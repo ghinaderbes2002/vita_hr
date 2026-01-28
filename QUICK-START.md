@@ -41,10 +41,13 @@ docker ps
 ## 📝 التعديلات المهمة
 
 ### تغيير API URL
-عدل ملف `docker-compose.yml`:
+⚠️ **مهم جداً:** عدل في مكانين في ملف `docker-compose.yml`:
 ```yaml
+build:
+  args:
+    NEXT_PUBLIC_API_URL: http://YOUR_BACKEND_IP:8000/api/v1  # ⬅️ مهم للبناء
 environment:
-  - NEXT_PUBLIC_API_URL=http://YOUR_BACKEND_IP:8000/api/v1
+  - NEXT_PUBLIC_API_URL=http://YOUR_BACKEND_IP:8000/api/v1   # ⬅️ مهم للتشغيل
 ```
 
 ### تغيير البورت

@@ -12,6 +12,10 @@ RUN npm ci
 # Copy all source files
 COPY . .
 
+# Build arguments for environment variables
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Build the Next.js application
 RUN npm run build
 

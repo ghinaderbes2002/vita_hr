@@ -6,12 +6,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Pass API URL to build process
+        NEXT_PUBLIC_API_URL: http://217.76.53.136:8000/api/v1
     container_name: vita-hr-frontend
     ports:
       - "3012:3012"
     environment:
       - NODE_ENV=production
-      # Update this with your backend server IP or domain
+      # This is also set for runtime (though NEXT_PUBLIC vars are build-time)
       - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
     restart: unless-stopped
     networks:

@@ -21,17 +21,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # IMPORTANT: Pass API URL to build process (Next.js needs this at build time)
+        # Change this to your backend URL:
+        NEXT_PUBLIC_API_URL: http://217.76.53.136:8000/api/v1
+        # Or if backend is in Docker on same network:
+        # NEXT_PUBLIC_API_URL: http://backend:8000/api/v1
     container_name: vita-hr-frontend
     ports:
       - "3012:3012"
     environment:
       - NODE_ENV=production
-      # Use this if backend is in Docker on same network:
-      # - NEXT_PUBLIC_API_URL=http://backend:8000/api/v1
-      # Or use this if backend is on same server but not in Docker:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-      # Or use this for remote backend:
-      # - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
+      # Also set for runtime (though NEXT_PUBLIC vars are mainly build-time)
+      - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
     restart: unless-stopped
     networks:
       - vita-hr-network
