@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Frontend Service (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vita-hr-frontend
+    ports:
+      - "3012:3012"
+    environment:
+      - NODE_ENV=production
+      # Update this with your backend server IP or domain
+      - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
+    restart: unless-stopped
+    networks:
+      - vita-hr-network
+
+networks:
+  vita-hr-network:
+    driver: bridge

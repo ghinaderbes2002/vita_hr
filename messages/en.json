@@ -1,0 +1,324 @@
+{
+  "auth": {
+    "welcomeBack": "Welcome Back",
+    "username": "Username",
+    "password": "Password",
+    "login": "Login",
+    "loginFailed": "Login Failed",
+    "forgotPassword": "Forgot Password?"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcomeMessage": "Welcome {name}",
+    "stats": {
+      "totalEmployees": "Total Employees",
+      "onLeave": "On Leave",
+      "pendingRequests": "Pending Requests",
+      "lateToday": "Late Today"
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "management": "Management",
+    "hr": "Human Resources",
+    "users": "User Management",
+    "roles": "Role Management",
+    "employees": "Employee Management",
+    "subordinates": "Subordinates",
+    "departments": "Department Management",
+    "leaveTypes": "Leave Types",
+    "holidays": "Holidays",
+    "leaveBalances": "Leave Balances",
+    "leaves": "Leaves",
+    "myLeaves": "My Leaves",
+    "newRequest": "New Request",
+    "pendingApproval": "Pending Approval",
+    "workSchedules": "Work Schedules",
+    "attendance": "Attendance",
+    "myAttendance": "My Attendance",
+    "checkInOut": "Check In/Out",
+    "attendanceRecords": "Attendance Records",
+    "myAlerts": "My Alerts",
+    "attendanceAlerts": "Attendance Alerts",
+    "attendanceData": "Attendance Data",
+    "evaluations": "Evaluations",
+    "evaluationPeriods": "Evaluation Periods",
+    "evaluationCriteria": "Evaluation Criteria",
+    "myEvaluations": "My Evaluations",
+    "pendingReview": "Pending Review",
+    "allEvaluations": "All Evaluations",
+    "evaluation": "Evaluation",
+    "tasks": "Tasks",
+    "tickets": "Tickets",
+    "medical": "Medical",
+    "physicalTherapy": "Physical Therapy",
+    "prosthetics": "Prosthetics",
+    "policies": "Policies",
+    "settings": "Settings"
+  },
+  "user": {
+    "logout": "Logout",
+    "profile": "Profile"
+  },
+  "users": {
+    "title": "User Management",
+    "description": "Manage system users and their permissions",
+    "addUser": "Add User",
+    "editUser": "Edit User",
+    "assignRoles": "Assign Roles",
+    "searchPlaceholder": "Search by username or email...",
+    "passwordHint": "Leave empty to keep current password",
+    "fields": {
+      "username": "Username",
+      "fullName": "Full Name",
+      "email": "Email",
+      "password": "Password",
+      "role": "Role",
+      "isActive": "Active"
+    },
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "departments": {
+    "title": "Department Management",
+    "description": "Manage organization departments and structure",
+    "addDepartment": "Add Department",
+    "editDepartment": "Edit Department",
+    "searchPlaceholder": "Search by code or name...",
+    "selectParent": "Select Parent Department",
+    "noParent": "No Parent Department",
+    "fields": {
+      "code": "Code",
+      "nameAr": "Arabic Name",
+      "nameEn": "English Name",
+      "nameTr": "Turkish Name",
+      "parent": "Parent Department"
+    }
+  },
+  "workSchedules": {
+    "title": "Work Schedules",
+    "description": "Manage work schedules and shift times",
+    "addSchedule": "Add Work Schedule",
+    "editSchedule": "Edit Work Schedule",
+    "searchPlaceholder": "Search by code or name...",
+    "fields": {
+      "code": "Code",
+      "name": "Name",
+      "workTimes": "Work Times",
+      "workDays": "Work Days",
+      "lateTolerance": "Late Tolerance",
+      "status": "Status"
+    },
+    "weekDays": {
+      "sunday": "Sunday",
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday"
+    },
+    "minutes": "minutes",
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "roles": {
+    "title": "Role Management",
+    "description": "Manage user roles and permissions",
+    "addRole": "Add Role",
+    "editRole": "Edit Role",
+    "permissionsCount": "permissions",
+    "fields": {
+      "name": "Name",
+      "displayNameAr": "Arabic Display Name",
+      "displayNameEn": "English Display Name",
+      "description": "Description",
+      "permissions": "Permissions"
+    }
+  },
+  "employees": {
+    "title": "Employee Management",
+    "description": "Manage employee data",
+    "addEmployee": "Add Employee",
+    "editEmployee": "Edit Employee",
+    "linkUser": "Link User",
+    "selectUser": "Select User",
+    "searchPlaceholder": "Search by name or ID...",
+    "selectDepartment": "Select Department",
+    "filterByDepartment": "Filter by Department",
+    "allDepartments": "All Departments",
+    "subordinates": {
+      "title": "Subordinates",
+      "description": "View employees reporting to a specific manager",
+      "selectManager": "Select Manager",
+      "noSubordinates": "No subordinates found for this manager"
+    },
+    "fields": {
+      "firstNameAr": "First Name (Arabic)",
+      "lastNameAr": "Last Name (Arabic)",
+      "firstNameEn": "First Name (English)",
+      "lastNameEn": "Last Name (English)",
+      "email": "Email",
+      "phone": "Phone",
+      "mobile": "Mobile",
+      "nationalId": "National ID",
+      "gender": "Gender",
+      "dateOfBirth": "Date of Birth",
+      "department": "Department",
+      "hireDate": "Hire Date",
+      "contractType": "Contract Type",
+      "status": "Status"
+    },
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "onLeave": "On Leave",
+      "terminated": "Terminated"
+    },
+    "genders": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "contractTypes": {
+      "permanent": "Permanent",
+      "contract": "Contract",
+      "temporary": "Temporary",
+      "intern": "Intern"
+    },
+    "additionalInfo": "Additional Information",
+    "linkedUser": "Linked User",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "tabs": {
+      "personal": "Personal Information",
+      "employment": "Employment Information",
+      "contact": "Contact Information"
+    }
+  },
+  "holidays": {
+    "title": "Holidays",
+    "description": "Manage public holidays and official days off",
+    "addHoliday": "Add Holiday",
+    "editHoliday": "Edit Holiday",
+    "searchPlaceholder": "Search by name...",
+    "fields": {
+      "nameAr": "Arabic Name",
+      "nameEn": "English Name",
+      "date": "Date",
+      "type": "Type",
+      "isRecurring": "Recurring Annually",
+      "selectDate": "Select Date",
+      "selectType": "Select Type"
+    },
+    "types": {
+      "public": "Public Holiday",
+      "national": "National Holiday",
+      "religious": "Religious Holiday",
+      "other": "Other"
+    }
+  },
+  "leaveTypes": {
+    "title": "Leave Types",
+    "description": "Manage leave types available in the system",
+    "addLeaveType": "Add Leave Type",
+    "editLeaveType": "Edit Leave Type",
+    "searchPlaceholder": "Search by name or code...",
+    "days": "days",
+    "active": "Active",
+    "inactive": "Inactive",
+    "fields": {
+      "code": "Code",
+      "nameAr": "Arabic Name",
+      "nameEn": "English Name",
+      "defaultDays": "Default Days",
+      "isPaid": "Paid Leave",
+      "requiresApproval": "Requires Approval",
+      "allowHalfDay": "Allow Half Day",
+      "color": "Color"
+    }
+  },
+  "leaveBalances": {
+    "title": "Leave Balances",
+    "description": "Manage employee leave balances",
+    "addBalance": "Add Balance",
+    "adjustBalance": "Adjust Balance",
+    "searchPlaceholder": "Search by employee or leave type...",
+    "selectEmployee": "Select Employee",
+    "selectLeaveType": "Select Leave Type",
+    "adjustmentHint": "Enter positive value to add or negative to deduct",
+    "fields": {
+      "employee": "Employee",
+      "leaveType": "Leave Type",
+      "year": "Year",
+      "totalDays": "Total Days",
+      "usedDays": "Used Days",
+      "pendingDays": "Pending Days",
+      "remainingDays": "Remaining Days",
+      "carriedOverDays": "Carried Over Days",
+      "adjustedDays": "Adjusted Days",
+      "adjustmentDays": "Adjustment Days",
+      "reason": "Reason"
+    }
+  },
+  "leaves": {
+    "title": "Leaves",
+    "myRequests": "My Requests",
+    "newRequest": "New Leave Request",
+    "editRequest": "Edit Leave Request",
+    "viewRequest": "View Leave Request",
+    "pendingApproval": "Pending Approval",
+    "calendar": "Leave Calendar",
+    "balances": "Leave Balances",
+    "fields": {
+      "leaveType": "Leave Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "totalDays": "Total Days",
+      "reason": "Reason",
+      "status": "Status",
+      "substitute": "Substitute",
+      "attachments": "Attachments"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "pending_manager": "Pending Manager",
+      "manager_approved": "Manager Approved",
+      "manager_rejected": "Manager Rejected",
+      "pending_hr": "Pending HR",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled",
+      "in_progress": "In Progress",
+      "completed": "Completed"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "add": "Add",
+    "search": "Search",
+    "loading": "Loading...",
+    "noData": "No Data",
+    "previous": "Previous",
+    "next": "Next",
+    "actions": "Actions",
+    "status": "Status",
+    "confirm": "Confirm",
+    "optional": "Optional",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "days": "days"
+  },
+  "messages": {
+    "confirmDelete": "Are you sure you want to delete?",
+    "actionCantUndo": "This action cannot be undone"
+  }
+}

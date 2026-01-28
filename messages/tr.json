@@ -1,0 +1,324 @@
+{
+  "auth": {
+    "welcomeBack": "Tekrar Hoşgeldiniz",
+    "username": "Kullanıcı Adı",
+    "password": "Şifre",
+    "login": "Giriş Yap",
+    "loginFailed": "Giriş Başarısız",
+    "forgotPassword": "Şifremi Unuttum?"
+  },
+  "dashboard": {
+    "title": "Kontrol Paneli",
+    "welcomeMessage": "Hoşgeldiniz {name}",
+    "stats": {
+      "totalEmployees": "Toplam Çalışan",
+      "onLeave": "İzinde",
+      "pendingRequests": "Bekleyen Talepler",
+      "lateToday": "Bugün Geç Kalanlar"
+    }
+  },
+  "nav": {
+    "dashboard": "Kontrol Paneli",
+    "management": "Yönetim",
+    "hr": "İnsan Kaynakları",
+    "users": "Kullanıcı Yönetimi",
+    "roles": "Rol Yönetimi",
+    "employees": "Çalışan Yönetimi",
+    "subordinates": "Astlar",
+    "departments": "Departman Yönetimi",
+    "leaveTypes": "İzin Türleri",
+    "holidays": "Resmi Tatiller",
+    "leaveBalances": "İzin Bakiyeleri",
+    "leaves": "İzinler",
+    "myLeaves": "İzinlerim",
+    "newRequest": "Yeni Talep",
+    "pendingApproval": "Onay Bekleyen",
+    "workSchedules": "Çalışma Programları",
+    "attendance": "Devam",
+    "myAttendance": "Devamım",
+    "checkInOut": "Giriş/Çıkış",
+    "attendanceRecords": "Devam Kayıtları",
+    "myAlerts": "Uyarılarım",
+    "attendanceAlerts": "Devam Uyarıları",
+    "attendanceData": "Devam Verileri",
+    "evaluations": "Değerlendirmeler",
+    "evaluationPeriods": "Değerlendirme Dönemleri",
+    "evaluationCriteria": "Değerlendirme Kriterleri",
+    "myEvaluations": "Değerlendirmelerim",
+    "pendingReview": "İnceleme Bekleyen",
+    "allEvaluations": "Tüm Değerlendirmeler",
+    "evaluation": "Değerlendirme",
+    "tasks": "Görevler",
+    "tickets": "Biletler",
+    "medical": "Tıbbi",
+    "physicalTherapy": "Fizik Tedavi",
+    "prosthetics": "Protez",
+    "policies": "Politikalar",
+    "settings": "Ayarlar"
+  },
+  "user": {
+    "logout": "Çıkış Yap",
+    "profile": "Profil"
+  },
+  "users": {
+    "title": "Kullanıcı Yönetimi",
+    "description": "Sistem kullanıcılarını ve izinlerini yönetin",
+    "addUser": "Kullanıcı Ekle",
+    "editUser": "Kullanıcı Düzenle",
+    "assignRoles": "Rol Ata",
+    "searchPlaceholder": "Kullanıcı adı veya e-posta ile ara...",
+    "passwordHint": "Mevcut şifreyi korumak için boş bırakın",
+    "fields": {
+      "username": "Kullanıcı Adı",
+      "fullName": "Tam Ad",
+      "email": "E-posta",
+      "password": "Şifre",
+      "role": "Rol",
+      "isActive": "Aktif"
+    },
+    "statuses": {
+      "active": "Aktif",
+      "inactive": "Pasif"
+    }
+  },
+  "departments": {
+    "title": "Departman Yönetimi",
+    "description": "Organizasyon departmanlarını ve yapısını yönetin",
+    "addDepartment": "Departman Ekle",
+    "editDepartment": "Departman Düzenle",
+    "searchPlaceholder": "Kod veya isim ile ara...",
+    "selectParent": "Ana Departman Seçin",
+    "noParent": "Ana Departman Yok",
+    "fields": {
+      "code": "Kod",
+      "nameAr": "Arapça İsim",
+      "nameEn": "İngilizce İsim",
+      "nameTr": "Türkçe İsim",
+      "parent": "Ana Departman"
+    }
+  },
+  "workSchedules": {
+    "title": "Çalışma Programları",
+    "description": "Çalışma programlarını ve vardiya saatlerini yönetin",
+    "addSchedule": "Çalışma Programı Ekle",
+    "editSchedule": "Çalışma Programı Düzenle",
+    "searchPlaceholder": "Kod veya isim ile ara...",
+    "fields": {
+      "code": "Kod",
+      "name": "İsim",
+      "workTimes": "Çalışma Saatleri",
+      "workDays": "Çalışma Günleri",
+      "lateTolerance": "Gecikme Toleransı",
+      "status": "Durum"
+    },
+    "weekDays": {
+      "sunday": "Pazar",
+      "monday": "Pazartesi",
+      "tuesday": "Salı",
+      "wednesday": "Çarşamba",
+      "thursday": "Perşembe",
+      "friday": "Cuma",
+      "saturday": "Cumartesi"
+    },
+    "minutes": "dakika",
+    "statuses": {
+      "active": "Aktif",
+      "inactive": "Pasif"
+    }
+  },
+  "roles": {
+    "title": "Rol Yönetimi",
+    "description": "Kullanıcı rollerini ve izinlerini yönetin",
+    "addRole": "Rol Ekle",
+    "editRole": "Rol Düzenle",
+    "permissionsCount": "izin",
+    "fields": {
+      "name": "İsim",
+      "displayNameAr": "Arapça Görünen İsim",
+      "displayNameEn": "İngilizce Görünen İsim",
+      "description": "Açıklama",
+      "permissions": "İzinler"
+    }
+  },
+  "employees": {
+    "title": "Çalışan Yönetimi",
+    "description": "Çalışan verilerini yönetin",
+    "addEmployee": "Çalışan Ekle",
+    "editEmployee": "Çalışan Düzenle",
+    "linkUser": "Kullanıcı Bağla",
+    "selectUser": "Kullanıcı Seçin",
+    "searchPlaceholder": "İsim veya kimlik ile ara...",
+    "selectDepartment": "Departman Seçin",
+    "filterByDepartment": "Departmana Göre Filtrele",
+    "allDepartments": "Tüm Departmanlar",
+    "subordinates": {
+      "title": "Astlar",
+      "description": "Belirli bir yöneticiye bağlı çalışanları görüntüle",
+      "selectManager": "Yönetici Seçin",
+      "noSubordinates": "Bu yönetici için ast bulunamadı"
+    },
+    "fields": {
+      "firstNameAr": "Ad (Arapça)",
+      "lastNameAr": "Soyad (Arapça)",
+      "firstNameEn": "Ad (İngilizce)",
+      "lastNameEn": "Soyad (İngilizce)",
+      "email": "E-posta",
+      "phone": "Telefon",
+      "mobile": "Cep Telefonu",
+      "nationalId": "Kimlik Numarası",
+      "gender": "Cinsiyet",
+      "dateOfBirth": "Doğum Tarihi",
+      "department": "Departman",
+      "hireDate": "İşe Alım Tarihi",
+      "contractType": "Sözleşme Türü",
+      "status": "Durum"
+    },
+    "statuses": {
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "onLeave": "İzinde",
+      "terminated": "İşten Çıkarıldı"
+    },
+    "genders": {
+      "male": "Erkek",
+      "female": "Kadın"
+    },
+    "contractTypes": {
+      "permanent": "Sürekli",
+      "contract": "Sözleşmeli",
+      "temporary": "Geçici",
+      "intern": "Stajyer"
+    },
+    "additionalInfo": "Ek Bilgiler",
+    "linkedUser": "Bağlı Kullanıcı",
+    "createdAt": "Oluşturulma Tarihi",
+    "updatedAt": "Güncellenme Tarihi",
+    "tabs": {
+      "personal": "Kişisel Bilgiler",
+      "employment": "İstihdam Bilgileri",
+      "contact": "İletişim Bilgileri"
+    }
+  },
+  "holidays": {
+    "title": "Resmi Tatiller",
+    "description": "Resmi tatilleri ve izin günlerini yönetin",
+    "addHoliday": "Tatil Ekle",
+    "editHoliday": "Tatil Düzenle",
+    "searchPlaceholder": "İsme göre ara...",
+    "fields": {
+      "nameAr": "Arapça Ad",
+      "nameEn": "İngilizce Ad",
+      "date": "Tarih",
+      "type": "Tür",
+      "isRecurring": "Her Yıl Tekrarlanır",
+      "selectDate": "Tarih Seçin",
+      "selectType": "Tür Seçin"
+    },
+    "types": {
+      "public": "Resmi Tatil",
+      "national": "Ulusal Tatil",
+      "religious": "Dini Tatil",
+      "other": "Diğer"
+    }
+  },
+  "leaveTypes": {
+    "title": "İzin Türleri",
+    "description": "Sistemde mevcut izin türlerini yönetin",
+    "addLeaveType": "İzin Türü Ekle",
+    "editLeaveType": "İzin Türü Düzenle",
+    "searchPlaceholder": "İsim veya koda göre ara...",
+    "days": "gün",
+    "active": "Aktif",
+    "inactive": "Pasif",
+    "fields": {
+      "code": "Kod",
+      "nameAr": "Arapça Ad",
+      "nameEn": "İngilizce Ad",
+      "defaultDays": "Varsayılan Günler",
+      "isPaid": "Ücretli İzin",
+      "requiresApproval": "Onay Gerektirir",
+      "allowHalfDay": "Yarım Güne İzin Ver",
+      "color": "Renk"
+    }
+  },
+  "leaveBalances": {
+    "title": "İzin Bakiyeleri",
+    "description": "Çalışan izin bakiyelerini yönetin",
+    "addBalance": "Bakiye Ekle",
+    "adjustBalance": "Bakiye Ayarla",
+    "searchPlaceholder": "Çalışan veya izin türüne göre ara...",
+    "selectEmployee": "Çalışan Seçin",
+    "selectLeaveType": "İzin Türü Seçin",
+    "adjustmentHint": "Eklemek için pozitif, düşmek için negatif değer girin",
+    "fields": {
+      "employee": "Çalışan",
+      "leaveType": "İzin Türü",
+      "year": "Yıl",
+      "totalDays": "Toplam Günler",
+      "usedDays": "Kullanılan Günler",
+      "pendingDays": "Bekleyen Günler",
+      "remainingDays": "Kalan Günler",
+      "carriedOverDays": "Devredilen Günler",
+      "adjustedDays": "Ayarlanan Günler",
+      "adjustmentDays": "Ayarlama Günleri",
+      "reason": "Neden"
+    }
+  },
+  "leaves": {
+    "title": "İzinler",
+    "myRequests": "İzin Taleplerim",
+    "newRequest": "Yeni İzin Talebi",
+    "editRequest": "İzin Talebini Düzenle",
+    "viewRequest": "İzin Talebini Görüntüle",
+    "pendingApproval": "Onay Bekleyen",
+    "calendar": "İzin Takvimi",
+    "balances": "İzin Bakiyeleri",
+    "fields": {
+      "leaveType": "İzin Türü",
+      "startDate": "Başlangıç Tarihi",
+      "endDate": "Bitiş Tarihi",
+      "totalDays": "Toplam Günler",
+      "reason": "Neden",
+      "status": "Durum",
+      "substitute": "Vekil",
+      "attachments": "Ekler"
+    },
+    "statuses": {
+      "draft": "Taslak",
+      "pending_manager": "Yönetici Onayı Bekliyor",
+      "manager_approved": "Yönetici Onayladı",
+      "manager_rejected": "Yönetici Reddetti",
+      "pending_hr": "İK Onayı Bekliyor",
+      "approved": "Onaylandı",
+      "rejected": "Reddedildi",
+      "cancelled": "İptal Edildi",
+      "in_progress": "Devam Ediyor",
+      "completed": "Tamamlandı"
+    }
+  },
+  "common": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "view": "Görüntüle",
+    "add": "Ekle",
+    "search": "Ara",
+    "loading": "Yükleniyor...",
+    "noData": "Veri Yok",
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "actions": "İşlemler",
+    "status": "Durum",
+    "back": "Geri",
+    "yes": "Evet",
+    "no": "Hayır",
+    "confirm": "Onayla",
+    "optional": "İsteğe Bağlı",
+    "days": "gün"
+  },
+  "messages": {
+    "confirmDelete": "Silmek istediğinizden emin misiniz?",
+    "actionCantUndo": "Bu işlem geri alınamaz"
+  }
+}

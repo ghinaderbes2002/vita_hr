@@ -1,0 +1,496 @@
+{
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "view": "عرض",
+    "add": "إضافة",
+    "create": "إنشاء",
+    "search": "بحث",
+    "filter": "تصفية",
+    "export": "تصدير",
+    "loading": "جاري التحميل...",
+    "noData": "لا توجد بيانات",
+    "confirm": "تأكيد",
+    "yes": "نعم",
+    "no": "لا",
+    "all": "الكل",
+    "status": "الحالة",
+    "actions": "الإجراءات",
+    "previous": "السابق",
+    "next": "التالي",
+    "optional": "اختياري",
+    "back": "رجوع",
+    "days": "يوم"
+  },
+  "auth": {
+    "welcomeBack": "مرحباً بعودتك",
+    "username": "اسم المستخدم",
+    "password": "كلمة المرور",
+    "login": "تسجيل الدخول",
+    "loginFailed": "فشل تسجيل الدخول",
+    "forgotPassword": "نسيت كلمة المرور؟"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "management": "الإدارة",
+    "hr": "الموارد البشرية",
+    "users": "إدارة المستخدمين",
+    "roles": "إدارة الأدوار",
+    "employees": "الموظفون",
+    "subordinates": "المرؤوسين",
+    "departments": "إدارة الأقسام",
+    "workSchedules": "جداول العمل",
+    "leaveTypes": "أنواع الإجازات",
+    "holidays": "العطل الرسمية",
+    "leaveBalances": "أرصدة الإجازات",
+    "leaves": "الإجازات",
+    "myLeaves": "إجازاتي",
+    "newRequest": "طلب جديد",
+    "pendingApproval": "بانتظار الموافقة",
+    "leaveCalendar": "تقويم الإجازات",
+    "balances": "الأرصدة",
+    "attendance": "الحضور",
+    "myAttendance": "حضوري",
+    "checkInOut": "تسجيل الحضور",
+    "attendanceRecords": "سجلات الحضور",
+    "myAlerts": "تنبيهاتي",
+    "attendanceAlerts": "تنبيهات الحضور",
+    "attendanceData": "بيانات الحضور",
+    "alerts": "التنبيهات",
+    "settings": "الإعدادات",
+    "evaluations": "التقييمات",
+    "evaluationPeriods": "فترات التقييم",
+    "evaluationCriteria": "معايير التقييم",
+    "myEvaluations": "تقييماتي",
+    "pendingReview": "بانتظار المراجعة",
+    "allEvaluations": "جميع التقييمات",
+    "evaluation": "التقييم",
+    "myEvaluation": "تقييمي",
+    "allForms": "جميع النماذج",
+    "evalSettings": "إعدادات التقييم",
+    "tasks": "المهام",
+    "tickets": "التذاكر",
+    "medical": "الخدمات الطبية",
+    "physicalTherapy": "العلاج الطبيعي",
+    "prosthetics": "الأطراف الصناعية",
+    "media": "الإعلام",
+    "campaigns": "الحملات",
+    "products": "المنتجات",
+    "policies": "السياسات",
+    "reports": "التقارير",
+    "notifications": "الإشعارات"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "welcomeMessage": "مرحباً {name}",
+    "stats": {
+      "totalEmployees": "إجمالي الموظفين",
+      "onLeave": "في إجازة",
+      "pendingRequests": "طلبات معلقة",
+      "lateToday": "متأخرون اليوم"
+    },
+    "leaveBalance": "رصيد الإجازات",
+    "recentActivity": "آخر النشاطات",
+    "pendingApprovals": "الموافقات المعلقة",
+    "employeesOnLeave": "الموظفون في إجازة"
+  },
+  "employees": {
+    "title": "الموظفون",
+    "description": "إدارة بيانات الموظفين",
+    "addEmployee": "إضافة موظف",
+    "editEmployee": "تعديل موظف",
+    "linkUser": "ربط مستخدم",
+    "selectUser": "اختر المستخدم",
+    "searchPlaceholder": "البحث بالاسم أو الرقم الوظيفي...",
+    "selectDepartment": "اختر القسم",
+    "filterByDepartment": "تصفية حسب القسم",
+    "allDepartments": "جميع الأقسام",
+    "subordinates": {
+      "title": "المرؤوسين",
+      "description": "عرض الموظفين التابعين لمدير معين",
+      "selectManager": "اختر المدير",
+      "noSubordinates": "لا يوجد موظفين تابعين لهذا المدير"
+    },
+    "fields": {
+      "employeeNumber": "الرقم الوظيفي",
+      "firstNameAr": "الاسم الأول (عربي)",
+      "lastNameAr": "الاسم الأخير (عربي)",
+      "firstNameEn": "الاسم الأول (إنجليزي)",
+      "lastNameEn": "الاسم الأخير (إنجليزي)",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "mobile": "الجوال",
+      "nationalId": "رقم الهوية",
+      "gender": "الجنس",
+      "dateOfBirth": "تاريخ الميلاد",
+      "nationality": "الجنسية",
+      "maritalStatus": "الحالة الاجتماعية",
+      "department": "القسم",
+      "jobTitle": "المسمى الوظيفي",
+      "manager": "المدير المباشر",
+      "hireDate": "تاريخ التعيين",
+      "contractType": "نوع العقد",
+      "status": "الحالة"
+    },
+    "statuses": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "onLeave": "في إجازة",
+      "terminated": "منتهي"
+    },
+    "genders": {
+      "male": "ذكر",
+      "female": "أنثى"
+    },
+    "contractTypes": {
+      "permanent": "دائم",
+      "contract": "عقد",
+      "temporary": "مؤقت",
+      "intern": "متدرب"
+    },
+    "additionalInfo": "معلومات إضافية",
+    "linkedUser": "مستخدم مرتبط",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "تاريخ التحديث",
+    "tabs": {
+      "personal": "البيانات الشخصية",
+      "employment": "البيانات الوظيفية",
+      "contact": "بيانات التواصل",
+      "documents": "المستندات",
+      "leaves": "الإجازات",
+      "attendance": "الحضور"
+    }
+  },
+  "leaveTypes": {
+    "title": "أنواع الإجازات",
+    "description": "إدارة أنواع الإجازات المتاحة في النظام",
+    "addLeaveType": "إضافة نوع إجازة",
+    "editLeaveType": "تعديل نوع إجازة",
+    "searchPlaceholder": "البحث بالاسم أو الكود...",
+    "days": "يوم",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "fields": {
+      "code": "الكود",
+      "nameAr": "الاسم بالعربي",
+      "nameEn": "الاسم بالإنجليزي",
+      "defaultDays": "عدد الأيام الافتراضي",
+      "isPaid": "مدفوعة",
+      "requiresApproval": "تتطلب موافقة",
+      "allowHalfDay": "تسمح بنصف يوم",
+      "color": "اللون"
+    }
+  },
+  "leaveBalances": {
+    "title": "أرصدة الإجازات",
+    "description": "إدارة أرصدة إجازات الموظفين",
+    "addBalance": "إضافة رصيد",
+    "adjustBalance": "تعديل الرصيد",
+    "searchPlaceholder": "البحث بالموظف أو نوع الإجازة...",
+    "selectEmployee": "اختر الموظف",
+    "selectLeaveType": "اختر نوع الإجازة",
+    "adjustmentHint": "أدخل قيمة موجبة للإضافة أو سالبة للخصم",
+    "fields": {
+      "employee": "الموظف",
+      "leaveType": "نوع الإجازة",
+      "year": "السنة",
+      "totalDays": "إجمالي الأيام",
+      "usedDays": "الأيام المستخدمة",
+      "pendingDays": "الأيام المعلقة",
+      "remainingDays": "الأيام المتبقية",
+      "carriedOverDays": "الأيام المرحلة",
+      "adjustedDays": "الأيام المعدلة",
+      "adjustmentDays": "أيام التعديل",
+      "reason": "السبب"
+    }
+  },
+  "leaves": {
+    "title": "الإجازات",
+    "myRequests": "طلباتي",
+    "newRequest": "طلب إجازة جديد",
+    "editRequest": "تعديل طلب الإجازة",
+    "viewRequest": "عرض طلب الإجازة",
+    "pendingApproval": "بانتظار الموافقة",
+    "calendar": "تقويم الإجازات",
+    "balances": "أرصدة الإجازات",
+    "fields": {
+      "leaveType": "نوع الإجازة",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "totalDays": "عدد الأيام",
+      "reason": "السبب",
+      "status": "الحالة",
+      "substitute": "البديل",
+      "attachments": "المرفقات"
+    },
+    "types": {
+      "annual": "سنوية",
+      "sick": "مرضية",
+      "emergency": "طارئة",
+      "unpaid": "بدون راتب",
+      "maternity": "أمومة",
+      "paternity": "أبوة",
+      "hajj": "حج",
+      "marriage": "زواج",
+      "death": "وفاة",
+      "study": "دراسية"
+    },
+    "statuses": {
+      "draft": "مسودة",
+      "pending_manager": "بانتظار المدير",
+      "manager_approved": "موافقة المدير",
+      "manager_rejected": "رفض المدير",
+      "pending_hr": "بانتظار HR",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "cancelled": "ملغي",
+      "in_progress": "جارية",
+      "completed": "منتهية"
+    },
+    "actions": {
+      "approve": "موافقة",
+      "reject": "رفض",
+      "cancel": "إلغاء"
+    },
+    "balance": {
+      "entitled": "المستحق",
+      "used": "المستخدم",
+      "pending": "المعلق",
+      "remaining": "المتبقي"
+    }
+  },
+  "attendance": {
+    "title": "الحضور والانصراف",
+    "myAttendance": "حضوري",
+    "clockIn": "تسجيل حضور",
+    "clockOut": "تسجيل انصراف",
+    "data": "بيانات الحضور",
+    "alerts": "التنبيهات",
+    "settings": "الإعدادات",
+    "fields": {
+      "date": "التاريخ",
+      "clockInTime": "وقت الحضور",
+      "clockOutTime": "وقت الانصراف",
+      "workHours": "ساعات العمل",
+      "lateMinutes": "دقائق التأخير",
+      "earlyMinutes": "دقائق الخروج المبكر",
+      "overtime": "الوقت الإضافي",
+      "status": "الحالة"
+    },
+    "statuses": {
+      "present": "حاضر",
+      "absent": "غائب",
+      "late": "متأخر",
+      "early_leave": "خروج مبكر",
+      "on_leave": "في إجازة",
+      "holiday": "عطلة",
+      "weekend": "نهاية أسبوع"
+    },
+    "alertTypes": {
+      "late": "تأخير",
+      "absent": "غياب",
+      "early_leave": "خروج مبكر",
+      "missing_punch": "بصمة ناقصة"
+    }
+  },
+  "evaluation": {
+    "title": "تقييم الأداء",
+    "myEvaluation": "تقييمي",
+    "forms": "نماذج التقييم",
+    "periods": "دورات التقييم",
+    "categories": {
+      "job_performance": "الأداء الوظيفي",
+      "skills": "المهارات",
+      "collaboration": "التعاون",
+      "work_behavior": "سلوك العمل",
+      "personal_development": "التطوير الشخصي"
+    },
+    "ratings": {
+      "excellent": "ممتاز",
+      "very_good": "جيد جداً",
+      "good": "جيد",
+      "acceptable": "مقبول",
+      "weak": "ضعيف"
+    },
+    "types": {
+      "self": "تقييم ذاتي",
+      "manager": "تقييم المدير",
+      "peer": "تقييم الأقران",
+      "final": "التقييم النهائي"
+    }
+  },
+  "tasks": {
+    "title": "المهام",
+    "myTasks": "مهامي",
+    "assignedTasks": "المهام المسندة",
+    "newTask": "مهمة جديدة",
+    "fields": {
+      "title": "العنوان",
+      "description": "الوصف",
+      "assignee": "المنفذ",
+      "assigner": "المسند",
+      "dueDate": "تاريخ الاستحقاق",
+      "priority": "الأولوية",
+      "status": "الحالة"
+    },
+    "statuses": {
+      "pending": "معلقة",
+      "in_progress": "جارية",
+      "completed": "مكتملة",
+      "cancelled": "ملغاة"
+    },
+    "priorities": {
+      "low": "منخفضة",
+      "medium": "متوسطة",
+      "high": "عالية",
+      "urgent": "عاجلة"
+    }
+  },
+  "tickets": {
+    "title": "تذاكر الدعم",
+    "myTickets": "تذاكري",
+    "newTicket": "تذكرة جديدة",
+    "fields": {
+      "subject": "الموضوع",
+      "message": "الرسالة",
+      "category": "التصنيف",
+      "priority": "الأولوية",
+      "status": "الحالة"
+    },
+    "statuses": {
+      "open": "مفتوحة",
+      "pending": "معلقة",
+      "in_progress": "جارية",
+      "resolved": "محلولة",
+      "closed": "مغلقة"
+    }
+  },
+  "user": {
+    "logout": "تسجيل الخروج",
+    "profile": "الملف الشخصي"
+  },
+  "users": {
+    "title": "إدارة المستخدمين",
+    "description": "إدارة مستخدمي النظام وصلاحياتهم",
+    "addUser": "إضافة مستخدم",
+    "editUser": "تعديل مستخدم",
+    "assignRoles": "تعيين أدوار",
+    "searchPlaceholder": "البحث باسم المستخدم أو البريد...",
+    "passwordHint": "اتركه فارغاً للإبقاء على كلمة المرور الحالية",
+    "fields": {
+      "username": "اسم المستخدم",
+      "fullName": "الاسم الكامل",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "role": "الدور",
+      "isActive": "نشط"
+    },
+    "statuses": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    }
+  },
+  "departments": {
+    "title": "إدارة الأقسام",
+    "description": "إدارة أقسام المؤسسة والهيكل التنظيمي",
+    "addDepartment": "إضافة قسم",
+    "editDepartment": "تعديل قسم",
+    "searchPlaceholder": "البحث بالكود أو الاسم...",
+    "selectParent": "اختر القسم الرئيسي",
+    "noParent": "لا يوجد قسم رئيسي",
+    "fields": {
+      "code": "الكود",
+      "nameAr": "الاسم بالعربية",
+      "nameEn": "الاسم بالإنجليزية",
+      "nameTr": "الاسم بالتركية",
+      "parent": "القسم الرئيسي"
+    }
+  },
+  "workSchedules": {
+    "title": "جداول العمل",
+    "description": "إدارة جداول العمل ومواعيد الدوام",
+    "addSchedule": "إضافة جدول عمل",
+    "editSchedule": "تعديل جدول عمل",
+    "searchPlaceholder": "البحث بالكود أو الاسم...",
+    "fields": {
+      "code": "الكود",
+      "name": "الاسم",
+      "workTimes": "أوقات العمل",
+      "workDays": "أيام العمل",
+      "lateTolerance": "تسامح التأخير",
+      "status": "الحالة"
+    },
+    "weekDays": {
+      "sunday": "الأحد",
+      "monday": "الإثنين",
+      "tuesday": "الثلاثاء",
+      "wednesday": "الأربعاء",
+      "thursday": "الخميس",
+      "friday": "الجمعة",
+      "saturday": "السبت"
+    },
+    "minutes": "دقيقة",
+    "statuses": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    }
+  },
+  "holidays": {
+    "title": "العطل الرسمية",
+    "description": "إدارة العطل والإجازات الرسمية",
+    "addHoliday": "إضافة عطلة",
+    "editHoliday": "تعديل عطلة",
+    "searchPlaceholder": "البحث بالاسم...",
+    "fields": {
+      "nameAr": "الاسم بالعربية",
+      "nameEn": "الاسم بالإنجليزية",
+      "date": "التاريخ",
+      "type": "النوع",
+      "isRecurring": "متكررة سنوياً",
+      "selectDate": "اختر التاريخ",
+      "selectType": "اختر النوع"
+    },
+    "types": {
+      "public": "عطلة عامة",
+      "national": "عطلة وطنية",
+      "religious": "عطلة دينية",
+      "other": "أخرى"
+    }
+  },
+  "roles": {
+    "title": "إدارة الأدوار",
+    "description": "إدارة أدوار المستخدمين وصلاحياتهم",
+    "addRole": "إضافة دور",
+    "editRole": "تعديل دور",
+    "permissionsCount": "صلاحية",
+    "fields": {
+      "name": "الاسم",
+      "displayNameAr": "الاسم بالعربية",
+      "displayNameEn": "الاسم بالإنجليزية",
+      "description": "الوصف",
+      "permissions": "الصلاحيات"
+    }
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "email": "البريد الإلكتروني غير صحيح",
+    "minLength": "يجب أن يكون على الأقل {min} أحرف",
+    "maxLength": "يجب ألا يتجاوز {max} حرف",
+    "invalidDate": "التاريخ غير صحيح",
+    "endDateBeforeStart": "تاريخ النهاية يجب أن يكون بعد تاريخ البداية"
+  },
+  "messages": {
+    "saveSuccess": "تم الحفظ بنجاح",
+    "saveError": "حدث خطأ أثناء الحفظ",
+    "deleteSuccess": "تم الحذف بنجاح",
+    "deleteError": "حدث خطأ أثناء الحذف",
+    "confirmDelete": "هل أنت متأكد من الحذف؟",
+    "actionCantUndo": "لا يمكن التراجع عن هذا الإجراء",
+    "checkInSuccess": "تم تسجيل الحضور بنجاح",
+    "checkInError": "حدث خطأ أثناء تسجيل الحضور",
+    "checkOutSuccess": "تم تسجيل الانصراف بنجاح",
+    "checkOutError": "حدث خطأ أثناء تسجيل الانصراف"
+  }
+}

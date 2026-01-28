@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Backend Service (if you want to run backend in Docker too)
+  # Uncomment and configure if needed
+  # backend:
+  #   image: your-backend-image:latest
+  #   container_name: vita-hr-backend
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - DATABASE_URL=postgresql://user:password@db:5432/vita_hr
+  #   restart: unless-stopped
+  #   networks:
+  #     - vita-hr-network
+  #   depends_on:
+  #     - db
+
+  # Frontend Service (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vita-hr-frontend
+    ports:
+      - "3012:3012"
+    environment:
+      - NODE_ENV=production
+      # Use this if backend is in Docker on same network:
+      # - NEXT_PUBLIC_API_URL=http://backend:8000/api/v1
+      # Or use this if backend is on same server but not in Docker:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      # Or use this for remote backend:
+      # - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
+    restart: unless-stopped
+    networks:
+      - vita-hr-network
+    # Uncomment if backend is in Docker:
+    # depends_on:
+    #   - backend
+
+  # Database (PostgreSQL) - if needed
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: vita-hr-db
+  #   environment:
+  #     - POSTGRES_USER=vita_user
+  #     - POSTGRES_PASSWORD=vita_password
+  #     - POSTGRES_DB=vita_hr
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+  #   networks:
+  #     - vita-hr-network
+
+networks:
+  vita-hr-network:
+    driver: bridge
+
+# volumes:
+#   postgres_data:
