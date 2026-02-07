@@ -100,6 +100,9 @@ export default function AttendanceAlertsPage() {
     : (data as any)?.data?.items || (data as any)?.data || [];
 
   const filteredAlerts = alerts.filter((alert: AttendanceAlert) => {
+    // إذا ما في بحث، نعرض كل التنبيهات
+    if (!search) return true;
+
     const searchLower = search.toLowerCase();
     return (
       alert.employee?.nameAr?.toLowerCase().includes(searchLower) ||

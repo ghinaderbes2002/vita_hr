@@ -191,10 +191,6 @@ export default function MyLeavesPage() {
                         إلغاء الطلب
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => router.push(`/leaves/view/${request.id}`)}>
-                      <Eye className="h-4 w-4 ml-2" />
-                      {t("common.view")}
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

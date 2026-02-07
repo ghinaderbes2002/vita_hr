@@ -60,15 +60,30 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   });
 
   useEffect(() => {
-    if (user) {
-      form.reset({
-        username: user.username || "",
-        email: user.email || "",
-        password: "",
-        fullName: user.fullName || "",
-        status: user.status || "ACTIVE",
-      });
+    if (open) {
+      // Clear form completely first
+      form.clearErrors();
+
+      if (user) {
+        form.reset({
+          username: user.username || "",
+          email: user.email || "",
+          password: "",
+          fullName: user.fullName || "",
+          status: user.status || "ACTIVE",
+        });
+      } else {
+        // For new user, ensure all fields are empty
+        form.reset({
+          username: "",
+          email: "",
+          password: "",
+          fullName: "",
+          status: "ACTIVE",
+        });
+      }
     } else {
+      // When dialog is closed, reset form
       form.reset({
         username: "",
         email: "",
@@ -77,7 +92,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         status: "ACTIVE",
       });
     }
-  }, [user, form]);
+  }, [user, form, open]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -103,17 +118,29 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         };
         await createUser.mutateAsync(createData);
       }
-      onOpenChange(false);
-      form.reset();
+      handleClose(false);
     } catch (error) {
       // Error handled by mutation
     }
   };
 
+  const handleClose = (open: boolean) => {
+    if (!open) {
+      form.reset({
+        username: "",
+        email: "",
+        password: "",
+        fullName: "",
+        status: "ACTIVE",
+      });
+    }
+    onOpenChange(open);
+  };
+
   const isLoading = createUser.isPending || updateUser.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose} key={user?.id || 'new-user'}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
@@ -121,7 +148,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
+        <Form {...form} key={open ? (user?.id || 'new') : 'closed'}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
@@ -208,7 +235,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleClose(false)}
               >
                 {t("common.cancel")}
               </Button>

@@ -32,18 +32,65 @@ export function useCreateUser() {
       toast.success("تم إنشاء المستخدم بنجاح");
     },
     onError: (error: any) => {
-      console.error("Create user error - Full error:", error);
-      console.error("Create user error - Response:", error.response);
-      console.error("Create user error - Data:", error.response?.data);
-      console.error("Create user error - Status:", error.response?.status);
-      const message = error.response?.data?.message
-        || error.response?.data?.error
-        || (error.response?.data && Object.keys(error.response.data).length > 0
-            ? JSON.stringify(error.response.data)
-            : null)
-        || error.message
-        || "حدث خطأ";
-      toast.error(message);
+      console.error("❌ Create user error:", error);
+      console.error("❌ Error response:", error.response);
+      console.error("❌ Error data:", error.response?.data);
+      console.error("❌ Error status:", error.response?.status);
+
+      // Extract error message
+      let errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error ||
+                          error.message;
+
+      // If message is an array, get first element
+      if (Array.isArray(errorMessage)) {
+        errorMessage = errorMessage[0];
+      }
+
+      // Convert to string if it's an object
+      if (typeof errorMessage !== 'string') {
+        errorMessage = typeof errorMessage === 'object' && errorMessage !== null
+          ? JSON.stringify(errorMessage)
+          : String(errorMessage);
+      }
+
+      // Translate common error messages to Arabic
+      const errorTranslations: { [key: string]: string } = {
+        "Password must be at least 8 characters": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+        "Email already exists": "البريد الإلكتروني مستخدم مسبقاً",
+        "Username already exists": "اسم المستخدم مستخدم مسبقاً",
+        "Invalid email format": "صيغة البريد الإلكتروني غير صحيحة",
+        "Username is required": "اسم المستخدم مطلوب",
+        "Email is required": "البريد الإلكتروني مطلوب",
+        "Password is required": "كلمة المرور مطلوبة",
+        "Full name is required": "الاسم الكامل مطلوب",
+      };
+
+      // Check if there's a direct translation
+      const translatedMessage = errorTranslations[errorMessage];
+      if (translatedMessage) {
+        toast.error(translatedMessage);
+        return;
+      }
+
+      // Check for specific error patterns
+      if (error.response?.status === 409 ||
+          errorMessage.includes("duplicate") ||
+          errorMessage.includes("already exists") ||
+          errorMessage.includes("موجود")) {
+        toast.error("اسم المستخدم أو البريد الإلكتروني موجود مسبقاً");
+      } else if (errorMessage.toLowerCase().includes("password")) {
+        // Any password-related error
+        if (errorMessage.includes("at least") || errorMessage.includes("8")) {
+          toast.error("كلمة المرور يجب أن تكون 8 أحرف على الأقل");
+        } else {
+          toast.error("خطأ في كلمة المرور");
+        }
+      } else if (errorMessage.includes("validation") || errorMessage.includes("required")) {
+        toast.error("يرجى التحقق من جميع الحقول المطلوبة");
+      } else {
+        toast.error(errorMessage || "حدث خطأ أثناء إنشاء المستخدم");
+      }
     },
   });
 }
@@ -59,7 +106,18 @@ export function useUpdateUser() {
       toast.success("تم تحديث المستخدم بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      let errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error ||
+                          error.message ||
+                          "حدث خطأ أثناء تحديث المستخدم";
+
+      if (typeof errorMessage !== 'string') {
+        errorMessage = typeof errorMessage === 'object' && errorMessage !== null
+          ? JSON.stringify(errorMessage)
+          : String(errorMessage);
+      }
+
+      toast.error(errorMessage);
     },
   });
 }
@@ -74,7 +132,18 @@ export function useDeleteUser() {
       toast.success("تم حذف المستخدم بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      let errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error ||
+                          error.message ||
+                          "حدث خطأ أثناء حذف المستخدم";
+
+      if (typeof errorMessage !== 'string') {
+        errorMessage = typeof errorMessage === 'object' && errorMessage !== null
+          ? JSON.stringify(errorMessage)
+          : String(errorMessage);
+      }
+
+      toast.error(errorMessage);
     },
   });
 }
@@ -90,7 +159,18 @@ export function useAssignRoles() {
       toast.success("تم تعيين الأدوار بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      let errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error ||
+                          error.message ||
+                          "حدث خطأ أثناء تعيين الأدوار";
+
+      if (typeof errorMessage !== 'string') {
+        errorMessage = typeof errorMessage === 'object' && errorMessage !== null
+          ? JSON.stringify(errorMessage)
+          : String(errorMessage);
+      }
+
+      toast.error(errorMessage);
     },
   });
 }

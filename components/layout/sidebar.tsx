@@ -1,9 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   LayoutDashboard,
   ChevronDown,
@@ -48,48 +49,53 @@ const navigation: NavItem[] = [
     title: "nav.management",
     icon: Settings,
     children: [
-      { title: "nav.users", href: "/users", icon: UserCog },
-      { title: "nav.roles", href: "/roles", icon: Shield },
-      { title: "nav.departments", href: "/departments", icon: Building2 },
-      { title: "nav.employees", href: "/employees", icon: Users },
-      { title: "nav.subordinates", href: "/employees/subordinates", icon: UserCheck },
+      { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
+      { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read" },
+      { title: "nav.departments", href: "/departments", icon: Building2, permission: "departments:read" },
+      { title: "nav.employees", href: "/employees", icon: Users, permission: "employees:read" },
+      { title: "nav.subordinates", href: "/employees/subordinates", icon: UserCheck, permission: "employees:read" },
     ],
   },
   {
     title: "nav.hr",
     icon: Briefcase,
     children: [
-      { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3 },
-      { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck },
-      { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn },
-      { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList },
-      { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell },
-      { title: "nav.attendanceAlerts", href: "/attendance/alerts", icon: AlertCircle },
-      { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays },
-      { title: "nav.holidays", href: "/holidays", icon: Calendar },
-      { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet },
-      { title: "nav.myLeaves", href: "/leaves/my-leaves", icon: FileText },
-      { title: "nav.newRequest", href: "/leaves/new-request", icon: PlusCircle },
-      { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock },
+      { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
+      { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck, permission: "attendance.records.read-own" },
+      { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn, permission: "attendance.records.check-in" },
+      { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
+      { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell, permission: "attendance.alerts.read-own" },
+      { title: "nav.attendanceAlerts", href: "/attendance/alerts", icon: AlertCircle, permission: "attendance.alerts.read" },
+      { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read" },
+      { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read" },
+      { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read" },
+      { title: "nav.myLeaves", href: "/leaves/my-leaves", icon: FileText, permission: "leave_requests:read" },
+      { title: "nav.newRequest", href: "/leaves/new-request", icon: PlusCircle, permission: "leave_requests:create" },
+      { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permission: "leave_requests:approve_manager" },
     ],
   },
   {
     title: "nav.evaluations",
     icon: Star,
     children: [
-      { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays },
-      { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks },
-      { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen },
-      { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck },
-      { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart },
+      { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read" },
+      { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read" },
+      { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
+      { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate" },
+      { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all" },
     ],
   },
 ];
 
 export function Sidebar() {
   const t = useTranslations();
+  const locale = useLocale();
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<string[]>([]);
+  const { hasPermission, isAdmin } = usePermissions();
+
+  // Determine if the locale is RTL (Arabic)
+  const isRTL = locale === "ar";
 
   const toggle = (title: string) => {
     setExpanded((prev) =>
@@ -100,11 +106,80 @@ export function Sidebar() {
   const isActive = (href: string) => {
     const segments = pathname.split("/");
     const pathWithoutLocale = "/" + segments.slice(2).join("/");
-    return pathWithoutLocale.startsWith(href);
+
+    // Remove query params and hash
+    const cleanPath = pathWithoutLocale.split("?")[0].split("#")[0];
+
+    // Exact match
+    if (cleanPath === href) {
+      return true;
+    }
+
+    // For routes with dynamic segments (e.g., /employees/123)
+    // Check if path starts with href + "/"
+    if (cleanPath.startsWith(href + "/")) {
+      // But exclude specific known sub-routes
+      const knownSubRoutes = [
+        "/employees/subordinates",
+        "/leaves/my-leaves",
+        "/leaves/new-request",
+        "/leaves/pending-approval",
+        "/attendance/my-attendance",
+        "/attendance/check-in-out",
+        "/attendance/records",
+        "/attendance/my-alerts",
+        "/attendance/alerts",
+        "/evaluations/periods",
+        "/evaluations/criteria",
+        "/evaluations/my-evaluations",
+        "/evaluations/pending-review",
+        "/evaluations/all-forms",
+      ];
+
+      // If current path is a known sub-route, don't match parent
+      if (knownSubRoutes.some(route => cleanPath.startsWith(route))) {
+        return false;
+      }
+
+      return true;
+    }
+
+    return false;
+  };
+
+  // التحقق من صلاحية العنصر
+  const hasItemPermission = (item: NavItem): boolean => {
+    // إذا ما في صلاحية محددة، الكل يشوفه
+    if (!item.permission) return true;
+
+    // Admin يشوف كل شي
+    if (isAdmin()) return true;
+
+    // التحقق من الصلاحية
+    return hasPermission(item.permission);
+  };
+
+  // التحقق من صلاحية القسم (إذا في أي عنصر فرعي له صلاحية)
+  const hasSectionPermission = (item: NavItem): boolean => {
+    // إذا القسم نفسه عنده صلاحية، نتحقق منها أولاً
+    if (item.permission && !hasItemPermission(item)) {
+      return false;
+    }
+
+    // إذا ما في عناصر فرعية، نتحقق من صلاحية القسم نفسه
+    if (!item.children || item.children.length === 0) {
+      return hasItemPermission(item);
+    }
+
+    // نتحقق من وجود أي عنصر فرعي له صلاحية
+    return item.children.some((child) => hasItemPermission(child));
   };
 
   return (
-    <aside className="fixed right-0 top-0 z-40 h-screen w-64 border-l bg-background">
+    <aside className={cn(
+      "fixed top-0 z-40 h-screen w-64 bg-background",
+      isRTL ? "right-0 border-l" : "left-0 border-r"
+    )}>
       {/* Logo */}
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
@@ -118,10 +193,25 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-1">
         {navigation.map((item) => {
+          // إخفاء العنصر إذا ما عنده صلاحية
+          if (!hasSectionPermission(item)) {
+            return null;
+          }
+
           const active = item.href ? isActive(item.href) : false;
           const isExpanded = expanded.includes(item.title);
 
           if (item.children) {
+            // فلترة العناصر الفرعية حسب الصلاحيات
+            const visibleChildren = item.children.filter((child) =>
+              hasItemPermission(child)
+            );
+
+            // إذا ما في عناصر فرعية مرئية، ما نعرض القسم
+            if (visibleChildren.length === 0) {
+              return null;
+            }
+
             return (
               <div key={item.title}>
                 <button
@@ -143,8 +233,11 @@ export function Sidebar() {
                   />
                 </button>
                 {isExpanded && (
-                  <div className="mt-1 mr-4 space-y-1">
-                    {item.children.map((child) => (
+                  <div className={cn(
+                    "mt-1 space-y-1",
+                    isRTL ? "mr-4" : "ml-4"
+                  )}>
+                    {visibleChildren.map((child) => (
                       <Link
                         key={child.href}
                         href={child.href!}

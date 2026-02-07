@@ -8,7 +8,7 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "WSO HR System",
+  title: "Vita HR System",
   description: "Human Resources Management System",
 };
 

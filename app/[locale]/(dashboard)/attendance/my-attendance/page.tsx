@@ -57,14 +57,14 @@ export default function MyAttendancePage() {
     if (!minutes) return "-";
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}س ${mins}د`;
+    return `${hours}${t("attendance.hourShort")} ${mins}${t("attendance.minuteShort")}`;
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="حضوري"
-        description="عرض سجلات الحضور والانصراف الخاصة بي"
+        title={t("attendance.myAttendance")}
+        description={t("attendance.myAttendanceDescription")}
       />
 
       <div className="flex items-center gap-4">
@@ -77,7 +77,7 @@ export default function MyAttendancePage() {
             className="w-auto"
           />
         </div>
-        <span className="text-muted-foreground">إلى</span>
+        <span className="text-muted-foreground">{t("attendance.dateTo")}</span>
         <Input
           type="date"
           value={dateTo}
@@ -90,13 +90,13 @@ export default function MyAttendancePage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>التاريخ</TableHead>
-              <TableHead>وقت الحضور</TableHead>
-              <TableHead>وقت الانصراف</TableHead>
-              <TableHead>ساعات العمل</TableHead>
-              <TableHead>التأخير</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>الموقع</TableHead>
+              <TableHead>{t("attendance.fields.date")}</TableHead>
+              <TableHead>{t("attendance.fields.checkInTime")}</TableHead>
+              <TableHead>{t("attendance.fields.checkOutTime")}</TableHead>
+              <TableHead>{t("attendance.fields.workHours")}</TableHead>
+              <TableHead>{t("attendance.fields.lateMinutes")}</TableHead>
+              <TableHead>{t("attendance.fields.status")}</TableHead>
+              <TableHead>{t("attendance.fields.location")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

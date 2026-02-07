@@ -130,6 +130,9 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
   const onSubmit = async (data: FormData) => {
     try {
       if (isEdit) {
+        console.log("📝 Updating employee:", employee.id);
+        console.log("📝 Update data:", data);
+
         // For update, only send fields that backend accepts
         const updateData = {
           phone: data.phone,
@@ -138,13 +141,20 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         };
         await updateEmployee.mutateAsync({ id: employee.id, data: updateData });
       } else {
+        console.log("➕ Creating new employee");
+        console.log("➕ Form data:", data);
+
         // Remove employmentStatus when creating (backend doesn't accept it)
         const { employmentStatus, ...createData } = data;
+
+        console.log("➕ Data to be sent:", createData);
+
         await createEmployee.mutateAsync(createData);
       }
       onOpenChange(false);
       form.reset();
     } catch (error) {
+      console.error("💥 Error in onSubmit:", error);
       // Error handled by mutation
     }
   };

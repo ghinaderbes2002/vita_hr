@@ -4,6 +4,7 @@ import { ApiResponse } from "@/types";
 export type EvaluationFormStatus =
   | "DRAFT"
   | "SELF_EVALUATION"
+  | "PENDING_SELF" // من الباك - نفس SELF_EVALUATION
   | "SELF_SUBMITTED"
   | "MANAGER_EVALUATION"
   | "MANAGER_SUBMITTED"

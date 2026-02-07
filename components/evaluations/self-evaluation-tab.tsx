@@ -73,7 +73,10 @@ export function SelfEvaluationTab({ form }: SelfEvaluationTabProps) {
     submitMutation.mutate(form.id);
   };
 
-  const canEdit = form.status === "DRAFT" || form.status === "SELF_EVALUATION";
+  const canEdit =
+    form.status === "DRAFT" ||
+    form.status === "SELF_EVALUATION" ||
+    (form.status as any) === "PENDING_SELF"; // دعم الحالة من الباك
 
   return (
     <div className="space-y-6">

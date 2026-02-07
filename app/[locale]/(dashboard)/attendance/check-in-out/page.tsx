@@ -71,8 +71,8 @@ export default function CheckInOutPage() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <PageHeader
-        title="تسجيل الحضور والانصراف"
-        description="سجل حضورك وانصرافك اليومي"
+        title={t("attendance.checkInOutTitle")}
+        description={t("attendance.checkInOutDescription")}
       />
 
       {/* Current Time Card */}
@@ -96,25 +96,25 @@ export default function CheckInOutPage() {
       {todayRecord && (
         <Card>
           <CardHeader>
-            <CardTitle>حالة اليوم</CardTitle>
+            <CardTitle>{t("attendance.todayStatus")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-muted-foreground">الحالة</Label>
+                <Label className="text-muted-foreground">{t("attendance.fields.status")}</Label>
                 <div className="mt-1">
                   <AttendanceStatusBadge status={todayRecord.status} />
                 </div>
               </div>
               <div>
-                <Label className="text-muted-foreground">وقت الحضور</Label>
+                <Label className="text-muted-foreground">{t("attendance.fields.checkInTime")}</Label>
                 <div className="mt-1 font-medium">
                   {formatTime(todayRecord.clockInTime)}
                 </div>
               </div>
               {todayRecord.clockOutTime && (
                 <div>
-                  <Label className="text-muted-foreground">وقت الانصراف</Label>
+                  <Label className="text-muted-foreground">{t("attendance.fields.checkOutTime")}</Label>
                   <div className="mt-1 font-medium">
                     {formatTime(todayRecord.clockOutTime)}
                   </div>
@@ -122,10 +122,10 @@ export default function CheckInOutPage() {
               )}
               {todayRecord.workedMinutes && (
                 <div>
-                  <Label className="text-muted-foreground">ساعات العمل</Label>
+                  <Label className="text-muted-foreground">{t("attendance.fields.workHours")}</Label>
                   <div className="mt-1 font-medium">
-                    {Math.floor(todayRecord.workedMinutes / 60)}س{" "}
-                    {todayRecord.workedMinutes % 60}د
+                    {Math.floor(todayRecord.workedMinutes / 60)}{t("attendance.hourShort")}{" "}
+                    {todayRecord.workedMinutes % 60}{t("attendance.minuteShort")}
                   </div>
                 </div>
               )}
@@ -138,24 +138,24 @@ export default function CheckInOutPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {!hasCheckedIn ? "تسجيل حضور" : !hasCheckedOut ? "تسجيل انصراف" : "تم التسجيل"}
+            {!hasCheckedIn ? t("attendance.checkIn") : !hasCheckedOut ? t("attendance.checkOut") : t("attendance.completed")}
           </CardTitle>
           <CardDescription>
             {!hasCheckedIn
-              ? "سجل حضورك الآن"
+              ? t("attendance.checkInNow")
               : !hasCheckedOut
-              ? "سجل انصرافك الآن"
-              : "لقد قمت بتسجيل حضورك وانصرافك اليوم"}
+              ? t("attendance.checkOutNow")
+              : t("attendance.alreadyCheckedInOut")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="location">الموقع</Label>
+            <Label htmlFor="location">{t("attendance.fields.location")}</Label>
             <div className="relative">
               <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="location"
-                placeholder="مثال: المكتب الرئيسي"
+                placeholder={t("attendance.locationPlaceholder")}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="pr-10"
@@ -165,10 +165,10 @@ export default function CheckInOutPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">ملاحظات (اختياري)</Label>
+            <Label htmlFor="notes">{t("attendance.notesOptional")}</Label>
             <Textarea
               id="notes"
-              placeholder="أي ملاحظات إضافية..."
+              placeholder={t("attendance.notesPlaceholder")}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
@@ -185,7 +185,7 @@ export default function CheckInOutPage() {
                 size="lg"
               >
                 <LogIn className="h-5 w-5 ml-2" />
-                تسجيل حضور
+                {t("attendance.checkIn")}
               </Button>
             )}
             {hasCheckedIn && !hasCheckedOut && (
@@ -197,12 +197,12 @@ export default function CheckInOutPage() {
                 size="lg"
               >
                 <LogOut className="h-5 w-5 ml-2" />
-                تسجيل انصراف
+                {t("attendance.checkOut")}
               </Button>
             )}
             {hasCheckedOut && (
               <div className="flex-1 p-4 bg-muted rounded-lg text-center text-muted-foreground">
-                تم تسجيل حضورك وانصرافك لهذا اليوم
+                {t("attendance.completedMessage")}
               </div>
             )}
           </div>

@@ -110,7 +110,18 @@ export function useGenerateEvaluationForms() {
       evaluationPeriodsApi.generateForms(id, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["evaluation-forms"] });
-      toast.success(result.message || `تم إنشاء ${result.totalForms} نموذج تقييم بنجاح`);
+
+      // Handle different response formats from backend
+      const totalForms = result?.totalForms ?? 0;
+      const message = result?.message;
+
+      if (message) {
+        toast.success(message);
+      } else if (totalForms > 0) {
+        toast.success(`تم إنشاء ${totalForms} نموذج تقييم بنجاح`);
+      } else {
+        toast.success("تم إنشاء نماذج التقييم بنجاح");
+      }
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "حدث خطأ أثناء إنشاء نماذج التقييم");

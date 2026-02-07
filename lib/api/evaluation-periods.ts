@@ -77,6 +77,7 @@ export const evaluationPeriodsApi = {
 
   generateForms: async (id: string, data?: GenerateFormsData): Promise<GenerateFormsResponse> => {
     const response = await apiClient.post(`/evaluation-periods/${id}/generate-forms`, data || {});
-    return response.data.data;
+    // Handle different response formats from backend
+    return response.data?.data || response.data || { totalForms: 0, message: "تم إنشاء النماذج بنجاح" };
   },
 };

@@ -49,6 +49,9 @@ export default function AttendanceRecordsPage() {
     : (data as any)?.data?.items || (data as any)?.data || [];
 
   const filteredRecords = records.filter((record: AttendanceRecord) => {
+    // إذا ما في بحث، نعرض كل السجلات
+    if (!search) return true;
+
     const searchLower = search.toLowerCase();
     return (
       record.employee?.nameAr?.toLowerCase().includes(searchLower) ||
@@ -91,21 +94,21 @@ export default function AttendanceRecordsPage() {
     if (!minutes) return "-";
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}س ${mins}د`;
+    return `${hours}${t("attendance.hourShort")} ${mins}${t("attendance.minuteShort")}`;
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="سجلات الحضور"
-        description="إدارة سجلات حضور وانصراف الموظفين"
+        title={t("attendance.recordsTitle")}
+        description={t("attendance.recordsDescription")}
       />
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="البحث بالاسم أو الكود..."
+            placeholder={t("attendance.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pr-10"
@@ -120,7 +123,7 @@ export default function AttendanceRecordsPage() {
             className="w-auto"
           />
         </div>
-        <span className="text-muted-foreground">إلى</span>
+        <span className="text-muted-foreground">{t("attendance.dateTo")}</span>
         <Input
           type="date"
           value={dateTo}
@@ -133,13 +136,13 @@ export default function AttendanceRecordsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>الموظف</TableHead>
-              <TableHead>التاريخ</TableHead>
-              <TableHead>وقت الحضور</TableHead>
-              <TableHead>وقت الانصراف</TableHead>
-              <TableHead>ساعات العمل</TableHead>
-              <TableHead>التأخير</TableHead>
-              <TableHead>الحالة</TableHead>
+              <TableHead>{t("attendance.fields.employee")}</TableHead>
+              <TableHead>{t("attendance.fields.date")}</TableHead>
+              <TableHead>{t("attendance.fields.checkInTime")}</TableHead>
+              <TableHead>{t("attendance.fields.checkOutTime")}</TableHead>
+              <TableHead>{t("attendance.fields.workHours")}</TableHead>
+              <TableHead>{t("attendance.fields.lateMinutes")}</TableHead>
+              <TableHead>{t("attendance.fields.status")}</TableHead>
               <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>

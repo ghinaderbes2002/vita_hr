@@ -1,24 +1,7 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { authApi } from "@/lib/api/auth";
 import { User } from "@/types";
-
-// Cookie storage for SSR compatibility
-const cookieStorage = {
-  getItem: (name: string): string | null => {
-    if (typeof document === "undefined") return null;
-    const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-    return match ? decodeURIComponent(match[2]) : null;
-  },
-  setItem: (name: string, value: string): void => {
-    if (typeof document === "undefined") return;
-    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-  },
-  removeItem: (name: string): void => {
-    if (typeof document === "undefined") return;
-    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-  },
-};
 
 interface AuthState {
   user: User | null;
@@ -26,10 +9,18 @@ interface AuthState {
   refreshToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  permissions: string[];
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
   setUser: (user: User) => void;
+  setPermissions: (permissions: string[]) => void;
+
+  // Permission checks
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  isAdmin: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -40,11 +31,26 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isLoading: false,
       isAuthenticated: false,
+      permissions: [],
 
       login: async (username, password) => {
         set({ isLoading: true });
         try {
           const response = await authApi.login({ username, password });
+
+          // Extract permissions - يمكن أن تأتي مباشرة من user.permissions أو من user.roles
+          let permissions: string[] = [];
+
+          // إذا الصلاحيات موجودة مباشرة في user.permissions
+          if (response.user?.permissions && Array.isArray(response.user.permissions)) {
+            permissions = response.user.permissions;
+          }
+          // أو إذا الصلاحيات داخل roles
+          else if (response.user?.roles) {
+            permissions = response.user.roles.flatMap((role: any) =>
+              role.permissions?.map((p: any) => p.name || p) || []
+            );
+          }
 
           set({
             user: response.user,
@@ -52,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
+            permissions,
           });
 
           // Set a separate simple cookie for middleware auth check (not managed by Zustand)
@@ -73,6 +80,7 @@ export const useAuthStore = create<AuthState>()(
             accessToken: null,
             refreshToken: null,
             isAuthenticated: false,
+            permissions: [],
           });
           // Clear the auth token cookie
           document.cookie = "wso-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -99,6 +107,7 @@ export const useAuthStore = create<AuthState>()(
             accessToken: null,
             refreshToken: null,
             isAuthenticated: false,
+            permissions: [],
           });
           // Clear the cookie
           if (typeof document !== "undefined") {
@@ -109,10 +118,67 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setUser: (user) => set({ user }),
+
+      setPermissions: (permissions) => set({ permissions }),
+
+      // التحقق من صلاحية واحدة
+      hasPermission: (permission: string) => {
+        const state = get();
+
+        // Admin له كل الصلاحيات
+        if (state.isAdmin()) return true;
+
+        // التحقق من وجود الصلاحية في القائمة
+        return state.permissions.includes(permission);
+      },
+
+      // التحقق من أي صلاحية من القائمة (OR)
+      hasAnyPermission: (permissions: string[]) => {
+        const state = get();
+
+        // Admin له كل الصلاحيات
+        if (state.isAdmin()) return true;
+
+        // التحقق من وجود أي صلاحية
+        return permissions.some((p) => state.permissions.includes(p));
+      },
+
+      // التحقق من كل الصلاحيات (AND)
+      hasAllPermissions: (permissions: string[]) => {
+        const state = get();
+
+        // Admin له كل الصلاحيات
+        if (state.isAdmin()) return true;
+
+        // التحقق من وجود كل الصلاحيات
+        return permissions.every((p) => state.permissions.includes(p));
+      },
+
+      // التحقق من أن المستخدم Admin
+      isAdmin: () => {
+        const state = get();
+
+        // التحقق من الصلاحية الخاصة
+        if (state.permissions.includes("*")) return true;
+        if (state.permissions.includes("ADMIN")) return true;
+
+        // التحقق من الدور - يمكن أن يكون roles مصفوفة نصوص أو كائنات
+        if (state.user?.roles) {
+          // إذا roles مصفوفة نصوص (مثل ["super_admin"])
+          if (Array.isArray(state.user.roles)) {
+            return state.user.roles.some((role: any) =>
+              typeof role === "string"
+                ? role === "ADMIN" || role === "super_admin" || role === "admin"
+                : role.name === "ADMIN" || role.name === "super_admin" || role.name === "admin"
+            );
+          }
+        }
+
+        return false;
+      },
     }),
     {
       name: "wso-auth",
-      storage: createJSONStorage(() => cookieStorage),
     }
   )
 );

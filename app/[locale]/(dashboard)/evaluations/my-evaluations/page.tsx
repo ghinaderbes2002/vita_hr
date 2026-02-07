@@ -38,6 +38,7 @@ export default function MyEvaluationsPage() {
     const statusConfig: Record<string, { label: string; className: string }> = {
       DRAFT: { label: "مسودة", className: "bg-gray-100 text-gray-800" },
       SELF_EVALUATION: { label: "تقييم ذاتي", className: "bg-blue-100 text-blue-800" },
+      PENDING_SELF: { label: "بانتظار التقييم الذاتي", className: "bg-blue-100 text-blue-800" },
       SELF_SUBMITTED: { label: "تم تقديم التقييم الذاتي", className: "bg-blue-100 text-blue-800" },
       MANAGER_EVALUATION: { label: "تقييم المدير", className: "bg-orange-100 text-orange-800" },
       MANAGER_SUBMITTED: { label: "تم تقديم تقييم المدير", className: "bg-orange-100 text-orange-800" },
