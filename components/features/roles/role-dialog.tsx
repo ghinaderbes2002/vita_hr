@@ -118,7 +118,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("roles.editRole") : t("roles.addRole")}
@@ -126,7 +126,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 overflow-y-auto flex-1 px-1">
             <FormField
               control={form.control}
               name="name"
@@ -189,7 +189,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
               render={() => (
                 <FormItem>
                   <FormLabel>{t("roles.fields.permissions")}</FormLabel>
-                  <ScrollArea className="h-[250px] rounded-md border p-4">
+                  <ScrollArea className="h-[200px] rounded-md border p-4">
                     {Object.entries(groupedPermissions).map(([module, perms]: [string, any]) => (
                       <div key={module} className="mb-4">
                         <h4 className="font-semibold mb-2 text-sm capitalize">{module}</h4>

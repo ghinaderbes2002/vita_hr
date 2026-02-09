@@ -60,29 +60,41 @@ const navigation: NavItem[] = [
     title: "nav.hr",
     icon: Briefcase,
     children: [
-      { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
-      { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck, permission: "attendance.records.read-own" },
-      { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn, permission: "attendance.records.check-in" },
-      { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
-      { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell, permission: "attendance.alerts.read-own" },
-      { title: "nav.attendanceAlerts", href: "/attendance/alerts", icon: AlertCircle, permission: "attendance.alerts.read" },
-      { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read" },
-      { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read" },
-      { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read" },
-      { title: "nav.myLeaves", href: "/leaves/my-leaves", icon: FileText, permission: "leave_requests:read" },
-      { title: "nav.newRequest", href: "/leaves/new-request", icon: PlusCircle, permission: "leave_requests:create" },
-      { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permission: "leave_requests:approve_manager" },
-    ],
-  },
-  {
-    title: "nav.evaluations",
-    icon: Star,
-    children: [
-      { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read" },
-      { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read" },
-      { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
-      { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate" },
-      { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all" },
+      {
+        title: "nav.attendance",
+        icon: ClipboardCheck,
+        children: [
+          { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
+          { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck, permission: "attendance.records.read-own" },
+          { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn, permission: "attendance.records.check-in" },
+          { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
+          { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell, permission: "attendance.alerts.read-own" },
+          { title: "nav.attendanceAlerts", href: "/attendance/alerts", icon: AlertCircle, permission: "attendance.alerts.read" },
+        ],
+      },
+      {
+        title: "nav.leaves",
+        icon: CalendarDays,
+        children: [
+          { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read" },
+          { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read" },
+          { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read" },
+          { title: "nav.myLeaves", href: "/leaves/my-leaves", icon: FileText, permission: "leave_requests:read" },
+          { title: "nav.newRequest", href: "/leaves/new-request", icon: PlusCircle, permission: "leave_requests:create" },
+          { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permission: "leave_requests:approve_manager" },
+        ],
+      },
+      {
+        title: "nav.evaluations",
+        icon: Star,
+        children: [
+          { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read" },
+          { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read" },
+          { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
+          { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate" },
+          { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all" },
+        ],
+      },
     ],
   },
 ];
@@ -237,21 +249,82 @@ export function Sidebar() {
                     "mt-1 space-y-1",
                     isRTL ? "mr-4" : "ml-4"
                   )}>
-                    {visibleChildren.map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href!}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
-                          "hover:bg-muted transition-colors",
-                          isActive(child.href!) &&
-                            "bg-primary text-primary-foreground"
-                        )}
-                      >
-                        <child.icon className="h-4 w-4" />
-                        <span>{t(child.title)}</span>
-                      </Link>
-                    ))}
+                    {visibleChildren.map((child) => {
+                      // إذا العنصر الفرعي عنده أطفال (مستوى ثاني)
+                      if (child.children) {
+                        const visibleGrandChildren = child.children.filter((grandChild) =>
+                          hasItemPermission(grandChild)
+                        );
+
+                        if (visibleGrandChildren.length === 0) {
+                          return null;
+                        }
+
+                        const isChildExpanded = expanded.includes(child.title);
+
+                        return (
+                          <div key={child.title}>
+                            <button
+                              onClick={() => toggle(child.title)}
+                              className={cn(
+                                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm",
+                                "hover:bg-muted transition-colors"
+                              )}
+                            >
+                              <div className="flex items-center gap-3">
+                                <child.icon className="h-4 w-4" />
+                                <span>{t(child.title)}</span>
+                              </div>
+                              <ChevronDown
+                                className={cn(
+                                  "h-3 w-3 transition-transform",
+                                  isChildExpanded && "rotate-180"
+                                )}
+                              />
+                            </button>
+                            {isChildExpanded && (
+                              <div className={cn(
+                                "mt-1 space-y-1",
+                                isRTL ? "mr-4" : "ml-4"
+                              )}>
+                                {visibleGrandChildren.map((grandChild) => (
+                                  <Link
+                                    key={grandChild.href}
+                                    href={grandChild.href!}
+                                    className={cn(
+                                      "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
+                                      "hover:bg-muted transition-colors",
+                                      isActive(grandChild.href!) &&
+                                        "bg-primary text-primary-foreground"
+                                    )}
+                                  >
+                                    <grandChild.icon className="h-4 w-4" />
+                                    <span>{t(grandChild.title)}</span>
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      // عنصر فرعي عادي بدون أطفال
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href!}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
+                            "hover:bg-muted transition-colors",
+                            isActive(child.href!) &&
+                              "bg-primary text-primary-foreground"
+                          )}
+                        >
+                          <child.icon className="h-4 w-4" />
+                          <span>{t(child.title)}</span>
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
