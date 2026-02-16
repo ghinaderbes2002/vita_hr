@@ -138,6 +138,7 @@
       "active": "نشط",
       "inactive": "غير نشط",
       "onLeave": "في إجازة",
+      "suspended": "موقوف",
       "terminated": "منتهي"
     },
     "genders": {
@@ -529,13 +530,15 @@
     "editDepartment": "تعديل قسم",
     "searchPlaceholder": "البحث بالكود أو الاسم...",
     "selectParent": "اختر القسم الرئيسي",
+    "selectManager": "اختر مدير القسم",
     "noParent": "لا يوجد قسم رئيسي",
     "fields": {
       "code": "الكود",
       "nameAr": "الاسم بالعربية",
       "nameEn": "الاسم بالإنجليزية",
       "nameTr": "الاسم بالتركية",
-      "parent": "القسم الرئيسي"
+      "parent": "القسم الرئيسي",
+      "manager": "مدير القسم"
     }
   },
   "workSchedules": {
@@ -595,6 +598,8 @@
     "addRole": "إضافة دور",
     "editRole": "تعديل دور",
     "permissionsCount": "صلاحية",
+    "selectAll": "اختيار الكل",
+    "deselectAll": "إلغاء تحديد الكل",
     "fields": {
       "name": "الاسم",
       "displayNameAr": "الاسم بالعربية",

@@ -88,13 +88,15 @@
     "editDepartment": "Departman Düzenle",
     "searchPlaceholder": "Kod veya isim ile ara...",
     "selectParent": "Ana Departman Seçin",
+    "selectManager": "Departman Müdürü Seçin",
     "noParent": "Ana Departman Yok",
     "fields": {
       "code": "Kod",
       "nameAr": "Arapça İsim",
       "nameEn": "İngilizce İsim",
       "nameTr": "Türkçe İsim",
-      "parent": "Ana Departman"
+      "parent": "Ana Departman",
+      "manager": "Departman Müdürü"
     }
   },
   "workSchedules": {
@@ -132,6 +134,8 @@
     "addRole": "Rol Ekle",
     "editRole": "Rol Düzenle",
     "permissionsCount": "izin",
+    "selectAll": "Tümünü Seç",
+    "deselectAll": "Tüm Seçimi Kaldır",
     "fields": {
       "name": "İsim",
       "displayNameAr": "Arapça Görünen İsim",
@@ -177,6 +181,7 @@
       "active": "Aktif",
       "inactive": "Pasif",
       "onLeave": "İzinde",
+      "suspended": "Askıya Alındı",
       "terminated": "İşten Çıkarıldı"
     },
     "genders": {

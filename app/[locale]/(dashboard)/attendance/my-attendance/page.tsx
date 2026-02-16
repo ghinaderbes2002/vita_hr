@@ -54,10 +54,15 @@ export default function MyAttendancePage() {
   };
 
   const formatDuration = (minutes?: number) => {
-    if (!minutes) return "-";
+    if (minutes == null) return "-"; // null أو undefined فقط
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}${t("attendance.hourShort")} ${mins}${t("attendance.minuteShort")}`;
+  };
+
+  const formatLateMinutes = (minutes?: number) => {
+    if (minutes == null || minutes === 0) return "-";
+    return `${minutes} دقيقة`;
   };
 
   return (
@@ -138,13 +143,9 @@ export default function MyAttendancePage() {
                   </TableCell>
                   <TableCell>{formatDuration(record.workedMinutes)}</TableCell>
                   <TableCell>
-                    {record.lateMinutes ? (
-                      <span className="text-destructive">
-                        {formatDuration(record.lateMinutes)}
-                      </span>
-                    ) : (
-                      "-"
-                    )}
+                    <span className="text-destructive font-medium">
+                      {formatLateMinutes(record.lateMinutes)}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <AttendanceStatusBadge status={record.status} />

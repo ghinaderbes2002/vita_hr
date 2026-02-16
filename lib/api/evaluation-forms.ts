@@ -51,7 +51,7 @@ export interface EvaluationForm {
     lastNameAr: string;
     firstNameEn: string;
     lastNameEn: string;
-    code: string;
+    employeeNumber: string;
   };
   periodId: string;
   period?: {

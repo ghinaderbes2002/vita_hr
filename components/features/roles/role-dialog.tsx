@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCreateRole, useUpdateRolePermissions, usePermissions } from "@/lib/hooks/use-roles";
+import { useCreateRole, useUpdateRolePermissions, usePermissions, useRole } from "@/lib/hooks/use-roles";
 import { Role } from "@/types";
 import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -52,6 +52,10 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   const updateRolePermissions = useUpdateRolePermissions();
   const { data: permissionsData } = usePermissions();
 
+  // Fetch full role data with permissions when editing
+  const { data: fullRoleData } = useRole(role?.id || "");
+  const roleToUse = isEdit ? fullRoleData : role;
+
   const permissions = permissionsData || [];
 
   const form = useForm<FormData>({
@@ -66,13 +70,13 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   });
 
   useEffect(() => {
-    if (role) {
+    if (roleToUse) {
       form.reset({
-        name: role.name || "",
-        displayNameAr: role.displayNameAr || "",
-        displayNameEn: role.displayNameEn || "",
-        description: role.description || "",
-        permissionIds: role.permissions?.map((p) => p.id) || [],
+        name: roleToUse.name || "",
+        displayNameAr: roleToUse.displayNameAr || "",
+        displayNameEn: roleToUse.displayNameEn || "",
+        description: roleToUse.description || "",
+        permissionIds: roleToUse.permissions?.map((p) => p.id) || [],
       });
     } else {
       form.reset({
@@ -83,7 +87,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
         permissionIds: [],
       });
     }
-  }, [role, form]);
+  }, [roleToUse, form]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -186,56 +190,88 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
             <FormField
               control={form.control}
               name="permissionIds"
-              render={() => (
-                <FormItem>
-                  <FormLabel>{t("roles.fields.permissions")}</FormLabel>
-                  <ScrollArea className="h-[200px] rounded-md border p-4">
-                    {Object.entries(groupedPermissions).map(([module, perms]: [string, any]) => (
-                      <div key={module} className="mb-4">
-                        <h4 className="font-semibold mb-2 text-sm capitalize">{module}</h4>
-                        <div className="space-y-2 mr-4">
-                          {perms.map((permission: any) => (
-                            <FormField
-                              key={permission.id}
-                              control={form.control}
-                              name="permissionIds"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem
-                                    key={permission.id}
-                                    className="flex flex-row items-start space-x-3 space-y-0"
-                                  >
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(permission.id)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...(field.value || []), permission.id])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                  (value) => value !== permission.id
-                                                )
-                                              );
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <div className="space-y-1 leading-none">
-                                      <FormLabel className="text-sm font-normal cursor-pointer">
-                                        {permission.displayName}
-                                      </FormLabel>
-                                    </div>
-                                  </FormItem>
-                                );
-                              }}
-                            />
-                          ))}
-                        </div>
+              render={() => {
+                const allPermissionIds = permissions.map(p => p.id);
+
+                const handleSelectAll = () => {
+                  form.setValue("permissionIds", allPermissionIds);
+                };
+
+                const handleDeselectAll = () => {
+                  form.setValue("permissionIds", []);
+                };
+
+                return (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>{t("roles.fields.permissions")}</FormLabel>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSelectAll}
+                        >
+                          {t("roles.selectAll")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDeselectAll}
+                        >
+                          {t("roles.deselectAll")}
+                        </Button>
                       </div>
-                    ))}
-                  </ScrollArea>
-                  <FormMessage />
-                </FormItem>
-              )}
+                    </div>
+                    <ScrollArea className="h-[200px] rounded-md border p-4">
+                      {Object.entries(groupedPermissions).map(([module, perms]: [string, any]) => (
+                        <div key={module} className="mb-4">
+                          <h4 className="font-semibold mb-2 text-sm capitalize">{module}</h4>
+                          <div className="space-y-2 mr-4">
+                            {perms.map((permission: any) => (
+                              <FormField
+                                key={permission.id}
+                                control={form.control}
+                                name="permissionIds"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={permission.id}
+                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(permission.id)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), permission.id])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== permission.id
+                                                  )
+                                                );
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <div className="space-y-1 leading-none">
+                                        <FormLabel className="text-sm font-normal cursor-pointer">
+                                          {permission.displayName}
+                                        </FormLabel>
+                                      </div>
+                                    </FormItem>
+                                  );
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <div className="flex justify-end gap-2 pt-4">

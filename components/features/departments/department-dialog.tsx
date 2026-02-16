@@ -29,8 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateDepartment, useUpdateDepartment, useDepartmentTree } from "@/lib/hooks/use-departments";
+import { useEmployees } from "@/lib/hooks/use-employees";
 import { Department } from "@/types";
 import { Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DepartmentWithChildren extends Department {
   children?: DepartmentWithChildren[];
@@ -42,6 +44,7 @@ const formSchema = z.object({
   nameEn: z.string().min(2, "الاسم بالإنجليزية مطلوب"),
   nameTr: z.string().min(2, "الاسم بالتركية مطلوب"),
   parentId: z.string().optional(),
+  managerId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -59,6 +62,11 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
   const createDepartment = useCreateDepartment();
   const updateDepartment = useUpdateDepartment();
   const { data: treeData } = useDepartmentTree();
+  const { data: employeesData } = useEmployees({});
+
+  const employees = Array.isArray(employeesData)
+    ? employeesData
+    : (employeesData as any)?.data?.items || (employeesData as any)?.data || [];
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -68,6 +76,7 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
       nameEn: "",
       nameTr: "",
       parentId: "",
+      managerId: "",
     },
   });
 
@@ -79,6 +88,7 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
         nameEn: department.nameEn || "",
         nameTr: department.nameTr || "",
         parentId: department.parentId || "",
+        managerId: department.managerId || "",
       });
     } else {
       form.reset({
@@ -87,6 +97,7 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
         nameEn: "",
         nameTr: "",
         parentId: "",
+        managerId: "",
       });
     }
   }, [department, form]);
@@ -99,6 +110,7 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
         nameEn: data.nameEn,
         nameTr: data.nameTr,
         ...(data.parentId && { parentId: data.parentId }),
+        ...(data.managerId && { managerId: data.managerId }),
       };
 
       if (isEdit) {
@@ -217,6 +229,36 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
                           {dept.nameAr} ({dept.code})
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="managerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("departments.fields.manager")} ({t("common.optional")})</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(value || undefined)}
+                    value={field.value || undefined}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("departments.selectManager")} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <ScrollArea className="h-[200px]">
+                        {employees.map((emp: any) => (
+                          <SelectItem key={emp.id} value={emp.id}>
+                            {emp.firstNameAr} {emp.lastNameAr} ({emp.employeeNumber})
+                          </SelectItem>
+                        ))}
+                      </ScrollArea>
                     </SelectContent>
                   </Select>
                   <FormMessage />

@@ -90,6 +90,8 @@ export default function EmployeesPage() {
         return "secondary";
       case "ON_LEAVE":
         return "outline";
+      case "SUSPENDED":
+        return "destructive";
       case "TERMINATED":
         return "destructive";
       default:
@@ -195,9 +197,11 @@ export default function EmployeesPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(employee.employmentStatus)}>
-                      {t(`employees.statuses.${employee.employmentStatus === "ACTIVE" ? "active" :
+                      {t(`employees.statuses.${
+                          employee.employmentStatus === "ACTIVE" ? "active" :
                           employee.employmentStatus === "INACTIVE" ? "inactive" :
-                          employee.employmentStatus === "ON_LEAVE" ? "onLeave" : "terminated"}`)}
+                          employee.employmentStatus === "ON_LEAVE" ? "onLeave" :
+                          employee.employmentStatus === "SUSPENDED" ? "suspended" : "terminated"}`)}
                     </Badge>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>

@@ -7,6 +7,7 @@ export interface CreateDepartmentData {
   nameEn: string;
   nameTr: string;
   parentId?: string;
+  managerId?: string;
 }
 
 export interface UpdateDepartmentData {
@@ -15,6 +16,7 @@ export interface UpdateDepartmentData {
   nameEn?: string;
   nameTr?: string;
   parentId?: string;
+  managerId?: string;
 }
 
 export const departmentsApi = {

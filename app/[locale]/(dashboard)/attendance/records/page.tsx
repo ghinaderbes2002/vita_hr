@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Calendar, Clock } from "lucide-react";
+import { Search, MoreHorizontal, Trash2, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -53,10 +53,13 @@ export default function AttendanceRecordsPage() {
     if (!search) return true;
 
     const searchLower = search.toLowerCase();
+    const employeeNameAr = `${record.employee?.firstNameAr || ""} ${record.employee?.lastNameAr || ""}`.trim();
+    const employeeNameEn = `${record.employee?.firstNameEn || ""} ${record.employee?.lastNameEn || ""}`.trim();
+
     return (
-      record.employee?.nameAr?.toLowerCase().includes(searchLower) ||
-      record.employee?.nameEn?.toLowerCase().includes(searchLower) ||
-      record.employee?.code?.toLowerCase().includes(searchLower)
+      employeeNameAr.toLowerCase().includes(searchLower) ||
+      employeeNameEn.toLowerCase().includes(searchLower) ||
+      record.employee?.employeeNumber?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -91,10 +94,15 @@ export default function AttendanceRecordsPage() {
   };
 
   const formatDuration = (minutes?: number) => {
-    if (!minutes) return "-";
+    if (minutes == null) return "-"; // null أو undefined فقط
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}${t("attendance.hourShort")} ${mins}${t("attendance.minuteShort")}`;
+  };
+
+  const formatLateMinutes = (minutes?: number) => {
+    if (minutes == null || minutes === 0) return "-";
+    return `${minutes} دقيقة`;
   };
 
   return (
@@ -171,9 +179,13 @@ export default function AttendanceRecordsPage() {
                 <TableRow key={record.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{record.employee?.nameAr}</div>
+                      <div className="font-medium">
+                        {record.employee
+                          ? `${record.employee.firstNameAr} ${record.employee.lastNameAr}`
+                          : "-"}
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                        {record.employee?.code}
+                        {record.employee?.employeeNumber || "-"}
                       </div>
                     </div>
                   </TableCell>
@@ -194,13 +206,9 @@ export default function AttendanceRecordsPage() {
                   </TableCell>
                   <TableCell>{formatDuration(record.workedMinutes)}</TableCell>
                   <TableCell>
-                    {record.lateMinutes ? (
-                      <span className="text-destructive">
-                        {formatDuration(record.lateMinutes)}
-                      </span>
-                    ) : (
-                      "-"
-                    )}
+                    <span className="text-destructive font-medium">
+                      {formatLateMinutes(record.lateMinutes)}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <AttendanceStatusBadge status={record.status} />

@@ -112,7 +112,7 @@ export default function EvaluationFormDetailsPage({ params }: PageProps) {
                 <p className="font-medium">
                   {form.employee?.firstNameAr} {form.employee?.lastNameAr}
                 </p>
-                <p className="text-sm text-muted-foreground">{form.employee?.code}</p>
+                <p className="text-sm text-muted-foreground">{form.employee?.employeeNumber}</p>
               </div>
             </div>
 

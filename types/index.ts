@@ -35,7 +35,14 @@ export interface User {
   profileImage?: string;
   status?: "ACTIVE" | "INACTIVE";
   role?: Role;
-  roles?: Role[];
+  roles?: Array<{
+    role: {
+      id: string;
+      name: string;
+      displayNameAr: string;
+      displayNameEn: string;
+    };
+  }>;
   permissions?: string[];
   employeeId?: string;
   createdAt?: string;
@@ -64,7 +71,7 @@ export interface Employee {
   manager?: Employee;
   hireDate: string;
   contractType: "PERMANENT" | "CONTRACT" | "TEMPORARY" | "INTERN";
-  employmentStatus: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "TERMINATED";
+  employmentStatus: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
   profileImage?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -78,6 +85,15 @@ export interface Department {
   nameTr: string;
   parentId?: string;
   parent?: Department;
+  managerId?: string;
+  manager?: {
+    id: string;
+    employeeNumber: string;
+    firstNameAr: string;
+    lastNameAr: string;
+    firstNameEn: string;
+    lastNameEn: string;
+  };
   employeeCount?: number;
   createdAt?: string;
   updatedAt?: string;

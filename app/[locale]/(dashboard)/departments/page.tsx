@@ -90,6 +90,7 @@ export default function DepartmentsPage() {
               <TableHead>{t("departments.fields.nameEn")}</TableHead>
               <TableHead>{t("departments.fields.nameTr")}</TableHead>
               <TableHead>{t("departments.fields.parent")}</TableHead>
+              <TableHead>{t("departments.fields.manager")}</TableHead>
               <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -102,12 +103,13 @@ export default function DepartmentsPage() {
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
             ) : departments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
@@ -125,6 +127,20 @@ export default function DepartmentsPage() {
                       <span className="text-sm text-muted-foreground">
                         {department.parent.nameAr}
                       </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {department.manager ? (
+                      <div>
+                        <div className="font-medium text-sm">
+                          {department.manager.firstNameAr} {department.manager.lastNameAr}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {department.manager.employeeNumber}
+                        </div>
+                      </div>
                     ) : (
                       <span className="text-sm text-muted-foreground">-</span>
                     )}

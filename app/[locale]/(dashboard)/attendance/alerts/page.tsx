@@ -104,10 +104,13 @@ export default function AttendanceAlertsPage() {
     if (!search) return true;
 
     const searchLower = search.toLowerCase();
+    const employeeNameAr = `${alert.employee?.firstNameAr || ""} ${alert.employee?.lastNameAr || ""}`.trim();
+    const employeeNameEn = `${alert.employee?.firstNameEn || ""} ${alert.employee?.lastNameEn || ""}`.trim();
+
     return (
-      alert.employee?.nameAr?.toLowerCase().includes(searchLower) ||
-      alert.employee?.nameEn?.toLowerCase().includes(searchLower) ||
-      alert.employee?.code?.toLowerCase().includes(searchLower) ||
+      employeeNameAr.toLowerCase().includes(searchLower) ||
+      employeeNameEn.toLowerCase().includes(searchLower) ||
+      alert.employee?.employeeNumber?.toLowerCase().includes(searchLower) ||
       alert.messageAr?.toLowerCase().includes(searchLower)
     );
   });
@@ -217,9 +220,13 @@ export default function AttendanceAlertsPage() {
               <TableRow key={alert.id}>
                 <TableCell>
                   <div>
-                    <div className="font-medium">{alert.employee?.nameAr}</div>
+                    <div className="font-medium">
+                      {alert.employee
+                        ? `${alert.employee.firstNameAr} ${alert.employee.lastNameAr}`
+                        : "-"}
+                    </div>
                     <div className="text-sm text-muted-foreground">
-                      {alert.employee?.code}
+                      {alert.employee?.employeeNumber || "-"}
                     </div>
                   </div>
                 </TableCell>

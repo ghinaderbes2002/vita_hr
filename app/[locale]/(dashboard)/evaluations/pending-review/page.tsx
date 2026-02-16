@@ -35,7 +35,7 @@ export default function PendingReviewPage() {
     return (
       form.employee?.firstNameAr?.toLowerCase().includes(searchLower) ||
       form.employee?.lastNameAr?.toLowerCase().includes(searchLower) ||
-      form.employee?.code?.toLowerCase().includes(searchLower)
+      form.employee?.employeeNumber?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -114,7 +114,7 @@ export default function PendingReviewPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{form.employee?.code}</TableCell>
+                  <TableCell>{form.employee?.employeeNumber}</TableCell>
                   <TableCell>{form.period?.nameAr}</TableCell>
                   <TableCell>{getStatusBadge(form.status)}</TableCell>
                   <TableCell>

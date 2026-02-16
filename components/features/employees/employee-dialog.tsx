@@ -48,7 +48,7 @@ const formSchema = z.object({
   departmentId: z.string().min(1, "القسم مطلوب"),
   hireDate: z.string().min(1, "تاريخ التعيين مطلوب"),
   contractType: z.enum(["PERMANENT", "CONTRACT", "TEMPORARY", "INTERN"]),
-  employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "TERMINATED"]).optional(),
+  employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -89,6 +89,11 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
     },
   });
 
+  const toDateInput = (dateStr?: string) => {
+    if (!dateStr) return "";
+    return dateStr.substring(0, 10); // "2026-02-12T00:00:00.000Z" → "2026-02-12"
+  };
+
   useEffect(() => {
     if (employee) {
       form.reset({
@@ -101,9 +106,9 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         mobile: employee.mobile || "",
         nationalId: employee.nationalId || "",
         gender: employee.gender || "MALE",
-        dateOfBirth: employee.dateOfBirth || "",
+        dateOfBirth: toDateInput(employee.dateOfBirth),
         departmentId: employee.departmentId || "",
-        hireDate: employee.hireDate || "",
+        hireDate: toDateInput(employee.hireDate),
         contractType: employee.contractType || "PERMANENT",
         employmentStatus: employee.employmentStatus || "ACTIVE",
       });
@@ -130,32 +135,30 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
   const onSubmit = async (data: FormData) => {
     try {
       if (isEdit) {
-        console.log("📝 Updating employee:", employee.id);
-        console.log("📝 Update data:", data);
-
-        // For update, only send fields that backend accepts
-        const updateData = {
+        // Send updatable fields only (exclude fixed fields like nationalId, dateOfBirth, hireDate)
+        const updateData: Record<string, any> = {
+          firstNameAr: data.firstNameAr,
+          lastNameAr: data.lastNameAr,
+          firstNameEn: data.firstNameEn,
+          lastNameEn: data.lastNameEn,
+          email: data.email,
           phone: data.phone,
           mobile: data.mobile,
+          departmentId: data.departmentId,
           employmentStatus: data.employmentStatus,
         };
+        console.log("📤 Sending updateData:", updateData);
         await updateEmployee.mutateAsync({ id: employee.id, data: updateData });
       } else {
-        console.log("➕ Creating new employee");
-        console.log("➕ Form data:", data);
-
         // Remove employmentStatus when creating (backend doesn't accept it)
         const { employmentStatus, ...createData } = data;
-
-        console.log("➕ Data to be sent:", createData);
-
         await createEmployee.mutateAsync(createData);
       }
       onOpenChange(false);
       form.reset();
-    } catch (error) {
-      console.error("💥 Error in onSubmit:", error);
-      // Error handled by mutation
+    } catch (error: any) {
+      const errData = error?.response?.data;
+      console.error("💥 Backend says:", JSON.stringify(errData, null, 2));
     }
   };
 
@@ -417,6 +420,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                               <SelectItem value="ACTIVE">{t("employees.statuses.active")}</SelectItem>
                               <SelectItem value="INACTIVE">{t("employees.statuses.inactive")}</SelectItem>
                               <SelectItem value="ON_LEAVE">{t("employees.statuses.onLeave")}</SelectItem>
+                              <SelectItem value="SUSPENDED">{t("employees.statuses.suspended")}</SelectItem>
                               <SelectItem value="TERMINATED">{t("employees.statuses.terminated")}</SelectItem>
                             </SelectContent>
                           </Select>

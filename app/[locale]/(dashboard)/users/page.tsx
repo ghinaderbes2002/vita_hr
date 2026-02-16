@@ -6,6 +6,13 @@ import { Plus, Search, MoreHorizontal, Pencil, Trash2, Shield } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -30,6 +37,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 export default function UsersPage() {
   const t = useTranslations();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
@@ -39,7 +47,17 @@ export default function UsersPage() {
   const deleteUser = useDeleteUser();
 
   // Backend returns: { success, data: { items: [...], page, limit, total }, meta }
-  const users = (data as any)?.data?.items || [];
+  const allUsers = (data as any)?.data?.items || [];
+
+  // Log للتحقق من البيانات
+  if (allUsers.length > 0) {
+    console.log("📊 Sample user data:", JSON.stringify(allUsers[0], null, 2));
+  }
+
+  // فلترة حسب الحالة
+  const users = statusFilter === "all"
+    ? allUsers
+    : allUsers.filter((user: any) => user.status === statusFilter);
 
   const handleEdit = (user: any) => {
     setSelectedUser(user);
@@ -87,6 +105,16 @@ export default function UsersPage() {
             className="pr-10"
           />
         </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder={t("common.status")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="ACTIVE">{t("users.statuses.active")}</SelectItem>
+            <SelectItem value="INACTIVE">{t("users.statuses.inactive")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-md border">
@@ -126,7 +154,17 @@ export default function UsersPage() {
                   <TableCell>{user.fullName}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{user.role?.name || "-"}</Badge>
+                    {user.roles && user.roles.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles.map((userRole: any, idx: number) => (
+                          <Badge key={idx} variant="outline">
+                            {userRole.role?.displayNameAr || userRole.role?.name || "-"}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.status === "ACTIVE" ? "default" : "secondary"}>

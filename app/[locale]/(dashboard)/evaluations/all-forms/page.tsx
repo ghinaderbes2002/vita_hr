@@ -43,7 +43,7 @@ export default function AllEvaluationFormsPage() {
     const matchesSearch =
       form.employee?.firstNameAr?.toLowerCase().includes(searchLower) ||
       form.employee?.lastNameAr?.toLowerCase().includes(searchLower) ||
-      form.employee?.code?.toLowerCase().includes(searchLower);
+      form.employee?.employeeNumber?.toLowerCase().includes(searchLower);
 
     if (activeTab === "all") return matchesSearch;
     return matchesSearch && form.status === activeTab;
@@ -109,7 +109,7 @@ export default function AllEvaluationFormsPage() {
                     {form.employee?.firstNameAr} {form.employee?.lastNameAr}
                   </div>
                 </TableCell>
-                <TableCell>{form.employee?.code}</TableCell>
+                <TableCell>{form.employee?.employeeNumber}</TableCell>
                 <TableCell>{form.period?.nameAr}</TableCell>
                 <TableCell>{getStatusBadge(form.status)}</TableCell>
                 <TableCell>

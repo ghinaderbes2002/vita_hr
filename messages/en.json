@@ -88,13 +88,15 @@
     "editDepartment": "Edit Department",
     "searchPlaceholder": "Search by code or name...",
     "selectParent": "Select Parent Department",
+    "selectManager": "Select Department Manager",
     "noParent": "No Parent Department",
     "fields": {
       "code": "Code",
       "nameAr": "Arabic Name",
       "nameEn": "English Name",
       "nameTr": "Turkish Name",
-      "parent": "Parent Department"
+      "parent": "Parent Department",
+      "manager": "Department Manager"
     }
   },
   "workSchedules": {
@@ -132,6 +134,8 @@
     "addRole": "Add Role",
     "editRole": "Edit Role",
     "permissionsCount": "permissions",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
     "fields": {
       "name": "Name",
       "displayNameAr": "Arabic Display Name",
@@ -177,6 +181,7 @@
       "active": "Active",
       "inactive": "Inactive",
       "onLeave": "On Leave",
+      "suspended": "Suspended",
       "terminated": "Terminated"
     },
     "genders": {

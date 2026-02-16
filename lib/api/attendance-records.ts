@@ -14,9 +14,11 @@ export interface AttendanceRecord {
   employeeId: string;
   employee?: {
     id: string;
-    nameAr: string;
-    nameEn: string;
-    code: string;
+    employeeNumber: string;
+    firstNameAr: string;
+    lastNameAr: string;
+    firstNameEn: string;
+    lastNameEn: string;
   };
   date: string;
   clockInTime?: string;

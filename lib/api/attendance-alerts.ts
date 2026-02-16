@@ -12,9 +12,11 @@ export interface AttendanceAlert {
   employeeId: string;
   employee?: {
     id: string;
-    nameAr: string;
-    nameEn: string;
-    code: string;
+    employeeNumber: string;
+    firstNameAr: string;
+    lastNameAr: string;
+    firstNameEn: string;
+    lastNameEn: string;
   };
   date: string;
   alertType: AlertType;
