@@ -18,7 +18,7 @@ export default async function DashboardLayout({
         <div
           className="transition-all duration-300"
           style={{
-            [isRTL ? 'marginRight' : 'marginLeft']: 'var(--sidebar-width, 18rem)'
+            [isRTL ? 'marginRight' : 'marginLeft']: 'var(--sidebar-width, 16rem)'
           }}
         >
           <Header />

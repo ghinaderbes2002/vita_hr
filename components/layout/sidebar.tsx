@@ -121,7 +121,7 @@ export function Sidebar() {
 
   // Update CSS variable when collapsed state changes
   useEffect(() => {
-    const width = isCollapsed ? '4rem' : '18rem';
+    const width = isCollapsed ? '4rem' : '16rem';
     document.documentElement.style.setProperty('--sidebar-width', width);
     localStorage.setItem('sidebar-collapsed', String(isCollapsed));
   }, [isCollapsed]);
@@ -207,7 +207,7 @@ export function Sidebar() {
   return (
     <aside className={cn(
       "fixed top-0 z-40 h-screen bg-background flex flex-col transition-all duration-300",
-      isCollapsed ? "w-16" : "w-72",
+      isCollapsed ? "w-16" : "w-64",
       isRTL ? "right-0 border-l" : "left-0 border-r"
     )}>
       {/* Logo */}
