@@ -473,6 +473,127 @@
       "confirmReject": "Bu değerlendirmeyi reddetmek istediğinizden emin misiniz?"
     }
   },
+  "evaluationPeriods": {
+    "title": "Değerlendirme Dönemleri",
+    "description": "Yıllık çalışan değerlendirme dönemlerini yönetin",
+    "addPeriod": "Dönem Ekle",
+    "editPeriod": "Değerlendirme Dönemini Düzenle",
+    "createPeriod": "Yeni Değerlendirme Dönemi Ekle",
+    "editDescription": "Değerlendirme dönemi verilerini düzenle",
+    "createDescription": "Çalışanlar için yeni bir değerlendirme dönemi ekle",
+    "searchPlaceholder": "Kod veya isme göre ara...",
+    "openPeriod": "Dönemi Aç",
+    "closePeriod": "Dönemi Kapat",
+    "generateForms": "Değerlendirme Formları Oluştur",
+    "saving": "Kaydediliyor...",
+    "fields": {
+      "code": "Kod",
+      "nameAr": "İsim (Arapça)",
+      "nameEn": "İsim (İngilizce)",
+      "startDate": "Başlangıç Tarihi",
+      "endDate": "Bitiş Tarihi",
+      "status": "Durum"
+    },
+    "statuses": {
+      "draft": "Taslak",
+      "open": "Açık",
+      "closed": "Kapalı"
+    },
+    "placeholders": {
+      "code": "EVAL2026",
+      "nameAr": "Değerlendirme 2026",
+      "nameEn": "Evaluation 2026"
+    }
+  },
+  "evaluationCriteria": {
+    "title": "Değerlendirme Kriterleri",
+    "description": "Performans ve beceri değerlendirme kriterlerini yönetin",
+    "addCriteria": "Kriter Ekle",
+    "editCriteria": "Kriteri Düzenle",
+    "createCriteria": "Yeni Kriter Ekle",
+    "editDescription": "Değerlendirme kriteri verilerini düzenle",
+    "createDescription": "Yeni bir değerlendirme kriteri ekle",
+    "searchPlaceholder": "Kod veya isme göre ara...",
+    "saving": "Kaydediliyor...",
+    "fields": {
+      "code": "Kod",
+      "nameAr": "İsim (Arapça)",
+      "nameEn": "İsim (İngilizce)",
+      "descriptionAr": "Açıklama (Arapça)",
+      "weight": "Ağırlık",
+      "maxScore": "Maksimum Puan",
+      "category": "Kategori"
+    },
+    "categories": {
+      "all": "Tümü",
+      "performance": "Performans",
+      "skills": "Beceriler",
+      "behavior": "Davranış",
+      "goals": "Hedefler"
+    },
+    "placeholders": {
+      "code": "PERF001",
+      "nameAr": "İş Kalitesi",
+      "nameEn": "Work Quality",
+      "descriptionAr": "Tamamlanan işin kalite düzeyi"
+    }
+  },
+  "myEvaluations": {
+    "title": "Değerlendirmelerim",
+    "description": "Değerlendirme formlarımı görüntüle",
+    "fields": {
+      "period": "Dönem",
+      "status": "Durum",
+      "mySelfScore": "Puanım",
+      "myManagerScore": "Yönetici Puanı",
+      "finalScore": "Nihai Puan"
+    },
+    "statuses": {
+      "draft": "Taslak",
+      "selfEvaluation": "Öz Değerlendirme",
+      "pendingSelf": "Öz Değerlendirme Bekliyor",
+      "selfSubmitted": "Öz Değerlendirme Gönderildi",
+      "managerEvaluation": "Yönetici Değerlendirmesi",
+      "managerSubmitted": "Yönetici Değerlendirmesi Gönderildi",
+      "hrReview": "İK İncelemesi",
+      "gmApproval": "Genel Müdür Onayı",
+      "completed": "Tamamlandı"
+    }
+  },
+  "pendingReview": {
+    "title": "İncelememi Bekleyen",
+    "description": "İncelemenizi gerektiren değerlendirme formları",
+    "searchPlaceholder": "İsim veya koda göre ara...",
+    "fields": {
+      "employee": "Çalışan",
+      "code": "Kod",
+      "period": "Dönem",
+      "status": "Durum",
+      "employeeScore": "Çalışan Puanı"
+    }
+  },
+  "allForms": {
+    "title": "Tüm Değerlendirmeler",
+    "description": "Sistemdeki tüm değerlendirme formlarını görüntüle",
+    "searchPlaceholder": "İsim veya koda göre ara...",
+    "fields": {
+      "employee": "Çalışan",
+      "code": "Kod",
+      "period": "Dönem",
+      "status": "Durum",
+      "employeeScore": "Çalışan Puanı",
+      "managerScore": "Yönetici Puanı",
+      "finalScore": "Nihai Puan"
+    },
+    "tabs": {
+      "all": "Tümü",
+      "selfEvaluation": "Öz Değerlendirme",
+      "managerEvaluation": "Yönetici Değerlendirmesi",
+      "hrReview": "İK İncelemesi",
+      "gmApproval": "Genel Müdür Onayı",
+      "completed": "Tamamlandı"
+    }
+  },
   "common": {
     "save": "Kaydet",
     "cancel": "İptal",

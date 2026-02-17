@@ -36,15 +36,15 @@ export default function MyEvaluationsPage() {
 
   const getStatusBadge = (status: EvaluationFormStatus) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
-      DRAFT: { label: "مسودة", className: "bg-gray-100 text-gray-800" },
-      SELF_EVALUATION: { label: "تقييم ذاتي", className: "bg-blue-100 text-blue-800" },
-      PENDING_SELF: { label: "بانتظار التقييم الذاتي", className: "bg-blue-100 text-blue-800" },
-      SELF_SUBMITTED: { label: "تم تقديم التقييم الذاتي", className: "bg-blue-100 text-blue-800" },
-      MANAGER_EVALUATION: { label: "تقييم المدير", className: "bg-orange-100 text-orange-800" },
-      MANAGER_SUBMITTED: { label: "تم تقديم تقييم المدير", className: "bg-orange-100 text-orange-800" },
-      HR_REVIEW: { label: "مراجعة HR", className: "bg-purple-100 text-purple-800" },
-      GM_APPROVAL: { label: "موافقة المدير العام", className: "bg-yellow-100 text-yellow-800" },
-      COMPLETED: { label: "مكتمل", className: "bg-green-100 text-green-800" },
+      DRAFT: { label: t("myEvaluations.statuses.draft"), className: "bg-gray-100 text-gray-800" },
+      SELF_EVALUATION: { label: t("myEvaluations.statuses.selfEvaluation"), className: "bg-blue-100 text-blue-800" },
+      PENDING_SELF: { label: t("myEvaluations.statuses.pendingSelf"), className: "bg-blue-100 text-blue-800" },
+      SELF_SUBMITTED: { label: t("myEvaluations.statuses.selfSubmitted"), className: "bg-blue-100 text-blue-800" },
+      MANAGER_EVALUATION: { label: t("myEvaluations.statuses.managerEvaluation"), className: "bg-orange-100 text-orange-800" },
+      MANAGER_SUBMITTED: { label: t("myEvaluations.statuses.managerSubmitted"), className: "bg-orange-100 text-orange-800" },
+      HR_REVIEW: { label: t("myEvaluations.statuses.hrReview"), className: "bg-purple-100 text-purple-800" },
+      GM_APPROVAL: { label: t("myEvaluations.statuses.gmApproval"), className: "bg-yellow-100 text-yellow-800" },
+      COMPLETED: { label: t("myEvaluations.statuses.completed"), className: "bg-green-100 text-green-800" },
     };
 
     const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800" };
@@ -54,19 +54,19 @@ export default function MyEvaluationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="تقييماتي"
-        description="عرض نماذج التقييم الخاصة بي"
+        title={t("myEvaluations.title")}
+        description={t("myEvaluations.description")}
       />
 
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>الفترة</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>درجتي</TableHead>
-              <TableHead>درجة المدير</TableHead>
-              <TableHead>الدرجة النهائية</TableHead>
+              <TableHead>{t("myEvaluations.fields.period")}</TableHead>
+              <TableHead>{t("myEvaluations.fields.status")}</TableHead>
+              <TableHead>{t("myEvaluations.fields.mySelfScore")}</TableHead>
+              <TableHead>{t("myEvaluations.fields.myManagerScore")}</TableHead>
+              <TableHead>{t("myEvaluations.fields.finalScore")}</TableHead>
               <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>

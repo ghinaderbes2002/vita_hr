@@ -32,8 +32,11 @@ import {
   ClipboardPen,
   UserRoundCheck,
   FileBarChart,
+  ChevronsRight,
+  ChevronsLeft,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 interface NavItem {
   title: string;
@@ -104,10 +107,24 @@ export function Sidebar() {
   const locale = useLocale();
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<string[]>([]);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      return saved === 'true';
+    }
+    return false;
+  });
   const { hasPermission, isAdmin } = usePermissions();
 
   // Determine if the locale is RTL (Arabic)
   const isRTL = locale === "ar";
+
+  // Update CSS variable when collapsed state changes
+  useEffect(() => {
+    const width = isCollapsed ? '4rem' : '18rem';
+    document.documentElement.style.setProperty('--sidebar-width', width);
+    localStorage.setItem('sidebar-collapsed', String(isCollapsed));
+  }, [isCollapsed]);
 
   const toggle = (title: string) => {
     setExpanded((prev) =>
@@ -189,17 +206,39 @@ export function Sidebar() {
 
   return (
     <aside className={cn(
-      "fixed top-0 z-40 h-screen w-64 bg-background",
+      "fixed top-0 z-40 h-screen bg-background flex flex-col transition-all duration-300",
+      isCollapsed ? "w-16" : "w-72",
       isRTL ? "right-0 border-l" : "left-0 border-r"
     )}>
       {/* Logo */}
-      <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold">V</span>
-          </div>
-          <span className="font-bold text-xl">Vita HR</span>
-        </Link>
+      <div className="flex h-16 items-center border-b px-3 shrink-0 justify-between">
+        {!isCollapsed && (
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold">V</span>
+            </div>
+            <span className="font-bold text-xl">Vita HR</span>
+          </Link>
+        )}
+        {isCollapsed && (
+          <Link href="/dashboard" className="mx-auto">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold">V</span>
+            </div>
+          </Link>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={cn("h-8 w-8", isCollapsed && "mx-auto mt-2")}
+        >
+          {isCollapsed ? (
+            isRTL ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />
+          ) : (
+            isRTL ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />
+          )}
+        </Button>
       </div>
 
       {/* Navigation */}
@@ -227,24 +266,35 @@ export function Sidebar() {
             return (
               <div key={item.title}>
                 <button
-                  onClick={() => toggle(item.title)}
+                  onClick={() => {
+                    if (isCollapsed) {
+                      setIsCollapsed(false);
+                      setTimeout(() => toggle(item.title), 100);
+                    } else {
+                      toggle(item.title);
+                    }
+                  }}
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm",
-                    "hover:bg-muted transition-colors"
+                    "hover:bg-muted transition-colors",
+                    isCollapsed && "justify-center"
                   )}
+                  title={isCollapsed ? t(item.title) : undefined}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className={cn("flex items-center gap-3", isCollapsed && "gap-0")}>
                     <item.icon className="h-5 w-5" />
-                    <span>{t(item.title)}</span>
+                    {!isCollapsed && <span>{t(item.title)}</span>}
                   </div>
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 transition-transform",
-                      isExpanded && "rotate-180"
-                    )}
-                  />
+                  {!isCollapsed && (
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        isExpanded && "rotate-180"
+                      )}
+                    />
+                  )}
                 </button>
-                {isExpanded && (
+                {isExpanded && !isCollapsed && (
                   <div className={cn(
                     "mt-1 space-y-1",
                     isRTL ? "mr-4" : "ml-4"
@@ -338,11 +388,13 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
                 "hover:bg-muted transition-colors",
-                active && "bg-primary text-primary-foreground"
+                active && "bg-primary text-primary-foreground",
+                isCollapsed && "justify-center gap-0"
               )}
+              title={isCollapsed ? t(item.title) : undefined}
             >
               <item.icon className="h-5 w-5" />
-              <span>{t(item.title)}</span>
+              {!isCollapsed && <span>{t(item.title)}</span>}
             </Link>
           );
         })}

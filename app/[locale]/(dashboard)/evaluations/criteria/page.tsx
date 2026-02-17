@@ -147,10 +147,10 @@ export default function EvaluationCriteriaPage() {
 
   const getCategoryBadge = (category: CriteriaCategory) => {
     const labels = {
-      PERFORMANCE: "الأداء",
-      SKILLS: "المهارات",
-      BEHAVIOR: "السلوك",
-      GOALS: "الأهداف",
+      PERFORMANCE: t("evaluationCriteria.categories.performance"),
+      SKILLS: t("evaluationCriteria.categories.skills"),
+      BEHAVIOR: t("evaluationCriteria.categories.behavior"),
+      GOALS: t("evaluationCriteria.categories.goals"),
     };
     return <Badge variant="outline">{labels[category]}</Badge>;
   };
@@ -160,11 +160,11 @@ export default function EvaluationCriteriaPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>الكود</TableHead>
-            <TableHead>الاسم (عربي)</TableHead>
-            <TableHead>الفئة</TableHead>
-            <TableHead>الوزن</TableHead>
-            <TableHead>الدرجة القصوى</TableHead>
+            <TableHead>{t("evaluationCriteria.fields.code")}</TableHead>
+            <TableHead>{t("evaluationCriteria.fields.nameAr")}</TableHead>
+            <TableHead>{t("evaluationCriteria.fields.category")}</TableHead>
+            <TableHead>{t("evaluationCriteria.fields.weight")}</TableHead>
+            <TableHead>{t("evaluationCriteria.fields.maxScore")}</TableHead>
             <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
@@ -227,12 +227,12 @@ export default function EvaluationCriteriaPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="معايير التقييم"
-        description="إدارة معايير تقييم الأداء والمهارات"
+        title={t("evaluationCriteria.title")}
+        description={t("evaluationCriteria.description")}
         actions={
           <Button onClick={handleCreate}>
             <Plus className="h-4 w-4 ml-2" />
-            إضافة معيار
+            {t("evaluationCriteria.addCriteria")}
           </Button>
         }
       />
@@ -241,7 +241,7 @@ export default function EvaluationCriteriaPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="البحث بالكود أو الاسم..."
+            placeholder={t("evaluationCriteria.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pr-10"
@@ -251,11 +251,11 @@ export default function EvaluationCriteriaPage() {
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList>
-          <TabsTrigger value="all">الكل</TabsTrigger>
-          <TabsTrigger value="PERFORMANCE">الأداء</TabsTrigger>
-          <TabsTrigger value="SKILLS">المهارات</TabsTrigger>
-          <TabsTrigger value="BEHAVIOR">السلوك</TabsTrigger>
-          <TabsTrigger value="GOALS">الأهداف</TabsTrigger>
+          <TabsTrigger value="all">{t("evaluationCriteria.categories.all")}</TabsTrigger>
+          <TabsTrigger value="PERFORMANCE">{t("evaluationCriteria.categories.performance")}</TabsTrigger>
+          <TabsTrigger value="SKILLS">{t("evaluationCriteria.categories.skills")}</TabsTrigger>
+          <TabsTrigger value="BEHAVIOR">{t("evaluationCriteria.categories.behavior")}</TabsTrigger>
+          <TabsTrigger value="GOALS">{t("evaluationCriteria.categories.goals")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -284,52 +284,55 @@ export default function EvaluationCriteriaPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {selectedCriteria ? "تعديل المعيار" : "إضافة معيار جديد"}
+              {selectedCriteria ? t("evaluationCriteria.editCriteria") : t("evaluationCriteria.createCriteria")}
             </DialogTitle>
             <DialogDescription>
               {selectedCriteria
-                ? "تعديل بيانات معيار التقييم"
-                : "إضافة معيار تقييم جديد"}
+                ? t("evaluationCriteria.editDescription")
+                : t("evaluationCriteria.createDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>الكود</Label>
+              <Label>{t("evaluationCriteria.fields.code")}</Label>
               <Input
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="PERF001"
+                placeholder={t("evaluationCriteria.placeholders.code")}
                 disabled={!!selectedCriteria}
               />
             </div>
             <div className="space-y-2">
-              <Label>الاسم (عربي)</Label>
+              <Label>{t("evaluationCriteria.fields.nameAr")}</Label>
               <Input
                 value={formData.nameAr}
                 onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
-                placeholder="جودة العمل"
+                placeholder={t("evaluationCriteria.placeholders.nameAr")}
+                dir="rtl"
               />
             </div>
             <div className="space-y-2">
-              <Label>الاسم (إنجليزي)</Label>
+              <Label>{t("evaluationCriteria.fields.nameEn")}</Label>
               <Input
                 value={formData.nameEn}
                 onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                placeholder="Work Quality"
+                placeholder={t("evaluationCriteria.placeholders.nameEn")}
+                dir="ltr"
               />
             </div>
             <div className="space-y-2">
-              <Label>الوصف (عربي)</Label>
+              <Label>{t("evaluationCriteria.fields.descriptionAr")}</Label>
               <Textarea
                 value={formData.descriptionAr}
                 onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
-                placeholder="مستوى جودة الأعمال المنجزة"
+                placeholder={t("evaluationCriteria.placeholders.descriptionAr")}
                 rows={3}
+                dir="rtl"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>الوزن</Label>
+                <Label>{t("evaluationCriteria.fields.weight")}</Label>
                 <Input
                   type="number"
                   step="0.1"
@@ -338,7 +341,7 @@ export default function EvaluationCriteriaPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>الدرجة القصوى</Label>
+                <Label>{t("evaluationCriteria.fields.maxScore")}</Label>
                 <Input
                   type="number"
                   value={formData.maxScore}
@@ -347,7 +350,7 @@ export default function EvaluationCriteriaPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>الفئة</Label>
+              <Label>{t("evaluationCriteria.fields.category")}</Label>
               <Select
                 value={formData.category}
                 onValueChange={(v) => setFormData({ ...formData, category: v as CriteriaCategory })}
@@ -356,10 +359,10 @@ export default function EvaluationCriteriaPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PERFORMANCE">الأداء</SelectItem>
-                  <SelectItem value="SKILLS">المهارات</SelectItem>
-                  <SelectItem value="BEHAVIOR">السلوك</SelectItem>
-                  <SelectItem value="GOALS">الأهداف</SelectItem>
+                  <SelectItem value="PERFORMANCE">{t("evaluationCriteria.categories.performance")}</SelectItem>
+                  <SelectItem value="SKILLS">{t("evaluationCriteria.categories.skills")}</SelectItem>
+                  <SelectItem value="BEHAVIOR">{t("evaluationCriteria.categories.behavior")}</SelectItem>
+                  <SelectItem value="GOALS">{t("evaluationCriteria.categories.goals")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -379,7 +382,7 @@ export default function EvaluationCriteriaPage() {
               }
             >
               {createCriteria.isPending || updateCriteria.isPending
-                ? "جاري الحفظ..."
+                ? t("evaluationCriteria.saving")
                 : t("common.save")}
             </Button>
           </DialogFooter>

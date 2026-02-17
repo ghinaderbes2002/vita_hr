@@ -161,11 +161,11 @@ export default function EvaluationPeriodsPage() {
   const getStatusBadge = (status: PeriodStatus) => {
     switch (status) {
       case "DRAFT":
-        return <Badge variant="secondary">مسودة</Badge>;
+        return <Badge variant="secondary">{t("evaluationPeriods.statuses.draft")}</Badge>;
       case "OPEN":
-        return <Badge className="bg-green-100 text-green-800">مفتوحة</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t("evaluationPeriods.statuses.open")}</Badge>;
       case "CLOSED":
-        return <Badge variant="destructive">مغلقة</Badge>;
+        return <Badge variant="destructive">{t("evaluationPeriods.statuses.closed")}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -174,12 +174,12 @@ export default function EvaluationPeriodsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="فترات التقييم"
-        description="إدارة فترات التقييم السنوية للموظفين"
+        title={t("evaluationPeriods.title")}
+        description={t("evaluationPeriods.description")}
         actions={
           <Button onClick={handleCreate}>
             <Plus className="h-4 w-4 ml-2" />
-            إضافة فترة
+            {t("evaluationPeriods.addPeriod")}
           </Button>
         }
       />
@@ -188,7 +188,7 @@ export default function EvaluationPeriodsPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="البحث بالكود أو الاسم..."
+            placeholder={t("evaluationPeriods.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pr-10"
@@ -200,11 +200,11 @@ export default function EvaluationPeriodsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>الكود</TableHead>
-              <TableHead>الاسم (عربي)</TableHead>
-              <TableHead>تاريخ البداية</TableHead>
-              <TableHead>تاريخ النهاية</TableHead>
-              <TableHead>الحالة</TableHead>
+              <TableHead>{t("evaluationPeriods.fields.code")}</TableHead>
+              <TableHead>{t("evaluationPeriods.fields.nameAr")}</TableHead>
+              <TableHead>{t("evaluationPeriods.fields.startDate")}</TableHead>
+              <TableHead>{t("evaluationPeriods.fields.endDate")}</TableHead>
+              <TableHead>{t("evaluationPeriods.fields.status")}</TableHead>
               <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -249,19 +249,19 @@ export default function EvaluationPeriodsPage() {
                         {period.status === "DRAFT" && (
                           <DropdownMenuItem onClick={() => handleOpen(period)}>
                             <PlayCircle className="h-4 w-4 ml-2" />
-                            فتح الفترة
+                            {t("evaluationPeriods.openPeriod")}
                           </DropdownMenuItem>
                         )}
                         {(period.status === "DRAFT" || period.status === "OPEN") && (
                           <DropdownMenuItem onClick={() => handleGenerateForms(period)}>
                             <FileText className="h-4 w-4 ml-2" />
-                            إنشاء نماذج التقييم
+                            {t("evaluationPeriods.generateForms")}
                           </DropdownMenuItem>
                         )}
                         {period.status === "OPEN" && (
                           <DropdownMenuItem onClick={() => handleClose(period)}>
                             <StopCircle className="h-4 w-4 ml-2" />
-                            إغلاق الفترة
+                            {t("evaluationPeriods.closePeriod")}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
@@ -286,43 +286,45 @@ export default function EvaluationPeriodsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedPeriod ? "تعديل فترة التقييم" : "إضافة فترة تقييم جديدة"}
+              {selectedPeriod ? t("evaluationPeriods.editPeriod") : t("evaluationPeriods.createPeriod")}
             </DialogTitle>
             <DialogDescription>
               {selectedPeriod
-                ? "تعديل بيانات فترة التقييم"
-                : "إضافة فترة تقييم جديدة للموظفين"}
+                ? t("evaluationPeriods.editDescription")
+                : t("evaluationPeriods.createDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>الكود</Label>
+              <Label>{t("evaluationPeriods.fields.code")}</Label>
               <Input
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="EVAL2026"
+                placeholder={t("evaluationPeriods.placeholders.code")}
                 disabled={!!selectedPeriod}
               />
             </div>
             <div className="space-y-2">
-              <Label>الاسم (عربي)</Label>
+              <Label>{t("evaluationPeriods.fields.nameAr")}</Label>
               <Input
                 value={formData.nameAr}
                 onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
-                placeholder="تقييم 2026"
+                placeholder={t("evaluationPeriods.placeholders.nameAr")}
+                dir="rtl"
               />
             </div>
             <div className="space-y-2">
-              <Label>الاسم (إنجليزي)</Label>
+              <Label>{t("evaluationPeriods.fields.nameEn")}</Label>
               <Input
                 value={formData.nameEn}
                 onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                placeholder="Evaluation 2026"
+                placeholder={t("evaluationPeriods.placeholders.nameEn")}
+                dir="ltr"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>تاريخ البداية</Label>
+                <Label>{t("evaluationPeriods.fields.startDate")}</Label>
                 <Input
                   type="date"
                   value={formData.startDate}
@@ -330,7 +332,7 @@ export default function EvaluationPeriodsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>تاريخ النهاية</Label>
+                <Label>{t("evaluationPeriods.fields.endDate")}</Label>
                 <Input
                   type="date"
                   value={formData.endDate}
@@ -356,7 +358,7 @@ export default function EvaluationPeriodsPage() {
               }
             >
               {createPeriod.isPending || updatePeriod.isPending
-                ? "جاري الحفظ..."
+                ? t("evaluationPeriods.saving")
                 : t("common.save")}
             </Button>
           </DialogFooter>

@@ -15,7 +15,12 @@ export default async function DashboardLayout({
     <AuthRefreshProvider>
       <div className="min-h-screen bg-background">
         <Sidebar />
-        <div className={isRTL ? "mr-64" : "ml-64"}>
+        <div
+          className="transition-all duration-300"
+          style={{
+            [isRTL ? 'marginRight' : 'marginLeft']: 'var(--sidebar-width, 18rem)'
+          }}
+        >
           <Header />
           <main className="p-6">{children}</main>
         </div>

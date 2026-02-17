@@ -473,6 +473,127 @@
       "confirmReject": "Are you sure you want to reject this evaluation?"
     }
   },
+  "evaluationPeriods": {
+    "title": "Evaluation Periods",
+    "description": "Manage annual employee evaluation periods",
+    "addPeriod": "Add Period",
+    "editPeriod": "Edit Evaluation Period",
+    "createPeriod": "Add New Evaluation Period",
+    "editDescription": "Edit evaluation period data",
+    "createDescription": "Add a new evaluation period for employees",
+    "searchPlaceholder": "Search by code or name...",
+    "openPeriod": "Open Period",
+    "closePeriod": "Close Period",
+    "generateForms": "Generate Evaluation Forms",
+    "saving": "Saving...",
+    "fields": {
+      "code": "Code",
+      "nameAr": "Name (Arabic)",
+      "nameEn": "Name (English)",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "status": "Status"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "placeholders": {
+      "code": "EVAL2026",
+      "nameAr": "Evaluation 2026",
+      "nameEn": "Evaluation 2026"
+    }
+  },
+  "evaluationCriteria": {
+    "title": "Evaluation Criteria",
+    "description": "Manage performance and skills evaluation criteria",
+    "addCriteria": "Add Criteria",
+    "editCriteria": "Edit Criteria",
+    "createCriteria": "Add New Criteria",
+    "editDescription": "Edit evaluation criteria data",
+    "createDescription": "Add a new evaluation criteria",
+    "searchPlaceholder": "Search by code or name...",
+    "saving": "Saving...",
+    "fields": {
+      "code": "Code",
+      "nameAr": "Name (Arabic)",
+      "nameEn": "Name (English)",
+      "descriptionAr": "Description (Arabic)",
+      "weight": "Weight",
+      "maxScore": "Max Score",
+      "category": "Category"
+    },
+    "categories": {
+      "all": "All",
+      "performance": "Performance",
+      "skills": "Skills",
+      "behavior": "Behavior",
+      "goals": "Goals"
+    },
+    "placeholders": {
+      "code": "PERF001",
+      "nameAr": "Work Quality",
+      "nameEn": "Work Quality",
+      "descriptionAr": "Level of quality of completed work"
+    }
+  },
+  "myEvaluations": {
+    "title": "My Evaluations",
+    "description": "View my evaluation forms",
+    "fields": {
+      "period": "Period",
+      "status": "Status",
+      "mySelfScore": "My Score",
+      "myManagerScore": "Manager Score",
+      "finalScore": "Final Score"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "selfEvaluation": "Self Evaluation",
+      "pendingSelf": "Pending Self Evaluation",
+      "selfSubmitted": "Self Evaluation Submitted",
+      "managerEvaluation": "Manager Evaluation",
+      "managerSubmitted": "Manager Evaluation Submitted",
+      "hrReview": "HR Review",
+      "gmApproval": "GM Approval",
+      "completed": "Completed"
+    }
+  },
+  "pendingReview": {
+    "title": "Pending My Review",
+    "description": "Evaluation forms that need your review",
+    "searchPlaceholder": "Search by name or code...",
+    "fields": {
+      "employee": "Employee",
+      "code": "Code",
+      "period": "Period",
+      "status": "Status",
+      "employeeScore": "Employee Score"
+    }
+  },
+  "allForms": {
+    "title": "All Evaluations",
+    "description": "View all evaluation forms in the system",
+    "searchPlaceholder": "Search by name or code...",
+    "fields": {
+      "employee": "Employee",
+      "code": "Code",
+      "period": "Period",
+      "status": "Status",
+      "employeeScore": "Employee Score",
+      "managerScore": "Manager Score",
+      "finalScore": "Final Score"
+    },
+    "tabs": {
+      "all": "All",
+      "selfEvaluation": "Self Evaluation",
+      "managerEvaluation": "Manager Evaluation",
+      "hrReview": "HR Review",
+      "gmApproval": "GM Approval",
+      "completed": "Completed"
+    }
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

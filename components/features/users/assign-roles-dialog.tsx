@@ -32,7 +32,7 @@ export function AssignRolesDialog({ open, onOpenChange, user }: AssignRolesDialo
   useEffect(() => {
     if (user && user.roles) {
       setSelectedRoles(user.roles.map((r) => r.role.id));
-    } else {
+    } else {و
       setSelectedRoles([]);
     }
   }, [user]);

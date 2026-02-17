@@ -608,6 +608,127 @@
       "permissions": "الصلاحيات"
     }
   },
+  "evaluationPeriods": {
+    "title": "فترات التقييم",
+    "description": "إدارة فترات التقييم السنوية للموظفين",
+    "addPeriod": "إضافة فترة",
+    "editPeriod": "تعديل فترة التقييم",
+    "createPeriod": "إضافة فترة تقييم جديدة",
+    "editDescription": "تعديل بيانات فترة التقييم",
+    "createDescription": "إضافة فترة تقييم جديدة للموظفين",
+    "searchPlaceholder": "البحث بالكود أو الاسم...",
+    "openPeriod": "فتح الفترة",
+    "closePeriod": "إغلاق الفترة",
+    "generateForms": "إنشاء نماذج التقييم",
+    "saving": "جاري الحفظ...",
+    "fields": {
+      "code": "الكود",
+      "nameAr": "الاسم (عربي)",
+      "nameEn": "الاسم (إنجليزي)",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "status": "الحالة"
+    },
+    "statuses": {
+      "draft": "مسودة",
+      "open": "مفتوحة",
+      "closed": "مغلقة"
+    },
+    "placeholders": {
+      "code": "EVAL2026",
+      "nameAr": "تقييم 2026",
+      "nameEn": "Evaluation 2026"
+    }
+  },
+  "evaluationCriteria": {
+    "title": "معايير التقييم",
+    "description": "إدارة معايير تقييم الأداء والمهارات",
+    "addCriteria": "إضافة معيار",
+    "editCriteria": "تعديل المعيار",
+    "createCriteria": "إضافة معيار جديد",
+    "editDescription": "تعديل بيانات معيار التقييم",
+    "createDescription": "إضافة معيار تقييم جديد",
+    "searchPlaceholder": "البحث بالكود أو الاسم...",
+    "saving": "جاري الحفظ...",
+    "fields": {
+      "code": "الكود",
+      "nameAr": "الاسم (عربي)",
+      "nameEn": "الاسم (إنجليزي)",
+      "descriptionAr": "الوصف (عربي)",
+      "weight": "الوزن",
+      "maxScore": "الدرجة القصوى",
+      "category": "الفئة"
+    },
+    "categories": {
+      "all": "الكل",
+      "performance": "الأداء",
+      "skills": "المهارات",
+      "behavior": "السلوك",
+      "goals": "الأهداف"
+    },
+    "placeholders": {
+      "code": "PERF001",
+      "nameAr": "جودة العمل",
+      "nameEn": "Work Quality",
+      "descriptionAr": "مستوى جودة الأعمال المنجزة"
+    }
+  },
+  "myEvaluations": {
+    "title": "تقييماتي",
+    "description": "عرض نماذج التقييم الخاصة بي",
+    "fields": {
+      "period": "الفترة",
+      "status": "الحالة",
+      "mySelfScore": "درجتي",
+      "myManagerScore": "درجة المدير",
+      "finalScore": "الدرجة النهائية"
+    },
+    "statuses": {
+      "draft": "مسودة",
+      "selfEvaluation": "تقييم ذاتي",
+      "pendingSelf": "بانتظار التقييم الذاتي",
+      "selfSubmitted": "تم تقديم التقييم الذاتي",
+      "managerEvaluation": "تقييم المدير",
+      "managerSubmitted": "تم تقديم تقييم المدير",
+      "hrReview": "مراجعة HR",
+      "gmApproval": "موافقة المدير العام",
+      "completed": "مكتمل"
+    }
+  },
+  "pendingReview": {
+    "title": "بانتظار مراجعتي",
+    "description": "نماذج التقييم التي تحتاج لمراجعتك",
+    "searchPlaceholder": "البحث بالاسم أو الكود...",
+    "fields": {
+      "employee": "الموظف",
+      "code": "الكود",
+      "period": "الفترة",
+      "status": "الحالة",
+      "employeeScore": "درجة الموظف"
+    }
+  },
+  "allForms": {
+    "title": "جميع التقييمات",
+    "description": "عرض جميع نماذج التقييم في النظام",
+    "searchPlaceholder": "البحث بالاسم أو الكود...",
+    "fields": {
+      "employee": "الموظف",
+      "code": "الكود",
+      "period": "الفترة",
+      "status": "الحالة",
+      "employeeScore": "درجة الموظف",
+      "managerScore": "درجة المدير",
+      "finalScore": "الدرجة النهائية"
+    },
+    "tabs": {
+      "all": "الكل",
+      "selfEvaluation": "تقييم ذاتي",
+      "managerEvaluation": "تقييم المدير",
+      "hrReview": "مراجعة HR",
+      "gmApproval": "موافقة المدير العام",
+      "completed": "مكتمل"
+    }
+  },
   "validation": {
     "required": "هذا الحقل مطلوب",
     "email": "البريد الإلكتروني غير صحيح",
