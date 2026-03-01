@@ -19,6 +19,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "employeePortal": "My Portal",
     "management": "Management",
     "hr": "Human Resources",
     "users": "User Management",
@@ -26,6 +27,8 @@
     "employees": "Employee Management",
     "subordinates": "Subordinates",
     "departments": "Department Management",
+    "jobTitles": "Job Titles",
+    "jobGrades": "Job Grades",
     "leaveTypes": "Leave Types",
     "holidays": "Holidays",
     "leaveBalances": "Leave Balances",
@@ -33,6 +36,10 @@
     "myLeaves": "My Leaves",
     "newRequest": "New Request",
     "pendingApproval": "Pending Approval",
+    "requests": "Administrative Requests",
+    "myRequests": "My Requests",
+    "pendingManagerApproval": "Pending Manager Approval",
+    "allRequests": "All Requests",
     "workSchedules": "Work Schedules",
     "attendance": "Attendance",
     "myAttendance": "My Attendance",
@@ -40,6 +47,7 @@
     "attendanceRecords": "Attendance Records",
     "myAlerts": "My Alerts",
     "attendanceAlerts": "Attendance Alerts",
+    "attendanceReports": "Attendance Reports",
     "attendanceData": "Attendance Data",
     "evaluations": "Evaluations",
     "evaluationPeriods": "Evaluation Periods",
@@ -90,13 +98,20 @@
     "selectParent": "Select Parent Department",
     "selectManager": "Select Department Manager",
     "noParent": "No Parent Department",
+    "editDescription": "Edit department information",
+    "createDescription": "Add a new department to the organizational structure",
+    "tabs": {
+      "list": "List",
+      "orgChart": "Org Chart"
+    },
     "fields": {
       "code": "Code",
       "nameAr": "Arabic Name",
       "nameEn": "English Name",
       "nameTr": "Turkish Name",
       "parent": "Parent Department",
-      "manager": "Department Manager"
+      "manager": "Department Manager",
+      "employeeCount": "Employee Count"
     }
   },
   "workSchedules": {
@@ -153,6 +168,8 @@
     "selectUser": "Select User",
     "searchPlaceholder": "Search by name or ID...",
     "selectDepartment": "Select Department",
+    "selectJobTitle": "Select Job Title",
+    "selectJobGrade": "Select Job Grade",
     "filterByDepartment": "Filter by Department",
     "allDepartments": "All Departments",
     "subordinates": {
@@ -173,6 +190,8 @@
       "gender": "Gender",
       "dateOfBirth": "Date of Birth",
       "department": "Department",
+      "jobGrade": "Job Grade",
+      "basicSalary": "Basic Salary",
       "hireDate": "Hire Date",
       "contractType": "Contract Type",
       "status": "Status"
@@ -381,6 +400,133 @@
       "checkOutError": "Failed to check out",
       "alreadyCheckedIn": "You have already checked in today",
       "notCheckedIn": "You must check in first"
+    }
+  },
+  "requests": {
+    "myRequests": "My Requests",
+    "myRequestsDescription": "View and manage your administrative requests",
+    "newRequest": "New Request",
+    "newRequestDescription": "Create a new administrative request",
+    "pendingManagerApproval": "Pending Manager Approval",
+    "pendingManagerDescription": "Requests waiting for review and approval",
+    "allRequests": "All Requests",
+    "allRequestsDescription": "View and manage all administrative requests",
+    "saveAsDraft": "Save as Draft",
+    "submitRequest": "Submit Request",
+    "filterByStatus": "Filter by Status",
+    "filterByType": "Filter by Type",
+    "types": {
+      "TRANSFER": "Transfer Request",
+      "PERMISSION": "Permission Request",
+      "ADVANCE": "Advance Request",
+      "RESIGNATION": "Resignation Request",
+      "JOB_CHANGE": "Job Change Request",
+      "RIGHTS": "Rights Request",
+      "REWARD": "Reward Request",
+      "SPONSORSHIP": "Sponsorship Request",
+      "OTHER": "Other"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "PENDING_MANAGER": "Pending Manager",
+      "PENDING_HR": "Pending HR",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled"
+    },
+    "actions": {
+      "submit": "Submit",
+      "approve": "Approve",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "approveDescription": "The request will be forwarded to the next stage",
+      "rejectDescription": "Please provide a reason for rejection",
+      "cancelDescription": "Please provide a reason for cancellation"
+    },
+    "fields": {
+      "requestNumber": "Request No.",
+      "type": "Request Type",
+      "reason": "Reason",
+      "notes": "Notes",
+      "status": "Status",
+      "employee": "Employee",
+      "createdAt": "Created At",
+      "fromDate": "From Date",
+      "toDate": "To Date",
+      "amount": "Amount",
+      "reasonPlaceholder": "Explain the reason for your request in detail..."
+    },
+    "details": {
+      "date": "Date",
+      "exitTime": "Exit Time",
+      "returnTime": "Expected Return Time",
+      "toDepartment": "Target Department",
+      "proposedDate": "Proposed Transfer Date",
+      "currency": "Currency",
+      "repaymentMonths": "Repayment Months",
+      "resignationDate": "Resignation Date",
+      "lastWorkingDay": "Last Working Day",
+      "handoverPlan": "Handover Plan",
+      "requestedTitle": "Requested Title",
+      "justification": "Justification",
+      "rightType": "Right Type",
+      "rightDescription": "Description",
+      "period": "Period",
+      "suggestedAmount": "Suggested Amount",
+      "personName": "Sponsored Person Name",
+      "relationship": "Relationship",
+      "relationshipPlaceholder": "e.g. Son, Wife, Brother...",
+      "sponsorshipPurpose": "Purpose of Sponsorship",
+      "rightsTypes": {
+        "OVERTIME": "Unpaid Overtime",
+        "HOUSING_ALLOWANCE": "Housing Allowance",
+        "TRANSPORT_ALLOWANCE": "Transport Allowance",
+        "OTHER": "Other"
+      }
+    }
+  },
+  "jobTitles": {
+    "title": "Job Titles",
+    "description": "Manage job titles and link them to grades",
+    "addTitle": "Add Job Title",
+    "editTitle": "Edit Job Title",
+    "editDescription": "Edit job title information",
+    "createDescription": "Create a new job title",
+    "searchPlaceholder": "Search by code or name...",
+    "selectGrade": "Select Job Grade",
+    "noGrade": "No Grade",
+    "fields": {
+      "code": "Code",
+      "nameAr": "Arabic Name",
+      "nameEn": "English Name",
+      "nameTr": "Turkish Name",
+      "grade": "Job Grade",
+      "description": "Description"
+    }
+  },
+  "jobGrades": {
+    "title": "Job Grades",
+    "description": "Manage job grades and salary scale",
+    "addGrade": "Add Grade",
+    "editGrade": "Edit Job Grade",
+    "editDescription": "Edit job grade details",
+    "createDescription": "Add a new job grade",
+    "searchPlaceholder": "Search by code or name...",
+    "fields": {
+      "code": "Code",
+      "nameAr": "Name (Arabic)",
+      "nameEn": "Name (English)",
+      "description": "Description",
+      "color": "Color",
+      "minSalary": "Min Salary",
+      "maxSalary": "Max Salary",
+      "isActive": "Active"
+    },
+    "placeholders": {
+      "code": "G3",
+      "nameAr": "الدرجة الثالثة",
+      "nameEn": "Grade 3",
+      "description": "Grade for mid-level employees"
     }
   },
   "evaluations": {
@@ -619,5 +765,39 @@
   "messages": {
     "confirmDelete": "Are you sure you want to delete?",
     "actionCantUndo": "This action cannot be undone"
+  },
+  "attendanceReports": {
+    "title": "Attendance Reports",
+    "description": "Detailed reports for attendance and departure records",
+    "daily": "Daily",
+    "monthly": "Monthly",
+    "summary": "Summary",
+    "breaks": "Breaks",
+    "date": "Date",
+    "year": "Year",
+    "month": "Month",
+    "department": "Department",
+    "dateFrom": "From Date",
+    "dateTo": "To Date",
+    "employee": "Employee",
+    "clockIn": "Clock In",
+    "clockOut": "Clock Out",
+    "workedHours": "Worked Hours",
+    "lateMinutes": "Late Minutes",
+    "status": "Status",
+    "presentDays": "Present Days",
+    "absentDays": "Absent Days",
+    "lateDays": "Late Days",
+    "onLeaveDays": "Leave Days",
+    "totalWorkedHours": "Total Worked Hours",
+    "totalOvertimeHours": "Total Overtime Hours",
+    "totalLateMinutes": "Total Late Minutes",
+    "totalEmployees": "Total Employees",
+    "totalRecords": "Total Records",
+    "totalBreakHours": "Total Break Hours",
+    "totalDays": "Total Days",
+    "totalBreakMinutes": "Total Break Minutes",
+    "avgBreakPerDay": "Avg Break Per Day",
+    "hours": "hrs"
   }
 }

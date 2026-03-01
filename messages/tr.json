@@ -19,6 +19,7 @@
   },
   "nav": {
     "dashboard": "Kontrol Paneli",
+    "employeePortal": "Çalışan Portalı",
     "management": "Yönetim",
     "hr": "İnsan Kaynakları",
     "users": "Kullanıcı Yönetimi",
@@ -26,6 +27,8 @@
     "employees": "Çalışan Yönetimi",
     "subordinates": "Astlar",
     "departments": "Departman Yönetimi",
+    "jobTitles": "İş Unvanları",
+    "jobGrades": "İş Dereceleri",
     "leaveTypes": "İzin Türleri",
     "holidays": "Resmi Tatiller",
     "leaveBalances": "İzin Bakiyeleri",
@@ -33,6 +36,10 @@
     "myLeaves": "İzinlerim",
     "newRequest": "Yeni Talep",
     "pendingApproval": "Onay Bekleyen",
+    "requests": "İdari Talepler",
+    "myRequests": "Taleplerim",
+    "pendingManagerApproval": "Yönetici Onayı Bekleyen",
+    "allRequests": "Tüm Talepler",
     "workSchedules": "Çalışma Programları",
     "attendance": "Devam",
     "myAttendance": "Devamım",
@@ -40,6 +47,7 @@
     "attendanceRecords": "Devam Kayıtları",
     "myAlerts": "Uyarılarım",
     "attendanceAlerts": "Devam Uyarıları",
+    "attendanceReports": "Devam Raporları",
     "attendanceData": "Devam Verileri",
     "evaluations": "Değerlendirmeler",
     "evaluationPeriods": "Değerlendirme Dönemleri",
@@ -90,13 +98,20 @@
     "selectParent": "Ana Departman Seçin",
     "selectManager": "Departman Müdürü Seçin",
     "noParent": "Ana Departman Yok",
+    "editDescription": "Departman bilgilerini düzenle",
+    "createDescription": "Organizasyon yapısına yeni departman ekle",
+    "tabs": {
+      "list": "Liste",
+      "orgChart": "Org Şeması"
+    },
     "fields": {
       "code": "Kod",
       "nameAr": "Arapça İsim",
       "nameEn": "İngilizce İsim",
       "nameTr": "Türkçe İsim",
       "parent": "Ana Departman",
-      "manager": "Departman Müdürü"
+      "manager": "Departman Müdürü",
+      "employeeCount": "Çalışan Sayısı"
     }
   },
   "workSchedules": {
@@ -153,6 +168,8 @@
     "selectUser": "Kullanıcı Seçin",
     "searchPlaceholder": "İsim veya kimlik ile ara...",
     "selectDepartment": "Departman Seçin",
+    "selectJobTitle": "İş Unvanı Seçin",
+    "selectJobGrade": "İş Derecesi Seçin",
     "filterByDepartment": "Departmana Göre Filtrele",
     "allDepartments": "Tüm Departmanlar",
     "subordinates": {
@@ -173,6 +190,8 @@
       "gender": "Cinsiyet",
       "dateOfBirth": "Doğum Tarihi",
       "department": "Departman",
+      "jobGrade": "İş Derecesi",
+      "basicSalary": "Temel Maaş",
       "hireDate": "İşe Alım Tarihi",
       "contractType": "Sözleşme Türü",
       "status": "Durum"
@@ -381,6 +400,133 @@
       "checkOutError": "Çıkış yapılamadı",
       "alreadyCheckedIn": "Bugün zaten giriş yaptınız",
       "notCheckedIn": "Önce giriş yapmalısınız"
+    }
+  },
+  "requests": {
+    "myRequests": "Taleplerim",
+    "myRequestsDescription": "İdari taleplerinizi görüntüleyin ve yönetin",
+    "newRequest": "Yeni Talep",
+    "newRequestDescription": "Yeni bir idari talep oluşturun",
+    "pendingManagerApproval": "Yönetici Onayı Bekleyen",
+    "pendingManagerDescription": "İnceleme ve onay bekleyen talepler",
+    "allRequests": "Tüm Talepler",
+    "allRequestsDescription": "Tüm idari talepleri görüntüleyin ve yönetin",
+    "saveAsDraft": "Taslak Olarak Kaydet",
+    "submitRequest": "Talebi Gönder",
+    "filterByStatus": "Duruma Göre Filtrele",
+    "filterByType": "Türe Göre Filtrele",
+    "types": {
+      "TRANSFER": "Transfer Talebi",
+      "PERMISSION": "İzin Talebi",
+      "ADVANCE": "Avans Talebi",
+      "RESIGNATION": "İstifa Talebi",
+      "JOB_CHANGE": "İş Değişikliği Talebi",
+      "RIGHTS": "Haklar Talebi",
+      "REWARD": "Ödül Talebi",
+      "SPONSORSHIP": "Sponsorluk Talebi",
+      "OTHER": "Diğer"
+    },
+    "statuses": {
+      "DRAFT": "Taslak",
+      "PENDING_MANAGER": "Yönetici Bekliyor",
+      "PENDING_HR": "İK Bekliyor",
+      "APPROVED": "Onaylandı",
+      "REJECTED": "Reddedildi",
+      "CANCELLED": "İptal Edildi"
+    },
+    "actions": {
+      "submit": "Gönder",
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "cancel": "İptal",
+      "approveDescription": "Talep bir sonraki aşamaya iletilecek",
+      "rejectDescription": "Lütfen reddetme nedenini belirtin",
+      "cancelDescription": "Lütfen iptal nedenini belirtin"
+    },
+    "fields": {
+      "requestNumber": "Talep No.",
+      "type": "Talep Türü",
+      "reason": "Neden",
+      "notes": "Notlar",
+      "status": "Durum",
+      "employee": "Çalışan",
+      "createdAt": "Oluşturulma Tarihi",
+      "fromDate": "Başlangıç Tarihi",
+      "toDate": "Bitiş Tarihi",
+      "amount": "Tutar",
+      "reasonPlaceholder": "Talebinizin nedenini ayrıntılı olarak açıklayın..."
+    },
+    "details": {
+      "date": "Tarih",
+      "exitTime": "Çıkış Saati",
+      "returnTime": "Beklenen Dönüş Saati",
+      "toDepartment": "Hedef Departman",
+      "proposedDate": "Önerilen Transfer Tarihi",
+      "currency": "Para Birimi",
+      "repaymentMonths": "Geri Ödeme Ayı",
+      "resignationDate": "İstifa Tarihi",
+      "lastWorkingDay": "Son Çalışma Günü",
+      "handoverPlan": "Devir Planı",
+      "requestedTitle": "Talep Edilen Unvan",
+      "justification": "Gerekçe",
+      "rightType": "Hak Türü",
+      "rightDescription": "Açıklama",
+      "period": "Dönem",
+      "suggestedAmount": "Önerilen Tutar",
+      "personName": "Kefil Olunan Kişinin Adı",
+      "relationship": "Akrabalık",
+      "relationshipPlaceholder": "örn. Oğul, Eş, Kardeş...",
+      "sponsorshipPurpose": "Kefalet Amacı",
+      "rightsTypes": {
+        "OVERTIME": "Ödenmeyen Fazla Mesai",
+        "HOUSING_ALLOWANCE": "Konut Yardımı",
+        "TRANSPORT_ALLOWANCE": "Ulaşım Yardımı",
+        "OTHER": "Diğer"
+      }
+    }
+  },
+  "jobTitles": {
+    "title": "İş Unvanları",
+    "description": "İş unvanlarını yönetin ve derecelerle ilişkilendirin",
+    "addTitle": "İş Unvanı Ekle",
+    "editTitle": "İş Unvanını Düzenle",
+    "editDescription": "İş unvanı bilgilerini düzenle",
+    "createDescription": "Yeni iş unvanı oluştur",
+    "searchPlaceholder": "Kod veya isim ile ara...",
+    "selectGrade": "İş Derecesi Seçin",
+    "noGrade": "Derece Yok",
+    "fields": {
+      "code": "Kod",
+      "nameAr": "Arapça İsim",
+      "nameEn": "İngilizce İsim",
+      "nameTr": "Türkçe İsim",
+      "grade": "İş Derecesi",
+      "description": "Açıklama"
+    }
+  },
+  "jobGrades": {
+    "title": "İş Dereceleri",
+    "description": "İş derecelerini ve maaş skalasını yönetin",
+    "addGrade": "Derece Ekle",
+    "editGrade": "İş Derecesini Düzenle",
+    "editDescription": "İş derecesi bilgilerini düzenleyin",
+    "createDescription": "Yeni bir iş derecesi ekleyin",
+    "searchPlaceholder": "Kod veya ada göre ara...",
+    "fields": {
+      "code": "Kod",
+      "nameAr": "Ad (Arapça)",
+      "nameEn": "Ad (İngilizce)",
+      "description": "Açıklama",
+      "color": "Renk",
+      "minSalary": "Min Maaş",
+      "maxSalary": "Max Maaş",
+      "isActive": "Aktif"
+    },
+    "placeholders": {
+      "code": "G3",
+      "nameAr": "الدرجة الثالثة",
+      "nameEn": "Grade 3",
+      "description": "Orta düzey çalışanlar için derece"
     }
   },
   "evaluations": {
@@ -619,5 +765,39 @@
   "messages": {
     "confirmDelete": "Silmek istediğinizden emin misiniz?",
     "actionCantUndo": "Bu işlem geri alınamaz"
+  },
+  "attendanceReports": {
+    "title": "Devam Raporları",
+    "description": "Devam ve ayrılış kayıtları için detaylı raporlar",
+    "daily": "Günlük",
+    "monthly": "Aylık",
+    "summary": "Özet",
+    "breaks": "Molalar",
+    "date": "Tarih",
+    "year": "Yıl",
+    "month": "Ay",
+    "department": "Departman",
+    "dateFrom": "Başlangıç Tarihi",
+    "dateTo": "Bitiş Tarihi",
+    "employee": "Çalışan",
+    "clockIn": "Giriş Saati",
+    "clockOut": "Çıkış Saati",
+    "workedHours": "Çalışılan Saatler",
+    "lateMinutes": "Geç Kalma Dakikaları",
+    "status": "Durum",
+    "presentDays": "Mevcut Günler",
+    "absentDays": "Devamsızlık Günleri",
+    "lateDays": "Geç Kalınan Günler",
+    "onLeaveDays": "İzinli Günler",
+    "totalWorkedHours": "Toplam Çalışma Saati",
+    "totalOvertimeHours": "Toplam Fazla Mesai",
+    "totalLateMinutes": "Toplam Geç Kalma Dakikası",
+    "totalEmployees": "Toplam Çalışan",
+    "totalRecords": "Toplam Kayıt",
+    "totalBreakHours": "Toplam Mola Saati",
+    "totalDays": "Toplam Gün",
+    "totalBreakMinutes": "Toplam Mola Dakikası",
+    "avgBreakPerDay": "Günlük Ort. Mola",
+    "hours": "saat"
   }
 }

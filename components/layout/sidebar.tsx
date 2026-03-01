@@ -34,6 +34,8 @@ import {
   FileBarChart,
   ChevronsRight,
   ChevronsLeft,
+  GraduationCap,
+  UserCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -49,12 +51,27 @@ interface NavItem {
 const navigation: NavItem[] = [
   { title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
   {
+    title: "nav.employeePortal",
+    icon: UserCircle,
+    children: [
+      { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck, permission: "attendance.records.read-own" },
+      { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn, permission: "attendance.records.check-in" },
+      { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell, permission: "attendance.alerts.read-own" },
+      { title: "nav.myLeaves", href: "/leaves/my-leaves", icon: CalendarDays, permission: "leave_requests:read" },
+      { title: "nav.newRequest", href: "/leaves/new-request", icon: PlusCircle, permission: "leave_requests:create" },
+      { title: "nav.myRequests", href: "/requests/my-requests", icon: FileText, permission: "" },
+      { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
+    ],
+  },
+  {
     title: "nav.management",
     icon: Settings,
     children: [
       { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
       { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read" },
       { title: "nav.departments", href: "/departments", icon: Building2, permission: "departments:read" },
+      { title: "nav.jobTitles", href: "/job-titles", icon: FileText, permission: "job-titles:read" },
+      { title: "nav.jobGrades", href: "/job-grades", icon: GraduationCap, permission: "job-grades:read" },
       { title: "nav.employees", href: "/employees", icon: Users, permission: "employees:read" },
       { title: "nav.subordinates", href: "/employees/subordinates", icon: UserCheck, permission: "employees:read" },
     ],
@@ -68,11 +85,9 @@ const navigation: NavItem[] = [
         icon: ClipboardCheck,
         children: [
           { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
-          { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck, permission: "attendance.records.read-own" },
-          { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn, permission: "attendance.records.check-in" },
           { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
-          { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell, permission: "attendance.alerts.read-own" },
           { title: "nav.attendanceAlerts", href: "/attendance/alerts", icon: AlertCircle, permission: "attendance.alerts.read" },
+          { title: "nav.attendanceReports", href: "/attendance/reports", icon: FileBarChart, permission: "attendance.reports.read" },
         ],
       },
       {
@@ -82,9 +97,15 @@ const navigation: NavItem[] = [
           { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read" },
           { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read" },
           { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read" },
-          { title: "nav.myLeaves", href: "/leaves/my-leaves", icon: FileText, permission: "leave_requests:read" },
-          { title: "nav.newRequest", href: "/leaves/new-request", icon: PlusCircle, permission: "leave_requests:create" },
           { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permission: "leave_requests:approve_manager" },
+        ],
+      },
+      {
+        title: "nav.requests",
+        icon: ClipboardList,
+        children: [
+          { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permission: "requests:manager-approve" },
+          { title: "nav.allRequests", href: "/requests/all", icon: ClipboardList, permission: "requests:read" },
         ],
       },
       {
@@ -93,7 +114,6 @@ const navigation: NavItem[] = [
         children: [
           { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read" },
           { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read" },
-          { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
           { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate" },
           { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all" },
         ],
@@ -107,6 +127,7 @@ export function Sidebar() {
   const locale = useLocale();
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('sidebar-collapsed');
@@ -115,6 +136,10 @@ export function Sidebar() {
     return false;
   });
   const { hasPermission, isAdmin } = usePermissions();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Determine if the locale is RTL (Arabic)
   const isRTL = locale === "ar";
@@ -163,6 +188,11 @@ export function Sidebar() {
         "/evaluations/my-evaluations",
         "/evaluations/pending-review",
         "/evaluations/all-forms",
+        "/requests/my-requests",
+        "/requests/pending-manager",
+        "/requests/all",
+        "/attendance/reports",
+        "/attendance/alerts",
       ];
 
       // If current path is a known sub-route, don't match parent
@@ -243,7 +273,17 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-        {navigation.map((item) => {
+        {!mounted ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "h-9 rounded-lg bg-muted/50 animate-pulse",
+                isCollapsed ? "w-9 mx-auto" : "w-full"
+              )}
+            />
+          ))
+        ) : navigation.map((item) => {
           // إخفاء العنصر إذا ما عنده صلاحية
           if (!hasSectionPermission(item)) {
             return null;

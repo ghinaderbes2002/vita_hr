@@ -1,3 +1,71 @@
+export type RequestType =
+  | "TRANSFER"
+  | "PERMISSION"
+  | "ADVANCE"
+  | "RESIGNATION"
+  | "JOB_CHANGE"
+  | "RIGHTS"
+  | "REWARD"
+  | "SPONSORSHIP"
+  | "OTHER";
+
+export type RequestStatus =
+  | "DRAFT"
+  | "PENDING_MANAGER"
+  | "PENDING_HR"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export interface Request {
+  id: string;
+  requestNumber: string;
+  employeeId: string;
+  employee?: {
+    id: string;
+    employeeNumber: string;
+    firstNameAr: string;
+    lastNameAr: string;
+    firstNameEn: string;
+    lastNameEn: string;
+  };
+  type: RequestType;
+  status: RequestStatus;
+  reason: string;
+  notes?: string;
+  attachmentUrl?: string;
+  details?: Record<string, any>;
+  managerStatus?: string;
+  managerReviewedAt?: string;
+  managerNotes?: string;
+  hrStatus?: string;
+  hrReviewedAt?: string;
+  hrNotes?: string;
+  cancelReason?: string;
+  history?: any[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JobTitle {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  nameTr?: string;
+  description?: string;
+  gradeId?: string;
+  grade?: {
+    id: string;
+    code: string;
+    nameAr: string;
+    minSalary: string | number;
+    maxSalary: string | number;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Role {
   id: string;
   name: string;
@@ -95,6 +163,7 @@ export interface Department {
     lastNameEn: string;
   };
   employeeCount?: number;
+  children?: Department[];
   createdAt?: string;
   updatedAt?: string;
 }

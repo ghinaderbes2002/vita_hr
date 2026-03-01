@@ -34,6 +34,7 @@
   },
   "nav": {
     "dashboard": "لوحة التحكم",
+    "employeePortal": "شؤون الموظف",
     "management": "الإدارة",
     "hr": "الموارد البشرية",
     "users": "إدارة المستخدمين",
@@ -41,6 +42,12 @@
     "employees": "الموظفون",
     "subordinates": "المرؤوسين",
     "departments": "إدارة الأقسام",
+    "jobTitles": "المسميات الوظيفية",
+    "jobGrades": "الدرجات الوظيفية",
+    "requests": "الطلبات الإدارية",
+    "myRequests": "طلباتي",
+    "pendingManagerApproval": "بانتظار موافقة المدير",
+    "allRequests": "جميع الطلبات",
     "workSchedules": "جداول العمل",
     "leaveTypes": "أنواع الإجازات",
     "holidays": "العطل الرسمية",
@@ -57,6 +64,7 @@
     "attendanceRecords": "سجلات الحضور",
     "myAlerts": "تنبيهاتي",
     "attendanceAlerts": "تنبيهات الحضور",
+    "attendanceReports": "تقارير الحضور",
     "attendanceData": "بيانات الحضور",
     "alerts": "التنبيهات",
     "settings": "الإعدادات",
@@ -105,6 +113,8 @@
     "selectUser": "اختر المستخدم",
     "searchPlaceholder": "البحث بالاسم أو الرقم الوظيفي...",
     "selectDepartment": "اختر القسم",
+    "selectJobTitle": "اختر المسمى الوظيفي",
+    "selectJobGrade": "اختر الدرجة الوظيفية",
     "filterByDepartment": "تصفية حسب القسم",
     "allDepartments": "جميع الأقسام",
     "subordinates": {
@@ -129,6 +139,8 @@
       "maritalStatus": "الحالة الاجتماعية",
       "department": "القسم",
       "jobTitle": "المسمى الوظيفي",
+      "jobGrade": "الدرجة الوظيفية",
+      "basicSalary": "الراتب الأساسي",
       "manager": "المدير المباشر",
       "hireDate": "تاريخ التعيين",
       "contractType": "نوع العقد",
@@ -532,13 +544,20 @@
     "selectParent": "اختر القسم الرئيسي",
     "selectManager": "اختر مدير القسم",
     "noParent": "لا يوجد قسم رئيسي",
+    "editDescription": "تعديل بيانات القسم",
+    "createDescription": "إضافة قسم جديد للهيكل التنظيمي",
+    "tabs": {
+      "list": "القائمة",
+      "orgChart": "الهيكل التنظيمي"
+    },
     "fields": {
       "code": "الكود",
       "nameAr": "الاسم بالعربية",
       "nameEn": "الاسم بالإنجليزية",
       "nameTr": "الاسم بالتركية",
       "parent": "القسم الرئيسي",
-      "manager": "مدير القسم"
+      "manager": "مدير القسم",
+      "employeeCount": "عدد الموظفين"
     }
   },
   "workSchedules": {
@@ -606,6 +625,133 @@
       "displayNameEn": "الاسم بالإنجليزية",
       "description": "الوصف",
       "permissions": "الصلاحيات"
+    }
+  },
+  "requests": {
+    "myRequests": "طلباتي",
+    "myRequestsDescription": "استعرض وأدر طلباتك الإدارية",
+    "newRequest": "طلب جديد",
+    "newRequestDescription": "أنشئ طلباً إدارياً جديداً",
+    "pendingManagerApproval": "بانتظار موافقة المدير",
+    "pendingManagerDescription": "الطلبات المنتظرة للمراجعة والموافقة",
+    "allRequests": "جميع الطلبات",
+    "allRequestsDescription": "عرض وإدارة جميع الطلبات الإدارية",
+    "saveAsDraft": "حفظ كمسودة",
+    "submitRequest": "تقديم الطلب",
+    "filterByStatus": "تصفية بالحالة",
+    "filterByType": "تصفية بالنوع",
+    "types": {
+      "TRANSFER": "طلب نقل",
+      "PERMISSION": "طلب إذن",
+      "ADVANCE": "طلب سلفة",
+      "RESIGNATION": "طلب استقالة",
+      "JOB_CHANGE": "طلب تغيير وظيفة",
+      "RIGHTS": "طلب استحقاقات",
+      "REWARD": "طلب مكافأة",
+      "SPONSORSHIP": "طلب كفالة",
+      "OTHER": "أخرى"
+    },
+    "statuses": {
+      "DRAFT": "مسودة",
+      "PENDING_MANAGER": "بانتظار المدير",
+      "PENDING_HR": "بانتظار HR",
+      "APPROVED": "مقبول",
+      "REJECTED": "مرفوض",
+      "CANCELLED": "ملغي"
+    },
+    "actions": {
+      "submit": "تقديم",
+      "approve": "موافقة",
+      "reject": "رفض",
+      "cancel": "إلغاء",
+      "approveDescription": "سيتم إرسال الطلب للمرحلة التالية",
+      "rejectDescription": "يرجى ذكر سبب الرفض",
+      "cancelDescription": "يرجى ذكر سبب الإلغاء"
+    },
+    "fields": {
+      "requestNumber": "رقم الطلب",
+      "type": "نوع الطلب",
+      "reason": "السبب",
+      "notes": "ملاحظات",
+      "status": "الحالة",
+      "employee": "الموظف",
+      "createdAt": "تاريخ الإنشاء",
+      "fromDate": "من تاريخ",
+      "toDate": "إلى تاريخ",
+      "amount": "المبلغ",
+      "reasonPlaceholder": "اشرح سبب طلبك بالتفصيل..."
+    },
+    "details": {
+      "date": "التاريخ",
+      "exitTime": "وقت الخروج",
+      "returnTime": "وقت العودة المتوقع",
+      "toDepartment": "القسم المطلوب الانتقال إليه",
+      "proposedDate": "تاريخ النقل المقترح",
+      "currency": "العملة",
+      "repaymentMonths": "عدد أشهر السداد",
+      "resignationDate": "تاريخ الاستقالة",
+      "lastWorkingDay": "آخر يوم عمل",
+      "handoverPlan": "خطة التسليم",
+      "requestedTitle": "المسمى المطلوب",
+      "justification": "المبررات",
+      "rightType": "نوع الحق",
+      "rightDescription": "وصف الحق",
+      "period": "الفترة الزمنية",
+      "suggestedAmount": "المبلغ المقترح",
+      "personName": "اسم الشخص المكفول",
+      "relationship": "صلة القرابة",
+      "relationshipPlaceholder": "مثال: ابن، زوجة، أخ...",
+      "sponsorshipPurpose": "الغرض من الكفالة",
+      "rightsTypes": {
+        "OVERTIME": "أوفرتايم غير مدفوع",
+        "HOUSING_ALLOWANCE": "بدل سكن",
+        "TRANSPORT_ALLOWANCE": "بدل نقل",
+        "OTHER": "أخرى"
+      }
+    }
+  },
+  "jobTitles": {
+    "title": "المسميات الوظيفية",
+    "description": "إدارة المسميات الوظيفية وربطها بالدرجات",
+    "addTitle": "إضافة مسمى",
+    "editTitle": "تعديل مسمى",
+    "editDescription": "تعديل بيانات المسمى الوظيفي",
+    "createDescription": "إضافة مسمى وظيفي جديد",
+    "searchPlaceholder": "البحث بالكود أو الاسم...",
+    "selectGrade": "اختر الدرجة الوظيفية",
+    "noGrade": "بدون درجة",
+    "fields": {
+      "code": "الكود",
+      "nameAr": "الاسم بالعربية",
+      "nameEn": "الاسم بالإنجليزية",
+      "nameTr": "الاسم بالتركية",
+      "grade": "الدرجة الوظيفية",
+      "description": "الوصف"
+    }
+  },
+  "jobGrades": {
+    "title": "الدرجات الوظيفية",
+    "description": "إدارة الدرجات الوظيفية وسلم الرواتب",
+    "addGrade": "إضافة درجة",
+    "editGrade": "تعديل الدرجة الوظيفية",
+    "editDescription": "تعديل بيانات الدرجة الوظيفية",
+    "createDescription": "إضافة درجة وظيفية جديدة",
+    "searchPlaceholder": "البحث بالكود أو الاسم...",
+    "fields": {
+      "code": "الكود",
+      "nameAr": "الاسم (عربي)",
+      "nameEn": "الاسم (إنجليزي)",
+      "description": "الوصف",
+      "color": "اللون",
+      "minSalary": "الراتب الأدنى",
+      "maxSalary": "الراتب الأقصى",
+      "isActive": "نشط"
+    },
+    "placeholders": {
+      "code": "G3",
+      "nameAr": "الدرجة الثالثة",
+      "nameEn": "Grade 3",
+      "description": "درجة للموظفين المتوسطين"
     }
   },
   "evaluationPeriods": {
@@ -748,5 +894,39 @@
     "checkInError": "حدث خطأ أثناء تسجيل الحضور",
     "checkOutSuccess": "تم تسجيل الانصراف بنجاح",
     "checkOutError": "حدث خطأ أثناء تسجيل الانصراف"
+  },
+  "attendanceReports": {
+    "title": "تقارير الحضور",
+    "description": "تقارير تفصيلية لسجلات الحضور والانصراف",
+    "daily": "اليومي",
+    "monthly": "الشهري",
+    "summary": "الملخص",
+    "breaks": "الاستراحات",
+    "date": "التاريخ",
+    "year": "السنة",
+    "month": "الشهر",
+    "department": "القسم",
+    "dateFrom": "من تاريخ",
+    "dateTo": "إلى تاريخ",
+    "employee": "الموظف",
+    "clockIn": "وقت الحضور",
+    "clockOut": "وقت الانصراف",
+    "workedHours": "ساعات العمل",
+    "lateMinutes": "دقائق التأخير",
+    "status": "الحالة",
+    "presentDays": "أيام الحضور",
+    "absentDays": "أيام الغياب",
+    "lateDays": "أيام التأخير",
+    "onLeaveDays": "أيام الإجازة",
+    "totalWorkedHours": "إجمالي ساعات العمل",
+    "totalOvertimeHours": "إجمالي الإضافي",
+    "totalLateMinutes": "إجمالي دقائق التأخير",
+    "totalEmployees": "إجمالي الموظفين",
+    "totalRecords": "إجمالي السجلات",
+    "totalBreakHours": "إجمالي ساعات الاستراحة",
+    "totalDays": "إجمالي الأيام",
+    "totalBreakMinutes": "إجمالي دقائق الاستراحة",
+    "avgBreakPerDay": "متوسط الاستراحة اليومي",
+    "hours": "ساعة"
   }
 }

@@ -31,6 +31,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateEmployee, useUpdateEmployee } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
+import { useJobGrades } from "@/lib/hooks/use-job-grades";
+import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { Employee } from "@/types";
 import { Loader2 } from "lucide-react";
 
@@ -49,6 +51,9 @@ const formSchema = z.object({
   hireDate: z.string().min(1, "تاريخ التعيين مطلوب"),
   contractType: z.enum(["PERMANENT", "CONTRACT", "TEMPORARY", "INTERN"]),
   employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
+  jobTitleId: z.string().optional(),
+  jobGradeId: z.string().optional(),
+  basicSalary: z.number().min(0).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -66,8 +71,16 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
   const { data: departmentsData } = useDepartments({ limit: 100 });
+  const { data: gradesData } = useJobGrades();
+  const { data: titlesData } = useJobTitles();
 
   const departments = (departmentsData as any)?.data?.items || [];
+  const jobGrades = Array.isArray(gradesData)
+    ? gradesData
+    : (gradesData as any)?.data?.items || (gradesData as any)?.data || [];
+  const jobTitles = Array.isArray(titlesData)
+    ? titlesData
+    : (titlesData as any)?.data?.items || (titlesData as any)?.data || [];
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -86,6 +99,9 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
       hireDate: "",
       contractType: "PERMANENT",
       employmentStatus: "ACTIVE",
+      jobTitleId: "",
+      jobGradeId: "",
+      basicSalary: 0,
     },
   });
 
@@ -111,6 +127,9 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         hireDate: toDateInput(employee.hireDate),
         contractType: employee.contractType || "PERMANENT",
         employmentStatus: employee.employmentStatus || "ACTIVE",
+        jobTitleId: (employee as any).jobTitleId || "",
+        jobGradeId: (employee as any).jobGradeId || "",
+        basicSalary: Number((employee as any).basicSalary) || 0,
       });
     } else {
       form.reset({
@@ -128,6 +147,9 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         hireDate: "",
         contractType: "PERMANENT",
         employmentStatus: "ACTIVE",
+        jobTitleId: "",
+        jobGradeId: "",
+        basicSalary: 0,
       });
     }
   }, [employee, form]);
@@ -146,12 +168,21 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
           mobile: data.mobile,
           departmentId: data.departmentId,
           employmentStatus: data.employmentStatus,
+          jobTitleId: data.jobTitleId || undefined,
+          jobGradeId: data.jobGradeId || undefined,
+          basicSalary: data.basicSalary || undefined,
         };
         console.log("📤 Sending updateData:", updateData);
         await updateEmployee.mutateAsync({ id: employee.id, data: updateData });
       } else {
         // Remove employmentStatus when creating (backend doesn't accept it)
-        const { employmentStatus, ...createData } = data;
+        const { employmentStatus, ...rest } = data;
+        const createData = {
+          ...rest,
+          jobTitleId: rest.jobTitleId || undefined,
+          jobGradeId: rest.jobGradeId || undefined,
+          basicSalary: rest.basicSalary || undefined,
+        };
         await createEmployee.mutateAsync(createData);
       }
       onOpenChange(false);
@@ -339,6 +370,112 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
               </TabsContent>
 
               <TabsContent value="employment" className="space-y-4">
+                {/* Job Grade Info Box */}
+                {(() => {
+                  const selectedGradeId = form.watch("jobGradeId");
+                  const selectedGrade = jobGrades.find((g: any) => g.id === selectedGradeId);
+                  if (!selectedGrade) return null;
+                  return (
+                    <div
+                      className="flex items-center gap-3 rounded-lg border p-3 text-sm"
+                      style={{ borderColor: selectedGrade.color || undefined, backgroundColor: selectedGrade.color ? `${selectedGrade.color}15` : undefined }}
+                    >
+                      {selectedGrade.color && (
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedGrade.color }} />
+                      )}
+                      <div className="flex-1">
+                        <span className="font-medium">{selectedGrade.nameAr}</span>
+                        {selectedGrade.description && (
+                          <span className="text-muted-foreground"> — {selectedGrade.description}</span>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground shrink-0">
+                        {Number(selectedGrade.minSalary).toLocaleString()} – {Number(selectedGrade.maxSalary).toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <FormField
+                  control={form.control}
+                  name="jobTitleId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("employees.fields.jobTitle")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("employees.selectJobTitle")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {jobTitles.map((title: any) => (
+                            <SelectItem key={title.id} value={title.id}>
+                              <span>{title.nameAr} ({title.code})</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="jobGradeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("employees.fields.jobGrade")}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("employees.selectJobGrade")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {jobGrades.map((grade: any) => (
+                              <SelectItem key={grade.id} value={grade.id}>
+                                <span className="flex items-center gap-2">
+                                  {grade.color && (
+                                    <span
+                                      className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
+                                      style={{ backgroundColor: grade.color }}
+                                    />
+                                  )}
+                                  {grade.nameAr} ({grade.code})
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="basicSalary"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("employees.fields.basicSalary")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="number"
+                            min={0}
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
                   name="departmentId"
