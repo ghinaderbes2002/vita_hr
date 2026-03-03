@@ -117,9 +117,18 @@ export interface User {
   updatedAt?: string;
 }
 
+export interface EmployeeAttachment {
+  id?: string;
+  employeeId?: string;
+  fileUrl: string;
+  fileName: string;
+  createdAt?: string;
+}
+
 export interface Employee {
   id: string;
   userId?: string;
+  employeeNumber: string;
   firstNameAr: string;
   lastNameAr: string;
   firstNameEn: string;
@@ -134,13 +143,27 @@ export interface Employee {
   maritalStatus?: string;
   departmentId: string;
   department?: Department;
-  jobTitle?: string;
+  jobTitleId?: string;
+  jobTitle?: { id: string; nameAr: string; nameEn: string; code: string };
+  jobGradeId?: string;
+  jobGrade?: { id: string; nameAr: string; nameEn: string; code: string; color?: string };
   managerId?: string;
   manager?: Employee;
   hireDate: string;
   contractType: "PERMANENT" | "CONTRACT" | "TEMPORARY" | "INTERN";
   employmentStatus: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
-  profileImage?: string;
+  basicSalary?: number;
+  // Additional fields
+  profilePhoto?: string;
+  bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE";
+  familyMembersCount?: number;
+  chronicDiseases?: string;
+  currentAddress?: string;
+  isSmoker?: boolean;
+  educationLevel?: "ILLITERATE" | "PRIMARY" | "SECONDARY" | "DIPLOMA" | "UNIVERSITY" | "POSTGRADUATE";
+  universityYear?: number;
+  religion?: string;
+  attachments?: EmployeeAttachment[];
   createdAt?: string;
   updatedAt?: string;
 }
