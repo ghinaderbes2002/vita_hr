@@ -17,11 +17,10 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRequests, useHrApproveRequest, useHrRejectRequest } from "@/lib/hooks/use-requests";
-import { useEmployees } from "@/lib/hooks/use-employees";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { Request, Employee } from "@/types";
+import { Request } from "@/types";
 
 const STATUS_OPTIONS = ["PENDING_MANAGER", "PENDING_HR", "APPROVED", "REJECTED", "CANCELLED", "DRAFT"];
 const TYPE_OPTIONS = ["PERMISSION", "TRANSFER", "ADVANCE", "RESIGNATION", "JOB_CHANGE", "RIGHTS", "REWARD", "SPONSORSHIP", "OTHER"];
@@ -42,13 +41,10 @@ export default function AllRequestsPage() {
     status: statusFilter === "all" ? undefined : statusFilter,
     type: typeFilter === "all" ? undefined : typeFilter,
   });
-  const { data: empData } = useEmployees({ limit: 1000 });
   const hrApprove = useHrApproveRequest();
   const hrReject = useHrRejectRequest();
 
   const requests: Request[] = (data as any)?.data?.items || (data as any)?.data || [];
-  const employees: Employee[] = (empData as any)?.data?.items || (empData as any)?.data || [];
-  const employeeMap = Object.fromEntries(employees.map((e) => [e.id, e]));
 
   const handleApproveConfirm = async (notes: string) => {
     if (selected) {
@@ -132,10 +128,9 @@ export default function AllRequestsPage() {
                 <TableRow key={req.id}>
                   <TableCell className="font-mono text-sm">{req.requestNumber}</TableCell>
                   <TableCell>
-                    {(() => {
-                      const emp = req.employee || employeeMap[req.employeeId];
-                      return emp ? `${emp.firstNameAr} ${emp.lastNameAr}` : "—";
-                    })()}
+                    {req.employee
+                      ? `${req.employee.firstNameAr} ${req.employee.lastNameAr}`
+                      : "—"}
                   </TableCell>
                   <TableCell>{t(`requests.types.${req.type}`)}</TableCell>
                   <TableCell className="max-w-40 truncate">{req.reason}</TableCell>

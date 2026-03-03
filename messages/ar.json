@@ -22,7 +22,8 @@
     "next": "التالي",
     "optional": "اختياري",
     "back": "رجوع",
-    "days": "يوم"
+    "days": "يوم",
+    "remove": "إزالة"
   },
   "auth": {
     "welcomeBack": "مرحباً بعودتك",
@@ -144,7 +145,16 @@
       "manager": "المدير المباشر",
       "hireDate": "تاريخ التعيين",
       "contractType": "نوع العقد",
-      "status": "الحالة"
+      "status": "الحالة",
+      "profilePhoto": "صورة الملف الشخصي",
+      "bloodType": "فصيلة الدم",
+      "familyMembersCount": "عدد أفراد الأسرة",
+      "chronicDiseases": "الأمراض المزمنة",
+      "currentAddress": "العنوان الحالي",
+      "isSmoker": "مدخن",
+      "educationLevel": "المستوى التعليمي",
+      "universityYear": "السنة الجامعية",
+      "religion": "الديانة"
     },
     "statuses": {
       "active": "نشط",
@@ -163,6 +173,31 @@
       "temporary": "مؤقت",
       "intern": "متدرب"
     },
+    "bloodTypes": {
+      "A_POSITIVE": "A+",
+      "A_NEGATIVE": "A-",
+      "B_POSITIVE": "B+",
+      "B_NEGATIVE": "B-",
+      "AB_POSITIVE": "AB+",
+      "AB_NEGATIVE": "AB-",
+      "O_POSITIVE": "O+",
+      "O_NEGATIVE": "O-"
+    },
+    "educationLevels": {
+      "ILLITERATE": "أمي",
+      "PRIMARY": "ابتدائي",
+      "SECONDARY": "ثانوي",
+      "DIPLOMA": "دبلوم",
+      "UNIVERSITY": "جامعي",
+      "POSTGRADUATE": "دراسات عليا"
+    },
+    "choosePhoto": "اختر صورة",
+    "selectBloodType": "اختر فصيلة الدم",
+    "selectEducationLevel": "اختر المستوى التعليمي",
+    "attachmentFileName": "اسم المرفق",
+    "attachmentFileUrl": "رابط الملف",
+    "addAttachment": "إضافة مرفق",
+    "noAttachments": "لا توجد مرفقات",
     "additionalInfo": "معلومات إضافية",
     "linkedUser": "مستخدم مرتبط",
     "createdAt": "تاريخ الإنشاء",
@@ -171,6 +206,7 @@
       "personal": "البيانات الشخصية",
       "employment": "البيانات الوظيفية",
       "contact": "بيانات التواصل",
+      "additional": "معلومات إضافية",
       "documents": "المستندات",
       "leaves": "الإجازات",
       "attendance": "الحضور"

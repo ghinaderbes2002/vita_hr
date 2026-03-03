@@ -194,7 +194,16 @@
       "basicSalary": "Temel Maaş",
       "hireDate": "İşe Alım Tarihi",
       "contractType": "Sözleşme Türü",
-      "status": "Durum"
+      "status": "Durum",
+      "profilePhoto": "Profil Fotoğrafı",
+      "bloodType": "Kan Grubu",
+      "familyMembersCount": "Aile Üyesi Sayısı",
+      "chronicDiseases": "Kronik Hastalıklar",
+      "currentAddress": "Mevcut Adres",
+      "isSmoker": "Sigara İçiyor",
+      "educationLevel": "Eğitim Seviyesi",
+      "universityYear": "Üniversite Yılı",
+      "religion": "Din"
     },
     "statuses": {
       "active": "Aktif",
@@ -213,6 +222,31 @@
       "temporary": "Geçici",
       "intern": "Stajyer"
     },
+    "bloodTypes": {
+      "A_POSITIVE": "A+",
+      "A_NEGATIVE": "A-",
+      "B_POSITIVE": "B+",
+      "B_NEGATIVE": "B-",
+      "AB_POSITIVE": "AB+",
+      "AB_NEGATIVE": "AB-",
+      "O_POSITIVE": "O+",
+      "O_NEGATIVE": "O-"
+    },
+    "educationLevels": {
+      "ILLITERATE": "Okuma-yazma bilmiyor",
+      "PRIMARY": "İlkokul",
+      "SECONDARY": "Lise",
+      "DIPLOMA": "Diploma",
+      "UNIVERSITY": "Üniversite",
+      "POSTGRADUATE": "Lisansüstü"
+    },
+    "choosePhoto": "Fotoğraf Seç",
+    "selectBloodType": "Kan grubu seçin",
+    "selectEducationLevel": "Eğitim seviyesi seçin",
+    "attachmentFileName": "Ek adı",
+    "attachmentFileUrl": "Dosya URL'si",
+    "addAttachment": "Ek ekle",
+    "noAttachments": "Ek yok",
     "additionalInfo": "Ek Bilgiler",
     "linkedUser": "Bağlı Kullanıcı",
     "createdAt": "Oluşturulma Tarihi",
@@ -220,7 +254,8 @@
     "tabs": {
       "personal": "Kişisel Bilgiler",
       "employment": "İstihdam Bilgileri",
-      "contact": "İletişim Bilgileri"
+      "contact": "İletişim Bilgileri",
+      "additional": "Ek Bilgiler"
     }
   },
   "holidays": {
@@ -760,7 +795,8 @@
     "no": "Hayır",
     "confirm": "Onayla",
     "optional": "İsteğe Bağlı",
-    "days": "gün"
+    "days": "gün",
+    "remove": "Kaldır"
   },
   "messages": {
     "confirmDelete": "Silmek istediğinizden emin misiniz?",

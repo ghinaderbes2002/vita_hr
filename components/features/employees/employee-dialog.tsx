@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,6 +20,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,11 +32,13 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateEmployee, useUpdateEmployee } from "@/lib/hooks/use-employees";
+import { toast } from "sonner";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useJobGrades } from "@/lib/hooks/use-job-grades";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { Employee } from "@/types";
-import { Loader2 } from "lucide-react";
+import { Camera, Loader2, Paperclip, Plus, Trash2, X } from "lucide-react";
+// Camera and X already imported above
 
 const formSchema = z.object({
   firstNameAr: z.string().min(2, "الاسم الأول بالعربية مطلوب"),
@@ -54,9 +58,64 @@ const formSchema = z.object({
   jobTitleId: z.string().optional(),
   jobGradeId: z.string().optional(),
   basicSalary: z.number().min(0).optional(),
+  // Additional fields
+  profilePhoto: z.string().optional(),
+  bloodType: z.enum(["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE"]).optional(),
+  familyMembersCount: z.number().int().min(0).optional(),
+  chronicDiseases: z.string().optional(),
+  currentAddress: z.string().optional(),
+  isSmoker: z.boolean().optional(),
+  educationLevel: z.enum(["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"]).optional(),
+  universityYear: z.number().int().min(1).max(7).optional(),
+  religion: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+function PhotoPicker({ value, onChange, chooseLabel, removeLabel }: {
+  value: string;
+  onChange: (v: string) => void;
+  chooseLabel: string;
+  removeLabel: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onChange(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="flex items-center gap-4">
+      <div
+        className="w-20 h-20 rounded-full border-2 border-dashed border-muted-foreground/40 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-colors bg-muted/30 shrink-0"
+        onClick={() => inputRef.current?.click()}
+      >
+        {value ? (
+          <img src={value} alt="profile" className="w-full h-full object-cover" />
+        ) : (
+          <Camera className="h-6 w-6 text-muted-foreground" />
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
+          {chooseLabel}
+        </Button>
+        {value && (
+          <Button
+            type="button" variant="ghost" size="sm" className="text-destructive"
+            onClick={() => { onChange(""); if (inputRef.current) inputRef.current.value = ""; }}
+          >
+            <X className="h-3 w-3 ml-1" />
+            {removeLabel}
+          </Button>
+        )}
+      </div>
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+    </div>
+  );
+}
 
 interface EmployeeDialogProps {
   open: boolean;
@@ -64,9 +123,14 @@ interface EmployeeDialogProps {
   employee?: Employee;
 }
 
+type Attachment = { fileUrl: string; fileName: string };
+
 export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogProps) {
   const t = useTranslations();
   const isEdit = !!employee;
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attUploading, setAttUploading] = useState(false);
+  const attInputRef = useRef<HTMLInputElement>(null);
 
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
@@ -102,6 +166,15 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
       jobTitleId: "",
       jobGradeId: "",
       basicSalary: 0,
+      profilePhoto: "",
+      bloodType: undefined,
+      familyMembersCount: undefined,
+      chronicDiseases: "",
+      currentAddress: "",
+      isSmoker: false,
+      educationLevel: undefined,
+      universityYear: undefined,
+      religion: "",
     },
   });
 
@@ -130,7 +203,17 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         jobTitleId: (employee as any).jobTitleId || "",
         jobGradeId: (employee as any).jobGradeId || "",
         basicSalary: Number((employee as any).basicSalary) || 0,
+        profilePhoto: (employee as any).profilePhoto || "",
+        bloodType: (employee as any).bloodType || undefined,
+        familyMembersCount: (employee as any).familyMembersCount ?? undefined,
+        chronicDiseases: (employee as any).chronicDiseases || "",
+        currentAddress: (employee as any).currentAddress || "",
+        isSmoker: (employee as any).isSmoker ?? false,
+        educationLevel: (employee as any).educationLevel || undefined,
+        universityYear: (employee as any).universityYear ?? undefined,
+        religion: (employee as any).religion || "",
       });
+      setAttachments((employee as any).attachments || []);
     } else {
       form.reset({
         firstNameAr: "",
@@ -150,7 +233,17 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         jobTitleId: "",
         jobGradeId: "",
         basicSalary: 0,
+        profilePhoto: "",
+        bloodType: undefined,
+        familyMembersCount: undefined,
+        chronicDiseases: "",
+        currentAddress: "",
+        isSmoker: false,
+        educationLevel: undefined,
+        universityYear: undefined,
+        religion: "",
       });
+      setAttachments([]);
     }
   }, [employee, form]);
 
@@ -164,29 +257,51 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
           firstNameEn: data.firstNameEn,
           lastNameEn: data.lastNameEn,
           email: data.email,
-          phone: data.phone,
-          mobile: data.mobile,
+          phone: data.phone || undefined,
+          mobile: data.mobile || undefined,
           departmentId: data.departmentId,
           employmentStatus: data.employmentStatus,
           jobTitleId: data.jobTitleId || undefined,
           jobGradeId: data.jobGradeId || undefined,
           basicSalary: data.basicSalary || undefined,
+          profilePhoto: data.profilePhoto || undefined,
+          bloodType: data.bloodType || undefined,
+          familyMembersCount: data.familyMembersCount ?? undefined,
+          chronicDiseases: data.chronicDiseases || undefined,
+          currentAddress: data.currentAddress || undefined,
+          isSmoker: data.isSmoker,
+          educationLevel: data.educationLevel || undefined,
+          universityYear: data.universityYear ?? undefined,
+          religion: data.religion || undefined,
+          ...(attachments.length > 0 && { attachments }),
         };
-        console.log("📤 Sending updateData:", updateData);
         await updateEmployee.mutateAsync({ id: employee.id, data: updateData });
       } else {
         // Remove employmentStatus when creating (backend doesn't accept it)
         const { employmentStatus, ...rest } = data;
         const createData = {
           ...rest,
+          phone: rest.phone || undefined,
+          mobile: rest.mobile || undefined,
           jobTitleId: rest.jobTitleId || undefined,
           jobGradeId: rest.jobGradeId || undefined,
           basicSalary: rest.basicSalary || undefined,
+          profilePhoto: rest.profilePhoto || undefined,
+          bloodType: rest.bloodType || undefined,
+          familyMembersCount: rest.familyMembersCount ?? undefined,
+          chronicDiseases: rest.chronicDiseases || undefined,
+          currentAddress: rest.currentAddress || undefined,
+          isSmoker: rest.isSmoker ?? undefined,
+          educationLevel: rest.educationLevel || undefined,
+          universityYear: rest.universityYear ?? undefined,
+          religion: rest.religion || undefined,
+          ...(attachments.length > 0 && { attachments }),
         };
         await createEmployee.mutateAsync(createData);
       }
       onOpenChange(false);
       form.reset();
+      setAttachments([]);
     } catch (error: any) {
       const errData = error?.response?.data;
       console.error("💥 Backend says:", JSON.stringify(errData, null, 2));
@@ -197,7 +312,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-175 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("employees.editEmployee") : t("employees.addEmployee")}
@@ -207,10 +322,11 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="personal">{t("employees.tabs.personal")}</TabsTrigger>
                 <TabsTrigger value="contact">{t("employees.tabs.contact")}</TabsTrigger>
                 <TabsTrigger value="employment">{t("employees.tabs.employment")}</TabsTrigger>
+                <TabsTrigger value="additional">{t("employees.tabs.additional")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="personal" className="space-y-4">
@@ -565,6 +681,254 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                         </FormItem>
                       )}
                     />
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="additional" className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="profilePhoto"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("employees.fields.profilePhoto")} ({t("common.optional")})</FormLabel>
+                      <FormControl>
+                        <PhotoPicker
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          chooseLabel={t("employees.choosePhoto")}
+                          removeLabel={t("common.remove")}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="bloodType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("employees.fields.bloodType")} ({t("common.optional")})</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("employees.selectBloodType")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            {["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE"].map((bt) => (
+                              <SelectItem key={bt} value={bt}>{t(`employees.bloodTypes.${bt}`)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="familyMembersCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("employees.fields.familyMembersCount")} ({t("common.optional")})</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="educationLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("employees.fields.educationLevel")} ({t("common.optional")})</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("employees.selectEducationLevel")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            {["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"].map((el) => (
+                              <SelectItem key={el} value={el}>{t(`employees.educationLevels.${el}`)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("educationLevel") === "UNIVERSITY" && (
+                    <FormField
+                      control={form.control}
+                      name="universityYear"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("employees.fields.universityYear")} ({t("common.optional")})</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={7}
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="currentAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("employees.fields.currentAddress")} ({t("common.optional")})</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="religion"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("employees.fields.religion")} ({t("common.optional")})</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="chronicDiseases"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("employees.fields.chronicDiseases")} ({t("common.optional")})</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} rows={2} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isSmoker"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <FormLabel className="cursor-pointer">{t("employees.fields.isSmoker")}</FormLabel>
+                      <FormControl>
+                        <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {/* Attachments */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{t("employees.tabs.documents")} ({t("common.optional")})</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      disabled={attUploading}
+                      onClick={() => attInputRef.current?.click()}
+                    >
+                      {attUploading
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <Plus className="h-3.5 w-3.5" />}
+                      {t("employees.addAttachment")}
+                    </Button>
+                  </div>
+
+                  <input
+                    ref={attInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      e.target.value = "";
+                      if (!files.length) return;
+                      setAttUploading(true);
+                      try {
+                        await Promise.all(
+                          files.map(async (file) => {
+                            const fd = new FormData();
+                            fd.append("file", file);
+                            const res = await fetch("/api/upload", { method: "POST", body: fd });
+                            if (!res.ok) throw new Error("Upload failed");
+                            const { fileUrl, fileName } = await res.json();
+                            setAttachments((a) => [...a, { fileUrl, fileName }]);
+                          })
+                        );
+                      } catch {
+                        toast.error("فشل رفع الملف");
+                      } finally {
+                        setAttUploading(false);
+                      }
+                    }}
+                  />
+
+                  {attachments.length === 0 ? (
+                    <div
+                      className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => !attUploading && attInputRef.current?.click()}
+                    >
+                      {attUploading
+                        ? <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                        : <Paperclip className="h-8 w-8 text-muted-foreground" />}
+                      <p className="text-sm text-muted-foreground">{t("employees.noAttachments")}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {attachments.map((att, i) => (
+                        <div key={i} className="flex items-center gap-2 rounded-lg border p-2">
+                          <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <p className="flex-1 text-sm font-medium truncate">{att.fileName}</p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 h-7 w-7"
+                            onClick={() => setAttachments((a) => a.filter((_, j) => j !== i))}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </TabsContent>

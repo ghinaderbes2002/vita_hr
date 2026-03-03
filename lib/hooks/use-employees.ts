@@ -28,22 +28,19 @@ export function useCreateEmployee() {
       toast.success("تم إنشاء الموظف بنجاح");
     },
     onError: (error: any) => {
-      console.error("❌ Create employee error:", error);
-      console.error("❌ Error response:", error.response);
-      console.error("❌ Error data:", error.response?.data);
+      const errData = error.response?.data?.error;
+      const errorMessage: string =
+        (typeof errData === "string" ? errData : errData?.message) ||
+        error.response?.data?.message ||
+        error.message ||
+        "حدث خطأ أثناء إنشاء الموظف";
 
-      const errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
-                          error.message ||
-                          "حدث خطأ أثناء إنشاء الموظف";
-
-      // Check for specific errors
       if (errorMessage.includes("duplicate") || errorMessage.includes("already exists")) {
         toast.error("رقم الهوية أو البريد الإلكتروني مستخدم مسبقاً");
       } else if (errorMessage.includes("validation") || errorMessage.includes("required")) {
         toast.error("يرجى التحقق من جميع الحقول المطلوبة");
       } else {
-        toast.error(errorMessage);
+        toast.error("حدث خطأ أثناء إنشاء الموظف");
       }
     },
   });

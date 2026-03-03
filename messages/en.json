@@ -194,7 +194,16 @@
       "basicSalary": "Basic Salary",
       "hireDate": "Hire Date",
       "contractType": "Contract Type",
-      "status": "Status"
+      "status": "Status",
+      "profilePhoto": "Profile Photo",
+      "bloodType": "Blood Type",
+      "familyMembersCount": "Family Members Count",
+      "chronicDiseases": "Chronic Diseases",
+      "currentAddress": "Current Address",
+      "isSmoker": "Smoker",
+      "educationLevel": "Education Level",
+      "universityYear": "University Year",
+      "religion": "Religion"
     },
     "statuses": {
       "active": "Active",
@@ -213,6 +222,31 @@
       "temporary": "Temporary",
       "intern": "Intern"
     },
+    "bloodTypes": {
+      "A_POSITIVE": "A+",
+      "A_NEGATIVE": "A-",
+      "B_POSITIVE": "B+",
+      "B_NEGATIVE": "B-",
+      "AB_POSITIVE": "AB+",
+      "AB_NEGATIVE": "AB-",
+      "O_POSITIVE": "O+",
+      "O_NEGATIVE": "O-"
+    },
+    "educationLevels": {
+      "ILLITERATE": "Illiterate",
+      "PRIMARY": "Primary",
+      "SECONDARY": "Secondary",
+      "DIPLOMA": "Diploma",
+      "UNIVERSITY": "University",
+      "POSTGRADUATE": "Postgraduate"
+    },
+    "choosePhoto": "Choose Photo",
+    "selectBloodType": "Select blood type",
+    "selectEducationLevel": "Select education level",
+    "attachmentFileName": "Attachment name",
+    "attachmentFileUrl": "File URL",
+    "addAttachment": "Add attachment",
+    "noAttachments": "No attachments",
     "additionalInfo": "Additional Information",
     "linkedUser": "Linked User",
     "createdAt": "Created At",
@@ -220,7 +254,8 @@
     "tabs": {
       "personal": "Personal Information",
       "employment": "Employment Information",
-      "contact": "Contact Information"
+      "contact": "Contact Information",
+      "additional": "Additional Info"
     }
   },
   "holidays": {
@@ -760,7 +795,8 @@
     "back": "Back",
     "yes": "Yes",
     "no": "No",
-    "days": "days"
+    "days": "days",
+    "remove": "Remove"
   },
   "messages": {
     "confirmDelete": "Are you sure you want to delete?",

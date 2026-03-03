@@ -97,11 +97,11 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   const onSubmit = async (data: FormData) => {
     try {
       if (isEdit) {
-        // Only send the fields backend accepts for update: email, fullName, status
         const updateData: any = {
           email: data.email,
           fullName: data.fullName,
           status: data.status,
+          ...(data.password && data.password.length >= 6 && { password: data.password }),
         };
         await updateUser.mutateAsync({ id: user.id, data: updateData });
       } else {
@@ -171,8 +171,11 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                 <FormItem>
                   <FormLabel>{t("users.fields.username")}</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} disabled={isEdit} className={isEdit ? "opacity-60" : ""} />
                   </FormControl>
+                  {isEdit && (
+                    <p className="text-xs text-muted-foreground">لا يمكن تغيير اسم المستخدم</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
