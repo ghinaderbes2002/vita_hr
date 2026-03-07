@@ -45,6 +45,8 @@ interface NavItem {
   href?: string;
   icon: any;
   permission?: string;
+  /** إخفاء القسم لأصحاب هذه الأدوار (بالاسم أو الاسم العربي) */
+  hiddenForRoles?: string[];
   children?: NavItem[];
 }
 
@@ -66,6 +68,7 @@ const navigation: NavItem[] = [
   {
     title: "nav.management",
     icon: Settings,
+    hiddenForRoles: ["employee", "موظف"],
     children: [
       { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
       { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read" },
@@ -79,6 +82,7 @@ const navigation: NavItem[] = [
   {
     title: "nav.hr",
     icon: Briefcase,
+    hiddenForRoles: ["employee", "موظف"],
     children: [
       {
         title: "nav.attendance",
@@ -135,7 +139,7 @@ export function Sidebar() {
     }
     return false;
   });
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin, hasRole } = usePermissions();
 
   useEffect(() => {
     setMounted(true);
@@ -206,32 +210,25 @@ export function Sidebar() {
     return false;
   };
 
-  // التحقق من صلاحية العنصر
+  // التحقق من صلاحية عنصر نهائي (بدون أطفال)
   const hasItemPermission = (item: NavItem): boolean => {
-    // إذا ما في صلاحية محددة، الكل يشوفه
     if (!item.permission) return true;
-
-    // Admin يشوف كل شي
     if (isAdmin()) return true;
-
-    // التحقق من الصلاحية
     return hasPermission(item.permission);
   };
 
-  // التحقق من صلاحية القسم (إذا في أي عنصر فرعي له صلاحية)
+  // التحقق recursive — يشتغل على أي عمق من التداخل
   const hasSectionPermission = (item: NavItem): boolean => {
-    // إذا القسم نفسه عنده صلاحية، نتحقق منها أولاً
-    if (item.permission && !hasItemPermission(item)) {
-      return false;
+    // إذا العنصر مخفي لدور معين، نخفيه (ما عدا الأدمن)
+    if (item.hiddenForRoles && !isAdmin()) {
+      if (item.hiddenForRoles.some((role) => hasRole(role))) return false;
     }
-
-    // إذا ما في عناصر فرعية، نتحقق من صلاحية القسم نفسه
+    // إذا ما في أطفال، نتحقق من صلاحية العنصر مباشرة
     if (!item.children || item.children.length === 0) {
       return hasItemPermission(item);
     }
-
-    // نتحقق من وجود أي عنصر فرعي له صلاحية
-    return item.children.some((child) => hasItemPermission(child));
+    // إذا في أطفال، القسم يظهر فقط إذا أي طفل (أو أحفاد) له صلاحية
+    return item.children.some((child) => hasSectionPermission(child));
   };
 
   return (
@@ -293,9 +290,9 @@ export function Sidebar() {
           const isExpanded = expanded.includes(item.title);
 
           if (item.children) {
-            // فلترة العناصر الفرعية حسب الصلاحيات
+            // فلترة العناصر الفرعية حسب الصلاحيات (recursive)
             const visibleChildren = item.children.filter((child) =>
-              hasItemPermission(child)
+              hasSectionPermission(child)
             );
 
             // إذا ما في عناصر فرعية مرئية، ما نعرض القسم

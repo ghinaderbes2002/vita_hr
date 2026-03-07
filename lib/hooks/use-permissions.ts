@@ -8,6 +8,7 @@ export function usePermissions() {
   const hasAnyPermission = useAuthStore((state) => state.hasAnyPermission);
   const hasAllPermissions = useAuthStore((state) => state.hasAllPermissions);
   const isAdmin = useAuthStore((state) => state.isAdmin);
+  const hasRole = useAuthStore((state) => state.hasRole);
   const permissions = useAuthStore((state) => state.permissions);
 
   return {
@@ -15,6 +16,7 @@ export function usePermissions() {
     hasAnyPermission,
     hasAllPermissions,
     isAdmin,
+    hasRole,
     permissions,
   };
 }

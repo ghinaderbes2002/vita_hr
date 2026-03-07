@@ -21,6 +21,7 @@ interface AuthState {
   hasAnyPermission: (permissions: string[]) => boolean;
   hasAllPermissions: (permissions: string[]) => boolean;
   isAdmin: () => boolean;
+  hasRole: (roleName: string) => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -152,6 +153,24 @@ export const useAuthStore = create<AuthState>()(
 
         // التحقق من وجود كل الصلاحيات
         return permissions.every((p) => state.permissions.includes(p));
+      },
+
+      // التحقق من وجود دور معين (بالاسم أو الاسم العربي/الإنجليزي)
+      hasRole: (roleName: string) => {
+        const state = get();
+        if (!state.user?.roles) return false;
+        const normalized = roleName.toLowerCase();
+        return state.user.roles.some((r: any) => {
+          // إذا الدور نص مباشر مثل "employee"
+          if (typeof r === "string") return r.toLowerCase() === normalized;
+          // إذا الدور object مثل { role: { name, displayNameAr } } أو { name, displayNameAr }
+          const role = r.role ?? r;
+          return (
+            role.name?.toLowerCase() === normalized ||
+            role.displayNameAr === roleName ||
+            role.displayNameEn?.toLowerCase() === normalized
+          );
+        });
       },
 
       // التحقق من أن المستخدم Admin
