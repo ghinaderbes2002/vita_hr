@@ -96,7 +96,13 @@ export function useLinkUser() {
       toast.success("تم ربط المستخدم بالموظف بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      const status = error.response?.status;
+      const message = error.response?.data?.message || error.response?.data?.error?.message;
+      if (status === 409) {
+        toast.error(message || "هذا المستخدم مرتبط بموظف آخر بالفعل");
+      } else {
+        toast.error(message || "حدث خطأ أثناء ربط المستخدم");
+      }
     },
   });
 }

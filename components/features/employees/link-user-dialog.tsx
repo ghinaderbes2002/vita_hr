@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -35,7 +35,13 @@ export function LinkUserDialog({ open, onOpenChange, employee }: LinkUserDialogP
   const { data: usersData } = useUsers({});
   const linkUser = useLinkUser();
 
+  // When dialog opens, pre-select the already linked user (if any)
+  useEffect(() => {
+    if (open) setSelectedUserId(employee?.userId || "");
+  }, [open, employee?.userId]);
+
   const users = (usersData as any)?.data?.items || [];
+  const linkedUser = users.find((u: any) => u.id === employee?.userId);
 
   const handleSubmit = async () => {
     if (!employee || !selectedUserId) return;
@@ -59,6 +65,13 @@ export function LinkUserDialog({ open, onOpenChange, employee }: LinkUserDialogP
         </DialogHeader>
 
         <div className="space-y-4">
+          {linkedUser && (
+            <div className="p-3 bg-muted rounded-lg text-sm">
+              <span className="text-muted-foreground">مرتبط حالياً: </span>
+              <span className="font-medium">{linkedUser.fullName} ({linkedUser.username})</span>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>{t("employees.selectUser")}</Label>
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>

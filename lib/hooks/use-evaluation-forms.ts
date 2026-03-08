@@ -7,7 +7,9 @@ import {
   SaveManagerEvaluationData,
   HrReviewData,
   GmApprovalData,
+  GetMyFormsParams,
 } from "@/lib/api/evaluation-forms";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 // Get all evaluation forms
 export function useAllEvaluationForms() {
@@ -17,11 +19,16 @@ export function useAllEvaluationForms() {
   });
 }
 
-// Get my evaluation forms
+// Get my evaluation forms (filtered by current employee)
 export function useMyEvaluationForms(periodId?: string) {
+  const employeeId = useAuthStore((state) => state.user?.employeeId);
+  const params: GetMyFormsParams = {};
+  if (periodId) params.periodId = periodId;
+  if (employeeId) params.employeeId = employeeId;
+
   return useQuery({
-    queryKey: ["evaluation-forms", "my", periodId],
-    queryFn: () => evaluationFormsApi.getMy(periodId ? { periodId } : undefined),
+    queryKey: ["evaluation-forms", "my", employeeId, periodId],
+    queryFn: () => evaluationFormsApi.getMy(params),
   });
 }
 

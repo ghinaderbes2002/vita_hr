@@ -53,8 +53,17 @@ export const useAuthStore = create<AuthState>()(
             );
           }
 
+          // Try to get the full profile (includes employeeId)
+          let fullUser = response.user;
+          try {
+            const me = await authApi.me();
+            if (me) fullUser = { ...response.user, ...me };
+          } catch {
+            // ignore, use login response user
+          }
+
           set({
-            user: response.user,
+            user: fullUser,
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
             isAuthenticated: true,

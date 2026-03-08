@@ -37,6 +37,7 @@ import {
 import { LeaveRequest } from "@/lib/api/leave-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 
 export default function PendingApprovalPage() {
   const t = useTranslations();
@@ -47,6 +48,9 @@ export default function PendingApprovalPage() {
   const [notes, setNotes] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [actionType, setActionType] = useState<"manager" | "hr">("manager");
+
+  const { hasRole } = usePermissions();
+  const isHrManager = hasRole("hr_manager") || hasRole("مدير الموارد البشرية");
 
   const { data, isLoading } = useLeaveRequests();
   const approveManager = useApproveManager();
@@ -192,15 +196,19 @@ export default function PendingApprovalPage() {
         description="الموافقة على طلبات الإجازات المعلقة"
       />
 
-      <Tabs defaultValue="manager" className="space-y-4">
+      <Tabs defaultValue={isHrManager ? "hr" : "manager"} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="manager">بانتظار المدير ({managerPending.length})</TabsTrigger>
+          {!isHrManager && (
+            <TabsTrigger value="manager">بانتظار المدير ({managerPending.length})</TabsTrigger>
+          )}
           <TabsTrigger value="hr">بانتظار HR ({hrPending.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="manager" className="rounded-md border">
-          {renderTable(managerPending, "manager")}
-        </TabsContent>
+        {!isHrManager && (
+          <TabsContent value="manager" className="rounded-md border">
+            {renderTable(managerPending, "manager")}
+          </TabsContent>
+        )}
 
         <TabsContent value="hr" className="rounded-md border">
           {renderTable(hrPending, "hr")}

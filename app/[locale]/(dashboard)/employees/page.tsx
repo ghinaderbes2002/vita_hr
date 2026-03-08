@@ -35,23 +35,32 @@ import { useDepartments } from "@/lib/hooks/use-departments";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { LinkUserDialog } from "@/components/features/employees/link-user-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Pagination } from "@/components/shared/pagination";
 
 export default function EmployeesPage() {
   const t = useTranslations();
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [linkUserDialogOpen, setLinkUserDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
-  const { data: allEmployeesData, isLoading: allEmployeesLoading } = useEmployees({ search });
+  const LIMIT = 10;
+  const { data: allEmployeesData, isLoading: allEmployeesLoading } = useEmployees({ search, page, limit: LIMIT });
   const { data: departmentEmployees, isLoading: departmentEmployeesLoading } = useEmployeesByDepartment(selectedDepartment);
   const { data: departmentsData } = useDepartments({});
   const deleteEmployee = useDeleteEmployee();
 
   const departments = (departmentsData as any)?.data?.items || [];
+
+  const responseData = (allEmployeesData as any)?.data;
+  const rawMeta = (allEmployeesData as any)?.meta || responseData?.meta;
+  const total = rawMeta?.total ?? responseData?.total ?? 0;
+  const totalPages = rawMeta?.totalPages ?? responseData?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
   // Use department-filtered employees if a department is selected, otherwise use all employees
   const isLoading = selectedDepartment ? departmentEmployeesLoading : allEmployeesLoading;
@@ -118,12 +127,12 @@ export default function EmployeesPage() {
           <Input
             placeholder={t("employees.searchPlaceholder")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="pr-10"
           />
         </div>
         <div className="w-64">
-          <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+          <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setPage(1); }}>
             <SelectTrigger>
               <Filter className="h-4 w-4 ml-2" />
               <SelectValue placeholder={t("employees.filterByDepartment")} />
@@ -236,6 +245,16 @@ export default function EmployeesPage() {
           </TableBody>
         </Table>
       </div>
+
+      {!selectedDepartment && meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
 
       <EmployeeDialog
         open={dialogOpen}

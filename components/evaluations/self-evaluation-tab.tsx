@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Save, Send } from "lucide-react";
 import { EvaluationForm } from "@/lib/api/evaluation-forms";
 import { useSaveSelfEvaluation, useSubmitSelfEvaluation } from "@/lib/hooks/use-evaluation-forms";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 interface SelfEvaluationTabProps {
   form: EvaluationForm;
@@ -17,6 +18,8 @@ interface SelfEvaluationTabProps {
 export function SelfEvaluationTab({ form }: SelfEvaluationTabProps) {
   const saveMutation = useSaveSelfEvaluation();
   const submitMutation = useSubmitSelfEvaluation();
+  const employeeId = useAuthStore((state) => state.user?.employeeId);
+  const isOwner = !employeeId || form.employeeId === employeeId;
 
   const [sections, setSections] = useState(
     form.sections.map((section) => ({
@@ -74,9 +77,10 @@ export function SelfEvaluationTab({ form }: SelfEvaluationTabProps) {
   };
 
   const canEdit =
-    form.status === "DRAFT" ||
+    isOwner &&
+    (form.status === "DRAFT" ||
     form.status === "SELF_EVALUATION" ||
-    (form.status as any) === "PENDING_SELF"; // دعم الحالة من الباك
+    (form.status as any) === "PENDING_SELF"); // دعم الحالة من الباك
 
   return (
     <div className="space-y-6">
@@ -176,7 +180,15 @@ export function SelfEvaluationTab({ form }: SelfEvaluationTabProps) {
             </div>
           )}
 
-          {!canEdit && (
+          {!canEdit && !isOwner && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">
+                لا يمكنك تعديل التقييم الذاتي لموظف آخر
+              </p>
+            </div>
+          )}
+
+          {!canEdit && isOwner && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
                 تم إرسال التقييم الذاتي ولا يمكن تعديله

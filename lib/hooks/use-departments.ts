@@ -67,7 +67,9 @@ export function useDeleteDepartment() {
       toast.success("تم حذف القسم بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      const data = error.response?.data;
+      const msg = data?.error?.message || data?.message || error.message || "حدث خطأ أثناء حذف القسم";
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
     },
   });
 }

@@ -36,7 +36,7 @@ export function GmApprovalTab({ form }: GmApprovalTabProps) {
     });
   };
 
-  const canEdit = form.status === "HR_REVIEW" || form.status === "GM_APPROVAL";
+  const canEdit = form.status === "GM_APPROVAL";
 
   return (
     <div className="space-y-6">
@@ -168,12 +168,14 @@ export function GmApprovalTab({ form }: GmApprovalTabProps) {
               </Button>
             )}
 
-            {!canEdit && form.status !== "HR_REVIEW" && (
+            {!canEdit && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
                   {form.status === "COMPLETED"
-                    ? "تم إرسال قرار المدير العام"
-                    : "يجب على الموارد البشرية مراجعة التقييم أولاً"}
+                    ? "تم إرسال قرار المدير العام وإغلاق التقييم"
+                    : form.status === "HR_REVIEW" || form.status === "MANAGER_SUBMITTED"
+                    ? "بانتظار مراجعة الموارد البشرية أولاً"
+                    : "لا يمكن تعديل هذا النموذج"}
                 </p>
               </div>
             )}

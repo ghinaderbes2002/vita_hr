@@ -16,23 +16,16 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEvaluationForms } from "@/lib/hooks/use-evaluation-forms";
-import { useAuthStore } from "@/lib/stores/auth-store";
 import { EvaluationForm, EvaluationFormStatus } from "@/lib/api/evaluation-forms";
 
 export default function MyEvaluationsPage() {
   const t = useTranslations();
   const router = useRouter();
   const { data, isLoading } = useMyEvaluationForms();
-  const user = useAuthStore((state) => state.user);
 
-  // Filter forms to show only current user's evaluations
-  const allForms = Array.isArray(data)
+  const forms = Array.isArray(data)
     ? data
     : (data as any)?.data?.items || (data as any)?.data || [];
-
-  const forms = user?.employeeId
-    ? allForms.filter((form: EvaluationForm) => form.employeeId === user.employeeId)
-    : allForms;
 
   const getStatusBadge = (status: EvaluationFormStatus) => {
     const statusConfig: Record<string, { label: string; className: string }> = {

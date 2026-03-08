@@ -45,8 +45,10 @@ interface NavItem {
   href?: string;
   icon: any;
   permission?: string;
-  /** إخفاء القسم لأصحاب هذه الأدوار (بالاسم أو الاسم العربي) */
+  /** إخفاء القسم لأصحاب هذه الأدوار */
   hiddenForRoles?: string[];
+  /** إظهار القسم دائماً لأصحاب هذه الأدوار بغض النظر عن الصلاحية */
+  showForRoles?: string[];
   children?: NavItem[];
 }
 
@@ -68,7 +70,7 @@ const navigation: NavItem[] = [
   {
     title: "nav.management",
     icon: Settings,
-    hiddenForRoles: ["employee", "موظف"],
+    hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية"],
     children: [
       { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
       { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read" },
@@ -87,6 +89,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.attendance",
         icon: ClipboardCheck,
+        hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"],
         children: [
           { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
           { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
@@ -98,28 +101,28 @@ const navigation: NavItem[] = [
         title: "nav.leaves",
         icon: CalendarDays,
         children: [
-          { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read" },
-          { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read" },
-          { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read" },
-          { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permission: "leave_requests:approve_manager" },
+          { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permission: "leave_requests:approve_manager", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
         ],
       },
       {
         title: "nav.requests",
         icon: ClipboardList,
         children: [
-          { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permission: "requests:manager-approve" },
-          { title: "nav.allRequests", href: "/requests/all", icon: ClipboardList, permission: "requests:read" },
+          { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permission: "requests:manager-approve", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.allRequests", href: "/requests/all", icon: ClipboardList, permission: "requests:read", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
         ],
       },
       {
         title: "nav.evaluations",
         icon: Star,
         children: [
-          { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read" },
-          { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read" },
-          { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate" },
-          { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all" },
+          { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
         ],
       },
     ],
@@ -223,6 +226,8 @@ export function Sidebar() {
     if (item.hiddenForRoles && !isAdmin()) {
       if (item.hiddenForRoles.some((role) => hasRole(role))) return false;
     }
+    // إذا العنصر مجبر على الظهور لدور معين، نظهره
+    if (item.showForRoles && item.showForRoles.some((role) => hasRole(role))) return true;
     // إذا ما في أطفال، نتحقق من صلاحية العنصر مباشرة
     if (!item.children || item.children.length === 0) {
       return hasItemPermission(item);
@@ -340,7 +345,7 @@ export function Sidebar() {
                       // إذا العنصر الفرعي عنده أطفال (مستوى ثاني)
                       if (child.children) {
                         const visibleGrandChildren = child.children.filter((grandChild) =>
-                          hasItemPermission(grandChild)
+                          hasSectionPermission(grandChild)
                         );
 
                         if (visibleGrandChildren.length === 0) {

@@ -79,6 +79,11 @@ export interface EvaluationForm {
 }
 
 // Data interfaces
+export interface GetMyFormsParams {
+  periodId?: string;
+  employeeId?: string;
+}
+
 export interface CreateFormData {
   periodId: string;
   employeeId: string;
@@ -122,9 +127,9 @@ export const evaluationFormsApi = {
     return response.data;
   },
 
-  // Get my forms (using /evaluation-forms since /my endpoint returns 404)
-  getMy: async (params?: { periodId?: string }): Promise<ApiResponse<EvaluationForm[]>> => {
-    const response = await apiClient.get("/evaluation-forms", { params });
+  // Get my forms (filter by employeeId — /my endpoint not available on server)
+  getMy: async (params?: GetMyFormsParams): Promise<ApiResponse<EvaluationForm[]>> => {
+    const response = await apiClient.get("/evaluation-forms/my", { params });
     return response.data;
   },
 

@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Pagination } from "@/components/shared/pagination";
 import { useDepartments, useDepartmentTree, useDeleteDepartment } from "@/lib/hooks/use-departments";
 import { DepartmentDialog } from "@/components/features/departments/department-dialog";
 import { OrgChart } from "@/components/features/departments/org-chart";
@@ -31,17 +32,24 @@ import { Department } from "@/types";
 export default function DepartmentsPage() {
   const t = useTranslations();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
 
-  const { data, isLoading } = useDepartments({ limit: 100, search });
+  const LIMIT = 10;
+  const { data, isLoading } = useDepartments({ page, limit: LIMIT, search });
   const { data: treeData, isLoading: treeLoading } = useDepartmentTree();
   const deleteDepartment = useDeleteDepartment();
 
   const allDepts: Department[] = Array.isArray(data)
     ? data
     : (data as any)?.data?.items || (data as any)?.data || [];
+  const responseData = (data as any)?.data;
+  const rawMeta = (data as any)?.meta || responseData?.meta;
+  const total = rawMeta?.total ?? responseData?.total ?? 0;
+  const totalPages = rawMeta?.totalPages ?? responseData?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
   const handleEdit = (dept: Department) => {
     setSelectedDept(dept);
@@ -97,7 +105,7 @@ export default function DepartmentsPage() {
             <Input
               placeholder={t("departments.searchPlaceholder")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="pr-10"
             />
           </div>
@@ -169,6 +177,16 @@ export default function DepartmentsPage() {
               </TableBody>
             </Table>
           </div>
+
+          {meta && (
+            <Pagination
+              page={page}
+              totalPages={meta.totalPages}
+              total={meta.total}
+              limit={LIMIT}
+              onPageChange={setPage}
+            />
+          )}
         </TabsContent>
 
         {/* Org Chart View */}

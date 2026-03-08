@@ -47,7 +47,9 @@ export function useDeleteJobTitle() {
       toast.success("تم حذف المسمى الوظيفي بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      const data = error.response?.data;
+      const msg = data?.error?.message || data?.message || error.message || "حدث خطأ أثناء حذف المسمى الوظيفي";
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
     },
   });
 }

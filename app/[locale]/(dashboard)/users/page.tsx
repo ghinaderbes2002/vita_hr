@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUsers, useDeleteUser } from "@/lib/hooks/use-users";
+import { Pagination } from "@/components/shared/pagination";
 import { UserDialog } from "@/components/features/users/user-dialog";
 import { AssignRolesDialog } from "@/components/features/users/assign-roles-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -37,24 +38,24 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 export default function UsersPage() {
   const t = useTranslations();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  const { data, isLoading } = useUsers({ search });
+  const LIMIT = 10;
+  const { data, isLoading } = useUsers({ search, page, limit: LIMIT });
   const deleteUser = useDeleteUser();
 
-  // Backend returns: { success, data: { items: [...], page, limit, total }, meta }
   const allUsers = (data as any)?.data?.items || [];
+  const responseData = (data as any)?.data;
+  const rawMeta = (data as any)?.meta || responseData?.meta;
+  const total = rawMeta?.total ?? responseData?.total ?? 0;
+  const totalPages = rawMeta?.totalPages ?? responseData?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
-  // Log للتحقق من البيانات
-  if (allUsers.length > 0) {
-    console.log("📊 Sample user data:", JSON.stringify(allUsers[0], null, 2));
-  }
-
-  // فلترة حسب الحالة
   const users = statusFilter === "all"
     ? allUsers
     : allUsers.filter((user: any) => user.status === statusFilter);
@@ -101,7 +102,7 @@ export default function UsersPage() {
           <Input
             placeholder={t("users.searchPlaceholder")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="pr-10"
           />
         </div>
@@ -203,6 +204,16 @@ export default function UsersPage() {
           </TableBody>
         </Table>
       </div>
+
+      {meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
 
       <UserDialog
         open={dialogOpen}
