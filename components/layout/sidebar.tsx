@@ -70,7 +70,7 @@ const navigation: NavItem[] = [
   {
     title: "nav.management",
     icon: Settings,
-    hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية"],
+    hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية", "dep_manager", "مدير قسم"],
     children: [
       { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
       { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read" },
