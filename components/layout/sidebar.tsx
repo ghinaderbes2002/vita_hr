@@ -68,6 +68,7 @@ const navigation: NavItem[] = [
     ],
   },
   {
+    
     title: "nav.management",
     icon: Settings,
     hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية", "dep_manager", "مدير قسم"],
