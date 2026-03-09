@@ -122,14 +122,14 @@ export interface GmApprovalData {
 
 export const evaluationFormsApi = {
   // Get all forms
-  getAll: async (): Promise<ApiResponse<EvaluationForm[]>> => {
-    const response = await apiClient.get("/evaluation-forms");
+  getAll: async (params?: { page?: number; limit?: number; periodId?: string; status?: string; employeeId?: string }): Promise<ApiResponse<EvaluationForm[]>> => {
+    const response = await apiClient.get("/evaluation-forms", { params });
     return response.data;
   },
 
-  // Get my forms (filter by employeeId — /my endpoint not available on server)
-  getMy: async (params?: GetMyFormsParams): Promise<ApiResponse<EvaluationForm[]>> => {
-    const response = await apiClient.get("/evaluation-forms/my", { params });
+  // Get my current evaluation form (single object or null)
+  getMy: async (): Promise<{ success: boolean; data: EvaluationForm | null }> => {
+    const response = await apiClient.get("/evaluation-forms/my");
     return response.data;
   },
 
@@ -146,8 +146,8 @@ export const evaluationFormsApi = {
   },
 
   // Get pending my review
-  getPendingMyReview: async (): Promise<ApiResponse<EvaluationForm[]>> => {
-    const response = await apiClient.get("/evaluation-forms/pending-my-review");
+  getPendingMyReview: async (params?: { page?: number; limit?: number }): Promise<ApiResponse<EvaluationForm[]>> => {
+    const response = await apiClient.get("/evaluation-forms/pending-my-review", { params });
     return response.data;
   },
 

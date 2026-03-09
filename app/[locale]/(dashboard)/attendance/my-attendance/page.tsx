@@ -16,6 +16,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyAttendance } from "@/lib/hooks/use-attendance-records";
+import { Pagination } from "@/components/shared/pagination";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
 import { AttendanceRecord } from "@/lib/api/attendance-records";
 import { format } from "date-fns";
@@ -23,6 +24,7 @@ import { ar } from "date-fns/locale";
 
 export default function MyAttendancePage() {
   const t = useTranslations();
+  const [page, setPage] = useState(1);
   const [dateFrom, setDateFrom] = useState(
     format(new Date(new Date().getFullYear(), 0, 1), "yyyy-MM-dd")
   );
@@ -30,11 +32,13 @@ export default function MyAttendancePage() {
     format(new Date(new Date().getFullYear(), 11, 31), "yyyy-MM-dd")
   );
 
-  const { data, isLoading } = useMyAttendance({ dateFrom, dateTo });
+  const LIMIT = 10;
+  const { data, isLoading } = useMyAttendance({ dateFrom, dateTo, page, limit: LIMIT });
 
-  const records = Array.isArray(data)
-    ? data
-    : (data as any)?.data?.items || (data as any)?.data || [];
+  const records = (data as any)?.items || (data as any)?.data?.items || [];
+  const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
+  const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
   const formatTime = (dateString?: string) => {
     if (!dateString) return "-";
@@ -159,6 +163,15 @@ export default function MyAttendancePage() {
           </TableBody>
         </Table>
       </div>
+      {meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 }

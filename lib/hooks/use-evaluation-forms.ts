@@ -7,28 +7,21 @@ import {
   SaveManagerEvaluationData,
   HrReviewData,
   GmApprovalData,
-  GetMyFormsParams,
 } from "@/lib/api/evaluation-forms";
-import { useAuthStore } from "@/lib/stores/auth-store";
 
 // Get all evaluation forms
-export function useAllEvaluationForms() {
+export function useAllEvaluationForms(params?: { page?: number; limit?: number; periodId?: string; status?: string; employeeId?: string }) {
   return useQuery({
-    queryKey: ["evaluation-forms", "all"],
-    queryFn: () => evaluationFormsApi.getAll(),
+    queryKey: ["evaluation-forms", "all", params],
+    queryFn: () => evaluationFormsApi.getAll(params),
   });
 }
 
-// Get my evaluation forms (filtered by current employee)
-export function useMyEvaluationForms(periodId?: string) {
-  const employeeId = useAuthStore((state) => state.user?.employeeId);
-  const params: GetMyFormsParams = {};
-  if (periodId) params.periodId = periodId;
-  if (employeeId) params.employeeId = employeeId;
-
+// Get my current evaluation form (single object)
+export function useMyEvaluationForms() {
   return useQuery({
-    queryKey: ["evaluation-forms", "my", employeeId, periodId],
-    queryFn: () => evaluationFormsApi.getMy(params),
+    queryKey: ["evaluation-forms", "my"],
+    queryFn: () => evaluationFormsApi.getMy(),
   });
 }
 
@@ -42,10 +35,10 @@ export function useEvaluationForm(id: string) {
 }
 
 // Get pending my review
-export function usePendingMyReview() {
+export function usePendingMyReview(params?: { page?: number; limit?: number }) {
   return useQuery({
-    queryKey: ["evaluation-forms", "pending-my-review"],
-    queryFn: () => evaluationFormsApi.getPendingMyReview(),
+    queryKey: ["evaluation-forms", "pending-my-review", params],
+    queryFn: () => evaluationFormsApi.getPendingMyReview(params),
   });
 }
 

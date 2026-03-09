@@ -19,18 +19,23 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAllEvaluationForms } from "@/lib/hooks/use-evaluation-forms";
+import { Pagination } from "@/components/shared/pagination";
 import { EvaluationForm, EvaluationFormStatus } from "@/lib/api/evaluation-forms";
 
 export default function AllEvaluationFormsPage() {
   const t = useTranslations();
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"all" | EvaluationFormStatus>("all");
-  const { data, isLoading } = useAllEvaluationForms();
 
-  const forms = Array.isArray(data)
-    ? data
-    : (data as any)?.data?.items || (data as any)?.data || [];
+  const LIMIT = 10;
+  const { data, isLoading } = useAllEvaluationForms({ page, limit: LIMIT });
+
+  const forms = (data as any)?.items || (data as any)?.data?.items || [];
+  const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
+  const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
   const filteredForms = forms.filter((form: EvaluationForm) => {
     // إذا ما في بحث، نتحقق بس من التاب
@@ -157,7 +162,7 @@ export default function AllEvaluationFormsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }}>
         <TabsList>
           <TabsTrigger value="all">{t("allForms.tabs.all")}</TabsTrigger>
           <TabsTrigger value="SELF_EVALUATION">{t("allForms.tabs.selfEvaluation")}</TabsTrigger>
@@ -174,6 +179,16 @@ export default function AllEvaluationFormsPage() {
         <TabsContent value="GM_APPROVAL">{renderTable(filteredForms)}</TabsContent>
         <TabsContent value="COMPLETED">{renderTable(filteredForms)}</TabsContent>
       </Tabs>
+
+      {meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 }

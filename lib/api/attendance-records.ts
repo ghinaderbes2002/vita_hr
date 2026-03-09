@@ -86,6 +86,8 @@ export interface AttendanceQueryParams {
   dateTo?: string;
   employeeId?: string;
   status?: AttendanceStatus;
+  page?: number;
+  limit?: number;
 }
 
 export const attendanceRecordsApi = {

@@ -59,12 +59,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEmployees } from "@/lib/hooks/use-employees";
+import { Pagination } from "@/components/shared/pagination";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
 export default function AttendanceAlertsPage() {
   const t = useTranslations();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"all" | AlertStatus>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
@@ -83,9 +85,10 @@ export default function AttendanceAlertsPage() {
     status: "OPEN" as AlertStatus,
   });
 
-  const queryParams = activeTab === "all" ? {} : { status: activeTab };
+  const LIMIT = 10;
+  const queryParams = activeTab === "all" ? { page, limit: LIMIT } : { status: activeTab, page, limit: LIMIT };
   const { data, isLoading } = useAttendanceAlerts(queryParams);
-  const { data: employeesData } = useEmployees({});
+  const { data: employeesData } = useEmployees({ limit: 100 });
   const createAlert = useCreateAttendanceAlert();
   const updateAlert = useUpdateAttendanceAlert();
   const resolveAlert = useResolveAttendanceAlert();
@@ -95,9 +98,10 @@ export default function AttendanceAlertsPage() {
     ? employeesData
     : (employeesData as any)?.data?.items || (employeesData as any)?.data || [];
 
-  const alerts = Array.isArray(data)
-    ? data
-    : (data as any)?.data?.items || (data as any)?.data || [];
+  const alerts = (data as any)?.items || (data as any)?.data?.items || [];
+  const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
+  const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
   const filteredAlerts = alerts.filter((alert: AttendanceAlert) => {
     // إذا ما في بحث، نعرض كل التنبيهات
@@ -308,7 +312,7 @@ export default function AttendanceAlertsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }}>
         <TabsList>
           <TabsTrigger value="all">الكل</TabsTrigger>
           <TabsTrigger value="OPEN">مفتوحة</TabsTrigger>
@@ -332,6 +336,16 @@ export default function AttendanceAlertsPage() {
           {renderTable(filteredAlerts.filter((a: AttendanceAlert) => a.status === "RESOLVED"))}
         </TabsContent>
       </Tabs>
+
+      {meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
 
       {/* Resolve Dialog */}
       <Dialog open={resolveDialogOpen} onOpenChange={setResolveDialogOpen}>
@@ -394,7 +408,7 @@ export default function AttendanceAlertsPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="اختر الموظف" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto">
                   {employees.map((emp: any) => (
                     <SelectItem key={emp.id} value={emp.id}>
                       {emp.firstNameAr} {emp.lastNameAr}

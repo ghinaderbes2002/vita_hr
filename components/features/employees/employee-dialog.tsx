@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCreateEmployee, useUpdateEmployee } from "@/lib/hooks/use-employees";
+import { useCreateEmployee, useUpdateEmployee, useEmployees } from "@/lib/hooks/use-employees";
 import { toast } from "sonner";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useJobGrades } from "@/lib/hooks/use-job-grades";
@@ -57,6 +57,7 @@ const formSchema = z.object({
   employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
   jobTitleId: z.string().optional(),
   jobGradeId: z.string().optional(),
+  managerId: z.string().optional(),
   basicSalary: z.number().min(0).optional(),
   // Additional fields
   profilePhoto: z.string().optional(),
@@ -134,10 +135,12 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
 
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
+  const { data: allEmployeesData } = useEmployees({ limit: 100 });
   const { data: departmentsData } = useDepartments({ limit: 100 });
   const { data: gradesData } = useJobGrades();
   const { data: titlesData } = useJobTitles();
 
+  const allEmployees = (allEmployeesData as any)?.data?.items || (allEmployeesData as any)?.items || [];
   const departments = (departmentsData as any)?.data?.items || [];
   const jobGrades = Array.isArray(gradesData)
     ? gradesData
@@ -165,6 +168,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
       employmentStatus: "ACTIVE",
       jobTitleId: "",
       jobGradeId: "",
+      managerId: "",
       basicSalary: 0,
       profilePhoto: "",
       bloodType: undefined,
@@ -202,6 +206,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         employmentStatus: employee.employmentStatus || "ACTIVE",
         jobTitleId: (employee as any).jobTitleId || "",
         jobGradeId: (employee as any).jobGradeId || "",
+        managerId: (employee as any).managerId || "",
         basicSalary: Number((employee as any).basicSalary) || 0,
         profilePhoto: (employee as any).profilePhoto || "",
         bloodType: (employee as any).bloodType || undefined,
@@ -232,6 +237,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         employmentStatus: "ACTIVE",
         jobTitleId: "",
         jobGradeId: "",
+        managerId: "",
         basicSalary: 0,
         profilePhoto: "",
         bloodType: undefined,
@@ -263,6 +269,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
           employmentStatus: data.employmentStatus,
           jobTitleId: data.jobTitleId || undefined,
           jobGradeId: data.jobGradeId || undefined,
+          managerId: data.managerId || undefined,
           basicSalary: data.basicSalary || undefined,
           profilePhoto: data.profilePhoto || undefined,
           bloodType: data.bloodType || undefined,
@@ -285,6 +292,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
           mobile: rest.mobile || undefined,
           jobTitleId: rest.jobTitleId || undefined,
           jobGradeId: rest.jobGradeId || undefined,
+          managerId: rest.managerId || undefined,
           basicSalary: rest.basicSalary || undefined,
           profilePhoto: rest.profilePhoto || undefined,
           bloodType: rest.bloodType || undefined,
@@ -610,6 +618,33 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                               {dept.nameAr} ({dept.code})
                             </SelectItem>
                           ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="managerId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>المدير المباشر ({t("common.optional")})</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر المدير المباشر" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {allEmployees
+                            .filter((emp: any) => emp.id !== employee?.id)
+                            .map((emp: any) => (
+                              <SelectItem key={emp.id} value={emp.id}>
+                                {emp.firstNameAr} {emp.lastNameAr}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />

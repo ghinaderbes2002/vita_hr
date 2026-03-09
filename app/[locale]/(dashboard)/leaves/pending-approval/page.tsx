@@ -38,6 +38,7 @@ import { LeaveRequest } from "@/lib/api/leave-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { Pagination } from "@/components/shared/pagination";
 
 export default function PendingApprovalPage() {
   const t = useTranslations();
@@ -52,19 +53,21 @@ export default function PendingApprovalPage() {
   const { hasRole } = usePermissions();
   const isHrManager = hasRole("hr_manager") || hasRole("مدير الموارد البشرية");
 
-  const { data, isLoading } = useLeaveRequests();
+  const [activeTab, setActiveTab] = useState<"manager" | "hr">(isHrManager ? "hr" : "manager");
+  const [page, setPage] = useState(1);
+  const LIMIT = 10;
+
+  const activeStatus = activeTab === "manager" ? "PENDING_MANAGER" : "PENDING_HR";
+  const { data, isLoading } = useLeaveRequests({ status: activeStatus as any, page, limit: LIMIT });
   const approveManager = useApproveManager();
   const rejectManager = useRejectManager();
   const approveHr = useApproveHr();
   const rejectHr = useRejectHr();
 
-  // Extract array from API response
-  const requests = Array.isArray(data)
-    ? data
-    : (data as any)?.data?.items || (data as any)?.data || [];
-
-  const managerPending = requests.filter((r: LeaveRequest) => r.status === "PENDING_MANAGER");
-  const hrPending = requests.filter((r: LeaveRequest) => r.status === "PENDING_HR");
+  const requests = (data as any)?.items || (data as any)?.data?.items || [];
+  const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
+  const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
   const handleApprove = (request: LeaveRequest, type: "manager" | "hr") => {
     setSelectedRequest(request);
@@ -196,24 +199,34 @@ export default function PendingApprovalPage() {
         description="الموافقة على طلبات الإجازات المعلقة"
       />
 
-      <Tabs defaultValue={isHrManager ? "hr" : "manager"} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }} className="space-y-4">
         <TabsList>
           {!isHrManager && (
-            <TabsTrigger value="manager">بانتظار المدير ({managerPending.length})</TabsTrigger>
+            <TabsTrigger value="manager">بانتظار المدير ({activeTab === "manager" ? total : ""})</TabsTrigger>
           )}
-          <TabsTrigger value="hr">بانتظار HR ({hrPending.length})</TabsTrigger>
+          <TabsTrigger value="hr">بانتظار HR ({activeTab === "hr" ? total : ""})</TabsTrigger>
         </TabsList>
 
         {!isHrManager && (
           <TabsContent value="manager" className="rounded-md border">
-            {renderTable(managerPending, "manager")}
+            {renderTable(requests, "manager")}
           </TabsContent>
         )}
 
         <TabsContent value="hr" className="rounded-md border">
-          {renderTable(hrPending, "hr")}
+          {renderTable(requests, "hr")}
         </TabsContent>
       </Tabs>
+
+      {meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
 
       {/* Approve Dialog */}
       <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>

@@ -18,17 +18,22 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePendingMyReview } from "@/lib/hooks/use-evaluation-forms";
+import { Pagination } from "@/components/shared/pagination";
 import { EvaluationForm, EvaluationFormStatus } from "@/lib/api/evaluation-forms";
 
 export default function PendingReviewPage() {
   const t = useTranslations();
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const { data, isLoading } = usePendingMyReview();
+  const [page, setPage] = useState(1);
 
-  const forms = Array.isArray(data)
-    ? data
-    : (data as any)?.data?.items || (data as any)?.data || [];
+  const LIMIT = 10;
+  const { data, isLoading } = usePendingMyReview({ page, limit: LIMIT });
+
+  const forms = (data as any)?.items || (data as any)?.data?.items || [];
+  const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
+  const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
   const filteredForms = forms.filter((form: EvaluationForm) => {
     const searchLower = search.toLowerCase();
@@ -135,6 +140,16 @@ export default function PendingReviewPage() {
           </TableBody>
         </Table>
       </div>
+
+      {meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 }

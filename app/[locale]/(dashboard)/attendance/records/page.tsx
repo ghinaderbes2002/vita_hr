@@ -22,6 +22,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Pagination } from "@/components/shared/pagination";
 import { useAttendanceRecords, useDeleteAttendanceRecord } from "@/lib/hooks/use-attendance-records";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
 import { AttendanceRecord } from "@/lib/api/attendance-records";
@@ -34,6 +35,7 @@ export default function AttendanceRecordsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
+  const [page, setPage] = useState(1);
   const [dateFrom, setDateFrom] = useState(
     format(new Date(new Date().getFullYear(), 0, 1), "yyyy-MM-dd")
   );
@@ -41,12 +43,14 @@ export default function AttendanceRecordsPage() {
     format(new Date(new Date().getFullYear(), 11, 31), "yyyy-MM-dd")
   );
 
-  const { data, isLoading } = useAttendanceRecords({ dateFrom, dateTo });
+  const LIMIT = 10;
+  const { data, isLoading } = useAttendanceRecords({ dateFrom, dateTo, page, limit: LIMIT });
   const deleteRecord = useDeleteAttendanceRecord();
 
-  const records = Array.isArray(data)
-    ? data
-    : (data as any)?.data?.items || (data as any)?.data || [];
+  const records = (data as any)?.items || (data as any)?.data?.items || [];
+  const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
+  const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
 
   const filteredRecords = records.filter((record: AttendanceRecord) => {
     // إذا ما في بحث، نعرض كل السجلات
@@ -237,6 +241,16 @@ export default function AttendanceRecordsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {meta && (
+        <Pagination
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
 
       <ConfirmDialog
         open={deleteDialogOpen}

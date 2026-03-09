@@ -60,9 +60,7 @@ export default function MyLeavesPage() {
   const cancelRequest = useCancelLeaveRequest();
 
   // Extract array from API response
-  const requests = Array.isArray(data)
-    ? data
-    : (data as any)?.data?.items || (data as any)?.data || [];
+  const requests = (data as any)?.items || (data as any)?.data?.items || [];
 
   const draftRequests = requests.filter((r: LeaveRequest) => r.status === "DRAFT");
   const pendingRequests = requests.filter((r: LeaveRequest) =>

@@ -24,6 +24,8 @@ export function useLeaveRequests(params?: {
   status?: LeaveRequestStatus;
   employeeId?: string;
   year?: number;
+  page?: number;
+  limit?: number;
 }) {
   return useQuery({
     queryKey: ["leave-requests", params],

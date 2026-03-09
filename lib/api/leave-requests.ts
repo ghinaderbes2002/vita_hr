@@ -97,6 +97,8 @@ export const leaveRequestsApi = {
     status?: LeaveRequestStatus;
     employeeId?: string;
     year?: number;
+    page?: number;
+    limit?: number;
   }): Promise<ApiResponse<LeaveRequest[]>> => {
     const response = await apiClient.get("/leave-requests", { params });
     return response.data;

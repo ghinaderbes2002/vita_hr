@@ -56,6 +56,8 @@ export interface AlertQueryParams {
   type?: AlertType;
   dateFrom?: string;
   dateTo?: string;
+  page?: number;
+  limit?: number;
 }
 
 export const attendanceAlertsApi = {
