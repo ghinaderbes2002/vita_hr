@@ -97,7 +97,7 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
       if (isEdit) {
         await updateLeaveType.mutateAsync({ id: leaveType.id, data });
       } else {
-        await createLeaveType.mutateAsync(data);
+        await createLeaveType.mutateAsync({ ...data, code: data.code ?? "" });
       }
       onOpenChange(false);
       form.reset();
