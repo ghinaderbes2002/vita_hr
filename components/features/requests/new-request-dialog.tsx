@@ -194,7 +194,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
     try {
       const created = await createRequest.mutateAsync({
         type: data.type,
-        reason: data.reason || undefined,
+        reason: data.reason,
         notes: data.notes || undefined,
         details: buildDetails(data),
       });
