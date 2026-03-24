@@ -136,20 +136,6 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("jobTitles.fields.code")}{!isEdit && " (اختياري)"}</FormLabel>
-                  <FormControl>
-                    <Input {...field} disabled={isEdit} placeholder={isEdit ? "" : "سيُنشأ تلقائياً"} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

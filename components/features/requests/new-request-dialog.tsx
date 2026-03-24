@@ -25,15 +25,14 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 const ALL_REQUEST_TYPES: RequestType[] = [
-  "PERMISSION", "ADVANCE", "RESIGNATION", "TRANSFER",
-  "JOB_CHANGE", "RIGHTS", "REWARD", "SPONSORSHIP", "OTHER",
+  "TRANSFER", "RESIGNATION", "REWARD", "OTHER",
   "PENALTY_PROPOSAL", "OVERTIME_EMPLOYEE", "OVERTIME_MANAGER",
   "BUSINESS_MISSION", "DELEGATION", "HIRING_REQUEST", "COMPLAINT",
 ];
 
 // Types that don't need a details section — reason field is enough
 const NO_DETAILS_TYPES: RequestType[] = [
-  "PERMISSION", "ADVANCE", "JOB_CHANGE", "RIGHTS", "SPONSORSHIP", "OTHER",
+  "OTHER",
 ];
 
 const formSchema = z.object({

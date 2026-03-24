@@ -46,7 +46,9 @@
     "checkInOut": "Check In/Out",
     "attendanceRecords": "Attendance Records",
     "myAlerts": "My Alerts",
+    "myJustifications": "My Justifications",
     "attendanceAlerts": "Attendance Alerts",
+    "attendanceJustifications": "Attendance Justifications",
     "attendanceReports": "Attendance Reports",
     "attendanceData": "Attendance Data",
     "evaluations": "Evaluations",
@@ -157,6 +159,22 @@
       "displayNameEn": "English Display Name",
       "description": "Description",
       "permissions": "Permissions"
+    },
+    "modules": {
+      "attendance": "Attendance",
+      "employees": "Employees",
+      "users": "Users",
+      "roles": "Roles",
+      "departments": "Departments",
+      "job-titles": "Job Titles",
+      "job-grades": "Job Grades",
+      "leave_requests": "Leave Requests",
+      "leave_types": "Leave Types",
+      "leave_balances": "Leave Balances",
+      "holidays": "Holidays",
+      "requests": "Requests",
+      "evaluations": "Evaluations",
+      "other": "Other"
     }
   },
   "employees": {
@@ -170,6 +188,49 @@
     "selectDepartment": "Select Department",
     "selectJobTitle": "Select Job Title",
     "selectJobGrade": "Select Job Grade",
+    "form": {
+      "uploadError": "File upload failed",
+      "chooseFile": "Choose File",
+      "changeFile": "Change",
+      "noFileChosen": "No file chosen",
+      "salaryOutOfRange": "Salary out of allowed range",
+      "allowedRange": "Allowed Range",
+      "directManager": "Direct Manager",
+      "allowancesTitle": "Allowances",
+      "yearsOfExperience": "Years of Experience",
+      "selectDirectManager": "Select Direct Manager",
+      "addAllowance": "Add Allowance",
+      "noAllowances": "No allowances",
+      "amount": "Amount",
+      "degreeName": "Degree Name",
+      "specialization": "Specialization",
+      "attachment": "Attachment",
+      "bachelorPlaceholder": "Bachelor of Business Administration",
+      "hrPlaceholder": "Human Resources Management",
+      "masterPlaceholder": "Master's Degree",
+      "pmPlaceholder": "Project Management",
+      "addCertificate": "Add Certificate",
+      "noCertificates": "No training certificates",
+      "certificateName": "Certificate Name",
+      "attachmentOptional": "Attachment (optional):",
+      "firstNameEnRequired": "First name in English is required",
+      "lastNameEnRequired": "Last name in English is required",
+      "invalidEmail": "Invalid email address",
+      "nationalIdRequired": "National ID is required",
+      "dateOfBirthRequired": "Date of birth is required",
+      "departmentRequired": "Department is required",
+      "hireDateRequired": "Hire date is required",
+      "firstDegree": "First Degree",
+      "secondDegree": "Second Degree",
+      "trainingCertificates": "Training Certificates",
+      "allowances": {
+        "FOOD": "Food Allowance",
+        "PREVIOUS_EXPERIENCE": "Previous Experience Allowance",
+        "ACADEMIC_DEGREE": "Academic Degree Allowance",
+        "WORK_NATURE": "Work Nature Allowance",
+        "RESPONSIBILITY": "Responsibility Allowance"
+      }
+    },
     "filterByDepartment": "Filter by Department",
     "allDepartments": "All Departments",
     "subordinates": {
@@ -186,11 +247,15 @@
       "email": "Email",
       "phone": "Phone",
       "mobile": "Mobile",
-      "nationalId": "National ID",
+      "nationalId": "National Number",
       "gender": "Gender",
       "dateOfBirth": "Date of Birth",
+      "nationality": "Nationality",
+      "maritalStatus": "Marital Status",
       "department": "Department",
+      "jobTitle": "Job Title",
       "jobGrade": "Job Grade",
+      "manager": "Direct Manager",
       "basicSalary": "Basic Salary",
       "hireDate": "Hire Date",
       "contractType": "Contract Type",
@@ -217,10 +282,10 @@
       "female": "Female"
     },
     "contractTypes": {
-      "permanent": "Permanent",
-      "contract": "Contract",
+      "fixed_term": "Fixed Term",
+      "indefinite": "Indefinite",
       "temporary": "Temporary",
-      "intern": "Intern"
+      "trainee": "Trainee"
     },
     "bloodTypes": {
       "A_POSITIVE": "A+",
@@ -255,6 +320,7 @@
       "personal": "Personal Information",
       "employment": "Employment Information",
       "contact": "Contact Information",
+      "qualifications": "Qualifications",
       "additional": "Additional Info"
     }
   },
@@ -327,11 +393,33 @@
     "title": "Leaves",
     "myRequests": "My Requests",
     "newRequest": "New Leave Request",
+    "newRequestDescription": "Create a new leave request",
+    "newRequestCardTitle": "Leave Request Details",
+    "newRequestCardDescription": "Fill in the details below to create a new leave request",
     "editRequest": "Edit Leave Request",
     "viewRequest": "View Leave Request",
     "pendingApproval": "Pending Approval",
     "calendar": "Leave Calendar",
     "balances": "Leave Balances",
+    "form": {
+      "selectDate": "Select Date",
+      "halfDay": "Half Day",
+      "halfDayDescription": "Do you want to request only half a day?",
+      "halfDayPeriod": "Half Day Period",
+      "selectPeriod": "Select Period",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "selectSubstitute": "Select Substitute",
+      "reasonPlaceholder": "Write the reason for the leave...",
+      "attachments": "Attachments (Optional)",
+      "attachmentsDescription": "You can attach a supporting document or image",
+      "attachFile": "Attach File",
+      "changeAttachment": "Change Attachment",
+      "attachment": "Attachment",
+      "uploadError": "File upload failed",
+      "leaveTypeRequired": "Leave type is required",
+      "reasonMinLength": "Reason must be at least 5 characters"
+    },
     "fields": {
       "leaveType": "Leave Type",
       "startDate": "Start Date",
@@ -353,6 +441,13 @@
       "cancelled": "Cancelled",
       "in_progress": "In Progress",
       "completed": "Completed"
+    },
+    "tabs": {
+      "all": "All",
+      "draft": "Draft",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
     }
   },
   "attendance": {
@@ -435,13 +530,61 @@
       "checkOutError": "Failed to check out",
       "alreadyCheckedIn": "You have already checked in today",
       "notCheckedIn": "You must check in first"
+    },
+    "myAlertsDescription": "View alerts related to my attendance",
+    "myJustificationsTitle": "My Justifications",
+    "myJustificationsDescription": "Your attendance justifications",
+    "justify": "Justify",
+    "tabs": {
+      "all": "All",
+      "open": "Open",
+      "acknowledged": "Acknowledged",
+      "resolved": "Resolved"
+    },
+    "alertFields": {
+      "message": "Message",
+      "severity": "Severity",
+      "resolutionNotes": "Resolution Notes",
+      "type": "Type",
+      "description": "Description",
+      "managerNotes": "Manager Notes",
+      "hrNotes": "HR Notes"
+    },
+    "justificationTypes": {
+      "sick": "Sick",
+      "emergency": "Emergency",
+      "officialMission": "Official Mission",
+      "transportation": "Transportation Issue",
+      "other": "Other"
+    },
+    "justificationStatuses": {
+      "pendingManager": "Pending Manager",
+      "managerApproved": "Manager Approved",
+      "pendingHr": "Pending HR",
+      "hrApproved": "Approved",
+      "hrRejected": "Rejected",
+      "autoRejected": "Auto Rejected"
+    },
+    "submitJustification": {
+      "title": "Submit Justification",
+      "typeLabel": "Justification Type",
+      "descLabel": "Justification Description",
+      "placeholder": "Write the reason for the delay or absence...",
+      "submit": "Submit Justification",
+      "submitting": "Submitting..."
     }
   },
   "requests": {
     "myRequests": "My Requests",
-    "myRequestsDescription": "View and manage your administrative requests",
+    "myRequestsDescription": "View and manage your leave and administrative requests",
+    "tabs": {
+      "leaveRequests": "Leave Requests",
+      "adminRequests": "Administrative Requests"
+    },
     "newRequest": "New Request",
-    "newRequestDescription": "Create a new administrative request",
+    "newRequestDescription": "Create a new request",
+    "adminRequest": "Administrative Request",
+    "adminRequestDescription": "Transfer, resignation, reward, delegation and more",
     "pendingManagerApproval": "Pending Manager Approval",
     "pendingManagerDescription": "Requests waiting for review and approval",
     "allRequests": "All Requests",
@@ -451,15 +594,17 @@
     "filterByStatus": "Filter by Status",
     "filterByType": "Filter by Type",
     "types": {
-      "TRANSFER": "Transfer Request",
-      "PERMISSION": "Permission Request",
-      "ADVANCE": "Advance Request",
-      "RESIGNATION": "Resignation Request",
-      "JOB_CHANGE": "Job Change Request",
-      "RIGHTS": "Rights Request",
-      "REWARD": "Reward Request",
-      "SPONSORSHIP": "Sponsorship Request",
-      "OTHER": "Other"
+      "TRANSFER": "Transfer",
+      "RESIGNATION": "Resignation",
+      "REWARD": "Reward",
+      "OTHER": "Other",
+      "PENALTY_PROPOSAL": "Penalty Proposal",
+      "OVERTIME_EMPLOYEE": "Employee Overtime",
+      "OVERTIME_MANAGER": "Manager Overtime",
+      "BUSINESS_MISSION": "Business Mission",
+      "DELEGATION": "Delegation",
+      "HIRING_REQUEST": "Hiring Request",
+      "COMPLAINT": "Complaint"
     },
     "statuses": {
       "DRAFT": "Draft",
@@ -788,6 +933,7 @@
     "noData": "No Data",
     "previous": "Previous",
     "next": "Next",
+    "of": "of",
     "actions": "Actions",
     "status": "Status",
     "confirm": "Confirm",

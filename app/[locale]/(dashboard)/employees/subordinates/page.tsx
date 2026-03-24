@@ -62,15 +62,15 @@ export default function SubordinatesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="المرؤوسون"
-        description="عرض موظفي مدير معين"
+        title={t("employees.subordinates.title")}
+        description={t("employees.subordinates.description")}
       />
 
       <div className="space-y-2">
-        <Label>اختر المدير</Label>
+        <Label>{t("employees.subordinates.selectManager")}</Label>
         <Select value={selectedManagerId} onValueChange={(v) => { setSelectedManagerId(v); setSearch(""); }}>
           <SelectTrigger className="w-full max-w-md">
-            <SelectValue placeholder="اختر المدير" />
+            <SelectValue placeholder={t("employees.subordinates.selectManager")} />
           </SelectTrigger>
           <SelectContent>
             {allEmployees.map((emp: any) => (

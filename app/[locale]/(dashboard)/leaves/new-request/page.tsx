@@ -24,7 +24,7 @@ export default function NewRequestPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("leaves.newRequest")}
-        description="قم بإنشاء طلب إجازة جديد"
+        description={t("leaves.newRequestDescription")}
         actions={
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowRight className="h-4 w-4 ml-2" />
@@ -35,8 +35,8 @@ export default function NewRequestPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>بيانات طلب الإجازة</CardTitle>
-          <CardDescription>املأ البيانات أدناه لإنشاء طلب إجازة جديد</CardDescription>
+          <CardTitle>{t("leaves.newRequestCardTitle")}</CardTitle>
+          <CardDescription>{t("leaves.newRequestCardDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <LeaveRequestForm onSubmit={handleSubmit} isLoading={createRequest.isPending} />

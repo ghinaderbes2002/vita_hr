@@ -36,7 +36,11 @@ import { CreateLeaveRequestData, LeaveRequest } from "@/lib/api/leave-requests";
 import { useState } from "react";
 import { toast } from "sonner";
 
-function FilePicker({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+function FilePicker({ value, onChange, labels }: {
+  value: string;
+  onChange: (url: string) => void;
+  labels: { attachFile: string; changeAttachment: string; attachment: string; uploadError: string };
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string>("");
@@ -53,7 +57,7 @@ function FilePicker({ value, onChange }: { value: string; onChange: (url: string
         setFileName(json.fileName || file.name);
       }
     } catch {
-      toast.error("فشل رفع الملف");
+      toast.error(labels.uploadError);
     } finally {
       setUploading(false);
     }
@@ -64,11 +68,11 @@ function FilePicker({ value, onChange }: { value: string; onChange: (url: string
       <input ref={inputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
       <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
         {uploading ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Paperclip className="h-4 w-4 ml-2" />}
-        {value ? "تغيير المرفق" : "إرفاق ملف"}
+        {value ? labels.changeAttachment : labels.attachFile}
       </Button>
       {value && (
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <span className="max-w-40 truncate">{fileName || "مرفق"}</span>
+          <span className="max-w-40 truncate">{fileName || labels.attachment}</span>
           <button type="button" onClick={() => { onChange(""); setFileName(""); }} className="text-destructive hover:text-destructive/80">
             <X className="h-3 w-3" />
           </button>
@@ -78,18 +82,16 @@ function FilePicker({ value, onChange }: { value: string; onChange: (url: string
   );
 }
 
-const formSchema = z.object({
-  leaveTypeId: z.string().min(1, "نوع الإجازة مطلوب"),
-  startDate: z.date(),
-  endDate: z.date(),
-  reason: z.string().min(5, "السبب يجب أن يكون 5 أحرف على الأقل"),
-  isHalfDay: z.boolean(),
-  halfDayPeriod: z.enum(["MORNING", "AFTERNOON"]).optional(),
-  substituteId: z.string().optional(),
-  attachmentUrl: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
+type FormData = {
+  leaveTypeId: string;
+  startDate: Date;
+  endDate: Date;
+  reason: string;
+  isHalfDay: boolean;
+  halfDayPeriod?: "MORNING" | "AFTERNOON";
+  substituteId?: string;
+  attachmentUrl?: string;
+};
 
 interface LeaveRequestFormProps {
   onSubmit: (data: CreateLeaveRequestData) => Promise<void>;
@@ -101,6 +103,17 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
   const t = useTranslations();
   const { data: leaveTypesData } = useLeaveTypes();
   const { data: employeesData } = useEmployees();
+
+  const formSchema = z.object({
+    leaveTypeId: z.string().min(1, t("leaves.form.leaveTypeRequired")),
+    startDate: z.date(),
+    endDate: z.date(),
+    reason: z.string().min(5, t("leaves.form.reasonMinLength")),
+    isHalfDay: z.boolean(),
+    halfDayPeriod: z.enum(["MORNING", "AFTERNOON"]).optional(),
+    substituteId: z.string().optional(),
+    attachmentUrl: z.string().optional(),
+  });
 
   // Helper function to extract array
   const extractArray = (data: any): any[] => {
@@ -191,7 +204,7 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
                           !field.value && "text-muted-foreground"
                         )}
                       >
-                        {field.value ? format(field.value, "PPP") : <span>اختر التاريخ</span>}
+                        {field.value ? format(field.value, "PPP") : <span>{t("leaves.form.selectDate")}</span>}
                         <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -227,7 +240,7 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
                           !field.value && "text-muted-foreground"
                         )}
                       >
-                        {field.value ? format(field.value, "PPP") : <span>اختر التاريخ</span>}
+                        {field.value ? format(field.value, "PPP") : <span>{t("leaves.form.selectDate")}</span>}
                         <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -257,8 +270,8 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel>نصف يوم</FormLabel>
-                <FormDescription>هل تريد طلب نصف يوم فقط؟</FormDescription>
+                <FormLabel>{t("leaves.form.halfDay")}</FormLabel>
+                <FormDescription>{t("leaves.form.halfDayDescription")}</FormDescription>
               </div>
             </FormItem>
           )}
@@ -270,16 +283,16 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
             name="halfDayPeriod"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>فترة نصف اليوم</FormLabel>
+                <FormLabel>{t("leaves.form.halfDayPeriod")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر الفترة" />
+                      <SelectValue placeholder={t("leaves.form.selectPeriod")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="MORNING">صباحي</SelectItem>
-                    <SelectItem value="AFTERNOON">مسائي</SelectItem>
+                    <SelectItem value="MORNING">{t("leaves.form.morning")}</SelectItem>
+                    <SelectItem value="AFTERNOON">{t("leaves.form.afternoon")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -297,7 +310,7 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر البديل" />
+                    <SelectValue placeholder={t("leaves.form.selectSubstitute")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -320,7 +333,7 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
             <FormItem>
               <FormLabel>{t("leaves.fields.reason")}</FormLabel>
               <FormControl>
-                <Textarea {...field} rows={4} placeholder="اكتب سبب الإجازة..." />
+                <Textarea {...field} rows={4} placeholder={t("leaves.form.reasonPlaceholder")} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -332,11 +345,20 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
           name="attachmentUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>المرفقات (اختياري)</FormLabel>
+              <FormLabel>{t("leaves.form.attachments")}</FormLabel>
               <FormControl>
-                <FilePicker value={field.value || ""} onChange={field.onChange} />
+                <FilePicker
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  labels={{
+                    attachFile: t("leaves.form.attachFile"),
+                    changeAttachment: t("leaves.form.changeAttachment"),
+                    attachment: t("leaves.form.attachment"),
+                    uploadError: t("leaves.form.uploadError"),
+                  }}
+                />
               </FormControl>
-              <FormDescription>يمكنك إرفاق وثيقة أو صورة داعمة للطلب</FormDescription>
+              <FormDescription>{t("leaves.form.attachmentsDescription")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}

@@ -27,7 +27,7 @@ import { LeaveType } from "@/types";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
-  code: z.string().min(1, "الكود مطلوب"),
+  code: z.string().optional(),
   nameAr: z.string().min(1, "الاسم بالعربي مطلوب"),
   nameEn: z.string().min(1, "الاسم بالإنجليزي مطلوب"),
   defaultDays: z.number().min(0, "عدد الأيام يجب أن يكون 0 أو أكثر"),
@@ -119,20 +119,6 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("leaveTypes.fields.code")}</FormLabel>
-                  <FormControl>
-                    <Input {...field} disabled={isEdit} placeholder="ANNUAL" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

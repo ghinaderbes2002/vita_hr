@@ -14,6 +14,7 @@ import { useRequest, useRequestApprovals, useApproveRequest, useRejectRequest } 
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { useState } from "react";
 import { ApprovalStep, ApprovalStatus } from "@/types";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const APPROVER_ROLE_LABELS: Record<string, string> = {
   DIRECT_MANAGER: "المدير المباشر",
@@ -50,6 +51,8 @@ export default function RequestDetailPage() {
 
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const { hasPermission, isAdmin } = usePermissions();
+  const canApprove = isAdmin() || hasPermission("requests:approve");
 
   const { data: request, isLoading } = useRequest(id);
   const { data: approvals, isLoading: approvalsLoading } = useRequestApprovals(id);
@@ -99,7 +102,7 @@ export default function RequestDetailPage() {
         description={t(`requests.types.${request.type}`)}
         actions={
           <div className="flex items-center gap-2">
-            {request.status === "IN_APPROVAL" && (
+            {request.status === "IN_APPROVAL" && canApprove && (
               <>
                 <Button onClick={() => setApproveOpen(true)} className="bg-green-600 hover:bg-green-700">
                   <CheckCircle2 className="h-4 w-4 ml-2" />

@@ -1,12 +1,7 @@
 export type RequestType =
   | "TRANSFER"
-  | "PERMISSION"
-  | "ADVANCE"
   | "RESIGNATION"
-  | "JOB_CHANGE"
-  | "RIGHTS"
   | "REWARD"
-  | "SPONSORSHIP"
   | "OTHER"
   | "PENALTY_PROPOSAL"
   | "OVERTIME_EMPLOYEE"
@@ -158,9 +153,9 @@ export interface EmployeeAttachment {
 }
 
 export type AllowanceType =
-  | "MEDICAL"
-  | "EXPERIENCE"
-  | "HIGHER_DEGREE"
+  | "FOOD"
+  | "PREVIOUS_EXPERIENCE"
+  | "ACADEMIC_DEGREE"
   | "WORK_NATURE"
   | "RESPONSIBILITY";
 

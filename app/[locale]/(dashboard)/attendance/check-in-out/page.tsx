@@ -19,6 +19,9 @@ export default function CheckInOutPage() {
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
+  // Local state to track status after mutation (covers cases where API response structure varies)
+  const [localCheckedIn, setLocalCheckedIn] = useState<boolean | null>(null);
+  const [localCheckedOut, setLocalCheckedOut] = useState<boolean | null>(null);
 
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
@@ -30,12 +33,20 @@ export default function CheckInOutPage() {
     dateTo: today,
   });
 
-  const todayRecord = Array.isArray(attendanceData)
-    ? attendanceData[0]
-    : (attendanceData as any)?.data?.items?.[0] || (attendanceData as any)?.data?.[0];
+  // Match the same parsing used in my-attendance page
+  const records: any[] =
+    (attendanceData as any)?.items ||
+    (attendanceData as any)?.data?.items ||
+    (Array.isArray((attendanceData as any)?.data) ? (attendanceData as any).data : []) ||
+    [];
+  const todayRecord = records[0];
 
-  const hasCheckedIn = todayRecord?.clockInTime;
-  const hasCheckedOut = todayRecord?.clockOutTime;
+  // Support both field name variants (clockInTime / checkInTime)
+  const apiCheckedIn = !!(todayRecord?.clockInTime || (todayRecord as any)?.checkInTime);
+  const apiCheckedOut = !!(todayRecord?.clockOutTime || (todayRecord as any)?.checkOutTime);
+
+  const hasCheckedIn = localCheckedIn !== null ? localCheckedIn : apiCheckedIn;
+  const hasCheckedOut = localCheckedOut !== null ? localCheckedOut : apiCheckedOut;
 
   // Update time every second
   useEffect(() => {
@@ -47,12 +58,14 @@ export default function CheckInOutPage() {
 
   const handleCheckIn = async () => {
     await checkIn.mutateAsync({ location, notes });
+    setLocalCheckedIn(true);
     setLocation("");
     setNotes("");
   };
 
   const handleCheckOut = async () => {
     await checkOut.mutateAsync({ location, notes });
+    setLocalCheckedOut(true);
     setLocation("");
     setNotes("");
   };
@@ -93,7 +106,7 @@ export default function CheckInOutPage() {
       </Card>
 
       {/* Today's Status */}
-      {todayRecord && (
+      {(todayRecord || hasCheckedIn) && (
         <Card>
           <CardHeader>
             <CardTitle>{t("attendance.todayStatus")}</CardTitle>

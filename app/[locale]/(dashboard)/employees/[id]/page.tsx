@@ -93,9 +93,9 @@ export default function EmployeeDetailsPage() {
   };
 
   const ALLOWANCE_TYPE_LABELS: Record<string, string> = {
-    MEDICAL: "بدل طبي",
-    EXPERIENCE: "بدل خبرة",
-    HIGHER_DEGREE: "بدل مؤهل عالٍ",
+    FOOD: "بدل غذاء",
+    PREVIOUS_EXPERIENCE: "بدل خبرة سابقة",
+    ACADEMIC_DEGREE: "بدل شهادة علمية",
     WORK_NATURE: "بدل طبيعة عمل",
     RESPONSIBILITY: "بدل مسؤولية",
   };
@@ -226,7 +226,7 @@ export default function EmployeeDetailsPage() {
               value={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("ar-EG") : undefined}
             />
             <InfoRow label={t("employees.fields.contractType")} value={CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType} />
-            <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `${Number(emp.basicSalary).toLocaleString()} ريال` : undefined} />
+            <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `${Number(emp.basicSalary).toLocaleString()} ل.س` : undefined} />
             {employee.manager && (
               <InfoRow
                 label={t("employees.fields.manager")}
@@ -240,13 +240,13 @@ export default function EmployeeDetailsPage() {
                   {allowances.map((al, i) => (
                     <div key={i} className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{ALLOWANCE_TYPE_LABELS[al.type] || al.type}</span>
-                      <span className="font-medium">{Number(al.amount).toLocaleString()} ريال</span>
+                      <span className="font-medium">{Number(al.amount).toLocaleString()} ل.س</span>
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
                     <span className="font-medium">الإجمالي</span>
                     <span className="font-bold text-primary">
-                      {allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString()} ريال
+                      {allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString()} ل.س
                     </span>
                   </div>
                 </div>

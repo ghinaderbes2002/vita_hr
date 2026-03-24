@@ -40,54 +40,22 @@ import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { Employee } from "@/types";
 import { Camera, Loader2, Paperclip, Plus, Trash2, Upload, X } from "lucide-react";
 
-const ALLOWANCE_TYPES = [
-  { value: "MEDICAL", label: "بدل طبي" },
-  { value: "EXPERIENCE", label: "بدل خبرة" },
-  { value: "HIGHER_DEGREE", label: "بدل مؤهل عالٍ" },
-  { value: "WORK_NATURE", label: "بدل طبيعة عمل" },
-  { value: "RESPONSIBILITY", label: "بدل مسؤولية" },
-];
-
-const formSchema = z.object({
-  firstNameAr: z.string().min(2, "الاسم الأول بالعربية مطلوب"),
-  lastNameAr: z.string().min(2, "الاسم الأخير بالعربية مطلوب"),
-  firstNameEn: z.string().min(2, "الاسم الأول بالإنجليزية مطلوب"),
-  lastNameEn: z.string().min(2, "الاسم الأخير بالإنجليزية مطلوب"),
-  email: z.string().email("البريد الإلكتروني غير صحيح"),
-  phone: z.string().optional(),
-  mobile: z.string().optional(),
-  nationalId: z.string().min(1, "رقم الهوية مطلوب"),
-  gender: z.enum(["MALE", "FEMALE"]),
-  dateOfBirth: z.string().min(1, "تاريخ الميلاد مطلوب"),
-  departmentId: z.string().min(1, "القسم مطلوب"),
-  hireDate: z.string().min(1, "تاريخ التعيين مطلوب"),
-  contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE"]),
-  employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
-  jobTitleId: z.string().optional(),
-  jobGradeId: z.string().optional(),
-  managerId: z.string().optional(),
-  basicSalary: z.number().min(0).optional(),
-  // Additional fields
-  profilePhoto: z.string().optional(),
-  bloodType: z.enum(["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE"]).optional(),
-  familyMembersCount: z.number().int().min(0).optional(),
-  chronicDiseases: z.string().optional(),
-  currentAddress: z.string().optional(),
-  isSmoker: z.boolean().optional(),
-  educationLevel: z.enum(["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"]).optional(),
-  universityYear: z.number().int().min(1).max(7).optional(),
-  religion: z.string().optional(),
-  // Qualification fields
-  yearsOfExperience: z.number().int().min(0).optional(),
-  certificate1: z.string().optional(),
-  specialization1: z.string().optional(),
-  certificateAttachment1: z.string().optional(),
-  certificate2: z.string().optional(),
-  specialization2: z.string().optional(),
-  certificateAttachment2: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
+type FormData = {
+  firstNameAr: string; lastNameAr: string; firstNameEn: string; lastNameEn: string;
+  email: string; phone?: string; mobile?: string; nationalId: string;
+  gender: "MALE" | "FEMALE"; dateOfBirth: string; departmentId: string; hireDate: string;
+  contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE";
+  employmentStatus?: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
+  jobTitleId?: string; jobGradeId?: string; managerId?: string; basicSalary?: number;
+  profilePhoto?: string;
+  bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE";
+  familyMembersCount?: number; chronicDiseases?: string; currentAddress?: string;
+  isSmoker?: boolean;
+  educationLevel?: "ILLITERATE" | "PRIMARY" | "SECONDARY" | "DIPLOMA" | "UNIVERSITY" | "POSTGRADUATE";
+  universityYear?: number; religion?: string; yearsOfExperience?: number;
+  certificate1?: string; specialization1?: string; certificateAttachment1?: string;
+  certificate2?: string; specialization2?: string; certificateAttachment2?: string;
+};
 
 type Attachment = { fileUrl: string; fileName: string };
 type TrainingCertificate = { name: string; attachmentUrl?: string };
@@ -138,7 +106,11 @@ function PhotoPicker({ value, onChange, chooseLabel, removeLabel }: {
   );
 }
 
-function FilePicker({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+function FilePicker({ value, onChange, labels }: {
+  value: string;
+  onChange: (url: string) => void;
+  labels: { change: string; choose: string; noFile: string; uploadError: string };
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -155,7 +127,7 @@ function FilePicker({ value, onChange }: { value: string; onChange: (url: string
       const { fileUrl } = await res.json();
       onChange(fileUrl);
     } catch {
-      toast.error("فشل رفع الملف");
+      toast.error(labels.uploadError);
     } finally {
       setUploading(false);
     }
@@ -174,24 +146,18 @@ function FilePicker({ value, onChange }: { value: string; onChange: (url: string
         onClick={() => inputRef.current?.click()}
       >
         {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-        {value ? "تغيير" : "اختيار ملف"}
+        {value ? labels.change : labels.choose}
       </Button>
       {fileName && (
         <>
           <span className="text-sm text-muted-foreground truncate max-w-40" title={fileName}>{fileName}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0"
-            onClick={() => onChange("")}
-          >
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onChange("")}>
             <X className="h-3.5 w-3.5 text-destructive" />
           </Button>
         </>
       )}
       {!value && !uploading && (
-        <span className="text-xs text-muted-foreground">لم يُختر ملف</span>
+        <span className="text-xs text-muted-foreground">{labels.noFile}</span>
       )}
       <input ref={inputRef} type="file" className="hidden" onChange={handleFile} />
     </div>
@@ -207,6 +173,58 @@ interface EmployeeDialogProps {
 export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogProps) {
   const t = useTranslations();
   const isEdit = !!employee;
+
+  const filePickerLabels = {
+    change: t("employees.form.changeFile"),
+    choose: t("employees.form.chooseFile"),
+    noFile: t("employees.form.noFileChosen"),
+    uploadError: t("employees.form.uploadError"),
+  };
+
+  const ALLOWANCE_TYPES = [
+    { value: "FOOD", label: t("employees.form.allowances.FOOD") },
+    { value: "PREVIOUS_EXPERIENCE", label: t("employees.form.allowances.PREVIOUS_EXPERIENCE") },
+    { value: "ACADEMIC_DEGREE", label: t("employees.form.allowances.ACADEMIC_DEGREE") },
+    { value: "WORK_NATURE", label: t("employees.form.allowances.WORK_NATURE") },
+    { value: "RESPONSIBILITY", label: t("employees.form.allowances.RESPONSIBILITY") },
+  ];
+
+  const formSchema = z.object({
+    firstNameAr: z.string().min(2, t("employees.fields.firstNameAr") + " " + t("common.required")),
+    lastNameAr: z.string().min(2, t("employees.fields.lastNameAr") + " " + t("common.required")),
+    firstNameEn: z.string().min(2, t("employees.form.firstNameEnRequired")),
+    lastNameEn: z.string().min(2, t("employees.form.lastNameEnRequired")),
+    email: z.string().email(t("employees.form.invalidEmail")),
+    phone: z.string().optional(),
+    mobile: z.string().optional(),
+    nationalId: z.string().min(1, t("employees.form.nationalIdRequired")),
+    gender: z.enum(["MALE", "FEMALE"]),
+    dateOfBirth: z.string().min(1, t("employees.form.dateOfBirthRequired")),
+    departmentId: z.string().min(1, t("employees.form.departmentRequired")),
+    hireDate: z.string().min(1, t("employees.form.hireDateRequired")),
+    contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE"]),
+    employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
+    jobTitleId: z.string().optional(),
+    jobGradeId: z.string().optional(),
+    managerId: z.string().optional(),
+    basicSalary: z.number().min(0).optional(),
+    profilePhoto: z.string().optional(),
+    bloodType: z.enum(["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE"]).optional(),
+    familyMembersCount: z.number().int().min(0).optional(),
+    chronicDiseases: z.string().optional(),
+    currentAddress: z.string().optional(),
+    isSmoker: z.boolean().optional(),
+    educationLevel: z.enum(["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"]).optional(),
+    universityYear: z.number().int().min(1).max(7).optional(),
+    religion: z.string().optional(),
+    yearsOfExperience: z.number().int().min(0).optional(),
+    certificate1: z.string().optional(),
+    specialization1: z.string().optional(),
+    certificateAttachment1: z.string().optional(),
+    certificate2: z.string().optional(),
+    specialization2: z.string().optional(),
+    certificateAttachment2: z.string().optional(),
+  });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attUploading, setAttUploading] = useState(false);
   const attInputRef = useRef<HTMLInputElement>(null);
@@ -378,7 +396,11 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
           email: data.email,
           phone: data.phone || undefined,
           mobile: data.mobile || undefined,
+          nationalId: data.nationalId,
+          gender: data.gender,
+          dateOfBirth: data.dateOfBirth,
           departmentId: data.departmentId,
+          contractType: data.contractType,
           employmentStatus: data.employmentStatus,
           jobTitleId: data.jobTitleId || undefined,
           jobGradeId: data.jobGradeId || undefined,
@@ -442,8 +464,8 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         const details = errData?.error?.details?.[0] || errData?.details?.[0];
         toast.error(
           details
-            ? `الراتب خارج النطاق المسموح (${Number(details.min).toLocaleString()} – ${Number(details.max).toLocaleString()})`
-            : "الراتب خارج النطاق المسموح للدرجة الوظيفية"
+            ? `${t("employees.form.salaryOutOfRange")} (${Math.min(Number(details.min), Number(details.max)).toLocaleString()} – ${Math.max(Number(details.min), Number(details.max)).toLocaleString()})`
+            : t("employees.form.salaryOutOfRange")
         );
       } else {
         console.error("💥 Backend says:", JSON.stringify(errData, null, 2));
@@ -455,6 +477,8 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
 
   const selectedGradeId = form.watch("jobGradeId");
   const selectedGrade = jobGrades.find((g: any) => g.id === selectedGradeId);
+  const gradeMin = selectedGrade ? Math.min(Number(selectedGrade.minSalary), Number(selectedGrade.maxSalary)) : 0;
+  const gradeMax = selectedGrade ? Math.max(Number(selectedGrade.minSalary), Number(selectedGrade.maxSalary)) : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -468,11 +492,11 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="flex flex-wrap h-auto gap-1 p-1">
                 <TabsTrigger value="personal">{t("employees.tabs.personal")}</TabsTrigger>
                 <TabsTrigger value="contact">{t("employees.tabs.contact")}</TabsTrigger>
                 <TabsTrigger value="employment">{t("employees.tabs.employment")}</TabsTrigger>
-                <TabsTrigger value="qualifications">المؤهلات</TabsTrigger>
+                <TabsTrigger value="qualifications">{t("employees.tabs.qualifications")}</TabsTrigger>
                 <TabsTrigger value="additional">{t("employees.tabs.additional")}</TabsTrigger>
               </TabsList>
 
@@ -627,7 +651,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                       )}
                     </div>
                     <div className="text-muted-foreground shrink-0">
-                      {Number(selectedGrade.minSalary).toLocaleString()} – {Number(selectedGrade.maxSalary).toLocaleString()}
+                      {gradeMin.toLocaleString()} – {gradeMax.toLocaleString()}
                     </div>
                   </div>
                 )}
@@ -647,7 +671,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                         <SelectContent>
                           {jobTitles.map((title: any) => (
                             <SelectItem key={title.id} value={title.id}>
-                              {title.nameAr} ({title.code})
+                              {title.nameAr}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -680,7 +704,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                                       style={{ backgroundColor: grade.color }}
                                     />
                                   )}
-                                  {grade.nameAr} ({grade.code})
+                                  {grade.nameAr}
                                 </span>
                               </SelectItem>
                             ))}
@@ -708,7 +732,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                         </FormControl>
                         {selectedGrade && (
                           <FormDescription className="text-xs">
-                            النطاق المسموح: {Number(selectedGrade.minSalary).toLocaleString()} – {Number(selectedGrade.maxSalary).toLocaleString()}
+                            {t("employees.form.allowedRange")}: {gradeMin.toLocaleString()} – {gradeMax.toLocaleString()}
                           </FormDescription>
                         )}
                         <FormMessage />
@@ -732,7 +756,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                         <SelectContent>
                           {departments.map((dept: any) => (
                             <SelectItem key={dept.id} value={dept.id}>
-                              {dept.nameAr} ({dept.code})
+                              {dept.nameAr}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -747,11 +771,11 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                   name="managerId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>المدير المباشر ({t("common.optional")})</FormLabel>
+                      <FormLabel>{t("employees.form.directManager")} ({t("common.optional")})</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="اختر المدير المباشر" />
+                            <SelectValue placeholder={t("employees.form.selectDirectManager")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -760,6 +784,9 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                             .map((emp: any) => (
                               <SelectItem key={emp.id} value={emp.id}>
                                 {emp.firstNameAr} {emp.lastNameAr}
+                                {emp.jobTitle?.nameAr && (
+                                  <span className="text-muted-foreground mr-2">— {emp.jobTitle.nameAr}</span>
+                                )}
                               </SelectItem>
                             ))}
                         </SelectContent>
@@ -793,10 +820,10 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                             <SelectTrigger><SelectValue /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="FIXED_TERM">عقد محدد المدة</SelectItem>
-                            <SelectItem value="INDEFINITE">عقد غير محدد المدة</SelectItem>
-                            <SelectItem value="TEMPORARY">مؤقت</SelectItem>
-                            <SelectItem value="TRAINEE">متدرب</SelectItem>
+                            <SelectItem value="FIXED_TERM">{t("employees.contractTypes.fixed_term")}</SelectItem>
+                            <SelectItem value="INDEFINITE">{t("employees.contractTypes.indefinite")}</SelectItem>
+                            <SelectItem value="TEMPORARY">{t("employees.contractTypes.temporary")}</SelectItem>
+                            <SelectItem value="TRAINEE">{t("employees.contractTypes.trainee")}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -833,20 +860,20 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                 {/* Allowances */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">البدلات ({t("common.optional")})</p>
+                    <p className="text-sm font-medium">{t("employees.form.allowancesTitle")} ({t("common.optional")})</p>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       className="gap-1.5"
-                      onClick={() => setAllowances((a) => [...a, { type: "MEDICAL", amount: 0 }])}
+                      onClick={() => setAllowances((a) => [...a, { type: "FOOD", amount: 0 }])}
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      إضافة بدل
+                      {t("employees.form.addAllowance")}
                     </Button>
                   </div>
                   {allowances.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">لا توجد بدلات</p>
+                    <p className="text-xs text-muted-foreground">{t("employees.form.noAllowances")}</p>
                   ) : (
                     <div className="space-y-2">
                       {allowances.map((al, i) => (
@@ -870,7 +897,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                             className="w-32"
                             value={al.amount}
                             onChange={(e) => setAllowances((a) => a.map((x, j) => j === i ? { ...x, amount: Number(e.target.value) } : x))}
-                            placeholder="المبلغ"
+                            placeholder={t("employees.form.amount")}
                           />
                           <Button
                             type="button"
@@ -895,7 +922,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                   name="yearsOfExperience"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>سنوات الخبرة ({t("common.optional")})</FormLabel>
+                      <FormLabel>{t("employees.form.yearsOfExperience")} ({t("common.optional")})</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -911,15 +938,15 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
 
                 {/* Certificate 1 */}
                 <div className="rounded-lg border p-3 space-y-3">
-                  <p className="text-sm font-medium">الشهادة الأولى ({t("common.optional")})</p>
+                  <p className="text-sm font-medium">{t("employees.form.firstDegree")} ({t("common.optional")})</p>
                   <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="certificate1"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>اسم الشهادة</FormLabel>
-                          <FormControl><Input {...field} placeholder="بكالوريوس إدارة أعمال" /></FormControl>
+                          <FormLabel>{t("employees.form.degreeName")}</FormLabel>
+                          <FormControl><Input {...field} placeholder={t("employees.form.bachelorPlaceholder")} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -929,8 +956,8 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                       name="specialization1"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>التخصص</FormLabel>
-                          <FormControl><Input {...field} placeholder="إدارة الموارد البشرية" /></FormControl>
+                          <FormLabel>{t("employees.form.specialization")}</FormLabel>
+                          <FormControl><Input {...field} placeholder={t("employees.form.hrPlaceholder")} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -941,9 +968,9 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                     name="certificateAttachment1"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>المرفق</FormLabel>
+                        <FormLabel>{t("employees.form.attachment")}</FormLabel>
                         <FormControl>
-                          <FilePicker value={field.value || ""} onChange={field.onChange} />
+                          <FilePicker value={field.value || ""} onChange={field.onChange} labels={filePickerLabels} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -953,15 +980,15 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
 
                 {/* Certificate 2 */}
                 <div className="rounded-lg border p-3 space-y-3">
-                  <p className="text-sm font-medium">الشهادة الثانية ({t("common.optional")})</p>
+                  <p className="text-sm font-medium">{t("employees.form.secondDegree")} ({t("common.optional")})</p>
                   <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="certificate2"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>اسم الشهادة</FormLabel>
-                          <FormControl><Input {...field} placeholder="ماجستير" /></FormControl>
+                          <FormLabel>{t("employees.form.degreeName")}</FormLabel>
+                          <FormControl><Input {...field} placeholder={t("employees.form.masterPlaceholder")} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -971,8 +998,8 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                       name="specialization2"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>التخصص</FormLabel>
-                          <FormControl><Input {...field} placeholder="إدارة المشاريع" /></FormControl>
+                          <FormLabel>{t("employees.form.specialization")}</FormLabel>
+                          <FormControl><Input {...field} placeholder={t("employees.form.pmPlaceholder")} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -983,9 +1010,9 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                     name="certificateAttachment2"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>المرفق</FormLabel>
+                        <FormLabel>{t("employees.form.attachment")}</FormLabel>
                         <FormControl>
-                          <FilePicker value={field.value || ""} onChange={field.onChange} />
+                          <FilePicker value={field.value || ""} onChange={field.onChange} labels={filePickerLabels} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -996,7 +1023,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                 {/* Training Certificates */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">الشهادات التدريبية ({t("common.optional")})</p>
+                    <p className="text-sm font-medium">{t("employees.form.trainingCertificates")} ({t("common.optional")})</p>
                     <Button
                       type="button"
                       variant="outline"
@@ -1005,11 +1032,11 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                       onClick={() => setTrainingCertificates((a) => [...a, { name: "", attachmentUrl: "" }])}
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      إضافة شهادة
+                      {t("employees.form.addCertificate")}
                     </Button>
                   </div>
                   {trainingCertificates.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">لا توجد شهادات تدريبية</p>
+                    <p className="text-xs text-muted-foreground">{t("employees.form.noCertificates")}</p>
                   ) : (
                     <div className="space-y-2">
                       {trainingCertificates.map((cert, i) => (
@@ -1018,7 +1045,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                             <Input
                               value={cert.name}
                               onChange={(e) => setTrainingCertificates((a) => a.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
-                              placeholder="اسم الشهادة *"
+                              placeholder={t("employees.form.certificateName")}
                               className="flex-1"
                             />
                             <Button
@@ -1032,10 +1059,11 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                             </Button>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground shrink-0">المرفق (اختياري):</span>
+                            <span className="text-xs text-muted-foreground shrink-0">{t("employees.form.attachmentOptional")}</span>
                             <FilePicker
                               value={cert.attachmentUrl || ""}
                               onChange={(url) => setTrainingCertificates((a) => a.map((x, j) => j === i ? { ...x, attachmentUrl: url } : x))}
+                              labels={filePickerLabels}
                             />
                           </div>
                         </div>
@@ -1249,7 +1277,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                           })
                         );
                       } catch {
-                        toast.error("فشل رفع الملف");
+                        toast.error(t("employees.form.uploadError"));
                       } finally {
                         setAttUploading(false);
                       }

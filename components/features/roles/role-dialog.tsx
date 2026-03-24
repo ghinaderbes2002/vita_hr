@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -46,7 +46,19 @@ interface RoleDialogProps {
 
 export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const isEdit = !!role;
+
+  const getPermissionLabel = (permission: any) => {
+    if (locale === "ar" && permission.displayNameAr) return permission.displayNameAr;
+    if (locale !== "ar" && permission.displayNameEn) return permission.displayNameEn;
+    return permission.displayName || permission.name;
+  };
+
+  const getModuleLabel = (module: string) => {
+    const key = `roles.modules.${module}`;
+    try { return t(key as any); } catch { return module; }
+  };
 
   const createRole = useCreateRole();
   const updateRolePermissions = useUpdateRolePermissions();
@@ -227,7 +239,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                     <ScrollArea className="h-[200px] rounded-md border p-4">
                       {Object.entries(groupedPermissions).map(([module, perms]: [string, any]) => (
                         <div key={module} className="mb-4">
-                          <h4 className="font-semibold mb-2 text-sm capitalize">{module}</h4>
+                          <h4 className="font-semibold mb-2 text-sm capitalize">{getModuleLabel(module)}</h4>
                           <div className="space-y-2 mr-4">
                             {perms.map((permission: any) => (
                               <FormField
@@ -256,7 +268,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                                       </FormControl>
                                       <div className="space-y-1 leading-none">
                                         <FormLabel className="text-sm font-normal cursor-pointer">
-                                          {permission.displayName}
+                                          {getPermissionLabel(permission)}
                                         </FormLabel>
                                       </div>
                                     </FormItem>

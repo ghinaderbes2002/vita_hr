@@ -46,7 +46,9 @@
     "checkInOut": "Giriş/Çıkış",
     "attendanceRecords": "Devam Kayıtları",
     "myAlerts": "Uyarılarım",
+    "myJustifications": "Mazeretlerim",
     "attendanceAlerts": "Devam Uyarıları",
+    "attendanceJustifications": "Devam Mazeretleri",
     "attendanceReports": "Devam Raporları",
     "attendanceData": "Devam Verileri",
     "evaluations": "Değerlendirmeler",
@@ -157,6 +159,22 @@
       "displayNameEn": "İngilizce Görünen İsim",
       "description": "Açıklama",
       "permissions": "İzinler"
+    },
+    "modules": {
+      "attendance": "Devam",
+      "employees": "Çalışanlar",
+      "users": "Kullanıcılar",
+      "roles": "Roller",
+      "departments": "Departmanlar",
+      "job-titles": "İş Unvanları",
+      "job-grades": "İş Dereceleri",
+      "leave_requests": "İzin Talepleri",
+      "leave_types": "İzin Türleri",
+      "leave_balances": "İzin Bakiyeleri",
+      "holidays": "Tatiller",
+      "requests": "İdari Talepler",
+      "evaluations": "Değerlendirmeler",
+      "other": "Diğer"
     }
   },
   "employees": {
@@ -170,6 +188,49 @@
     "selectDepartment": "Departman Seçin",
     "selectJobTitle": "İş Unvanı Seçin",
     "selectJobGrade": "İş Derecesi Seçin",
+    "form": {
+      "uploadError": "Dosya yükleme başarısız",
+      "chooseFile": "Dosya Seç",
+      "changeFile": "Değiştir",
+      "noFileChosen": "Dosya seçilmedi",
+      "salaryOutOfRange": "Maaş izin verilen aralığın dışında",
+      "allowedRange": "İzin Verilen Aralık",
+      "directManager": "Doğrudan Yönetici",
+      "allowancesTitle": "Ödenekler",
+      "yearsOfExperience": "Deneyim Yılı",
+      "selectDirectManager": "Doğrudan Yönetici Seç",
+      "addAllowance": "Ödenek Ekle",
+      "noAllowances": "Ödenek yok",
+      "amount": "Miktar",
+      "degreeName": "Derece Adı",
+      "specialization": "Uzmanlık",
+      "attachment": "Ek",
+      "bachelorPlaceholder": "İşletme Lisansı",
+      "hrPlaceholder": "İnsan Kaynakları Yönetimi",
+      "masterPlaceholder": "Yüksek Lisans",
+      "pmPlaceholder": "Proje Yönetimi",
+      "addCertificate": "Sertifika Ekle",
+      "noCertificates": "Eğitim sertifikası yok",
+      "certificateName": "Sertifika Adı",
+      "attachmentOptional": "Ek (isteğe bağlı):",
+      "firstNameEnRequired": "İngilizce ad zorunludur",
+      "lastNameEnRequired": "İngilizce soyad zorunludur",
+      "invalidEmail": "Geçersiz e-posta adresi",
+      "nationalIdRequired": "Ulusal numara zorunludur",
+      "dateOfBirthRequired": "Doğum tarihi zorunludur",
+      "departmentRequired": "Departman zorunludur",
+      "hireDateRequired": "İşe alım tarihi zorunludur",
+      "firstDegree": "Birinci Derece",
+      "secondDegree": "İkinci Derece",
+      "trainingCertificates": "Eğitim Sertifikaları",
+      "allowances": {
+        "FOOD": "Yemek Ödeneği",
+        "PREVIOUS_EXPERIENCE": "Önceki Deneyim Ödeneği",
+        "ACADEMIC_DEGREE": "Akademik Derece Ödeneği",
+        "WORK_NATURE": "İş Doğası Ödeneği",
+        "RESPONSIBILITY": "Sorumluluk Ödeneği"
+      }
+    },
     "filterByDepartment": "Departmana Göre Filtrele",
     "allDepartments": "Tüm Departmanlar",
     "subordinates": {
@@ -186,11 +247,15 @@
       "email": "E-posta",
       "phone": "Telefon",
       "mobile": "Cep Telefonu",
-      "nationalId": "Kimlik Numarası",
+      "nationalId": "Ulusal Numara",
       "gender": "Cinsiyet",
       "dateOfBirth": "Doğum Tarihi",
+      "nationality": "Uyruk",
+      "maritalStatus": "Medeni Durum",
       "department": "Departman",
+      "jobTitle": "İş Unvanı",
       "jobGrade": "İş Derecesi",
+      "manager": "Doğrudan Yönetici",
       "basicSalary": "Temel Maaş",
       "hireDate": "İşe Alım Tarihi",
       "contractType": "Sözleşme Türü",
@@ -217,10 +282,10 @@
       "female": "Kadın"
     },
     "contractTypes": {
-      "permanent": "Sürekli",
-      "contract": "Sözleşmeli",
+      "fixed_term": "Belirli Süreli",
+      "indefinite": "Belirsiz Süreli",
       "temporary": "Geçici",
-      "intern": "Stajyer"
+      "trainee": "Stajyer"
     },
     "bloodTypes": {
       "A_POSITIVE": "A+",
@@ -255,6 +320,7 @@
       "personal": "Kişisel Bilgiler",
       "employment": "İstihdam Bilgileri",
       "contact": "İletişim Bilgileri",
+      "qualifications": "Nitelikler",
       "additional": "Ek Bilgiler"
     }
   },
@@ -327,11 +393,33 @@
     "title": "İzinler",
     "myRequests": "İzin Taleplerim",
     "newRequest": "Yeni İzin Talebi",
+    "newRequestDescription": "Yeni bir izin talebi oluşturun",
+    "newRequestCardTitle": "İzin Talebi Detayları",
+    "newRequestCardDescription": "Yeni bir izin talebi oluşturmak için aşağıdaki bilgileri doldurun",
     "editRequest": "İzin Talebini Düzenle",
     "viewRequest": "İzin Talebini Görüntüle",
     "pendingApproval": "Onay Bekleyen",
     "calendar": "İzin Takvimi",
     "balances": "İzin Bakiyeleri",
+    "form": {
+      "selectDate": "Tarih Seç",
+      "halfDay": "Yarım Gün",
+      "halfDayDescription": "Sadece yarım gün talep etmek istiyor musunuz?",
+      "halfDayPeriod": "Yarım Gün Dönemi",
+      "selectPeriod": "Dönem Seç",
+      "morning": "Sabah",
+      "afternoon": "Öğleden Sonra",
+      "selectSubstitute": "Vekil Seç",
+      "reasonPlaceholder": "İzin nedenini yazın...",
+      "attachments": "Ekler (İsteğe Bağlı)",
+      "attachmentsDescription": "Destekleyici bir belge veya görsel ekleyebilirsiniz",
+      "attachFile": "Dosya Ekle",
+      "changeAttachment": "Eki Değiştir",
+      "attachment": "Ek",
+      "uploadError": "Dosya yükleme başarısız",
+      "leaveTypeRequired": "İzin türü zorunludur",
+      "reasonMinLength": "Neden en az 5 karakter olmalıdır"
+    },
     "fields": {
       "leaveType": "İzin Türü",
       "startDate": "Başlangıç Tarihi",
@@ -353,6 +441,13 @@
       "cancelled": "İptal Edildi",
       "in_progress": "Devam Ediyor",
       "completed": "Tamamlandı"
+    },
+    "tabs": {
+      "all": "Tümü",
+      "draft": "Taslak",
+      "pending": "Bekleyen",
+      "approved": "Onaylanan",
+      "rejected": "Reddedilen"
     }
   },
   "attendance": {
@@ -435,13 +530,61 @@
       "checkOutError": "Çıkış yapılamadı",
       "alreadyCheckedIn": "Bugün zaten giriş yaptınız",
       "notCheckedIn": "Önce giriş yapmalısınız"
+    },
+    "myAlertsDescription": "Devam ve çıkışlarımla ilgili uyarıları görüntüle",
+    "myJustificationsTitle": "Mazeretlerim",
+    "myJustificationsDescription": "Devam mazeretleriniz",
+    "justify": "Mazeret Bildir",
+    "tabs": {
+      "all": "Tümü",
+      "open": "Açık",
+      "acknowledged": "Onaylandı",
+      "resolved": "Çözüldü"
+    },
+    "alertFields": {
+      "message": "Mesaj",
+      "severity": "Önem",
+      "resolutionNotes": "Çözüm Notları",
+      "type": "Tür",
+      "description": "Açıklama",
+      "managerNotes": "Yönetici Notları",
+      "hrNotes": "İK Notları"
+    },
+    "justificationTypes": {
+      "sick": "Hastalık",
+      "emergency": "Acil Durum",
+      "officialMission": "Resmi Görev",
+      "transportation": "Ulaşım Sorunu",
+      "other": "Diğer"
+    },
+    "justificationStatuses": {
+      "pendingManager": "Yönetici Onayı Bekleniyor",
+      "managerApproved": "Yönetici Onayladı",
+      "pendingHr": "İK Onayı Bekleniyor",
+      "hrApproved": "Onaylandı",
+      "hrRejected": "Reddedildi",
+      "autoRejected": "Otomatik Reddedildi"
+    },
+    "submitJustification": {
+      "title": "Mazeret Bildir",
+      "typeLabel": "Mazeret Türü",
+      "descLabel": "Mazeret Açıklaması",
+      "placeholder": "Gecikme veya devamsızlık nedenini yazın...",
+      "submit": "Mazeret Gönder",
+      "submitting": "Gönderiliyor..."
     }
   },
   "requests": {
     "myRequests": "Taleplerim",
-    "myRequestsDescription": "İdari taleplerinizi görüntüleyin ve yönetin",
+    "myRequestsDescription": "İzin ve idari taleplerinizi görüntüleyin ve yönetin",
+    "tabs": {
+      "leaveRequests": "İzin Talepleri",
+      "adminRequests": "İdari Talepler"
+    },
     "newRequest": "Yeni Talep",
-    "newRequestDescription": "Yeni bir idari talep oluşturun",
+    "newRequestDescription": "Yeni bir talep oluşturun",
+    "adminRequest": "İdari Talep",
+    "adminRequestDescription": "Nakil, istifa, ödül, yetki devri ve daha fazlası",
     "pendingManagerApproval": "Yönetici Onayı Bekleyen",
     "pendingManagerDescription": "İnceleme ve onay bekleyen talepler",
     "allRequests": "Tüm Talepler",
@@ -451,15 +594,17 @@
     "filterByStatus": "Duruma Göre Filtrele",
     "filterByType": "Türe Göre Filtrele",
     "types": {
-      "TRANSFER": "Transfer Talebi",
-      "PERMISSION": "İzin Talebi",
-      "ADVANCE": "Avans Talebi",
-      "RESIGNATION": "İstifa Talebi",
-      "JOB_CHANGE": "İş Değişikliği Talebi",
-      "RIGHTS": "Haklar Talebi",
-      "REWARD": "Ödül Talebi",
-      "SPONSORSHIP": "Sponsorluk Talebi",
-      "OTHER": "Diğer"
+      "TRANSFER": "Nakil",
+      "RESIGNATION": "İstifa",
+      "REWARD": "Ödül",
+      "OTHER": "Diğer",
+      "PENALTY_PROPOSAL": "Ceza Önerisi",
+      "OVERTIME_EMPLOYEE": "Çalışan Fazla Mesai",
+      "OVERTIME_MANAGER": "Yönetici Fazla Mesai",
+      "BUSINESS_MISSION": "İş Görevi",
+      "DELEGATION": "Yetki Devri",
+      "HIRING_REQUEST": "İşe Alım Talebi",
+      "COMPLAINT": "Şikayet"
     },
     "statuses": {
       "DRAFT": "Taslak",
@@ -788,6 +933,7 @@
     "noData": "Veri Yok",
     "previous": "Önceki",
     "next": "Sonraki",
+    "of": "/",
     "actions": "İşlemler",
     "status": "Durum",
     "back": "Geri",

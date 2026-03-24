@@ -31,16 +31,16 @@ import { ar } from "date-fns/locale";
 
 const JUSTIFIABLE_TYPES = ["LATE", "ABSENT", "EARLY_LEAVE", "MISSING_CLOCK_OUT"];
 
-const justificationTypeLabels: Record<JustificationType, string> = {
-  SICK: "مرض",
-  EMERGENCY: "طارئ",
-  OFFICIAL_MISSION: "مهمة رسمية",
-  TRANSPORTATION: "مشكلة مواصلات",
-  OTHER: "أخرى",
-};
-
 export default function MyAlertsPage() {
   const t = useTranslations();
+
+  const justificationTypeLabels: Record<JustificationType, string> = {
+    SICK: t("attendance.justificationTypes.sick"),
+    EMERGENCY: t("attendance.justificationTypes.emergency"),
+    OFFICIAL_MISSION: t("attendance.justificationTypes.officialMission"),
+    TRANSPORTATION: t("attendance.justificationTypes.transportation"),
+    OTHER: t("attendance.justificationTypes.other"),
+  };
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"all" | AlertStatus>("all");
 
@@ -88,13 +88,13 @@ export default function MyAlertsPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>التاريخ</TableHead>
-            <TableHead>النوع</TableHead>
-            <TableHead>الرسالة</TableHead>
-            <TableHead>الشدة</TableHead>
-            <TableHead>الحالة</TableHead>
-            <TableHead>ملاحظات الحل</TableHead>
-            <TableHead className="w-[100px]">تبرير</TableHead>
+            <TableHead>{t("attendance.fields.date")}</TableHead>
+            <TableHead>{t("attendance.alertFields.type")}</TableHead>
+            <TableHead>{t("attendance.alertFields.message")}</TableHead>
+            <TableHead>{t("attendance.alertFields.severity")}</TableHead>
+            <TableHead>{t("attendance.fields.status")}</TableHead>
+            <TableHead>{t("attendance.alertFields.resolutionNotes")}</TableHead>
+            <TableHead className="w-[100px]">{t("attendance.justify")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -123,7 +123,7 @@ export default function MyAlertsPage() {
                   {alert.status === "OPEN" && JUSTIFIABLE_TYPES.includes(alert.alertType) && (
                     <Button variant="outline" size="sm" onClick={() => openJustify(alert)}>
                       <FileText className="h-3.5 w-3.5 ml-1" />
-                      تبرير
+                      {t("attendance.justify")}
                     </Button>
                   )}
                 </TableCell>
@@ -137,14 +137,14 @@ export default function MyAlertsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="تنبيهاتي" description="عرض التنبيهات المتعلقة بحضوري وانصرافي" />
+      <PageHeader title={t("attendance.myAlerts")} description={t("attendance.myAlertsDescription")} />
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }}>
         <TabsList>
-          <TabsTrigger value="all">الكل</TabsTrigger>
-          <TabsTrigger value="OPEN">مفتوحة</TabsTrigger>
-          <TabsTrigger value="ACKNOWLEDGED">تم الإقرار</TabsTrigger>
-          <TabsTrigger value="RESOLVED">محلولة</TabsTrigger>
+          <TabsTrigger value="all">{t("attendance.tabs.all")}</TabsTrigger>
+          <TabsTrigger value="OPEN">{t("attendance.tabs.open")}</TabsTrigger>
+          <TabsTrigger value="ACKNOWLEDGED">{t("attendance.tabs.acknowledged")}</TabsTrigger>
+          <TabsTrigger value="RESOLVED">{t("attendance.tabs.resolved")}</TabsTrigger>
         </TabsList>
         <TabsContent value="all">{renderTable(alerts)}</TabsContent>
         <TabsContent value="OPEN">{renderTable(alerts.filter((a: AttendanceAlert) => a.status === "OPEN"))}</TabsContent>
@@ -160,14 +160,14 @@ export default function MyAlertsPage() {
       <Dialog open={justifyDialogOpen} onOpenChange={setJustifyDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>تقديم تبرير</DialogTitle>
+            <DialogTitle>{t("attendance.submitJustification.title")}</DialogTitle>
             <DialogDescription>
               {selectedAlert && `${selectedAlert.messageAr} — ${formatDate(selectedAlert.date)}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>نوع التبرير</Label>
+              <Label>{t("attendance.submitJustification.typeLabel")}</Label>
               <Select value={justType} onValueChange={(v) => setJustType(v as JustificationType)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -180,22 +180,22 @@ export default function MyAlertsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>وصف التبرير *</Label>
+              <Label>{t("attendance.submitJustification.descLabel")} *</Label>
               <Textarea
                 value={descAr}
                 onChange={(e) => setDescAr(e.target.value)}
-                placeholder="اكتب سبب التأخير أو الغياب..."
+                placeholder={t("attendance.submitJustification.placeholder")}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setJustifyDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setJustifyDialogOpen(false)}>{t("common.cancel")}</Button>
             <Button
               onClick={submitJustification}
               disabled={!descAr.trim() || createJustification.isPending}
             >
-              {createJustification.isPending ? "جاري الإرسال..." : "إرسال التبرير"}
+              {createJustification.isPending ? t("attendance.submitJustification.submitting") : t("attendance.submitJustification.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
