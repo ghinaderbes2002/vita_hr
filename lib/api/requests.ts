@@ -65,4 +65,25 @@ export const requestsApi = {
     const response = await apiClient.post(`/requests/${id}/hr-reject`, { notes });
     return response.data.data;
   },
+
+  // New dynamic approval system
+  getPendingMyApproval: async (params?: { page?: number; limit?: number }) => {
+    const response = await apiClient.get("/requests/pending-my-approval", { params });
+    return response.data;
+  },
+
+  getApprovals: async (id: string) => {
+    const response = await apiClient.get(`/requests/${id}/approvals`);
+    return response.data.data;
+  },
+
+  approve: async (id: string, notes?: string) => {
+    const response = await apiClient.post(`/requests/${id}/approve`, { notes });
+    return response.data.data;
+  },
+
+  reject: async (id: string, reason: string) => {
+    const response = await apiClient.post(`/requests/${id}/reject`, { reason });
+    return response.data.data;
+  },
 };

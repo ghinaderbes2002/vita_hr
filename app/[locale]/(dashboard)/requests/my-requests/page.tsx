@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { Plus, Send, X, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import { Request } from "@/types";
 
 export default function MyRequestsPage() {
   const t = useTranslations();
+  const router = useRouter();
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selected, setSelected] = useState<Request | null>(null);
@@ -104,6 +106,10 @@ export default function MyRequestsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push(`/requests/${req.id}`)}>
+                          <Eye className="h-4 w-4 ml-2" />
+                          {t("common.view")}
+                        </DropdownMenuItem>
                         {req.status === "DRAFT" && (
                           <DropdownMenuItem onClick={() => handleSubmit(req)}>
                             <Send className="h-4 w-4 ml-2" />

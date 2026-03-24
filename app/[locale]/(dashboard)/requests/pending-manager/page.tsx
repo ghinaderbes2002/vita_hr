@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle, XCircle, MoreHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CheckCircle, XCircle, MoreHorizontal, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -12,38 +13,35 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRequests, useManagerApproveRequest, useManagerRejectRequest } from "@/lib/hooks/use-requests";
+import { usePendingMyApproval, useApproveRequest, useRejectRequest } from "@/lib/hooks/use-requests";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
-import { usePermissions } from "@/lib/hooks/use-permissions";
 import { Request } from "@/types";
 
 export default function PendingManagerPage() {
   const t = useTranslations();
-  const { hasPermission, isAdmin } = usePermissions();
-  const canApprove = isAdmin() || hasPermission("requests:manager-approve");
-  const canReject = isAdmin() || hasPermission("requests:manager-reject");
+  const router = useRouter();
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selected, setSelected] = useState<Request | null>(null);
 
-  const { data, isLoading } = useRequests({ status: "PENDING_MANAGER", limit: 50 });
-  const managerApprove = useManagerApproveRequest();
-  const managerReject = useManagerRejectRequest();
+  const { data, isLoading } = usePendingMyApproval({ limit: 50 });
+  const approveRequest = useApproveRequest();
+  const rejectRequest = useRejectRequest();
 
   const requests: Request[] = (data as any)?.data?.items || (data as any)?.data || [];
 
   const handleApproveConfirm = async (notes: string) => {
     if (selected) {
-      await managerApprove.mutateAsync({ id: selected.id, notes: notes || undefined });
+      await approveRequest.mutateAsync({ id: selected.id, notes: notes || undefined });
       setApproveDialogOpen(false);
       setSelected(null);
     }
   };
 
-  const handleRejectConfirm = async (notes: string) => {
+  const handleRejectConfirm = async (reason: string) => {
     if (selected) {
-      await managerReject.mutateAsync({ id: selected.id, notes });
+      await rejectRequest.mutateAsync({ id: selected.id, reason });
       setRejectDialogOpen(false);
       setSelected(null);
     }
@@ -53,7 +51,7 @@ export default function PendingManagerPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("requests.pendingManagerApproval")}
-        description={t("requests.pendingManagerDescription")}
+        description={t("requests.pendingManagerDescription") || "الطلبات التي تنتظر موافقتك"}
       />
 
       <div className="rounded-md border">
@@ -100,34 +98,32 @@ export default function PendingManagerPage() {
                     {new Date(req.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    {(canApprove || canReject) && (
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {canApprove && (
-                            <DropdownMenuItem
-                              onClick={() => { setSelected(req); setApproveDialogOpen(true); }}
-                            >
-                              <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
-                              {t("requests.actions.approve")}
-                            </DropdownMenuItem>
-                          )}
-                          {canReject && (
-                            <DropdownMenuItem
-                              onClick={() => { setSelected(req); setRejectDialogOpen(true); }}
-                              className="text-destructive"
-                            >
-                              <XCircle className="h-4 w-4 ml-2" />
-                              {t("requests.actions.reject")}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push(`/requests/${req.id}`)}>
+                          <Eye className="h-4 w-4 ml-2" />
+                          {t("common.view")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => { setSelected(req); setApproveDialogOpen(true); }}
+                        >
+                          <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
+                          {t("requests.actions.approve")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => { setSelected(req); setRejectDialogOpen(true); }}
+                          className="text-destructive"
+                        >
+                          <XCircle className="h-4 w-4 ml-2" />
+                          {t("requests.actions.reject")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -141,14 +137,14 @@ export default function PendingManagerPage() {
         onOpenChange={setApproveDialogOpen}
         action="approve"
         onConfirm={handleApproveConfirm}
-        isLoading={managerApprove.isPending}
+        isLoading={approveRequest.isPending}
       />
       <RequestActionDialog
         open={rejectDialogOpen}
         onOpenChange={setRejectDialogOpen}
         action="reject"
         onConfirm={handleRejectConfirm}
-        isLoading={managerReject.isPending}
+        isLoading={rejectRequest.isPending}
       />
     </div>
   );

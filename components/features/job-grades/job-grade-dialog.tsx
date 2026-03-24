@@ -29,7 +29,7 @@ import { JobGrade } from "@/lib/api/job-grades";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
-  code: z.string().min(1, "الكود مطلوب"),
+  code: z.string().optional(),
   nameAr: z.string().min(1, "الاسم بالعربي مطلوب"),
   nameEn: z.string().min(1, "الاسم بالإنجليزي مطلوب"),
   description: z.string().optional(),
@@ -96,10 +96,12 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
 
   const onSubmit = async (data: FormData) => {
     try {
+      const payload: any = { ...data };
+      if (!isEdit && !data.code) delete payload.code;
       if (isEdit) {
         await updateJobGrade.mutateAsync({ id: jobGrade.id, data });
       } else {
-        await createJobGrade.mutateAsync(data);
+        await createJobGrade.mutateAsync(payload);
       }
       onOpenChange(false);
       form.reset();
@@ -129,9 +131,9 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("jobGrades.fields.code")}</FormLabel>
+                  <FormLabel>{t("jobGrades.fields.code")}{!isEdit && " (اختياري)"}</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isEdit} placeholder={t("jobGrades.placeholders.code")} />
+                    <Input {...field} disabled={isEdit} placeholder={isEdit ? "" : "سيُنشأ تلقائياً"} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

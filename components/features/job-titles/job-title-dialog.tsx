@@ -36,7 +36,7 @@ import { JobTitle } from "@/types";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
-  code: z.string().min(1),
+  code: z.string().optional(),
   nameAr: z.string().min(1),
   nameEn: z.string().min(1),
   nameTr: z.string().optional(),
@@ -101,9 +101,9 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
   const onSubmit = async (data: FormData) => {
     try {
       const payload: any = {
-        code: data.code,
         nameAr: data.nameAr,
         nameEn: data.nameEn,
+        ...(data.code && { code: data.code }),
         ...(data.nameTr && { nameTr: data.nameTr }),
         ...(data.description && { description: data.description }),
         ...(data.gradeId && { gradeId: data.gradeId }),
@@ -141,9 +141,9 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("jobTitles.fields.code")}</FormLabel>
+                  <FormLabel>{t("jobTitles.fields.code")}{!isEdit && " (اختياري)"}</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isEdit} placeholder="DEV" />
+                    <Input {...field} disabled={isEdit} placeholder={isEdit ? "" : "سيُنشأ تلقائياً"} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

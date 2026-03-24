@@ -3,15 +3,15 @@
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-  ArrowRight, Mail, Phone, Building2, Calendar, User, Briefcase,
+  ArrowRight, Mail, Building2, User, Briefcase,
   Paperclip, Heart, GraduationCap, MapPin, Users, FileDown,
-  BadgeCheck, Cigarette,
+  BadgeCheck, Cigarette, Award, DollarSign, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
+import { TrainingCertificate, EmployeeAllowance } from "@/types";
 import { useEmployee } from "@/lib/hooks/use-employees";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -78,6 +78,27 @@ export default function EmployeeDetailsPage() {
 
   const attachments: { id: string; fileUrl: string; fileName: string; createdAt: string }[] =
     emp.attachments || [];
+
+  const trainingCertificates: TrainingCertificate[] = emp.trainingCertificates || [];
+  const allowances: EmployeeAllowance[] = emp.allowances || [];
+
+  const CONTRACT_TYPE_LABELS: Record<string, string> = {
+    FIXED_TERM: "عقد محدد المدة",
+    INDEFINITE: "عقد غير محدد المدة",
+    TEMPORARY: "مؤقت",
+    TRAINEE: "متدرب",
+    PERMANENT: "دائم",
+    CONTRACT: "عقد",
+    INTERN: "متدرب",
+  };
+
+  const ALLOWANCE_TYPE_LABELS: Record<string, string> = {
+    MEDICAL: "بدل طبي",
+    EXPERIENCE: "بدل خبرة",
+    HIGHER_DEGREE: "بدل مؤهل عالٍ",
+    WORK_NATURE: "بدل طبيعة عمل",
+    RESPONSIBILITY: "بدل مسؤولية",
+  };
 
   return (
     <div className="space-y-6">
@@ -204,13 +225,32 @@ export default function EmployeeDetailsPage() {
               label={t("employees.fields.hireDate")}
               value={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("ar-EG") : undefined}
             />
-            <InfoRow label={t("employees.fields.contractType")} value={t(`employees.contractTypes.${employee.contractType.toLowerCase()}`)} />
-            <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? Number(emp.basicSalary).toLocaleString() : undefined} />
+            <InfoRow label={t("employees.fields.contractType")} value={CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType} />
+            <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `${Number(emp.basicSalary).toLocaleString()} ريال` : undefined} />
             {employee.manager && (
               <InfoRow
                 label={t("employees.fields.manager")}
                 value={`${(employee.manager as any).firstNameAr} ${(employee.manager as any).lastNameAr}`}
               />
+            )}
+            {allowances.length > 0 && (
+              <div className="pt-2">
+                <span className="text-sm text-muted-foreground block mb-2">البدلات</span>
+                <div className="space-y-1">
+                  {allowances.map((al, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{ALLOWANCE_TYPE_LABELS[al.type] || al.type}</span>
+                      <span className="font-medium">{Number(al.amount).toLocaleString()} ريال</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
+                    <span className="font-medium">الإجمالي</span>
+                    <span className="font-bold text-primary">
+                      {allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString()} ريال
+                    </span>
+                  </div>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -260,6 +300,92 @@ export default function EmployeeDetailsPage() {
                   <span className="text-sm font-medium">{emp.chronicDiseases}</span>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ─── Qualifications ────────────────────────────────── */}
+        {(emp.yearsOfExperience !== undefined || emp.certificate1 || emp.certificate2) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-primary" />
+                المؤهلات والخبرة
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y divide-border/50">
+              {emp.yearsOfExperience !== undefined && emp.yearsOfExperience !== null && (
+                <InfoRow label="سنوات الخبرة" value={`${emp.yearsOfExperience} سنة`} />
+              )}
+              {emp.certificate1 && (
+                <div className="py-2 space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">الشهادة الأولى</span>
+                  <InfoRow label="الشهادة" value={emp.certificate1} />
+                  {emp.specialization1 && <InfoRow label="التخصص" value={emp.specialization1} />}
+                  {emp.certificateAttachment1 && (
+                    <a
+                      href={emp.certificateAttachment1}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      عرض المرفق
+                    </a>
+                  )}
+                </div>
+              )}
+              {emp.certificate2 && (
+                <div className="py-2 space-y-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">الشهادة الثانية</span>
+                  <InfoRow label="الشهادة" value={emp.certificate2} />
+                  {emp.specialization2 && <InfoRow label="التخصص" value={emp.specialization2} />}
+                  {emp.certificateAttachment2 && (
+                    <a
+                      href={emp.certificateAttachment2}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      عرض المرفق
+                    </a>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ─── Training Certificates ─────────────────────────── */}
+        {trainingCertificates.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Award className="h-4 w-4 text-primary" />
+                الشهادات التدريبية
+                <Badge variant="secondary" className="mr-auto">{trainingCertificates.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {trainingCertificates.map((cert, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-lg border p-2.5">
+                    <span className="text-sm font-medium">{cert.name}</span>
+                    {cert.attachmentUrl && (
+                      <a
+                        href={cert.attachmentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        مرفق
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}

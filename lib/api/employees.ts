@@ -14,12 +14,12 @@ export const employeesApi = {
     return response.data.data;
   },
 
-  create: async (data: Partial<Employee>): Promise<Employee> => {
+  create: async (data: Record<string, any>): Promise<Employee> => {
     const response = await apiClient.post("/employees", data);
     return response.data.data;
   },
 
-  update: async (id: string, data: Partial<Employee>): Promise<Employee> => {
+  update: async (id: string, data: Record<string, any>): Promise<Employee> => {
     const response = await apiClient.patch(`/employees/${id}`, data);
     return response.data.data;
   },

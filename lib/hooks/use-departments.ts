@@ -35,7 +35,9 @@ export function useCreateDepartment() {
       toast.success("تم إنشاء القسم بنجاح");
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || "حدث خطأ";
+      const code = error.response?.data?.error?.code || error.response?.data?.code;
+      if (code === "DEPARTMENT_CODE_EXISTS") return toast.error("هذا الكود موجود مسبقاً، اختر كوداً مختلفاً");
+      const message = error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ";
       toast.error(message);
     },
   });

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Form,
@@ -33,6 +33,50 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { CreateLeaveRequestData, LeaveRequest } from "@/lib/api/leave-requests";
+import { useState } from "react";
+import { toast } from "sonner";
+
+function FilePicker({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState<string>("");
+
+  const handleFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.fileUrl) {
+        onChange(json.fileUrl);
+        setFileName(json.fileName || file.name);
+      }
+    } catch {
+      toast.error("فشل رفع الملف");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <input ref={inputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+      <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
+        {uploading ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Paperclip className="h-4 w-4 ml-2" />}
+        {value ? "تغيير المرفق" : "إرفاق ملف"}
+      </Button>
+      {value && (
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <span className="max-w-40 truncate">{fileName || "مرفق"}</span>
+          <button type="button" onClick={() => { onChange(""); setFileName(""); }} className="text-destructive hover:text-destructive/80">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const formSchema = z.object({
   leaveTypeId: z.string().min(1, "نوع الإجازة مطلوب"),
@@ -42,6 +86,7 @@ const formSchema = z.object({
   isHalfDay: z.boolean(),
   halfDayPeriod: z.enum(["MORNING", "AFTERNOON"]).optional(),
   substituteId: z.string().optional(),
+  attachmentUrl: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -80,6 +125,7 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
       isHalfDay: initialData?.isHalfDay || false,
       halfDayPeriod: initialData?.halfDayPeriod || undefined,
       substituteId: initialData?.substituteId || "",
+      attachmentUrl: (initialData as any)?.attachmentUrl || "",
     },
   });
 
@@ -94,6 +140,7 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
       isHalfDay: data.isHalfDay,
       halfDayPeriod: data.isHalfDay ? data.halfDayPeriod : undefined,
       substituteId: data.substituteId || undefined,
+      ...(data.attachmentUrl && { attachmentUrl: data.attachmentUrl }),
     };
 
     await onSubmit(submitData);
@@ -275,6 +322,21 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
               <FormControl>
                 <Textarea {...field} rows={4} placeholder="اكتب سبب الإجازة..." />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="attachmentUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>المرفقات (اختياري)</FormLabel>
+              <FormControl>
+                <FilePicker value={field.value || ""} onChange={field.onChange} />
+              </FormControl>
+              <FormDescription>يمكنك إرفاق وثيقة أو صورة داعمة للطلب</FormDescription>
               <FormMessage />
             </FormItem>
           )}

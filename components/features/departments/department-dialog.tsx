@@ -39,7 +39,7 @@ interface DepartmentWithChildren extends Department {
 }
 
 const formSchema = z.object({
-  code: z.string().min(1, "الكود مطلوب"),
+  code: z.string().optional(),
   nameAr: z.string().min(2, "الاسم بالعربية مطلوب"),
   nameEn: z.string().min(2, "الاسم بالإنجليزية مطلوب"),
   nameTr: z.string().min(2, "الاسم بالتركية مطلوب"),
@@ -104,11 +104,11 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
 
   const onSubmit = async (data: FormData) => {
     try {
-      const submitData = {
-        code: data.code,
+      const submitData: any = {
         nameAr: data.nameAr,
         nameEn: data.nameEn,
         nameTr: data.nameTr,
+        ...(data.code && { code: data.code }),
         ...(data.parentId && { parentId: data.parentId }),
         ...(data.managerId && { managerId: data.managerId }),
       };
@@ -157,9 +157,9 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("departments.fields.code")}</FormLabel>
+                  <FormLabel>{t("departments.fields.code")}{!isEdit && " (اختياري)"}</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isEdit} />
+                    <Input {...field} disabled={isEdit} placeholder={isEdit ? "" : "سيُنشأ تلقائياً"} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -687,12 +687,20 @@
       "RIGHTS": "طلب استحقاقات",
       "REWARD": "طلب مكافأة",
       "SPONSORSHIP": "طلب كفالة",
-      "OTHER": "أخرى"
+      "OTHER": "أخرى",
+      "PENALTY_PROPOSAL": "اقتراح جزاء",
+      "OVERTIME_EMPLOYEE": "عمل إضافي (موظف)",
+      "OVERTIME_MANAGER": "عمل إضافي (مدير)",
+      "BUSINESS_MISSION": "مهمة عمل",
+      "DELEGATION": "تفويض",
+      "HIRING_REQUEST": "طلب توظيف",
+      "COMPLAINT": "شكوى"
     },
     "statuses": {
       "DRAFT": "مسودة",
       "PENDING_MANAGER": "بانتظار المدير",
       "PENDING_HR": "بانتظار HR",
+      "IN_APPROVAL": "قيد الموافقة",
       "APPROVED": "مقبول",
       "REJECTED": "مرفوض",
       "CANCELLED": "ملغي"

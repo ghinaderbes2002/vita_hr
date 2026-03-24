@@ -29,7 +29,7 @@ import { useCreateWorkSchedule, useUpdateWorkSchedule } from "@/lib/hooks/use-wo
 import { WorkSchedule } from "@/lib/api/work-schedules";
 
 const formSchema = z.object({
-  code: z.string().min(1, "الكود مطلوب"),
+  code: z.string().optional(),
   nameAr: z.string().min(1, "الاسم بالعربي مطلوب"),
   nameEn: z.string().min(1, "الاسم بالإنجليزي مطلوب"),
   workStartTime: z.string().min(1, "وقت بداية العمل مطلوب"),
@@ -100,7 +100,6 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
   const onSubmit = async (data: FormData) => {
     try {
       const submitData: any = {
-        code: data.code,
         nameAr: data.nameAr,
         nameEn: data.nameEn,
         workStartTime: data.workStartTime,
@@ -111,10 +110,8 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
         isActive: Boolean(data.isActive),
       };
 
-      // Only add description if it has a value
-      if (data.description) {
-        submitData.description = data.description;
-      }
+      if (data.code) submitData.code = data.code;
+      if (data.description) submitData.description = data.description;
 
       console.log("Submitting work schedule data:", submitData);
 
@@ -149,9 +146,9 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الكود</FormLabel>
+                    <FormLabel>الكود{!schedule && " (اختياري)"}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="WS001" />
+                      <Input {...field} placeholder={schedule ? "" : "سيُنشأ تلقائياً"} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

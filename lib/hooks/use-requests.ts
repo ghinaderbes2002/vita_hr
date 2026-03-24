@@ -39,7 +39,13 @@ export function useCreateRequest() {
       toast.success("تم إنشاء الطلب بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إنشاء الطلب");
+      const msg = error.response?.data?.error?.message
+        || error.response?.data?.message
+        || error.response?.data?.errors?.[0]?.message
+        || JSON.stringify(error.response?.data)
+        || "حدث خطأ أثناء إنشاء الطلب";
+      toast.error(msg);
+      console.error("Create request error:", error.response?.data);
     },
   });
 }
@@ -129,6 +135,55 @@ export function useHrRejectRequest() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "حدث خطأ");
+    },
+  });
+}
+
+// ─── Dynamic approval system ───────────────────────────────────────
+
+export function usePendingMyApproval(params?: { page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: ["requests", "pending-my-approval", params],
+    queryFn: () => requestsApi.getPendingMyApproval(params),
+  });
+}
+
+export function useRequestApprovals(id: string) {
+  return useQuery({
+    queryKey: ["request-approvals", id],
+    queryFn: () => requestsApi.getApprovals(id),
+    enabled: !!id,
+  });
+}
+
+export function useApproveRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
+      requestsApi.approve(id, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      toast.success("تمت الموافقة على الطلب");
+    },
+    onError: (error: any) => {
+      const code = error.response?.data?.error?.code || error.response?.data?.code;
+      if (code === "AUTH_INSUFFICIENT_PERMISSIONS") return toast.error("غير مخوَّل للموافقة على هذه الخطوة");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
+    },
+  });
+}
+
+export function useRejectRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      requestsApi.reject(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      toast.success("تم رفض الطلب");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

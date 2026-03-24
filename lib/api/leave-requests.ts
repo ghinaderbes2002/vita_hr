@@ -59,6 +59,7 @@ export interface CreateLeaveRequestData {
   isHalfDay: boolean;
   halfDayPeriod?: "MORNING" | "AFTERNOON";
   substituteId?: string;
+  attachmentUrl?: string;
 }
 
 export interface UpdateLeaveRequestData {

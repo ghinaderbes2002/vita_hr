@@ -7,15 +7,45 @@ export type RequestType =
   | "RIGHTS"
   | "REWARD"
   | "SPONSORSHIP"
-  | "OTHER";
+  | "OTHER"
+  | "PENALTY_PROPOSAL"
+  | "OVERTIME_EMPLOYEE"
+  | "OVERTIME_MANAGER"
+  | "BUSINESS_MISSION"
+  | "DELEGATION"
+  | "HIRING_REQUEST"
+  | "COMPLAINT";
 
 export type RequestStatus =
   | "DRAFT"
   | "PENDING_MANAGER"
   | "PENDING_HR"
+  | "IN_APPROVAL"
   | "APPROVED"
   | "REJECTED"
   | "CANCELLED";
+
+export type ApproverRole =
+  | "DIRECT_MANAGER"
+  | "DEPARTMENT_MANAGER"
+  | "TARGET_MANAGER"
+  | "HR"
+  | "CEO"
+  | "CFO";
+
+export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";
+
+export interface ApprovalStep {
+  id: string;
+  requestId: string;
+  stepOrder: number;
+  approverRole: ApproverRole;
+  status: ApprovalStatus;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  notes?: string;
+  createdAt: string;
+}
 
 export interface Request {
   id: string;
@@ -31,10 +61,13 @@ export interface Request {
   };
   type: RequestType;
   status: RequestStatus;
-  reason: string;
+  reason?: string;
   notes?: string;
   attachmentUrl?: string;
   details?: Record<string, any>;
+  currentStepOrder?: number;
+  targetEmployeeId?: string;
+  approvalSteps?: ApprovalStep[];
   managerStatus?: string;
   managerReviewedAt?: string;
   managerNotes?: string;
@@ -42,7 +75,6 @@ export interface Request {
   hrReviewedAt?: string;
   hrNotes?: string;
   cancelReason?: string;
-  history?: any[];
   createdAt: string;
   updatedAt: string;
 }
@@ -125,6 +157,28 @@ export interface EmployeeAttachment {
   createdAt?: string;
 }
 
+export type AllowanceType =
+  | "MEDICAL"
+  | "EXPERIENCE"
+  | "HIGHER_DEGREE"
+  | "WORK_NATURE"
+  | "RESPONSIBILITY";
+
+export interface EmployeeAllowance {
+  id: string;
+  type: AllowanceType;
+  amount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TrainingCertificate {
+  id?: string;
+  name: string;
+  attachmentUrl?: string;
+  createdAt?: string;
+}
+
 export interface Employee {
   id: string;
   userId?: string;
@@ -146,11 +200,11 @@ export interface Employee {
   jobTitleId?: string;
   jobTitle?: { id: string; nameAr: string; nameEn: string; code: string };
   jobGradeId?: string;
-  jobGrade?: { id: string; nameAr: string; nameEn: string; code: string; color?: string };
+  jobGrade?: { id: string; nameAr: string; nameEn: string; code: string; color?: string; minSalary?: number; maxSalary?: number };
   managerId?: string;
-  manager?: Employee;
+  manager?: { id: string; employeeNumber: string; firstNameAr: string; lastNameAr: string };
   hireDate: string;
-  contractType: "PERMANENT" | "CONTRACT" | "TEMPORARY" | "INTERN";
+  contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE";
   employmentStatus: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
   basicSalary?: number;
   // Additional fields
@@ -163,7 +217,18 @@ export interface Employee {
   educationLevel?: "ILLITERATE" | "PRIMARY" | "SECONDARY" | "DIPLOMA" | "UNIVERSITY" | "POSTGRADUATE";
   universityYear?: number;
   religion?: string;
+  // Qualification fields
+  yearsOfExperience?: number;
+  certificate1?: string;
+  specialization1?: string;
+  certificateAttachment1?: string;
+  certificate2?: string;
+  specialization2?: string;
+  certificateAttachment2?: string;
+  // Arrays
   attachments?: EmployeeAttachment[];
+  trainingCertificates?: TrainingCertificate[];
+  allowances?: EmployeeAllowance[];
   createdAt?: string;
   updatedAt?: string;
 }

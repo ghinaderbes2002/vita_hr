@@ -27,7 +27,9 @@ export function useCreateJobGrade() {
       toast.success("تم إنشاء الدرجة الوظيفية بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إنشاء الدرجة الوظيفية");
+      const code = error.response?.data?.error?.code || error.response?.data?.code;
+      if (code === "JOB_GRADE_CODE_EXISTS") return toast.error("هذا الكود موجود مسبقاً، اختر كوداً مختلفاً");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء إنشاء الدرجة الوظيفية");
     },
   });
 }

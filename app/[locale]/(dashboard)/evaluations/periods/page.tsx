@@ -116,7 +116,14 @@ export default function EvaluationPeriodsPage() {
         },
       });
     } else {
-      await createPeriod.mutateAsync(formData);
+      const createData: any = {
+        nameAr: formData.nameAr,
+        nameEn: formData.nameEn,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+      };
+      if (formData.code) createData.code = formData.code;
+      await createPeriod.mutateAsync(createData);
     }
     setDialogOpen(false);
   };
@@ -296,11 +303,11 @@ export default function EvaluationPeriodsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>{t("evaluationPeriods.fields.code")}</Label>
+              <Label>{t("evaluationPeriods.fields.code")}{!selectedPeriod && " (اختياري)"}</Label>
               <Input
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder={t("evaluationPeriods.placeholders.code")}
+                placeholder={selectedPeriod ? "" : "سيُنشأ تلقائياً"}
                 disabled={!!selectedPeriod}
               />
             </div>
@@ -348,7 +355,6 @@ export default function EvaluationPeriodsPage() {
             <Button
               onClick={handleSubmit}
               disabled={
-                !formData.code ||
                 !formData.nameAr ||
                 !formData.nameEn ||
                 !formData.startDate ||

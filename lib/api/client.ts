@@ -30,6 +30,10 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Remove Cache-Control header to avoid CORS preflight rejection
+  delete config.headers['Cache-Control'];
+  delete config.headers['cache-control'];
+  delete config.headers['Pragma'];
   return config;
 });
 

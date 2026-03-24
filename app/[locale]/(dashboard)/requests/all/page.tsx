@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle, XCircle, MoreHorizontal, Search } from "lucide-react";
+import { CheckCircle, XCircle, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -16,14 +15,14 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRequests, useHrApproveRequest, useHrRejectRequest } from "@/lib/hooks/use-requests";
+import { useRequests, useApproveRequest, useRejectRequest } from "@/lib/hooks/use-requests";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { Request } from "@/types";
 
-const STATUS_OPTIONS = ["PENDING_MANAGER", "PENDING_HR", "APPROVED", "REJECTED", "CANCELLED", "DRAFT"];
-const TYPE_OPTIONS = ["PERMISSION", "TRANSFER", "ADVANCE", "RESIGNATION", "JOB_CHANGE", "RIGHTS", "REWARD", "SPONSORSHIP", "OTHER"];
+const STATUS_OPTIONS = ["DRAFT", "PENDING_MANAGER", "PENDING_HR", "IN_APPROVAL", "APPROVED", "REJECTED", "CANCELLED"];
+const TYPE_OPTIONS = ["PERMISSION", "TRANSFER", "ADVANCE", "RESIGNATION", "JOB_CHANGE", "RIGHTS", "REWARD", "SPONSORSHIP", "OTHER", "PENALTY_PROPOSAL", "OVERTIME_EMPLOYEE", "OVERTIME_MANAGER", "BUSINESS_MISSION", "DELEGATION", "HIRING_REQUEST", "COMPLAINT"];
 
 export default function AllRequestsPage() {
   const t = useTranslations();
@@ -41,8 +40,8 @@ export default function AllRequestsPage() {
     status: statusFilter === "all" ? undefined : statusFilter,
     type: typeFilter === "all" ? undefined : typeFilter,
   });
-  const hrApprove = useHrApproveRequest();
-  const hrReject = useHrRejectRequest();
+  const hrApprove = useApproveRequest();
+  const hrReject = useRejectRequest();
 
   const requests: Request[] = (data as any)?.data?.items || (data as any)?.data || [];
 
@@ -56,7 +55,7 @@ export default function AllRequestsPage() {
 
   const handleRejectConfirm = async (notes: string) => {
     if (selected) {
-      await hrReject.mutateAsync({ id: selected.id, notes });
+      await hrReject.mutateAsync({ id: selected.id, reason: notes });
       setRejectDialogOpen(false);
       setSelected(null);
     }
@@ -139,7 +138,7 @@ export default function AllRequestsPage() {
                     {new Date(req.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    {req.status === "PENDING_HR" && (canApprove || canReject) && (
+                    {(req.status === "PENDING_HR" || req.status === "IN_APPROVAL") && (canApprove || canReject) && (
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
