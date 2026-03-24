@@ -109,7 +109,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { type: "PERMISSION", reason: "", notes: "" },
+    defaultValues: { type: "OTHER", reason: "", notes: "" },
   });
 
   const selectedType = form.watch("type");
@@ -201,7 +201,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
         await submitRequest.mutateAsync(created.id);
       }
       onOpenChange(false);
-      form.reset({ type: "PERMISSION", reason: "", notes: "" });
+      form.reset({ type: "OTHER", reason: "", notes: "" });
       setHiringPositions([{ departmentId: "", jobTitle: "", count: "1", reason: "" }]);
       setRewardEmployees([{ employeeId: "", rewardType: "", amount: "", reason: "" }]);
     } catch {
