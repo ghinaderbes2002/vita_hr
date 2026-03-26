@@ -20,8 +20,10 @@ import { useCreateRequest, useSubmitRequest } from "@/lib/hooks/use-requests";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
+import { useCheckUnreturnedCustodies } from "@/lib/hooks/use-custodies";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { RequestType } from "@/types";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 
 const ALL_REQUEST_TYPES: RequestType[] = [
@@ -87,6 +89,7 @@ interface NewRequestDialogProps {
 
 export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) {
   const t = useTranslations();
+  const { user } = useAuthStore();
   const [submitMode, setSubmitMode] = useState<"draft" | "submit">("draft");
   const [hiringPositions, setHiringPositions] = useState<HiringPosition[]>([
     { departmentId: "", jobTitle: "", count: "1", reason: "" },
@@ -113,6 +116,12 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
   });
 
   const selectedType = form.watch("type");
+
+  const { data: custodyCheck } = useCheckUnreturnedCustodies(
+    user?.employeeId || "",
+    selectedType === "RESIGNATION" && !!user?.employeeId,
+  );
+  const hasUnreturnedCustodies = custodyCheck?.hasUnreturned ?? false;
 
   const buildDetails = (data: FormData): Record<string, any> | undefined => {
     switch (data.type) {
@@ -266,6 +275,12 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
             {/* ── RESIGNATION ── */}
             {selectedType === "RESIGNATION" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                {hasUnreturnedCustodies && (
+                  <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <p>{t("custodies.unreturnedWarning")}</p>
+                  </div>
+                )}
                 <FormField control={form.control} name="effectiveDate" render={({ field }) => (
                   <FormItem>
                     <FormLabel>تاريخ الاستقالة الفعلي *</FormLabel>

@@ -64,7 +64,10 @@
     "physicalTherapy": "Fizik Tedavi",
     "prosthetics": "Protez",
     "policies": "Politikalar",
-    "settings": "Ayarlar"
+    "settings": "Ayarlar",
+    "custodies": "Emanet Yönetimi",
+    "allCustodies": "Tüm Emanetler",
+    "myCustodies": "Emanetlerim"
   },
   "user": {
     "logout": "Çıkış Yap",
@@ -981,5 +984,55 @@
     "totalBreakMinutes": "Toplam Mola Dakikası",
     "avgBreakPerDay": "Günlük Ort. Mola",
     "hours": "saat"
+  },
+  "custodies": {
+    "title": "Emanet Yönetimi",
+    "description": "Çalışanlara teslim edilen varlıkları takip edin",
+    "myTitle": "Emanetlerim",
+    "myDescription": "Size atanmış varlıklar ve ekipmanlar",
+    "addCustody": "Emanet Ekle",
+    "editCustody": "Emanet Düzenle",
+    "returnCustody": "İade / Durum Güncelle",
+    "searchPlaceholder": "İsim veya seri numarasıyla ara...",
+    "unreturnedWarning": "İade edilmemiş emanediniz var. İstifa başvurusundan önce lütfen iade edin.",
+    "fields": {
+      "name": "Varlık Adı",
+      "description": "Açıklama",
+      "serialNumber": "Seri Numarası",
+      "category": "Kategori",
+      "employee": "Çalışan",
+      "assignedDate": "Teslim Tarihi",
+      "returnedDate": "İade Tarihi",
+      "status": "Durum",
+      "notes": "Notlar"
+    },
+    "statuses": {
+      "WITH_EMPLOYEE": "Çalışanda",
+      "RETURNED": "İade Edildi",
+      "DAMAGED": "Hasarlı",
+      "LOST": "Kayıp"
+    },
+    "categories": {
+      "ELECTRONICS": "Elektronik",
+      "FURNITURE": "Mobilya",
+      "VEHICLE": "Araç",
+      "TOOLS": "Aletler",
+      "KEYS": "Anahtarlar",
+      "UNIFORM": "Üniforma",
+      "OTHER": "Diğer"
+    },
+    "summary": {
+      "total": "Toplam Emanet",
+      "withEmployee": "Çalışanda",
+      "returned": "İade Edildi",
+      "damaged": "Hasarlı",
+      "lost": "Kayıp"
+    },
+    "return": {
+      "title": "Emanet İade / Durum Güncelle",
+      "status": "Yeni Durum",
+      "returnedDate": "İade Tarihi",
+      "notes": "Notlar"
+    }
   }
 }

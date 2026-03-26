@@ -92,7 +92,10 @@
     "products": "المنتجات",
     "policies": "السياسات",
     "reports": "التقارير",
-    "notifications": "الإشعارات"
+    "notifications": "الإشعارات",
+    "custodies": "إدارة العهد",
+    "allCustodies": "كل العهد",
+    "myCustodies": "عهدي"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -1107,5 +1110,55 @@
     "totalBreakMinutes": "إجمالي دقائق الاستراحة",
     "avgBreakPerDay": "متوسط الاستراحة اليومي",
     "hours": "ساعة"
+  },
+  "custodies": {
+    "title": "إدارة العهد",
+    "description": "تسجيل وتتبع العهد المسلّمة للموظفين",
+    "myTitle": "عهدي",
+    "myDescription": "الأصول والعهد المسلّمة إليك",
+    "addCustody": "إضافة عهدة",
+    "editCustody": "تعديل عهدة",
+    "returnCustody": "إرجاع / تحديث الحالة",
+    "searchPlaceholder": "بحث بالاسم أو الرقم التسلسلي...",
+    "unreturnedWarning": "لديك عهد غير مسلّمة، يرجى تسليمها قبل تقديم الاستقالة",
+    "fields": {
+      "name": "اسم الأصل",
+      "description": "الوصف",
+      "serialNumber": "الرقم التسلسلي",
+      "category": "الفئة",
+      "employee": "الموظف",
+      "assignedDate": "تاريخ التسليم",
+      "returnedDate": "تاريخ الإرجاع",
+      "status": "الحالة",
+      "notes": "ملاحظات"
+    },
+    "statuses": {
+      "WITH_EMPLOYEE": "مع الموظف",
+      "RETURNED": "تم إرجاعها",
+      "DAMAGED": "تالفة",
+      "LOST": "مفقودة"
+    },
+    "categories": {
+      "ELECTRONICS": "إلكترونيات",
+      "FURNITURE": "أثاث",
+      "VEHICLE": "مركبة",
+      "TOOLS": "أدوات عمل",
+      "KEYS": "مفاتيح",
+      "UNIFORM": "زي رسمي",
+      "OTHER": "أخرى"
+    },
+    "summary": {
+      "total": "إجمالي العهد",
+      "withEmployee": "مع الموظف",
+      "returned": "مُرجَعة",
+      "damaged": "تالفة",
+      "lost": "مفقودة"
+    },
+    "return": {
+      "title": "إرجاع / تحديث حالة العهدة",
+      "status": "الحالة الجديدة",
+      "returnedDate": "تاريخ الإرجاع",
+      "notes": "ملاحظات"
+    }
   }
 }

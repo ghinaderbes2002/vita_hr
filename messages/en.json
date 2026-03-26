@@ -64,7 +64,10 @@
     "physicalTherapy": "Physical Therapy",
     "prosthetics": "Prosthetics",
     "policies": "Policies",
-    "settings": "Settings"
+    "settings": "Settings",
+    "custodies": "Custody Management",
+    "allCustodies": "All Custodies",
+    "myCustodies": "My Custodies"
   },
   "user": {
     "logout": "Logout",
@@ -981,5 +984,55 @@
     "totalBreakMinutes": "Total Break Minutes",
     "avgBreakPerDay": "Avg Break Per Day",
     "hours": "hrs"
+  },
+  "custodies": {
+    "title": "Custody Management",
+    "description": "Track and manage assets assigned to employees",
+    "myTitle": "My Custodies",
+    "myDescription": "Assets and equipment assigned to you",
+    "addCustody": "Add Custody",
+    "editCustody": "Edit Custody",
+    "returnCustody": "Return / Update Status",
+    "searchPlaceholder": "Search by name or serial number...",
+    "unreturnedWarning": "You have unreturned custodies. Please return them before submitting a resignation.",
+    "fields": {
+      "name": "Asset Name",
+      "description": "Description",
+      "serialNumber": "Serial Number",
+      "category": "Category",
+      "employee": "Employee",
+      "assignedDate": "Assigned Date",
+      "returnedDate": "Returned Date",
+      "status": "Status",
+      "notes": "Notes"
+    },
+    "statuses": {
+      "WITH_EMPLOYEE": "With Employee",
+      "RETURNED": "Returned",
+      "DAMAGED": "Damaged",
+      "LOST": "Lost"
+    },
+    "categories": {
+      "ELECTRONICS": "Electronics",
+      "FURNITURE": "Furniture",
+      "VEHICLE": "Vehicle",
+      "TOOLS": "Tools",
+      "KEYS": "Keys",
+      "UNIFORM": "Uniform",
+      "OTHER": "Other"
+    },
+    "summary": {
+      "total": "Total Custodies",
+      "withEmployee": "With Employee",
+      "returned": "Returned",
+      "damaged": "Damaged",
+      "lost": "Lost"
+    },
+    "return": {
+      "title": "Return / Update Custody Status",
+      "status": "New Status",
+      "returnedDate": "Return Date",
+      "notes": "Notes"
+    }
   }
 }

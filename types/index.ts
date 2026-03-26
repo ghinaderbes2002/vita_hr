@@ -318,6 +318,35 @@ export interface ApiResponse<T> {
   };
 }
 
+export type CustodyStatus = "WITH_EMPLOYEE" | "RETURNED" | "DAMAGED" | "LOST";
+export type CustodyCategory = "ELECTRONICS" | "FURNITURE" | "VEHICLE" | "TOOLS" | "KEYS" | "UNIFORM" | "OTHER";
+
+export interface Custody {
+  id: string;
+  name: string;
+  description?: string;
+  serialNumber?: string;
+  category: CustodyCategory;
+  employeeId: string;
+  assignedDate: string;
+  returnedDate?: string;
+  status: CustodyStatus;
+  notes?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  employee?: {
+    id: string;
+    firstNameAr: string;
+    lastNameAr: string;
+    firstNameEn?: string;
+    lastNameEn?: string;
+    employeeNumber: string;
+    department?: { id: string; nameAr: string };
+  };
+}
+
 export interface PaginationParams {
   page?: number;
   limit?: number;

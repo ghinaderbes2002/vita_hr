@@ -1,0 +1,235 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, Filter } from "lucide-react";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/shared/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useCustodies, useDeleteCustody } from "@/lib/hooks/use-custodies";
+import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
+import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
+import { Custody, CustodyStatus } from "@/types";
+
+const STATUS_VARIANTS: Record<CustodyStatus, "default" | "secondary" | "destructive" | "outline"> = {
+  WITH_EMPLOYEE: "default",
+  RETURNED: "secondary",
+  DAMAGED: "destructive",
+  LOST: "destructive",
+};
+
+export default function CustodiesPage() {
+  const t = useTranslations();
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selected, setSelected] = useState<Custody | null>(null);
+
+  const { data, isLoading } = useCustodies({
+    search: search || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    category: categoryFilter !== "all" ? categoryFilter : undefined,
+    limit: 50,
+  });
+
+  const deleteCustody = useDeleteCustody();
+
+  const custodies: Custody[] =
+    (data as any)?.data?.data ||
+    (data as any)?.data ||
+    (Array.isArray(data) ? data : []);
+
+  const handleEdit = (c: Custody) => { setSelected(c); setDialogOpen(true); };
+  const handleReturn = (c: Custody) => { setSelected(c); setReturnDialogOpen(true); };
+  const handleDelete = (c: Custody) => { setSelected(c); setDeleteDialogOpen(true); };
+
+  const confirmDelete = async () => {
+    if (selected) {
+      await deleteCustody.mutateAsync(selected.id);
+      setDeleteDialogOpen(false);
+      setSelected(null);
+    }
+  };
+
+  const CATEGORIES = ["ELECTRONICS", "FURNITURE", "VEHICLE", "TOOLS", "KEYS", "UNIFORM", "OTHER"];
+  const STATUSES: CustodyStatus[] = ["WITH_EMPLOYEE", "RETURNED", "DAMAGED", "LOST"];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t("custodies.title")}
+        description={t("custodies.description")}
+        actions={
+          <Button onClick={() => { setSelected(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 ml-2" />
+            {t("custodies.addCustody")}
+          </Button>
+        }
+      />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("custodies.searchPlaceholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pr-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            {STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>{t(`custodies.statuses.${s}`)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            {CATEGORIES.map((c) => (
+              <SelectItem key={c} value={c}>{t(`custodies.categories.${c}`)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("custodies.fields.name")}</TableHead>
+              <TableHead>{t("custodies.fields.category")}</TableHead>
+              <TableHead>{t("custodies.fields.serialNumber")}</TableHead>
+              <TableHead>{t("custodies.fields.employee")}</TableHead>
+              <TableHead>{t("custodies.fields.assignedDate")}</TableHead>
+              <TableHead>{t("custodies.fields.status")}</TableHead>
+              <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 7 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : custodies.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">{t("common.noData")}</TableCell>
+              </TableRow>
+            ) : (
+              custodies.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{c.name}</p>
+                      {c.description && (
+                        <p className="text-xs text-muted-foreground">{c.description}</p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{t(`custodies.categories.${c.category}`)}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{c.serialNumber || "—"}</TableCell>
+                  <TableCell>
+                    {c.employee ? (
+                      <div>
+                        <p>{c.employee.firstNameAr} {c.employee.lastNameAr}</p>
+                        {c.employee.department && (
+                          <p className="text-xs text-muted-foreground">{c.employee.department.nameAr}</p>
+                        )}
+                      </div>
+                    ) : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {c.assignedDate ? format(new Date(c.assignedDate), "yyyy/MM/dd") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_VARIANTS[c.status]}>
+                      {t(`custodies.statuses.${c.status}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(c)}>
+                          <Pencil className="h-4 w-4 ml-2" />
+                          {t("common.edit")}
+                        </DropdownMenuItem>
+                        {c.status === "WITH_EMPLOYEE" && (
+                          <DropdownMenuItem onClick={() => handleReturn(c)}>
+                            <RotateCcw className="h-4 w-4 ml-2" />
+                            {t("custodies.returnCustody")}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => handleDelete(c)} className="text-destructive">
+                          <Trash2 className="h-4 w-4 ml-2" />
+                          {t("common.delete")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <CustodyDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        custody={selected || undefined}
+      />
+
+      <ReturnCustodyDialog
+        open={returnDialogOpen}
+        onOpenChange={setReturnDialogOpen}
+        custody={selected}
+      />
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t("messages.confirmDelete")}
+        description={t("messages.actionCantUndo")}
+        onConfirm={confirmDelete}
+        variant="destructive"
+      />
+    </div>
+  );
+}

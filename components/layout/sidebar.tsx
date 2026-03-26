@@ -36,6 +36,7 @@ import {
   ChevronsLeft,
   GraduationCap,
   UserCircle,
+  Package,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ const navigation: NavItem[] = [
       { title: "nav.myRequests", href: "/requests/my-requests", icon: FileText, permission: "leave_requests:read" },
       { title: "nav.newRequest", href: "/requests/new", icon: PlusCircle, permission: "leave_requests:create" },
       { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
+      { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read" },
     ],
   },
   {
@@ -115,6 +117,13 @@ const navigation: NavItem[] = [
         children: [
           { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permission: "requests:manager-approve", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.allRequests", href: "/requests/all", icon: ClipboardList, permission: "requests:read", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+        ],
+      },
+      {
+        title: "nav.custodies",
+        icon: Package,
+        children: [
+          { title: "nav.allCustodies", href: "/custodies", icon: Package, permission: "custodies:read" },
         ],
       },
       {
