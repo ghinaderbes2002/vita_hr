@@ -102,7 +102,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
   const submitRequest = useSubmitRequest();
   const { data: deptData } = useDepartments({ limit: 100 });
   const { data: empData } = useEmployees({ limit: 100 });
-  const { data: titlesData } = useJobTitles();
+  const { data: titlesData } = useJobTitles({ limit: 100 });
 
   const departments: any[] = (deptData as any)?.data?.items || (deptData as any)?.data || [];
   const employees: any[] = (empData as any)?.data?.items || (empData as any)?.items || [];

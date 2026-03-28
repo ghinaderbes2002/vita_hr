@@ -102,18 +102,6 @@ export default function RequestDetailPage() {
         description={t(`requests.types.${request.type}`)}
         actions={
           <div className="flex items-center gap-2">
-            {request.status === "IN_APPROVAL" && canApprove && (
-              <>
-                <Button onClick={() => setApproveOpen(true)} className="bg-green-600 hover:bg-green-700">
-                  <CheckCircle2 className="h-4 w-4 ml-2" />
-                  موافقة
-                </Button>
-                <Button variant="destructive" onClick={() => setRejectOpen(true)}>
-                  <XCircle className="h-4 w-4 ml-2" />
-                  رفض
-                </Button>
-              </>
-            )}
             <Button variant="outline" onClick={() => router.back()}>
               <ArrowRight className="h-4 w-4 ml-2" />
               {t("common.back")}
