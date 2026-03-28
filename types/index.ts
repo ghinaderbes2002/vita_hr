@@ -347,6 +347,44 @@ export interface Custody {
   };
 }
 
+export type JobApplicationStatus = "PENDING" | "INTERVIEW_READY" | "ACCEPTED" | "REJECTED" | "HIRED";
+
+export interface JobApplication {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  specialization: string;
+  yearsOfExperience: number;
+  education: string;
+  cvFileUrl: string;
+  coverLetter: string;
+  linkedinUrl: string | null;
+  ref1Name: string;
+  ref1Company: string;
+  ref1JobTitle: string;
+  ref1Phone: string;
+  ref2Name: string | null;
+  ref2Company: string | null;
+  ref2JobTitle: string | null;
+  ref2Phone: string | null;
+  status: JobApplicationStatus;
+  reviewNotes: string | null;
+  rejectionNote: string | null;
+  rating: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JobApplicationStats {
+  total: number;
+  pending: number;
+  interviewReady: number;
+  accepted: number;
+  rejected: number;
+  hired: number;
+}
+
 export interface PaginationParams {
   page?: number;
   limit?: number;

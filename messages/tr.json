@@ -67,7 +67,9 @@
     "settings": "Ayarlar",
     "custodies": "Emanet Yönetimi",
     "allCustodies": "Tüm Emanetler",
-    "myCustodies": "Emanetlerim"
+    "myCustodies": "Emanetlerim",
+    "jobApplications": "İş Başvuruları",
+    "allJobApplications": "Tüm Başvurular"
   },
   "user": {
     "logout": "Çıkış Yap",
@@ -177,6 +179,9 @@
       "holidays": "Tatiller",
       "requests": "İdari Talepler",
       "evaluations": "Değerlendirmeler",
+      "evaluation": "Değerlendirmeler",
+      "leaves": "İzinler",
+      "custodies": "Emanet Yönetimi",
       "other": "Diğer"
     }
   },
@@ -944,8 +949,11 @@
     "no": "Hayır",
     "confirm": "Onayla",
     "optional": "İsteğe Bağlı",
+    "required": "zorunlu",
+    "select": "Seçin",
     "days": "gün",
-    "remove": "Kaldır"
+    "remove": "Kaldır",
+    "years": "yıl"
   },
   "messages": {
     "confirmDelete": "Silmek istediğinizden emin misiniz?",
@@ -995,6 +1003,7 @@
     "returnCustody": "İade / Durum Güncelle",
     "searchPlaceholder": "İsim veya seri numarasıyla ara...",
     "unreturnedWarning": "İade edilmemiş emanediniz var. İstifa başvurusundan önce lütfen iade edin.",
+    "noLinkedEmployee": "Bu hesap bir çalışan kaydıyla bağlantılı değil",
     "fields": {
       "name": "Varlık Adı",
       "description": "Açıklama",
@@ -1033,6 +1042,52 @@
       "status": "Yeni Durum",
       "returnedDate": "İade Tarihi",
       "notes": "Notlar"
+    }
+  },
+  "jobApplications": {
+    "title": "İş Başvuruları",
+    "description": "Harici iş başvurularını inceleyin ve yönetin",
+    "downloadCV": "CV İndir",
+    "stats": {
+      "total": "Toplam Başvuru",
+      "pending": "Beklemede",
+      "interview": "Mülakat Hazır",
+      "accepted": "Kabul Edildi",
+      "rejected": "Reddedildi",
+      "hired": "İşe Alındı"
+    },
+    "statuses": {
+      "PENDING": "Beklemede",
+      "INTERVIEW_READY": "Mülakat Hazır",
+      "ACCEPTED": "Kabul Edildi",
+      "REJECTED": "Reddedildi",
+      "HIRED": "İşe Alındı"
+    },
+    "fields": {
+      "fullName": "Ad Soyad",
+      "specialization": "Uzmanlık",
+      "yearsOfExperience": "Deneyim Yılı",
+      "education": "Eğitim",
+      "status": "Durum",
+      "createdAt": "Başvuru Tarihi",
+      "rating": "Değerlendirme",
+      "reviewNotes": "İnceleme Notları",
+      "rejectionNote": "Red Sebebi",
+      "rejectionNotePlaceholder": "Ret gerekçesini belirtin...",
+      "application": "başvuru"
+    },
+    "sections": {
+      "personalInfo": "Kişisel Bilgiler",
+      "coverLetter": "Ön Yazı",
+      "reference1": "Referans 1",
+      "reference2": "Referans 2"
+    },
+    "actions": {
+      "title": "İşlemler",
+      "interviewReady": "Mülakata Hazır",
+      "accept": "Kabul Et",
+      "reject": "Reddet",
+      "hire": "İşe Al"
     }
   }
 }

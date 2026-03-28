@@ -120,6 +120,13 @@ const navigation: NavItem[] = [
         ],
       },
       {
+        title: "nav.jobApplications",
+        icon: Briefcase,
+        children: [
+          { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
+        ],
+      },
+      {
         title: "nav.custodies",
         icon: Package,
         children: [
@@ -212,6 +219,7 @@ export function Sidebar() {
         "/requests/all",
         "/attendance/reports",
         "/attendance/alerts",
+        "/custodies/my-custodies",
       ];
 
       // If current path is a known sub-route, don't match parent

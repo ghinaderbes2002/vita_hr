@@ -22,9 +22,12 @@
     "next": "التالي",
     "of": "من",
     "optional": "اختياري",
+    "required": "مطلوب",
+    "select": "اختر",
     "back": "رجوع",
     "days": "يوم",
-    "remove": "إزالة"
+    "remove": "إزالة",
+    "years": "سنة"
   },
   "auth": {
     "welcomeBack": "مرحباً بعودتك",
@@ -95,7 +98,9 @@
     "notifications": "الإشعارات",
     "custodies": "إدارة العهد",
     "allCustodies": "كل العهد",
-    "myCustodies": "عهدي"
+    "myCustodies": "عهدي",
+    "jobApplications": "طلبات التوظيف",
+    "allJobApplications": "كل الطلبات"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -797,6 +802,9 @@
       "holidays": "العطل الرسمية",
       "requests": "الطلبات الإدارية",
       "evaluations": "التقييمات",
+      "evaluation": "التقييمات",
+      "leaves": "الإجازات",
+      "custodies": "إدارة العهد",
       "other": "أخرى"
     }
   },
@@ -1121,6 +1129,7 @@
     "returnCustody": "إرجاع / تحديث الحالة",
     "searchPlaceholder": "بحث بالاسم أو الرقم التسلسلي...",
     "unreturnedWarning": "لديك عهد غير مسلّمة، يرجى تسليمها قبل تقديم الاستقالة",
+    "noLinkedEmployee": "هذا الحساب غير مرتبط بسجل موظف",
     "fields": {
       "name": "اسم الأصل",
       "description": "الوصف",
@@ -1159,6 +1168,52 @@
       "status": "الحالة الجديدة",
       "returnedDate": "تاريخ الإرجاع",
       "notes": "ملاحظات"
+    }
+  },
+  "jobApplications": {
+    "title": "طلبات التوظيف",
+    "description": "متابعة ومراجعة طلبات التوظيف الخارجية",
+    "downloadCV": "تحميل السيرة الذاتية",
+    "stats": {
+      "total": "إجمالي الطلبات",
+      "pending": "معلق",
+      "interview": "مؤهل للمقابلة",
+      "accepted": "مقبول",
+      "rejected": "مرفوض",
+      "hired": "تم التوظيف"
+    },
+    "statuses": {
+      "PENDING": "معلق",
+      "INTERVIEW_READY": "مؤهل للمقابلة",
+      "ACCEPTED": "مقبول",
+      "REJECTED": "مرفوض",
+      "HIRED": "تم التوظيف"
+    },
+    "fields": {
+      "fullName": "الاسم الكامل",
+      "specialization": "التخصص",
+      "yearsOfExperience": "سنوات الخبرة",
+      "education": "المؤهل العلمي",
+      "status": "الحالة",
+      "createdAt": "تاريخ التقديم",
+      "rating": "التقييم",
+      "reviewNotes": "ملاحظات المراجع",
+      "rejectionNote": "سبب الرفض",
+      "rejectionNotePlaceholder": "اذكر سبب رفض الطلب...",
+      "application": "طلب"
+    },
+    "sections": {
+      "personalInfo": "المعلومات الشخصية",
+      "coverLetter": "الرسالة التعريفية",
+      "reference1": "المرجع الأول",
+      "reference2": "المرجع الثاني"
+    },
+    "actions": {
+      "title": "إجراءات",
+      "interviewReady": "مؤهل للمقابلة",
+      "accept": "قبول",
+      "reject": "رفض",
+      "hire": "تم التوظيف"
     }
   }
 }

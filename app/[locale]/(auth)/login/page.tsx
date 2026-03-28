@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,6 +24,7 @@ type FormData = z.infer<typeof schema>;
 export default function LoginPage() {
   const t = useTranslations("auth");
   const { login } = useAuthStore();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [localLoading, setLocalLoading] = useState(false);
 
@@ -38,8 +40,7 @@ export default function LoginPage() {
     setLocalLoading(true);
     try {
       await login(data.username, data.password);
-      // Reload page - middleware will handle redirect to dashboard
-      window.location.reload();
+      router.push("/ar/dashboard");
     } catch (error: any) {
       let errorMessage = "خطأ في تسجيل الدخول";
 

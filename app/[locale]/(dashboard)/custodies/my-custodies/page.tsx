@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
-import { Package, RotateCcw, AlertTriangle, XCircle, CheckCircle } from "lucide-react";
+import { Package, AlertTriangle, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -24,10 +24,24 @@ const STATUS_VARIANTS: Record<CustodyStatus, "default" | "secondary" | "destruct
 export default function MyCustodiesPage() {
   const t = useTranslations();
   const { user } = useAuthStore();
-  const employeeId = user?.employeeId || "";
+  const employeeId =
+    user?.employeeId ||
+    (user as any)?.employee?.id ||
+    "";
 
   const { data: custodiesData, isLoading } = useEmployeeCustodies(employeeId);
   const { data: summary } = useEmployeeCustodySummary(employeeId);
+
+  if (!employeeId) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title={t("custodies.myTitle")} description={t("custodies.myDescription")} />
+        <div className="flex items-center justify-center h-48 rounded-md border text-muted-foreground">
+          {t("custodies.noLinkedEmployee")}
+        </div>
+      </div>
+    );
+  }
 
   const custodies: Custody[] =
     (custodiesData as any)?.data?.data ||

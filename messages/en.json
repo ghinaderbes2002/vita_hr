@@ -67,7 +67,9 @@
     "settings": "Settings",
     "custodies": "Custody Management",
     "allCustodies": "All Custodies",
-    "myCustodies": "My Custodies"
+    "myCustodies": "My Custodies",
+    "jobApplications": "Job Applications",
+    "allJobApplications": "All Applications"
   },
   "user": {
     "logout": "Logout",
@@ -177,6 +179,9 @@
       "holidays": "Holidays",
       "requests": "Requests",
       "evaluations": "Evaluations",
+      "evaluation": "Evaluations",
+      "leaves": "Leaves",
+      "custodies": "Custody Management",
       "other": "Other"
     }
   },
@@ -941,11 +946,14 @@
     "status": "Status",
     "confirm": "Confirm",
     "optional": "Optional",
+    "required": "is required",
+    "select": "Select",
     "back": "Back",
     "yes": "Yes",
     "no": "No",
     "days": "days",
-    "remove": "Remove"
+    "remove": "Remove",
+    "years": "years"
   },
   "messages": {
     "confirmDelete": "Are you sure you want to delete?",
@@ -995,6 +1003,7 @@
     "returnCustody": "Return / Update Status",
     "searchPlaceholder": "Search by name or serial number...",
     "unreturnedWarning": "You have unreturned custodies. Please return them before submitting a resignation.",
+    "noLinkedEmployee": "This account is not linked to an employee record",
     "fields": {
       "name": "Asset Name",
       "description": "Description",
@@ -1033,6 +1042,52 @@
       "status": "New Status",
       "returnedDate": "Return Date",
       "notes": "Notes"
+    }
+  },
+  "jobApplications": {
+    "title": "Job Applications",
+    "description": "Review and manage external job applications",
+    "downloadCV": "Download CV",
+    "stats": {
+      "total": "Total Applications",
+      "pending": "Pending",
+      "interview": "Interview Ready",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "hired": "Hired"
+    },
+    "statuses": {
+      "PENDING": "Pending",
+      "INTERVIEW_READY": "Interview Ready",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "HIRED": "Hired"
+    },
+    "fields": {
+      "fullName": "Full Name",
+      "specialization": "Specialization",
+      "yearsOfExperience": "Years of Experience",
+      "education": "Education",
+      "status": "Status",
+      "createdAt": "Applied At",
+      "rating": "Rating",
+      "reviewNotes": "Review Notes",
+      "rejectionNote": "Rejection Reason",
+      "rejectionNotePlaceholder": "State the reason for rejection...",
+      "application": "application"
+    },
+    "sections": {
+      "personalInfo": "Personal Information",
+      "coverLetter": "Cover Letter",
+      "reference1": "Reference 1",
+      "reference2": "Reference 2"
+    },
+    "actions": {
+      "title": "Actions",
+      "interviewReady": "Mark as Interview Ready",
+      "accept": "Accept",
+      "reject": "Reject",
+      "hire": "Mark as Hired"
     }
   }
 }

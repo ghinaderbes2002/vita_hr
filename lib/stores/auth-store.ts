@@ -53,26 +53,17 @@ export const useAuthStore = create<AuthState>()(
             );
           }
 
-          // Try to get the full profile (includes employeeId)
-          let fullUser = response.user;
-          try {
-            const me = await authApi.me();
-            if (me) fullUser = { ...response.user, ...me };
-          } catch {
-            // ignore, use login response user
-          }
+          // Set cookie FIRST so apiClient can use token for /auth/me call
+          document.cookie = `wso-token=${response.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
           set({
-            user: fullUser,
+            user: response.user,
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
             permissions,
           });
-
-          // Set a separate simple cookie for middleware auth check (not managed by Zustand)
-          document.cookie = `wso-token=${response.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
         } catch (error: any) {
           set({ isLoading: false });
           throw error;

@@ -16,12 +16,18 @@ export const authApi = {
     username: string;
     password: string;
   }): Promise<LoginResponse> => {
-    const response = await apiClient.post("/auth/login", data);
+    const response = await refreshClient.post("/auth/login", data);
     return response.data.data;
   },
 
   logout: async (): Promise<void> => {
-    await apiClient.post("/auth/logout");
+    const token =
+      typeof document !== "undefined"
+        ? document.cookie.split("; ").find((c) => c.startsWith("wso-token="))?.split("=")[1]
+        : null;
+    await refreshClient.post("/auth/logout", {}, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
   },
 
   refresh: async (refreshToken: string): Promise<RefreshResponse> => {
