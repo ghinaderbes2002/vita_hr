@@ -56,8 +56,18 @@ export const useAuthStore = create<AuthState>()(
           // Set cookie FIRST so apiClient can use token for /auth/me call
           document.cookie = `wso-token=${response.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
+          // استعادة employeeId من localStorage إذا كان مربوطاً مسبقاً
+          let userWithEmployee = response.user;
+          try {
+            const map = JSON.parse(localStorage.getItem("vita-user-employee-map") || "{}");
+            const savedEmployeeId = map[response.user?.id];
+            if (savedEmployeeId) {
+              userWithEmployee = { ...response.user, employeeId: savedEmployeeId };
+            }
+          } catch {}
+
           set({
-            user: response.user,
+            user: userWithEmployee,
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
             isAuthenticated: true,

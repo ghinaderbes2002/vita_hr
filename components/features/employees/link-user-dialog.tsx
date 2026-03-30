@@ -50,7 +50,13 @@ export function LinkUserDialog({ open, onOpenChange, employee }: LinkUserDialogP
 
     try {
       await linkUser.mutateAsync({ employeeId: employee.id, userId: selectedUserId });
-      // إذا المستخدم المربوط هو نفس المسجل دخول، نحفظ employeeId في الـ store
+      // نحفظ الربط في localStorage عشان يبقى بعد logout/login
+      try {
+        const map = JSON.parse(localStorage.getItem("vita-user-employee-map") || "{}");
+        map[selectedUserId] = employee.id;
+        localStorage.setItem("vita-user-employee-map", JSON.stringify(map));
+      } catch {}
+      // إذا المستخدم المربوط هو نفس المسجل دخول، نحدث الـ store فوراً
       if (user && selectedUserId === user.id) {
         setUser({ ...user, employeeId: employee.id } as any);
       }
