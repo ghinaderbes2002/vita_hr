@@ -45,7 +45,7 @@ export default function DashboardLayout({
           }}
         >
           <Header />
-          <main className="p-6">{children}</main>
+          <main className="p-6 space-y-2">{children}</main>
         </div>
       </div>
     </AuthRefreshProvider>

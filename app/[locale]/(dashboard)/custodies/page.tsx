@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ const STATUS_VARIANTS: Record<CustodyStatus, "default" | "secondary" | "destruct
 
 export default function CustodiesPage() {
   const t = useTranslations();
+  const router = useRouter();
+  const locale = useLocale();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -147,7 +150,7 @@ export default function CustodiesPage() {
               </TableRow>
             ) : (
               custodies.map((c) => (
-                <TableRow key={c.id}>
+                <TableRow key={c.id} className="cursor-pointer" onClick={() => router.push(`/${locale}/custodies/${c.id}`)}>
                   <TableCell>
                     <div>
                       <p className="font-medium">{c.name}</p>
@@ -178,7 +181,7 @@ export default function CustodiesPage() {
                       {t(`custodies.statuses.${c.status}`)}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">

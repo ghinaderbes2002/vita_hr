@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useJobApplication, useUpdateJobApplication } from "@/lib/hooks/use-job-applications";
 import { CV_BASE_URL } from "@/lib/api/job-applications";
 import { JobApplicationStatus } from "@/types";
+import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 
 const STATUS_CONFIG: Record<JobApplicationStatus, { bg: string; label: string }> = {
   PENDING:         { bg: "bg-amber-100 text-amber-800",   label: "" },
@@ -52,6 +53,15 @@ export default function JobApplicationDetailPage() {
   const [rejectionNote, setRejectionNote] = useState("");
   const [rating, setRating] = useState(0);
   const [actionStatus, setActionStatus] = useState<JobApplicationStatus | null>(null);
+  const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
+
+  const RATING_TO_EVALUATION: Record<number, "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR"> = {
+    5: "EXCELLENT",
+    4: "VERY_GOOD",
+    3: "GOOD",
+    2: "ACCEPTABLE",
+    1: "POOR",
+  };
 
   const handleAction = (status: JobApplicationStatus) => {
     setActionStatus(status);
@@ -111,6 +121,11 @@ export default function JobApplicationDetailPage() {
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
             <span className="font-medium">{app.rating}/5</span>
           </div>
+        )}
+        {app.status === "ACCEPTED" && (
+          <Button size="sm" onClick={() => setAddEmployeeOpen(true)}>
+            إضافة كموظف
+          </Button>
         )}
       </div>
 
@@ -218,7 +233,7 @@ export default function JobApplicationDetailPage() {
             {/* Action buttons */}
             {!actionStatus && (
               <div className="flex flex-wrap gap-2">
-                {app.status !== "INTERVIEW_READY" && (
+                {app.status !== "INTERVIEW_READY" && app.status !== "ACCEPTED" && (
                   <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50"
                     onClick={() => handleAction("INTERVIEW_READY")}>
                     {t("jobApplications.actions.interviewReady")}
@@ -302,6 +317,12 @@ export default function JobApplicationDetailPage() {
       <p className="text-xs text-muted-foreground">
         {t("jobApplications.fields.createdAt")}: {format(new Date(app.createdAt), "yyyy/MM/dd HH:mm")}
       </p>
+
+      <EmployeeDialog
+        open={addEmployeeOpen}
+        onOpenChange={setAddEmployeeOpen}
+        defaultInterviewEvaluation={app.rating ? RATING_TO_EVALUATION[app.rating] : undefined}
+      />
     </div>
   );
 }

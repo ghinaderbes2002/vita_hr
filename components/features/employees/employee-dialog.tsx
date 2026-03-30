@@ -45,6 +45,8 @@ type FormData = {
   email: string; phone?: string; mobile?: string; nationalId: string;
   gender: "MALE" | "FEMALE"; dateOfBirth: string; departmentId: string; hireDate: string;
   contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE";
+  probationPeriod?: "ONE_MONTH" | "TWO_MONTHS" | "THREE_MONTHS";
+  interviewEvaluation?: "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR";
   employmentStatus?: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
   jobTitleId?: string; jobGradeId?: string; managerId?: string; basicSalary?: number;
   profilePhoto?: string;
@@ -168,9 +170,10 @@ interface EmployeeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employee?: Employee;
+  defaultInterviewEvaluation?: "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR";
 }
 
-export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogProps) {
+export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewEvaluation }: EmployeeDialogProps) {
   const t = useTranslations();
   const isEdit = !!employee;
 
@@ -203,6 +206,8 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
     departmentId: z.string().min(1, t("employees.form.departmentRequired")),
     hireDate: z.string().min(1, t("employees.form.hireDateRequired")),
     contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE"]),
+    probationPeriod: z.enum(["ONE_MONTH", "TWO_MONTHS", "THREE_MONTHS"]).optional(),
+    interviewEvaluation: z.enum(["EXCELLENT", "VERY_GOOD", "GOOD", "ACCEPTABLE", "POOR"]).optional(),
     employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
     jobTitleId: z.string().optional(),
     jobGradeId: z.string().optional(),
@@ -263,6 +268,8 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
       departmentId: "",
       hireDate: "",
       contractType: "INDEFINITE",
+      probationPeriod: undefined,
+      interviewEvaluation: defaultInterviewEvaluation,
       employmentStatus: "ACTIVE",
       jobTitleId: "",
       jobGradeId: "",
@@ -293,6 +300,7 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
   };
 
   useEffect(() => {
+    if (!open) return;
     if (employee) {
       form.reset({
         firstNameAr: employee.firstNameAr || "",
@@ -308,6 +316,8 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         departmentId: employee.departmentId || "",
         hireDate: toDateInput(employee.hireDate),
         contractType: (employee.contractType as any) || "INDEFINITE",
+        probationPeriod: (employee as any).probationPeriod || undefined,
+        interviewEvaluation: (employee as any).interviewEvaluation || undefined,
         employmentStatus: employee.employmentStatus || "ACTIVE",
         jobTitleId: (employee as any).jobTitleId || "",
         jobGradeId: (employee as any).jobGradeId || "",
@@ -369,12 +379,13 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
         certificate2: "",
         specialization2: "",
         certificateAttachment2: "",
+        interviewEvaluation: defaultInterviewEvaluation,
       });
       setAttachments([]);
       setTrainingCertificates([]);
       setAllowances([]);
     }
-  }, [employee, form]);
+  }, [open, employee, defaultInterviewEvaluation, form]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -831,6 +842,28 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="probationPeriod"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>فترة التجربة ({t("common.optional")})</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                          <FormControl>
+                            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            <SelectItem value="ONE_MONTH">شهر</SelectItem>
+                            <SelectItem value="TWO_MONTHS">شهران</SelectItem>
+                            <SelectItem value="THREE_MONTHS">3 شهور</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   {isEdit && (
                     <FormField
                       control={form.control}
@@ -856,6 +889,30 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                     />
                   )}
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="interviewEvaluation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>تقييم المقابلة ({t("common.optional")})</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">—</SelectItem>
+                          <SelectItem value="EXCELLENT">ممتاز</SelectItem>
+                          <SelectItem value="VERY_GOOD">جيد جداً</SelectItem>
+                          <SelectItem value="GOOD">جيد</SelectItem>
+                          <SelectItem value="ACCEPTABLE">مقبول</SelectItem>
+                          <SelectItem value="POOR">ضعيف</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {/* Allowances */}
                 <div className="space-y-2">
@@ -917,6 +974,54 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
 
               {/* ─── Qualifications Tab ─── */}
               <TabsContent value="qualifications" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="educationLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("employees.fields.educationLevel")} ({t("common.optional")})</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("employees.selectEducationLevel")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            {["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"].map((el) => (
+                              <SelectItem key={el} value={el}>{t(`employees.educationLevels.${el}`)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("educationLevel") === "UNIVERSITY" && (
+                    <FormField
+                      control={form.control}
+                      name="universityYear"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("employees.fields.universityYear")} ({t("common.optional")})</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={7}
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
                 <FormField
                   control={form.control}
                   name="yearsOfExperience"
@@ -1137,54 +1242,6 @@ export function EmployeeDialog({ open, onOpenChange, employee }: EmployeeDialogP
                       </FormItem>
                     )}
                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="educationLevel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("employees.fields.educationLevel")} ({t("common.optional")})</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t("employees.selectEducationLevel")} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="__none__">—</SelectItem>
-                            {["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"].map((el) => (
-                              <SelectItem key={el} value={el}>{t(`employees.educationLevels.${el}`)}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {form.watch("educationLevel") === "UNIVERSITY" && (
-                    <FormField
-                      control={form.control}
-                      name="universityYear"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("employees.fields.universityYear")} ({t("common.optional")})</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={7}
-                              value={field.value ?? ""}
-                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
                 </div>
 
                 <FormField
