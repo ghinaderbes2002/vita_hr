@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUsers } from "@/lib/hooks/use-users";
 import { useLinkUser } from "@/lib/hooks/use-employees";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { Employee } from "@/types";
 import { Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,7 @@ export function LinkUserDialog({ open, onOpenChange, employee }: LinkUserDialogP
 
   const { data: usersData } = useUsers({});
   const linkUser = useLinkUser();
+  const { user, setUser } = useAuthStore();
 
   // When dialog opens, pre-select the already linked user (if any)
   useEffect(() => {
@@ -48,6 +50,10 @@ export function LinkUserDialog({ open, onOpenChange, employee }: LinkUserDialogP
 
     try {
       await linkUser.mutateAsync({ employeeId: employee.id, userId: selectedUserId });
+      // إذا المستخدم المربوط هو نفس المسجل دخول، نحفظ employeeId في الـ store
+      if (user && selectedUserId === user.id) {
+        setUser({ ...user, employeeId: employee.id } as any);
+      }
       onOpenChange(false);
       setSelectedUserId("");
     } catch (error) {

@@ -24,10 +24,7 @@ const STATUS_VARIANTS: Record<CustodyStatus, "default" | "secondary" | "destruct
 export default function MyCustodiesPage() {
   const t = useTranslations();
   const { user } = useAuthStore();
-  const employeeId =
-    user?.employeeId ||
-    (user as any)?.employee?.id ||
-    "";
+  const employeeId = user?.employeeId || (user as any)?.employee?.id || "";
 
   const { data: custodiesData, isLoading } = useEmployeeCustodies(employeeId);
   const { data: summary } = useEmployeeCustodySummary(employeeId);
