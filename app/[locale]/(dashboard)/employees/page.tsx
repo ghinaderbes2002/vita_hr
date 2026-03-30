@@ -29,7 +29,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Users } from "lucide-react";
 import { useEmployees, useDeleteEmployee, useEmployeesByDepartment } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
@@ -113,6 +115,7 @@ export default function EmployeesPage() {
       <PageHeader
         title={t("employees.title")}
         description={t("employees.description")}
+        count={!isLoading && !selectedDepartment ? total : undefined}
         actions={
           <Button onClick={() => { setSelectedEmployee(null); setDialogOpen(true); }}>
             <Plus className="h-4 w-4 ml-2" />
@@ -121,32 +124,30 @@ export default function EmployeesPage() {
         }
       />
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="filter-bar">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("employees.searchPlaceholder")}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="pr-10"
+            className="pr-10 bg-background"
           />
         </div>
-        <div className="w-64">
-          <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setPage(1); }}>
-            <SelectTrigger>
-              <Filter className="h-4 w-4 ml-2" />
-              <SelectValue placeholder={t("employees.filterByDepartment")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value=" ">{t("employees.allDepartments")}</SelectItem>
-              {departments.map((dept: any) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.nameAr}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setPage(1); }}>
+          <SelectTrigger className="w-56 bg-background">
+            <Filter className="h-4 w-4 ml-2" />
+            <SelectValue placeholder={t("employees.filterByDepartment")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value=" ">{t("employees.allDepartments")}</SelectItem>
+            {departments.map((dept: any) => (
+              <SelectItem key={dept.id} value={dept.id}>
+                {dept.nameAr}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-md border">
@@ -165,22 +166,26 @@ export default function EmployeesPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
+              Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4" style={{ width: `${60 + (i * 13) % 40}px` }} /></TableCell>
+                  <TableCell><Skeleton className="h-4" style={{ width: `${50 + (i * 17) % 40}px` }} /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-44" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-7 w-7 rounded-md" /></TableCell>
                 </TableRow>
               ))
             ) : employees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
-                  {t("common.noData")}
+                <TableCell colSpan={8} className="p-0">
+                  <EmptyState
+                    icon={<Users className="h-8 w-8 text-muted-foreground" />}
+                    title={t("common.noData")}
+                    description={search ? "جرب تغيير كلمة البحث" : undefined}
+                  />
                 </TableCell>
               </TableRow>
             ) : (

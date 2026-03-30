@@ -14,7 +14,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ClipboardList } from "lucide-react";
 import { useRequests, useApproveRequest, useRejectRequest } from "@/lib/hooks/use-requests";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
@@ -66,11 +68,12 @@ export default function AllRequestsPage() {
       <PageHeader
         title={t("requests.allRequests")}
         description={t("requests.allRequestsDescription")}
+        count={!isLoading ? requests.length : undefined}
       />
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="filter-bar">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-48 bg-background">
             <SelectValue placeholder={t("requests.filterByStatus")} />
           </SelectTrigger>
           <SelectContent>
@@ -82,7 +85,7 @@ export default function AllRequestsPage() {
         </Select>
 
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-48 bg-background">
             <SelectValue placeholder={t("requests.filterByType")} />
           </SelectTrigger>
           <SelectContent>
@@ -118,8 +121,12 @@ export default function AllRequestsPage() {
               ))
             ) : requests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  {t("common.noData")}
+                <TableCell colSpan={7} className="p-0">
+                  <EmptyState
+                    icon={<ClipboardList className="h-8 w-8 text-muted-foreground" />}
+                    title={t("common.noData")}
+                    description={statusFilter !== "all" || typeFilter !== "all" ? "جرب تغيير الفلاتر" : undefined}
+                  />
                 </TableCell>
               </TableRow>
             ) : (

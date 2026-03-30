@@ -102,7 +102,6 @@ export default function EmployeeDetailsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Back button */}
       <Button variant="ghost" onClick={() => router.back()} className="gap-2">
         <ArrowRight className="h-4 w-4" />
         {t("common.back")}

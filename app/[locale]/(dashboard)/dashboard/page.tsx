@@ -1,13 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Users, Calendar, Clock, AlertCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
+import { Users, Calendar, Clock, AlertCircle, PlusCircle, ClipboardList, Package, UserCheck } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const { user } = useAuthStore();
+  const locale = useLocale();
+  const router = useRouter();
 
   const stats = [
     {
@@ -68,6 +73,37 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">إجراءات سريعة</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Button variant="outline" className="h-auto flex-col gap-2 py-4"
+              onClick={() => router.push(`/${locale}/employees`)}>
+              <Users className="h-5 w-5" />
+              <span className="text-xs">الموظفون</span>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col gap-2 py-4"
+              onClick={() => router.push(`/${locale}/requests/new`)}>
+              <PlusCircle className="h-5 w-5" />
+              <span className="text-xs">طلب جديد</span>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col gap-2 py-4"
+              onClick={() => router.push(`/${locale}/requests/all`)}>
+              <ClipboardList className="h-5 w-5" />
+              <span className="text-xs">كل الطلبات</span>
+            </Button>
+            <Button variant="outline" className="h-auto flex-col gap-2 py-4"
+              onClick={() => router.push(`/${locale}/custodies`)}>
+              <Package className="h-5 w-5" />
+              <span className="text-xs">العهد</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

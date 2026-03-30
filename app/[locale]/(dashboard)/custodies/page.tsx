@@ -21,6 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useCustodies, useDeleteCustody } from "@/lib/hooks/use-custodies";
+import { EmptyState } from "@/components/shared/empty-state";
 import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
 import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
 import { Custody, CustodyStatus } from "@/types";
@@ -80,6 +81,7 @@ export default function CustodiesPage() {
       <PageHeader
         title={t("custodies.title")}
         description={t("custodies.description")}
+        count={!isLoading ? custodies.length : undefined}
         actions={
           <Button onClick={() => { setSelected(null); setDialogOpen(true); }}>
             <Plus className="h-4 w-4 ml-2" />
@@ -88,18 +90,18 @@ export default function CustodiesPage() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="filter-bar">
+        <div className="relative flex-1 min-w-50 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("custodies.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pr-10"
+            className="pr-10 bg-background"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-40 bg-background">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -110,7 +112,7 @@ export default function CustodiesPage() {
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-40 bg-background">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -146,7 +148,12 @@ export default function CustodiesPage() {
               ))
             ) : custodies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">{t("common.noData")}</TableCell>
+                <TableCell colSpan={7} className="p-0">
+                  <EmptyState
+                    title={t("common.noData")}
+                    description={search || statusFilter !== "all" || categoryFilter !== "all" ? "جرب تغيير الفلاتر" : undefined}
+                  />
+                </TableCell>
               </TableRow>
             ) : (
               custodies.map((c) => (

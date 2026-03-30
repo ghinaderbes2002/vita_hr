@@ -294,7 +294,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
         {!mounted ? (
           Array.from({ length: 6 }).map((_, i) => (
             <div
@@ -305,11 +305,13 @@ export function Sidebar() {
               )}
             />
           ))
-        ) : navigation.map((item) => {
+        ) : navigation.map((item, index) => {
           // إخفاء العنصر إذا ما عنده صلاحية
           if (!hasSectionPermission(item)) {
             return null;
           }
+
+          const showSeparator = index > 0 && item.children && !isCollapsed;
 
           const active = item.href ? isActive(item.href) : false;
           const isExpanded = expanded.includes(item.title);
@@ -320,13 +322,11 @@ export function Sidebar() {
               hasSectionPermission(child)
             );
 
-            // إذا ما في عناصر فرعية مرئية، ما نعرض القسم
-            if (visibleChildren.length === 0) {
-              return null;
-            }
+            if (visibleChildren.length === 0) return null;
 
             return (
               <div key={item.title}>
+                {showSeparator && <div className="my-2 border-t" />}
                 <button
                   onClick={() => {
                     if (isCollapsed) {
@@ -337,7 +337,7 @@ export function Sidebar() {
                     }
                   }}
                   className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm",
+                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium",
                     "hover:bg-muted transition-colors",
                     isCollapsed && "justify-center"
                   )}
@@ -404,10 +404,11 @@ export function Sidebar() {
                                     key={grandChild.href}
                                     href={grandChild.href!}
                                     className={cn(
-                                      "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
-                                      "hover:bg-muted transition-colors",
-                                      isActive(grandChild.href!) &&
-                                        "bg-primary text-primary-foreground"
+                                      "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                                      "hover:bg-muted",
+                                      isActive(grandChild.href!)
+                                        ? "bg-primary text-primary-foreground font-medium"
+                                        : ""
                                     )}
                                   >
                                     <grandChild.icon className="h-4 w-4" />
@@ -426,10 +427,11 @@ export function Sidebar() {
                           key={child.href}
                           href={child.href!}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
-                            "hover:bg-muted transition-colors",
-                            isActive(child.href!) &&
-                              "bg-primary text-primary-foreground"
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                            "hover:bg-muted",
+                            isActive(child.href!)
+                              ? "bg-primary text-primary-foreground font-medium"
+                              : ""
                           )}
                         >
                           <child.icon className="h-4 w-4" />
@@ -448,9 +450,9 @@ export function Sidebar() {
               key={item.href}
               href={item.href!}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
-                "hover:bg-muted transition-colors",
-                active && "bg-primary text-primary-foreground",
+                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors font-medium",
+                "hover:bg-muted",
+                active ? "bg-primary text-primary-foreground" : "",
                 isCollapsed && "justify-center gap-0"
               )}
               title={isCollapsed ? t(item.title) : undefined}

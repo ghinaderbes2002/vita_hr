@@ -123,6 +123,45 @@
     @apply bg-background text-foreground;
   }
   .card {
-    @apply shadow-sm;
+    @apply shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Table headers - sticky + styled */
+  thead tr th {
+    @apply bg-muted/60 font-semibold text-foreground sticky top-0 z-10;
+  }
+
+  /* Dialog header separator */
+  [role="dialog"] [data-slot="dialog-header"] {
+    @apply border-b pb-4 mb-2;
+  }
+
+  /* Table row hover */
+  tbody tr {
+    @apply transition-colors;
+  }
+  tbody tr:hover {
+    @apply bg-muted/40;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    @apply flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3;
+  }
+
+  /* Sidebar scrollbar */
+  nav::-webkit-scrollbar {
+    width: 4px;
+  }
+  nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  nav::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  /* Input focus improvement */
+  input:focus-visible, textarea:focus-visible {
+    @apply ring-2;
   }
 }
