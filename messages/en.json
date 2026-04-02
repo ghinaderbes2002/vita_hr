@@ -69,7 +69,12 @@
     "allCustodies": "All Custodies",
     "myCustodies": "My Custodies",
     "jobApplications": "Job Applications",
-    "allJobApplications": "All Applications"
+    "allJobApplications": "All Applications",
+    "biometricDevices": "Biometric Devices",
+    "allBiometricDevices": "Manage Devices",
+    "biometricReports": "Biometric Reports",
+    "deductionPolicies": "Deduction Policies",
+    "allDeductionPolicies": "Manage Policies"
   },
   "user": {
     "logout": "Logout",

@@ -100,7 +100,12 @@
     "allCustodies": "كل العهد",
     "myCustodies": "عهدي",
     "jobApplications": "طلبات التوظيف",
-    "allJobApplications": "كل الطلبات"
+    "allJobApplications": "كل الطلبات",
+    "biometricDevices": "أجهزة البصمة",
+    "allBiometricDevices": "إدارة الأجهزة",
+    "biometricReports": "تقارير البصمة",
+    "deductionPolicies": "سياسات الحسم",
+    "allDeductionPolicies": "إدارة السياسات"
   },
   "dashboard": {
     "title": "لوحة التحكم",

@@ -69,7 +69,12 @@
     "allCustodies": "Tüm Emanetler",
     "myCustodies": "Emanetlerim",
     "jobApplications": "İş Başvuruları",
-    "allJobApplications": "Tüm Başvurular"
+    "allJobApplications": "Tüm Başvurular",
+    "biometricDevices": "Biyometrik Cihazlar",
+    "allBiometricDevices": "Cihaz Yönetimi",
+    "biometricReports": "Biyometrik Raporlar",
+    "deductionPolicies": "Kesinti Politikaları",
+    "allDeductionPolicies": "Politika Yönetimi"
   },
   "user": {
     "logout": "Çıkış Yap",

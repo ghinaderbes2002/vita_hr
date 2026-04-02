@@ -1,18 +1,35 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ArrowRight, Mail, Building2, User, Briefcase,
   Paperclip, Heart, GraduationCap, MapPin, Users, FileDown,
-  BadgeCheck, Cigarette, Award, DollarSign, ExternalLink,
+  BadgeCheck, Cigarette, Award, ExternalLink,
+  Fingerprint, Plus, Trash2, Settings, Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TrainingCertificate, EmployeeAllowance } from "@/types";
 import { useEmployee } from "@/lib/hooks/use-employees";
+import { useEmployeeFingerprints, useRegisterFingerprint, useDeleteFingerprint } from "@/lib/hooks/use-employee-fingerprints";
+import { useBiometricDevices } from "@/lib/hooks/use-biometric-devices";
+import { useEmployeeAttendanceConfig, useUpsertAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
+import { EmployeeFingerprint } from "@/lib/api/employee-fingerprints";
+import { BiometricDevice } from "@/lib/api/biometric-devices";
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800 border-green-200",
@@ -40,6 +57,55 @@ export default function EmployeeDetailsPage() {
 
   const { data: employee, isLoading } = useEmployee(employeeId);
   const emp = employee as any;
+
+  // Attendance config
+  const { data: attendanceConfig } = useEmployeeAttendanceConfig(employeeId);
+  const upsertConfig = useUpsertAttendanceConfig();
+  const [configForm, setConfigForm] = useState<{ salaryLinked: boolean; allowedBreakMinutes: number } | null>(null);
+  const config = attendanceConfig as any;
+
+  function getConfigForm() {
+    return configForm ?? {
+      salaryLinked: config?.salaryLinked ?? true,
+      allowedBreakMinutes: config?.allowedBreakMinutes ?? 60,
+    };
+  }
+
+  function handleSaveConfig() {
+    const f = getConfigForm();
+    upsertConfig.mutate({ employeeId, salaryLinked: f.salaryLinked, allowedBreakMinutes: f.allowedBreakMinutes });
+    setConfigForm(null);
+  }
+
+  // Fingerprint state
+  const [fpDialogOpen, setFpDialogOpen] = useState(false);
+  const [fpDeleteOpen, setFpDeleteOpen] = useState(false);
+  const [selectedFp, setSelectedFp] = useState<EmployeeFingerprint | null>(null);
+  const [fpForm, setFpForm] = useState({ deviceId: "", pin: "" });
+
+  const { data: fingerprints } = useEmployeeFingerprints(employeeId);
+  const { data: devicesData } = useBiometricDevices();
+  const registerFingerprint = useRegisterFingerprint();
+  const deleteFingerprint = useDeleteFingerprint();
+
+  const fpList: EmployeeFingerprint[] = (fingerprints as any) || [];
+  const deviceList: BiometricDevice[] = (devicesData as any) || [];
+
+  function handleRegisterFingerprint() {
+    if (!fpForm.deviceId || !fpForm.pin.trim()) return;
+    registerFingerprint.mutate(
+      { employeeId, deviceId: fpForm.deviceId, pin: fpForm.pin },
+      { onSuccess: () => { setFpDialogOpen(false); setFpForm({ deviceId: "", pin: "" }); } }
+    );
+  }
+
+  function handleDeleteFingerprint() {
+    if (!selectedFp) return;
+    deleteFingerprint.mutate(
+      { id: selectedFp.id, employeeId },
+      { onSuccess: () => setFpDeleteOpen(false) }
+    );
+  }
 
   if (isLoading) {
     return (
@@ -451,7 +517,168 @@ export default function EmployeeDetailsPage() {
           </CardContent>
         </Card>
 
+        {/* ─── Attendance Config ─────────────────────────────── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Settings className="h-4 w-4 text-primary" />
+              إعدادات الحضور
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">مرتبط بالراتب</p>
+                <p className="text-xs text-muted-foreground">يُحسم على التأخر والغياب</p>
+              </div>
+              <Switch
+                checked={getConfigForm().salaryLinked}
+                onCheckedChange={(v) => setConfigForm({ ...getConfigForm(), salaryLinked: v })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>دقائق الاستراحة المسموحة يومياً</Label>
+              <Input
+                type="number"
+                value={getConfigForm().allowedBreakMinutes}
+                onChange={(e) => setConfigForm({ ...getConfigForm(), allowedBreakMinutes: Number(e.target.value) })}
+                min={0}
+                className="w-full"
+              />
+            </div>
+            <Button
+              size="sm"
+              className="gap-1.5 w-full"
+              onClick={handleSaveConfig}
+              disabled={upsertConfig.isPending}
+            >
+              <Save className="h-3.5 w-3.5" />
+              حفظ الإعدادات
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* ─── Fingerprints ──────────────────────────────────── */}
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Fingerprint className="h-4 w-4 text-primary" />
+              بصمات الموظف
+              <Badge variant="secondary" className="mr-auto">{fpList.length}</Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 mr-0 ms-auto h-7 text-xs"
+                onClick={() => { setFpForm({ deviceId: "", pin: "" }); setFpDialogOpen(true); }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                تسجيل بصمة
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {fpList.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                لا توجد بصمات مسجلة لهذا الموظف
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {fpList.map((fp) => (
+                  <div
+                    key={fp.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Fingerprint className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {fp.device?.nameAr || "جهاز غير محدد"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          PIN: {fp.pin} • {new Date(fp.createdAt).toLocaleDateString("ar-EG")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={fp.isActive ? "default" : "secondary"} className={fp.isActive ? "bg-green-600" : ""}>
+                        {fp.isActive ? "نشط" : "غير نشط"}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => { setSelectedFp(fp); setFpDeleteOpen(true); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
       </div>
+
+      {/* ─── Register Fingerprint Dialog ───────────────────── */}
+      <Dialog open={fpDialogOpen} onOpenChange={setFpDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>تسجيل بصمة جديدة</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>الجهاز *</Label>
+              <Select
+                value={fpForm.deviceId}
+                onValueChange={(v) => setFpForm({ ...fpForm, deviceId: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر جهاز البصمة" />
+                </SelectTrigger>
+                <SelectContent>
+                  {deviceList.filter((d) => d.isActive).map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.nameAr}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>رقم PIN *</Label>
+              <Input
+                value={fpForm.pin}
+                onChange={(e) => setFpForm({ ...fpForm, pin: e.target.value })}
+                placeholder="أدخل رقم PIN"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFpDialogOpen(false)}>إلغاء</Button>
+            <Button
+              onClick={handleRegisterFingerprint}
+              disabled={!fpForm.deviceId || !fpForm.pin.trim() || registerFingerprint.isPending}
+            >
+              تسجيل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Delete Fingerprint Confirm ─────────────────────── */}
+      <ConfirmDialog
+        open={fpDeleteOpen}
+        onOpenChange={setFpDeleteOpen}
+        title="حذف البصمة"
+        description="هل أنت متأكد من حذف هذه البصمة؟"
+        onConfirm={handleDeleteFingerprint}
+        variant="destructive"
+      />
+
     </div>
   );
 }

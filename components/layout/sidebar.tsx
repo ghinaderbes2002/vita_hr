@@ -37,6 +37,8 @@ import {
   GraduationCap,
   UserCircle,
   Package,
+  Fingerprint,
+  ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -131,6 +133,21 @@ const navigation: NavItem[] = [
         icon: Package,
         children: [
           { title: "nav.allCustodies", href: "/custodies", icon: Package, permission: "custodies:read" },
+        ],
+      },
+      {
+        title: "nav.biometricDevices",
+        icon: Fingerprint,
+        children: [
+          { title: "nav.allBiometricDevices", href: "/biometric-devices", icon: Fingerprint, permission: "employees:read" },
+          { title: "nav.biometricReports", href: "/attendance/biometric-reports", icon: FileBarChart, permission: "attendance.reports.read" },
+        ],
+      },
+      {
+        title: "nav.deductionPolicies",
+        icon: ShieldCheck,
+        children: [
+          { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck, permission: "employees:read" },
         ],
       },
       {
