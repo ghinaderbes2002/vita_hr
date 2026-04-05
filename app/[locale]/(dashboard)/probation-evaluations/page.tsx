@@ -79,6 +79,7 @@ export default function ProbationEvaluationsPage() {
   const isLoading = tab === "all" ? allLoading : pendingLoading;
   const criteriaList: any[] = (criteria as any) || [];
   const employees: any[] = (employeesData as any)?.data?.items || [];
+  const employeeMap = Object.fromEntries(employees.map((e: any) => [e.id, e]));
 
   function handleCreate() {
     if (!form.employeeId || !form.hireDate || !form.probationEndDate) return;
@@ -165,7 +166,9 @@ export default function ProbationEvaluationsPage() {
                       <TableCell className="font-medium">
                         {ev.employee
                           ? `${ev.employee.firstNameAr} ${ev.employee.lastNameAr}`
-                          : ev.employeeId}
+                          : employeeMap[ev.employeeId]
+                            ? `${employeeMap[ev.employeeId].firstNameAr} ${employeeMap[ev.employeeId].lastNameAr}`
+                            : ev.employeeId}
                       </TableCell>
                       <TableCell>
                         {ev.probationEndDate
