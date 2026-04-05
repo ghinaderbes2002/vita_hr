@@ -136,7 +136,7 @@ export const probationEvaluationsApi = {
     return response.data?.data || response.data;
   },
 
-  seniorApprove: async (id: string, data: WorkflowActionData) => {
+  seniorApprove: async (id: string, data?: WorkflowActionData) => {
     const response = await apiClient.post(`/probation/evaluations/${id}/senior-approve`, data);
     return response.data?.data || response.data;
   },
@@ -156,7 +156,7 @@ export const probationEvaluationsApi = {
     return response.data?.data || response.data;
   },
 
-  ceoDecide: async (id: string, data: WorkflowActionData) => {
+  ceoDecide: async (id: string, data?: WorkflowActionData) => {
     const response = await apiClient.post(`/probation/evaluations/${id}/ceo-decide`, data);
     return response.data?.data || response.data;
   },
