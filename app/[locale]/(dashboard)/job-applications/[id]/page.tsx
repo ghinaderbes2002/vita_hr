@@ -6,17 +6,30 @@ import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import {
   ArrowRight, Download, Linkedin, Star, Phone, Mail, Building2, User,
+  ClipboardList, Trophy, Send, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { useJobApplication, useUpdateJobApplication } from "@/lib/hooks/use-job-applications";
 import { CV_BASE_URL } from "@/lib/api/job-applications";
 import { JobApplicationStatus } from "@/types";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
+import { useInterviewEvaluationByApplication, useCreateInterviewEvaluation, useUpdateInterviewEvaluation, useTransferToEmployee } from "@/lib/hooks/use-interview-evaluations";
+import { useInterviewPositions } from "@/lib/hooks/use-interview-positions";
+import { usePersonalCriteria, useComputerCriteria } from "@/lib/hooks/use-interview-criteria";
+import { InterviewDecision, CreateInterviewEvaluationData } from "@/lib/api/interview-evaluations";
 
 const STATUS_CONFIG: Record<JobApplicationStatus, { bg: string; label: string }> = {
   PENDING:         { bg: "bg-amber-100 text-amber-800",   label: "" },
@@ -48,6 +61,74 @@ export default function JobApplicationDetailPage() {
 
   const { data: application, isLoading } = useJobApplication(id);
   const updateApplication = useUpdateJobApplication();
+
+  // Interview evaluation
+  const { data: existingEval } = useInterviewEvaluationByApplication(id);
+  const { data: positionsData } = useInterviewPositions();
+  const { data: personalCriteria } = usePersonalCriteria();
+  const { data: computerCriteria } = useComputerCriteria();
+  const createEval = useCreateInterviewEvaluation();
+  const updateEval = useUpdateInterviewEvaluation();
+  const transferToEmployee = useTransferToEmployee();
+
+  const [evalDialogOpen, setEvalDialogOpen] = useState(false);
+  const [evalForm, setEvalForm] = useState<{
+    positionId: string;
+    decision: InterviewDecision | "";
+    generalNotes: string;
+    proposedSalary: string;
+    personalScores: Record<string, number>;
+    computerScores: Record<string, number>;
+    technicalScores: Record<string, number>;
+  }>({
+    positionId: "", decision: "", generalNotes: "", proposedSalary: "",
+    personalScores: {}, computerScores: {}, technicalScores: {},
+  });
+
+  const positions = (positionsData as any)?.items || (positionsData as any) || [];
+  const evalData = existingEval as any;
+  const pCriteria = (personalCriteria as any) || [];
+  const cCriteria = (computerCriteria as any) || [];
+
+  const selectedPosition = positions.find((p: any) => p.id === evalForm.positionId);
+  const techQuestions = selectedPosition?.technicalQuestions || [];
+
+  function openEvalDialog() {
+    if (evalData) {
+      setEvalForm({
+        positionId: evalData.positionId || "",
+        decision: evalData.decision || "",
+        generalNotes: evalData.generalNotes || "",
+        proposedSalary: evalData.proposedSalary?.toString() || "",
+        personalScores: Object.fromEntries((evalData.personalScores || []).map((s: any) => [s.criterionId, s.score])),
+        computerScores: Object.fromEntries((evalData.computerScores || []).map((s: any) => [s.criterionId, s.score])),
+        technicalScores: Object.fromEntries((evalData.technicalScores || []).map((s: any) => [s.questionId, s.score])),
+      });
+    } else {
+      setEvalForm({ positionId: "", decision: "", generalNotes: "", proposedSalary: "", personalScores: {}, computerScores: {}, technicalScores: {} });
+    }
+    setEvalDialogOpen(true);
+  }
+
+  function handleSaveEval() {
+    if (!evalForm.positionId || !app) return;
+    const payload: CreateInterviewEvaluationData = {
+      positionId: evalForm.positionId,
+      jobApplicationId: id,
+      candidateName: app.fullName,
+      decision: (evalForm.decision as InterviewDecision) || undefined,
+      generalNotes: evalForm.generalNotes || undefined,
+      proposedSalary: evalForm.proposedSalary ? Number(evalForm.proposedSalary) : undefined,
+      personalScores: pCriteria.map((c: any) => ({ criterionId: c.id, score: evalForm.personalScores[c.id] || 1 })),
+      computerScores: cCriteria.map((c: any) => ({ criterionId: c.id, score: evalForm.computerScores[c.id] || 1 })),
+      technicalScores: techQuestions.map((q: any) => ({ questionId: q.id, score: evalForm.technicalScores[q.id] || 1 })),
+    };
+    if (evalData) {
+      updateEval.mutate({ id: evalData.id, data: payload }, { onSuccess: () => setEvalDialogOpen(false) });
+    } else {
+      createEval.mutate(payload, { onSuccess: () => setEvalDialogOpen(false) });
+    }
+  }
 
   const [reviewNotes, setReviewNotes] = useState("");
   const [rejectionNote, setRejectionNote] = useState("");
@@ -233,7 +314,7 @@ export default function JobApplicationDetailPage() {
             {/* Action buttons */}
             {!actionStatus && (
               <div className="flex flex-wrap gap-2">
-                {app.status !== "INTERVIEW_READY" && app.status !== "ACCEPTED" && (
+                {app.status !== "INTERVIEW_READY" && app.status !== "ACCEPTED" && app.status !== "REJECTED" && (
                   <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50"
                     onClick={() => handleAction("INTERVIEW_READY")}>
                     {t("jobApplications.actions.interviewReady")}
@@ -314,9 +395,207 @@ export default function JobApplicationDetailPage() {
         </Card>
       )}
 
+      {/* Interview Evaluation Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-primary" />
+            تقييم المقابلة
+            <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs ms-auto" onClick={openEvalDialog}>
+              {evalData ? "تعديل التقييم" : "إنشاء تقييم"}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!evalData ? (
+            <p className="text-sm text-muted-foreground text-center py-4">لم يتم إجراء تقييم رسمي للمقابلة بعد</p>
+          ) : (
+            <div className="space-y-3">
+              {/* Scores */}
+              <div className="grid gap-3 sm:grid-cols-4">
+                {[
+                  { label: "شخصي (40)", value: evalData.personalScore },
+                  { label: "تقني (40)", value: evalData.technicalScore },
+                  { label: "حاسوبي (20)", value: evalData.computerScore },
+                  { label: "المجموع", value: evalData.totalScore, highlight: true },
+                ].map((item) => (
+                  <div key={item.label} className={`rounded-lg border p-3 text-center ${item.highlight ? "border-primary/30 bg-primary/5" : ""}`}>
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className={`text-xl font-bold mt-0.5 ${item.highlight ? "text-primary" : ""}`}>
+                      {item.value != null ? item.value.toFixed(1) : "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {/* Decision */}
+              {evalData.decision && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">القرار:</span>
+                  <Badge className={`text-xs ${
+                    evalData.decision === "ACCEPTED" ? "bg-green-100 text-green-700" :
+                    evalData.decision === "REJECTED" ? "bg-red-100 text-red-700" :
+                    "bg-amber-100 text-amber-700"
+                  }`}>
+                    {{ ACCEPTED: "مقبول", REFERRED_TO_OTHER: "مرشح لشاغر آخر", DEFERRED: "مؤجل", REJECTED: "مرفوض" }[evalData.decision as string]}
+                  </Badge>
+                </div>
+              )}
+              {evalData.proposedSalary && (
+                <p className="text-sm text-muted-foreground">
+                  الراتب المقترح: <strong>{Number(evalData.proposedSalary).toLocaleString()} ل.س</strong>
+                </p>
+              )}
+              {/* Transfer button */}
+              {evalData.decision === "ACCEPTED" && !evalData.isTransferred && (
+                <Button
+                  size="sm" variant="outline"
+                  className="gap-1.5 text-xs border-green-300 text-green-700 hover:bg-green-50"
+                  onClick={() => transferToEmployee.mutate(evalData.id)}
+                  disabled={transferToEmployee.isPending}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  نقل النتيجة لسجل الموظف
+                </Button>
+              )}
+              {evalData.isTransferred && (
+                <Badge variant="default" className="bg-green-600 gap-1 text-xs">
+                  <Trophy className="h-3 w-3" />تم النقل لسجل الموظف
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <p className="text-xs text-muted-foreground">
         {t("jobApplications.fields.createdAt")}: {format(new Date(app.createdAt), "yyyy/MM/dd HH:mm")}
       </p>
+
+      {/* Evaluation Dialog */}
+      <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{evalData ? "تعديل تقييم المقابلة" : "إنشاء تقييم المقابلة"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 py-2">
+            {/* Position */}
+            <div className="space-y-1.5">
+              <Label>الشاغر الوظيفي *</Label>
+              <Select value={evalForm.positionId} onValueChange={(v) => setEvalForm({ ...evalForm, positionId: v, technicalScores: {} })}>
+                <SelectTrigger><SelectValue placeholder="اختر الشاغر" /></SelectTrigger>
+                <SelectContent>
+                  {positions.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.jobTitle} — {p.department}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Personal Criteria */}
+            {pCriteria.length > 0 && (
+              <div className="space-y-2 rounded-lg border p-3">
+                <p className="text-sm font-medium">الصفات الشخصية (من 5 لكل معيار)</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {pCriteria.map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between gap-2">
+                      <Label className="text-xs flex-1">{c.nameAr}</Label>
+                      <Input
+                        type="number" min={1} max={c.maxScore}
+                        value={evalForm.personalScores[c.id] ?? ""}
+                        onChange={(e) => setEvalForm({ ...evalForm, personalScores: { ...evalForm.personalScores, [c.id]: Number(e.target.value) } })}
+                        className="w-16 h-7 text-center text-xs"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Technical Questions */}
+            {techQuestions.length > 0 && (
+              <div className="space-y-2 rounded-lg border p-3">
+                <p className="text-sm font-medium">الأسئلة التقنية</p>
+                <div className="space-y-2">
+                  {techQuestions.map((q: any) => (
+                    <div key={q.id} className="flex items-center justify-between gap-2">
+                      <Label className="text-xs flex-1">{q.question}</Label>
+                      <span className="text-xs text-muted-foreground shrink-0">/{q.maxScore}</span>
+                      <Input
+                        type="number" min={1} max={q.maxScore}
+                        value={evalForm.technicalScores[q.id] ?? ""}
+                        onChange={(e) => setEvalForm({ ...evalForm, technicalScores: { ...evalForm.technicalScores, [q.id]: Number(e.target.value) } })}
+                        className="w-16 h-7 text-center text-xs"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Computer Criteria */}
+            {cCriteria.length > 0 && (
+              <div className="space-y-2 rounded-lg border p-3">
+                <p className="text-sm font-medium">المهارات الحاسوبية (من 5 لكل معيار)</p>
+                <div className="space-y-2">
+                  {cCriteria.map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between gap-2">
+                      <Label className="text-xs flex-1">{c.nameAr}</Label>
+                      <Input
+                        type="number" min={1} max={c.maxScore}
+                        value={evalForm.computerScores[c.id] ?? ""}
+                        onChange={(e) => setEvalForm({ ...evalForm, computerScores: { ...evalForm.computerScores, [c.id]: Number(e.target.value) } })}
+                        className="w-16 h-7 text-center text-xs"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Decision + notes */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>القرار</Label>
+                <Select value={evalForm.decision || "none"} onValueChange={(v) => setEvalForm({ ...evalForm, decision: v === "none" ? "" : v as InterviewDecision })}>
+                  <SelectTrigger><SelectValue placeholder="اختر القرار" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    <SelectItem value="ACCEPTED">مقبول</SelectItem>
+                    <SelectItem value="REFERRED_TO_OTHER">مرشح لشاغر آخر</SelectItem>
+                    <SelectItem value="DEFERRED">مؤجل</SelectItem>
+                    <SelectItem value="REJECTED">مرفوض</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>الراتب المقترح (ل.س)</Label>
+                <Input
+                  type="number"
+                  value={evalForm.proposedSalary}
+                  onChange={(e) => setEvalForm({ ...evalForm, proposedSalary: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>ملاحظات عامة</Label>
+              <Textarea
+                rows={3}
+                value={evalForm.generalNotes}
+                onChange={(e) => setEvalForm({ ...evalForm, generalNotes: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEvalDialogOpen(false)}>إلغاء</Button>
+            <Button
+              onClick={handleSaveEval}
+              disabled={!evalForm.positionId || createEval.isPending || updateEval.isPending}
+            >
+              {evalData ? "حفظ التعديلات" : "حفظ التقييم"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <EmployeeDialog
         open={addEmployeeOpen}

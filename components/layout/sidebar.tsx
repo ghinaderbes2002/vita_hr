@@ -126,6 +126,14 @@ const navigation: NavItem[] = [
         icon: Briefcase,
         children: [
           { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
+          { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase },
+        ],
+      },
+      {
+        title: "nav.probationEvaluations",
+        icon: UserRoundCheck,
+        children: [
+          { title: "nav.allProbationEvaluations", href: "/probation-evaluations", icon: ClipboardPen },
         ],
       },
       {
@@ -139,15 +147,15 @@ const navigation: NavItem[] = [
         title: "nav.biometricDevices",
         icon: Fingerprint,
         children: [
-          { title: "nav.allBiometricDevices", href: "/biometric-devices", icon: Fingerprint, permission: "employees:read" },
-          { title: "nav.biometricReports", href: "/attendance/biometric-reports", icon: FileBarChart, permission: "attendance.reports.read" },
+          { title: "nav.allBiometricDevices", href: "/biometric-devices", icon: Fingerprint },
+          { title: "nav.biometricReports", href: "/attendance/biometric-reports", icon: FileBarChart },
         ],
       },
       {
         title: "nav.deductionPolicies",
         icon: ShieldCheck,
         children: [
-          { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck, permission: "employees:read" },
+          { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck },
         ],
       },
       {
