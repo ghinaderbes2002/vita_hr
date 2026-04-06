@@ -30,6 +30,8 @@ import { useBiometricDevices } from "@/lib/hooks/use-biometric-devices";
 import { useEmployeeAttendanceConfig, useUpsertAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
 import { EmployeeFingerprint } from "@/lib/api/employee-fingerprints";
 import { BiometricDevice } from "@/lib/api/biometric-devices";
+import { useEmployeeWorkflows, useOnboardingTemplates, useCreateOnboardingWorkflow } from "@/lib/hooks/use-onboarding";
+import { Progress } from "@/components/ui/progress";
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800 border-green-200",
@@ -90,6 +92,23 @@ export default function EmployeeDetailsPage() {
 
   const fpList: EmployeeFingerprint[] = (fingerprints as any) || [];
   const deviceList: BiometricDevice[] = (devicesData as any) || [];
+
+  // Onboarding
+  const { data: employeeWorkflows } = useEmployeeWorkflows(employeeId);
+  const { data: onboardingTemplates } = useOnboardingTemplates();
+  const createWorkflow = useCreateOnboardingWorkflow();
+  const [wfDialogOpen, setWfDialogOpen] = useState(false);
+  const [wfForm, setWfForm] = useState({ templateId: "", type: "ONBOARDING" as "ONBOARDING" | "OFFBOARDING", startDate: "", targetDate: "" });
+  const wfList: any[] = (employeeWorkflows as any) || [];
+  const templateList: any[] = (onboardingTemplates as any) || [];
+
+  function handleCreateWorkflow() {
+    if (!wfForm.templateId || !wfForm.startDate) return;
+    createWorkflow.mutate(
+      { employeeId, templateId: wfForm.templateId, type: wfForm.type, startDate: wfForm.startDate, targetDate: wfForm.targetDate || undefined },
+      { onSuccess: () => { setWfDialogOpen(false); setWfForm({ templateId: "", type: "ONBOARDING", startDate: "", targetDate: "" }); } }
+    );
+  }
 
   function handleRegisterFingerprint() {
     if (!fpForm.deviceId || !fpForm.pin.trim()) return;
@@ -621,7 +640,100 @@ export default function EmployeeDetailsPage() {
           </CardContent>
         </Card>
 
+      {/* ─── Onboarding Workflows ──────────────────────────── */}
+      <Card className="md:col-span-3">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Settings className="h-4 w-4 text-primary" />
+            الإلحاق والإنهاء
+            <Button size="sm" variant="outline" className="gap-1.5 ms-auto h-7 text-xs"
+              onClick={() => setWfDialogOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />بدء Workflow
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {wfList.length === 0 ? (
+            <p className="text-center py-4 text-sm text-muted-foreground">لا توجد workflows لهذا الموظف</p>
+          ) : (
+            <div className="space-y-3">
+              {wfList.map((wf: any) => {
+                const completed = (wf.tasks || []).filter((t: any) => t.status === "COMPLETED" || t.status === "SKIPPED").length;
+                const total = wf.tasks?.length || 0;
+                const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+                return (
+                  <div key={wf.id} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge className={`text-xs ${wf.type === "ONBOARDING" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
+                          {wf.type === "ONBOARDING" ? "استقبال" : "إنهاء خدمة"}
+                        </Badge>
+                        <Badge className={`text-xs ${wf.status === "COMPLETED" ? "bg-green-100 text-green-700" : wf.status === "CANCELLED" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}>
+                          {wf.status === "COMPLETED" ? "مكتمل" : wf.status === "CANCELLED" ? "ملغى" : "قيد التنفيذ"}
+                        </Badge>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-6 text-xs text-primary"
+                        onClick={() => router.push(`/onboarding/workflows/${wf.id}`)}>
+                        تفاصيل
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Progress value={progress} className="h-1.5 flex-1" />
+                      <span className="text-xs text-muted-foreground shrink-0">{completed}/{total}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       </div>
+
+      {/* ─── Start Workflow Dialog ─────────────────────────── */}
+      <Dialog open={wfDialogOpen} onOpenChange={setWfDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>بدء Workflow جديد</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>النوع</Label>
+              <Select value={wfForm.type} onValueChange={(v) => setWfForm({ ...wfForm, type: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ONBOARDING">استقبال موظف</SelectItem>
+                  <SelectItem value="OFFBOARDING">إنهاء خدمة</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>القالب *</Label>
+              <Select value={wfForm.templateId} onValueChange={(v) => setWfForm({ ...wfForm, templateId: v })}>
+                <SelectTrigger><SelectValue placeholder="اختر قالباً" /></SelectTrigger>
+                <SelectContent>
+                  {templateList.filter((t: any) => t.type === wfForm.type).map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>{t.nameAr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>تاريخ البداية *</Label>
+                <Input type="date" value={wfForm.startDate} onChange={(e) => setWfForm({ ...wfForm, startDate: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>تاريخ الهدف</Label>
+                <Input type="date" value={wfForm.targetDate} onChange={(e) => setWfForm({ ...wfForm, targetDate: e.target.value })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWfDialogOpen(false)}>إلغاء</Button>
+            <Button onClick={handleCreateWorkflow} disabled={!wfForm.templateId || !wfForm.startDate || createWorkflow.isPending}>بدء</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── Register Fingerprint Dialog ───────────────────── */}
       <Dialog open={fpDialogOpen} onOpenChange={setFpDialogOpen}>

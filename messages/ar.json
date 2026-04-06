@@ -108,7 +108,10 @@
     "allBiometricDevices": "إدارة الأجهزة",
     "biometricReports": "تقارير البصمة",
     "deductionPolicies": "سياسات الحسم",
-    "allDeductionPolicies": "إدارة السياسات"
+    "allDeductionPolicies": "إدارة السياسات",
+    "onboarding": "الإلحاق والإنهاء",
+    "onboardingTemplates": "القوالب",
+    "onboardingWorkflows": "لوحة المتابعة"
   },
   "dashboard": {
     "title": "لوحة التحكم",

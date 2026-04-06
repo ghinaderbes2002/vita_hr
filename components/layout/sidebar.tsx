@@ -39,6 +39,7 @@ import {
   Package,
   Fingerprint,
   ShieldCheck,
+  LayoutList,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -134,6 +135,14 @@ const navigation: NavItem[] = [
         icon: UserRoundCheck,
         children: [
           { title: "nav.allProbationEvaluations", href: "/probation-evaluations", icon: ClipboardPen },
+        ],
+      },
+      {
+        title: "nav.onboarding",
+        icon: LayoutList,
+        children: [
+          { title: "nav.onboardingTemplates", href: "/onboarding/templates", icon: ClipboardList },
+          { title: "nav.onboardingWorkflows", href: "/onboarding/workflows", icon: LayoutList },
         ],
       },
       {

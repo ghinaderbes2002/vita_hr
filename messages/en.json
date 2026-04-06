@@ -77,7 +77,10 @@
     "allBiometricDevices": "Manage Devices",
     "biometricReports": "Biometric Reports",
     "deductionPolicies": "Deduction Policies",
-    "allDeductionPolicies": "Manage Policies"
+    "allDeductionPolicies": "Manage Policies",
+    "onboarding": "Onboarding & Offboarding",
+    "onboardingTemplates": "Templates",
+    "onboardingWorkflows": "Workflows Dashboard"
   },
   "user": {
     "logout": "Logout",

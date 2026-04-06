@@ -77,7 +77,10 @@
     "allBiometricDevices": "Cihaz Yönetimi",
     "biometricReports": "Biyometrik Raporlar",
     "deductionPolicies": "Kesinti Politikaları",
-    "allDeductionPolicies": "Politika Yönetimi"
+    "allDeductionPolicies": "Politika Yönetimi",
+    "onboarding": "İşe Alım & Ayrılış",
+    "onboardingTemplates": "Şablonlar",
+    "onboardingWorkflows": "İş Akışı Paneli"
   },
   "user": {
     "logout": "Çıkış Yap",

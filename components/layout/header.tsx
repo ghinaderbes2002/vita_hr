@@ -2,17 +2,22 @@
 
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
-import { Bell, Moon, Sun, Globe, LogOut } from "lucide-react";
+import { Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useRouter, usePathname } from "@/i18n/navigation";
+import { useUnreadCount, useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
 
 export function Header() {
   const t = useTranslations();
@@ -21,6 +26,13 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const { data: unreadCount = 0 } = useUnreadCount();
+  const { data: notifications = [] } = useNotifications();
+  const markAsRead = useMarkAsRead();
+  const markAllAsRead = useMarkAllAsRead();
+
+  const notifList: any[] = Array.isArray(notifications) ? notifications : [];
+
   const changeLocale = (locale: "ar" | "en" | "tr") => {
     router.replace(pathname, { locale });
   };
@@ -28,6 +40,11 @@ export function Header() {
   const handleLogout = async () => {
     await logout();
     router.push("/login");
+  };
+
+  const handleNotifClick = (notif: any) => {
+    if (!notif.isRead) markAsRead.mutate(notif.id);
+    if (notif.actionUrl) router.push(notif.actionUrl);
   };
 
   return (
@@ -43,15 +60,9 @@ export function Header() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => changeLocale("ar")}>
-              العربية
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => changeLocale("en")}>
-              English
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => changeLocale("tr")}>
-              Turkce
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => changeLocale("ar")}>العربية</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => changeLocale("en")}>English</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => changeLocale("tr")}>Turkce</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -66,9 +77,69 @@ export function Header() {
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              {(unreadCount as number) > 0 && (
+                <span className="absolute -top-0.5 -end-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {(unreadCount as number) > 9 ? "9+" : unreadCount as number}
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80 p-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <p className="text-sm font-semibold">الإشعارات</p>
+              {(unreadCount as number) > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => markAllAsRead.mutate()}
+                  disabled={markAllAsRead.isPending}
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  قراءة الكل
+                </Button>
+              )}
+            </div>
+
+            <div className="max-h-80 overflow-y-auto">
+              {notifList.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  لا توجد إشعارات
+                </div>
+              ) : (
+                notifList.slice(0, 10).map((notif: any) => (
+                  <div
+                    key={notif.id}
+                    className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b last:border-0 ${!notif.isRead ? "bg-blue-50/50 dark:bg-blue-950/20" : ""}`}
+                    onClick={() => handleNotifClick(notif)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-sm leading-snug ${!notif.isRead ? "font-medium" : "text-muted-foreground"}`}>
+                          {notif.title}
+                        </p>
+                        {!notif.isRead && (
+                          <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+                        )}
+                      </div>
+                      {notif.message && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
+                      </p>
+                    </div>
+                    {notif.actionUrl && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
+                  </div>
+                ))
+              )}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* User Menu */}
         <DropdownMenu>
@@ -85,6 +156,7 @@ export function Header() {
               <p className="text-sm font-medium">{user?.fullName || "User"}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="ml-2 h-4 w-4" />
               {t("user.logout")}
