@@ -8,14 +8,14 @@ services:
       dockerfile: Dockerfile
       args:
         # Pass API URL to build process
-        NEXT_PUBLIC_API_URL: http://217.76.53.136:8000/api/v1
+        NEXT_PUBLIC_API_URL: http://159.198.37.52:8000/api/v1
     container_name: vita-hr-frontend
     ports:
       - "3012:3012"
     environment:
       - NODE_ENV=production
       # This is also set for runtime (though NEXT_PUBLIC vars are build-time)
-      - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
+      - NEXT_PUBLIC_API_URL=http://159.198.37.52:8000/api/v1
     restart: unless-stopped
     networks:
       - vita-hr-network

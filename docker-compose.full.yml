@@ -24,7 +24,7 @@ services:
       args:
         # IMPORTANT: Pass API URL to build process (Next.js needs this at build time)
         # Change this to your backend URL:
-        NEXT_PUBLIC_API_URL: http://217.76.53.136:8000/api/v1
+        NEXT_PUBLIC_API_URL: http://159.198.37.52:8000/api/v1
         # Or if backend is in Docker on same network:
         # NEXT_PUBLIC_API_URL: http://backend:8000/api/v1
     container_name: vita-hr-frontend
@@ -33,7 +33,7 @@ services:
     environment:
       - NODE_ENV=production
       # Also set for runtime (though NEXT_PUBLIC vars are mainly build-time)
-      - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
+      - NEXT_PUBLIC_API_URL=http://159.198.37.52:8000/api/v1
     restart: unless-stopped
     networks:
       - vita-hr-network

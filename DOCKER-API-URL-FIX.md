@@ -2,7 +2,7 @@
 
 ## 🐛 المشكلة
 
-عند تشغيل التطبيق في Docker، التطبيق يطلب `http://localhost:8000` بدلاً من `http://217.76.53.136:8000`
+عند تشغيل التطبيق في Docker، التطبيق يطلب `http://localhost:8000` بدلاً من `http://159.198.37.52:8000`
 
 ## 🔍 السبب
 
@@ -42,10 +42,10 @@ frontend:
     dockerfile: Dockerfile
     args:
       # ⬅️ مهم: يُمرر للـ build process
-      NEXT_PUBLIC_API_URL: http://217.76.53.136:8000/api/v1
+      NEXT_PUBLIC_API_URL: http://159.198.37.52:8000/api/v1
   environment:
     # ⬅️ للتشغيل (احتياطي)
-    - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
+    - NEXT_PUBLIC_API_URL=http://159.198.37.52:8000/api/v1
 ```
 
 ---
@@ -58,9 +58,9 @@ frontend:
 cd /path/to/local/project
 
 # انقل الملفات المحدثة فقط
-scp Dockerfile root@217.76.53.136:/root/vita-hr/vita_hr/
-scp docker-compose.yml root@217.76.53.136:/root/vita-hr/vita_hr/
-scp .dockerignore root@217.76.53.136:/root/vita-hr/vita_hr/
+scp Dockerfile root@159.198.37.52:/root/vita-hr/vita_hr/
+scp docker-compose.yml root@159.198.37.52:/root/vita-hr/vita_hr/
+scp .dockerignore root@159.198.37.52:/root/vita-hr/vita_hr/
 ```
 
 ### الطريقة 2️⃣: Git (إذا كنت تستخدم Git)
@@ -92,7 +92,7 @@ nano Dockerfile
 nano docker-compose.yml
 # أضف تحت build:
 #   args:
-#     NEXT_PUBLIC_API_URL: http://217.76.53.136:8000/api/v1
+#     NEXT_PUBLIC_API_URL: http://159.198.37.52:8000/api/v1
 ```
 
 ---
@@ -130,15 +130,15 @@ docker-compose logs -f frontend
 docker-compose logs frontend | grep -i api
 ```
 
-يجب أن ترى: `NEXT_PUBLIC_API_URL=http://217.76.53.136:8000`
+يجب أن ترى: `NEXT_PUBLIC_API_URL=http://159.198.37.52:8000`
 
 ### 2. في المتصفح
 
-افتح: `http://217.76.53.136:3012`
+افتح: `http://159.198.37.52:3012`
 
 اضغط F12 → Network → جرب تسجيل الدخول
 
-يجب أن ترى الطلبات تروح لـ: `http://217.76.53.136:8000/api/v1/...`
+يجب أن ترى الطلبات تروح لـ: `http://159.198.37.52:8000/api/v1/...`
 
 ### 3. تحقق من المتغيرات داخل الكونتينر
 
@@ -234,7 +234,7 @@ cat .dockerignore | grep package-lock
 بعد هذه التعديلات:
 
 ✅ التطبيق يُبنى مع URL الصحيح
-✅ الطلبات تروح لـ `http://217.76.53.136:8000/api/v1`
+✅ الطلبات تروح لـ `http://159.198.37.52:8000/api/v1`
 ✅ لا داعي لملف `.env` منفصل
 ✅ كل شي موجود في `docker-compose.yml`
 

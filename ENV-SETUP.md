@@ -11,7 +11,7 @@
 NODE_ENV=production
 
 # Backend API URL - عدل هذا حسب IP السيرفر تبعك
-NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
+NEXT_PUBLIC_API_URL=http://159.198.37.52:8000/api/v1
 
 # Frontend Port
 PORT=3012
@@ -56,7 +56,7 @@ nano .env
 ```yaml
 environment:
   - NODE_ENV=production
-  - NEXT_PUBLIC_API_URL=http://217.76.53.136:8000/api/v1
+  - NEXT_PUBLIC_API_URL=http://159.198.37.52:8000/api/v1
 ```
 
 إذا أردت تغيير URL الباك اند:
@@ -74,7 +74,7 @@ nano docker-compose.yml
 | المتغير | الوصف | مثال |
 |---------|-------|------|
 | `NODE_ENV` | بيئة التشغيل | `production` أو `development` |
-| `NEXT_PUBLIC_API_URL` | عنوان API الباك اند | `http://217.76.53.136:8000/api/v1` |
+| `NEXT_PUBLIC_API_URL` | عنوان API الباك اند | `http://159.198.37.52:8000/api/v1` |
 | `PORT` | بورت الفرونت اند | `3012` |
 | `NEXT_TELEMETRY_DISABLED` | تعطيل telemetry من Next.js | `1` (نعم) |
 
@@ -99,7 +99,7 @@ NEXT_PUBLIC_API_URL=https://api.yourcompany.com/api/v1
 
 إذا كنت تستخدم SSL:
 ```bash
-NEXT_PUBLIC_API_URL=https://217.76.53.136:8443/api/v1
+NEXT_PUBLIC_API_URL=https://159.198.37.52:8443/api/v1
 ```
 
 ---
@@ -134,7 +134,7 @@ http://YOUR_SERVER_IP:3012
 ```
 
 في Console المتصفح (F12)، تحقق من URL المستخدم:
-- يجب أن ترى طلبات للـ API على `http://217.76.53.136:8000/api/v1`
+- يجب أن ترى طلبات للـ API على `http://159.198.37.52:8000/api/v1`
 - إذا كانت الطلبات للـ `http://localhost:8000`، معناها المتغيرات ما اشتغلت
 
 ---
@@ -155,7 +155,7 @@ cat docker-compose.yml | grep NEXT_PUBLIC_API_URL
 
 3. تحقق من الباك اند يعمل:
 ```bash
-curl http://217.76.53.136:8000/api/v1/health
+curl http://159.198.37.52:8000/api/v1/health
 ```
 
 ### المشكلة: Changes لا تظهر بعد التعديل
