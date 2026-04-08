@@ -78,6 +78,11 @@
     "biometricReports": "Biometric Reports",
     "deductionPolicies": "Deduction Policies",
     "allDeductionPolicies": "Manage Policies",
+    "hrReports": "HR Reports",
+    "hrReportsSummary": "Reports & Analytics",
+    "leaveReports": "Leave Reports",
+    "attendanceReportsSummary": "Attendance Reports",
+    "evaluationReports": "Evaluation Reports",
     "onboarding": "Onboarding & Offboarding",
     "onboardingTemplates": "Templates",
     "onboardingWorkflows": "Workflows Dashboard"

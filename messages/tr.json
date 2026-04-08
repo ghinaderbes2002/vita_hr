@@ -78,6 +78,11 @@
     "biometricReports": "Biyometrik Raporlar",
     "deductionPolicies": "Kesinti Politikaları",
     "allDeductionPolicies": "Politika Yönetimi",
+    "hrReports": "İK Raporları",
+    "hrReportsSummary": "Raporlar ve Analitik",
+    "leaveReports": "İzin Raporları",
+    "attendanceReportsSummary": "Devam Raporları",
+    "evaluationReports": "Değerlendirme Raporları",
     "onboarding": "İşe Alım & Ayrılış",
     "onboardingTemplates": "Şablonlar",
     "onboardingWorkflows": "İş Akışı Paneli"

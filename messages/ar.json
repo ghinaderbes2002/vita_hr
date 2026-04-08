@@ -109,6 +109,11 @@
     "biometricReports": "تقارير البصمة",
     "deductionPolicies": "سياسات الحسم",
     "allDeductionPolicies": "إدارة السياسات",
+    "hrReports": "تقارير الموارد البشرية",
+    "hrReportsSummary": "التقارير والإحصائيات",
+    "leaveReports": "تقارير الإجازات",
+    "attendanceReportsSummary": "تقارير الحضور",
+    "evaluationReports": "تقارير التقييم",
     "onboarding": "الإلحاق والإنهاء",
     "onboardingTemplates": "القوالب",
     "onboardingWorkflows": "لوحة المتابعة"

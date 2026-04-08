@@ -83,7 +83,8 @@ export const onboardingApi = {
   // Templates
   getTemplates: async (params?: { type?: WorkflowType }): Promise<OnboardingTemplate[]> => {
     const response = await apiClient.get("/onboarding/templates", { params });
-    return response.data?.data || response.data;
+    const result = response.data?.data ?? response.data;
+    return Array.isArray(result) ? result : (result?.items || []);
   },
 
   getTemplate: async (id: string): Promise<OnboardingTemplate> => {
@@ -103,7 +104,8 @@ export const onboardingApi = {
   // Workflows
   getWorkflows: async (params?: { employeeId?: string; status?: WorkflowStatus; type?: WorkflowType }): Promise<OnboardingWorkflow[]> => {
     const response = await apiClient.get("/onboarding/workflows", { params });
-    return response.data?.data || response.data;
+    const result = response.data?.data ?? response.data;
+    return Array.isArray(result) ? result : (result?.items || []);
   },
 
   getWorkflow: async (id: string): Promise<OnboardingWorkflow> => {

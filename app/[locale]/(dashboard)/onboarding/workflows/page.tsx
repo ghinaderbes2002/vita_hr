@@ -11,6 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useOnboardingWorkflows } from "@/lib/hooks/use-onboarding";
+import { useEmployees } from "@/lib/hooks/use-employees";
 import { WorkflowType, WorkflowStatus } from "@/lib/api/onboarding";
 import { format } from "date-fns";
 
@@ -30,7 +31,11 @@ export default function OnboardingWorkflowsPage() {
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
-  const list: any[] = (workflows as any) || [];
+  const { data: employeesData } = useEmployees({ limit: 100 });
+  const employees: any[] = (employeesData as any)?.data?.items || [];
+  const employeeMap = Object.fromEntries(employees.map((e: any) => [e.id, e]));
+
+  const list: any[] = Array.isArray(workflows) ? workflows : [];
 
   return (
     <div className="space-y-6">
@@ -78,8 +83,9 @@ export default function OnboardingWorkflowsPage() {
             const completedTasks = (wf.tasks || []).filter((t: any) => t.status === "COMPLETED" || t.status === "SKIPPED").length;
             const totalTasks = wf.tasks?.length || 0;
             const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-            const empName = wf.employee
-              ? `${wf.employee.firstNameAr} ${wf.employee.lastNameAr}`
+            const emp = wf.employee || employeeMap[wf.employeeId];
+            const empName = emp
+              ? `${emp.firstNameAr} ${emp.lastNameAr}`
               : wf.employeeId;
 
             return (

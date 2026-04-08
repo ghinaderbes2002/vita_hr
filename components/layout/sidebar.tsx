@@ -168,6 +168,16 @@ const navigation: NavItem[] = [
         ],
       },
       {
+        title: "nav.hrReports",
+        icon: FileBarChart,
+        children: [
+          { title: "nav.hrReportsSummary", href: "/reports/hr", icon: FileBarChart },
+          { title: "nav.leaveReports", href: "/reports/leave", icon: FileBarChart },
+          { title: "nav.attendanceReportsSummary", href: "/reports/attendance", icon: FileBarChart },
+          { title: "nav.evaluationReports", href: "/reports/evaluation", icon: FileBarChart },
+        ],
+      },
+      {
         title: "nav.evaluations",
         icon: Star,
         children: [
