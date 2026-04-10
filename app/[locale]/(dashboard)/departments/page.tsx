@@ -1,23 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, GitBranch, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
@@ -25,9 +17,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Pagination } from "@/components/shared/pagination";
 import { useDepartments, useDepartmentTree, useDeleteDepartment } from "@/lib/hooks/use-departments";
+import { useJobGrades } from "@/lib/hooks/use-job-grades";
 import { DepartmentDialog } from "@/components/features/departments/department-dialog";
 import { OrgChart } from "@/components/features/departments/org-chart";
 import { Department } from "@/types";
+
+const STORAGE_KEY = "dept_grade_map";
+
+function loadMap(): Record<string, string> {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    return s ? JSON.parse(s) : {};
+  } catch { return {}; }
+}
 
 export default function DepartmentsPage() {
   const t = useTranslations();
@@ -36,11 +38,47 @@ export default function DepartmentsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
+  const [deptGradeMap, setDeptGradeMap] = useState<Record<string, string>>({});
+
+  // Load map from localStorage once on mount
+  useEffect(() => {
+    setDeptGradeMap(loadMap());
+  }, []);
 
   const LIMIT = 10;
   const { data, isLoading } = useDepartments({ page, limit: LIMIT, search });
   const { data: treeData, isLoading: treeLoading } = useDepartmentTree();
+  const { data: allDeptsData } = useDepartments({ page: 1, limit: 500 });
+  const { data: gradesData } = useJobGrades();
   const deleteDepartment = useDeleteDepartment();
+
+  const allDepartmentsRaw: Department[] = Array.isArray(allDeptsData)
+    ? allDeptsData
+    : (allDeptsData as any)?.data?.items || (allDeptsData as any)?.data || [];
+
+  const allGrades: any[] = Array.isArray(gradesData)
+    ? gradesData
+    : (gradesData as any)?.data?.items || (gradesData as any)?.data || [];
+
+  // Merge grade mapping into department objects
+  const allDepartmentsFlat: Department[] = useMemo(() => {
+    return allDepartmentsRaw.map((dept) => {
+      const gradeId = deptGradeMap[dept.id];
+      if (!gradeId) return dept;
+      const grade = allGrades.find((g) => g.id === gradeId);
+      return grade ? { ...dept, gradeId, grade } : dept;
+    });
+  }, [allDepartmentsRaw, allGrades, deptGradeMap]);
+
+  // Called by dialog after saving grade mapping
+  const handleGradeMapped = (deptId: string, gradeId: string) => {
+    setDeptGradeMap((prev) => {
+      const next = { ...prev };
+      if (gradeId) { next[deptId] = gradeId; } else { delete next[deptId]; }
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const allDepts: Department[] = Array.isArray(data)
     ? data
@@ -72,6 +110,11 @@ export default function DepartmentsPage() {
   const treeNodes: Department[] = Array.isArray(treeData)
     ? treeData
     : (treeData as any)?.data || [];
+
+  // Enrich selectedDept with stored gradeId for the dialog
+  const selectedDeptWithGrade = selectedDept
+    ? { ...selectedDept, gradeId: deptGradeMap[selectedDept.id] || "" }
+    : null;
 
   return (
     <div className="space-y-6">
@@ -133,9 +176,7 @@ export default function DepartmentsPage() {
                   ))
                 ) : allDepts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      {t("common.noData")}
-                    </TableCell>
+                    <TableCell colSpan={6} className="h-24 text-center">{t("common.noData")}</TableCell>
                   </TableRow>
                 ) : (
                   allDepts.map((dept) => (
@@ -145,9 +186,7 @@ export default function DepartmentsPage() {
                       <TableCell>{dept.nameEn}</TableCell>
                       <TableCell>{dept.parent?.nameAr || "—"}</TableCell>
                       <TableCell>
-                        {dept.manager
-                          ? `${dept.manager.firstNameAr} ${dept.manager.lastNameAr}`
-                          : "—"}
+                        {dept.manager ? `${dept.manager.firstNameAr} ${dept.manager.lastNameAr}` : "—"}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu modal={false}>
@@ -161,10 +200,7 @@ export default function DepartmentsPage() {
                               <Pencil className="h-4 w-4 ml-2" />
                               {t("common.edit")}
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(dept)}
-                              className="text-destructive"
-                            >
+                            <DropdownMenuItem onClick={() => handleDelete(dept)} className="text-destructive">
                               <Trash2 className="h-4 w-4 ml-2" />
                               {t("common.delete")}
                             </DropdownMenuItem>
@@ -197,7 +233,7 @@ export default function DepartmentsPage() {
                 <Skeleton className="h-8 w-48" />
               </div>
             ) : (
-              <OrgChart departments={treeNodes} />
+              <OrgChart departments={treeNodes} allDepartments={allDepartmentsFlat} />
             )}
           </div>
         </TabsContent>
@@ -206,7 +242,8 @@ export default function DepartmentsPage() {
       <DepartmentDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        department={selectedDept || undefined}
+        department={selectedDeptWithGrade || undefined}
+        onGradeMapped={handleGradeMapped}
       />
 
       <ConfirmDialog

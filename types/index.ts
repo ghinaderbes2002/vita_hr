@@ -89,6 +89,7 @@ export interface JobTitle {
     minSalary: string | number;
     maxSalary: string | number;
   };
+  order?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -189,7 +190,8 @@ export interface Employee {
   gender: "MALE" | "FEMALE";
   dateOfBirth: string;
   nationality?: string;
-  maritalStatus?: string;
+  maritalStatus?: "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED";
+  hasDrivingLicense?: boolean;
   departmentId: string;
   department?: Department;
   jobTitleId?: string;
@@ -244,6 +246,15 @@ export interface Department {
     lastNameAr: string;
     firstNameEn: string;
     lastNameEn: string;
+  };
+  gradeId?: string;
+  grade?: {
+    id: string;
+    code: string;
+    nameAr: string;
+    nameEn: string;
+    order?: number;
+    color?: string;
   };
   employeeCount?: number;
   children?: Department[];

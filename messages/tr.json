@@ -252,7 +252,8 @@
         "PREVIOUS_EXPERIENCE": "Önceki Deneyim Ödeneği",
         "ACADEMIC_DEGREE": "Akademik Derece Ödeneği",
         "WORK_NATURE": "İş Doğası Ödeneği",
-        "RESPONSIBILITY": "Sorumluluk Ödeneği"
+        "RESPONSIBILITY": "Sorumluluk Ödeneği",
+        "RESIDENCE": "Konut Ödeneği"
       }
     },
     "filterByDepartment": "Departmana Göre Filtrele",

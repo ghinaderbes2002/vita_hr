@@ -7,6 +7,7 @@ export interface CreateJobTitleData {
   nameTr?: string;
   description?: string;
   gradeId?: string;
+  order?: number;
 }
 
 export interface UpdateJobTitleData extends Partial<CreateJobTitleData> {}

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useCreateDepartment, useUpdateDepartment, useDepartmentTree } from "@/lib/hooks/use-departments";
 import { useEmployees } from "@/lib/hooks/use-employees";
+import { useJobGrades } from "@/lib/hooks/use-job-grades";
 import { Department } from "@/types";
 import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -45,6 +46,7 @@ const formSchema = z.object({
   nameTr: z.string().min(2, "الاسم بالتركية مطلوب"),
   parentId: z.string().optional(),
   managerId: z.string().optional(),
+  gradeId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -52,10 +54,11 @@ type FormData = z.infer<typeof formSchema>;
 interface DepartmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  department?: Department;
+  department?: Department & { gradeId?: string };
+  onGradeMapped?: (deptId: string, gradeId: string) => void;
 }
 
-export function DepartmentDialog({ open, onOpenChange, department }: DepartmentDialogProps) {
+export function DepartmentDialog({ open, onOpenChange, department, onGradeMapped }: DepartmentDialogProps) {
   const t = useTranslations();
   const isEdit = !!department;
 
@@ -63,6 +66,11 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
   const updateDepartment = useUpdateDepartment();
   const { data: treeData } = useDepartmentTree();
   const { data: employeesData } = useEmployees({});
+  const { data: gradesData } = useJobGrades();
+
+  const allGrades: any[] = Array.isArray(gradesData)
+    ? gradesData
+    : (gradesData as any)?.data?.items || (gradesData as any)?.data || [];
 
   const employees = Array.isArray(employeesData)
     ? employeesData
@@ -77,6 +85,7 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
       nameTr: "",
       parentId: "",
       managerId: "",
+      gradeId: "",
     },
   });
 
@@ -89,6 +98,7 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
         nameTr: department.nameTr || "",
         parentId: department.parentId || "",
         managerId: department.managerId || "",
+        gradeId: department.gradeId || "",
       });
     } else {
       form.reset({
@@ -98,6 +108,7 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
         nameTr: "",
         parentId: "",
         managerId: "",
+        gradeId: "",
       });
     }
   }, [department, form]);
@@ -115,8 +126,12 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
 
       if (isEdit) {
         await updateDepartment.mutateAsync({ id: department.id, data: submitData });
+        onGradeMapped?.(department.id, data.gradeId || "");
       } else {
-        await createDepartment.mutateAsync(submitData);
+        const created = await createDepartment.mutateAsync(submitData);
+        if (created?.id) {
+          onGradeMapped?.(created.id, data.gradeId || "");
+        }
       }
       onOpenChange(false);
       form.reset();
@@ -245,6 +260,40 @@ export function DepartmentDialog({ open, onOpenChange, department }: DepartmentD
                           </SelectItem>
                         ))}
                       </ScrollArea>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="gradeId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>الدرجة الوظيفية ({t("common.optional")})</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(value === "__none__" ? "" : value)}
+                    value={field.value || "__none__"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر الدرجة الوظيفية" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none__">بدون درجة</SelectItem>
+                      {allGrades
+                        .sort((a, b) => (b.order ?? 0) - (a.order ?? 0))
+                        .map((g) => (
+                          <SelectItem key={g.id} value={g.id}>
+                            {g.nameAr}
+                            {g.order !== undefined && (
+                              <span className="text-muted-foreground mr-1">(مستوى {g.order})</span>
+                            )}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

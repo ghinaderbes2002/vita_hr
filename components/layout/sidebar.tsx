@@ -40,6 +40,7 @@ import {
   Fingerprint,
   ShieldCheck,
   LayoutList,
+  ClipboardSignature,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -176,6 +177,12 @@ const navigation: NavItem[] = [
           { title: "nav.attendanceReportsSummary", href: "/reports/attendance", icon: FileBarChart },
           { title: "nav.evaluationReports", href: "/reports/evaluation", icon: FileBarChart },
         ],
+      },
+      {
+        title: "nav.auditLogs",
+        href: "/audit-logs",
+        icon: ClipboardSignature,
+        permission: "audit:read",
       },
       {
         title: "nav.evaluations",

@@ -10,6 +10,7 @@ export interface JobGrade {
   minSalary: number | string;
   maxSalary: number | string;
   isActive: boolean;
+  order?: number;
   createdAt?: string;
 }
 
@@ -22,6 +23,7 @@ export interface CreateJobGradeData {
   minSalary: number;
   maxSalary: number;
   isActive?: boolean;
+  order?: number;
 }
 
 export interface UpdateJobGradeData extends Partial<CreateJobGradeData> {}

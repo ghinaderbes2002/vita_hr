@@ -53,6 +53,8 @@ type FormData = {
   bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE";
   familyMembersCount?: number; chronicDiseases?: string; currentAddress?: string;
   isSmoker?: boolean;
+  hasDrivingLicense?: boolean;
+  maritalStatus?: "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED";
   educationLevel?: "ILLITERATE" | "PRIMARY" | "SECONDARY" | "DIPLOMA" | "UNIVERSITY" | "POSTGRADUATE";
   universityYear?: number; religion?: string; yearsOfExperience?: number;
   certificate1?: string; specialization1?: string; certificateAttachment1?: string;
@@ -190,6 +192,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     { value: "ACADEMIC_DEGREE", label: t("employees.form.allowances.ACADEMIC_DEGREE") },
     { value: "WORK_NATURE", label: t("employees.form.allowances.WORK_NATURE") },
     { value: "RESPONSIBILITY", label: t("employees.form.allowances.RESPONSIBILITY") },
+    { value: "RESIDENCE", label: t("employees.form.allowances.RESIDENCE") },
   ];
 
   const formSchema = z.object({
@@ -219,6 +222,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     chronicDiseases: z.string().optional(),
     currentAddress: z.string().optional(),
     isSmoker: z.boolean().optional(),
+    hasDrivingLicense: z.boolean().optional(),
+    maritalStatus: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"]).optional(),
     educationLevel: z.enum(["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"]).optional(),
     universityYear: z.number().int().min(1).max(7).optional(),
     religion: z.string().optional(),
@@ -329,6 +334,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         chronicDiseases: (employee as any).chronicDiseases || "",
         currentAddress: (employee as any).currentAddress || "",
         isSmoker: (employee as any).isSmoker ?? false,
+        hasDrivingLicense: (employee as any).hasDrivingLicense ?? false,
+        maritalStatus: (employee as any).maritalStatus || undefined,
         educationLevel: (employee as any).educationLevel || undefined,
         universityYear: (employee as any).universityYear ?? undefined,
         religion: (employee as any).religion || "",
@@ -369,6 +376,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         chronicDiseases: "",
         currentAddress: "",
         isSmoker: false,
+        hasDrivingLicense: false,
+        maritalStatus: undefined,
         educationLevel: undefined,
         universityYear: undefined,
         religion: "",
@@ -423,6 +432,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           chronicDiseases: data.chronicDiseases || undefined,
           currentAddress: data.currentAddress || undefined,
           isSmoker: data.isSmoker,
+          hasDrivingLicense: data.hasDrivingLicense,
+          maritalStatus: data.maritalStatus || undefined,
           educationLevel: data.educationLevel || undefined,
           universityYear: data.universityYear ?? undefined,
           religion: data.religion || undefined,
@@ -448,6 +459,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           chronicDiseases: rest.chronicDiseases || undefined,
           currentAddress: rest.currentAddress || undefined,
           isSmoker: rest.isSmoker ?? undefined,
+          hasDrivingLicense: rest.hasDrivingLicense ?? undefined,
+          maritalStatus: rest.maritalStatus || undefined,
           educationLevel: rest.educationLevel || undefined,
           universityYear: rest.universityYear ?? undefined,
           religion: rest.religion || undefined,
@@ -1289,6 +1302,43 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       <FormControl>
                         <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
                       </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="hasDrivingLicense"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <FormLabel className="cursor-pointer">رخصة قيادة</FormLabel>
+                      <FormControl>
+                        <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="maritalStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الحالة الاجتماعية ({t("common.optional")})</FormLabel>
+                      <Select value={field.value || ""} onValueChange={(v) => field.onChange(v || undefined)}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر الحالة الاجتماعية" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="SINGLE">أعزب</SelectItem>
+                          <SelectItem value="MARRIED">متزوج</SelectItem>
+                          <SelectItem value="DIVORCED">مطلق</SelectItem>
+                          <SelectItem value="WIDOWED">أرمل</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />

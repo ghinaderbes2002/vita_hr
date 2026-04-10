@@ -183,6 +183,14 @@ export default function EmployeeDetailsPage() {
     ACADEMIC_DEGREE: "بدل شهادة علمية",
     WORK_NATURE: "بدل طبيعة عمل",
     RESPONSIBILITY: "بدل مسؤولية",
+    RESIDENCE: "بدل سكن",
+  };
+
+  const MARITAL_STATUS_LABELS: Record<string, string> = {
+    SINGLE: "أعزب",
+    MARRIED: "متزوج",
+    DIVORCED: "مطلق",
+    WIDOWED: "أرمل",
   };
 
   return (
@@ -266,6 +274,17 @@ export default function EmployeeDetailsPage() {
               label={t("employees.fields.dateOfBirth")}
               value={employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString("ar-EG") : undefined}
             />
+            {emp.maritalStatus && (
+              <InfoRow label="الحالة الاجتماعية" value={MARITAL_STATUS_LABELS[emp.maritalStatus] || emp.maritalStatus} />
+            )}
+            {emp.hasDrivingLicense !== undefined && (
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm text-muted-foreground">رخصة قيادة</span>
+                <Badge variant={emp.hasDrivingLicense ? "default" : "secondary"}>
+                  {emp.hasDrivingLicense ? "يمتلك" : "لا يمتلك"}
+                </Badge>
+              </div>
+            )}
           </CardContent>
         </Card>
 

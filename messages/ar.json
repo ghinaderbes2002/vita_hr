@@ -46,7 +46,7 @@
     "roles": "إدارة الأدوار",
     "employees": "الموظفون",
     "subordinates": "المرؤوسين",
-    "departments": "إدارة الأقسام",
+    "departments": "الهيكل التنظيمي",
     "jobTitles": "المسميات الوظيفية",
     "jobGrades": "الدرجات الوظيفية",
     "requests": "الطلبات الإدارية",
@@ -116,7 +116,8 @@
     "evaluationReports": "تقارير التقييم",
     "onboarding": "الإلحاق والإنهاء",
     "onboardingTemplates": "القوالب",
-    "onboardingWorkflows": "لوحة المتابعة"
+    "onboardingWorkflows": "لوحة المتابعة",
+    "auditLogs": "سجلات التدقيق"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -183,7 +184,8 @@
         "PREVIOUS_EXPERIENCE": "بدل خبرة سابقة",
         "ACADEMIC_DEGREE": "بدل شهادة علمية",
         "WORK_NATURE": "بدل طبيعة عمل",
-        "RESPONSIBILITY": "بدل مسؤولية"
+        "RESPONSIBILITY": "بدل مسؤولية",
+        "RESIDENCE": "بدل سكن"
       }
     },
     "filterByDepartment": "تصفية حسب القسم",
@@ -714,7 +716,7 @@
     }
   },
   "departments": {
-    "title": "إدارة الأقسام",
+    "title": "الهيكل التنظيمي",
     "description": "إدارة أقسام المؤسسة والهيكل التنظيمي",
     "addDepartment": "إضافة قسم",
     "editDepartment": "تعديل قسم",

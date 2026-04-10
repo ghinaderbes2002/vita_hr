@@ -37,6 +37,7 @@ const formSchema = z.object({
   minSalary: z.number().min(0, "الراتب الأدنى يجب أن يكون 0 أو أكثر"),
   maxSalary: z.number().min(0, "الراتب الأقصى يجب أن يكون 0 أو أكثر"),
   isActive: z.boolean(),
+  order: z.number().int().min(0).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -65,6 +66,7 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
       minSalary: 0,
       maxSalary: 0,
       isActive: true,
+      order: undefined,
     },
   });
 
@@ -79,6 +81,7 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
         minSalary: Number(jobGrade.minSalary),
         maxSalary: Number(jobGrade.maxSalary),
         isActive: jobGrade.isActive,
+        order: jobGrade.order ?? undefined,
       });
     } else {
       form.reset({
@@ -90,6 +93,7 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
         minSalary: 0,
         maxSalary: 0,
         isActive: true,
+        order: undefined,
       });
     }
   }, [jobGrade, form]);
@@ -221,6 +225,26 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
                       <Input {...field} type="color" className="w-14 h-10 p-1 cursor-pointer" />
                       <Input {...field} placeholder="#3B82F6" className="flex-1" />
                     </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="order"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>الترتيب (اختياري)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

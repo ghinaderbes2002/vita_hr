@@ -252,7 +252,8 @@
         "PREVIOUS_EXPERIENCE": "Previous Experience Allowance",
         "ACADEMIC_DEGREE": "Academic Degree Allowance",
         "WORK_NATURE": "Work Nature Allowance",
-        "RESPONSIBILITY": "Responsibility Allowance"
+        "RESPONSIBILITY": "Responsibility Allowance",
+        "RESIDENCE": "Residence Allowance"
       }
     },
     "filterByDepartment": "Filter by Department",

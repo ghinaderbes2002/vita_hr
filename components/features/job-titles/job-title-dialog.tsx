@@ -42,6 +42,7 @@ const formSchema = z.object({
   nameTr: z.string().optional(),
   description: z.string().optional(),
   gradeId: z.string().optional(),
+  order: z.number().int().min(1).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -73,6 +74,7 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
       nameTr: "",
       description: "",
       gradeId: undefined,
+      order: undefined,
     },
   });
 
@@ -85,6 +87,7 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
         nameTr: jobTitle.nameTr || "",
         description: jobTitle.description || "",
         gradeId: jobTitle.gradeId || undefined,
+        order: jobTitle.order ?? undefined,
       });
     } else {
       form.reset({
@@ -94,6 +97,7 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
         nameTr: "",
         description: "",
         gradeId: undefined,
+        order: undefined,
       });
     }
   }, [jobTitle, form]);
@@ -107,6 +111,7 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
         ...(data.nameTr && { nameTr: data.nameTr }),
         ...(data.description && { description: data.description }),
         ...(data.gradeId && { gradeId: data.gradeId }),
+        ...(data.order !== undefined && { order: data.order }),
       };
       if (isEdit) {
         await updateJobTitle.mutateAsync({ id: jobTitle.id, data: payload });
@@ -204,6 +209,26 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="order"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>مستوى الهيكل التنظيمي ({t("common.optional")})</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="1 = إدارة عليا، 2 = أقسام رئيسية، ..."
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
