@@ -74,8 +74,6 @@ export default function EvaluationFormDetailsPage({ params }: PageProps) {
     );
   }
 
-  const tDetail = t.raw ? undefined : undefined; // just use t("detail.*")
-
   return (
     <div className="space-y-6">
       {/* Header */}
