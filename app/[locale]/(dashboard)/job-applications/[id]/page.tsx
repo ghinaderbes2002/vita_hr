@@ -22,14 +22,15 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { useJobApplication, useUpdateJobApplication } from "@/lib/hooks/use-job-applications";
+import { useJobApplication, useUpdateJobApplication, useApproveJobApplicationCEO } from "@/lib/hooks/use-job-applications";
 import { CV_BASE_URL } from "@/lib/api/job-applications";
 import { JobApplicationStatus } from "@/types";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { useInterviewEvaluationByApplication, useCreateInterviewEvaluation, useUpdateInterviewEvaluation, useTransferToEmployee } from "@/lib/hooks/use-interview-evaluations";
-import { useInterviewPositions } from "@/lib/hooks/use-interview-positions";
+import { useInterviewPositions, useTechnicalQuestions } from "@/lib/hooks/use-interview-positions";
 import { usePersonalCriteria, useComputerCriteria } from "@/lib/hooks/use-interview-criteria";
 import { InterviewDecision, CreateInterviewEvaluationData } from "@/lib/api/interview-evaluations";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const STATUS_CONFIG: Record<JobApplicationStatus, { bg: string; label: string }> = {
   PENDING:         { bg: "bg-amber-100 text-amber-800",   label: "" },
@@ -58,9 +59,11 @@ export default function JobApplicationDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const { hasPermission } = usePermissions();
 
   const { data: application, isLoading } = useJobApplication(id);
   const updateApplication = useUpdateJobApplication();
+  const approveCEO = useApproveJobApplicationCEO();
 
   // Interview evaluation
   const { data: existingEval } = useInterviewEvaluationByApplication(id);
@@ -90,8 +93,8 @@ export default function JobApplicationDetailPage() {
   const pCriteria = (personalCriteria as any) || [];
   const cCriteria = (computerCriteria as any) || [];
 
-  const selectedPosition = positions.find((p: any) => p.id === evalForm.positionId);
-  const techQuestions = selectedPosition?.technicalQuestions || [];
+  const { data: techQuestionsData, isLoading: techQuestionsLoading } = useTechnicalQuestions(evalForm.positionId);
+  const techQuestions: any[] = (techQuestionsData as any) || [];
 
   function openEvalDialog() {
     if (evalData) {
@@ -133,7 +136,7 @@ export default function JobApplicationDetailPage() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [rejectionNote, setRejectionNote] = useState("");
   const [rating, setRating] = useState(0);
-  const [actionStatus, setActionStatus] = useState<JobApplicationStatus | null>(null);
+  const [actionStatus, setActionStatus] = useState<Exclude<JobApplicationStatus, "HIRED"> | null>(null);
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
 
   const RATING_TO_EVALUATION: Record<number, "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR"> = {
@@ -144,7 +147,7 @@ export default function JobApplicationDetailPage() {
     1: "POOR",
   };
 
-  const handleAction = (status: JobApplicationStatus) => {
+  const handleAction = (status: Exclude<JobApplicationStatus, "HIRED">) => {
     setActionStatus(status);
     setReviewNotes("");
     setRejectionNote("");
@@ -163,6 +166,10 @@ export default function JobApplicationDetailPage() {
       },
     });
     setActionStatus(null);
+  };
+
+  const handleCEOApprove = async () => {
+    await approveCEO.mutateAsync(id);
   };
 
   if (isLoading) {
@@ -307,14 +314,13 @@ export default function JobApplicationDetailPage() {
       )}
 
       {/* Actions */}
-      {app.status !== "HIRED" && (
-        <Card>
+      <Card>
           <CardHeader><CardTitle className="text-base">{t("jobApplications.actions.title")}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {/* Action buttons */}
             {!actionStatus && (
               <div className="flex flex-wrap gap-2">
-                {app.status !== "INTERVIEW_READY" && app.status !== "ACCEPTED" && app.status !== "REJECTED" && (
+                {app.status !== "INTERVIEW_READY" && (
                   <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50"
                     onClick={() => handleAction("INTERVIEW_READY")}>
                     {t("jobApplications.actions.interviewReady")}
@@ -332,10 +338,15 @@ export default function JobApplicationDetailPage() {
                     {t("jobApplications.actions.reject")}
                   </Button>
                 )}
-                {app.status === "ACCEPTED" && (
-                  <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50"
-                    onClick={() => handleAction("HIRED")}>
-                    {t("jobApplications.actions.hire")}
+                {/* زر موافقة المدير التنفيذي */}
+                {app.status === "ACCEPTED" && hasPermission("job-applications:ceo-approve") && (
+                  <Button 
+                    className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                    variant="outline"
+                    onClick={handleCEOApprove}
+                    disabled={approveCEO.isPending}
+                  >
+                    {approveCEO.isPending ? "جاري المعالجة..." : t("jobApplications.actions.ceoApprove")}
                   </Button>
                 )}
               </div>
@@ -393,7 +404,6 @@ export default function JobApplicationDetailPage() {
             )}
           </CardContent>
         </Card>
-      )}
 
       {/* Interview Evaluation Card */}
       <Card>
@@ -512,23 +522,29 @@ export default function JobApplicationDetailPage() {
             )}
 
             {/* Technical Questions */}
-            {techQuestions.length > 0 && (
+            {evalForm.positionId && (
               <div className="space-y-2 rounded-lg border p-3">
                 <p className="text-sm font-medium">الأسئلة التقنية</p>
-                <div className="space-y-2">
-                  {techQuestions.map((q: any) => (
-                    <div key={q.id} className="flex items-center justify-between gap-2">
-                      <Label className="text-xs flex-1">{q.question}</Label>
-                      <span className="text-xs text-muted-foreground shrink-0">/{q.maxScore}</span>
-                      <Input
-                        type="number" min={1} max={q.maxScore}
-                        value={evalForm.technicalScores[q.id] ?? ""}
-                        onChange={(e) => setEvalForm({ ...evalForm, technicalScores: { ...evalForm.technicalScores, [q.id]: Number(e.target.value) } })}
-                        className="w-16 h-7 text-center text-xs"
-                      />
-                    </div>
-                  ))}
-                </div>
+                {techQuestionsLoading ? (
+                  <p className="text-xs text-muted-foreground py-2">جاري تحميل الأسئلة...</p>
+                ) : techQuestions.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">لا توجد أسئلة تقنية لهذا الشاغر</p>
+                ) : (
+                  <div className="space-y-2">
+                    {techQuestions.map((q: any) => (
+                      <div key={q.id} className="flex items-center justify-between gap-2">
+                        <Label className="text-xs flex-1">{q.question}</Label>
+                        <span className="text-xs text-muted-foreground shrink-0">/{q.maxScore}</span>
+                        <Input
+                          type="number" min={1} max={q.maxScore}
+                          value={evalForm.technicalScores[q.id] ?? ""}
+                          onChange={(e) => setEvalForm({ ...evalForm, technicalScores: { ...evalForm.technicalScores, [q.id]: Number(e.target.value) } })}
+                          className="w-16 h-7 text-center text-xs"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

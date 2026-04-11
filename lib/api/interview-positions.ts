@@ -21,6 +21,8 @@ export interface InterviewPosition {
   workMode?: WorkMode;
   committeeMembers?: string[];
   interviewDate?: string;
+  requiresLanguage: boolean;
+  requiresComputer: boolean;
   status: PositionStatus;
   createdAt: string;
   technicalQuestions: TechnicalQuestion[];
@@ -34,6 +36,8 @@ export interface CreateInterviewPositionData {
   workMode?: WorkMode;
   committeeMembers?: string[];
   interviewDate?: string;
+  requiresLanguage?: boolean;
+  requiresComputer?: boolean;
 }
 
 export const interviewPositionsApi = {

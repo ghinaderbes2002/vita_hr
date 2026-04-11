@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Pencil, Trash2, Wifi, WifiOff, Fingerprint, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,9 @@ const EMPTY_FORM: DeviceFormData = {
 };
 
 export default function BiometricDevicesPage() {
+  const t = useTranslations("biometricDevices");
+  const tCommon = useTranslations("common");
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<BiometricDevice | null>(null);
@@ -127,13 +131,13 @@ export default function BiometricDevicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="أجهزة البصمة"
-        description="إدارة أجهزة البصمة البيومترية المتصلة بالنظام"
+        title={t("title")}
+        description={t("description")}
         count={deviceList.length}
         actions={
           <Button onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" />
-            إضافة جهاز
+            {t("addDevice")}
           </Button>
         }
       />
@@ -146,7 +150,7 @@ export default function BiometricDevicesPage() {
               <Server className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">إجمالي الأجهزة</p>
+              <p className="text-sm text-muted-foreground">{t("stats.total")}</p>
               <p className="text-2xl font-bold">{deviceList.length}</p>
             </div>
           </CardContent>
@@ -157,7 +161,7 @@ export default function BiometricDevicesPage() {
               <Wifi className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">نشط</p>
+              <p className="text-sm text-muted-foreground">{t("stats.active")}</p>
               <p className="text-2xl font-bold text-green-600">{activeCount}</p>
             </div>
           </CardContent>
@@ -168,7 +172,7 @@ export default function BiometricDevicesPage() {
               <WifiOff className="h-5 w-5 text-gray-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">غير نشط</p>
+              <p className="text-sm text-muted-foreground">{t("stats.inactive")}</p>
               <p className="text-2xl font-bold text-gray-500">{deviceList.length - activeCount}</p>
             </div>
           </CardContent>
@@ -187,12 +191,12 @@ export default function BiometricDevicesPage() {
           ) : deviceList.length === 0 ? (
             <EmptyState
               icon={<Fingerprint className="h-10 w-10" />}
-              title="لا توجد أجهزة بصمة"
-              description="أضف جهاز بصمة جديد للبدء"
+              title={t("empty.title")}
+              description={t("empty.description")}
               action={
                 <Button onClick={openCreate} variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  إضافة جهاز
+                  {t("addDevice")}
                 </Button>
               }
             />
@@ -201,13 +205,13 @@ export default function BiometricDevicesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>الاسم</TableHead>
-                    <TableHead>الرقم التسلسلي</TableHead>
-                    <TableHead>الموقع</TableHead>
+                    <TableHead>{t("table.name")}</TableHead>
+                    <TableHead>{t("table.serialNumber")}</TableHead>
+                    <TableHead>{t("table.location")}</TableHead>
                     <TableHead>IP</TableHead>
-                    <TableHead>الموديل</TableHead>
-                    <TableHead>آخر مزامنة</TableHead>
-                    <TableHead>الحالة</TableHead>
+                    <TableHead>{t("table.model")}</TableHead>
+                    <TableHead>{t("table.lastSync")}</TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
                     <TableHead className="w-24"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -244,7 +248,7 @@ export default function BiometricDevicesPage() {
                           variant={device.isActive ? "default" : "secondary"}
                           className={device.isActive ? "bg-green-600" : ""}
                         >
-                          {device.isActive ? "نشط" : "غير نشط"}
+                          {device.isActive ? t("status.active") : t("status.inactive")}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -281,48 +285,48 @@ export default function BiometricDevicesPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {selectedDevice ? "تعديل الجهاز" : "إضافة جهاز بصمة"}
+              {selectedDevice ? t("dialog.editTitle") : t("dialog.addTitle")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>الاسم بالعربي *</Label>
+                <Label>{t("form.nameAr")} *</Label>
                 <Input
                   value={form.nameAr}
                   onChange={(e) => setForm({ ...form, nameAr: e.target.value })}
-                  placeholder="جهاز المدخل الرئيسي"
+                  placeholder={t("form.nameArPlaceholder")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>الاسم بالإنجليزي</Label>
+                <Label>{t("form.nameEn")}</Label>
                 <Input
                   value={form.nameEn}
                   onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
-                  placeholder="Main Entrance Device"
+                  placeholder={t("form.nameEnPlaceholder")}
                 />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>الرقم التسلسلي *</Label>
+              <Label>{t("form.serialNumber")} *</Label>
               <Input
                 value={form.serialNumber}
                 onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
-                placeholder="SN-001"
+                placeholder={t("form.serialNumberPlaceholder")}
                 disabled={!!selectedDevice}
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>الموقع</Label>
+                <Label>{t("form.location")}</Label>
                 <Input
                   value={form.location}
                   onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  placeholder="المدخل الرئيسي"
+                  placeholder={t("form.locationPlaceholder")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>عنوان IP</Label>
+                <Label>{t("form.ipAddress")}</Label>
                 <Input
                   value={form.ipAddress}
                   onChange={(e) => setForm({ ...form, ipAddress: e.target.value })}
@@ -331,15 +335,15 @@ export default function BiometricDevicesPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>الموديل</Label>
+              <Label>{t("form.model")}</Label>
               <Input
                 value={form.model}
                 onChange={(e) => setForm({ ...form, model: e.target.value })}
-                placeholder="ZKTeco F22"
+                placeholder={t("form.modelPlaceholder")}
               />
             </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
-              <Label className="cursor-pointer">تفعيل الجهاز</Label>
+              <Label className="cursor-pointer">{t("form.isActive")}</Label>
               <Switch
                 checked={form.isActive}
                 onCheckedChange={(v) => setForm({ ...form, isActive: v })}
@@ -348,13 +352,13 @@ export default function BiometricDevicesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              إلغاء
+              {tCommon("cancel")}
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={!form.nameAr.trim() || !form.serialNumber.trim() || createDevice.isPending || updateDevice.isPending}
             >
-              {selectedDevice ? "حفظ التعديلات" : "إضافة"}
+              {selectedDevice ? t("dialog.save") : t("dialog.add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -364,8 +368,8 @@ export default function BiometricDevicesPage() {
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="حذف الجهاز"
-        description={`هل أنت متأكد من حذف الجهاز "${selectedDevice?.nameAr}"؟ سيتم حذف جميع البيانات المرتبطة به.`}
+        title={t("delete.title")}
+        description={t("delete.description", { name: selectedDevice?.nameAr ?? "" })}
         onConfirm={handleDelete}
         variant="destructive"
       />

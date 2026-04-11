@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Download, CalendarDays, PieChartIcon, BarChart2, Clock } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,12 +16,7 @@ import {
 } from "@/lib/hooks/use-leave-reports";
 import { downloadCsv } from "@/lib/api/reports";
 
-const MONTH_NAMES = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 const COLORS = ["#6366f1","#22c55e","#f59e0b","#ef4444","#8b5cf6","#14b8a6","#f97316","#ec4899"];
-const STATUS_LABELS: Record<string, string> = {
-  APPROVED: "موافق عليه", PENDING: "معلق", REJECTED: "مرفوض",
-  CANCELLED: "ملغى", PENDING_APPROVAL: "بانتظار الموافقة",
-};
 const STATUS_COLORS: Record<string, string> = {
   APPROVED: "bg-green-100 text-green-700",
   PENDING: "bg-amber-100 text-amber-700",
@@ -29,6 +25,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function LeaveReportsPage() {
+  const t = useTranslations("reports");
+  const tLeave = useTranslations("reports.leave");
+  const months = t.raw("months") as string[];
+
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [search, setSearch] = useState("");
@@ -41,13 +41,14 @@ export default function LeaveReportsPage() {
   const dist = distribution as any;
   const sum = summary as any;
 
-  // build monthly chart data
-  const monthlyData = MONTH_NAMES.map((name, i) => {
+  const requestsKey = tLeave("distribution.requestsKey");
+  const daysKey = tLeave("distribution.daysKey");
+
+  const monthlyData = months.map((name, i) => {
     const m = (dist?.byMonth || []).find((x: any) => x.month === i + 1);
-    return { name: name.slice(0, 3), طلبات: m?.requestCount || 0, أيام: m?.totalDays || 0 };
+    return { name: name.slice(0, 3), [requestsKey]: m?.requestCount || 0, [daysKey]: m?.totalDays || 0 };
   });
 
-  // filter balance details
   const balDetails = (bal?.details || []).filter((d: any) =>
     !search || d.leaveTypeName?.includes(search)
   );
@@ -69,21 +70,21 @@ export default function LeaveReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">تقارير الإجازات</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">إحصائيات وتحليلات طلبات الإجازات</p>
+          <h1 className="text-2xl font-bold">{tLeave("title")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{tLeave("description")}</p>
         </div>
         <YearSelector />
       </div>
 
-      {/* ─── 1. ملخص الطلبات ─────────────────────────────────── */}
+      {/* ─── 1. Summary ─────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <BarChart2 className="h-5 w-5 text-primary" />
-          ملخص طلبات الإجازة
+          {tLeave("summary.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
           onClick={() => downloadCsv(`/reports/leave/summary?year=${year}`, `leave-summary-${year}`)}>
-          <Download className="h-3.5 w-3.5" />تصدير CSV
+          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
         </Button>
       </div>
 
@@ -100,11 +101,11 @@ export default function LeaveReportsPage() {
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={`text-xs ${STATUS_COLORS[s.status] || "bg-gray-100 text-gray-600"}`}>
-                      {STATUS_LABELS[s.status] || s.status}
+                      {tLeave(`status.${s.status}`) || s.status}
                     </Badge>
                     <span className="text-2xl font-bold text-primary">{s.count}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{s.totalDays} يوم إجمالي</p>
+                  <p className="text-xs text-muted-foreground">{tLeave("summary.totalDays", { count: s.totalDays })}</p>
                 </CardContent>
               </Card>
             ))}
@@ -116,7 +117,7 @@ export default function LeaveReportsPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Clock className="h-4 w-4 text-amber-500" />
-                  الطلبات المعلقة ({sum.pendingRequests.count})
+                  {tLeave("summary.pendingTitle", { count: sum.pendingRequests.count })}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -124,10 +125,10 @@ export default function LeaveReportsPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50">
                       <tr>
-                        <th className="px-4 py-2.5 text-right font-medium">نوع الإجازة</th>
-                        <th className="px-4 py-2.5 text-center font-medium">من</th>
-                        <th className="px-4 py-2.5 text-center font-medium">إلى</th>
-                        <th className="px-4 py-2.5 text-center font-medium">الأيام</th>
+                        <th className="px-4 py-2.5 text-right font-medium">{tLeave("summary.leaveType")}</th>
+                        <th className="px-4 py-2.5 text-center font-medium">{tLeave("summary.from")}</th>
+                        <th className="px-4 py-2.5 text-center font-medium">{tLeave("summary.to")}</th>
+                        <th className="px-4 py-2.5 text-center font-medium">{tLeave("summary.days")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -135,10 +136,10 @@ export default function LeaveReportsPage() {
                         <tr key={req.id} className="border-t hover:bg-muted/30">
                           <td className="px-4 py-2.5 font-medium">{req.leaveTypeName}</td>
                           <td className="px-4 py-2.5 text-center text-muted-foreground">
-                            {new Date(req.startDate).toLocaleDateString("ar-EG")}
+                            {new Date(req.startDate).toLocaleDateString()}
                           </td>
                           <td className="px-4 py-2.5 text-center text-muted-foreground">
-                            {new Date(req.endDate).toLocaleDateString("ar-EG")}
+                            {new Date(req.endDate).toLocaleDateString()}
                           </td>
                           <td className="px-4 py-2.5 text-center font-semibold text-primary">{req.totalDays}</td>
                         </tr>
@@ -152,15 +153,15 @@ export default function LeaveReportsPage() {
         </>
       )}
 
-      {/* ─── 2. توزيع الإجازات ───────────────────────────────── */}
+      {/* ─── 2. Distribution ───────────────────────────────── */}
       <div className="flex items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <PieChartIcon className="h-5 w-5 text-primary" />
-          توزيع الإجازات
+          {tLeave("distribution.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
           onClick={() => downloadCsv(`/reports/leave/distribution?year=${year}`, `leave-distribution-${year}`)}>
-          <Download className="h-3.5 w-3.5" />تصدير CSV
+          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
         </Button>
       </div>
 
@@ -170,15 +171,15 @@ export default function LeaveReportsPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Pie by type */}
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">حسب نوع الإجازة</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{tLeave("distribution.byType")}</CardTitle></CardHeader>
             <CardContent>
               {(dist?.byType || []).length === 0 ? (
-                <p className="text-center py-8 text-sm text-muted-foreground">لا توجد بيانات</p>
+                <p className="text-center py-8 text-sm text-muted-foreground">{t("noData")}</p>
               ) : (
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie
-                      data={(dist.byType || []).map((t: any) => ({ name: t.leaveTypeName, value: t.requestCount }))}
+                      data={(dist.byType || []).map((tp: any) => ({ name: tp.leaveTypeName, value: tp.requestCount }))}
                       cx="50%" cy="50%" outerRadius={75} dataKey="value"
                       label={({ name, value }) => `${name}: ${value}`} labelLine={false}
                     >
@@ -186,7 +187,7 @@ export default function LeaveReportsPage() {
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v) => [`${v} طلب`]} />
+                    <Tooltip formatter={(v) => [`${v} ${tLeave("distribution.requestUnit")}`]} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -195,7 +196,7 @@ export default function LeaveReportsPage() {
 
           {/* Bar monthly */}
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">التوزيع الشهري</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{tLeave("distribution.monthly")}</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -204,8 +205,8 @@ export default function LeaveReportsPage() {
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="طلبات" fill="#6366f1" radius={[3,3,0,0]} />
-                  <Bar dataKey="أيام" fill="#22c55e" radius={[3,3,0,0]} />
+                  <Bar dataKey={requestsKey} fill="#6366f1" radius={[3,3,0,0]} />
+                  <Bar dataKey={daysKey} fill="#22c55e" radius={[3,3,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -213,28 +214,28 @@ export default function LeaveReportsPage() {
         </div>
       )}
 
-      {/* ─── 3. رصيد الإجازات ───────────────────────────────── */}
+      {/* ─── 3. Balances ───────────────────────────────── */}
       <div className="flex items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-primary" />
-          رصيد الإجازات
+          {tLeave("balances.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
           onClick={() => downloadCsv(`/reports/leave/balances?year=${year}`, `leave-balances-${year}`)}>
-          <Download className="h-3.5 w-3.5" />تصدير CSV
+          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
         </Button>
       </div>
 
       {/* Summary by type */}
       {!balLoading && (bal?.byType || []).length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {bal.byType.map((t: any) => (
-            <Card key={t.leaveTypeName}>
+          {bal.byType.map((tp: any) => (
+            <Card key={tp.leaveTypeName}>
               <CardContent className="p-4">
-                <p className="font-medium text-sm">{t.leaveTypeName}</p>
+                <p className="font-medium text-sm">{tp.leaveTypeName}</p>
                 <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                  <span>{t.totalEmployees} موظف</span>
-                  <span className="font-semibold text-primary">متوسط متبقي: {t.avgRemaining} يوم</span>
+                  <span>{tLeave("balances.employees", { count: tp.totalEmployees })}</span>
+                  <span className="font-semibold text-primary">{tLeave("balances.avgRemaining", { count: tp.avgRemaining })}</span>
                 </div>
               </CardContent>
             </Card>
@@ -247,11 +248,11 @@ export default function LeaveReportsPage() {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-3">
             <CardTitle className="text-sm">
-              التفاصيل {bal?.totalRecords ? `(${bal.totalRecords} سجل)` : ""}
+              {tLeave("balances.details")} {bal?.totalRecords ? tLeave("balances.records", { count: bal.totalRecords }) : ""}
             </CardTitle>
             <input
               type="text"
-              placeholder="بحث بنوع الإجازة..."
+              placeholder={tLeave("balances.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-7 w-44 rounded-md border bg-background px-2 text-xs"
@@ -260,17 +261,17 @@ export default function LeaveReportsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {balLoading ? <Skeleton className="h-48 m-4" /> : balDetails.length === 0 ? (
-            <p className="text-center py-8 text-sm text-muted-foreground">لا توجد بيانات</p>
+            <p className="text-center py-8 text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
             <div className="overflow-x-auto max-h-96">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 sticky top-0">
                   <tr>
-                    <th className="px-4 py-2.5 text-right font-medium">نوع الإجازة</th>
-                    <th className="px-4 py-2.5 text-center font-medium">الإجمالي</th>
-                    <th className="px-4 py-2.5 text-center font-medium">المستخدم</th>
-                    <th className="px-4 py-2.5 text-center font-medium">المتبقي</th>
-                    <th className="px-4 py-2.5 text-center font-medium">الاستهلاك</th>
+                    <th className="px-4 py-2.5 text-right font-medium">{tLeave("balances.leaveType")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium">{tLeave("balances.totalDays")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium">{tLeave("balances.used")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium">{tLeave("balances.remaining")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium">{tLeave("balances.consumption")}</th>
                   </tr>
                 </thead>
                 <tbody>

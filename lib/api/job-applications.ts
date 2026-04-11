@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 import { JobApplicationStatus } from "@/types";
 
 export interface UpdateJobApplicationData {
-  status: JobApplicationStatus;
+  status: Exclude<JobApplicationStatus, "HIRED">;
   reviewNotes?: string;
   rejectionNote?: string;
   rating?: number;
@@ -26,6 +26,12 @@ export const jobApplicationsApi = {
 
   update: async (id: string, data: UpdateJobApplicationData) => {
     const response = await apiClient.put(`/job-applications/${id}`, data);
+    return response.data.data;
+  },
+
+  // موافقة المدير التنفيذي (ينقل الطلب إلى HIRED)
+  ceoApprove: async (id: string) => {
+    const response = await apiClient.patch(`/job-applications/${id}/ceo-approve`);
     return response.data.data;
   },
 };

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
-  ArrowRight, Plus, Trash2, Trophy, User, BarChart2,
-  CheckCircle2, XCircle, Clock, RefreshCw,
+  ArrowRight, Plus, Trash2, Trophy, BarChart2, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,16 +27,18 @@ import {
 } from "@/lib/hooks/use-interview-positions";
 import { InterviewDecision } from "@/lib/api/interview-evaluations";
 
-const DECISION_CONFIG: Record<InterviewDecision, { label: string; className: string }> = {
-  ACCEPTED:          { label: "مقبول",                  className: "bg-green-100 text-green-700" },
-  REFERRED_TO_OTHER: { label: "مرشح لشاغر آخر",         className: "bg-blue-100 text-blue-700" },
-  DEFERRED:          { label: "مؤجل",                   className: "bg-amber-100 text-amber-700" },
-  REJECTED:          { label: "مرفوض",                  className: "bg-red-100 text-red-700" },
+const DECISION_CLASSES: Record<InterviewDecision, string> = {
+  ACCEPTED:          "bg-green-100 text-green-700",
+  REFERRED_TO_OTHER: "bg-blue-100 text-blue-700",
+  DEFERRED:          "bg-amber-100 text-amber-700",
+  REJECTED:          "bg-red-100 text-red-700",
 };
 
 export default function InterviewPositionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useTranslations("interviewPositions");
+  const tCommon = useTranslations("common");
 
   const [qDialogOpen, setQDialogOpen] = useState(false);
   const [deleteQOpen, setDeleteQOpen] = useState(false);
@@ -49,7 +51,17 @@ export default function InterviewPositionDetailPage() {
   const addQuestion = useAddTechnicalQuestion(id);
   const deleteQuestion = useDeleteTechnicalQuestion(id);
 
-  const pos = position as any;
+  const rawPos = position as any;
+  const pos = rawPos
+    ? {
+        ...rawPos,
+        committeeMembers: Array.isArray(rawPos.committeeMembers)
+          ? rawPos.committeeMembers
+          : rawPos.committeeMembers
+          ? String(rawPos.committeeMembers).split(",").map((s: string) => s.trim()).filter(Boolean)
+          : [],
+      }
+    : rawPos;
   const comp = comparison as any;
 
   if (isLoading) {
@@ -73,6 +85,11 @@ export default function InterviewPositionDetailPage() {
     );
   }
 
+  const statusClass =
+    pos.status === "OPEN" ? "bg-green-100 text-green-700 border-green-200" :
+    pos.status === "CLOSED" ? "bg-gray-100 text-gray-600 border-gray-200" :
+    "bg-amber-100 text-amber-700 border-amber-200";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -83,23 +100,34 @@ export default function InterviewPositionDetailPage() {
           <h1 className="text-2xl font-bold">{pos.jobTitle}</h1>
           <p className="text-muted-foreground text-sm">{pos.department}</p>
         </div>
-        <Badge className={`mr-auto text-xs border ${
-          pos.status === "OPEN" ? "bg-green-100 text-green-700 border-green-200" :
-          pos.status === "CLOSED" ? "bg-gray-100 text-gray-600 border-gray-200" :
-          "bg-amber-100 text-amber-700 border-amber-200"
-        }`}>
-          {pos.status === "OPEN" ? "مفتوح" : pos.status === "CLOSED" ? "مغلق" : "موقوف"}
+        <Badge className={`mr-auto text-xs border ${statusClass}`}>
+          {t(`status.${pos.status}`)}
         </Badge>
       </div>
 
       {/* Position Info */}
       <div className="grid gap-4 sm:grid-cols-3 text-sm">
-        {pos.workType && <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">نوع الدوام</p><p className="font-medium mt-0.5">{pos.workType === "FULL_TIME" ? "دوام كامل" : "دوام جزئي"}</p></div>}
-        {pos.workMode && <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">طريقة العمل</p><p className="font-medium mt-0.5">{{ ON_SITE: "حضوري", REMOTE: "عن بُعد", HYBRID: "هجين" }[pos.workMode as string]}</p></div>}
-        {pos.interviewDate && <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">تاريخ المقابلة</p><p className="font-medium mt-0.5">{new Date(pos.interviewDate).toLocaleDateString("ar-EG")}</p></div>}
+        {pos.workType && (
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{t("detail.workType")}</p>
+            <p className="font-medium mt-0.5">{t(`workType.${pos.workType}`)}</p>
+          </div>
+        )}
+        {pos.workMode && (
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{t("detail.workMode")}</p>
+            <p className="font-medium mt-0.5">{t(`workMode.${pos.workMode}`)}</p>
+          </div>
+        )}
+        {pos.interviewDate && (
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{t("detail.interviewDate")}</p>
+            <p className="font-medium mt-0.5">{new Date(pos.interviewDate).toLocaleDateString()}</p>
+          </div>
+        )}
         {pos.committeeMembers?.length > 0 && (
           <div className="rounded-lg border p-3 sm:col-span-3">
-            <p className="text-xs text-muted-foreground mb-1">لجنة المقابلة</p>
+            <p className="text-xs text-muted-foreground mb-1">{t("detail.committee")}</p>
             <div className="flex flex-wrap gap-1.5">
               {pos.committeeMembers.map((m: string, i: number) => (
                 <Badge key={i} variant="secondary" className="text-xs">{m}</Badge>
@@ -113,17 +141,17 @@ export default function InterviewPositionDetailPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            الأسئلة التقنية
+            {t("detail.technicalQuestions")}
             <Badge variant="secondary" className="mr-auto">{pos.technicalQuestions?.length || 0}</Badge>
             <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs ms-auto"
               onClick={() => setQDialogOpen(true)}>
-              <Plus className="h-3.5 w-3.5" />إضافة سؤال
+              <Plus className="h-3.5 w-3.5" />{t("detail.addQuestion")}
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!pos.technicalQuestions?.length ? (
-            <p className="text-center py-4 text-sm text-muted-foreground">لا توجد أسئلة تقنية — أضف سؤالاً للبدء</p>
+            <p className="text-center py-4 text-sm text-muted-foreground">{t("detail.noQuestions")}</p>
           ) : (
             <div className="space-y-2">
               {pos.technicalQuestions.map((q: any, i: number) => (
@@ -133,7 +161,7 @@ export default function InterviewPositionDetailPage() {
                     <p className="text-sm">{q.question}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="outline" className="text-xs">{q.maxScore} درجة</Badge>
+                    <Badge variant="outline" className="text-xs">{t("detail.score", { score: q.maxScore })}</Badge>
                     <Button
                       variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
                       onClick={() => { setSelectedQId(q.id); setDeleteQOpen(true); }}
@@ -153,64 +181,63 @@ export default function InterviewPositionDetailPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart2 className="h-4 w-4 text-primary" />
-            مقارنة المرشحين
+            {t("detail.comparison")}
             <Button
               size="sm" variant="outline" className="gap-1.5 h-7 text-xs ms-auto"
               onClick={() => setShowComparison(true)}
               disabled={showComparison}
             >
               {showComparison ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : null}
-              عرض المقارنة
+              {t("detail.showComparison")}
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!showComparison ? (
-            <p className="text-center py-4 text-sm text-muted-foreground">اضغط "عرض المقارنة" لتحميل بيانات المرشحين</p>
+            <p className="text-center py-4 text-sm text-muted-foreground">{t("detail.comparisonHint")}</p>
           ) : compLoading ? (
             <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           ) : !comp?.candidates?.length ? (
-            <p className="text-center py-4 text-sm text-muted-foreground">لا يوجد مرشحون مقيَّمون لهذا الشاغر بعد</p>
+            <p className="text-center py-4 text-sm text-muted-foreground">{t("detail.noCandidates")}</p>
           ) : (
             <div className="space-y-3">
               <div className="flex gap-4 text-sm text-muted-foreground">
-                <span>إجمالي المرشحين: <strong className="text-foreground">{comp.total}</strong></span>
-                <span>المقبولون: <strong className="text-green-600">{comp.accepted}</strong></span>
+                <span>{t("detail.totalCandidates")}: <strong className="text-foreground">{comp.total}</strong></span>
+                <span>{t("detail.accepted")}: <strong className="text-green-600">{comp.accepted}</strong></span>
               </div>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>الترتيب</TableHead>
-                      <TableHead>المرشح</TableHead>
-                      <TableHead>شخصي (40)</TableHead>
-                      <TableHead>تقني (40)</TableHead>
-                      <TableHead>حاسوبي (20)</TableHead>
-                      <TableHead>المجموع</TableHead>
-                      <TableHead>القرار</TableHead>
+                      <TableHead>{t("detail.rank")}</TableHead>
+                      <TableHead>{t("detail.candidate")}</TableHead>
+                      <TableHead>{t("detail.personal")}</TableHead>
+                      <TableHead>{t("detail.technical")}</TableHead>
+                      <TableHead>{t("detail.computer")}</TableHead>
+                      <TableHead>{t("detail.total")}</TableHead>
+                      <TableHead>{t("detail.decision")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {comp.candidates.map((c: any, i: number) => {
-                      const dcfg = c.decision ? DECISION_CONFIG[c.decision as InterviewDecision] : null;
-                      return (
-                        <TableRow key={c.id} className={i === 0 ? "bg-amber-50/50" : ""}>
-                          <TableCell>
-                            {i === 0 ? <Trophy className="h-4 w-4 text-amber-500" /> : <span className="text-muted-foreground text-sm">#{i + 1}</span>}
-                          </TableCell>
-                          <TableCell className="font-medium">{c.candidateName}</TableCell>
-                          <TableCell>{c.personalScore?.toFixed(1) || "—"}</TableCell>
-                          <TableCell>{c.technicalScore?.toFixed(1) || "—"}</TableCell>
-                          <TableCell>{c.computerScore?.toFixed(1) || "—"}</TableCell>
-                          <TableCell className="font-bold text-primary">{c.totalScore?.toFixed(1) || "—"}</TableCell>
-                          <TableCell>
-                            {dcfg ? (
-                              <Badge className={`text-xs ${dcfg.className}`}>{dcfg.label}</Badge>
-                            ) : "—"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {comp.candidates.map((c: any, i: number) => (
+                      <TableRow key={c.id} className={i === 0 ? "bg-amber-50/50" : ""}>
+                        <TableCell>
+                          {i === 0 ? <Trophy className="h-4 w-4 text-amber-500" /> : <span className="text-muted-foreground text-sm">#{i + 1}</span>}
+                        </TableCell>
+                        <TableCell className="font-medium">{c.candidateName}</TableCell>
+                        <TableCell>{c.personalScore?.toFixed(1) || "—"}</TableCell>
+                        <TableCell>{c.technicalScore?.toFixed(1) || "—"}</TableCell>
+                        <TableCell>{c.computerScore?.toFixed(1) || "—"}</TableCell>
+                        <TableCell className="font-bold text-primary">{c.totalScore?.toFixed(1) || "—"}</TableCell>
+                        <TableCell>
+                          {c.decision ? (
+                            <Badge className={`text-xs ${DECISION_CLASSES[c.decision as InterviewDecision]}`}>
+                              {t(`decisions.${c.decision}`)}
+                            </Badge>
+                          ) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -222,18 +249,18 @@ export default function InterviewPositionDetailPage() {
       {/* Add Question Dialog */}
       <Dialog open={qDialogOpen} onOpenChange={setQDialogOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>إضافة سؤال تقني</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("detail.addQuestionTitle")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>نص السؤال *</Label>
+              <Label>{t("detail.questionText")} *</Label>
               <Input
                 value={qForm.text}
                 onChange={(e) => setQForm({ ...qForm, text: e.target.value })}
-                placeholder="ما الفرق بين REST وGraphQL؟"
+                placeholder={t("detail.questionPlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>الدرجة القصوى</Label>
+              <Label>{t("detail.maxScore")}</Label>
               <Input
                 type="number"
                 value={qForm.maxScore}
@@ -243,9 +270,9 @@ export default function InterviewPositionDetailPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setQDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setQDialogOpen(false)}>{tCommon("cancel")}</Button>
             <Button onClick={handleAddQuestion} disabled={!qForm.text.trim() || addQuestion.isPending}>
-              إضافة
+              {tCommon("add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -254,8 +281,8 @@ export default function InterviewPositionDetailPage() {
       <ConfirmDialog
         open={deleteQOpen}
         onOpenChange={setDeleteQOpen}
-        title="حذف السؤال"
-        description="هل أنت متأكد من حذف هذا السؤال؟"
+        title={t("detail.deleteQuestion")}
+        description={t("detail.deleteQuestionConfirm")}
         onConfirm={() => deleteQuestion.mutate(selectedQId, { onSuccess: () => setDeleteQOpen(false) })}
         variant="destructive"
       />

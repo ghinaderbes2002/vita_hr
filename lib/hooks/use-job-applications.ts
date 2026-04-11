@@ -40,3 +40,24 @@ export function useUpdateJobApplication() {
     },
   });
 }
+
+// موافقة المدير التنفيذي
+export function useApproveJobApplicationCEO() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jobApplicationsApi.ceoApprove(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["job-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["job-applications-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["job-application", id] });
+      toast.success("تم الموافقة على الطلب بنجاح");
+    },
+    onError: (error: any) => {
+      if (error.response?.status === 403) {
+        toast.error("ليس لديك صلاحية تنفيذ هذه العملية");
+      } else {
+        toast.error(error.response?.data?.message || error.response?.data?.error?.message || "حدث خطأ");
+      }
+    },
+  });
+}

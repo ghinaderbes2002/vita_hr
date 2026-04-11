@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Download, CalendarDays, Clock, AlertTriangle, TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,9 +15,11 @@ import {
 } from "@/lib/hooks/use-attendance-reports";
 import { downloadCsv } from "@/lib/api/reports";
 
-const MONTH_NAMES = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-
 export default function AttendanceReportsPage() {
+  const t = useTranslations("reports");
+  const tAtt = useTranslations("reports.attendance");
+  const months = t.raw("months") as string[];
+
   const today = new Date().toISOString().split("T")[0];
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -40,12 +43,15 @@ export default function AttendanceReportsPage() {
   const day = daily as any;
   const mon = monthly as any;
 
+  const absenceKey = tAtt("absences.absenceKey");
+  const lateKey = tAtt("absences.lateKey");
+
   const tabs = [
-    { key: "absences", label: "الأكثر غياباً", icon: AlertTriangle },
-    { key: "overtime", label: "الأوفرتايم", icon: TrendingUp },
-    { key: "daily", label: "التقرير اليومي", icon: CalendarDays },
-    { key: "monthly", label: "التقرير الشهري", icon: Clock },
-  ] as const;
+    { key: "absences" as const, icon: AlertTriangle },
+    { key: "overtime" as const, icon: TrendingUp },
+    { key: "daily" as const, icon: CalendarDays },
+    { key: "monthly" as const, icon: Clock },
+  ];
 
   const YearMonthFilter = ({
     year, setYear, month, setMonth, showMonth = true,
@@ -58,8 +64,8 @@ export default function AttendanceReportsPage() {
       {showMonth && setMonth && (
         <select value={month ?? ""} onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : undefined)}
           className="h-8 rounded-md border bg-background px-2 text-sm">
-          <option value="">كل الأشهر</option>
-          {MONTH_NAMES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+          <option value="">{tAtt("allMonths")}</option>
+          {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
         </select>
       )}
     </div>
@@ -69,27 +75,27 @@ export default function AttendanceReportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">تقارير الحضور</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">إحصائيات وتحليلات الحضور والغياب</p>
+        <h1 className="text-2xl font-bold">{tAtt("title")}</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">{tAtt("description")}</p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-lg border p-1 w-fit flex-wrap">
-        {tabs.map(({ key, label, icon: Icon }) => (
+        {tabs.map(({ key, icon: Icon }) => (
           <button key={key} onClick={() => setActiveTab(key)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               activeTab === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}>
-            <Icon className="h-3.5 w-3.5" />{label}
+            <Icon className="h-3.5 w-3.5" />{tAtt(`tabs.${key}`)}
           </button>
         ))}
       </div>
 
-      {/* ─── الأكثر غياباً ──────────────────────────────────── */}
+      {/* ─── Most Absent ──────────────────────────────────── */}
       {activeTab === "absences" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">الموظفون الأكثر غياباً وتأخراً (أعلى 10)</h2>
+            <h2 className="text-base font-semibold">{tAtt("absences.title")}</h2>
             <div className="flex items-center gap-2">
               <YearMonthFilter year={absYear} setYear={setAbsYear} month={absMonth} setMonth={setAbsMonth} />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
@@ -101,7 +107,6 @@ export default function AttendanceReportsPage() {
 
           {absLoading ? <Skeleton className="h-64 w-full" /> : (
             <>
-              {/* Chart */}
               {(abs?.items || []).length > 0 && (
                 <Card>
                   <CardContent className="p-4">
@@ -109,8 +114,8 @@ export default function AttendanceReportsPage() {
                       <BarChart
                         data={(abs.items || []).map((it: any) => ({
                           name: `${it.employee.firstNameAr} ${it.employee.lastNameAr}`.slice(0, 10),
-                          غياب: it.absenceCount,
-                          تأخر: it.lateCount,
+                          [absenceKey]: it.absenceCount,
+                          [lateKey]: it.lateCount,
                         }))}
                         margin={{ top: 5, right: 10, left: 0, bottom: 40 }}
                       >
@@ -119,29 +124,28 @@ export default function AttendanceReportsPage() {
                         <YAxis tick={{ fontSize: 10 }} />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="غياب" fill="#ef4444" radius={[3,3,0,0]} />
-                        <Bar dataKey="تأخر" fill="#f59e0b" radius={[3,3,0,0]} />
+                        <Bar dataKey={absenceKey} fill="#ef4444" radius={[3,3,0,0]} />
+                        <Bar dataKey={lateKey} fill="#f59e0b" radius={[3,3,0,0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Table */}
               <Card>
                 <CardContent className="p-0">
                   {!(abs?.items?.length) ? (
-                    <p className="text-center py-8 text-sm text-muted-foreground">لا توجد بيانات</p>
+                    <p className="text-center py-8 text-sm text-muted-foreground">{tAtt("noData")}</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/50">
                           <tr>
                             <th className="px-4 py-3 text-right font-medium">#</th>
-                            <th className="px-4 py-3 text-right font-medium">الموظف</th>
-                            <th className="px-4 py-3 text-center font-medium">أيام الغياب</th>
-                            <th className="px-4 py-3 text-center font-medium">مرات التأخر</th>
-                            <th className="px-4 py-3 text-center font-medium">ساعات التأخر</th>
+                            <th className="px-4 py-3 text-right font-medium">{tAtt("absences.employee")}</th>
+                            <th className="px-4 py-3 text-center font-medium">{tAtt("absences.absenceDays")}</th>
+                            <th className="px-4 py-3 text-center font-medium">{tAtt("absences.lateCount")}</th>
+                            <th className="px-4 py-3 text-center font-medium">{tAtt("absences.lateHours")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -154,16 +158,16 @@ export default function AttendanceReportsPage() {
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <Badge className={`text-xs ${it.absenceCount > 5 ? "bg-red-100 text-red-700" : it.absenceCount > 2 ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>
-                                  {it.absenceCount} يوم
+                                  {tAtt("absences.daysUnit", { count: it.absenceCount })}
                                 </Badge>
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <Badge className={`text-xs ${it.lateCount > 10 ? "bg-red-100 text-red-700" : it.lateCount > 5 ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>
-                                  {it.lateCount} مرة
+                                  {tAtt("absences.timesUnit", { count: it.lateCount })}
                                 </Badge>
                               </td>
                               <td className="px-4 py-3 text-center text-muted-foreground">
-                                {it.totalLateHours?.toFixed(1)} س
+                                {tAtt("absences.hoursUnit", { count: it.totalLateHours?.toFixed(1) })}
                               </td>
                             </tr>
                           ))}
@@ -178,11 +182,11 @@ export default function AttendanceReportsPage() {
         </div>
       )}
 
-      {/* ─── الأوفرتايم ─────────────────────────────────────── */}
+      {/* ─── Overtime ─────────────────────────────────────── */}
       {activeTab === "overtime" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">تقرير الأوفرتايم</h2>
+            <h2 className="text-base font-semibold">{tAtt("overtime.title")}</h2>
             <div className="flex items-center gap-2">
               <YearMonthFilter year={otYear} setYear={setOtYear} month={otMonth} setMonth={setOtMonth} />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
@@ -194,18 +198,17 @@ export default function AttendanceReportsPage() {
 
           {otLoading ? <Skeleton className="h-64 w-full" /> : (
             <>
-              {/* KPI */}
               {ot?.totalOvertimeHours != null && (
                 <Card>
                   <CardContent className="p-6 flex items-center gap-6">
                     <div className="text-center">
                       <p className="text-4xl font-bold text-primary">{ot.totalOvertimeHours?.toFixed(1)}</p>
-                      <p className="text-sm text-muted-foreground mt-1">إجمالي ساعات الأوفرتايم</p>
+                      <p className="text-sm text-muted-foreground mt-1">{tAtt("overtime.totalHoursLabel")}</p>
                     </div>
                     <div className="h-12 w-px bg-border" />
                     <div className="text-center">
                       <p className="text-2xl font-bold">{(ot.items || []).length}</p>
-                      <p className="text-sm text-muted-foreground mt-1">موظف لديه أوفرتايم</p>
+                      <p className="text-sm text-muted-foreground mt-1">{tAtt("overtime.employeeCountLabel")}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -214,15 +217,15 @@ export default function AttendanceReportsPage() {
               <Card>
                 <CardContent className="p-0">
                   {!(ot?.items?.length) ? (
-                    <p className="text-center py-8 text-sm text-muted-foreground">لا توجد بيانات</p>
+                    <p className="text-center py-8 text-sm text-muted-foreground">{tAtt("noData")}</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/50">
                           <tr>
-                            <th className="px-4 py-3 text-right font-medium">الموظف</th>
-                            <th className="px-4 py-3 text-center font-medium">أيام الأوفرتايم</th>
-                            <th className="px-4 py-3 text-center font-medium">إجمالي الساعات</th>
+                            <th className="px-4 py-3 text-right font-medium">{tAtt("overtime.employee")}</th>
+                            <th className="px-4 py-3 text-center font-medium">{tAtt("overtime.overtimeDays")}</th>
+                            <th className="px-4 py-3 text-center font-medium">{tAtt("overtime.totalHours")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -232,9 +235,9 @@ export default function AttendanceReportsPage() {
                                 <p className="font-medium">{it.employee.firstNameAr} {it.employee.lastNameAr}</p>
                                 <p className="text-xs text-muted-foreground">{it.employee.employeeNumber}</p>
                               </td>
-                              <td className="px-4 py-3 text-center">{it.overtimeDays} يوم</td>
+                              <td className="px-4 py-3 text-center">{tAtt("overtime.daysUnit", { count: it.overtimeDays })}</td>
                               <td className="px-4 py-3 text-center font-semibold text-primary">
-                                {it.totalOvertimeHours?.toFixed(1)} س
+                                {tAtt("overtime.hoursUnit", { count: it.totalOvertimeHours?.toFixed(1) })}
                               </td>
                             </tr>
                           ))}
@@ -249,11 +252,11 @@ export default function AttendanceReportsPage() {
         </div>
       )}
 
-      {/* ─── التقرير اليومي ──────────────────────────────────── */}
+      {/* ─── Daily ──────────────────────────────────── */}
       {activeTab === "daily" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">التقرير اليومي</h2>
+            <h2 className="text-base font-semibold">{tAtt("daily.title")}</h2>
             <div className="flex items-center gap-2">
               <input type="date" value={dailyDate} onChange={(e) => setDailyDate(e.target.value)}
                 className="h-8 rounded-md border bg-background px-2 text-sm" />
@@ -268,7 +271,7 @@ export default function AttendanceReportsPage() {
             <Card>
               <CardContent className="p-4">
                 {!day ? (
-                  <p className="text-center py-8 text-sm text-muted-foreground">لا توجد بيانات لهذا اليوم</p>
+                  <p className="text-center py-8 text-sm text-muted-foreground">{tAtt("daily.noData")}</p>
                 ) : (
                   <pre className="text-xs text-muted-foreground overflow-auto max-h-96 whitespace-pre-wrap">
                     {JSON.stringify(day, null, 2)}
@@ -280,11 +283,11 @@ export default function AttendanceReportsPage() {
         </div>
       )}
 
-      {/* ─── التقرير الشهري ──────────────────────────────────── */}
+      {/* ─── Monthly ──────────────────────────────────── */}
       {activeTab === "monthly" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">التقرير الشهري</h2>
+            <h2 className="text-base font-semibold">{tAtt("monthly.title")}</h2>
             <div className="flex items-center gap-2">
               <YearMonthFilter year={monthlyYear} setYear={setMonthlyYear}
                 month={monthlyMonth} setMonth={(m) => setMonthlyMonth(m ?? currentMonth)} showMonth />
@@ -299,7 +302,7 @@ export default function AttendanceReportsPage() {
             <Card>
               <CardContent className="p-4">
                 {!mon ? (
-                  <p className="text-center py-8 text-sm text-muted-foreground">لا توجد بيانات</p>
+                  <p className="text-center py-8 text-sm text-muted-foreground">{tAtt("monthly.noData")}</p>
                 ) : (
                   <pre className="text-xs text-muted-foreground overflow-auto max-h-96 whitespace-pre-wrap">
                     {JSON.stringify(mon, null, 2)}

@@ -1083,6 +1083,227 @@
       "completed": "مكتمل"
     }
   },
+  "evaluationForms": {
+    "statuses": {
+      "DRAFT": "مسودة",
+      "SELF_EVALUATION": "تقييم ذاتي",
+      "PENDING_SELF": "بانتظار التقييم الذاتي",
+      "SELF_SUBMITTED": "تم تقديم التقييم الذاتي",
+      "MANAGER_EVALUATION": "تقييم المدير",
+      "MANAGER_SUBMITTED": "تم تقديم تقييم المدير",
+      "HR_REVIEW": "مراجعة HR",
+      "GM_APPROVAL": "موافقة المدير العام",
+      "COMPLETED": "مكتمل",
+      "NOT_STARTED": "لم يبدأ",
+      "IN_PROGRESS": "جارٍ",
+      "SUBMITTED": "مرسل",
+      "APPROVED": "موافق",
+      "REJECTED": "مرفوض"
+    },
+    "detail": {
+      "title": "تفاصيل نموذج التقييم",
+      "description": "عرض وإدارة نموذج التقييم",
+      "notFound": "لم يتم العثور على النموذج",
+      "employee": "الموظف",
+      "period": "الفترة",
+      "finalScore": "الدرجة النهائية",
+      "status": "الحالة",
+      "tabs": {
+        "overview": "نظرة عامة",
+        "self": "التقييم الذاتي",
+        "manager": "تقييم المدير",
+        "goals": "الأهداف",
+        "peers": "تقييم الزملاء",
+        "hr": "مراجعة HR",
+        "gm": "موافقة GM"
+      },
+      "overview": {
+        "scoresSummary": "ملخص الدرجات",
+        "selfScore": "درجة التقييم الذاتي",
+        "managerScore": "درجة تقييم المدير",
+        "finalScore": "الدرجة النهائية",
+        "criteriaDetails": "تفاصيل المعايير",
+        "noCriteria": "لا توجد معايير",
+        "selfPrefix": "ذاتي:",
+        "managerPrefix": "مدير:",
+        "selfCommentsTitle": "ملاحظات التقييم الذاتي",
+        "managerCommentsTitle": "ملاحظات تقييم المدير",
+        "generalComments": "ملاحظات عامة:",
+        "strengths": "نقاط القوة:",
+        "weaknesses": "نقاط الضعف:",
+        "recommendations": "التوصيات:",
+        "hrReviewTitle": "مراجعة الموارد البشرية",
+        "hrRecommendation": "التوصية:",
+        "gmDecisionTitle": "قرار المدير العام",
+        "gmStatusLabel": "الحالة:",
+        "gmApproved": "موافق",
+        "gmRejected": "مرفوض"
+      }
+    },
+    "selfEval": {
+      "title": "التقييم الذاتي",
+      "description": "قم بتقييم أدائك بناءً على المعايير التالية",
+      "weight": "الوزن",
+      "maxScore": "الحد الأقصى",
+      "score": "الدرجة",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "أضف ملاحظاتك هنا...",
+      "generalNotes": "ملاحظات عامة",
+      "generalNotesPlaceholder": "أضف ملاحظاتك العامة على أدائك...",
+      "total": "المجموع الكلي",
+      "saveDraft": "حفظ المسودة",
+      "submit": "إرسال التقييم",
+      "noEditOther": "لا يمكنك تعديل التقييم الذاتي لموظف آخر",
+      "submitted": "تم إرسال التقييم الذاتي ولا يمكن تعديله"
+    },
+    "managerEval": {
+      "title": "تقييم المدير",
+      "description": "قم بتقييم أداء الموظف بناءً على المعايير التالية",
+      "selfSummaryTitle": "التقييم الذاتي للموظف",
+      "selfTotal": "المجموع الكلي",
+      "employeeNotes": "ملاحظات الموظف:",
+      "selfPrefix": "التقييم الذاتي:",
+      "weight": "الوزن",
+      "maxScore": "الحد الأقصى",
+      "score": "الدرجة",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "أضف ملاحظاتك هنا...",
+      "generalNotes": "ملاحظات عامة",
+      "generalNotesPlaceholder": "أضف ملاحظاتك العامة...",
+      "strengths": "نقاط القوة",
+      "strengthsPlaceholder": "اذكر نقاط القوة الرئيسية للموظف...",
+      "weaknesses": "نقاط الضعف",
+      "weaknessesPlaceholder": "اذكر نقاط الضعف التي تحتاج لتحسين...",
+      "recommendations": "التوصيات",
+      "recommendationsPlaceholder": "ما هي توصياتك لتطوير الموظف؟",
+      "total": "المجموع الكلي",
+      "saveDraft": "حفظ المسودة",
+      "submit": "إرسال التقييم",
+      "submitted": "تم إرسال تقييم المدير ولا يمكن تعديله",
+      "waitSelf": "يجب على الموظف إرسال التقييم الذاتي أولاً"
+    },
+    "hrReview": {
+      "title": "مراجعة الموارد البشرية",
+      "description": "مراجعة التقييم وتقديم التوصيات",
+      "selfEvalBox": "التقييم الذاتي",
+      "managerEvalBox": "تقييم المدير",
+      "managerSummary": "ملخص تقييم المدير",
+      "strengths": "نقاط القوة:",
+      "weaknesses": "نقاط الضعف:",
+      "managerRecs": "توصيات المدير:",
+      "recommendation": "التوصية",
+      "recommendationPlaceholder": "اختر التوصية",
+      "hrNotes": "ملاحظات الموارد البشرية",
+      "hrNotesPlaceholder": "أضف ملاحظاتك ومراجعتك للتقييم...",
+      "submitReview": "إرسال المراجعة",
+      "reviewSubmitted": "تم إرسال مراجعة الموارد البشرية",
+      "waitManager": "يجب على المدير إرسال التقييم أولاً",
+      "currentReview": "المراجعة الحالية",
+      "recOptions": {
+        "NO_ACTION": "لا يوجد إجراء",
+        "SALARY_INCREASE": "زيادة راتب",
+        "PROMOTION": "ترقية",
+        "TRAINING": "تدريب",
+        "WARNING": "إنذار",
+        "TERMINATION": "إنهاء خدمات"
+      }
+    },
+    "gmApproval": {
+      "title": "موافقة المدير العام",
+      "description": "الموافقة النهائية على نموذج التقييم",
+      "selfEvalBox": "التقييم الذاتي",
+      "managerEvalBox": "تقييم المدير",
+      "finalScoreBox": "الدرجة النهائية",
+      "managerSummary": "ملخص تقييم المدير",
+      "strengths": "نقاط القوة:",
+      "weaknesses": "نقاط الضعف:",
+      "recommendations": "التوصيات:",
+      "hrReviewBox": "مراجعة الموارد البشرية",
+      "decision": "القرار",
+      "approve": "موافقة",
+      "approveDesc": "الموافقة على التقييم",
+      "reject": "رفض",
+      "rejectDesc": "رفض التقييم",
+      "gmNotes": "ملاحظات المدير العام (اختياري)",
+      "gmNotesPlaceholder": "أضف ملاحظاتك أو تعليقاتك على القرار...",
+      "submitDecision": "إرسال القرار",
+      "decisionSubmitted": "تم إرسال قرار المدير العام وإغلاق التقييم",
+      "waitHr": "بانتظار مراجعة الموارد البشرية أولاً",
+      "cantEdit": "لا يمكن تعديل هذا النموذج",
+      "currentDecision": "القرار:",
+      "approved": "موافق",
+      "rejected": "مرفوض"
+    },
+    "goals": {
+      "title": "أهداف الموظف",
+      "description": "إدارة الأهداف وتتبع الإنجازات",
+      "addGoal": "إضافة هدف",
+      "addGoalTitle": "إضافة هدف جديد",
+      "addGoalDesc": "أضف هدف جديد للموظف في هذه الفترة",
+      "goalTitle": "عنوان الهدف *",
+      "goalTitlePlaceholder": "مثال: زيادة الإنتاجية بنسبة 20%",
+      "goalDescription": "الوصف",
+      "descPlaceholder": "وصف تفصيلي للهدف...",
+      "targetDate": "تاريخ الإنجاز المستهدف *",
+      "weight": "الوزن *",
+      "empty": "لا توجد أهداف",
+      "emptyDesc": "قم بإضافة أهداف لهذا الموظف",
+      "table": {
+        "goal": "الهدف",
+        "description": "الوصف",
+        "targetDate": "التاريخ المستهدف",
+        "weight": "الوزن",
+        "selfAchievement": "الإنجاز الذاتي",
+        "managerAchievement": "إنجاز المدير",
+        "actions": "الإجراءات"
+      },
+      "deleteTitle": "حذف الهدف",
+      "deleteDesc": "هل أنت متأكد من حذف هذا الهدف؟ لا يمكن التراجع عن هذا الإجراء.",
+      "updateTitle": "تحديث الإنجاز",
+      "updateDesc": "قم بتحديث نسبة الإنجاز والملاحظات",
+      "selfAchievementPct": "نسبة الإنجاز الذاتي (%)",
+      "achievementNotes": "ملاحظات الإنجاز",
+      "achievementNotesPlaceholder": "أضف ملاحظاتك على الإنجاز..."
+    },
+    "peers": {
+      "title": "تقييمات الزملاء",
+      "description": "تقييمات الموظف من قبل زملائه في العمل",
+      "addEvaluation": "إضافة تقييم",
+      "addTitle": "تقييم زميل",
+      "addDesc": "قدم تقييمك لأداء زميلك في العمل",
+      "rating": "التقدير *",
+      "strengths": "نقاط القوة",
+      "strengthsPlaceholder": "ما هي نقاط القوة لدى زميلك؟",
+      "improvements": "نقاط التحسين",
+      "improvementsPlaceholder": "ما هي المجالات التي يمكن تحسينها؟",
+      "generalNotes": "ملاحظات عامة",
+      "generalNotesPlaceholder": "أضف أي ملاحظات إضافية...",
+      "anonymous": "تقييم مجهول (لن يظهر اسمك)",
+      "submitEvaluation": "إرسال التقييم",
+      "anonymousLabel": "تقييم مجهول",
+      "empty": "لا توجد تقييمات من الزملاء",
+      "emptyDesc": "قم بإضافة تقييم لهذا الموظف",
+      "strengthsLabel": "نقاط القوة:",
+      "improvementsLabel": "نقاط التحسين:",
+      "generalNotesLabel": "ملاحظات عامة:",
+      "statsTitle": "إحصائيات التقييمات",
+      "totalEvaluations": "إجمالي التقييمات",
+      "ratings": {
+        "EXCELLENT": "ممتاز",
+        "VERY_GOOD": "جيد جداً",
+        "GOOD": "جيد",
+        "FAIR": "مقبول",
+        "POOR": "ضعيف"
+      }
+    }
+  },
+  "myEvaluations": {
+    "viewForm": "عرض النموذج",
+    "selfEvaluation": "التقييم الذاتي",
+    "managerEvaluation": "تقييم المدير",
+    "hrReview": "مراجعة HR",
+    "gmApproval": "موافقة المدير العام"
+  },
   "validation": {
     "required": "هذا الحقل مطلوب",
     "email": "البريد الإلكتروني غير صحيح",
@@ -1229,9 +1450,722 @@
     "actions": {
       "title": "إجراءات",
       "interviewReady": "مؤهل للمقابلة",
-      "accept": "قبول",
+      "accept": "مؤهل نهائي",
       "reject": "رفض",
-      "hire": "تم التوظيف"
+      "ceoApprove": "موافقة المدير التنفيذي"
+    }
+  },
+  "biometricReports": {
+    "title": "تقارير البصمة",
+    "description": "تقارير الحضور والانصراف المبنية على بيانات أجهزة البصمة",
+    "showReport": "عرض التقرير",
+    "hint": "اختر الفلاتر واضغط \"عرض التقرير\" لعرض النتائج",
+    "tabs": {
+      "lateness": "التأخر",
+      "absences": "الغياب",
+      "temp-exits": "الخروج المؤقت",
+      "monthly-payroll": "كشف الرواتب",
+      "employee-card": "بطاقة الموظف"
+    },
+    "filters": {
+      "from": "من تاريخ",
+      "to": "إلى تاريخ",
+      "department": "القسم",
+      "allDepartments": "كل الأقسام",
+      "year": "السنة",
+      "month": "الشهر",
+      "employee": "الموظف",
+      "selectEmployee": "اختر موظف"
+    },
+    "months": ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],
+    "lateness": {
+      "lateEmployees": "الموظفون المتأخرون",
+      "totalInstances": "إجمالي حالات التأخر",
+      "totalMinutes": "إجمالي دقائق التأخر",
+      "noData": "لا توجد بيانات تأخر في هذه الفترة",
+      "employee": "الموظف",
+      "instances": "مرات التأخر",
+      "minutes": "إجمالي الدقائق",
+      "details": "التفاصيل",
+      "hide": "إخفاء",
+      "show": "عرض",
+      "date": "التاريخ",
+      "clockIn": "وقت الدخول",
+      "expected": "الوقت المتوقع",
+      "lateMinutes": "الدقائق",
+      "times": "{count} مرة",
+      "minutesUnit": "{count} د"
+    },
+    "absences": {
+      "absentEmployees": "موظفون غائبون",
+      "totalDays": "إجمالي أيام الغياب",
+      "noData": "لا توجد بيانات غياب في هذه الفترة",
+      "employee": "الموظف",
+      "absenceDays": "أيام الغياب",
+      "dates": "التواريخ",
+      "days": "{count} يوم"
+    },
+    "tempExits": {
+      "employeesWithExits": "موظفون بخروج مؤقت",
+      "totalExcess": "إجمالي الدقائق الزائدة",
+      "noData": "لا توجد بيانات خروج مؤقت",
+      "employee": "الموظف",
+      "exitCount": "عدد الخروجات",
+      "breakMinutes": "دقائق الاستراحة",
+      "allowed": "المسموح",
+      "excess": "الزائد",
+      "withinLimit": "ضمن الحد",
+      "minutesUnit": "{count} د"
+    },
+    "payroll": {
+      "employeeCount": "عدد الموظفين",
+      "totalDeductions": "إجمالي الخصومات",
+      "netSalaries": "صافي الرواتب",
+      "noData": "لا توجد بيانات رواتب لهذا الشهر",
+      "employee": "الموظف",
+      "baseSalary": "الراتب الأساسي",
+      "deductions": "الخصومات",
+      "net": "الصافي",
+      "status": "الحالة",
+      "statuses": {
+        "DRAFT": "مسودة",
+        "CONFIRMED": "مؤكد",
+        "EXPORTED": "مُصدَّر"
+      }
+    },
+    "employeeCard": {
+      "title": "بطاقة الموظف الشهرية",
+      "noData": "لا توجد بيانات",
+      "workingDays": "أيام العمل المقررة",
+      "presentDays": "أيام الحضور",
+      "absentDays": "أيام الغياب",
+      "lateDays": "أيام التأخر",
+      "totalLateMinutes": "إجمالي دقائق التأخر",
+      "breakMinutes": "دقائق الاستراحة",
+      "netWorkedMinutes": "صافي ساعات العمل",
+      "attendanceRate": "نسبة الحضور",
+      "present": "حضور",
+      "absent": "غياب",
+      "dayUnit": "{count} يوم",
+      "minuteUnit": "{count} دقيقة",
+      "breakUnit": "{actual} / {allowed} د"
+    }
+  },
+  "deductionPolicies": {
+    "title": "سياسات الحسم",
+    "description": "تحديد قواعد خصم التأخر والغياب والاستراحة على الرواتب",
+    "createPolicy": "إنشاء سياسة",
+    "default": "افتراضي",
+    "disabled": "معطل",
+    "empty": {
+      "title": "لا توجد سياسات حسم",
+      "description": "أنشئ سياسة حسم لتطبيق قواعد الخصم على الرواتب"
+    },
+    "deductionType": {
+      "MINUTE_BY_MINUTE": "دقيقة بدقيقة",
+      "TIERED": "متدرج (شرائح)"
+    },
+    "card": {
+      "lateTolerance": "هامش التأخر",
+      "lateDeduction": "خصم التأخر",
+      "absenceDeduction": "خصم الغياب",
+      "repeatPenalty": "عقوبة التكرار",
+      "repeatPenaltyValue": "بعد {threshold} مرة ← +{days} يوم",
+      "lateTiers": "شرائح التأخر:",
+      "dayPerDay": "{days} يوم/يوم",
+      "minutesUnit": "{count} د",
+      "edit": "تعديل",
+      "setDefault": "تعيين افتراضي"
+    },
+    "form": {
+      "createTitle": "إنشاء سياسة حسم",
+      "editTitle": "تعديل السياسة",
+      "nameAr": "الاسم بالعربي",
+      "nameEn": "الاسم بالإنجليزي",
+      "activate": "تفعيل",
+      "default": "افتراضي",
+      "lateSettings": "إعدادات التأخر",
+      "tolerance": "هامش السماح (دقيقة)",
+      "deductionType": "نوع الخصم",
+      "lateTiers": "شرائح التأخر (من – إلى دقيقة ← أيام خصم)",
+      "earlyLeave": "إعدادات الخروج المبكر",
+      "earlyLeaveTiers": "شرائح الخروج المبكر",
+      "absenceDeduction": "خصم الغياب (أيام/يوم)",
+      "breakDeduction": "خصم تجاوز الاستراحة",
+      "repeatThreshold": "عقوبة التكرار (بعد كم مرة)",
+      "repeatThresholdPlaceholder": "فارغ = لا عقوبة",
+      "repeatPenaltyDays": "أيام العقوبة الإضافية",
+      "addTier": "إضافة شريحة",
+      "minuteLabel": "دقيقة ←",
+      "dayLabel": "يوم",
+      "create": "إنشاء",
+      "save": "حفظ التعديلات"
+    },
+    "delete": {
+      "title": "حذف السياسة",
+      "description": "هل أنت متأكد من حذف سياسة \"{name}\"؟"
+    }
+  },
+  "onboarding": {
+    "templates": {
+      "title": "قوالب الإلحاق والإنهاء",
+      "description": "إدارة قوالب مهام استقبال وإنهاء الموظفين",
+      "newTemplate": "قالب جديد",
+      "tabs": {
+        "ONBOARDING": "استقبال موظف",
+        "OFFBOARDING": "إنهاء خدمة"
+      },
+      "default": "افتراضي",
+      "tasks": "{count} مهمة",
+      "moreTasks": "+{count} مهام أخرى",
+      "empty": "لا توجد قوالب — أنشئ قالباً للبدء",
+      "form": {
+        "createTitle": "إنشاء قالب جديد — {type}",
+        "nameAr": "اسم القالب (عربي)",
+        "nameArPlaceholder": "قالب استقبال موظف جديد",
+        "nameEn": "اسم القالب (إنجليزي)",
+        "nameEnPlaceholder": "New Employee Onboarding",
+        "description": "الوصف",
+        "tasks": "المهام ({count})",
+        "addTask": "إضافة مهمة",
+        "taskNumber": "مهمة {number}",
+        "taskTitle": "عنوان المهمة",
+        "taskTitlePlaceholder": "تسليم جهاز اللابتوب",
+        "assignedTo": "المسؤول",
+        "daysFromStart": "بعد كم يوم من البداية",
+        "create": "إنشاء القالب"
+      },
+      "delete": {
+        "title": "حذف القالب",
+        "description": "هل أنت متأكد من حذف هذا القالب؟"
+      }
+    },
+    "assignee": {
+      "HR": "الموارد البشرية",
+      "IT": "تقنية المعلومات",
+      "MANAGER": "المدير المباشر",
+      "EMPLOYEE": "الموظف",
+      "OTHER": "أخرى"
+    },
+    "workflows": {
+      "title": "لوحة الإلحاق والإنهاء",
+      "description": "متابعة جميع عمليات استقبال وإنهاء خدمة الموظفين",
+      "filters": {
+        "allTypes": "جميع الأنواع",
+        "allStatuses": "جميع الحالات",
+        "type": "النوع",
+        "status": "الحالة"
+      },
+      "type": {
+        "ONBOARDING": "استقبال موظف",
+        "OFFBOARDING": "إنهاء خدمة",
+        "ONBOARDING_SHORT": "استقبال",
+        "OFFBOARDING_SHORT": "إنهاء خدمة"
+      },
+      "status": {
+        "IN_PROGRESS": "قيد التنفيذ",
+        "COMPLETED": "مكتمل",
+        "CANCELLED": "ملغى"
+      },
+      "taskProgress": "{completed}/{total} مهمة",
+      "startDate": "البداية",
+      "targetDate": "الهدف",
+      "template": "القالب",
+      "empty": "لا توجد عمليات مطابقة للفلاتر"
+    },
+    "workflowDetail": {
+      "progress": "التقدم",
+      "completedOf": "{completed} من {total} مهمة مكتملة",
+      "startDate": "البداية",
+      "targetDate": "الهدف",
+      "tasks": "المهام",
+      "dueDate": "الاستحقاق",
+      "update": "تحديث",
+      "cancelWorkflow": "إلغاء الـ Workflow",
+      "updateTaskTitle": "تحديث حالة المهمة",
+      "newStatus": "الحالة الجديدة",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "ملاحظات اختيارية...",
+      "save": "حفظ",
+      "cancelDialog": {
+        "title": "إلغاء الـ Workflow",
+        "description": "هل أنت متأكد من إلغاء هذا الـ Workflow؟ لا يمكن التراجع عن هذا الإجراء."
+      },
+      "taskStatus": {
+        "PENDING": "في الانتظار",
+        "IN_PROGRESS": "قيد التنفيذ",
+        "COMPLETED": "مكتملة",
+        "SKIPPED": "تم تخطيها"
+      }
+    }
+  },
+  "probationEvaluations": {
+    "title": "تقييمات فترة التجربة",
+    "description": "متابعة تقييمات الموظفين الجدد خلال فترة التجربة",
+    "newEvaluation": "تقييم جديد",
+    "tabs": {
+      "pending": "بانتظار إجراءي",
+      "all": "جميع التقييمات"
+    },
+    "status": {
+      "DRAFT": "مسودة",
+      "PENDING_SENIOR_MANAGER": "بانتظار المدير الأعلى",
+      "PENDING_HR": "بانتظار HR",
+      "PENDING_CEO": "بانتظار المدير التنفيذي",
+      "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "بانتظار إقرار الموظف",
+      "COMPLETED": "مكتمل",
+      "REJECTED_BY_SENIOR": "مرفوض من المدير",
+      "REJECTED_BY_HR": "مرفوض من HR",
+      "REJECTED_BY_CEO": "مرفوض من المدير التنفيذي"
+    },
+    "scores": {
+      "UNACCEPTABLE": "غير مقبول",
+      "ACCEPTABLE": "مقبول",
+      "GOOD": "جيد",
+      "VERY_GOOD": "جيد جداً",
+      "EXCELLENT": "ممتاز"
+    },
+    "recommendations": {
+      "CONFIRM_POSITION": "تثبيت في المنصب الحالي",
+      "EXTEND_PROBATION": "تمديد فترة التجربة",
+      "TRANSFER_POSITION": "نقل لمنصب آخر",
+      "TERMINATE": "إنهاء التعاقد"
+    },
+    "historyActions": {
+      "CREATE": "إنشاء التقييم",
+      "SUBMIT": "إرسال للمدير الأعلى",
+      "SENIOR_APPROVE": "موافقة المدير الأعلى",
+      "SENIOR_REJECT": "رفض المدير الأعلى",
+      "HR_DOCUMENT": "توثيق HR",
+      "HR_REJECT": "رفض HR",
+      "CEO_DECIDE": "قرار المدير التنفيذي",
+      "EMPLOYEE_ACKNOWLEDGE": "إقرار الموظف"
+    },
+    "workflow": {
+      "DRAFT": "مسودة",
+      "PENDING_SENIOR_MANAGER": "المدير الأعلى",
+      "PENDING_HR": "HR",
+      "PENDING_CEO": "المدير التنفيذي",
+      "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "إقرار الموظف",
+      "COMPLETED": "مكتمل"
+    },
+    "table": {
+      "employee": "الموظف",
+      "probationEnd": "انتهاء التجربة",
+      "status": "الحالة",
+      "overallRating": "التقييم النهائي",
+      "recommendation": "التوصية",
+      "open": "فتح"
+    },
+    "recommendationShort": {
+      "CONFIRM_POSITION": "تثبيت",
+      "EXTEND_PROBATION": "تمديد",
+      "TRANSFER_POSITION": "نقل",
+      "TERMINATE": "إنهاء"
+    },
+    "empty": {
+      "pendingTitle": "لا توجد تقييمات بانتظار إجراءك",
+      "pendingDescription": "ستظهر هنا التقييمات التي تحتاج منك إجراءً",
+      "allTitle": "لا توجد تقييمات",
+      "allDescription": "أنشئ تقييم فترة تجربة جديد"
+    },
+    "form": {
+      "employee": "الموظف",
+      "employeePlaceholder": "اختر الموظف",
+      "hireDate": "تاريخ التعيين",
+      "probationEndDate": "نهاية فترة التجربة",
+      "evaluationDate": "تاريخ التقييم",
+      "workAreasNote": "مجالات العمل",
+      "workAreasNotePlaceholder": "عمل في قسم المبيعات والتسويق",
+      "criteriaScoring": "تقييم المعايير",
+      "createDraft": "إنشاء (مسودة)",
+      "createTitle": "إنشاء تقييم فترة تجربة"
+    },
+    "detail": {
+      "hireDate": "تاريخ التعيين",
+      "probationEnd": "نهاية فترة التجربة",
+      "evaluationDate": "تاريخ التقييم",
+      "workAreas": "مجالات العمل",
+      "criteriaResults": "نتائج المعايير",
+      "finalResult": "النتيجة النهائية",
+      "overallRating": "التقييم العام",
+      "finalRecommendation": "التوصية",
+      "employeeAcknowledged": "وافق الموظف على التقييم",
+      "availableActions": "الإجراءات المتاحة",
+      "completed": "التقييم مكتمل — لا توجد إجراءات إضافية",
+      "historyLog": "سجل الإجراءات",
+      "defaultTitle": "تقييم فترة التجربة"
+    },
+    "actions": {
+      "submit": "إرسال للمدير الأعلى",
+      "approve": "موافقة وإرسال لـ HR",
+      "reject": "رفض",
+      "document": "توثيق وإرسال للمدير التنفيذي",
+      "hrReject": "رفض",
+      "ceoDecide": "اتخاذ القرار النهائي",
+      "acknowledge": "إقرار الموظف",
+      "resubmit": "إعادة الإرسال بعد التعديل",
+      "confirm": "تأكيد"
+    },
+    "actionDialog": {
+      "submit": "إرسال التقييم",
+      "approve": "موافقة المدير الأعلى",
+      "reject": "رفض التقييم",
+      "document": "توثيق HR",
+      "hrReject": "رفض من HR",
+      "ceo": "قرار المدير التنفيذي",
+      "acknowledge": "إقرار الموظف",
+      "overallRating": "التقييم العام",
+      "recommendation": "التوصية",
+      "notes": "ملاحظات",
+      "notesOptional": "ملاحظات (اختياري)",
+      "notesRequired": "ملاحظات *",
+      "rejectionReason": "سبب الرفض...",
+      "notesPlaceholder": "ملاحظات..."
+    }
+  },
+  "interviewPositions": {
+    "title": "الشواغر الوظيفية",
+    "description": "إدارة الشواغر ولجان المقابلات والأسئلة التقنية",
+    "addPosition": "إضافة شاغر",
+    "empty": {
+      "title": "لا توجد شواغر",
+      "description": "أضف شاغراً وظيفياً جديداً للبدء"
+    },
+    "status": {
+      "OPEN": "مفتوح",
+      "CLOSED": "مغلق",
+      "SUSPENDED": "موقوف"
+    },
+    "workType": {
+      "FULL_TIME": "دوام كامل",
+      "PART_TIME": "دوام جزئي"
+    },
+    "workMode": {
+      "ON_SITE": "حضوري",
+      "REMOTE": "عن بُعد",
+      "HYBRID": "هجين"
+    },
+    "card": {
+      "viewDetails": "عرض التفاصيل",
+      "edit": "تعديل",
+      "close": "إغلاق الشاغر",
+      "reopen": "إعادة فتح",
+      "delete": "حذف",
+      "viewCandidates": "عرض التقييمات والمرشحين",
+      "technicalQuestions": "{count} سؤال تقني"
+    },
+    "form": {
+      "jobTitle": "المسمى الوظيفي",
+      "jobTitlePlaceholder": "مطور برمجيات",
+      "department": "القسم",
+      "departmentPlaceholder": "تقنية المعلومات",
+      "sector": "القطاع",
+      "sectorPlaceholder": "إداري",
+      "workType": "نوع الدوام",
+      "workMode": "طريقة العمل",
+      "interviewDate": "تاريخ المقابلة",
+      "committeeMembers": "أعضاء لجنة المقابلة",
+      "committeeMembersPlaceholder": "أحمد محمد، سارة خالد (مفصولين بفاصلة عربية)",
+      "requiresLanguage": "يتطلب تقييم اللغة الإنجليزية",
+      "requiresComputer": "يتطلب تقييم المهارات الحاسوبية"
+    },
+    "dialog": {
+      "addTitle": "إضافة شاغر وظيفي",
+      "editTitle": "تعديل الشاغر",
+      "save": "حفظ",
+      "add": "إضافة"
+    },
+    "delete": {
+      "title": "حذف الشاغر",
+      "description": "هل أنت متأكد من حذف شاغر \"{title}\"؟"
+    },
+    "detail": {
+      "workType": "نوع الدوام",
+      "workMode": "طريقة العمل",
+      "interviewDate": "تاريخ المقابلة",
+      "committee": "لجنة المقابلة",
+      "technicalQuestions": "الأسئلة التقنية",
+      "noQuestions": "لا توجد أسئلة تقنية — أضف سؤالاً للبدء",
+      "addQuestion": "إضافة سؤال",
+      "score": "{score} درجة",
+      "comparison": "مقارنة المرشحين",
+      "showComparison": "عرض المقارنة",
+      "comparisonHint": "اضغط \"عرض المقارنة\" لتحميل بيانات المرشحين",
+      "noCandidates": "لا يوجد مرشحون مقيَّمون لهذا الشاغر بعد",
+      "totalCandidates": "إجمالي المرشحين",
+      "accepted": "المقبولون",
+      "rank": "الترتيب",
+      "candidate": "المرشح",
+      "personal": "شخصي (40)",
+      "technical": "تقني (40)",
+      "computer": "حاسوبي (20)",
+      "total": "المجموع",
+      "decision": "القرار",
+      "addQuestionTitle": "إضافة سؤال تقني",
+      "questionText": "نص السؤال",
+      "questionPlaceholder": "ما الفرق بين REST وGraphQL؟",
+      "maxScore": "الدرجة القصوى",
+      "deleteQuestion": "حذف السؤال",
+      "deleteQuestionConfirm": "هل أنت متأكد من حذف هذا السؤال؟"
+    },
+    "decisions": {
+      "ACCEPTED": "مقبول",
+      "REFERRED_TO_OTHER": "مرشح لشاغر آخر",
+      "DEFERRED": "مؤجل",
+      "REJECTED": "مرفوض"
+    }
+  },
+  "biometricDevices": {
+    "title": "أجهزة البصمة",
+    "description": "إدارة أجهزة البصمة البيومترية المتصلة بالنظام",
+    "addDevice": "إضافة جهاز",
+    "stats": {
+      "total": "إجمالي الأجهزة",
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "table": {
+      "name": "الاسم",
+      "serialNumber": "الرقم التسلسلي",
+      "location": "الموقع",
+      "model": "الموديل",
+      "lastSync": "آخر مزامنة",
+      "status": "الحالة"
+    },
+    "empty": {
+      "title": "لا توجد أجهزة بصمة",
+      "description": "أضف جهاز بصمة جديد للبدء"
+    },
+    "form": {
+      "nameAr": "الاسم بالعربي",
+      "nameEn": "الاسم بالإنجليزي",
+      "serialNumber": "الرقم التسلسلي",
+      "location": "الموقع",
+      "ipAddress": "عنوان IP",
+      "model": "الموديل",
+      "isActive": "تفعيل الجهاز",
+      "nameArPlaceholder": "جهاز المدخل الرئيسي",
+      "nameEnPlaceholder": "Main Entrance Device",
+      "serialNumberPlaceholder": "SN-001",
+      "locationPlaceholder": "المدخل الرئيسي",
+      "modelPlaceholder": "ZKTeco F22"
+    },
+    "dialog": {
+      "addTitle": "إضافة جهاز بصمة",
+      "editTitle": "تعديل الجهاز",
+      "save": "حفظ التعديلات",
+      "add": "إضافة"
+    },
+    "delete": {
+      "title": "حذف الجهاز",
+      "description": "هل أنت متأكد من حذف الجهاز \"{name}\"؟ سيتم حذف جميع البيانات المرتبطة به."
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    }
+  },
+  "auditLogs": {
+    "title": "سجلات التدقيق",
+    "description": "متابعة جميع العمليات والأنشطة في النظام",
+    "refresh": "تحديث",
+    "filters": {
+      "from": "من تاريخ",
+      "to": "إلى تاريخ",
+      "resource": "المورد",
+      "all": "الكل",
+      "filter": "تصفية",
+      "clear": "مسح الفلتر"
+    },
+    "totalRecords": "إجمالي السجلات",
+    "table": {
+      "user": "المستخدم",
+      "method": "الطريقة",
+      "description": "الوصف",
+      "path": "المسار",
+      "resource": "المورد",
+      "ip": "IP",
+      "date": "التاريخ"
+    },
+    "empty": "لا توجد سجلات"
+  },
+  "reports": {
+    "exportCsv": "تصدير CSV",
+    "noData": "لا توجد بيانات",
+    "months": ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],
+    "hr": {
+      "title": "تقارير الموارد البشرية",
+      "description": "إحصائيات وتحليلات الموارد البشرية",
+      "gender": { "MALE": "ذكر", "FEMALE": "أنثى" },
+      "contractType": { "FULL_TIME": "دوام كامل", "PART_TIME": "دوام جزئي", "CONTRACT": "عقد", "TEMPORARY": "مؤقت" },
+      "employees": {
+        "title": "توزيع الموظفين",
+        "total": "إجمالي الموظفين",
+        "byGender": "حسب الجنس",
+        "byContract": "حسب نوع العقد",
+        "byDepartment": "توزيع حسب الأقسام",
+        "count": "عدد الموظفين"
+      },
+      "turnover": {
+        "title": "الدوران الوظيفي",
+        "hired": "تعيينات",
+        "terminated": "إنهاءات"
+      },
+      "salaries": {
+        "title": "الرواتب حسب القسم",
+        "department": "القسم",
+        "employees": "الموظفون",
+        "total": "إجمالي الرواتب",
+        "avg": "متوسط",
+        "min": "الأدنى",
+        "max": "الأعلى"
+      },
+      "expiry": {
+        "title": "العقود القريبة من الانتهاء (خلال 90 يوماً)",
+        "noData": "لا توجد عقود منتهية خلال 90 يوماً",
+        "employee": "الموظف",
+        "department": "القسم",
+        "contractType": "نوع العقد",
+        "endDate": "تاريخ الانتهاء",
+        "daysRemaining": "الأيام المتبقية",
+        "daysUnit": "{count} يوم"
+      }
+    },
+    "leave": {
+      "title": "تقارير الإجازات",
+      "description": "إحصائيات وتحليلات طلبات الإجازات",
+      "status": {
+        "APPROVED": "موافق عليه",
+        "PENDING": "معلق",
+        "REJECTED": "مرفوض",
+        "CANCELLED": "ملغى",
+        "PENDING_APPROVAL": "بانتظار الموافقة"
+      },
+      "summary": {
+        "title": "ملخص طلبات الإجازة",
+        "totalDays": "{count} يوم إجمالي",
+        "pendingTitle": "الطلبات المعلقة ({count})",
+        "leaveType": "نوع الإجازة",
+        "from": "من",
+        "to": "إلى",
+        "days": "الأيام"
+      },
+      "distribution": {
+        "title": "توزيع الإجازات",
+        "byType": "حسب نوع الإجازة",
+        "monthly": "التوزيع الشهري",
+        "requestsKey": "طلبات",
+        "daysKey": "أيام",
+        "requestUnit": "طلب"
+      },
+      "balances": {
+        "title": "رصيد الإجازات",
+        "employees": "{count} موظف",
+        "avgRemaining": "متوسط متبقي: {count} يوم",
+        "details": "التفاصيل",
+        "records": "({count} سجل)",
+        "searchPlaceholder": "بحث بنوع الإجازة...",
+        "leaveType": "نوع الإجازة",
+        "totalDays": "الإجمالي",
+        "used": "المستخدم",
+        "remaining": "المتبقي",
+        "consumption": "الاستهلاك"
+      }
+    },
+    "attendance": {
+      "title": "تقارير الحضور",
+      "description": "إحصائيات وتحليلات الحضور والغياب",
+      "allMonths": "كل الأشهر",
+      "noData": "لا توجد بيانات",
+      "tabs": {
+        "absences": "الأكثر غياباً",
+        "overtime": "الأوفرتايم",
+        "daily": "التقرير اليومي",
+        "monthly": "التقرير الشهري"
+      },
+      "absences": {
+        "title": "الموظفون الأكثر غياباً وتأخراً (أعلى 10)",
+        "absenceKey": "غياب",
+        "lateKey": "تأخر",
+        "employee": "الموظف",
+        "absenceDays": "أيام الغياب",
+        "lateCount": "مرات التأخر",
+        "lateHours": "ساعات التأخر",
+        "daysUnit": "{count} يوم",
+        "timesUnit": "{count} مرة",
+        "hoursUnit": "{count} س"
+      },
+      "overtime": {
+        "title": "تقرير الأوفرتايم",
+        "totalHoursLabel": "إجمالي ساعات الأوفرتايم",
+        "employeeCountLabel": "موظف لديه أوفرتايم",
+        "employee": "الموظف",
+        "overtimeDays": "أيام الأوفرتايم",
+        "totalHours": "إجمالي الساعات",
+        "daysUnit": "{count} يوم",
+        "hoursUnit": "{count} س"
+      },
+      "daily": {
+        "title": "التقرير اليومي",
+        "noData": "لا توجد بيانات لهذا اليوم"
+      },
+      "monthly": {
+        "title": "التقرير الشهري",
+        "noData": "لا توجد بيانات"
+      }
+    },
+    "evaluation": {
+      "title": "تقارير التقييم",
+      "description": "إحصائيات وتحليلات نتائج التقييمات",
+      "allPeriods": "كل الفترات",
+      "noData": "لا توجد بيانات",
+      "recommendation": {
+        "SALARY_INCREASE": "زيادة راتب",
+        "PROMOTION": "ترقية",
+        "TRAINING": "تدريب",
+        "WARNING": "إنذار",
+        "TERMINATION": "إنهاء خدمة",
+        "NO_ACTION": "لا إجراء"
+      },
+      "tabs": {
+        "grades": "توزيع الدرجات",
+        "departments": "مقارنة الأقسام",
+        "recommendations": "التوصيات"
+      },
+      "grades": {
+        "title": "توزيع الدرجات النهائية",
+        "totalForms": "إجمالي النماذج",
+        "completed": "مكتمل",
+        "avgScore": "متوسط الدرجات",
+        "pieTitle": "توزيع التقييمات",
+        "barTitle": "عدد الموظفين لكل درجة",
+        "grade": "التقدير",
+        "count": "عدد الموظفين",
+        "percentage": "النسبة",
+        "countKey": "عدد الموظفين"
+      },
+      "departments": {
+        "title": "مقارنة أداء الأقسام",
+        "chartTitle": "متوسط الدرجات بالقسم",
+        "avgScoreKey": "متوسط الدرجة",
+        "topScoreKey": "أعلى درجة",
+        "department": "القسم",
+        "totalForms": "إجمالي النماذج",
+        "completed": "مكتمل",
+        "avgScore": "متوسط الدرجة",
+        "topScore": "أعلى درجة"
+      },
+      "recommendations": {
+        "title": "توصيات الموارد البشرية",
+        "countKey": "عدد",
+        "employee": "الموظف",
+        "finalScore": "الدرجة النهائية",
+        "hrRecommendation": "توصية الموارد البشرية",
+        "gmDecision": "قرار المدير العام",
+        "gmApproved": "موافق",
+        "gmRejected": "مرفوض"
+      }
     }
   }
 }

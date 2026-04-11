@@ -945,6 +945,227 @@
       "completed": "Completed"
     }
   },
+  "evaluationForms": {
+    "statuses": {
+      "DRAFT": "Draft",
+      "SELF_EVALUATION": "Self Evaluation",
+      "PENDING_SELF": "Pending Self Evaluation",
+      "SELF_SUBMITTED": "Self Evaluation Submitted",
+      "MANAGER_EVALUATION": "Manager Evaluation",
+      "MANAGER_SUBMITTED": "Manager Evaluation Submitted",
+      "HR_REVIEW": "HR Review",
+      "GM_APPROVAL": "GM Approval",
+      "COMPLETED": "Completed",
+      "NOT_STARTED": "Not Started",
+      "IN_PROGRESS": "In Progress",
+      "SUBMITTED": "Submitted",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "detail": {
+      "title": "Evaluation Form Details",
+      "description": "View and manage the evaluation form",
+      "notFound": "Form not found",
+      "employee": "Employee",
+      "period": "Period",
+      "finalScore": "Final Score",
+      "status": "Status",
+      "tabs": {
+        "overview": "Overview",
+        "self": "Self Evaluation",
+        "manager": "Manager Evaluation",
+        "goals": "Goals",
+        "peers": "Peer Evaluations",
+        "hr": "HR Review",
+        "gm": "GM Approval"
+      },
+      "overview": {
+        "scoresSummary": "Scores Summary",
+        "selfScore": "Self Evaluation Score",
+        "managerScore": "Manager Evaluation Score",
+        "finalScore": "Final Score",
+        "criteriaDetails": "Criteria Details",
+        "noCriteria": "No criteria",
+        "selfPrefix": "Self:",
+        "managerPrefix": "Manager:",
+        "selfCommentsTitle": "Self Evaluation Comments",
+        "managerCommentsTitle": "Manager Evaluation Comments",
+        "generalComments": "General Comments:",
+        "strengths": "Strengths:",
+        "weaknesses": "Weaknesses:",
+        "recommendations": "Recommendations:",
+        "hrReviewTitle": "HR Review",
+        "hrRecommendation": "Recommendation:",
+        "gmDecisionTitle": "GM Decision",
+        "gmStatusLabel": "Status:",
+        "gmApproved": "Approved",
+        "gmRejected": "Rejected"
+      }
+    },
+    "selfEval": {
+      "title": "Self Evaluation",
+      "description": "Evaluate your performance based on the following criteria",
+      "weight": "Weight",
+      "maxScore": "Max Score",
+      "score": "Score",
+      "notes": "Notes",
+      "notesPlaceholder": "Add your notes here...",
+      "generalNotes": "General Notes",
+      "generalNotesPlaceholder": "Add your general notes on your performance...",
+      "total": "Total Score",
+      "saveDraft": "Save Draft",
+      "submit": "Submit Evaluation",
+      "noEditOther": "You cannot edit another employee's self evaluation",
+      "submitted": "Self evaluation has been submitted and cannot be edited"
+    },
+    "managerEval": {
+      "title": "Manager Evaluation",
+      "description": "Evaluate the employee's performance based on the following criteria",
+      "selfSummaryTitle": "Employee's Self Evaluation",
+      "selfTotal": "Total Score",
+      "employeeNotes": "Employee Notes:",
+      "selfPrefix": "Self:",
+      "weight": "Weight",
+      "maxScore": "Max Score",
+      "score": "Score",
+      "notes": "Notes",
+      "notesPlaceholder": "Add your notes here...",
+      "generalNotes": "General Comments",
+      "generalNotesPlaceholder": "Add your general comments...",
+      "strengths": "Strengths",
+      "strengthsPlaceholder": "List the employee's main strengths...",
+      "weaknesses": "Weaknesses",
+      "weaknessesPlaceholder": "List weaknesses that need improvement...",
+      "recommendations": "Recommendations",
+      "recommendationsPlaceholder": "What are your recommendations for employee development?",
+      "total": "Total Score",
+      "saveDraft": "Save Draft",
+      "submit": "Submit Evaluation",
+      "submitted": "Manager evaluation submitted and cannot be edited",
+      "waitSelf": "Employee must submit self evaluation first"
+    },
+    "hrReview": {
+      "title": "HR Review",
+      "description": "Review the evaluation and provide recommendations",
+      "selfEvalBox": "Self Evaluation",
+      "managerEvalBox": "Manager Evaluation",
+      "managerSummary": "Manager Evaluation Summary",
+      "strengths": "Strengths:",
+      "weaknesses": "Weaknesses:",
+      "managerRecs": "Manager Recommendations:",
+      "recommendation": "Recommendation",
+      "recommendationPlaceholder": "Select recommendation",
+      "hrNotes": "HR Notes",
+      "hrNotesPlaceholder": "Add your notes and review of the evaluation...",
+      "submitReview": "Submit Review",
+      "reviewSubmitted": "HR review has been submitted",
+      "waitManager": "Manager must submit evaluation first",
+      "currentReview": "Current Review",
+      "recOptions": {
+        "NO_ACTION": "No Action",
+        "SALARY_INCREASE": "Salary Increase",
+        "PROMOTION": "Promotion",
+        "TRAINING": "Training",
+        "WARNING": "Warning",
+        "TERMINATION": "Termination"
+      }
+    },
+    "gmApproval": {
+      "title": "GM Approval",
+      "description": "Final approval of the evaluation form",
+      "selfEvalBox": "Self Evaluation",
+      "managerEvalBox": "Manager Evaluation",
+      "finalScoreBox": "Final Score",
+      "managerSummary": "Manager Evaluation Summary",
+      "strengths": "Strengths:",
+      "weaknesses": "Weaknesses:",
+      "recommendations": "Recommendations:",
+      "hrReviewBox": "HR Review",
+      "decision": "Decision",
+      "approve": "Approve",
+      "approveDesc": "Approve the evaluation",
+      "reject": "Reject",
+      "rejectDesc": "Reject the evaluation",
+      "gmNotes": "GM Notes (optional)",
+      "gmNotesPlaceholder": "Add your notes or comments on the decision...",
+      "submitDecision": "Submit Decision",
+      "decisionSubmitted": "GM decision submitted and evaluation closed",
+      "waitHr": "Waiting for HR review first",
+      "cantEdit": "This form cannot be edited",
+      "currentDecision": "Decision:",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "goals": {
+      "title": "Employee Goals",
+      "description": "Manage goals and track achievements",
+      "addGoal": "Add Goal",
+      "addGoalTitle": "Add New Goal",
+      "addGoalDesc": "Add a new goal for the employee in this period",
+      "goalTitle": "Goal Title *",
+      "goalTitlePlaceholder": "Example: Increase productivity by 20%",
+      "goalDescription": "Description",
+      "descPlaceholder": "Detailed description of the goal...",
+      "targetDate": "Target Achievement Date *",
+      "weight": "Weight *",
+      "empty": "No goals",
+      "emptyDesc": "Add goals for this employee",
+      "table": {
+        "goal": "Goal",
+        "description": "Description",
+        "targetDate": "Target Date",
+        "weight": "Weight",
+        "selfAchievement": "Self Achievement",
+        "managerAchievement": "Manager Achievement",
+        "actions": "Actions"
+      },
+      "deleteTitle": "Delete Goal",
+      "deleteDesc": "Are you sure you want to delete this goal? This action cannot be undone.",
+      "updateTitle": "Update Achievement",
+      "updateDesc": "Update the achievement percentage and notes",
+      "selfAchievementPct": "Self Achievement (%)",
+      "achievementNotes": "Achievement Notes",
+      "achievementNotesPlaceholder": "Add your notes on the achievement..."
+    },
+    "peers": {
+      "title": "Peer Evaluations",
+      "description": "Employee evaluations from colleagues",
+      "addEvaluation": "Add Evaluation",
+      "addTitle": "Peer Evaluation",
+      "addDesc": "Submit your evaluation of your colleague's performance",
+      "rating": "Rating *",
+      "strengths": "Strengths",
+      "strengthsPlaceholder": "What are your colleague's strengths?",
+      "improvements": "Areas of Improvement",
+      "improvementsPlaceholder": "What areas can be improved?",
+      "generalNotes": "General Notes",
+      "generalNotesPlaceholder": "Add any additional notes...",
+      "anonymous": "Anonymous evaluation (your name won't appear)",
+      "submitEvaluation": "Submit Evaluation",
+      "anonymousLabel": "Anonymous",
+      "empty": "No peer evaluations",
+      "emptyDesc": "Add an evaluation for this employee",
+      "strengthsLabel": "Strengths:",
+      "improvementsLabel": "Areas of Improvement:",
+      "generalNotesLabel": "General Notes:",
+      "statsTitle": "Evaluation Statistics",
+      "totalEvaluations": "Total Evaluations",
+      "ratings": {
+        "EXCELLENT": "Excellent",
+        "VERY_GOOD": "Very Good",
+        "GOOD": "Good",
+        "FAIR": "Fair",
+        "POOR": "Poor"
+      }
+    }
+  },
+  "myEvaluations": {
+    "viewForm": "View Form",
+    "selfEvaluation": "Self Evaluation",
+    "managerEvaluation": "Manager Evaluation",
+    "hrReview": "HR Review",
+    "gmApproval": "GM Approval"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -1104,7 +1325,720 @@
       "interviewReady": "Mark as Interview Ready",
       "accept": "Accept",
       "reject": "Reject",
-      "hire": "Mark as Hired"
+      "ceoApprove": "CEO Approval"
+    }
+  },
+  "biometricReports": {
+    "title": "Biometric Reports",
+    "description": "Attendance and departure reports based on biometric device data",
+    "showReport": "Show Report",
+    "hint": "Select filters and click \"Show Report\" to view results",
+    "tabs": {
+      "lateness": "Lateness",
+      "absences": "Absences",
+      "temp-exits": "Temp Exits",
+      "monthly-payroll": "Payroll Sheet",
+      "employee-card": "Employee Card"
+    },
+    "filters": {
+      "from": "From Date",
+      "to": "To Date",
+      "department": "Department",
+      "allDepartments": "All Departments",
+      "year": "Year",
+      "month": "Month",
+      "employee": "Employee",
+      "selectEmployee": "Select employee"
+    },
+    "months": ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    "lateness": {
+      "lateEmployees": "Late Employees",
+      "totalInstances": "Total Late Instances",
+      "totalMinutes": "Total Late Minutes",
+      "noData": "No lateness data for this period",
+      "employee": "Employee",
+      "instances": "Late Instances",
+      "minutes": "Total Minutes",
+      "details": "Details",
+      "hide": "Hide",
+      "show": "Show",
+      "date": "Date",
+      "clockIn": "Clock-in Time",
+      "expected": "Expected Time",
+      "lateMinutes": "Minutes",
+      "times": "{count} times",
+      "minutesUnit": "{count} min"
+    },
+    "absences": {
+      "absentEmployees": "Absent Employees",
+      "totalDays": "Total Absence Days",
+      "noData": "No absence data for this period",
+      "employee": "Employee",
+      "absenceDays": "Absence Days",
+      "dates": "Dates",
+      "days": "{count} days"
+    },
+    "tempExits": {
+      "employeesWithExits": "Employees with Temp Exits",
+      "totalExcess": "Total Excess Minutes",
+      "noData": "No temp exit data",
+      "employee": "Employee",
+      "exitCount": "Exit Count",
+      "breakMinutes": "Break Minutes",
+      "allowed": "Allowed",
+      "excess": "Excess",
+      "withinLimit": "Within Limit",
+      "minutesUnit": "{count} min"
+    },
+    "payroll": {
+      "employeeCount": "Employee Count",
+      "totalDeductions": "Total Deductions",
+      "netSalaries": "Net Salaries",
+      "noData": "No payroll data for this month",
+      "employee": "Employee",
+      "baseSalary": "Base Salary",
+      "deductions": "Deductions",
+      "net": "Net",
+      "status": "Status",
+      "statuses": {
+        "DRAFT": "Draft",
+        "CONFIRMED": "Confirmed",
+        "EXPORTED": "Exported"
+      }
+    },
+    "employeeCard": {
+      "title": "Monthly Employee Card",
+      "noData": "No data available",
+      "workingDays": "Scheduled Working Days",
+      "presentDays": "Present Days",
+      "absentDays": "Absent Days",
+      "lateDays": "Late Days",
+      "totalLateMinutes": "Total Late Minutes",
+      "breakMinutes": "Break Minutes",
+      "netWorkedMinutes": "Net Worked Hours",
+      "attendanceRate": "Attendance Rate",
+      "present": "Present",
+      "absent": "Absent",
+      "dayUnit": "{count} days",
+      "minuteUnit": "{count} min",
+      "breakUnit": "{actual} / {allowed} min"
+    }
+  },
+  "deductionPolicies": {
+    "title": "Deduction Policies",
+    "description": "Define rules for deducting lateness, absences, and breaks from salaries",
+    "createPolicy": "Create Policy",
+    "default": "Default",
+    "disabled": "Disabled",
+    "empty": {
+      "title": "No Deduction Policies",
+      "description": "Create a deduction policy to apply salary deduction rules"
+    },
+    "deductionType": {
+      "MINUTE_BY_MINUTE": "Minute by Minute",
+      "TIERED": "Tiered"
+    },
+    "card": {
+      "lateTolerance": "Late Tolerance",
+      "lateDeduction": "Late Deduction",
+      "absenceDeduction": "Absence Deduction",
+      "repeatPenalty": "Repeat Penalty",
+      "repeatPenaltyValue": "After {threshold} times → +{days} days",
+      "lateTiers": "Late Tiers:",
+      "dayPerDay": "{days} day/day",
+      "minutesUnit": "{count} min",
+      "edit": "Edit",
+      "setDefault": "Set as Default"
+    },
+    "form": {
+      "createTitle": "Create Deduction Policy",
+      "editTitle": "Edit Policy",
+      "nameAr": "Name in Arabic",
+      "nameEn": "Name in English",
+      "activate": "Active",
+      "default": "Default",
+      "lateSettings": "Lateness Settings",
+      "tolerance": "Tolerance (minutes)",
+      "deductionType": "Deduction Type",
+      "lateTiers": "Late Tiers (from – to minutes → deduction days)",
+      "earlyLeave": "Early Leave Settings",
+      "earlyLeaveTiers": "Early Leave Tiers",
+      "absenceDeduction": "Absence Deduction (days/day)",
+      "breakDeduction": "Break Over Limit Deduction",
+      "repeatThreshold": "Repeat Penalty (after how many times)",
+      "repeatThresholdPlaceholder": "Empty = no penalty",
+      "repeatPenaltyDays": "Extra Penalty Days",
+      "addTier": "Add Tier",
+      "minuteLabel": "min →",
+      "dayLabel": "day",
+      "create": "Create",
+      "save": "Save Changes"
+    },
+    "delete": {
+      "title": "Delete Policy",
+      "description": "Are you sure you want to delete the policy \"{name}\"?"
+    }
+  },
+  "onboarding": {
+    "templates": {
+      "title": "Onboarding & Offboarding Templates",
+      "description": "Manage task templates for employee onboarding and offboarding",
+      "newTemplate": "New Template",
+      "tabs": {
+        "ONBOARDING": "Employee Onboarding",
+        "OFFBOARDING": "Offboarding"
+      },
+      "default": "Default",
+      "tasks": "{count} tasks",
+      "moreTasks": "+{count} more tasks",
+      "empty": "No templates — create one to get started",
+      "form": {
+        "createTitle": "Create New Template — {type}",
+        "nameAr": "Template Name (Arabic)",
+        "nameArPlaceholder": "New Employee Onboarding Template",
+        "nameEn": "Template Name (English)",
+        "nameEnPlaceholder": "New Employee Onboarding",
+        "description": "Description",
+        "tasks": "Tasks ({count})",
+        "addTask": "Add Task",
+        "taskNumber": "Task {number}",
+        "taskTitle": "Task Title",
+        "taskTitlePlaceholder": "Deliver laptop",
+        "assignedTo": "Assigned To",
+        "daysFromStart": "Days from start",
+        "create": "Create Template"
+      },
+      "delete": {
+        "title": "Delete Template",
+        "description": "Are you sure you want to delete this template?"
+      }
+    },
+    "assignee": {
+      "HR": "Human Resources",
+      "IT": "Information Technology",
+      "MANAGER": "Direct Manager",
+      "EMPLOYEE": "Employee",
+      "OTHER": "Other"
+    },
+    "workflows": {
+      "title": "Onboarding & Offboarding Dashboard",
+      "description": "Track all employee onboarding and offboarding processes",
+      "filters": {
+        "allTypes": "All Types",
+        "allStatuses": "All Statuses",
+        "type": "Type",
+        "status": "Status"
+      },
+      "type": {
+        "ONBOARDING": "Employee Onboarding",
+        "OFFBOARDING": "Offboarding",
+        "ONBOARDING_SHORT": "Onboarding",
+        "OFFBOARDING_SHORT": "Offboarding"
+      },
+      "status": {
+        "IN_PROGRESS": "In Progress",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled"
+      },
+      "taskProgress": "{completed}/{total} tasks",
+      "startDate": "Start",
+      "targetDate": "Target",
+      "template": "Template",
+      "empty": "No processes match the current filters"
+    },
+    "workflowDetail": {
+      "progress": "Progress",
+      "completedOf": "{completed} of {total} tasks completed",
+      "startDate": "Start",
+      "targetDate": "Target",
+      "tasks": "Tasks",
+      "dueDate": "Due",
+      "update": "Update",
+      "cancelWorkflow": "Cancel Workflow",
+      "updateTaskTitle": "Update Task Status",
+      "newStatus": "New Status",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes...",
+      "save": "Save",
+      "cancelDialog": {
+        "title": "Cancel Workflow",
+        "description": "Are you sure you want to cancel this workflow? This action cannot be undone."
+      },
+      "taskStatus": {
+        "PENDING": "Pending",
+        "IN_PROGRESS": "In Progress",
+        "COMPLETED": "Completed",
+        "SKIPPED": "Skipped"
+      }
+    }
+  },
+  "probationEvaluations": {
+    "title": "Probation Evaluations",
+    "description": "Track evaluations of new employees during their probation period",
+    "newEvaluation": "New Evaluation",
+    "tabs": {
+      "pending": "Pending My Action",
+      "all": "All Evaluations"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "PENDING_SENIOR_MANAGER": "Pending Senior Manager",
+      "PENDING_HR": "Pending HR",
+      "PENDING_CEO": "Pending CEO",
+      "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "Pending Employee Acknowledgment",
+      "COMPLETED": "Completed",
+      "REJECTED_BY_SENIOR": "Rejected by Senior Manager",
+      "REJECTED_BY_HR": "Rejected by HR",
+      "REJECTED_BY_CEO": "Rejected by CEO"
+    },
+    "scores": {
+      "UNACCEPTABLE": "Unacceptable",
+      "ACCEPTABLE": "Acceptable",
+      "GOOD": "Good",
+      "VERY_GOOD": "Very Good",
+      "EXCELLENT": "Excellent"
+    },
+    "recommendations": {
+      "CONFIRM_POSITION": "Confirm in Current Position",
+      "EXTEND_PROBATION": "Extend Probation Period",
+      "TRANSFER_POSITION": "Transfer to Another Position",
+      "TERMINATE": "Terminate Contract"
+    },
+    "historyActions": {
+      "CREATE": "Evaluation Created",
+      "SUBMIT": "Submitted to Senior Manager",
+      "SENIOR_APPROVE": "Senior Manager Approved",
+      "SENIOR_REJECT": "Senior Manager Rejected",
+      "HR_DOCUMENT": "HR Documented",
+      "HR_REJECT": "HR Rejected",
+      "CEO_DECIDE": "CEO Decision",
+      "EMPLOYEE_ACKNOWLEDGE": "Employee Acknowledged"
+    },
+    "workflow": {
+      "DRAFT": "Draft",
+      "PENDING_SENIOR_MANAGER": "Senior Manager",
+      "PENDING_HR": "HR",
+      "PENDING_CEO": "CEO",
+      "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "Employee Ack.",
+      "COMPLETED": "Completed"
+    },
+    "table": {
+      "employee": "Employee",
+      "probationEnd": "Probation End",
+      "status": "Status",
+      "overallRating": "Overall Rating",
+      "recommendation": "Recommendation",
+      "open": "Open"
+    },
+    "recommendationShort": {
+      "CONFIRM_POSITION": "Confirm",
+      "EXTEND_PROBATION": "Extend",
+      "TRANSFER_POSITION": "Transfer",
+      "TERMINATE": "Terminate"
+    },
+    "empty": {
+      "pendingTitle": "No Evaluations Pending Your Action",
+      "pendingDescription": "Evaluations that require your action will appear here",
+      "allTitle": "No Evaluations",
+      "allDescription": "Create a new probation evaluation"
+    },
+    "form": {
+      "employee": "Employee",
+      "employeePlaceholder": "Select employee",
+      "hireDate": "Hire Date",
+      "probationEndDate": "Probation End Date",
+      "evaluationDate": "Evaluation Date",
+      "workAreasNote": "Work Areas",
+      "workAreasNotePlaceholder": "Worked in Sales and Marketing department",
+      "criteriaScoring": "Criteria Scoring",
+      "createDraft": "Create (Draft)",
+      "createTitle": "Create Probation Evaluation"
+    },
+    "detail": {
+      "hireDate": "Hire Date",
+      "probationEnd": "Probation End",
+      "evaluationDate": "Evaluation Date",
+      "workAreas": "Work Areas",
+      "criteriaResults": "Criteria Results",
+      "finalResult": "Final Result",
+      "overallRating": "Overall Rating",
+      "finalRecommendation": "Recommendation",
+      "employeeAcknowledged": "Employee acknowledged the evaluation",
+      "availableActions": "Available Actions",
+      "completed": "Evaluation completed — no further actions",
+      "historyLog": "Action History",
+      "defaultTitle": "Probation Evaluation"
+    },
+    "actions": {
+      "submit": "Submit to Senior Manager",
+      "approve": "Approve & Send to HR",
+      "reject": "Reject",
+      "document": "Document & Send to CEO",
+      "hrReject": "Reject",
+      "ceoDecide": "Make Final Decision",
+      "acknowledge": "Employee Acknowledgment",
+      "resubmit": "Resubmit After Revision",
+      "confirm": "Confirm"
+    },
+    "actionDialog": {
+      "submit": "Submit Evaluation",
+      "approve": "Senior Manager Approval",
+      "reject": "Reject Evaluation",
+      "document": "HR Documentation",
+      "hrReject": "Reject from HR",
+      "ceo": "CEO Decision",
+      "acknowledge": "Employee Acknowledgment",
+      "overallRating": "Overall Rating",
+      "recommendation": "Recommendation",
+      "notes": "Notes",
+      "notesOptional": "Notes (optional)",
+      "notesRequired": "Notes *",
+      "rejectionReason": "Reason for rejection...",
+      "notesPlaceholder": "Notes..."
+    }
+  },
+  "interviewPositions": {
+    "title": "Job Vacancies",
+    "description": "Manage vacancies, interview committees, and technical questions",
+    "addPosition": "Add Vacancy",
+    "empty": {
+      "title": "No Vacancies",
+      "description": "Add a new job vacancy to get started"
+    },
+    "status": {
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "SUSPENDED": "Suspended"
+    },
+    "workType": {
+      "FULL_TIME": "Full Time",
+      "PART_TIME": "Part Time"
+    },
+    "workMode": {
+      "ON_SITE": "On-site",
+      "REMOTE": "Remote",
+      "HYBRID": "Hybrid"
+    },
+    "card": {
+      "viewDetails": "View Details",
+      "edit": "Edit",
+      "close": "Close Vacancy",
+      "reopen": "Reopen",
+      "delete": "Delete",
+      "viewCandidates": "View Evaluations & Candidates",
+      "technicalQuestions": "{count} technical questions"
+    },
+    "form": {
+      "jobTitle": "Job Title",
+      "jobTitlePlaceholder": "Software Developer",
+      "department": "Department",
+      "departmentPlaceholder": "Information Technology",
+      "sector": "Sector",
+      "sectorPlaceholder": "Administrative",
+      "workType": "Work Type",
+      "workMode": "Work Mode",
+      "interviewDate": "Interview Date",
+      "committeeMembers": "Interview Committee Members",
+      "committeeMembersPlaceholder": "Ahmed Mohamed, Sara Khaled (separated by Arabic comma)",
+      "requiresLanguage": "Requires English Language Evaluation",
+      "requiresComputer": "Requires Computer Skills Evaluation"
+    },
+    "dialog": {
+      "addTitle": "Add Job Vacancy",
+      "editTitle": "Edit Vacancy",
+      "save": "Save",
+      "add": "Add"
+    },
+    "delete": {
+      "title": "Delete Vacancy",
+      "description": "Are you sure you want to delete the vacancy \"{title}\"?"
+    },
+    "detail": {
+      "workType": "Work Type",
+      "workMode": "Work Mode",
+      "interviewDate": "Interview Date",
+      "committee": "Interview Committee",
+      "technicalQuestions": "Technical Questions",
+      "noQuestions": "No technical questions — add one to get started",
+      "addQuestion": "Add Question",
+      "score": "{score} pts",
+      "comparison": "Candidates Comparison",
+      "showComparison": "Show Comparison",
+      "comparisonHint": "Click \"Show Comparison\" to load candidate data",
+      "noCandidates": "No evaluated candidates for this vacancy yet",
+      "totalCandidates": "Total Candidates",
+      "accepted": "Accepted",
+      "rank": "Rank",
+      "candidate": "Candidate",
+      "personal": "Personal (40)",
+      "technical": "Technical (40)",
+      "computer": "Computer (20)",
+      "total": "Total",
+      "decision": "Decision",
+      "addQuestionTitle": "Add Technical Question",
+      "questionText": "Question Text",
+      "questionPlaceholder": "What is the difference between REST and GraphQL?",
+      "maxScore": "Max Score",
+      "deleteQuestion": "Delete Question",
+      "deleteQuestionConfirm": "Are you sure you want to delete this question?"
+    },
+    "decisions": {
+      "ACCEPTED": "Accepted",
+      "REFERRED_TO_OTHER": "Referred to Another Vacancy",
+      "DEFERRED": "Deferred",
+      "REJECTED": "Rejected"
+    }
+  },
+  "biometricDevices": {
+    "title": "Biometric Devices",
+    "description": "Manage biometric devices connected to the system",
+    "addDevice": "Add Device",
+    "stats": {
+      "total": "Total Devices",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "name": "Name",
+      "serialNumber": "Serial Number",
+      "location": "Location",
+      "model": "Model",
+      "lastSync": "Last Sync",
+      "status": "Status"
+    },
+    "empty": {
+      "title": "No Biometric Devices",
+      "description": "Add a new biometric device to get started"
+    },
+    "form": {
+      "nameAr": "Name in Arabic",
+      "nameEn": "Name in English",
+      "serialNumber": "Serial Number",
+      "location": "Location",
+      "ipAddress": "IP Address",
+      "model": "Model",
+      "isActive": "Activate Device",
+      "nameArPlaceholder": "Main Entrance Device",
+      "nameEnPlaceholder": "Main Entrance Device",
+      "serialNumberPlaceholder": "SN-001",
+      "locationPlaceholder": "Main Entrance",
+      "modelPlaceholder": "ZKTeco F22"
+    },
+    "dialog": {
+      "addTitle": "Add Biometric Device",
+      "editTitle": "Edit Device",
+      "save": "Save Changes",
+      "add": "Add"
+    },
+    "delete": {
+      "title": "Delete Device",
+      "description": "Are you sure you want to delete the device \"{name}\"? All associated data will be deleted."
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "auditLogs": {
+    "title": "Audit Logs",
+    "description": "Track all operations and activities in the system",
+    "refresh": "Refresh",
+    "filters": {
+      "from": "From Date",
+      "to": "To Date",
+      "resource": "Resource",
+      "all": "All",
+      "filter": "Filter",
+      "clear": "Clear Filter"
+    },
+    "totalRecords": "Total Records",
+    "table": {
+      "user": "User",
+      "method": "Method",
+      "description": "Description",
+      "path": "Path",
+      "resource": "Resource",
+      "ip": "IP",
+      "date": "Date"
+    },
+    "empty": "No logs found"
+  },
+  "reports": {
+    "exportCsv": "Export CSV",
+    "noData": "No data",
+    "months": ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    "hr": {
+      "title": "HR Reports",
+      "description": "HR statistics and analytics",
+      "gender": { "MALE": "Male", "FEMALE": "Female" },
+      "contractType": { "FULL_TIME": "Full Time", "PART_TIME": "Part Time", "CONTRACT": "Contract", "TEMPORARY": "Temporary" },
+      "employees": {
+        "title": "Employee Distribution",
+        "total": "Total Employees",
+        "byGender": "By Gender",
+        "byContract": "By Contract Type",
+        "byDepartment": "Distribution by Department",
+        "count": "Employee Count"
+      },
+      "turnover": {
+        "title": "Staff Turnover",
+        "hired": "Hired",
+        "terminated": "Terminated"
+      },
+      "salaries": {
+        "title": "Salaries by Department",
+        "department": "Department",
+        "employees": "Employees",
+        "total": "Total Salaries",
+        "avg": "Average",
+        "min": "Min",
+        "max": "Max"
+      },
+      "expiry": {
+        "title": "Contracts Expiring Soon (within 90 days)",
+        "noData": "No contracts expiring within 90 days",
+        "employee": "Employee",
+        "department": "Department",
+        "contractType": "Contract Type",
+        "endDate": "End Date",
+        "daysRemaining": "Days Remaining",
+        "daysUnit": "{count} days"
+      }
+    },
+    "leave": {
+      "title": "Leave Reports",
+      "description": "Leave request statistics and analytics",
+      "status": {
+        "APPROVED": "Approved",
+        "PENDING": "Pending",
+        "REJECTED": "Rejected",
+        "CANCELLED": "Cancelled",
+        "PENDING_APPROVAL": "Pending Approval"
+      },
+      "summary": {
+        "title": "Leave Request Summary",
+        "totalDays": "{count} total days",
+        "pendingTitle": "Pending Requests ({count})",
+        "leaveType": "Leave Type",
+        "from": "From",
+        "to": "To",
+        "days": "Days"
+      },
+      "distribution": {
+        "title": "Leave Distribution",
+        "byType": "By Leave Type",
+        "monthly": "Monthly Distribution",
+        "requestsKey": "Requests",
+        "daysKey": "Days",
+        "requestUnit": "requests"
+      },
+      "balances": {
+        "title": "Leave Balances",
+        "employees": "{count} employees",
+        "avgRemaining": "Avg Remaining: {count} days",
+        "details": "Details",
+        "records": "({count} records)",
+        "searchPlaceholder": "Search by leave type...",
+        "leaveType": "Leave Type",
+        "totalDays": "Total",
+        "used": "Used",
+        "remaining": "Remaining",
+        "consumption": "Consumption"
+      }
+    },
+    "attendance": {
+      "title": "Attendance Reports",
+      "description": "Attendance statistics and analytics",
+      "allMonths": "All Months",
+      "noData": "No data",
+      "tabs": {
+        "absences": "Most Absent",
+        "overtime": "Overtime",
+        "daily": "Daily Report",
+        "monthly": "Monthly Report"
+      },
+      "absences": {
+        "title": "Most Absent & Late Employees (Top 10)",
+        "absenceKey": "Absence",
+        "lateKey": "Late",
+        "employee": "Employee",
+        "absenceDays": "Absence Days",
+        "lateCount": "Late Count",
+        "lateHours": "Late Hours",
+        "daysUnit": "{count} days",
+        "timesUnit": "{count} times",
+        "hoursUnit": "{count} h"
+      },
+      "overtime": {
+        "title": "Overtime Report",
+        "totalHoursLabel": "Total Overtime Hours",
+        "employeeCountLabel": "Employees with Overtime",
+        "employee": "Employee",
+        "overtimeDays": "Overtime Days",
+        "totalHours": "Total Hours",
+        "daysUnit": "{count} days",
+        "hoursUnit": "{count} h"
+      },
+      "daily": {
+        "title": "Daily Report",
+        "noData": "No data for this day"
+      },
+      "monthly": {
+        "title": "Monthly Report",
+        "noData": "No data"
+      }
+    },
+    "evaluation": {
+      "title": "Evaluation Reports",
+      "description": "Evaluation results statistics and analytics",
+      "allPeriods": "All Periods",
+      "noData": "No data",
+      "recommendation": {
+        "SALARY_INCREASE": "Salary Increase",
+        "PROMOTION": "Promotion",
+        "TRAINING": "Training",
+        "WARNING": "Warning",
+        "TERMINATION": "Termination",
+        "NO_ACTION": "No Action"
+      },
+      "tabs": {
+        "grades": "Grade Distribution",
+        "departments": "Department Comparison",
+        "recommendations": "Recommendations"
+      },
+      "grades": {
+        "title": "Final Grade Distribution",
+        "totalForms": "Total Forms",
+        "completed": "Completed",
+        "avgScore": "Average Score",
+        "pieTitle": "Evaluation Distribution",
+        "barTitle": "Employees per Grade",
+        "grade": "Grade",
+        "count": "Employee Count",
+        "percentage": "Percentage",
+        "countKey": "Count"
+      },
+      "departments": {
+        "title": "Department Performance Comparison",
+        "chartTitle": "Average Scores by Department",
+        "avgScoreKey": "Avg Score",
+        "topScoreKey": "Top Score",
+        "department": "Department",
+        "totalForms": "Total Forms",
+        "completed": "Completed",
+        "avgScore": "Avg Score",
+        "topScore": "Top Score"
+      },
+      "recommendations": {
+        "title": "HR Recommendations",
+        "countKey": "Count",
+        "employee": "Employee",
+        "finalScore": "Final Score",
+        "hrRecommendation": "HR Recommendation",
+        "gmDecision": "GM Decision",
+        "gmApproved": "Approved",
+        "gmRejected": "Rejected"
+      }
     }
   }
 }

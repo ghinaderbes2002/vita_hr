@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search, Shield, RefreshCw } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,9 @@ const RESOURCES = [
 ];
 
 export default function AuditLogsPage() {
+  const t = useTranslations("auditLogs");
+  const locale = useLocale();
+
   const [page, setPage] = useState(1);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -54,7 +58,7 @@ export default function AuditLogsPage() {
 
   const formatDate = (iso: string) => {
     try {
-      return new Intl.DateTimeFormat("ar", {
+      return new Intl.DateTimeFormat(locale, {
         year: "numeric", month: "short", day: "numeric",
         hour: "2-digit", minute: "2-digit",
       }).format(new Date(iso));
@@ -71,12 +75,12 @@ export default function AuditLogsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="سجلات التدقيق"
-        description="متابعة جميع العمليات والأنشطة في النظام"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 ml-2" />
-            تحديث
+            {t("refresh")}
           </Button>
         }
       />
@@ -84,7 +88,7 @@ export default function AuditLogsPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-end">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground">من تاريخ</label>
+          <label className="text-xs text-muted-foreground">{t("filters.from")}</label>
           <Input
             type="datetime-local"
             value={from}
@@ -93,7 +97,7 @@ export default function AuditLogsPage() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground">إلى تاريخ</label>
+          <label className="text-xs text-muted-foreground">{t("filters.to")}</label>
           <Input
             type="datetime-local"
             value={to}
@@ -102,13 +106,13 @@ export default function AuditLogsPage() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground">المورد</label>
+          <label className="text-xs text-muted-foreground">{t("filters.resource")}</label>
           <select
             value={resource}
             onChange={(e) => setResource(e.target.value)}
             className="h-10 rounded-md border border-input bg-background px-3 text-sm w-48"
           >
-            <option value="">الكل</option>
+            <option value="">{t("filters.all")}</option>
             {RESOURCES.map((r) => (
               <option key={r} value={r}>{r}</option>
             ))}
@@ -116,11 +120,11 @@ export default function AuditLogsPage() {
         </div>
         <Button onClick={handleFilter}>
           <Search className="h-4 w-4 ml-2" />
-          تصفية
+          {t("filters.filter")}
         </Button>
         {(from || to || resource) && (
           <Button variant="ghost" onClick={() => { setFrom(""); setTo(""); setResource(""); setPage(1); }}>
-            مسح الفلتر
+            {t("filters.clear")}
           </Button>
         )}
       </div>
@@ -129,7 +133,7 @@ export default function AuditLogsPage() {
       {!isLoading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Shield className="h-4 w-4" />
-          <span>إجمالي السجلات: <strong className="text-foreground">{total}</strong></span>
+          <span>{t("totalRecords")}: <strong className="text-foreground">{total}</strong></span>
         </div>
       )}
 
@@ -139,27 +143,25 @@ export default function AuditLogsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>#</TableHead>
-              <TableHead>المستخدم</TableHead>
-              <TableHead>الطريقة</TableHead>
-              <TableHead>المسار</TableHead>
-              <TableHead>المورد</TableHead>
-              <TableHead>IP</TableHead>
-              <TableHead>التاريخ</TableHead>
+              <TableHead>{t("table.user")}</TableHead>
+              <TableHead>{t("table.method")}</TableHead>
+              <TableHead>{t("table.description")}</TableHead>
+              <TableHead>{t("table.date")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 5 }).map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                  لا توجد سجلات
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -172,13 +174,9 @@ export default function AuditLogsPage() {
                       {log.method}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs max-w-64 truncate" title={log.path}>
-                    {log.path}
+                  <TableCell className="text-sm max-w-md">
+                    {log.description || <span className="font-mono text-xs text-muted-foreground">{log.action}</span>}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">{log.resource}</Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{log.ip}</TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {formatDate(log.createdAt)}
                   </TableCell>

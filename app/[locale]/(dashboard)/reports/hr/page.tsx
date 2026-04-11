@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Download, Users, TrendingUp, Wallet, AlertTriangle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,16 +16,13 @@ import {
 } from "@/lib/hooks/use-hr-reports";
 import { downloadCsv } from "@/lib/api/reports";
 
-const MONTH_NAMES = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 const COLORS = ["#6366f1","#22c55e","#f59e0b","#ef4444","#8b5cf6","#14b8a6","#f97316","#ec4899"];
 
-const GENDER_LABELS: Record<string, string> = { MALE: "ذكر", FEMALE: "أنثى" };
-const CONTRACT_LABELS: Record<string, string> = {
-  FULL_TIME: "دوام كامل", PART_TIME: "دوام جزئي",
-  CONTRACT: "عقد", TEMPORARY: "مؤقت",
-};
-
 export default function HrReportsPage() {
+  const t = useTranslations("reports");
+  const tHr = useTranslations("reports.hr");
+  const months = t.raw("months") as string[];
+
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
@@ -38,8 +36,7 @@ export default function HrReportsPage() {
   const salList = (salaries as any[]) || [];
   const exp = expiry as any;
 
-  // Build turnover chart data
-  const turnoverData = MONTH_NAMES.map((name, i) => {
+  const turnoverData = months.map((name, i) => {
     const month = i + 1;
     const hired = (turn?.hired || []).find((h: any) => h.month === month)?.count || 0;
     const terminated = (turn?.terminated || []).find((t: any) => t.month === month)?.count || 0;
@@ -51,20 +48,20 @@ export default function HrReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">تقارير الموارد البشرية</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">إحصائيات وتحليلات الموارد البشرية</p>
+          <h1 className="text-2xl font-bold">{tHr("title")}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{tHr("description")}</p>
         </div>
       </div>
 
-      {/* ─── 1. توزيع الموظفين ─────────────────────────────── */}
+      {/* ─── 1. Employee Distribution ─────────────────────────────── */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
-          توزيع الموظفين
+          {tHr("employees.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
           onClick={() => downloadCsv("/reports/hr/employees-summary", "employees-summary")}>
-          <Download className="h-3.5 w-3.5" />تصدير CSV
+          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
         </Button>
       </div>
 
@@ -76,17 +73,17 @@ export default function HrReportsPage() {
           <Card>
             <CardContent className="p-6 flex flex-col items-center justify-center h-full gap-2">
               <p className="text-5xl font-bold text-primary">{sum.total || 0}</p>
-              <p className="text-muted-foreground text-sm">إجمالي الموظفين</p>
+              <p className="text-muted-foreground text-sm">{tHr("employees.total")}</p>
             </CardContent>
           </Card>
 
           {/* Gender */}
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">حسب الجنس</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{tHr("employees.byGender")}</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
-                  <Pie data={(sum.byGender || []).map((g: any) => ({ name: GENDER_LABELS[g.gender] || g.gender, value: g.count }))}
+                  <Pie data={(sum.byGender || []).map((g: any) => ({ name: tHr(`gender.${g.gender}`) || g.gender, value: g.count }))}
                     cx="50%" cy="50%" outerRadius={60} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
                     {(sum.byGender || []).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
@@ -98,11 +95,11 @@ export default function HrReportsPage() {
 
           {/* Contract */}
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">حسب نوع العقد</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{tHr("employees.byContract")}</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
-                  <Pie data={(sum.byContractType || []).map((c: any) => ({ name: CONTRACT_LABELS[c.contractType] || c.contractType, value: c.count }))}
+                  <Pie data={(sum.byContractType || []).map((c: any) => ({ name: tHr(`contractType.${c.contractType}`) || c.contractType, value: c.count }))}
                     cx="50%" cy="50%" outerRadius={60} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
                     {(sum.byContractType || []).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
@@ -115,7 +112,7 @@ export default function HrReportsPage() {
           {/* By Department */}
           {(sum.byDepartment || []).length > 0 && (
             <Card className="sm:col-span-3">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">توزيع حسب الأقسام</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">{tHr("employees.byDepartment")}</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={(sum.byDepartment || []).map((d: any) => ({ name: d.departmentAr, count: d.count }))} margin={{ top: 5, right: 10, left: 0, bottom: 60 }}>
@@ -123,7 +120,7 @@ export default function HrReportsPage() {
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" interval={0} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#6366f1" name="عدد الموظفين" radius={[4,4,0,0]} />
+                    <Bar dataKey="count" fill="#6366f1" name={tHr("employees.count")} radius={[4,4,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -132,11 +129,11 @@ export default function HrReportsPage() {
         </div>
       ) : null}
 
-      {/* ─── 2. الدوران الوظيفي ──────────────────────────────── */}
+      {/* ─── 2. Turnover ──────────────────────────────── */}
       <div className="flex items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />
-          الدوران الوظيفي
+          {tHr("turnover.title")}
         </h2>
         <div className="flex items-center gap-2">
           <select
@@ -150,7 +147,7 @@ export default function HrReportsPage() {
           </select>
           <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
             onClick={() => downloadCsv(`/reports/hr/turnover?year=${year}`, `turnover-${year}`)}>
-            <Download className="h-3.5 w-3.5" />تصدير CSV
+            <Download className="h-3.5 w-3.5" />{t("exportCsv")}
           </Button>
         </div>
       </div>
@@ -165,41 +162,41 @@ export default function HrReportsPage() {
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="hired" stroke="#22c55e" name="تعيينات" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="terminated" stroke="#ef4444" name="إنهاءات" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="hired" stroke="#22c55e" name={tHr("turnover.hired")} strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="terminated" stroke="#ef4444" name={tHr("turnover.terminated")} strokeWidth={2} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
 
-      {/* ─── 3. الرواتب ──────────────────────────────────────── */}
+      {/* ─── 3. Salaries ──────────────────────────────────────── */}
       <div className="flex items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Wallet className="h-5 w-5 text-primary" />
-          الرواتب حسب القسم
+          {tHr("salaries.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
           onClick={() => downloadCsv("/reports/hr/salaries", "salaries")}>
-          <Download className="h-3.5 w-3.5" />تصدير CSV
+          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
         </Button>
       </div>
 
       <Card>
         <CardContent className="p-0">
           {salariesLoading ? <Skeleton className="h-48 m-4" /> : salList.length === 0 ? (
-            <p className="text-center py-8 text-sm text-muted-foreground">لا توجد بيانات</p>
+            <p className="text-center py-8 text-sm text-muted-foreground">{t("noData")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-right font-medium">القسم</th>
-                    <th className="px-4 py-3 text-center font-medium">الموظفون</th>
-                    <th className="px-4 py-3 text-center font-medium">إجمالي الرواتب</th>
-                    <th className="px-4 py-3 text-center font-medium">متوسط</th>
-                    <th className="px-4 py-3 text-center font-medium">الأدنى</th>
-                    <th className="px-4 py-3 text-center font-medium">الأعلى</th>
+                    <th className="px-4 py-3 text-right font-medium">{tHr("salaries.department")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.employees")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.total")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.avg")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.min")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.max")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -220,32 +217,32 @@ export default function HrReportsPage() {
         </CardContent>
       </Card>
 
-      {/* ─── 4. العقود القريبة من الانتهاء ───────────────────── */}
+      {/* ─── 4. Expiry ───────────────────── */}
       <div className="flex items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-500" />
-          العقود القريبة من الانتهاء (خلال 90 يوماً)
+          {tHr("expiry.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
           onClick={() => downloadCsv("/reports/hr/expiry-dates?daysAhead=90", "expiry-dates")}>
-          <Download className="h-3.5 w-3.5" />تصدير CSV
+          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
         </Button>
       </div>
 
       <Card>
         <CardContent className="p-0">
           {expiryLoading ? <Skeleton className="h-48 m-4" /> : !exp?.items?.length ? (
-            <p className="text-center py-8 text-sm text-muted-foreground">لا توجد عقود منتهية خلال 90 يوماً</p>
+            <p className="text-center py-8 text-sm text-muted-foreground">{tHr("expiry.noData")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-right font-medium">الموظف</th>
-                    <th className="px-4 py-3 text-right font-medium">القسم</th>
-                    <th className="px-4 py-3 text-center font-medium">نوع العقد</th>
-                    <th className="px-4 py-3 text-center font-medium">تاريخ الانتهاء</th>
-                    <th className="px-4 py-3 text-center font-medium">الأيام المتبقية</th>
+                    <th className="px-4 py-3 text-right font-medium">{tHr("expiry.employee")}</th>
+                    <th className="px-4 py-3 text-right font-medium">{tHr("expiry.department")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("expiry.contractType")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("expiry.endDate")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("expiry.daysRemaining")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -260,12 +257,12 @@ export default function HrReportsPage() {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{item.departmentAr}</td>
                         <td className="px-4 py-3 text-center">
-                          <Badge variant="outline" className="text-xs">{CONTRACT_LABELS[item.contractType] || item.contractType}</Badge>
+                          <Badge variant="outline" className="text-xs">{tHr(`contractType.${item.contractType}`) || item.contractType}</Badge>
                         </td>
                         <td className="px-4 py-3 text-center text-muted-foreground">
-                          {new Date(item.contractEndDate).toLocaleDateString("ar-EG")}
+                          {new Date(item.contractEndDate).toLocaleDateString()}
                         </td>
-                        <td className={`px-4 py-3 text-center ${urgency}`}>{days} يوم</td>
+                        <td className={`px-4 py-3 text-center ${urgency}`}>{tHr("expiry.daysUnit", { count: days })}</td>
                       </tr>
                     );
                   })}

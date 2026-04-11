@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Clock, UserX, Coffee, Wallet, CreditCard,
   Search, ChevronDown, ChevronUp,
@@ -31,26 +32,25 @@ import { LatenessReport, AbsenceReport, TempExitReport, MonthlyPayrollReport, Em
 
 type TabKey = "lateness" | "absences" | "temp-exits" | "monthly-payroll" | "employee-card";
 
-const TABS: { key: TabKey; label: string; icon: any }[] = [
-  { key: "lateness", label: "التأخر", icon: Clock },
-  { key: "absences", label: "الغياب", icon: UserX },
-  { key: "temp-exits", label: "الخروج المؤقت", icon: Coffee },
-  { key: "monthly-payroll", label: "كشف الرواتب", icon: Wallet },
-  { key: "employee-card", label: "بطاقة الموظف", icon: CreditCard },
-];
+const TAB_ICONS: Record<TabKey, any> = {
+  "lateness": Clock,
+  "absences": UserX,
+  "temp-exits": Coffee,
+  "monthly-payroll": Wallet,
+  "employee-card": CreditCard,
+};
 
-const MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو",
-                 "يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const TAB_KEYS: TabKey[] = ["lateness", "absences", "temp-exits", "monthly-payroll", "employee-card"];
 
 function formatTime(iso?: string) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
 function formatMinutes(mins: number) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return `${h}س ${m}د`;
+  return `${h}h ${m}m`;
 }
 
 const today = new Date();
@@ -58,6 +58,9 @@ const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOStr
 const todayStr = today.toISOString().split("T")[0];
 
 export default function BiometricReportsPage() {
+  const t = useTranslations("biometricReports");
+  const tCommon = useTranslations("common");
+
   const [activeTab, setActiveTab] = useState<TabKey>("lateness");
   const [from, setFrom] = useState(firstOfMonth);
   const [to, setTo] = useState(todayStr);
@@ -85,11 +88,12 @@ export default function BiometricReportsPage() {
 
   const isLoading = latenessLoading || absencesLoading || tempExitsLoading || payrollLoading || cardLoading;
 
+  const months = t.raw("months") as string[];
+
   function toggleRow(id: string) {
     setExpandedRows((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   }
@@ -107,27 +111,24 @@ export default function BiometricReportsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="تقارير البصمة"
-        description="تقارير الحضور والانصراف المبنية على بيانات أجهزة البصمة"
-      />
+      <PageHeader title={t("title")} description={t("description")} />
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
+        {TAB_KEYS.map((key) => {
+          const Icon = TAB_ICONS[key];
           return (
             <button
-              key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
+              key={key}
+              onClick={() => handleTabChange(key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab.key
+                activeTab === key
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="h-4 w-4" />
-              {tab.label}
+              {t(`tabs.${key}`)}
             </button>
           );
         })}
@@ -140,21 +141,19 @@ export default function BiometricReportsPage() {
             {isDateBased ? (
               <>
                 <div className="space-y-1.5">
-                  <Label>من تاريخ</Label>
+                  <Label>{t("filters.from")}</Label>
                   <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>إلى تاريخ</Label>
+                  <Label>{t("filters.to")}</Label>
                   <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>القسم</Label>
+                  <Label>{t("filters.department")}</Label>
                   <Select value={departmentId} onValueChange={setDepartmentId}>
-                    <SelectTrigger className="w-44">
-                      <SelectValue placeholder="كل الأقسام" />
-                    </SelectTrigger>
+                    <SelectTrigger className="w-44"><SelectValue placeholder={t("filters.allDepartments")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">كل الأقسام</SelectItem>
+                      <SelectItem value="all">{t("filters.allDepartments")}</SelectItem>
                       {departments.map((d: any) => (
                         <SelectItem key={d.id} value={d.id}>{d.nameAr}</SelectItem>
                       ))}
@@ -165,24 +164,15 @@ export default function BiometricReportsPage() {
             ) : (
               <>
                 <div className="space-y-1.5">
-                  <Label>السنة</Label>
-                  <Input
-                    type="number"
-                    value={year}
-                    onChange={(e) => setYear(Number(e.target.value))}
-                    className="w-24"
-                    min={2020}
-                    max={2030}
-                  />
+                  <Label>{t("filters.year")}</Label>
+                  <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="w-24" min={2020} max={2030} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الشهر</Label>
+                  <Label>{t("filters.month")}</Label>
                   <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {MONTHS.map((name, i) => (
+                      {months.map((name, i) => (
                         <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -190,29 +180,23 @@ export default function BiometricReportsPage() {
                 </div>
                 {activeTab === "employee-card" ? (
                   <div className="space-y-1.5">
-                    <Label>الموظف *</Label>
+                    <Label>{t("filters.employee")} *</Label>
                     <Select value={employeeId} onValueChange={setEmployeeId}>
-                      <SelectTrigger className="w-52">
-                        <SelectValue placeholder="اختر موظف" />
-                      </SelectTrigger>
+                      <SelectTrigger className="w-52"><SelectValue placeholder={t("filters.selectEmployee")} /></SelectTrigger>
                       <SelectContent>
                         {employees.map((e: any) => (
-                          <SelectItem key={e.id} value={e.id}>
-                            {e.firstNameAr} {e.lastNameAr}
-                          </SelectItem>
+                          <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 ) : (
                   <div className="space-y-1.5">
-                    <Label>القسم</Label>
+                    <Label>{t("filters.department")}</Label>
                     <Select value={departmentId} onValueChange={setDepartmentId}>
-                      <SelectTrigger className="w-44">
-                        <SelectValue placeholder="كل الأقسام" />
-                      </SelectTrigger>
+                      <SelectTrigger className="w-44"><SelectValue placeholder={t("filters.allDepartments")} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">كل الأقسام</SelectItem>
+                        <SelectItem value="all">{t("filters.allDepartments")}</SelectItem>
                         {departments.map((d: any) => (
                           <SelectItem key={d.id} value={d.id}>{d.nameAr}</SelectItem>
                         ))}
@@ -224,7 +208,7 @@ export default function BiometricReportsPage() {
             )}
             <Button onClick={handleSearch} className="gap-2" disabled={activeTab === "employee-card" && !employeeId}>
               <Search className="h-4 w-4" />
-              عرض التقرير
+              {t("showReport")}
             </Button>
           </div>
         </CardContent>
@@ -232,9 +216,7 @@ export default function BiometricReportsPage() {
 
       {/* Results */}
       {!hasSearched ? (
-        <div className="text-center py-16 text-muted-foreground text-sm">
-          اختر الفلاتر واضغط "عرض التقرير" لعرض النتائج
-        </div>
+        <div className="text-center py-16 text-muted-foreground text-sm">{t("hint")}</div>
       ) : isLoading ? (
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -243,7 +225,7 @@ export default function BiometricReportsPage() {
         </Card>
       ) : (
         <>
-          {/* Lateness Report */}
+          {/* Lateness */}
           {activeTab === "lateness" && (() => {
             const data = (latenessData as LatenessReport[]) || [];
             const totalInstances = data.reduce((s, r) => s + r.totalLateInstances, 0);
@@ -252,98 +234,89 @@ export default function BiometricReportsPage() {
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">الموظفون المتأخرون</span>
+                    <span className="text-sm text-muted-foreground">{t("lateness.lateEmployees")}</span>
                     <span className="text-2xl font-bold">{data.length}</span>
                   </CardContent></Card>
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">إجمالي حالات التأخر</span>
+                    <span className="text-sm text-muted-foreground">{t("lateness.totalInstances")}</span>
                     <span className="text-2xl font-bold text-amber-600">{totalInstances}</span>
                   </CardContent></Card>
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">إجمالي دقائق التأخر</span>
-                    <span className="text-2xl font-bold text-red-600">{totalMinutes} د</span>
+                    <span className="text-sm text-muted-foreground">{t("lateness.totalMinutes")}</span>
+                    <span className="text-2xl font-bold text-red-600">{t("lateness.minutesUnit", { count: totalMinutes })}</span>
                   </CardContent></Card>
                 </div>
                 {data.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">لا توجد بيانات تأخر في هذه الفترة</div>
+                  <div className="text-center py-12 text-muted-foreground">{t("lateness.noData")}</div>
                 ) : (
-                  <Card>
-                    <CardContent className="p-0">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>الموظف</TableHead>
-                            <TableHead>مرات التأخر</TableHead>
-                            <TableHead>إجمالي الدقائق</TableHead>
-                            <TableHead>التفاصيل</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.map((row) => (
-                            <>
-                              <TableRow key={row.employeeId}>
-                                <TableCell className="font-medium">{row.employeeName}</TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className="text-amber-600 border-amber-300">
-                                    {row.totalLateInstances} مرة
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-red-600 font-medium">{row.totalLateMinutes} د</TableCell>
-                                <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="gap-1.5 h-7 text-xs"
-                                    onClick={() => toggleRow(row.employeeId)}
-                                  >
-                                    {expandedRows.has(row.employeeId) ? (
-                                      <><ChevronUp className="h-3 w-3" />إخفاء</>
-                                    ) : (
-                                      <><ChevronDown className="h-3 w-3" />عرض</>
-                                    )}
-                                  </Button>
+                  <Card><CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("lateness.employee")}</TableHead>
+                          <TableHead>{t("lateness.instances")}</TableHead>
+                          <TableHead>{t("lateness.minutes")}</TableHead>
+                          <TableHead>{t("lateness.details")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.map((row) => (
+                          <>
+                            <TableRow key={row.employeeId}>
+                              <TableCell className="font-medium">{row.employeeName}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-amber-600 border-amber-300">
+                                  {t("lateness.times", { count: row.totalLateInstances })}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-red-600 font-medium">{t("lateness.minutesUnit", { count: row.totalLateMinutes })}</TableCell>
+                              <TableCell>
+                                <Button variant="ghost" size="sm" className="gap-1.5 h-7 text-xs" onClick={() => toggleRow(row.employeeId)}>
+                                  {expandedRows.has(row.employeeId)
+                                    ? <><ChevronUp className="h-3 w-3" />{t("lateness.hide")}</>
+                                    : <><ChevronDown className="h-3 w-3" />{t("lateness.show")}</>}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                            {expandedRows.has(row.employeeId) && (
+                              <TableRow key={`${row.employeeId}-details`} className="bg-muted/30">
+                                <TableCell colSpan={4} className="p-0">
+                                  <div className="p-3">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>{t("lateness.date")}</TableHead>
+                                          <TableHead>{t("lateness.clockIn")}</TableHead>
+                                          <TableHead>{t("lateness.expected")}</TableHead>
+                                          <TableHead>{t("lateness.lateMinutes")}</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {row.records.map((rec) => (
+                                          <TableRow key={rec.date}>
+                                            <TableCell>{rec.date}</TableCell>
+                                            <TableCell>{formatTime(rec.clockInTime)}</TableCell>
+                                            <TableCell>{rec.expectedTime}</TableCell>
+                                            <TableCell className="text-amber-600 font-medium">{t("lateness.minutesUnit", { count: rec.lateMinutes })}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
                                 </TableCell>
                               </TableRow>
-                              {expandedRows.has(row.employeeId) && (
-                                <TableRow key={`${row.employeeId}-details`} className="bg-muted/30">
-                                  <TableCell colSpan={4} className="p-0">
-                                    <div className="p-3">
-                                      <Table>
-                                        <TableHeader>
-                                          <TableRow>
-                                            <TableHead>التاريخ</TableHead>
-                                            <TableHead>وقت الدخول</TableHead>
-                                            <TableHead>الوقت المتوقع</TableHead>
-                                            <TableHead>الدقائق</TableHead>
-                                          </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                          {row.records.map((rec) => (
-                                            <TableRow key={rec.date}>
-                                              <TableCell>{rec.date}</TableCell>
-                                              <TableCell>{formatTime(rec.clockInTime)}</TableCell>
-                                              <TableCell>{rec.expectedTime}</TableCell>
-                                              <TableCell className="text-amber-600 font-medium">{rec.lateMinutes} د</TableCell>
-                                            </TableRow>
-                                          ))}
-                                        </TableBody>
-                                      </Table>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                            )}
+                          </>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent></Card>
                 )}
               </div>
             );
           })()}
 
-          {/* Absences Report */}
+          {/* Absences */}
           {activeTab === "absences" && (() => {
             const data = (absencesData as AbsenceReport[]) || [];
             const totalDays = data.reduce((s, r) => s + r.totalAbsenceDays, 0);
@@ -351,56 +324,54 @@ export default function BiometricReportsPage() {
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">موظفون غائبون</span>
+                    <span className="text-sm text-muted-foreground">{t("absences.absentEmployees")}</span>
                     <span className="text-2xl font-bold">{data.length}</span>
                   </CardContent></Card>
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">إجمالي أيام الغياب</span>
+                    <span className="text-sm text-muted-foreground">{t("absences.totalDays")}</span>
                     <span className="text-2xl font-bold text-red-600">{totalDays}</span>
                   </CardContent></Card>
                 </div>
                 {data.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">لا توجد بيانات غياب في هذه الفترة</div>
+                  <div className="text-center py-12 text-muted-foreground">{t("absences.noData")}</div>
                 ) : (
-                  <Card>
-                    <CardContent className="p-0">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>الموظف</TableHead>
-                            <TableHead>أيام الغياب</TableHead>
-                            <TableHead>التواريخ</TableHead>
+                  <Card><CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("absences.employee")}</TableHead>
+                          <TableHead>{t("absences.absenceDays")}</TableHead>
+                          <TableHead>{t("absences.dates")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.map((row) => (
+                          <TableRow key={row.employeeId}>
+                            <TableCell className="font-medium">{row.employeeName}</TableCell>
+                            <TableCell>
+                              <Badge variant="destructive">{t("absences.days", { count: row.totalAbsenceDays })}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {row.dates.slice(0, 5).map((d) => (
+                                  <Badge key={d} variant="outline" className="text-xs">{d}</Badge>
+                                ))}
+                                {row.dates.length > 5 && (
+                                  <Badge variant="secondary" className="text-xs">+{row.dates.length - 5}</Badge>
+                                )}
+                              </div>
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.map((row) => (
-                            <TableRow key={row.employeeId}>
-                              <TableCell className="font-medium">{row.employeeName}</TableCell>
-                              <TableCell>
-                                <Badge variant="destructive">{row.totalAbsenceDays} يوم</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {row.dates.slice(0, 5).map((d) => (
-                                    <Badge key={d} variant="outline" className="text-xs">{d}</Badge>
-                                  ))}
-                                  {row.dates.length > 5 && (
-                                    <Badge variant="secondary" className="text-xs">+{row.dates.length - 5}</Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent></Card>
                 )}
               </div>
             );
           })()}
 
-          {/* Temp Exits Report */}
+          {/* Temp Exits */}
           {activeTab === "temp-exits" && (() => {
             const data = (tempExitsData as TempExitReport[]) || [];
             const totalExcess = data.reduce((s, r) => s + r.excessMinutes, 0);
@@ -408,55 +379,51 @@ export default function BiometricReportsPage() {
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">موظفون بخروج مؤقت</span>
+                    <span className="text-sm text-muted-foreground">{t("tempExits.employeesWithExits")}</span>
                     <span className="text-2xl font-bold">{data.length}</span>
                   </CardContent></Card>
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">إجمالي الدقائق الزائدة</span>
-                    <span className="text-2xl font-bold text-amber-600">{totalExcess} د</span>
+                    <span className="text-sm text-muted-foreground">{t("tempExits.totalExcess")}</span>
+                    <span className="text-2xl font-bold text-amber-600">{t("tempExits.minutesUnit", { count: totalExcess })}</span>
                   </CardContent></Card>
                 </div>
                 {data.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">لا توجد بيانات خروج مؤقت</div>
+                  <div className="text-center py-12 text-muted-foreground">{t("tempExits.noData")}</div>
                 ) : (
-                  <Card>
-                    <CardContent className="p-0">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>الموظف</TableHead>
-                            <TableHead>عدد الخروجات</TableHead>
-                            <TableHead>دقائق الاستراحة</TableHead>
-                            <TableHead>المسموح</TableHead>
-                            <TableHead>الزائد</TableHead>
+                  <Card><CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("tempExits.employee")}</TableHead>
+                          <TableHead>{t("tempExits.exitCount")}</TableHead>
+                          <TableHead>{t("tempExits.breakMinutes")}</TableHead>
+                          <TableHead>{t("tempExits.allowed")}</TableHead>
+                          <TableHead>{t("tempExits.excess")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.map((row) => (
+                          <TableRow key={row.employeeId}>
+                            <TableCell className="font-medium">{row.employeeName}</TableCell>
+                            <TableCell>{row.totalExits}</TableCell>
+                            <TableCell>{t("tempExits.minutesUnit", { count: row.totalBreakMinutes })}</TableCell>
+                            <TableCell>{t("tempExits.minutesUnit", { count: row.allowedBreakMinutes })}</TableCell>
+                            <TableCell>
+                              {row.excessMinutes > 0
+                                ? <Badge variant="destructive">{t("tempExits.minutesUnit", { count: row.excessMinutes })}</Badge>
+                                : <Badge variant="default" className="bg-green-600">{t("tempExits.withinLimit")}</Badge>}
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.map((row) => (
-                            <TableRow key={row.employeeId}>
-                              <TableCell className="font-medium">{row.employeeName}</TableCell>
-                              <TableCell>{row.totalExits}</TableCell>
-                              <TableCell>{row.totalBreakMinutes} د</TableCell>
-                              <TableCell>{row.allowedBreakMinutes} د</TableCell>
-                              <TableCell>
-                                {row.excessMinutes > 0 ? (
-                                  <Badge variant="destructive">{row.excessMinutes} د</Badge>
-                                ) : (
-                                  <Badge variant="default" className="bg-green-600">ضمن الحد</Badge>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent></Card>
                 )}
               </div>
             );
           })()}
 
-          {/* Monthly Payroll Report */}
+          {/* Monthly Payroll */}
           {activeTab === "monthly-payroll" && (() => {
             const data = (payrollData as MonthlyPayrollReport[]) || [];
             const totalNet = data.reduce((s, r) => s + r.netSalary, 0);
@@ -465,55 +432,51 @@ export default function BiometricReportsPage() {
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">عدد الموظفين</span>
+                    <span className="text-sm text-muted-foreground">{t("payroll.employeeCount")}</span>
                     <span className="text-2xl font-bold">{data.length}</span>
                   </CardContent></Card>
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">إجمالي الخصومات</span>
+                    <span className="text-sm text-muted-foreground">{t("payroll.totalDeductions")}</span>
                     <span className="text-2xl font-bold text-red-600">{totalDeductions.toLocaleString()}</span>
                   </CardContent></Card>
                   <Card><CardContent className="py-4 flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">صافي الرواتب</span>
+                    <span className="text-sm text-muted-foreground">{t("payroll.netSalaries")}</span>
                     <span className="text-2xl font-bold text-green-600">{totalNet.toLocaleString()}</span>
                   </CardContent></Card>
                 </div>
                 {data.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">لا توجد بيانات رواتب لهذا الشهر</div>
+                  <div className="text-center py-12 text-muted-foreground">{t("payroll.noData")}</div>
                 ) : (
-                  <Card>
-                    <CardContent className="p-0">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>الموظف</TableHead>
-                            <TableHead>الراتب الأساسي</TableHead>
-                            <TableHead>الخصومات</TableHead>
-                            <TableHead>الصافي</TableHead>
-                            <TableHead>الحالة</TableHead>
+                  <Card><CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("payroll.employee")}</TableHead>
+                          <TableHead>{t("payroll.baseSalary")}</TableHead>
+                          <TableHead>{t("payroll.deductions")}</TableHead>
+                          <TableHead>{t("payroll.net")}</TableHead>
+                          <TableHead>{t("payroll.status")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.map((row) => (
+                          <TableRow key={row.employeeId}>
+                            <TableCell className="font-medium">{row.employeeName}</TableCell>
+                            <TableCell>{Number(row.baseSalary).toLocaleString()}</TableCell>
+                            <TableCell className="text-red-600">
+                              {row.totalDeductions > 0 ? `-${Number(row.totalDeductions).toLocaleString()}` : "—"}
+                            </TableCell>
+                            <TableCell className="font-bold text-green-700">{Number(row.netSalary).toLocaleString()}</TableCell>
+                            <TableCell>
+                              <Badge variant={row.status === "CONFIRMED" ? "default" : "secondary"}>
+                                {t(`payroll.statuses.${row.status}`)}
+                              </Badge>
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.map((row) => (
-                            <TableRow key={row.employeeId}>
-                              <TableCell className="font-medium">{row.employeeName}</TableCell>
-                              <TableCell>{Number(row.baseSalary).toLocaleString()} ل.س</TableCell>
-                              <TableCell className="text-red-600">
-                                {row.totalDeductions > 0 ? `-${Number(row.totalDeductions).toLocaleString()}` : "—"}
-                              </TableCell>
-                              <TableCell className="font-bold text-green-700">
-                                {Number(row.netSalary).toLocaleString()} ل.س
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={row.status === "CONFIRMED" ? "default" : "secondary"}>
-                                  {{ DRAFT: "مسودة", CONFIRMED: "مؤكد", EXPORTED: "مُصدَّر" }[row.status]}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent></Card>
                 )}
               </div>
             );
@@ -522,7 +485,7 @@ export default function BiometricReportsPage() {
           {/* Employee Card */}
           {activeTab === "employee-card" && (() => {
             const card = cardData as EmployeeCardReport | undefined;
-            if (!card) return <div className="text-center py-12 text-muted-foreground">لا توجد بيانات</div>;
+            if (!card) return <div className="text-center py-12 text-muted-foreground">{t("employeeCard.noData")}</div>;
             const attendancePct = card.workingDays > 0
               ? Math.round((card.presentDays / card.workingDays) * 100)
               : 0;
@@ -530,9 +493,9 @@ export default function BiometricReportsPage() {
               <Card className="max-w-2xl">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>بطاقة الموظف الشهرية</span>
+                    <span>{t("employeeCard.title")}</span>
                     <span className="text-sm font-normal text-muted-foreground">
-                      {MONTHS[card.month - 1]} {card.year}
+                      {months[card.month - 1]} {card.year}
                     </span>
                   </CardTitle>
                   <p className="text-lg font-semibold">{card.employeeName}</p>
@@ -540,39 +503,32 @@ export default function BiometricReportsPage() {
                 <CardContent className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-2">
                     {[
-                      { label: "أيام العمل المقررة", value: `${card.workingDays} يوم`, color: "" },
-                      { label: "أيام الحضور", value: `${card.presentDays} يوم`, color: "text-green-600" },
-                      { label: "أيام الغياب", value: `${card.absentDays} يوم`, color: "text-red-600" },
-                      { label: "أيام التأخر", value: `${card.lateDays} يوم`, color: "text-amber-600" },
-                      { label: "إجمالي دقائق التأخر", value: `${card.totalLateMinutes} دقيقة`, color: "text-amber-600" },
-                      { label: "دقائق الاستراحة", value: `${card.totalBreakMinutes} / ${card.allowedBreakMinutes} د`, color: "" },
-                      { label: "صافي ساعات العمل", value: formatMinutes(card.netWorkedMinutes), color: "text-primary" },
+                      { key: "workingDays", value: t("employeeCard.dayUnit", { count: card.workingDays }), color: "" },
+                      { key: "presentDays", value: t("employeeCard.dayUnit", { count: card.presentDays }), color: "text-green-600" },
+                      { key: "absentDays", value: t("employeeCard.dayUnit", { count: card.absentDays }), color: "text-red-600" },
+                      { key: "lateDays", value: t("employeeCard.dayUnit", { count: card.lateDays }), color: "text-amber-600" },
+                      { key: "totalLateMinutes", value: t("employeeCard.minuteUnit", { count: card.totalLateMinutes }), color: "text-amber-600" },
+                      { key: "breakMinutes", value: t("employeeCard.breakUnit", { actual: card.totalBreakMinutes, allowed: card.allowedBreakMinutes }), color: "" },
+                      { key: "netWorkedMinutes", value: formatMinutes(card.netWorkedMinutes), color: "text-primary" },
                     ].map((item) => (
-                      <div key={item.label} className="flex items-center justify-between rounded-lg border p-3">
-                        <span className="text-sm text-muted-foreground">{item.label}</span>
+                      <div key={item.key} className="flex items-center justify-between rounded-lg border p-3">
+                        <span className="text-sm text-muted-foreground">{t(`employeeCard.${item.key}`)}</span>
                         <span className={`text-sm font-bold ${item.color}`}>{item.value}</span>
                       </div>
                     ))}
                   </div>
-                  {/* Attendance bar */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>نسبة الحضور</span>
+                      <span>{t("employeeCard.attendanceRate")}</span>
                       <span>{attendancePct}%</span>
                     </div>
                     <div className="h-3 rounded-full bg-muted overflow-hidden flex">
-                      <div
-                        className="h-full bg-green-500 transition-all"
-                        style={{ width: `${attendancePct}%` }}
-                      />
-                      <div
-                        className="h-full bg-red-400"
-                        style={{ width: `${100 - attendancePct}%` }}
-                      />
+                      <div className="h-full bg-green-500 transition-all" style={{ width: `${attendancePct}%` }} />
+                      <div className="h-full bg-red-400" style={{ width: `${100 - attendancePct}%` }} />
                     </div>
                     <div className="flex gap-4 text-xs">
-                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />حضور</span>
-                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" />غياب</span>
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />{t("employeeCard.present")}</span>
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" />{t("employeeCard.absent")}</span>
                     </div>
                   </div>
                 </CardContent>
