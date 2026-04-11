@@ -63,7 +63,7 @@ export default function DepartmentsPage() {
   // Merge grade mapping into department objects
   const allDepartmentsFlat: Department[] = useMemo(() => {
     return allDepartmentsRaw.map((dept) => {
-      const gradeId = deptGradeMap[dept.id];
+      const gradeId = deptGradeMap[dept.id] || dept.gradeId;
       if (!gradeId) return dept;
       const grade = allGrades.find((g) => g.id === gradeId);
       return grade ? { ...dept, gradeId, grade } : dept;
