@@ -211,7 +211,7 @@ export default function DeductionPoliciesPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t("card.repeatPenalty")}</span>
                     <span className="font-medium text-xs">
-                      {t("card.repeatPenaltyValue", { threshold: policy.repeatLateThreshold, days: policy.repeatLatePenaltyDays })}
+                      {t("card.repeatPenaltyValue", { threshold: policy.repeatLateThreshold ?? 0, days: policy.repeatLatePenaltyDays ?? 0 })}
                     </span>
                   </div>
                 )}
