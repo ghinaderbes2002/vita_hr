@@ -122,6 +122,7 @@ export function DepartmentDialog({ open, onOpenChange, department, onGradeMapped
         ...(data.code && { code: data.code }),
         ...(data.parentId && { parentId: data.parentId }),
         ...(data.managerId && { managerId: data.managerId }),
+        gradeId: data.gradeId || null,
       };
 
       if (isEdit) {
