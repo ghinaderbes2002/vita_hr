@@ -1,8 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { jobApplicationsApi, UpdateJobApplicationData } from "@/lib/api/job-applications";
+import {
+  jobApplicationsApi,
+  UpdateJobApplicationData,
+} from "@/lib/api/job-applications";
 import { toast } from "sonner";
 
-export function useJobApplications(params?: { status?: string; page?: number; limit?: number }) {
+export function useJobApplications(params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) {
   return useQuery({
     queryKey: ["job-applications", params],
     queryFn: () => jobApplicationsApi.getAll(params),
@@ -27,8 +34,13 @@ export function useJobApplication(id: string) {
 export function useUpdateJobApplication() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateJobApplicationData }) =>
-      jobApplicationsApi.update(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateJobApplicationData;
+    }) => jobApplicationsApi.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["job-applications"] });
       queryClient.invalidateQueries({ queryKey: ["job-applications-stats"] });
@@ -56,7 +68,11 @@ export function useApproveJobApplicationCEO() {
       if (error.response?.status === 403) {
         toast.error("ليس لديك صلاحية تنفيذ هذه العملية");
       } else {
-        toast.error(error.response?.data?.message || error.response?.data?.error?.message || "حدث خطأ");
+        toast.error(
+          error.response?.data?.message ||
+            error.response?.data?.error?.message ||
+            "حدث خطأ",
+        );
       }
     },
   });

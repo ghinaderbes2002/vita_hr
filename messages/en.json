@@ -1350,7 +1350,20 @@
       "employee": "Employee",
       "selectEmployee": "Select employee"
     },
-    "months": ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
     "lateness": {
       "lateEmployees": "Late Employees",
       "totalInstances": "Total Late Instances",
@@ -1866,12 +1879,30 @@
   "reports": {
     "exportCsv": "Export CSV",
     "noData": "No data",
-    "months": ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
     "hr": {
       "title": "HR Reports",
       "description": "HR statistics and analytics",
       "gender": { "MALE": "Male", "FEMALE": "Female" },
-      "contractType": { "FULL_TIME": "Full Time", "PART_TIME": "Part Time", "CONTRACT": "Contract", "TEMPORARY": "Temporary" },
+      "contractType": {
+        "FULL_TIME": "Full Time",
+        "PART_TIME": "Part Time",
+        "CONTRACT": "Contract",
+        "TEMPORARY": "Temporary"
+      },
       "employees": {
         "title": "Employee Distribution",
         "total": "Total Employees",

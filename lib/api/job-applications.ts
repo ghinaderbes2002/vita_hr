@@ -9,7 +9,11 @@ export interface UpdateJobApplicationData {
 }
 
 export const jobApplicationsApi = {
-  getAll: async (params?: { status?: string; page?: number; limit?: number }) => {
+  getAll: async (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) => {
     const response = await apiClient.get("/job-applications", { params });
     return response.data;
   },
@@ -31,7 +35,9 @@ export const jobApplicationsApi = {
 
   // موافقة المدير التنفيذي (ينقل الطلب إلى HIRED)
   ceoApprove: async (id: string) => {
-    const response = await apiClient.patch(`/job-applications/${id}/ceo-approve`);
+    const response = await apiClient.patch(
+      `/job-applications/${id}/ceo-approve`,
+    );
     return response.data.data;
   },
 };
