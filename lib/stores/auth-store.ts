@@ -105,7 +105,10 @@ export const useAuthStore = create<AuthState>()(
         }
         try {
           const response = await authApi.refresh(refreshToken);
-          set({ accessToken: response.accessToken });
+          set({
+            accessToken: response.accessToken,
+            ...(response.refreshToken && { refreshToken: response.refreshToken }),
+          });
 
           // Update the cookie with the new access token
           if (typeof document !== "undefined") {

@@ -9,6 +9,7 @@ interface LoginResponse {
 
 interface RefreshResponse {
   accessToken: string;
+  refreshToken?: string;
 }
 
 export const authApi = {
