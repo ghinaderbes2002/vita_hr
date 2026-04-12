@@ -122,16 +122,34 @@
   "dashboard": {
     "title": "لوحة التحكم",
     "welcomeMessage": "مرحباً {name}",
+    "viewAll": "عرض الكل",
     "stats": {
       "totalEmployees": "إجمالي الموظفين",
-      "onLeave": "في إجازة",
-      "pendingRequests": "طلبات معلقة",
-      "lateToday": "متأخرون اليوم"
+      "onLeave": "طلبات إجازة معلقة",
+      "pendingApplications": "طلبات توظيف معلقة",
+      "expiringContracts": "عقود تنتهي خلال 30 يوم"
     },
-    "leaveBalance": "رصيد الإجازات",
-    "recentActivity": "آخر النشاطات",
-    "pendingApprovals": "الموافقات المعلقة",
-    "employeesOnLeave": "الموظفون في إجازة"
+    "sections": {
+      "expiringContracts": "عقود تنتهي قريباً",
+      "noExpiring": "لا توجد عقود تنتهي خلال 30 يوماً",
+      "topAbsences": "الأكثر غياباً هذا الشهر",
+      "noAbsences": "لا توجد بيانات غياب لهذا الشهر",
+      "byDepartment": "توزيع الموظفين حسب القسم",
+      "days": "يوم",
+      "absenceDays": "غياب",
+      "lateTimes": "تأخر"
+    },
+    "quickActions": "إجراءات سريعة",
+    "actions": {
+      "employees": "الموظفون",
+      "leaves": "الإجازات",
+      "recruitment": "التوظيف",
+      "custodies": "العهد",
+      "newRequest": "طلب جديد",
+      "allRequests": "كل الطلبات",
+      "reports": "التقارير",
+      "attendance": "الحضور"
+    }
   },
   "employees": {
     "title": "الموظفون",

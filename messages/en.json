@@ -10,11 +10,33 @@
   "dashboard": {
     "title": "Dashboard",
     "welcomeMessage": "Welcome {name}",
+    "viewAll": "View All",
     "stats": {
       "totalEmployees": "Total Employees",
-      "onLeave": "On Leave",
-      "pendingRequests": "Pending Requests",
-      "lateToday": "Late Today"
+      "onLeave": "Pending Leave Requests",
+      "pendingApplications": "Pending Job Applications",
+      "expiringContracts": "Contracts Expiring in 30 Days"
+    },
+    "sections": {
+      "expiringContracts": "Expiring Contracts",
+      "noExpiring": "No contracts expiring in the next 30 days",
+      "topAbsences": "Top Absences This Month",
+      "noAbsences": "No absence data for this month",
+      "byDepartment": "Employees by Department",
+      "days": "days",
+      "absenceDays": "absent",
+      "lateTimes": "late"
+    },
+    "quickActions": "Quick Actions",
+    "actions": {
+      "employees": "Employees",
+      "leaves": "Leaves",
+      "recruitment": "Recruitment",
+      "custodies": "Custodies",
+      "newRequest": "New Request",
+      "allRequests": "All Requests",
+      "reports": "Reports",
+      "attendance": "Attendance"
     }
   },
   "nav": {
