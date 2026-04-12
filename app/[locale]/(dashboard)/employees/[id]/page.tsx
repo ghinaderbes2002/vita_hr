@@ -162,10 +162,15 @@ export default function EmployeeDetailsPage() {
     : null;
 
   const attachments: { id: string; fileUrl: string; fileName: string; createdAt: string }[] =
-    emp.attachments || [];
+    Array.isArray(emp.attachments) ? emp.attachments : emp.attachments?.items || emp.attachments?.data || [];
 
-  const trainingCertificates: TrainingCertificate[] = emp.trainingCertificates || [];
-  const allowances: EmployeeAllowance[] = emp.allowances || [];
+  const trainingCertificates: TrainingCertificate[] = Array.isArray(emp.trainingCertificates)
+    ? emp.trainingCertificates
+    : emp.trainingCertificates?.items || emp.trainingCertificates?.data || [];
+
+  const allowances: EmployeeAllowance[] = Array.isArray(emp.allowances)
+    ? emp.allowances
+    : emp.allowances?.items || emp.allowances?.data || [];
 
   const CONTRACT_TYPE_LABELS: Record<string, string> = {
     FIXED_TERM: "عقد محدد المدة",
