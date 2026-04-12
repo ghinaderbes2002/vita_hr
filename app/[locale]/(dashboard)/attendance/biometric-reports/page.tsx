@@ -59,7 +59,6 @@ const todayStr = today.toISOString().split("T")[0];
 
 export default function BiometricReportsPage() {
   const t = useTranslations("biometricReports");
-  const tCommon = useTranslations("common");
 
   const [activeTab, setActiveTab] = useState<TabKey>("lateness");
   const [from, setFrom] = useState(firstOfMonth);
@@ -227,7 +226,8 @@ export default function BiometricReportsPage() {
         <>
           {/* Lateness */}
           {activeTab === "lateness" && (() => {
-            const data = (latenessData as LatenessReport[]) || [];
+            const _ld = latenessData as any;
+            const data: LatenessReport[] = Array.isArray(_ld) ? _ld : _ld?.items || _ld?.data || [];
             const totalInstances = data.reduce((s, r) => s + r.totalLateInstances, 0);
             const totalMinutes = data.reduce((s, r) => s + r.totalLateMinutes, 0);
             return (
@@ -318,7 +318,8 @@ export default function BiometricReportsPage() {
 
           {/* Absences */}
           {activeTab === "absences" && (() => {
-            const data = (absencesData as AbsenceReport[]) || [];
+            const _ad = absencesData as any;
+            const data: AbsenceReport[] = Array.isArray(_ad) ? _ad : _ad?.items || _ad?.data || [];
             const totalDays = data.reduce((s, r) => s + r.totalAbsenceDays, 0);
             return (
               <div className="space-y-4">
@@ -373,7 +374,8 @@ export default function BiometricReportsPage() {
 
           {/* Temp Exits */}
           {activeTab === "temp-exits" && (() => {
-            const data = (tempExitsData as TempExitReport[]) || [];
+            const _td = tempExitsData as any;
+            const data: TempExitReport[] = Array.isArray(_td) ? _td : _td?.items || _td?.data || [];
             const totalExcess = data.reduce((s, r) => s + r.excessMinutes, 0);
             return (
               <div className="space-y-4">
@@ -425,7 +427,8 @@ export default function BiometricReportsPage() {
 
           {/* Monthly Payroll */}
           {activeTab === "monthly-payroll" && (() => {
-            const data = (payrollData as MonthlyPayrollReport[]) || [];
+            const _pd = payrollData as any;
+            const data: MonthlyPayrollReport[] = Array.isArray(_pd) ? _pd : _pd?.items || _pd?.data || [];
             const totalNet = data.reduce((s, r) => s + r.netSalary, 0);
             const totalDeductions = data.reduce((s, r) => s + r.totalDeductions, 0);
             return (

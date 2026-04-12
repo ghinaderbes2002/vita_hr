@@ -40,13 +40,13 @@ export function useAutoRefreshToken() {
       isRefreshingRef.current = true;
       try {
         await useAuthStore.getState().refreshAccessToken();
-        console.log('✅ Token auto-refreshed successfully');
-
-        // Schedule next refresh based on new token
-        scheduleNextRefresh();
+        // scheduleNextRefresh() is NOT called here intentionally:
+        // the effect re-runs automatically when accessToken changes,
+        // which schedules the next refresh — calling it here too would
+        // create duplicate timers.
       } catch (error) {
-        console.error('❌ Auto-refresh failed:', error);
-        // Don't redirect here, let the axios interceptor handle it
+        // Silent failure — user stays logged in with the current token.
+        // The axios interceptor will handle logout if an actual API call fails.
       } finally {
         isRefreshingRef.current = false;
       }

@@ -115,18 +115,9 @@ export const useAuthStore = create<AuthState>()(
             document.cookie = `wso-token=${response.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           }
         } catch (error) {
-          // Clear auth state on refresh failure
-          set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-            isAuthenticated: false,
-            permissions: [],
-          });
-          // Clear the cookie
-          if (typeof document !== "undefined") {
-            document.cookie = "wso-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-          }
+          // Don't clear auth state here — let the caller (interceptor) decide.
+          // Clearing isAuthenticated here would kick the user out even on
+          // transient network errors or failed proactive refreshes.
           throw error;
         }
       },
