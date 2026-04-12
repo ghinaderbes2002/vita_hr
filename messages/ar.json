@@ -1857,7 +1857,7 @@
   },
   "interviewPositions": {
     "title": "الشواغر الوظيفية",
-    "description": "إدارة الشواغر ولجان المقابلات والأسئلة التقنية",
+    "description": "إدارة الشواغر ولجان المقابلات والأسئلة الاختصاصية",
     "addPosition": "إضافة شاغر",
     "empty": {
       "title": "لا توجد شواغر",
@@ -1884,7 +1884,7 @@
       "reopen": "إعادة فتح",
       "delete": "حذف",
       "viewCandidates": "عرض التقييمات والمرشحين",
-      "technicalQuestions": "{count} سؤال تقني"
+      "technicalQuestions": "{count} سؤال اختصاصي"
     },
     "form": {
       "jobTitle": "المسمى الوظيفي",
@@ -1916,8 +1916,8 @@
       "workMode": "طريقة العمل",
       "interviewDate": "تاريخ المقابلة",
       "committee": "لجنة المقابلة",
-      "technicalQuestions": "الأسئلة التقنية",
-      "noQuestions": "لا توجد أسئلة تقنية — أضف سؤالاً للبدء",
+      "technicalQuestions": "الأسئلة الاختصاصية",
+      "noQuestions": "لا توجد أسئلة اختصاصية — أضف سؤالاً للبدء",
       "addQuestion": "إضافة سؤال",
       "score": "{score} درجة",
       "comparison": "مقارنة المرشحين",
@@ -1933,7 +1933,7 @@
       "computer": "حاسوبي (20)",
       "total": "المجموع",
       "decision": "القرار",
-      "addQuestionTitle": "إضافة سؤال تقني",
+      "addQuestionTitle": "إضافة سؤال اختصاصي",
       "questionText": "نص السؤال",
       "questionPlaceholder": "ما الفرق بين REST وGraphQL؟",
       "maxScore": "الدرجة القصوى",
