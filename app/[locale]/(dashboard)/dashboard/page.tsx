@@ -29,7 +29,7 @@ export default function DashboardPage() {
 
   const { data: summary, isLoading: summaryLoading } = useEmployeesSummary();
   const { data: employeesData, isLoading: employeesLoading } = useEmployees({ limit: 1 });
-  const { data: pendingLeaves, isLoading: leavesLoading } = useLeaveRequests({ status: "PENDING", limit: 1 });
+  const { data: pendingLeaves, isLoading: leavesLoading } = useLeaveRequests({ status: "PENDING_MANAGER", limit: 1 });
   const { data: jobStats, isLoading: jobStatsLoading } = useJobApplicationStats();
   const { data: expiryData, isLoading: expiryLoading } = useExpiryDatesReport(30);
   const { data: topAbsences, isLoading: absencesLoading } = useTopAbsencesReport({ year, month, limit: 5 });
