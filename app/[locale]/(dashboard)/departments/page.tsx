@@ -61,8 +61,11 @@ export default function DepartmentsPage() {
     : (gradesData as any)?.data?.items || (gradesData as any)?.data || [];
 
   // Merge grade mapping into department objects
+  // Priority: 1) grade already populated by API  2) localStorage map  3) dept.gradeId from API
   const allDepartmentsFlat: Department[] = useMemo(() => {
     return allDepartmentsRaw.map((dept) => {
+      // If the API already returned the grade object, use it directly
+      if (dept.grade) return dept;
       const gradeId = deptGradeMap[dept.id] || dept.gradeId;
       if (!gradeId) return dept;
       const grade = allGrades.find((g) => g.id === gradeId);
