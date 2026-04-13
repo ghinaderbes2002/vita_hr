@@ -7,7 +7,9 @@ export type AttendanceStatus =
   | "LATE"
   | "EARLY_LEAVE"
   | "HALF_DAY"
-  | "ON_LEAVE";
+  | "ON_LEAVE"
+  | "HOLIDAY"
+  | "WEEKEND";
 
 export interface AttendanceRecord {
   id: string;
@@ -67,6 +69,9 @@ export interface CreateAttendanceRecordData {
   lateMinutes?: number;
   earlyLeaveMinutes?: number;
   overtimeMinutes?: number;
+  isManualEntry?: boolean;
+  manualEntryBy?: string;
+  manualEntryReason?: string;
 }
 
 export interface UpdateAttendanceRecordData {

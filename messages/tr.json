@@ -457,6 +457,7 @@
     },
     "statuses": {
       "draft": "Taslak",
+      "pending": "Bekliyor",
       "pending_manager": "Yönetici Onayı Bekliyor",
       "manager_approved": "Yönetici Onayladı",
       "manager_rejected": "Yönetici Reddetti",
@@ -909,7 +910,14 @@
       "hrReview": "İK İncelemesi",
       "gmApproval": "Genel Müdür Onayı",
       "completed": "Tamamlandı"
-    }
+    },
+    "viewForm": "Formu Görüntüle",
+    "selfEvaluation": "Öz Değerlendirme",
+    "managerEvaluation": "Yönetici Değerlendirmesi",
+    "hrReviewTab": "İK İncelemesi",
+    "gmApprovalTab": "GM Onayı",
+    "maintenanceTitle": "Değerlendirme Hizmeti Bakımda",
+    "maintenanceDesc": "Şu anda değerlendirme sisteminde bazı teknik sorunları çözüyoruz. Geçici olarak öz değerlendirmenizi dolduramayabilir veya gönderemeyebilirsiniz. Verdiğimiz rahatsızlıktan dolayı özür dileriz."
   },
   "pendingReview": {
     "title": "İncelememi Bekleyen",

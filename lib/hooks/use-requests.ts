@@ -86,10 +86,12 @@ export function useManagerApproveRequest() {
       requestsApi.managerApprove(id, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
       toast.success("تمت الموافقة على الطلب");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      if (error.response?.status === 403) return toast.error("غير مخوّل للموافقة على هذا الطلب");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -104,7 +106,8 @@ export function useManagerRejectRequest() {
       toast.success("تم رفض الطلب");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      if (error.response?.status === 403) return toast.error("غير مخوّل لرفض هذا الطلب");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -116,10 +119,12 @@ export function useHrApproveRequest() {
       requestsApi.hrApprove(id, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
       toast.success("تمت الموافقة على الطلب من HR");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      if (error.response?.status === 403) return toast.error("غير مخوّل للموافقة على هذا الطلب");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -134,7 +139,8 @@ export function useHrRejectRequest() {
       toast.success("تم رفض الطلب من HR");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      if (error.response?.status === 403) return toast.error("غير مخوّل لرفض هذا الطلب");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -163,9 +169,12 @@ export function useApproveRequest() {
       requestsApi.approve(id, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
+      queryClient.invalidateQueries({ queryKey: ["request"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
       toast.success("تمت الموافقة على الطلب");
     },
     onError: (error: any) => {
+      if (error.response?.status === 403) return toast.error("غير مخوّل للموافقة على هذا الطلب");
       const code = error.response?.data?.error?.code || error.response?.data?.code;
       if (code === "AUTH_INSUFFICIENT_PERMISSIONS") return toast.error("غير مخوَّل للموافقة على هذه الخطوة");
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");

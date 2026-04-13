@@ -33,6 +33,7 @@ import {
 import {
   ProbationStatus, ProbationScore, ProbationRecommendation, WorkflowActionData,
 } from "@/lib/api/probation-evaluations";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                           "bg-gray-100 text-gray-600",
@@ -111,6 +112,12 @@ export default function ProbationEvaluationDetailPage() {
 
   const ev = evaluation as any;
   const hist = (history as any) || [];
+  const { hasRole, hasAnyPermission, isAdmin } = usePermissions();
+
+  // Frontend-only role guard (backend doesn't enforce permissions on these endpoints yet)
+  const canSeniorApprove = isAdmin() || hasRole("senior_manager") || hasRole("manager") || hasAnyPermission(["probation:approve", "probation:*"]);
+  const canHrDocument = isAdmin() || hasRole("hr") || hasRole("hr_manager") || hasAnyPermission(["probation:hr-document", "probation:*", "hr:*"]);
+  const canCeoDecide = isAdmin() || hasRole("ceo") || hasRole("general_manager") || hasAnyPermission(["probation:ceo-decide", "probation:*"]);
 
   if (isLoading) {
     return (
@@ -273,7 +280,7 @@ export default function ProbationEvaluationDetailPage() {
                   <Send className="h-4 w-4" />{t("actions.submit")}
                 </Button>
               )}
-              {ev.status === "PENDING_SENIOR_MANAGER" && (
+              {ev.status === "PENDING_SENIOR_MANAGER" && canSeniorApprove && (
                 <>
                   <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("approve")}>
                     <CheckCircle2 className="h-4 w-4" />{t("actions.approve")}
@@ -283,7 +290,7 @@ export default function ProbationEvaluationDetailPage() {
                   </Button>
                 </>
               )}
-              {ev.status === "PENDING_HR" && (
+              {ev.status === "PENDING_HR" && canHrDocument && (
                 <>
                   <Button className="gap-2 bg-purple-600 hover:bg-purple-700" onClick={() => openAction("document")}>
                     <FileCheck className="h-4 w-4" />{t("actions.document")}
@@ -293,7 +300,7 @@ export default function ProbationEvaluationDetailPage() {
                   </Button>
                 </>
               )}
-              {ev.status === "PENDING_CEO" && (
+              {ev.status === "PENDING_CEO" && canCeoDecide && (
                 <Button className="gap-2 bg-amber-600 hover:bg-amber-700" onClick={() => openAction("ceo")}>
                   <Gavel className="h-4 w-4" />{t("actions.ceoDecide")}
                 </Button>

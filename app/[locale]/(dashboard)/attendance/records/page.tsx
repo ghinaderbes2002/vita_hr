@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Search, MoreHorizontal, Trash2, Calendar, Clock } from "lucide-react";
+import { Search, MoreHorizontal, Trash2, Calendar, Clock, Plus, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,21 +19,64 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Pagination } from "@/components/shared/pagination";
-import { useAttendanceRecords, useDeleteAttendanceRecord } from "@/lib/hooks/use-attendance-records";
+import { useAttendanceRecords, useDeleteAttendanceRecord, useCreateAttendanceRecord } from "@/lib/hooks/use-attendance-records";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
-import { AttendanceRecord } from "@/lib/api/attendance-records";
+import { AttendanceRecord, AttendanceStatus } from "@/lib/api/attendance-records";
+import { useEmployees } from "@/lib/hooks/use-employees";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+
+const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
+  { value: "PRESENT", label: "حاضر" },
+  { value: "ABSENT", label: "غائب" },
+  { value: "LATE", label: "متأخر" },
+  { value: "EARLY_LEAVE", label: "خروج مبكر" },
+  { value: "HALF_DAY", label: "نصف يوم" },
+  { value: "ON_LEAVE", label: "في إجازة" },
+  { value: "HOLIDAY", label: "عطلة رسمية" },
+  { value: "WEEKEND", label: "إجازة أسبوعية" },
+];
 
 export default function AttendanceRecordsPage() {
   const t = useTranslations();
+  const { user } = useAuthStore();
   const [search, setSearch] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  // Manual entry form state
+  const [manualForm, setManualForm] = useState({
+    employeeId: "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    checkInTime: "",
+    checkOutTime: "",
+    status: "PRESENT" as AttendanceStatus,
+    manualEntryReason: "",
+  });
 
   const [page, setPage] = useState(1);
   const [dateFrom, setDateFrom] = useState(
@@ -44,8 +87,18 @@ export default function AttendanceRecordsPage() {
   );
 
   const LIMIT = 10;
-  const { data, isLoading } = useAttendanceRecords({ dateFrom, dateTo, page, limit: LIMIT });
+  const { data, isLoading } = useAttendanceRecords({
+    dateFrom,
+    dateTo,
+    page,
+    limit: LIMIT,
+    ...(statusFilter !== "ALL" && { status: statusFilter as AttendanceStatus }),
+  });
   const deleteRecord = useDeleteAttendanceRecord();
+  const createRecord = useCreateAttendanceRecord();
+  const { data: employeesData } = useEmployees({ limit: 200 });
+
+  const employees: any[] = (employeesData as any)?.data?.items || [];
 
   const records = (data as any)?.items || (data as any)?.data?.items || [];
   const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
@@ -53,7 +106,6 @@ export default function AttendanceRecordsPage() {
   const meta = total > 0 ? { total, totalPages } : null;
 
   const filteredRecords = records.filter((record: AttendanceRecord) => {
-    // إذا ما في بحث، نعرض كل السجلات
     if (!search) return true;
 
     const searchLower = search.toLowerCase();
@@ -78,6 +130,29 @@ export default function AttendanceRecordsPage() {
       setDeleteDialogOpen(false);
       setSelectedRecord(null);
     }
+  };
+
+  const handleCreateManual = async () => {
+    if (!manualForm.employeeId || !manualForm.date || !manualForm.manualEntryReason) return;
+    await createRecord.mutateAsync({
+      employeeId: manualForm.employeeId,
+      date: manualForm.date,
+      status: manualForm.status,
+      ...(manualForm.checkInTime && { checkInTime: `${manualForm.date}T${manualForm.checkInTime}:00` }),
+      ...(manualForm.checkOutTime && { checkOutTime: `${manualForm.date}T${manualForm.checkOutTime}:00` }),
+      isManualEntry: true,
+      manualEntryBy: user?.id || "",
+      manualEntryReason: manualForm.manualEntryReason,
+    });
+    setCreateDialogOpen(false);
+    setManualForm({
+      employeeId: "",
+      date: format(new Date(), "yyyy-MM-dd"),
+      checkInTime: "",
+      checkOutTime: "",
+      status: "PRESENT",
+      manualEntryReason: "",
+    });
   };
 
   const formatTime = (dateString?: string) => {
@@ -114,9 +189,15 @@ export default function AttendanceRecordsPage() {
       <PageHeader
         title={t("attendance.recordsTitle")}
         description={t("attendance.recordsDescription")}
+        actions={
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            إدخال يدوي
+          </Button>
+        }
       />
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -142,6 +223,22 @@ export default function AttendanceRecordsPage() {
           onChange={(e) => setDateTo(e.target.value)}
           className="w-auto"
         />
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="كل الحالات" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">كل الحالات</SelectItem>
+              {ALL_STATUSES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -215,7 +312,14 @@ export default function AttendanceRecordsPage() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <AttendanceStatusBadge status={record.status} />
+                    <div className="flex items-center gap-1">
+                      <AttendanceStatusBadge status={record.status} />
+                      {record.isManualEntry && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-amber-50 text-amber-600 border-amber-200">
+                          يدوي
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -260,6 +364,79 @@ export default function AttendanceRecordsPage() {
         onConfirm={confirmDelete}
         variant="destructive"
       />
+
+      {/* Manual Entry Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>إدخال سجل حضور يدوي</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>الموظف *</Label>
+              <Select value={manualForm.employeeId} onValueChange={(v) => setManualForm({ ...manualForm, employeeId: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الموظف" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((e: any) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.firstNameAr} {e.lastNameAr} — {e.employeeNumber}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>التاريخ *</Label>
+                <Input type="date" value={manualForm.date} onChange={(e) => setManualForm({ ...manualForm, date: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>الحالة *</Label>
+                <Select value={manualForm.status} onValueChange={(v) => setManualForm({ ...manualForm, status: v as AttendanceStatus })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALL_STATUSES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>وقت الدخول</Label>
+                <Input type="time" value={manualForm.checkInTime} onChange={(e) => setManualForm({ ...manualForm, checkInTime: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>وقت الخروج</Label>
+                <Input type="time" value={manualForm.checkOutTime} onChange={(e) => setManualForm({ ...manualForm, checkOutTime: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>سبب الإدخال اليدوي *</Label>
+              <Textarea
+                value={manualForm.manualEntryReason}
+                onChange={(e) => setManualForm({ ...manualForm, manualEntryReason: e.target.value })}
+                placeholder="مثال: نسيان تسجيل البصمة"
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>إلغاء</Button>
+            <Button
+              onClick={handleCreateManual}
+              disabled={!manualForm.employeeId || !manualForm.date || !manualForm.manualEntryReason || createRecord.isPending}
+            >
+              {createRecord.isPending ? "جاري الحفظ..." : "حفظ السجل"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

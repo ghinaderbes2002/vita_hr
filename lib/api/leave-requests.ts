@@ -41,6 +41,7 @@ export interface LeaveRequest {
 
 export type LeaveRequestStatus =
   | "DRAFT"
+  | "PENDING"
   | "PENDING_MANAGER"
   | "MANAGER_APPROVED"
   | "MANAGER_REJECTED"

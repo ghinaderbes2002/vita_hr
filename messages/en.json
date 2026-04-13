@@ -479,6 +479,7 @@
     },
     "statuses": {
       "draft": "Draft",
+      "pending": "Pending",
       "pending_manager": "Pending Manager",
       "manager_approved": "Manager Approved",
       "manager_rejected": "Manager Rejected",
@@ -931,7 +932,14 @@
       "hrReview": "HR Review",
       "gmApproval": "GM Approval",
       "completed": "Completed"
-    }
+    },
+    "viewForm": "View Form",
+    "selfEvaluation": "Self Evaluation",
+    "managerEvaluation": "Manager Evaluation",
+    "hrReviewTab": "HR Review",
+    "gmApprovalTab": "GM Approval",
+    "maintenanceTitle": "Evaluation Service under Maintenance",
+    "maintenanceDesc": "We are currently fixing some technical issues in the evaluation system. You may temporarily be unable to fill or submit your self-evaluation. We apologize for any inconvenience."
   },
   "pendingReview": {
     "title": "Pending My Review",
@@ -1180,13 +1188,6 @@
         "POOR": "Poor"
       }
     }
-  },
-  "myEvaluations": {
-    "viewForm": "View Form",
-    "selfEvaluation": "Self Evaluation",
-    "managerEvaluation": "Manager Evaluation",
-    "hrReview": "HR Review",
-    "gmApproval": "GM Approval"
   },
   "common": {
     "save": "Save",

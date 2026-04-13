@@ -10,16 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMyEvaluationForms } from "@/lib/hooks/use-evaluation-forms";
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    NOT_STARTED: { label: "لم يبدأ", className: "bg-gray-100 text-gray-700" },
-    IN_PROGRESS: { label: "جارٍ", className: "bg-blue-100 text-blue-800" },
-    SUBMITTED: { label: "مرسل", className: "bg-green-100 text-green-800" },
-    APPROVED: { label: "موافق", className: "bg-green-100 text-green-800" },
-    REJECTED: { label: "مرفوض", className: "bg-red-100 text-red-800" },
+function StatusBadge({ status, label }: { status: string; label?: string }) {
+  const map: Record<string, { className: string }> = {
+    NOT_STARTED: { className: "bg-gray-100 text-gray-700" },
+    IN_PROGRESS: { className: "bg-blue-100 text-blue-800" },
+    SUBMITTED: { className: "bg-green-100 text-green-800" },
+    APPROVED: { className: "bg-green-100 text-green-800" },
+    REJECTED: { className: "bg-red-100 text-red-800" },
   };
-  const cfg = map[status] || { label: status, className: "bg-gray-100 text-gray-700" };
-  return <Badge className={cfg.className}>{cfg.label}</Badge>;
+  const cfg = map[status] || { className: "bg-gray-100 text-gray-700" };
+  return <Badge className={cfg.className}>{label || status}</Badge>;
 }
 
 export default function MyEvaluationsPage() {
@@ -35,6 +35,21 @@ export default function MyEvaluationsPage() {
         title={t("myEvaluations.title")}
         description={t("myEvaluations.description")}
       />
+
+      {/* Maintenance Notice */}
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="flex items-start gap-3">
+          <svg className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-amber-800">{t("myEvaluations.maintenanceTitle")}</p>
+            <p className="text-sm text-amber-700 mt-1">
+              {t("myEvaluations.maintenanceDesc")}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {isLoading ? (
         <Card>
@@ -62,32 +77,44 @@ export default function MyEvaluationsPage() {
               onClick={() => router.push(`/evaluations/forms/${form.id}`)}
             >
               <Eye className="h-4 w-4 ml-2" />
-              عرض النموذج
+              {t("myEvaluations.viewForm")}
             </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">التقييم الذاتي</p>
-                <StatusBadge status={form.selfStatus || "NOT_STARTED"} />
+                <p className="text-sm text-muted-foreground">{t("myEvaluations.selfEvaluation")}</p>
+                <StatusBadge 
+                  status={form.selfStatus || "NOT_STARTED"} 
+                  label={t(`evaluationForms.statuses.${form.selfStatus || "NOT_STARTED"}`)} 
+                />
                 {form.selfScore != null && (
                   <p className="text-sm font-medium">{form.selfScore}</p>
                 )}
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">تقييم المدير</p>
-                <StatusBadge status={form.managerStatus || "NOT_STARTED"} />
+                <p className="text-sm text-muted-foreground">{t("myEvaluations.managerEvaluation")}</p>
+                <StatusBadge 
+                  status={form.managerStatus || "NOT_STARTED"} 
+                  label={t(`evaluationForms.statuses.${form.managerStatus || "NOT_STARTED"}`)} 
+                />
                 {form.managerScore != null && (
                   <p className="text-sm font-medium">{form.managerScore}</p>
                 )}
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">مراجعة HR</p>
-                <StatusBadge status={form.hrStatus || "NOT_STARTED"} />
+                <p className="text-sm text-muted-foreground">{t("myEvaluations.hrReviewTab")}</p>
+                <StatusBadge 
+                  status={form.hrStatus || "NOT_STARTED"} 
+                  label={t(`evaluationForms.statuses.${form.hrStatus || "NOT_STARTED"}`)} 
+                />
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">موافقة المدير العام</p>
-                <StatusBadge status={form.gmStatus || "NOT_STARTED"} />
+                <p className="text-sm text-muted-foreground">{t("myEvaluations.gmApprovalTab")}</p>
+                <StatusBadge 
+                  status={form.gmStatus || "NOT_STARTED"} 
+                  label={t(`evaluationForms.statuses.${form.gmStatus || "NOT_STARTED"}`)} 
+                />
               </div>
             </div>
           </CardContent>

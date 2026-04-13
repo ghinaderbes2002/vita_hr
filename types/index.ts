@@ -315,7 +315,7 @@ export interface Attendance {
   date: string;
   checkIn?: string;
   checkOut?: string;
-  status: "present" | "absent" | "late" | "early_leave" | "on_leave";
+  status: "PRESENT" | "ABSENT" | "LATE" | "EARLY_LEAVE" | "HALF_DAY" | "ON_LEAVE" | "HOLIDAY" | "WEEKEND";
   workHours?: number;
   notes?: string;
 }

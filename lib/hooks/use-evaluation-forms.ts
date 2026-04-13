@@ -70,7 +70,11 @@ export function useSaveSelfEvaluation() {
       toast.success("تم حفظ التقييم الذاتي بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء حفظ التقييم");
+      if (error.response?.status === 403) {
+        toast.error("غير مصرّح لك بتعديل هذا التقييم — خدمة التقييم قيد الصيانة");
+        return;
+      }
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء حفظ التقييم");
     },
   });
 }
@@ -86,7 +90,11 @@ export function useSubmitSelfEvaluation() {
       toast.success("تم تقديم التقييم الذاتي بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء تقديم التقييم");
+      if (error.response?.status === 403) {
+        toast.error("غير مصرّح لك بإرسال هذا التقييم — خدمة التقييم قيد الصيانة");
+        return;
+      }
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء تقديم التقييم");
     },
   });
 }

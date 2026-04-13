@@ -208,6 +208,38 @@ export default function RequestDetailPage() {
         )}
       </div>
 
+      {/* Contextual Notes for REWARD / TRANSFER */}
+      {request.type === "REWARD" && request.status === "APPROVED" && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">ملاحظة حول المكافأة</p>
+                <p className="text-sm text-green-700 mt-1">
+                  سيُضاف هذا المبلغ لكشف راتب الموظف عند توليده للشهر الذي صدر فيه الطلب.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {request.type === "TRANSFER" && request.status === "APPROVED" && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-800">ملاحظة حول النقل</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  تم تحديث قسم الموظف ومسماه الوظيفي تلقائياً بناءً على بيانات هذا الطلب.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Approval Steps Timeline */}
       <Card>
         <CardHeader>

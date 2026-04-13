@@ -55,7 +55,10 @@ export function useCreateLeaveRequest() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      const msg = error.response?.data?.error?.message
+        || error.response?.data?.message
+        || t("messages.saveError");
+      toast.error(msg);
     },
   });
 }

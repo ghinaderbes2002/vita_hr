@@ -401,6 +401,7 @@
     },
     "statuses": {
       "draft": "مسودة",
+      "pending": "معلق",
       "pending_manager": "بانتظار المدير",
       "manager_approved": "موافقة المدير",
       "manager_rejected": "رفض المدير",
@@ -1065,7 +1066,14 @@
       "hrReview": "مراجعة HR",
       "gmApproval": "موافقة المدير العام",
       "completed": "مكتمل"
-    }
+    },
+    "viewForm": "عرض النموذج",
+    "selfEvaluation": "التقييم الذاتي",
+    "managerEvaluation": "تقييم المدير",
+    "hrReviewTab": "مراجعة HR",
+    "gmApprovalTab": "موافقة المدير العام",
+    "maintenanceTitle": "خدمة التقييم قيد الصيانة",
+    "maintenanceDesc": "يتم حالياً إصلاح بعض المشاكل التقنية في نظام التقييم. قد لا تتمكن من تعبئة أو إرسال تقييمك الذاتي مؤقتاً. نعتذر عن أي إزعاج."
   },
   "pendingReview": {
     "title": "بانتظار مراجعتي",
@@ -1314,13 +1322,6 @@
         "POOR": "ضعيف"
       }
     }
-  },
-  "myEvaluations": {
-    "viewForm": "عرض النموذج",
-    "selfEvaluation": "التقييم الذاتي",
-    "managerEvaluation": "تقييم المدير",
-    "hrReview": "مراجعة HR",
-    "gmApproval": "موافقة المدير العام"
   },
   "validation": {
     "required": "هذا الحقل مطلوب",
