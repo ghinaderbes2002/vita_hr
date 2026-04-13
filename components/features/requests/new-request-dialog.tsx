@@ -563,7 +563,10 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
             {selectedType === "REWARD" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">الموظفون المرشحون للمكافأة *</p>
+                  <div>
+                    <p className="text-sm font-medium">الموظفون المرشحون للمكافأة *</p>
+                    <p className="text-xs text-muted-foreground mt-1">ملاحظة: المبالغ المعتمدة سيتم إضافتها تلقائياً إلى راتب الموظف في مسير الرواتب.</p>
+                  </div>
                   {rewardEmployees.length < 10 && (
                     <Button type="button" variant="outline" size="sm" className="gap-1"
                       onClick={() => setRewardEmployees((a) => [...a, { employeeId: "", rewardType: "", amount: "", reason: "" }])}>

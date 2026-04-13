@@ -71,7 +71,7 @@ export default function DashboardPage() {
       icon: Calendar,
       iconBg: "bg-amber-50 dark:bg-amber-950",
       iconColor: "text-amber-600 dark:text-amber-400",
-      onClick: () => router.push(`/${locale}/leaves`),
+      onClick: () => router.push(`/${locale}/reports/leave`),
     },
     {
       title: t("stats.pendingApplications"),
@@ -259,7 +259,7 @@ export default function DashboardPage() {
               <Users className="h-5 w-5" />
               <span className="text-xs">{t("actions.employees")}</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/leaves`)}>
+            <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/reports/leave`)}>
               <Calendar className="h-5 w-5" />
               <span className="text-xs">{t("actions.leaves")}</span>
             </Button>
