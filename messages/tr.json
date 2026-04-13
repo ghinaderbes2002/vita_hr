@@ -1114,5 +1114,34 @@
       "reject": "Reddet",
       "ceoApprove": "CEO Onayı"
     }
+  },
+  "reports": {
+    "leave": {
+      "title": "İzin Raporları",
+      "description": "İzin talebi istatistikleri ve analizleri",
+      "status": {
+        "DRAFT": "Taslak",
+        "PENDING": "Bekliyor",
+        "PENDING_MANAGER": "Yönetici Onayı Bekliyor",
+        "MANAGER_APPROVED": "Yönetici Onayladı",
+        "MANAGER_REJECTED": "Yönetici Reddetti",
+        "PENDING_HR": "İK Onayı Bekliyor",
+        "APPROVED": "Onaylandı",
+        "REJECTED": "Reddedildi",
+        "CANCELLED": "İptal Edildi",
+        "IN_PROGRESS": "Devam Ediyor",
+        "COMPLETED": "Tamamlandı",
+        "PENDING_APPROVAL": "Onay Bekleyen"
+      },
+      "summary": {
+        "title": "İzin Talebi Özeti",
+        "totalDays": "{count} toplam gün",
+        "pendingTitle": "Bekleyen Talepler ({count})",
+        "leaveType": "İzin Türü",
+        "from": "Başlangıç",
+        "to": "Bitiş",
+        "days": "Günler"
+      }
+    }
   }
 }

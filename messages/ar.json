@@ -2086,10 +2086,17 @@
       "title": "تقارير الإجازات",
       "description": "إحصائيات وتحليلات طلبات الإجازات",
       "status": {
-        "APPROVED": "موافق عليه",
+        "DRAFT": "مسودة",
         "PENDING": "معلق",
+        "PENDING_MANAGER": "بانتظار المدير",
+        "MANAGER_APPROVED": "موافقة المدير",
+        "MANAGER_REJECTED": "رفض المدير",
+        "PENDING_HR": "بانتظار الموارد البشرية",
+        "APPROVED": "موافق عليه",
         "REJECTED": "مرفوض",
         "CANCELLED": "ملغى",
+        "IN_PROGRESS": "جارية",
+        "COMPLETED": "منتهية",
         "PENDING_APPROVAL": "بانتظار الموافقة"
       },
       "summary": {

@@ -1963,10 +1963,17 @@
       "title": "Leave Reports",
       "description": "Leave request statistics and analytics",
       "status": {
-        "APPROVED": "Approved",
+        "DRAFT": "Draft",
         "PENDING": "Pending",
+        "PENDING_MANAGER": "Pending Manager",
+        "MANAGER_APPROVED": "Manager Approved",
+        "MANAGER_REJECTED": "Manager Rejected",
+        "PENDING_HR": "Pending HR",
+        "APPROVED": "Approved",
         "REJECTED": "Rejected",
         "CANCELLED": "Cancelled",
+        "IN_PROGRESS": "In Progress",
+        "COMPLETED": "Completed",
         "PENDING_APPROVAL": "Pending Approval"
       },
       "summary": {
