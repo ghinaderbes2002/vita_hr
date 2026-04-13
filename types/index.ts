@@ -86,8 +86,11 @@ export interface JobTitle {
     id: string;
     code: string;
     nameAr: string;
-    minSalary: string | number;
-    maxSalary: string | number;
+    nameEn?: string;
+    order?: number;
+    color?: string;
+    minSalary?: string | number;
+    maxSalary?: string | number;
   };
   order?: number;
   createdAt?: string;

@@ -114,9 +114,9 @@ export default function DepartmentsPage() {
     ? treeData
     : (treeData as any)?.data || [];
 
-  // Enrich selectedDept with stored gradeId for the dialog
+  // gradeId: prefer API value, fall back to localStorage
   const selectedDeptWithGrade = selectedDept
-    ? { ...selectedDept, gradeId: deptGradeMap[selectedDept.id] || "" }
+    ? { ...selectedDept, gradeId: selectedDept.gradeId || deptGradeMap[selectedDept.id] || "" }
     : null;
 
   return (
