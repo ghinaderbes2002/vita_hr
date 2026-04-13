@@ -53,7 +53,7 @@ export function useCreateEvaluationForm() {
       toast.success("تم إنشاء نموذج التقييم بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إنشاء النموذج");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء إنشاء النموذج");
     },
   });
 }
@@ -111,7 +111,7 @@ export function useSaveManagerEvaluation() {
       toast.success("تم حفظ تقييم المدير بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء حفظ التقييم");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء حفظ التقييم");
     },
   });
 }
@@ -127,7 +127,7 @@ export function useSubmitManagerEvaluation() {
       toast.success("تم تقديم تقييم المدير بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء تقديم التقييم");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء تقديم التقييم");
     },
   });
 }
@@ -144,7 +144,7 @@ export function useHrReview() {
       toast.success("تم إرسال مراجعة الموارد البشرية بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إرسال المراجعة");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء إرسال المراجعة");
     },
   });
 }
@@ -161,7 +161,7 @@ export function useGmApproval() {
       toast.success("تم إرسال قرار المدير العام بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إرسال القرار");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء إرسال القرار");
     },
   });
 }

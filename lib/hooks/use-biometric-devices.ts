@@ -30,7 +30,7 @@ export function useCreateBiometricDevice() {
       toast.success("تم إضافة الجهاز بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -45,7 +45,7 @@ export function useUpdateBiometricDevice() {
       toast.success("تم تحديث الجهاز بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -59,7 +59,7 @@ export function useDeleteBiometricDevice() {
       toast.success("تم حذف الجهاز بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

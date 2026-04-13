@@ -24,7 +24,7 @@ export function useUpsertAttendanceConfig() {
       toast.success("تم حفظ إعدادات الحضور بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

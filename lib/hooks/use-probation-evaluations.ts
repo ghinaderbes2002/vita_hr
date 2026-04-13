@@ -53,7 +53,7 @@ export function useCreateProbationEvaluation() {
   return useMutation({
     mutationFn: (data: CreateProbationEvaluationData) => probationEvaluationsApi.create(data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["probation-evaluations"] }); toast.success("تم إنشاء التقييم بنجاح"); },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -67,7 +67,7 @@ export function useUpdateProbationEvaluation() {
       qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
       toast.success("تم التحديث");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -84,7 +84,7 @@ function makeWorkflowMutation(action: (id: string, data?: WorkflowActionData) =>
         qc.invalidateQueries({ queryKey: ["probation-history", id] });
         toast.success(successMsg);
       },
-      onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+      onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
     });
   };
 }

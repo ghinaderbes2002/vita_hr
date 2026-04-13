@@ -21,7 +21,7 @@ export function useCreateDeductionPolicy() {
       toast.success("تم إنشاء السياسة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -36,7 +36,7 @@ export function useUpdateDeductionPolicy() {
       toast.success("تم تحديث السياسة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -50,7 +50,7 @@ export function useDeleteDeductionPolicy() {
       toast.success("تم حذف السياسة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أو السياسة مستخدمة");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أو السياسة مستخدمة");
     },
   });
 }

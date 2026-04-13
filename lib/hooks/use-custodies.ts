@@ -73,7 +73,7 @@ export function useUpdateCustody() {
       toast.success("تم تحديث العهدة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -88,7 +88,7 @@ export function useReturnCustody() {
       toast.success("تم تحديث حالة العهدة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -102,7 +102,7 @@ export function useDeleteCustody() {
       toast.success("تم حذف العهدة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

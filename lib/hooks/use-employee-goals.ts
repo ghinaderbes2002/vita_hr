@@ -29,7 +29,7 @@ export function useCreateEmployeeGoal() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -47,7 +47,7 @@ export function useUpdateEmployeeGoal() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -64,7 +64,7 @@ export function useDeleteEmployeeGoal() {
       toast.success(t("messages.deleteSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.deleteError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.deleteError"));
     },
   });
 }

@@ -38,6 +38,6 @@ export function useMarkAllAsRead() {
       qc.invalidateQueries({ queryKey: ["notifications-unread-count"] });
       toast.success("تم تحديد جميع الإشعارات كمقروءة");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }

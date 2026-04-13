@@ -38,8 +38,9 @@ export function useCreateUser() {
       console.error("❌ Error status:", error.response?.status);
 
       // Extract error message
-      let errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
+      let errorMessage = error.response?.data?.error?.message ||
+                          error.response?.data?.message ||
+                          (typeof error.response?.data?.error === 'string' ? error.response?.data?.error : null) ||
                           error.message;
 
       // If message is an array, get first element
@@ -106,8 +107,8 @@ export function useUpdateUser() {
       toast.success("تم تحديث المستخدم بنجاح");
     },
     onError: (error: any) => {
-      let errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
+      let errorMessage = error.response?.data?.error?.message ||
+                          error.response?.data?.message ||
                           error.message ||
                           "حدث خطأ أثناء تحديث المستخدم";
 
@@ -132,8 +133,8 @@ export function useDeleteUser() {
       toast.success("تم حذف المستخدم بنجاح");
     },
     onError: (error: any) => {
-      let errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
+      let errorMessage = error.response?.data?.error?.message ||
+                          error.response?.data?.message ||
                           error.message ||
                           "حدث خطأ أثناء حذف المستخدم";
 
@@ -159,8 +160,8 @@ export function useAssignRoles() {
       toast.success("تم تعيين الأدوار بنجاح");
     },
     onError: (error: any) => {
-      let errorMessage = error.response?.data?.message ||
-                          error.response?.data?.error ||
+      let errorMessage = error.response?.data?.error?.message ||
+                          error.response?.data?.message ||
                           error.message ||
                           "حدث خطأ أثناء تعيين الأدوار";
 

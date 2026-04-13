@@ -45,7 +45,7 @@ export function useCheckIn() {
       toast.success(t("messages.checkInSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.checkInError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.checkInError"));
     },
   });
 }
@@ -61,7 +61,7 @@ export function useCheckOut() {
       toast.success(t("messages.checkOutSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.checkOutError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.checkOutError"));
     },
   });
 }
@@ -77,7 +77,7 @@ export function useCreateAttendanceRecord() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -94,7 +94,7 @@ export function useUpdateAttendanceRecord() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -110,7 +110,7 @@ export function useDeleteAttendanceRecord() {
       toast.success(t("messages.deleteSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.deleteError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.deleteError"));
     },
   });
 }

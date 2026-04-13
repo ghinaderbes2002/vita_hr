@@ -50,7 +50,7 @@ export function useCreateLeaveType() {
       toast.success("تم إنشاء نوع الإجازة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -66,7 +66,7 @@ export function useUpdateLeaveType() {
       toast.success("تم تحديث نوع الإجازة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -81,7 +81,7 @@ export function useDeleteLeaveType() {
       toast.success("تم حذف نوع الإجازة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

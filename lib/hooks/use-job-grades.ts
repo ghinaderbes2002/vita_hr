@@ -45,7 +45,7 @@ export function useUpdateJobGrade() {
       toast.success("تم تحديث الدرجة الوظيفية بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -60,7 +60,7 @@ export function useDeleteJobGrade() {
       toast.success("تم حذف الدرجة الوظيفية بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

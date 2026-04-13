@@ -169,6 +169,13 @@ const navigation: NavItem[] = [
         ],
       },
       {
+        title: "nav.payroll",
+        icon: Wallet,
+        children: [
+          { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+        ],
+      },
+      {
         title: "nav.hrReports",
         icon: FileBarChart,
         children: [

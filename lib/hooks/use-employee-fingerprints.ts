@@ -22,7 +22,7 @@ export function useRegisterFingerprint() {
       toast.success("تم تسجيل البصمة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -37,7 +37,7 @@ export function useDeleteFingerprint() {
       toast.success("تم حذف البصمة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

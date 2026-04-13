@@ -57,7 +57,7 @@ export function useUpdateEmployee() {
       toast.success("تم تحديث الموظف بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -72,7 +72,7 @@ export function useDeleteEmployee() {
       toast.success("تم حذف الموظف بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

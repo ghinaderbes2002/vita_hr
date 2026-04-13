@@ -34,7 +34,7 @@ export function useCreateRole() {
       toast.success("تم إنشاء الدور بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -50,7 +50,7 @@ export function useUpdateRolePermissions() {
       toast.success("تم تحديث صلاحيات الدور بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -65,7 +65,7 @@ export function useDeleteRole() {
       toast.success("تم حذف الدور بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

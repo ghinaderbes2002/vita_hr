@@ -42,7 +42,7 @@ export function useCreateAttendanceAlert() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -59,7 +59,7 @@ export function useUpdateAttendanceAlert() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -76,7 +76,7 @@ export function useResolveAttendanceAlert() {
       toast.success("تم حل التنبيه بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء حل التنبيه");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء حل التنبيه");
     },
   });
 }
@@ -92,7 +92,7 @@ export function useDeleteAttendanceAlert() {
       toast.success(t("messages.deleteSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.deleteError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.deleteError"));
     },
   });
 }

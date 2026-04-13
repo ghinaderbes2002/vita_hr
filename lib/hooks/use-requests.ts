@@ -59,7 +59,7 @@ export function useSubmitRequest() {
       toast.success("تم تقديم الطلب بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -74,7 +74,7 @@ export function useCancelRequest() {
       toast.success("تم إلغاء الطلب");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

@@ -27,7 +27,7 @@ export function useCreateOnboardingTemplate() {
       qc.invalidateQueries({ queryKey: ["onboarding-templates"] });
       toast.success("تم إنشاء القالب بنجاح");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -39,7 +39,7 @@ export function useDeleteOnboardingTemplate() {
       qc.invalidateQueries({ queryKey: ["onboarding-templates"] });
       toast.success("تم حذف القالب");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -76,7 +76,7 @@ export function useCreateOnboardingWorkflow() {
       qc.invalidateQueries({ queryKey: ["onboarding-workflows-employee", vars.employeeId] });
       toast.success("تم بدء الـ Workflow بنجاح");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -90,7 +90,7 @@ export function useUpdateTaskStatus(workflowId: string) {
       qc.invalidateQueries({ queryKey: ["onboarding-workflows"] });
       toast.success("تم تحديث حالة المهمة");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -102,6 +102,6 @@ export function useCancelWorkflow() {
       qc.invalidateQueries({ queryKey: ["onboarding-workflows"] });
       toast.success("تم إلغاء الـ Workflow");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }

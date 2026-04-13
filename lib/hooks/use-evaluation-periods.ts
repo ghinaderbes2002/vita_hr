@@ -34,7 +34,7 @@ export function useCreateEvaluationPeriod() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -51,7 +51,7 @@ export function useUpdateEvaluationPeriod() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -66,7 +66,7 @@ export function useOpenEvaluationPeriod() {
       toast.success("تم فتح فترة التقييم بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء فتح فترة التقييم");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء فتح فترة التقييم");
     },
   });
 }
@@ -81,7 +81,7 @@ export function useCloseEvaluationPeriod() {
       toast.success("تم إغلاق فترة التقييم بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إغلاق فترة التقييم");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء إغلاق فترة التقييم");
     },
   });
 }
@@ -97,7 +97,7 @@ export function useDeleteEvaluationPeriod() {
       toast.success(t("messages.deleteSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.deleteError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.deleteError"));
     },
   });
 }
@@ -124,7 +124,7 @@ export function useGenerateEvaluationForms() {
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إنشاء نماذج التقييم");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء إنشاء نماذج التقييم");
     },
   });
 }

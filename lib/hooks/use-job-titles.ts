@@ -35,7 +35,7 @@ export function useUpdateJobTitle() {
       toast.success("تم تحديث المسمى الوظيفي بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

@@ -77,7 +77,7 @@ export function useUpdateLeaveRequest() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.saveError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
   });
 }
@@ -95,7 +95,7 @@ export function useSubmitLeaveRequest() {
       toast.success("تم إرسال الطلب للموافقة");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "فشل إرسال الطلب");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشل إرسال الطلب");
     },
   });
 }
@@ -113,7 +113,7 @@ export function useApproveManager() {
       toast.success("تمت الموافقة على الطلب");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "فشلت الموافقة");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشلت الموافقة");
     },
   });
 }
@@ -131,7 +131,7 @@ export function useRejectManager() {
       toast.success("تم رفض الطلب");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "فشل الرفض");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشل الرفض");
     },
   });
 }
@@ -150,7 +150,7 @@ export function useApproveHr() {
       toast.success("تمت الموافقة النهائية على الطلب");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "فشلت الموافقة");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشلت الموافقة");
     },
   });
 }
@@ -169,7 +169,7 @@ export function useRejectHr() {
       toast.success("تم رفض الطلب");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "فشل الرفض");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشل الرفض");
     },
   });
 }
@@ -188,7 +188,7 @@ export function useCancelLeaveRequest() {
       toast.success("تم إلغاء الطلب");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "فشل الإلغاء");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشل الإلغاء");
     },
   });
 }
@@ -206,7 +206,7 @@ export function useDeleteLeaveRequest() {
       toast.success(t("messages.deleteSuccess"));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || t("messages.deleteError"));
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.deleteError"));
     },
   });
 }

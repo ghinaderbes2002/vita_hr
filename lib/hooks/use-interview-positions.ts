@@ -30,7 +30,7 @@ export function useCreateInterviewPosition() {
   return useMutation({
     mutationFn: (data: CreateInterviewPositionData) => interviewPositionsApi.create(data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["interview-positions"] }); toast.success("تم إنشاء الشاغر بنجاح"); },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -44,7 +44,7 @@ export function useUpdateInterviewPosition() {
       qc.invalidateQueries({ queryKey: ["interview-position", id] });
       toast.success("تم التحديث بنجاح");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -53,7 +53,7 @@ export function useDeleteInterviewPosition() {
   return useMutation({
     mutationFn: (id: string) => interviewPositionsApi.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["interview-positions"] }); toast.success("تم الحذف"); },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -76,7 +76,7 @@ export function useAddTechnicalQuestion(positionId: string) {
       qc.invalidateQueries({ queryKey: ["interview-position", positionId] });
       toast.success("تمت إضافة السؤال");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -89,6 +89,6 @@ export function useDeleteTechnicalQuestion(positionId: string) {
       qc.invalidateQueries({ queryKey: ["interview-position", positionId] });
       toast.success("تم حذف السؤال");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }

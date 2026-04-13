@@ -42,7 +42,7 @@ export function useCreateHoliday() {
       toast.success("تم إنشاء العطلة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -58,7 +58,7 @@ export function useUpdateHoliday() {
       toast.success("تم تحديث العطلة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -73,7 +73,7 @@ export function useDeleteHoliday() {
       toast.success("تم حذف العطلة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

@@ -26,7 +26,7 @@ export function useSubmitPeerEvaluation() {
       toast.success("تم إرسال تقييم الزملاء بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إرسال التقييم");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء إرسال التقييم");
     },
   });
 }

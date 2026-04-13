@@ -35,7 +35,7 @@ export function useCreateInterviewEvaluation() {
       qc.invalidateQueries({ queryKey: ["interview-position-comparison", vars.positionId] });
       toast.success("تم حفظ التقييم بنجاح");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -50,7 +50,7 @@ export function useUpdateInterviewEvaluation() {
       qc.invalidateQueries({ queryKey: ["interview-evaluation-by-app", result.jobApplicationId] });
       toast.success("تم تحديث التقييم");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
 
@@ -62,6 +62,6 @@ export function useTransferToEmployee() {
       qc.invalidateQueries({ queryKey: ["interview-evaluation", id] });
       toast.success("تم نقل النتيجة لسجل الموظف");
     },
-    onError: (e: any) => toast.error(e.response?.data?.message || "حدث خطأ"),
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }

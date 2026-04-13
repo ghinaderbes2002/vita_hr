@@ -39,7 +39,7 @@ export function useCreateLeaveBalance() {
       toast.success("تم إنشاء رصيد الإجازة بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -55,7 +55,7 @@ export function useAdjustLeaveBalance() {
       toast.success("تم تعديل الرصيد بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -71,7 +71,7 @@ export function useInitializeEmployeeBalances() {
       toast.success("تم تهيئة أرصدة الموظف بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -87,7 +87,7 @@ export function useCarryOverBalance() {
       toast.success("تم ترحيل الرصيد بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
@@ -102,7 +102,7 @@ export function useDeleteLeaveBalance() {
       toast.success("تم حذف الرصيد بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "حدث خطأ");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }
