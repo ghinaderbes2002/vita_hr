@@ -29,7 +29,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMyLeaveBalances, useDeleteLeaveBalance } from "@/lib/hooks/use-leave-balances";
+import { useLeaveBalances, useDeleteLeaveBalance } from "@/lib/hooks/use-leave-balances";
+import { useEmployees } from "@/lib/hooks/use-employees";
 import { BalanceDialog } from "@/components/features/leave-balances/balance-dialog";
 import { AdjustDialog } from "@/components/features/leave-balances/adjust-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -45,8 +46,12 @@ export default function LeaveBalancesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<LeaveBalance | null>(null);
 
-  const { data, isLoading } = useMyLeaveBalances(year);
+  const { data, isLoading } = useLeaveBalances({ year });
   const deleteBalance = useDeleteLeaveBalance();
+
+  const { data: employeesData } = useEmployees({ limit: 500 });
+  const allEmployees = (employeesData as any)?.data?.items || (employeesData as any)?.items || [];
+  const empMap = new Map(allEmployees.map((e: any) => [e.id, e]));
 
   // Handle different API response formats
   const balances = Array.isArray(data)
@@ -54,7 +59,8 @@ export default function LeaveBalancesPage() {
     : (data as any)?.data?.items || (data as any)?.data || [];
 
   const filteredBalances = balances.filter((balance: LeaveBalance) => {
-    const employeeName = `${balance.employee?.firstNameAr || ""} ${balance.employee?.lastNameAr || ""}`;
+    const emp = balance.employee || empMap.get(balance.employeeId) as any;
+    const employeeName = emp ? `${emp.firstNameAr || ""} ${emp.lastNameAr || ""}` : "";
     const leaveTypeName = balance.leaveType?.nameAr || "";
     return (
       employeeName.toLowerCase().includes(search.toLowerCase()) ||
@@ -157,7 +163,10 @@ export default function LeaveBalancesPage() {
               filteredBalances.map((balance: LeaveBalance) => (
                 <TableRow key={balance.id}>
                   <TableCell className="font-medium">
-                    {balance.employee?.firstNameAr} {balance.employee?.lastNameAr}
+                    {(() => {
+                      const emp = balance.employee || empMap.get(balance.employeeId) as any;
+                      return emp ? `${emp.firstNameAr} ${emp.lastNameAr}` : balance.employeeId;
+                    })()}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
