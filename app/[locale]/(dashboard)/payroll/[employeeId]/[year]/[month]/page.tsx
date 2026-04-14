@@ -15,7 +15,7 @@ const MONTHS = [
 ];
 
 function money(val: string | number | undefined): string {
-  return (Number(val) || 0).toLocaleString("ar-SA", { minimumFractionDigits: 2 });
+  return "$" + (Number(val) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function Row({ label, value, variant }: { label: string; value: string; variant?: "positive" | "negative" | "neutral" }) {
@@ -26,7 +26,7 @@ function Row({ label, value, variant }: { label: string; value: string; variant?
         variant === "positive" ? "text-green-700" :
         variant === "negative" ? "text-red-600" : ""
       }`}>
-        {variant === "positive" ? "+" : variant === "negative" ? "-" : ""}{value} ر.س
+        {variant === "positive" ? "+" : variant === "negative" ? "-" : ""}{value}
       </span>
     </div>
   );
@@ -144,15 +144,14 @@ export default function PayslipPage() {
                   المكافآت
                 </span>
                 <Badge className="bg-green-50 text-green-700 border-green-200 font-mono text-xs">
-                  +{money(s.bonusAmount)} ر.س
-                </Badge>
+                  +{money(s.bonusAmount)}                </Badge>
               </div>
               {bonusDetails.length > 0 && (
                 <div className="pr-4 pb-2 space-y-1">
                   {bonusDetails.map((b, i) => (
                     <div key={i} className="flex items-center justify-between text-xs text-green-700">
                       <span>{b.reason}</span>
-                      <span className="font-mono">+{(b.amount || 0).toLocaleString()} ر.س</span>
+                      <span className="font-mono">+${(b.amount || 0).toLocaleString("en-US")} ر.س</span>
                     </div>
                   ))}
                 </div>
@@ -178,15 +177,14 @@ export default function PayslipPage() {
                   الجزاءات
                 </span>
                 <Badge className="bg-red-50 text-red-700 border-red-200 font-mono text-xs">
-                  -{money(s.penaltyAmount)} ر.س
-                </Badge>
+                  -{money(s.penaltyAmount)}                </Badge>
               </div>
               {penaltyDetails.length > 0 && (
                 <div className="pr-4 pb-2 space-y-1">
                   {penaltyDetails.map((p, i) => (
                     <div key={i} className="flex items-center justify-between text-xs text-red-700">
                       <span>{p.description}</span>
-                      <span className="font-mono">-{(p.amount || 0).toLocaleString()} ر.س</span>
+                      <span className="font-mono">-${(p.amount || 0).toLocaleString("en-US")} ر.س</span>
                     </div>
                   ))}
                 </div>
@@ -205,8 +203,7 @@ export default function PayslipPage() {
           {/* Formula note */}
           <div className="py-2">
             <p className="text-xs text-muted-foreground">
-              المعادلة: الراتب الإجمالي ({money(s.grossSalary)}) + المكافآت ({money(bonusAmount)}) − الخصومات ({money(totalDeduction)}) − الجزاءات ({money(penaltyAmount)}) = {money(s.netSalary)} ر.س
-            </p>
+              المعادلة: الراتب الإجمالي ({money(s.grossSalary)}) + المكافآت ({money(bonusAmount)}) − الخصومات ({money(totalDeduction)}) − الجزاءات ({money(penaltyAmount)}) = {money(s.netSalary)}            </p>
           </div>
         </CardContent>
       </Card>

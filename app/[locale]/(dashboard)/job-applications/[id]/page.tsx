@@ -646,7 +646,7 @@ export default function JobApplicationDetailPage() {
                 <p className="text-sm text-muted-foreground">
                   الراتب المقترح:{" "}
                   <strong>
-                    {Number(evalData.proposedSalary).toLocaleString()} ل.س
+                    ${Number(evalData.proposedSalary).toLocaleString("en-US")}
                   </strong>
                 </p>
               )}
@@ -858,7 +858,7 @@ export default function JobApplicationDetailPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>الراتب المقترح (ل.س)</Label>
+                <Label>الراتب المقترح ($)</Label>
                 <Input
                   type="number"
                   value={evalForm.proposedSalary}

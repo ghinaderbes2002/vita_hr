@@ -334,7 +334,7 @@ export default function EmployeeDetailsPage() {
               value={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("ar-EG") : undefined}
             />
             <InfoRow label={t("employees.fields.contractType")} value={CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType} />
-            <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `${Number(emp.basicSalary).toLocaleString()} ل.س` : undefined} />
+            <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `$${Number(emp.basicSalary).toLocaleString("en-US")}` : undefined} />
             {employee.manager && (
               <InfoRow
                 label={t("employees.fields.manager")}
@@ -348,13 +348,13 @@ export default function EmployeeDetailsPage() {
                   {allowances.map((al, i) => (
                     <div key={i} className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{ALLOWANCE_TYPE_LABELS[al.type] || al.type}</span>
-                      <span className="font-medium">{Number(al.amount).toLocaleString()} ل.س</span>
+                      <span className="font-medium">${Number(al.amount).toLocaleString("en-US")}</span>
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
                     <span className="font-medium">الإجمالي</span>
                     <span className="font-bold text-primary">
-                      {allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString()} ل.س
+                      ${allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString("en-US")}
                     </span>
                   </div>
                 </div>

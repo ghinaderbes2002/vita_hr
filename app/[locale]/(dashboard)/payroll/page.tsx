@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { usePayroll, useGeneratePayroll } from "@/lib/hooks/use-payroll";
 import { PayrollItem, BonusDetail, PenaltyDetail } from "@/lib/api/payroll";
+import { useEmployees } from "@/lib/hooks/use-employees";
 
 const MONTHS = [
   { value: 1, label: "يناير" }, { value: 2, label: "فبراير" },
@@ -62,6 +63,10 @@ export default function PayrollPage() {
 
   const { data, isLoading } = usePayroll({ year, month, limit: 100 });
   const generatePayroll = useGeneratePayroll();
+  const { data: empData } = useEmployees({ limit: 500 });
+
+  const allEmployees: any[] = (empData as any)?.data?.items || (empData as any)?.items || (empData as any)?.data || [];
+  const empMap = new Map(allEmployees.map((e: any) => [e.id, e]));
 
   const items: PayrollItem[] = data?.items || [];
 
@@ -161,6 +166,7 @@ export default function PayrollPage() {
               </TableRow>
             ) : (
               items.map((item) => {
+                const emp = empMap.get(item.employeeId);
                 const bonusDetails = parseBonusDetails(item.bonusDetails);
                 const penaltyDetails = parsePenaltyDetails(item.penaltyDetails);
                 const bonus = parseMoney(item.bonusAmount);
@@ -180,31 +186,33 @@ export default function PayrollPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-sm">{item.employee?.firstNameAr} {item.employee?.lastNameAr}</p>
-                          <p className="text-xs text-muted-foreground">{item.employee?.employeeNumber}</p>
+                          <p className="font-medium text-sm">
+                            {emp ? `${emp.firstNameAr} ${emp.lastNameAr}` : item.employee?.firstNameAr ? `${item.employee.firstNameAr} ${item.employee.lastNameAr}` : "—"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{emp?.employeeNumber || item.employee?.employeeNumber}</p>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {item.employee?.department?.nameAr || "—"}
+                        {emp?.department?.nameAr || item.employee?.department?.nameAr || "—"}
                       </TableCell>
-                      <TableCell className="text-sm">{parseMoney(item.basicSalary).toLocaleString()} ر.س</TableCell>
-                      <TableCell className="text-sm">{parseMoney(item.grossSalary).toLocaleString()} ر.س</TableCell>
+                      <TableCell className="text-sm">${parseMoney(item.basicSalary).toLocaleString("en-US")}</TableCell>
+                      <TableCell className="text-sm">${parseMoney(item.grossSalary).toLocaleString("en-US")}</TableCell>
                       <TableCell>
                         {bonus > 0 ? (
                           <Badge className="bg-green-50 text-green-700 border-green-200 font-mono text-xs">
-                            +{bonus.toLocaleString()}
+                            +${bonus.toLocaleString("en-US")}
                           </Badge>
                         ) : <span className="text-muted-foreground text-sm">—</span>}
                       </TableCell>
                       <TableCell>
                         {penalty > 0 ? (
                           <Badge className="bg-red-50 text-red-700 border-red-200 font-mono text-xs">
-                            -{penalty.toLocaleString()}
+                            -${penalty.toLocaleString("en-US")}
                           </Badge>
                         ) : <span className="text-muted-foreground text-sm">—</span>}
                       </TableCell>
                       <TableCell className="font-semibold text-sm">
-                        {parseMoney(item.netSalary).toLocaleString()} ر.س
+                        ${parseMoney(item.netSalary).toLocaleString("en-US")}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -229,7 +237,7 @@ export default function PayrollPage() {
                                 <div className="space-y-1">
                                   {bonusDetails.map((b, i) => (
                                     <div key={i} className="flex items-center gap-2 text-green-800">
-                                      <span className="font-mono text-xs bg-green-100 rounded px-1.5 py-0.5">+{b.amount.toLocaleString()} ر.س</span>
+                                      <span className="font-mono text-xs bg-green-100 rounded px-1.5 py-0.5">+${b.amount.toLocaleString("en-US")}</span>
                                       <span>{b.reason}</span>
                                     </div>
                                   ))}
@@ -242,7 +250,7 @@ export default function PayrollPage() {
                                 <div className="space-y-1">
                                   {penaltyDetails.map((p, i) => (
                                     <div key={i} className="flex items-center gap-2 text-red-700">
-                                      <span className="font-mono text-xs bg-red-100 rounded px-1.5 py-0.5">-{p.amount.toLocaleString()} ر.س</span>
+                                      <span className="font-mono text-xs bg-red-100 rounded px-1.5 py-0.5">-${p.amount.toLocaleString("en-US")}</span>
                                       <span>{p.description}</span>
                                     </div>
                                   ))}

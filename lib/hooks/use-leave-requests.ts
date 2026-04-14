@@ -113,6 +113,7 @@ export function useApproveManager() {
       toast.success("تمت الموافقة على الطلب");
     },
     onError: (error: any) => {
+      if (error.response?.status === 403) return toast.error("أنت لست المدير المباشر لهذا الموظف");
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشلت الموافقة");
     },
   });
@@ -131,6 +132,7 @@ export function useRejectManager() {
       toast.success("تم رفض الطلب");
     },
     onError: (error: any) => {
+      if (error.response?.status === 403) return toast.error("أنت لست المدير المباشر لهذا الموظف");
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشل الرفض");
     },
   });

@@ -192,6 +192,7 @@ export function useRejectRequest() {
       toast.success("تم رفض الطلب");
     },
     onError: (error: any) => {
+      if (error.response?.status === 403) return toast.error("غير مخوّل لرفض هذا الطلب");
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });

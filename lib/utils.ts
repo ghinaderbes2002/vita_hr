@@ -18,9 +18,9 @@ export function toNumber(value: string | number | null | undefined): number {
 /**
  * Format a number as currency with Arabic locale.
  */
-export function formatCurrency(value: string | number | null | undefined, currency = "SAR"): string {
+export function formatCurrency(value: string | number | null | undefined, currency = "USD"): string {
   const n = toNumber(value);
-  return new Intl.NumberFormat("ar-SA", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     minimumFractionDigits: 0,

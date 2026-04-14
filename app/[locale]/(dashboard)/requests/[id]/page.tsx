@@ -136,7 +136,7 @@ export default function RequestDetailPage() {
 
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
-  const { data: request, isLoading } = useRequest(id);
+  const { data: request, isLoading, error: requestError } = useRequest(id);
   const { data: approvals, isLoading: approvalsLoading } = useRequestApprovals(id);
   const approveRequest = useApproveRequest();
   const rejectRequest = useRejectRequest();
@@ -165,10 +165,13 @@ export default function RequestDetailPage() {
     );
   }
 
-  if (!request) {
+  if (!isLoading && (requestError || !request)) {
+    const is403 = (requestError as any)?.response?.status === 403;
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-muted-foreground">الطلب غير موجود</p>
+        <p className="text-muted-foreground">
+          {is403 ? "ليس لديك صلاحية لعرض هذا الطلب" : "الطلب غير موجود"}
+        </p>
         <Button variant="outline" onClick={() => router.back()}>
           <ArrowRight className="h-4 w-4 ml-2" />
           العودة

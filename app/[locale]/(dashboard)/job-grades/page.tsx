@@ -139,8 +139,8 @@ export default function JobGradesPage() {
                   </TableCell>
                   <TableCell>{grade.nameAr}</TableCell>
                   <TableCell>{grade.nameEn}</TableCell>
-                  <TableCell>{Number(grade.minSalary).toLocaleString()}</TableCell>
-                  <TableCell>{Number(grade.maxSalary).toLocaleString()}</TableCell>
+                  <TableCell>${Number(grade.minSalary).toLocaleString("en-US")}</TableCell>
+                  <TableCell>${Number(grade.maxSalary).toLocaleString("en-US")}</TableCell>
                   <TableCell>
                     <Badge variant={grade.isActive ? "default" : "secondary"}>
                       {grade.isActive ? t("common.yes") : t("common.no")}

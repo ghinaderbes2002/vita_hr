@@ -488,7 +488,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         const details = errData?.error?.details?.[0] || errData?.details?.[0];
         toast.error(
           details
-            ? `${t("employees.form.salaryOutOfRange")} (${Math.min(Number(details.min), Number(details.max)).toLocaleString()} – ${Math.max(Number(details.min), Number(details.max)).toLocaleString()})`
+            ? `${t("employees.form.salaryOutOfRange")} ($${Math.min(Number(details.min), Number(details.max)).toLocaleString("en-US")} – $${Math.max(Number(details.min), Number(details.max)).toLocaleString("en-US")})`
             : t("employees.form.salaryOutOfRange")
         );
       } else {
@@ -675,7 +675,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       )}
                     </div>
                     <div className="text-muted-foreground shrink-0">
-                      {gradeMin.toLocaleString()} – {gradeMax.toLocaleString()}
+                      ${gradeMin.toLocaleString("en-US")} – ${gradeMax.toLocaleString("en-US")}
                     </div>
                   </div>
                 )}

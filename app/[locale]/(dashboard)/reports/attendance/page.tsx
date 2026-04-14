@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Download, CalendarDays, Clock, AlertTriangle, TrendingUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -45,6 +45,33 @@ export default function AttendanceReportsPage() {
 
   const absenceKey = tAtt("absences.absenceKey");
   const lateKey = tAtt("absences.lateKey");
+
+  const COL_LABELS: Record<string, string> = {
+    netMinutes: "ساعات العمل", totalMinutes: "ساعات العمل", workMinutes: "ساعات العمل",
+    totalWorkMinutes: "ساعات العمل", netWorkMinutes: "ساعات العمل",
+    lateMinutes: "دقائق التأخر", totalLateMinutes: "دقائق التأخر",
+    overtimeMinutes: "دقائق الإضافي", totalOvertimeMinutes: "دقائق الإضافي",
+    checkIn: "وقت الدخول", checkOut: "وقت الخروج",
+    status: "الحالة", date: "التاريخ",
+    presentDays: "أيام الحضور", absentDays: "أيام الغياب",
+    lateDays: "أيام التأخر", workDays: "أيام العمل",
+    attendanceRate: "نسبة الحضور %", overtimeDays: "أيام الإضافي",
+    totalOvertimeHours: "ساعات الإضافي",
+  };
+
+  const MINUTE_COLS = new Set(["netMinutes","totalMinutes","workMinutes","totalWorkMinutes","netWorkMinutes"]);
+
+  function colLabel(k: string) { return COL_LABELS[k] || k; }
+  function colValue(k: string, v: any): string {
+    if (v == null) return "—";
+    if (MINUTE_COLS.has(k) && typeof v === "number") {
+      const h = Math.floor(v / 60);
+      const m = v % 60;
+      return m > 0 ? `${h}س ${m}د` : `${h}س`;
+    }
+    if (typeof v === "number") return Number.isInteger(v) ? String(v) : v.toFixed(1);
+    return String(v);
+  }
 
   const tabs = [
     { key: "absences" as const, icon: AlertTriangle },
@@ -267,18 +294,72 @@ export default function AttendanceReportsPage() {
             </div>
           </div>
 
-          {dailyLoading ? <Skeleton className="h-48 w-full" /> : (
-            <Card>
-              <CardContent className="p-4">
-                {!day ? (
-                  <p className="text-center py-8 text-sm text-muted-foreground">{tAtt("daily.noData")}</p>
-                ) : (
-                  <pre className="text-xs text-muted-foreground overflow-auto max-h-96 whitespace-pre-wrap">
-                    {JSON.stringify(day, null, 2)}
-                  </pre>
-                )}
-              </CardContent>
-            </Card>
+          {dailyLoading ? <Skeleton className="h-48 w-full" /> : !day ? (
+            <Card><CardContent className="p-4">
+              <p className="text-center py-8 text-sm text-muted-foreground">{tAtt("daily.noData")}</p>
+            </CardContent></Card>
+          ) : (
+            <>
+              {/* Summary stats */}
+              {(() => {
+                const stats = Object.entries(day).filter(([, v]) => typeof v === "number" || typeof v === "string" && !["date","month","year"].includes(String(v)));
+                const summaryFields = day.summary ? Object.entries(day.summary) : stats.filter(([k]) => !["date","year","month"].includes(k) && !Array.isArray((day as any)[k]));
+                if (!summaryFields.length) return null;
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {summaryFields.map(([k, v]) => (
+                      <Card key={k}>
+                        <CardContent className="p-4 text-center">
+                          <p className="text-2xl font-bold">{typeof v === "number" ? (Number.isInteger(v) ? v : (v as number).toFixed(1)) : String(v)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{k}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Records table */}
+              {(() => {
+                const rows: any[] = day.records || day.items || day.data || [];
+                if (!rows.length) return null;
+                const first = rows[0];
+                const cols = Object.keys(first).filter(k => k !== "employee" && typeof first[k] !== "object");
+                return (
+                  <Card>
+                    <CardContent className="p-0 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="px-4 py-3 text-right font-medium">{tAtt("absences.employee")}</th>
+                            {cols.map(c => <th key={c} className="px-4 py-3 text-center font-medium whitespace-nowrap">{colLabel(c)}</th>)}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((row: any, i: number) => (
+                            <tr key={i} className="border-t hover:bg-muted/30">
+                              <td className="px-4 py-3">
+                                {row.employee ? (
+                                  <>
+                                    <p className="font-medium">{row.employee.firstNameAr} {row.employee.lastNameAr}</p>
+                                    <p className="text-xs text-muted-foreground">{row.employee.employeeNumber}</p>
+                                  </>
+                                ) : "—"}
+                              </td>
+                              {cols.map(c => (
+                                <td key={c} className="px-4 py-3 text-center text-muted-foreground">
+                                  {colValue(c, row[c])}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+            </>
           )}
         </div>
       )}
@@ -298,18 +379,71 @@ export default function AttendanceReportsPage() {
             </div>
           </div>
 
-          {monthlyLoading ? <Skeleton className="h-48 w-full" /> : (
-            <Card>
-              <CardContent className="p-4">
-                {!mon ? (
-                  <p className="text-center py-8 text-sm text-muted-foreground">{tAtt("monthly.noData")}</p>
-                ) : (
-                  <pre className="text-xs text-muted-foreground overflow-auto max-h-96 whitespace-pre-wrap">
-                    {JSON.stringify(mon, null, 2)}
-                  </pre>
-                )}
-              </CardContent>
-            </Card>
+          {monthlyLoading ? <Skeleton className="h-48 w-full" /> : !mon ? (
+            <Card><CardContent className="p-4">
+              <p className="text-center py-8 text-sm text-muted-foreground">{tAtt("monthly.noData")}</p>
+            </CardContent></Card>
+          ) : (
+            <>
+              {/* Summary stats */}
+              {(() => {
+                const summaryFields = mon.summary ? Object.entries(mon.summary) : Object.entries(mon).filter(([k, v]) => !["year","month"].includes(k) && !Array.isArray(v) && typeof v !== "object");
+                if (!summaryFields.length) return null;
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {summaryFields.map(([k, v]) => (
+                      <Card key={k}>
+                        <CardContent className="p-4 text-center">
+                          <p className="text-2xl font-bold">{typeof v === "number" ? (Number.isInteger(v) ? v : (v as number).toFixed(1)) : String(v)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{k}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Items table */}
+              {(() => {
+                const rows: any[] = mon.items || mon.records || mon.data || [];
+                if (!rows.length) return null;
+                const first = rows[0];
+                const cols = Object.keys(first).filter(k => k !== "employee" && typeof first[k] !== "object");
+                return (
+                  <Card>
+                    <CardContent className="p-0 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="px-4 py-3 text-right font-medium">{tAtt("absences.employee")}</th>
+                            {cols.map(c => <th key={c} className="px-4 py-3 text-center font-medium whitespace-nowrap">{colLabel(c)}</th>)}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((row: any, i: number) => (
+                            <tr key={i} className="border-t hover:bg-muted/30">
+                              <td className="px-4 py-3">
+                                {row.employee ? (
+                                  <>
+                                    <p className="font-medium">{row.employee.firstNameAr} {row.employee.lastNameAr}</p>
+                                    <p className="text-xs text-muted-foreground">{row.employee.employeeNumber}</p>
+                                  </>
+                                ) : "—"}
+                              </td>
+                              {cols.map(c => (
+                                <td key={c} className="px-4 py-3 text-center text-muted-foreground">
+                                  {colValue(c, row[c])}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+            </>
           )}
         </div>
       )}
