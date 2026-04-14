@@ -16,6 +16,91 @@ import { useState } from "react";
 import { ApprovalStep, ApprovalStatus } from "@/types";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 
+// Human-readable labels for detail keys
+const DETAIL_KEY_LABELS: Record<string, string> = {
+  positions: "المناصب المطلوبة",
+  count: "العدد",
+  reason: "السبب",
+  jobTitle: "المسمى الوظيفي",
+  department: "القسم",
+  departmentId: "رمز القسم",
+  targetDepartment: "القسم المستهدف",
+  targetJobTitle: "المسمى الوظيفي المستهدف",
+  amount: "المبلغ",
+  description: "الوصف",
+  startDate: "تاريخ البداية",
+  endDate: "تاريخ النهاية",
+  date: "التاريخ",
+  hours: "عدد الساعات",
+  destination: "الوجهة",
+  purpose: "الغرض",
+  delegateTo: "التفويض إلى",
+  penalty: "الجزاء",
+  reward: "المكافأة",
+  type: "النوع",
+  notes: "ملاحظات",
+};
+
+function formatDetailKey(key: string): string {
+  return DETAIL_KEY_LABELS[key] || key;
+}
+
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+function renderDetailValue(value: any) {
+  if (value === null || value === undefined) return "—";
+
+  // Array of objects (e.g. positions)
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "—";
+
+    // Array of primitives
+    if (typeof value[0] !== "object") {
+      return <span>{value.join("، ")}</span>;
+    }
+
+    // Array of objects — render as mini table
+    return (
+      <div className="space-y-2 w-full">
+        {value.map((item: any, i: number) => (
+          <div key={i} className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
+            {Object.entries(item).map(([k, v]) => {
+              if (k === "departmentId" || (typeof v === "string" && isUUID(v as string))) return null;
+              return (
+                <div key={k} className="flex items-start justify-between gap-2 text-xs">
+                  <span className="text-muted-foreground shrink-0">{formatDetailKey(k)}:</span>
+                  <span className="font-medium text-right">{String(v ?? "—")}</span>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Plain object
+  if (typeof value === "object") {
+    return (
+      <div className="space-y-1 w-full">
+        {Object.entries(value).map(([k, v]) => (
+          <div key={k} className="flex items-start justify-between gap-2 text-xs">
+            <span className="text-muted-foreground shrink-0">{formatDetailKey(k)}:</span>
+            <span className="font-medium text-right">{String(v ?? "—")}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // UUID string — skip or show shortened
+  if (typeof value === "string" && isUUID(value)) return null;
+
+  return <span>{String(value)}</span>;
+}
+
 const APPROVER_ROLE_LABELS: Record<string, string> = {
   DIRECT_MANAGER: "المدير المباشر",
   DEPARTMENT_MANAGER: "مدير القسم",
@@ -192,17 +277,27 @@ export default function RequestDetailPage() {
               <CardTitle>تفاصيل الطلب</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {Object.entries(request.details).map(([key, value]) => (
-                <div key={key}>
-                  <div className="flex justify-between items-start">
-                    <span className="text-muted-foreground text-sm capitalize">{key}</span>
-                    <span className="text-sm font-medium text-left max-w-48 break-words">
-                      {Array.isArray(value) ? JSON.stringify(value) : String(value ?? "—")}
-                    </span>
+              {Object.entries(request.details).map(([key, value]) => {
+                const rendered = renderDetailValue(value);
+                if (rendered === null) return null;
+                const isComplex = Array.isArray(value) || (typeof value === "object" && value !== null);
+                return (
+                  <div key={key}>
+                    {isComplex ? (
+                      <div className="space-y-2">
+                        <span className="text-muted-foreground text-sm font-medium">{formatDetailKey(key)}</span>
+                        <div className="text-sm">{rendered}</div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-start gap-4">
+                        <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
+                        <span className="text-sm font-medium text-right">{rendered}</span>
+                      </div>
+                    )}
+                    <Separator className="mt-3" />
                   </div>
-                  <Separator className="mt-3" />
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         )}
@@ -213,7 +308,7 @@ export default function RequestDetailPage() {
         <Card className="border-green-200 bg-green-50">
           <CardContent className="py-4">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-green-800">ملاحظة حول المكافأة</p>
                 <p className="text-sm text-green-700 mt-1">
@@ -228,7 +323,7 @@ export default function RequestDetailPage() {
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="py-4">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium text-blue-800">ملاحظة حول النقل</p>
                 <p className="text-sm text-blue-700 mt-1">
@@ -238,6 +333,20 @@ export default function RequestDetailPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Approval Action Buttons */}
+      {canApprove && request.status === "IN_APPROVAL" && (
+        <div className="flex items-center gap-3">
+          <Button onClick={() => setApproveOpen(true)} className="gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            موافقة
+          </Button>
+          <Button variant="destructive" onClick={() => setRejectOpen(true)} className="gap-2">
+            <XCircle className="h-4 w-4" />
+            رفض
+          </Button>
+        </div>
       )}
 
       {/* Approval Steps Timeline */}
@@ -259,7 +368,7 @@ export default function RequestDetailPage() {
           ) : (
             <div className="relative">
               {/* Vertical line */}
-              <div className="absolute right-[18px] top-6 bottom-6 w-0.5 bg-border" />
+              <div className="absolute right-4.5 top-6 bottom-6 w-0.5 bg-border" />
 
               <div className="space-y-4">
                 {steps
@@ -268,7 +377,7 @@ export default function RequestDetailPage() {
                     const isCurrent = step.status === "PENDING" && step.stepOrder === request.currentStepOrder;
                     return (
                       <div key={step.id} className="flex items-start gap-4 relative">
-                        <div className={`z-10 flex-shrink-0 rounded-full p-1 ${isCurrent ? "bg-amber-100 ring-2 ring-amber-400" : "bg-background"}`}>
+                        <div className={`z-10 shrink-0 rounded-full p-1 ${isCurrent ? "bg-amber-100 ring-2 ring-amber-400" : "bg-background"}`}>
                           <ApprovalStatusIcon status={step.status} />
                         </div>
                         <div className="flex-1 min-w-0 pb-2">
