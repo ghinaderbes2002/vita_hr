@@ -2049,7 +2049,10 @@
         "FULL_TIME": "دوام كامل",
         "PART_TIME": "دوام جزئي",
         "CONTRACT": "عقد",
-        "TEMPORARY": "مؤقت"
+        "TEMPORARY": "مؤقت",
+        "INDEFINITE": "غير محدد المدة",
+        "PERMANENT": "دائم",
+        "FIXED": "محدد المدة"
       },
       "employees": {
         "title": "توزيع الموظفين",

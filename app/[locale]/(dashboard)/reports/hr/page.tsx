@@ -84,7 +84,7 @@ export default function HrReportsPage() {
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
                   <Pie data={(sum.byGender || []).map((g: any) => ({ name: tHr(`gender.${g.gender}`) || g.gender, value: g.count }))}
-                    cx="50%" cy="50%" outerRadius={60} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
+                    cx="50%" cy="50%" outerRadius={60} dataKey="value" labelLine={false}>
                     {(sum.byGender || []).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip />
@@ -100,7 +100,7 @@ export default function HrReportsPage() {
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
                   <Pie data={(sum.byContractType || []).map((c: any) => ({ name: tHr(`contractType.${c.contractType}`) || c.contractType, value: c.count }))}
-                    cx="50%" cy="50%" outerRadius={60} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
+                    cx="50%" cy="50%" outerRadius={60} dataKey="value" labelLine={false}>
                     {(sum.byContractType || []).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip />
@@ -115,9 +115,9 @@ export default function HrReportsPage() {
               <CardHeader className="pb-2"><CardTitle className="text-sm">{tHr("employees.byDepartment")}</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={(sum.byDepartment || []).map((d: any) => ({ name: d.departmentAr, count: d.count }))} margin={{ top: 5, right: 10, left: 0, bottom: 60 }}>
+                  <BarChart data={(sum.byDepartment || []).map((d: any) => ({ name: d.departmentAr, count: d.count }))} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" interval={0} />
+                    <XAxis dataKey="name" tick={false} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
                     <Bar dataKey="count" fill="#6366f1" name={tHr("employees.count")} radius={[4,4,0,0]} />

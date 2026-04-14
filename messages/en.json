@@ -1926,7 +1926,10 @@
         "FULL_TIME": "Full Time",
         "PART_TIME": "Part Time",
         "CONTRACT": "Contract",
-        "TEMPORARY": "Temporary"
+        "TEMPORARY": "Temporary",
+        "INDEFINITE": "Indefinite",
+        "PERMANENT": "Permanent",
+        "FIXED": "Fixed Term"
       },
       "employees": {
         "title": "Employee Distribution",

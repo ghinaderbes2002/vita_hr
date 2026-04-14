@@ -1118,6 +1118,26 @@
     }
   },
   "reports": {
+    "hr": {
+      "gender": { "MALE": "Erkek", "FEMALE": "Kadın", "OTHER": "Diğer" },
+      "contractType": {
+        "FULL_TIME": "Tam Zamanlı",
+        "PART_TIME": "Yarı Zamanlı",
+        "CONTRACT": "Sözleşmeli",
+        "TEMPORARY": "Geçici",
+        "INDEFINITE": "Belirsiz Süreli",
+        "PERMANENT": "Daimi",
+        "FIXED": "Belirli Süreli"
+      },
+      "employees": {
+        "title": "Çalışan Dağılımı",
+        "total": "Toplam Çalışan",
+        "byGender": "Cinsiyete Göre",
+        "byContract": "Sözleşme Türüne Göre",
+        "byDepartment": "Departmana Göre",
+        "byStatus": "Duruma Göre"
+      }
+    },
     "leave": {
       "title": "İzin Raporları",
       "description": "İzin talebi istatistikleri ve analizleri",
