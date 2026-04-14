@@ -174,17 +174,17 @@ export interface EvaluationRecommendations {
 
 export const evaluationReportsApi = {
   getGradeDistribution: async (params: { periodId?: string }): Promise<EvaluationGradeDistribution> => {
-    const response = await apiClient.get("/evaluation-reports/grade-distribution", { params });
+    const response = await apiClient.get("/reports/evaluation/grade-distribution", { params });
     return response.data?.data || response.data;
   },
 
   getDepartmentComparison: async (params: { periodId?: string }): Promise<EvaluationDepartmentComparison> => {
-    const response = await apiClient.get("/evaluation-reports/department-comparison", { params });
+    const response = await apiClient.get("/reports/evaluation/department-comparison", { params });
     return response.data?.data || response.data;
   },
 
   getRecommendations: async (params: { periodId?: string }): Promise<EvaluationRecommendations> => {
-    const response = await apiClient.get("/evaluation-reports/recommendations", { params });
+    const response = await apiClient.get("/reports/evaluation/recommendations", { params });
     return response.data?.data || response.data;
   },
 };

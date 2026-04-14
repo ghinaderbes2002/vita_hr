@@ -62,7 +62,7 @@ export interface AlertQueryParams {
 
 export const attendanceAlertsApi = {
   getMyAlerts: async (params: AlertQueryParams): Promise<ApiResponse<AttendanceAlert[]>> => {
-    const response = await apiClient.get("/attendance-alerts/my-alerts", { params });
+    const response = await apiClient.get("/attendance-alerts/my", { params });
     return response.data;
   },
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Plus, Send, X, Eye, Edit, Trash2, XCircle } from "lucide-react";
 import { format } from "date-fns";
@@ -42,6 +42,7 @@ import { toast } from "sonner";
 export default function MyRequestsPage() {
   const t = useTranslations();
   const router = useRouter();
+  const locale = useLocale();
 
   // --- Admin requests state ---
   const [newDialogOpen, setNewDialogOpen] = useState(false);
@@ -174,9 +175,13 @@ export default function MyRequestsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => router.push(`/${locale}/leaves/view/${request.id}`)}>
+                      <Eye className="h-4 w-4 ml-2" />
+                      {t("common.view")}
+                    </DropdownMenuItem>
                     {request.status === "DRAFT" && (
                       <>
-                        <DropdownMenuItem onClick={() => router.push(`/leaves/edit/${request.id}`)}>
+                        <DropdownMenuItem onClick={() => router.push(`/${locale}/leaves/edit/${request.id}`)}>
                           <Edit className="h-4 w-4 ml-2" />
                           {t("common.edit")}
                         </DropdownMenuItem>
@@ -212,7 +217,7 @@ export default function MyRequestsPage() {
         title={t("requests.myRequests")}
         description={t("requests.myRequestsDescription")}
         actions={
-          <Button onClick={() => router.push("/requests/new")}>
+          <Button onClick={() => router.push(`/${locale}/requests/new`)}>
             <Plus className="h-4 w-4 ml-2" />
             {t("requests.newRequest")}
           </Button>
@@ -290,7 +295,7 @@ export default function MyRequestsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/requests/${req.id}`)}>
+                            <DropdownMenuItem onClick={() => router.push(`/${locale}/requests/${req.id}`)}>
                               <Eye className="h-4 w-4 ml-2" />
                               {t("common.view")}
                             </DropdownMenuItem>

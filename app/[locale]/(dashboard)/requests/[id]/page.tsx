@@ -14,7 +14,7 @@ import { useRequest, useRequestApprovals, useApproveRequest, useRejectRequest } 
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { useState } from "react";
 import { ApprovalStep, ApprovalStatus } from "@/types";
-import { usePermissions } from "@/lib/hooks/use-permissions";
+
 
 // Human-readable labels for detail keys
 const DETAIL_KEY_LABELS: Record<string, string> = {
@@ -136,9 +136,6 @@ export default function RequestDetailPage() {
 
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
-  const { hasPermission, isAdmin } = usePermissions();
-  const canApprove = isAdmin() || hasPermission("requests:approve");
-
   const { data: request, isLoading } = useRequest(id);
   const { data: approvals, isLoading: approvalsLoading } = useRequestApprovals(id);
   const approveRequest = useApproveRequest();
@@ -333,20 +330,6 @@ export default function RequestDetailPage() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Approval Action Buttons */}
-      {canApprove && request.status === "IN_APPROVAL" && (
-        <div className="flex items-center gap-3">
-          <Button onClick={() => setApproveOpen(true)} className="gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            موافقة
-          </Button>
-          <Button variant="destructive" onClick={() => setRejectOpen(true)} className="gap-2">
-            <XCircle className="h-4 w-4" />
-            رفض
-          </Button>
-        </div>
       )}
 
       {/* Approval Steps Timeline */}
