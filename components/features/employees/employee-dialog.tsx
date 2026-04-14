@@ -246,7 +246,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
   const { data: allEmployeesData } = useEmployees({ limit: 100 });
   const { data: departmentsData } = useDepartments({ limit: 100 });
   const { data: gradesData } = useJobGrades();
-  const { data: titlesData } = useJobTitles();
+  const { data: titlesData } = useJobTitles({ limit: 500 });
 
   const allEmployees = (allEmployeesData as any)?.data?.items || (allEmployeesData as any)?.items || [];
   const departments = (departmentsData as any)?.data?.items || [];
