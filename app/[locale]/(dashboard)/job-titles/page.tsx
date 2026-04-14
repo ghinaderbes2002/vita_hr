@@ -25,21 +25,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useJobTitles, useDeleteJobTitle } from "@/lib/hooks/use-job-titles";
 import { JobTitleDialog } from "@/components/features/job-titles/job-title-dialog";
+import { Pagination } from "@/components/shared/pagination";
 import { JobTitle } from "@/types";
 
 export default function JobTitlesPage() {
   const t = useTranslations();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTitle, setSelectedTitle] = useState<JobTitle | null>(null);
 
-  const { data, isLoading } = useJobTitles();
+  const LIMIT = 10;
+  const { data, isLoading } = useJobTitles({ page, limit: LIMIT });
   const deleteJobTitle = useDeleteJobTitle();
 
   const allTitles: JobTitle[] = Array.isArray(data)
     ? data
     : (data as any)?.data?.items || (data as any)?.data || [];
+
+  const total: number = (data as any)?.data?.total ?? 0;
+  const totalPages: number = (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
 
   const titles = allTitles.filter(
     (t) =>
@@ -48,6 +54,11 @@ export default function JobTitlesPage() {
       t.nameEn?.toLowerCase().includes(search.toLowerCase()) ||
       t.code?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleSearch = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
 
   const handleEdit = (title: JobTitle) => {
     setSelectedTitle(title);
@@ -85,7 +96,7 @@ export default function JobTitlesPage() {
         <Input
           placeholder={t("jobTitles.searchPlaceholder")}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearch(e.target.value)}
           className="pr-10"
         />
       </div>
@@ -161,6 +172,16 @@ export default function JobTitlesPage() {
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          limit={LIMIT}
+          onPageChange={setPage}
+        />
+      )}
 
       <JobTitleDialog
         open={dialogOpen}
