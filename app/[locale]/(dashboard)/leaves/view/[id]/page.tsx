@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowRight, Edit, Send, XCircle, CheckCircle, X } from "lucide-react";
+import { ArrowRight, Edit, Send, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,16 +11,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/features/leave-requests/status-badge";
 import {
   useLeaveRequest,
   useSubmitLeaveRequest,
   useCancelLeaveRequest,
-  useApproveManager,
-  useRejectManager,
-  useApproveHr,
-  useRejectHr,
 } from "@/lib/hooks/use-leave-requests";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -42,19 +37,11 @@ export default function ViewLeaveRequestPage() {
 
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [rejectReason, setRejectReason] = useState("");
-  const [notes, setNotes] = useState("");
 
   const { data: request, isLoading } = useLeaveRequest(id);
   const submitRequest = useSubmitLeaveRequest();
   const cancelRequest = useCancelLeaveRequest();
-  const approveManager = useApproveManager();
-  const rejectManager = useRejectManager();
-  const approveHr = useApproveHr();
-  const rejectHr = useRejectHr();
 
   const handleSubmit = async () => {
     await submitRequest.mutateAsync(id);
@@ -66,29 +53,6 @@ export default function ViewLeaveRequestPage() {
       await cancelRequest.mutateAsync({ id, data: { reason: cancelReason } });
       setCancelDialogOpen(false);
       setCancelReason("");
-    }
-  };
-
-  const handleApprove = async () => {
-    const data = notes ? { notes } : undefined;
-    if (request?.status === "PENDING_MANAGER") {
-      await approveManager.mutateAsync({ id, data });
-    } else if (request?.status === "PENDING_HR" || request?.status === "MANAGER_APPROVED") {
-      await approveHr.mutateAsync({ id, data });
-    }
-    setApproveDialogOpen(false);
-    setNotes("");
-  };
-
-  const handleReject = async () => {
-    if (rejectReason) {
-      if (request?.status === "PENDING_MANAGER") {
-        await rejectManager.mutateAsync({ id, data: { reason: rejectReason } });
-      } else if (request?.status === "PENDING_HR" || request?.status === "MANAGER_APPROVED") {
-        await rejectHr.mutateAsync({ id, data: { reason: rejectReason } });
-      }
-      setRejectDialogOpen(false);
-      setRejectReason("");
     }
   };
 
@@ -132,9 +96,6 @@ export default function ViewLeaveRequestPage() {
   const canEdit = request.status === "DRAFT";
   const canSubmit = request.status === "DRAFT";
   const canCancel = ["PENDING_MANAGER", "PENDING_HR", "MANAGER_APPROVED"].includes(request.status);
-  const canApproveOrReject = ["PENDING_MANAGER", "PENDING_HR", "MANAGER_APPROVED"].includes(
-    request.status
-  );
 
   return (
     <div className="space-y-6">
@@ -300,31 +261,6 @@ export default function ViewLeaveRequestPage() {
         </Card>
       )}
 
-      {canApproveOrReject && (
-        <Card>
-          <CardHeader>
-            <CardTitle>إجراءات الموافقة</CardTitle>
-            <CardDescription>يمكنك الموافقة على الطلب أو رفضه</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-3">
-              <Button onClick={() => setApproveDialogOpen(true)} className="flex-1">
-                <CheckCircle className="h-4 w-4 ml-2" />
-                موافقة
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => setRejectDialogOpen(true)}
-                className="flex-1"
-              >
-                <X className="h-4 w-4 ml-2" />
-                رفض
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <ConfirmDialog
         open={submitDialogOpen}
         onOpenChange={setSubmitDialogOpen}
@@ -360,59 +296,6 @@ export default function ViewLeaveRequestPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>موافقة على الطلب</DialogTitle>
-            <DialogDescription>هل أنت متأكد من الموافقة على هذا الطلب؟</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="approve-notes">ملاحظات (اختياري)</Label>
-            <Textarea
-              id="approve-notes"
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="اكتب ملاحظاتك..."
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={handleApprove}>
-              موافقة
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>رفض الطلب</DialogTitle>
-            <DialogDescription>الرجاء كتابة سبب الرفض</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="reject-reason">سبب الرفض</Label>
-            <Textarea
-              id="reject-reason"
-              rows={3}
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="اكتب سبب الرفض..."
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button variant="destructive" onClick={handleReject}>
-              رفض الطلب
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
