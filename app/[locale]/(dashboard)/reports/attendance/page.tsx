@@ -47,16 +47,29 @@ export default function AttendanceReportsPage() {
   const lateKey = tAtt("absences.lateKey");
 
   const COL_LABELS: Record<string, string> = {
+    // minutes → hours
     netMinutes: "ساعات العمل", totalMinutes: "ساعات العمل", workMinutes: "ساعات العمل",
     totalWorkMinutes: "ساعات العمل", netWorkMinutes: "ساعات العمل",
     lateMinutes: "دقائق التأخر", totalLateMinutes: "دقائق التأخر",
     overtimeMinutes: "دقائق الإضافي", totalOvertimeMinutes: "دقائق الإضافي",
+    totalBreakMinutes: "دقائق الاستراحة", breakMinutes: "دقائق الاستراحة",
+    earlyLeaveMinutes: "دقائق الخروج المبكر", totalEarlyLeaveMinutes: "دقائق الخروج المبكر",
+    // time / status
     checkIn: "وقت الدخول", checkOut: "وقت الخروج",
     status: "الحالة", date: "التاريخ",
-    presentDays: "أيام الحضور", absentDays: "أيام الغياب",
-    lateDays: "أيام التأخر", workDays: "أيام العمل",
+    // counts / days
+    totalEmployees: "إجمالي الموظفين", employeeCount: "عدد الموظفين",
+    presentCount: "الحاضرون", absentCount: "الغائبون",
+    lateCount: "عدد التأخرات", earlyLeaveCount: "المغادرون مبكراً",
+    onLeaveCount: "في إجازة", presentDays: "أيام الحضور",
+    absentDays: "أيام الغياب", lateDays: "أيام التأخر",
+    workDays: "أيام العمل", workingDays: "أيام العمل",
+    earlyLeaveDays: "أيام الخروج المبكر",
+    // rates / hours
     attendanceRate: "نسبة الحضور %", overtimeDays: "أيام الإضافي",
-    totalOvertimeHours: "ساعات الإضافي",
+    totalOvertimeHours: "ساعات الإضافي", overtimeHours: "ساعات الإضافي",
+    avgAttendanceRate: "متوسط نسبة الحضور %",
+    totalWorkedHours: "ساعات العمل الكلية", avgWorkedHours: "متوسط ساعات العمل",
   };
 
   const MINUTE_COLS = new Set(["netMinutes","totalMinutes","workMinutes","totalWorkMinutes","netWorkMinutes"]);
@@ -311,7 +324,7 @@ export default function AttendanceReportsPage() {
                       <Card key={k}>
                         <CardContent className="p-4 text-center">
                           <p className="text-2xl font-bold">{typeof v === "number" ? (Number.isInteger(v) ? v : (v as number).toFixed(1)) : String(v)}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{k}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{colLabel(k)}</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -395,7 +408,7 @@ export default function AttendanceReportsPage() {
                       <Card key={k}>
                         <CardContent className="p-4 text-center">
                           <p className="text-2xl font-bold">{typeof v === "number" ? (Number.isInteger(v) ? v : (v as number).toFixed(1)) : String(v)}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{k}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{colLabel(k)}</p>
                         </CardContent>
                       </Card>
                     ))}
