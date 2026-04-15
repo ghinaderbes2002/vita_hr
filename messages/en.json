@@ -222,6 +222,9 @@
       "evaluation": "Evaluations",
       "leaves": "Leaves",
       "custodies": "Custody Management",
+      "biometric": "Biometric Devices",
+      "probation": "Probation",
+      "jobs": "Jobs & Recruitment",
       "other": "Other"
     }
   },

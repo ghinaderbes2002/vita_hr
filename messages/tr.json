@@ -200,6 +200,9 @@
       "evaluation": "Değerlendirmeler",
       "leaves": "İzinler",
       "custodies": "Emanet Yönetimi",
+      "biometric": "Biyometrik Cihazlar",
+      "probation": "Deneme Süreci",
+      "jobs": "İşler ve İşe Alım",
       "other": "Diğer"
     }
   },
@@ -1164,6 +1167,56 @@
         "to": "Bitiş",
         "days": "Günler"
       }
+    }
+  },
+  "biometricDevices": {
+    "title": "Biyometrik Cihazlar",
+    "description": "Sisteme bağlı biyometrik cihazları yönetin",
+    "addDevice": "Cihaz Ekle",
+    "stats": {
+      "total": "Toplam Cihaz",
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "table": {
+      "name": "Ad",
+      "serialNumber": "Seri Numarası",
+      "location": "Konum",
+      "model": "Model",
+      "lastSync": "Son Senkronizasyon",
+      "status": "Durum"
+    },
+    "empty": {
+      "title": "Biyometrik Cihaz Yok",
+      "description": "Başlamak için yeni bir biyometrik cihaz ekleyin"
+    },
+    "form": {
+      "nameAr": "Arapça Ad",
+      "nameEn": "İngilizce Ad",
+      "serialNumber": "Seri Numarası",
+      "location": "Konum",
+      "ipAddress": "IP Adresi",
+      "model": "Model",
+      "isActive": "Cihazı Etkinleştir",
+      "nameArPlaceholder": "Ana Giriş Cihazı",
+      "nameEnPlaceholder": "Main Entrance Device",
+      "serialNumberPlaceholder": "SN-001",
+      "locationPlaceholder": "Ana Giriş",
+      "modelPlaceholder": "ZKTeco F22"
+    },
+    "dialog": {
+      "addTitle": "Biyometrik Cihaz Ekle",
+      "editTitle": "Cihazı Düzenle",
+      "save": "Değişiklikleri Kaydet",
+      "add": "Ekle"
+    },
+    "delete": {
+      "title": "Cihazı Sil",
+      "description": "\"{name}\" cihazını silmek istediğinizden emin misiniz? Tüm ilgili veriler silinecektir."
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Pasif"
     }
   }
 }
