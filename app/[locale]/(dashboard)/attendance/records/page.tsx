@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Search, MoreHorizontal, Trash2, Calendar, Clock, Plus, Filter } from "lucide-react";
+import { Search, MoreHorizontal, Trash2, Calendar, Clock, Plus, Filter, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -305,19 +305,31 @@ export default function AttendanceRecordsPage() {
                       {formatTime(record.clockOutTime)}
                     </div>
                   </TableCell>
-                  <TableCell>{formatDuration(record.workedMinutes)}</TableCell>
+                  <TableCell>
+                    {formatDuration(record.netWorkedMinutes ?? record.workedMinutes)}
+                  </TableCell>
                   <TableCell>
                     <span className="text-destructive font-medium">
                       {formatLateMinutes(record.lateMinutes)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap">
                       <AttendanceStatusBadge status={record.status} />
                       {record.isManualEntry && (
                         <Badge variant="outline" className="text-[10px] px-1 py-0 bg-amber-50 text-amber-600 border-amber-200">
                           يدوي
                         </Badge>
+                      )}
+                      {record.interpretedAs === "DUPLICATE_IGNORED" && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-gray-50 text-gray-500 border-gray-200">
+                          مكرر
+                        </Badge>
+                      )}
+                      {record.syncError && (
+                        <span title={record.syncError}>
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                        </span>
                       )}
                     </div>
                   </TableCell>

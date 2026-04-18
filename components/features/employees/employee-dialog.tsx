@@ -44,10 +44,11 @@ type FormData = {
   firstNameAr: string; lastNameAr: string; firstNameEn: string; lastNameEn: string;
   email: string; phone?: string; mobile?: string; nationalId: string;
   gender: "MALE" | "FEMALE"; dateOfBirth: string; departmentId: string; hireDate: string;
-  contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE";
-  probationPeriod?: "ONE_MONTH" | "TWO_MONTHS" | "THREE_MONTHS";
+  contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE" | "CONSULTANT" | "SERVICE_PROVIDER";
+  probationPeriod?: "ONE_MONTH" | "TWO_MONTHS" | "THREE_MONTHS" | "PERMANENT";
   interviewEvaluation?: "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR";
   employmentStatus?: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
+  workType?: "FULL_TIME" | "PART_TIME" | "REMOTE";
   jobTitleId?: string; jobGradeId?: string; managerId?: string; basicSalary?: number;
   profilePhoto?: string;
   bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE";
@@ -55,7 +56,7 @@ type FormData = {
   isSmoker?: boolean;
   hasDrivingLicense?: boolean;
   maritalStatus?: "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED";
-  educationLevel?: "ILLITERATE" | "PRIMARY" | "SECONDARY" | "DIPLOMA" | "UNIVERSITY" | "POSTGRADUATE";
+  educationLevel?: "PRIMARY" | "INTERMEDIATE" | "SECONDARY" | "DIPLOMA" | "BACHELOR" | "POSTGRADUATE";
   universityYear?: number; religion?: string; yearsOfExperience?: number;
   certificate1?: string; specialization1?: string; university1?: string; certificateAttachment1?: string;
   certificate2?: string; specialization2?: string; university2?: string; certificateAttachment2?: string;
@@ -208,10 +209,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     dateOfBirth: z.string().min(1, t("employees.form.dateOfBirthRequired")),
     departmentId: z.string().min(1, t("employees.form.departmentRequired")),
     hireDate: z.string().min(1, t("employees.form.hireDateRequired")),
-    contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE"]),
-    probationPeriod: z.enum(["ONE_MONTH", "TWO_MONTHS", "THREE_MONTHS"]).optional(),
+    contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE", "CONSULTANT", "SERVICE_PROVIDER"]),
+    probationPeriod: z.enum(["ONE_MONTH", "TWO_MONTHS", "THREE_MONTHS", "PERMANENT"]).optional(),
     interviewEvaluation: z.enum(["EXCELLENT", "VERY_GOOD", "GOOD", "ACCEPTABLE", "POOR"]).optional(),
     employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
+    workType: z.enum(["FULL_TIME", "PART_TIME", "REMOTE"]).optional(),
     jobTitleId: z.string().optional(),
     jobGradeId: z.string().optional(),
     managerId: z.string().optional(),
@@ -224,7 +226,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     isSmoker: z.boolean().optional(),
     hasDrivingLicense: z.boolean().optional(),
     maritalStatus: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"]).optional(),
-    educationLevel: z.enum(["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"]).optional(),
+    educationLevel: z.enum(["PRIMARY", "INTERMEDIATE", "SECONDARY", "DIPLOMA", "BACHELOR", "POSTGRADUATE"]).optional(),
     universityYear: z.number().int().min(1).max(7).optional(),
     religion: z.string().optional(),
     yearsOfExperience: z.number().int().min(0).optional(),
@@ -278,6 +280,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       probationPeriod: undefined,
       interviewEvaluation: defaultInterviewEvaluation,
       employmentStatus: "ACTIVE",
+      workType: undefined,
       jobTitleId: "",
       jobGradeId: "",
       managerId: "",
@@ -328,6 +331,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         probationPeriod: (employee as any).probationPeriod || undefined,
         interviewEvaluation: (employee as any).interviewEvaluation || undefined,
         employmentStatus: employee.employmentStatus || "ACTIVE",
+        workType: (employee as any).workType || undefined,
         jobTitleId: (employee as any).jobTitleId || "",
         jobGradeId: (employee as any).jobGradeId || "",
         managerId: (employee as any).managerId || "",
@@ -372,6 +376,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         hireDate: "",
         contractType: "INDEFINITE",
         employmentStatus: "ACTIVE",
+        workType: undefined,
         jobTitleId: "",
         jobGradeId: "",
         managerId: "",
@@ -431,7 +436,9 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           dateOfBirth: data.dateOfBirth,
           departmentId: data.departmentId,
           contractType: data.contractType,
+          probationPeriod: data.probationPeriod || undefined,
           employmentStatus: data.employmentStatus,
+          workType: data.workType || undefined,
           jobTitleId: data.jobTitleId || undefined,
           jobGradeId: data.jobGradeId || undefined,
           managerId: data.managerId || undefined,
@@ -858,6 +865,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                             <SelectItem value="INDEFINITE">{t("employees.contractTypes.indefinite")}</SelectItem>
                             <SelectItem value="TEMPORARY">{t("employees.contractTypes.temporary")}</SelectItem>
                             <SelectItem value="TRAINEE">{t("employees.contractTypes.trainee")}</SelectItem>
+                            <SelectItem value="CONSULTANT">{t("employees.contractTypes.consultant")}</SelectItem>
+                            <SelectItem value="SERVICE_PROVIDER">{t("employees.contractTypes.service_provider")}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -880,6 +889,29 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                             <SelectItem value="ONE_MONTH">شهر</SelectItem>
                             <SelectItem value="TWO_MONTHS">شهران</SelectItem>
                             <SelectItem value="THREE_MONTHS">3 شهور</SelectItem>
+                            <SelectItem value="PERMANENT">دائم</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="workType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>نوع العمل ({t("common.optional")})</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                          <FormControl>
+                            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            <SelectItem value="FULL_TIME">دوام كامل</SelectItem>
+                            <SelectItem value="PART_TIME">دوام جزئي</SelectItem>
+                            <SelectItem value="REMOTE">عن بُعد</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -1012,7 +1044,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="__none__">—</SelectItem>
-                            {["ILLITERATE", "PRIMARY", "SECONDARY", "DIPLOMA", "UNIVERSITY", "POSTGRADUATE"].map((el) => (
+                            {["PRIMARY", "INTERMEDIATE", "SECONDARY", "DIPLOMA", "BACHELOR", "POSTGRADUATE"].map((el) => (
                               <SelectItem key={el} value={el}>{t(`employees.educationLevels.${el}`)}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1022,7 +1054,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     )}
                   />
 
-                  {form.watch("educationLevel") === "UNIVERSITY" && (
+                  {form.watch("educationLevel") === "BACHELOR" && (
                     <FormField
                       control={form.control}
                       name="universityYear"

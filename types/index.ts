@@ -204,8 +204,9 @@ export interface Employee {
   managerId?: string;
   manager?: { id: string; employeeNumber: string; firstNameAr: string; lastNameAr: string };
   hireDate: string;
-  contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE";
+  contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE" | "CONSULTANT" | "SERVICE_PROVIDER";
   employmentStatus: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
+  workType?: "FULL_TIME" | "PART_TIME" | "REMOTE";
   basicSalary?: number;
   // Additional fields
   profilePhoto?: string;
@@ -214,7 +215,7 @@ export interface Employee {
   chronicDiseases?: string;
   currentAddress?: string;
   isSmoker?: boolean;
-  educationLevel?: "ILLITERATE" | "PRIMARY" | "SECONDARY" | "DIPLOMA" | "UNIVERSITY" | "POSTGRADUATE";
+  educationLevel?: "PRIMARY" | "INTERMEDIATE" | "SECONDARY" | "DIPLOMA" | "BACHELOR" | "POSTGRADUATE";
   universityYear?: number;
   religion?: string;
   // Qualification fields

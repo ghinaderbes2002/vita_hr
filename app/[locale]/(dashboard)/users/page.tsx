@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Shield } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Shield, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +33,7 @@ import { useUsers, useDeleteUser } from "@/lib/hooks/use-users";
 import { Pagination } from "@/components/shared/pagination";
 import { UserDialog } from "@/components/features/users/user-dialog";
 import { AssignRolesDialog } from "@/components/features/users/assign-roles-dialog";
+import { ChangePasswordDialog } from "@/components/features/users/change-password-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function UsersPage() {
@@ -43,6 +44,7 @@ export default function UsersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const LIMIT = 10;
@@ -68,6 +70,11 @@ export default function UsersPage() {
   const handleAssignRoles = (user: any) => {
     setSelectedUser(user);
     setRolesDialogOpen(true);
+  };
+
+  const handleChangePassword = (user: any) => {
+    setSelectedUser(user);
+    setChangePasswordOpen(true);
   };
 
   const handleDelete = (user: any) => {
@@ -188,6 +195,10 @@ export default function UsersPage() {
                           <Shield className="h-4 w-4 ml-2" />
                           {t("users.assignRoles")}
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangePassword(user)}>
+                          <KeyRound className="h-4 w-4 ml-2" />
+                          تغيير كلمة المرور
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDelete(user)}
                           className="text-destructive"
@@ -226,6 +237,14 @@ export default function UsersPage() {
         onOpenChange={setRolesDialogOpen}
         user={selectedUser}
       />
+
+      {selectedUser && (
+        <ChangePasswordDialog
+          open={changePasswordOpen}
+          onOpenChange={setChangePasswordOpen}
+          user={selectedUser}
+        />
+      )}
 
       <ConfirmDialog
         open={deleteDialogOpen}

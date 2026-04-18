@@ -266,7 +266,9 @@
       "fixed_term": "عقد محدد المدة",
       "indefinite": "عقد غير محدد المدة",
       "temporary": "مؤقت",
-      "trainee": "متدرب"
+      "trainee": "متدرب",
+      "consultant": "استشاري",
+      "service_provider": "مزود خدمة"
     },
     "bloodTypes": {
       "A_POSITIVE": "A+",
@@ -279,11 +281,11 @@
       "O_NEGATIVE": "O-"
     },
     "educationLevels": {
-      "ILLITERATE": "أمي",
       "PRIMARY": "ابتدائي",
+      "INTERMEDIATE": "إعدادي",
       "SECONDARY": "ثانوي",
       "DIPLOMA": "دبلوم",
-      "UNIVERSITY": "جامعي",
+      "BACHELOR": "بكالوريوس",
       "POSTGRADUATE": "دراسات عليا"
     },
     "choosePhoto": "اختر صورة",

@@ -18,6 +18,12 @@ export interface RegisterFingerprintData {
   pin: string;
 }
 
+export interface BulkFingerprintMapping {
+  employeeId: string;
+  pin: string;
+  deviceId: string;
+}
+
 export const employeeFingerprintsApi = {
   getByEmployee: async (employeeId: string): Promise<EmployeeFingerprint[]> => {
     const response = await apiClient.get("/employee-fingerprints", {
@@ -28,6 +34,11 @@ export const employeeFingerprintsApi = {
 
   register: async (data: RegisterFingerprintData): Promise<EmployeeFingerprint> => {
     const response = await apiClient.post("/employee-fingerprints", data);
+    return response.data?.data || response.data;
+  },
+
+  bulkCreate: async (mappings: BulkFingerprintMapping[]): Promise<EmployeeFingerprint[]> => {
+    const response = await apiClient.post("/employee-fingerprints/bulk", { mappings });
     return response.data?.data || response.data;
   },
 

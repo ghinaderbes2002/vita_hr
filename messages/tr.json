@@ -342,7 +342,9 @@
       "fixed_term": "Belirli Süreli",
       "indefinite": "Belirsiz Süreli",
       "temporary": "Geçici",
-      "trainee": "Stajyer"
+      "trainee": "Stajyer",
+      "consultant": "Danışman",
+      "service_provider": "Hizmet Sağlayıcı"
     },
     "bloodTypes": {
       "A_POSITIVE": "A+",
@@ -355,11 +357,11 @@
       "O_NEGATIVE": "O-"
     },
     "educationLevels": {
-      "ILLITERATE": "Okuma-yazma bilmiyor",
       "PRIMARY": "İlkokul",
+      "INTERMEDIATE": "Ortaokul",
       "SECONDARY": "Lise",
       "DIPLOMA": "Diploma",
-      "UNIVERSITY": "Üniversite",
+      "BACHELOR": "Lisans",
       "POSTGRADUATE": "Lisansüstü"
     },
     "choosePhoto": "Fotoğraf Seç",

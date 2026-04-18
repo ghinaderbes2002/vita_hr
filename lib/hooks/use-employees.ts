@@ -35,7 +35,10 @@ export function useCreateEmployee() {
         error.message ||
         "حدث خطأ أثناء إنشاء الموظف";
 
-      if (errorMessage.includes("duplicate") || errorMessage.includes("already exists")) {
+      const errCode = error.response?.data?.error?.code || error.response?.data?.code;
+      if (errCode === "EMPLOYEE_PREVIOUSLY_DELETED") {
+        toast.error("يوجد موظف محذوف مسبقاً بنفس البريد الإلكتروني — يرجى التواصل مع الإدارة");
+      } else if (errCode === "RESOURCE_ALREADY_EXISTS" || errorMessage.includes("duplicate") || errorMessage.includes("already exists")) {
         toast.error("رقم الهوية أو البريد الإلكتروني مستخدم مسبقاً");
       } else if (errorMessage.includes("validation") || errorMessage.includes("required")) {
         toast.error("يرجى التحقق من جميع الحقول المطلوبة");

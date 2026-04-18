@@ -74,6 +74,13 @@ export function useCreateUser() {
         return;
       }
 
+      // Check for specific error codes first
+      const errCode = error.response?.data?.error?.code || error.response?.data?.code;
+      if (errCode === "USER_PREVIOUSLY_DELETED") {
+        toast.error("يوجد مستخدم محذوف مسبقاً بنفس البريد الإلكتروني — يرجى التواصل مع الإدارة");
+        return;
+      }
+
       // Check for specific error patterns
       if (error.response?.status === 409 ||
           errorMessage.includes("duplicate") ||
@@ -145,6 +152,28 @@ export function useDeleteUser() {
       }
 
       toast.error(errorMessage);
+    },
+  });
+}
+
+export function useChangePassword() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, currentPassword, newPassword }: { id: string; currentPassword: string; newPassword: string }) =>
+      usersApi.changePassword(id, { currentPassword, newPassword }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("تم تغيير كلمة المرور بنجاح");
+    },
+    onError: (error: any) => {
+      const errCode = error.response?.data?.error?.code || error.response?.data?.code;
+      if (errCode === "INVALID_CURRENT_PASSWORD") {
+        toast.error("كلمة المرور الحالية غير صحيحة");
+      } else {
+        const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message;
+        toast.error(msg || "حدث خطأ أثناء تغيير كلمة المرور");
+      }
     },
   });
 }

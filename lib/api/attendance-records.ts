@@ -26,11 +26,15 @@ export interface AttendanceRecord {
   clockInTime?: string;
   clockOutTime?: string;
   workedMinutes?: number;
+  netWorkedMinutes?: number;
+  totalBreakMinutes?: number;
   lateMinutes?: number;
   earlyLeaveMinutes?: number;
   overtimeMinutes?: number;
   breakMinutes?: number;
   status: AttendanceStatus;
+  syncError?: string;
+  interpretedAs?: string;
   clockInLocation?: string;
   clockOutLocation?: string;
   clockInIp?: string;

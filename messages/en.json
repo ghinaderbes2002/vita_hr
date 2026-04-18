@@ -340,7 +340,9 @@
       "fixed_term": "Fixed Term",
       "indefinite": "Indefinite",
       "temporary": "Temporary",
-      "trainee": "Trainee"
+      "trainee": "Trainee",
+      "consultant": "Consultant",
+      "service_provider": "Service Provider"
     },
     "bloodTypes": {
       "A_POSITIVE": "A+",
@@ -353,11 +355,11 @@
       "O_NEGATIVE": "O-"
     },
     "educationLevels": {
-      "ILLITERATE": "Illiterate",
       "PRIMARY": "Primary",
+      "INTERMEDIATE": "Intermediate",
       "SECONDARY": "Secondary",
       "DIPLOMA": "Diploma",
-      "UNIVERSITY": "University",
+      "BACHELOR": "Bachelor",
       "POSTGRADUATE": "Postgraduate"
     },
     "choosePhoto": "Choose Photo",
