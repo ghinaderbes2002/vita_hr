@@ -36,6 +36,12 @@ export default function HrReportsPage() {
   const salList = (salaries as any[]) || [];
   const exp = expiry as any;
 
+  // total قد يجي كـ string من Prisma أو يكون 0 بينما البيانات موجودة
+  const totalEmployees = Number(sum?.total)
+    || Number(sum?.totalCount)
+    || (sum?.byGender || []).reduce((acc: number, g: any) => acc + (Number(g.count) || 0), 0)
+    || 0;
+
   const turnoverData = months.map((name, i) => {
     const month = i + 1;
     const hired = (turn?.hired || []).find((h: any) => h.month === month)?.count || 0;
@@ -72,7 +78,7 @@ export default function HrReportsPage() {
           {/* KPI */}
           <Card>
             <CardContent className="p-6 flex flex-col items-center justify-center h-full gap-2">
-              <p className="text-5xl font-bold text-primary">{sum.total || 0}</p>
+              <p className="text-5xl font-bold text-primary">{totalEmployees}</p>
               <p className="text-muted-foreground text-sm">{tHr("employees.total")}</p>
             </CardContent>
           </Card>

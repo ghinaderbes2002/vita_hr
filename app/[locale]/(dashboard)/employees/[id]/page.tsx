@@ -277,7 +277,7 @@ export default function EmployeeDetailsPage() {
             <InfoRow label={t("employees.fields.gender")} value={t(`employees.genders.${employee.gender.toLowerCase()}`)} />
             <InfoRow
               label={t("employees.fields.dateOfBirth")}
-              value={employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString("ar-EG") : undefined}
+              value={employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString("en-GB") : undefined}
             />
             {emp.maritalStatus && (
               <InfoRow label="الحالة الاجتماعية" value={MARITAL_STATUS_LABELS[emp.maritalStatus] || emp.maritalStatus} />
@@ -331,7 +331,7 @@ export default function EmployeeDetailsPage() {
             <InfoRow label={t("employees.fields.jobGrade")} value={emp.jobGrade?.nameAr} />
             <InfoRow
               label={t("employees.fields.hireDate")}
-              value={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("ar-EG") : undefined}
+              value={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("en-GB") : undefined}
             />
             <InfoRow label={t("employees.fields.contractType")} value={CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType} />
             <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `$${Number(emp.basicSalary).toLocaleString("en-US")}` : undefined} />
@@ -430,6 +430,7 @@ export default function EmployeeDetailsPage() {
                   <span className="text-xs font-semibold text-muted-foreground uppercase">الشهادة الأولى</span>
                   <InfoRow label="الشهادة" value={emp.certificate1} />
                   {emp.specialization1 && <InfoRow label="التخصص" value={emp.specialization1} />}
+                  {emp.university1 && <InfoRow label="الجامعة" value={emp.university1} />}
                   {emp.certificateAttachment1 && (
                     <a
                       href={emp.certificateAttachment1}
@@ -448,6 +449,7 @@ export default function EmployeeDetailsPage() {
                   <span className="text-xs font-semibold text-muted-foreground uppercase">الشهادة الثانية</span>
                   <InfoRow label="الشهادة" value={emp.certificate2} />
                   {emp.specialization2 && <InfoRow label="التخصص" value={emp.specialization2} />}
+                  {emp.university2 && <InfoRow label="الجامعة" value={emp.university2} />}
                   {emp.certificateAttachment2 && (
                     <a
                       href={emp.certificateAttachment2}
@@ -522,7 +524,7 @@ export default function EmployeeDetailsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{att.fileName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(att.createdAt).toLocaleDateString("ar-EG")}
+                        {new Date(att.createdAt).toLocaleDateString("en-GB")}
                       </p>
                     </div>
                   </a>
@@ -551,11 +553,11 @@ export default function EmployeeDetailsPage() {
             </div>
             <InfoRow
               label={t("employees.createdAt")}
-              value={employee.createdAt ? new Date(employee.createdAt).toLocaleDateString("ar-EG") : undefined}
+              value={employee.createdAt ? new Date(employee.createdAt).toLocaleDateString("en-GB") : undefined}
             />
             <InfoRow
               label={t("employees.updatedAt")}
-              value={employee.updatedAt ? new Date(employee.updatedAt).toLocaleDateString("ar-EG") : undefined}
+              value={employee.updatedAt ? new Date(employee.updatedAt).toLocaleDateString("en-GB") : undefined}
             />
           </CardContent>
         </Card>
@@ -640,7 +642,7 @@ export default function EmployeeDetailsPage() {
                           {fp.device?.nameAr || "جهاز غير محدد"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          PIN: {fp.pin} • {new Date(fp.createdAt).toLocaleDateString("ar-EG")}
+                          PIN: {fp.pin} • {new Date(fp.createdAt).toLocaleDateString("en-GB")}
                         </p>
                       </div>
                     </div>

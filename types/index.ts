@@ -221,9 +221,11 @@ export interface Employee {
   yearsOfExperience?: number;
   certificate1?: string;
   specialization1?: string;
+  university1?: string;
   certificateAttachment1?: string;
   certificate2?: string;
   specialization2?: string;
+  university2?: string;
   certificateAttachment2?: string;
   // Arrays
   attachments?: EmployeeAttachment[];

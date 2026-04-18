@@ -36,7 +36,8 @@
       "newRequest": "New Request",
       "allRequests": "All Requests",
       "reports": "Reports",
-      "attendance": "Attendance"
+      "attendance": "Attendance",
+      "addEmployee": "Add Employee"
     }
   },
   "nav": {
@@ -256,6 +257,8 @@
       "degreeName": "Degree Name",
       "specialization": "Specialization",
       "attachment": "Attachment",
+      "universityName": "University Name",
+      "universityNamePlaceholder": "University of Damascus",
       "bachelorPlaceholder": "Bachelor of Business Administration",
       "hrPlaceholder": "Human Resources Management",
       "masterPlaceholder": "Master's Degree",
@@ -297,7 +300,7 @@
       "firstNameEn": "First Name (English)",
       "lastNameEn": "Last Name (English)",
       "email": "Email",
-      "phone": "Phone",
+      "phone": "Company Number",
       "mobile": "Mobile",
       "nationalId": "National Number",
       "gender": "Gender",

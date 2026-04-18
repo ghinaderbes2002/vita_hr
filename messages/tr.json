@@ -10,11 +10,36 @@
   "dashboard": {
     "title": "Kontrol Paneli",
     "welcomeMessage": "Hoşgeldiniz {name}",
+    "viewAll": "Tümünü Gör",
     "stats": {
       "totalEmployees": "Toplam Çalışan",
       "onLeave": "İzinde",
       "pendingRequests": "Bekleyen Talepler",
-      "lateToday": "Bugün Geç Kalanlar"
+      "lateToday": "Bugün Geç Kalanlar",
+      "pendingApplications": "Bekleyen Başvurular",
+      "expiringContracts": "30 Günde Sona Erecek Sözleşmeler"
+    },
+    "sections": {
+      "expiringContracts": "Yakında Sona Erecek Sözleşmeler",
+      "noExpiring": "30 gün içinde sona erecek sözleşme yok",
+      "topAbsences": "Bu Ay En Çok Devamsız",
+      "noAbsences": "Bu ay için devamsızlık verisi yok",
+      "byDepartment": "Departmana Göre Çalışan Dağılımı",
+      "days": "gün",
+      "absenceDays": "devamsızlık",
+      "lateTimes": "geç kalma"
+    },
+    "quickActions": "Hızlı İşlemler",
+    "actions": {
+      "employees": "Çalışanlar",
+      "addEmployee": "Çalışan Ekle",
+      "leaves": "İzinler",
+      "recruitment": "İşe Alım",
+      "custodies": "Emanetler",
+      "newRequest": "Yeni Talep",
+      "allRequests": "Tüm Talepler",
+      "reports": "Raporlar",
+      "attendance": "Devam"
     }
   },
   "nav": {
@@ -234,6 +259,8 @@
       "degreeName": "Derece Adı",
       "specialization": "Uzmanlık",
       "attachment": "Ek",
+      "universityName": "Üniversite Adı",
+      "universityNamePlaceholder": "Şam Üniversitesi",
       "bachelorPlaceholder": "İşletme Lisansı",
       "hrPlaceholder": "İnsan Kaynakları Yönetimi",
       "masterPlaceholder": "Yüksek Lisans",
@@ -275,7 +302,7 @@
       "firstNameEn": "Ad (İngilizce)",
       "lastNameEn": "Soyad (İngilizce)",
       "email": "E-posta",
-      "phone": "Telefon",
+      "phone": "Şirket Numarası",
       "mobile": "Cep Telefonu",
       "nationalId": "Ulusal Numara",
       "gender": "Cinsiyet",

@@ -150,7 +150,8 @@
       "newRequest": "طلب جديد",
       "allRequests": "كل الطلبات",
       "reports": "التقارير",
-      "attendance": "الحضور"
+      "attendance": "الحضور",
+      "addEmployee": "إضافة موظف"
     }
   },
   "employees": {
@@ -181,6 +182,8 @@
       "degreeName": "اسم الشهادة",
       "specialization": "التخصص",
       "attachment": "المرفق",
+      "universityName": "اسم الجامعة",
+      "universityNamePlaceholder": "جامعة دمشق",
       "bachelorPlaceholder": "بكالوريوس إدارة أعمال",
       "hrPlaceholder": "إدارة الموارد البشرية",
       "masterPlaceholder": "ماجستير",
@@ -223,7 +226,7 @@
       "firstNameEn": "الاسم الأول (إنجليزي)",
       "lastNameEn": "الاسم الأخير (إنجليزي)",
       "email": "البريد الإلكتروني",
-      "phone": "الهاتف",
+      "phone": "رقم الشركة",
       "mobile": "الجوال",
       "nationalId": "الرقم الوطني",
       "gender": "الجنس",

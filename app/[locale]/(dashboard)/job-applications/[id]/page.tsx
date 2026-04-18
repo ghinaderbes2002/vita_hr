@@ -752,7 +752,7 @@ export default function JobApplicationDetailPage() {
             {/* Technical Questions */}
             {evalForm.positionId && (
               <div className="space-y-2 rounded-lg border p-3">
-                <p className="text-sm font-medium">الأسئلة التقنية</p>
+                <p className="text-sm font-medium">الأسئلة الاختصاصية</p>
                 {techQuestionsLoading ? (
                   <p className="text-xs text-muted-foreground py-2">
                     جاري تحميل الأسئلة...

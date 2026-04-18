@@ -216,26 +216,6 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
 
             <FormField
               control={form.control}
-              name="order"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>مستوى الهيكل التنظيمي ({t("common.optional")})</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      placeholder="1 = إدارة عليا، 2 = أقسام رئيسية، ..."
-                      value={field.value ?? ""}
-                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>

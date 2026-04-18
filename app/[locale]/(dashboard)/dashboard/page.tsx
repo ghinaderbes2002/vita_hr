@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   Users, Calendar, Clock, AlertCircle, PlusCircle, ClipboardList,
-  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight,
+  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight, UserPlus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,12 +17,14 @@ import { useLeaveRequests } from "@/lib/hooks/use-leave-requests";
 import { useJobApplicationStats } from "@/lib/hooks/use-job-applications";
 import { useTopAbsencesReport } from "@/lib/hooks/use-attendance-reports";
 import { useEmployees } from "@/lib/hooks/use-employees";
+import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const { user } = useAuthStore();
   const locale = useLocale();
   const router = useRouter();
+  const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
 
   const today = new Date();
   const year = today.getFullYear();
@@ -259,6 +262,10 @@ export default function DashboardPage() {
               <Users className="h-5 w-5" />
               <span className="text-xs">{t("actions.employees")}</span>
             </Button>
+            <Button variant="outline" className="h-auto flex-col gap-2 py-4 border-primary/40 text-primary hover:bg-primary/5" onClick={() => setAddEmployeeOpen(true)}>
+              <UserPlus className="h-5 w-5" />
+              <span className="text-xs">{t("actions.addEmployee")}</span>
+            </Button>
             <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/reports/leave`)}>
               <Calendar className="h-5 w-5" />
               <span className="text-xs">{t("actions.leaves")}</span>
@@ -290,6 +297,8 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      <EmployeeDialog open={addEmployeeOpen} onOpenChange={setAddEmployeeOpen} />
     </div>
   );
 }

@@ -57,8 +57,8 @@ type FormData = {
   maritalStatus?: "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED";
   educationLevel?: "ILLITERATE" | "PRIMARY" | "SECONDARY" | "DIPLOMA" | "UNIVERSITY" | "POSTGRADUATE";
   universityYear?: number; religion?: string; yearsOfExperience?: number;
-  certificate1?: string; specialization1?: string; certificateAttachment1?: string;
-  certificate2?: string; specialization2?: string; certificateAttachment2?: string;
+  certificate1?: string; specialization1?: string; university1?: string; certificateAttachment1?: string;
+  certificate2?: string; specialization2?: string; university2?: string; certificateAttachment2?: string;
 };
 
 type Attachment = { fileUrl: string; fileName: string };
@@ -230,9 +230,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     yearsOfExperience: z.number().int().min(0).optional(),
     certificate1: z.string().optional(),
     specialization1: z.string().optional(),
+    university1: z.string().optional(),
     certificateAttachment1: z.string().optional(),
     certificate2: z.string().optional(),
     specialization2: z.string().optional(),
+    university2: z.string().optional(),
     certificateAttachment2: z.string().optional(),
   });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -292,9 +294,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       yearsOfExperience: undefined,
       certificate1: "",
       specialization1: "",
+      university1: "",
       certificateAttachment1: "",
       certificate2: "",
       specialization2: "",
+      university2: "",
       certificateAttachment2: "",
     },
   });
@@ -342,9 +346,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         yearsOfExperience: (employee as any).yearsOfExperience ?? undefined,
         certificate1: (employee as any).certificate1 || "",
         specialization1: (employee as any).specialization1 || "",
+        university1: (employee as any).university1 || "",
         certificateAttachment1: (employee as any).certificateAttachment1 || "",
         certificate2: (employee as any).certificate2 || "",
         specialization2: (employee as any).specialization2 || "",
+        university2: (employee as any).university2 || "",
         certificateAttachment2: (employee as any).certificateAttachment2 || "",
       });
       setAttachments((employee as any).attachments || []);
@@ -384,9 +390,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         yearsOfExperience: undefined,
         certificate1: "",
         specialization1: "",
+        university1: "",
         certificateAttachment1: "",
         certificate2: "",
         specialization2: "",
+        university2: "",
         certificateAttachment2: "",
         interviewEvaluation: defaultInterviewEvaluation,
       });
@@ -402,9 +410,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       if (data.yearsOfExperience !== undefined) qualificationFields.yearsOfExperience = data.yearsOfExperience;
       if (data.certificate1) qualificationFields.certificate1 = data.certificate1;
       if (data.specialization1) qualificationFields.specialization1 = data.specialization1;
+      if (data.university1) qualificationFields.university1 = data.university1;
       if (data.certificateAttachment1) qualificationFields.certificateAttachment1 = data.certificateAttachment1;
       if (data.certificate2) qualificationFields.certificate2 = data.certificate2;
       if (data.specialization2) qualificationFields.specialization2 = data.specialization2;
+      if (data.university2) qualificationFields.university2 = data.university2;
       if (data.certificateAttachment2) qualificationFields.certificateAttachment2 = data.certificateAttachment2;
 
       if (isEdit) {
@@ -1083,6 +1093,17 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   </div>
                   <FormField
                     control={form.control}
+                    name="university1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("employees.form.universityName")}</FormLabel>
+                        <FormControl><Input {...field} placeholder={t("employees.form.universityNamePlaceholder")} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="certificateAttachment1"
                     render={({ field }) => (
                       <FormItem>
@@ -1123,6 +1144,17 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       )}
                     />
                   </div>
+                  <FormField
+                    control={form.control}
+                    name="university2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("employees.form.universityName")}</FormLabel>
+                        <FormControl><Input {...field} placeholder={t("employees.form.universityNamePlaceholder")} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="certificateAttachment2"
