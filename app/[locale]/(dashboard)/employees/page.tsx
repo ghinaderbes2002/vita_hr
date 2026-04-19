@@ -53,7 +53,7 @@ export default function EmployeesPage() {
   const LIMIT = 10;
   const { data: allEmployeesData, isLoading: allEmployeesLoading } = useEmployees({ search, page, limit: LIMIT });
   const { data: departmentEmployees, isLoading: departmentEmployeesLoading } = useEmployeesByDepartment(selectedDepartment);
-  const { data: departmentsData } = useDepartments({});
+  const { data: departmentsData } = useDepartments({ limit: 500 });
   const deleteEmployee = useDeleteEmployee();
 
   const departments = (departmentsData as any)?.data?.items || [];

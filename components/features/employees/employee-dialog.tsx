@@ -205,28 +205,28 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     phone: z.string().optional(),
     mobile: z.string().optional(),
     nationalId: z.string().min(1, t("employees.form.nationalIdRequired")),
-    gender: z.enum(["MALE", "FEMALE"]),
+    gender: z.enum(["MALE", "FEMALE", "UNSPECIFIED"]),
     dateOfBirth: z.string().min(1, t("employees.form.dateOfBirthRequired")),
     departmentId: z.string().min(1, t("employees.form.departmentRequired")),
     hireDate: z.string().min(1, t("employees.form.hireDateRequired")),
-    contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE", "CONSULTANT", "SERVICE_PROVIDER"]),
-    probationPeriod: z.enum(["ONE_MONTH", "TWO_MONTHS", "THREE_MONTHS", "PERMANENT"]).optional(),
-    interviewEvaluation: z.enum(["EXCELLENT", "VERY_GOOD", "GOOD", "ACCEPTABLE", "POOR"]).optional(),
+    contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE", "CONSULTANT", "SERVICE_PROVIDER", "UNSPECIFIED"]),
+    probationPeriod: z.enum(["ONE_MONTH", "TWO_MONTHS", "THREE_MONTHS", "PERMANENT", "UNSPECIFIED"]).optional(),
+    interviewEvaluation: z.enum(["EXCELLENT", "VERY_GOOD", "GOOD", "ACCEPTABLE", "POOR", "UNSPECIFIED"]).optional(),
     employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
-    workType: z.enum(["FULL_TIME", "PART_TIME", "REMOTE"]).optional(),
+    workType: z.enum(["FULL_TIME", "PART_TIME", "REMOTE", "UNSPECIFIED"]).optional(),
     jobTitleId: z.string().optional(),
     jobGradeId: z.string().optional(),
     managerId: z.string().optional(),
     basicSalary: z.number().min(0).optional(),
     profilePhoto: z.string().optional(),
-    bloodType: z.enum(["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE"]).optional(),
+    bloodType: z.enum(["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE", "UNSPECIFIED"]).optional(),
     familyMembersCount: z.number().int().min(0).optional(),
     chronicDiseases: z.string().optional(),
     currentAddress: z.string().optional(),
     isSmoker: z.boolean().optional(),
     hasDrivingLicense: z.boolean().optional(),
-    maritalStatus: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"]).optional(),
-    educationLevel: z.enum(["PRIMARY", "INTERMEDIATE", "SECONDARY", "DIPLOMA", "BACHELOR", "POSTGRADUATE"]).optional(),
+    maritalStatus: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED", "UNSPECIFIED"]).optional(),
+    educationLevel: z.enum(["PRIMARY", "INTERMEDIATE", "SECONDARY", "DIPLOMA", "BACHELOR", "POSTGRADUATE", "UNSPECIFIED"]).optional(),
     universityYear: z.number().int().min(1).max(7).optional(),
     religion: z.string().optional(),
     yearsOfExperience: z.number().int().min(0).optional(),
@@ -272,11 +272,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       phone: "",
       mobile: "",
       nationalId: "",
-      gender: "MALE",
+      gender: "UNSPECIFIED",
       dateOfBirth: "",
       departmentId: "",
       hireDate: "",
-      contractType: "INDEFINITE",
+      contractType: "UNSPECIFIED",
       probationPeriod: undefined,
       interviewEvaluation: defaultInterviewEvaluation,
       employmentStatus: "ACTIVE",
@@ -323,11 +323,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         phone: employee.phone || "",
         mobile: employee.mobile || "",
         nationalId: employee.nationalId || "",
-        gender: employee.gender || "MALE",
+        gender: employee.gender || "UNSPECIFIED",
         dateOfBirth: toDateInput(employee.dateOfBirth),
         departmentId: employee.departmentId || "",
         hireDate: toDateInput(employee.hireDate),
-        contractType: (employee.contractType as any) || "INDEFINITE",
+        contractType: (employee.contractType as any) || "UNSPECIFIED",
         probationPeriod: (employee as any).probationPeriod || undefined,
         interviewEvaluation: (employee as any).interviewEvaluation || undefined,
         employmentStatus: employee.employmentStatus || "ACTIVE",
@@ -370,11 +370,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         phone: "",
         mobile: "",
         nationalId: "",
-        gender: "MALE",
+        gender: "UNSPECIFIED",
         dateOfBirth: "",
         departmentId: "",
         hireDate: "",
-        contractType: "INDEFINITE",
+        contractType: "UNSPECIFIED",
         employmentStatus: "ACTIVE",
         workType: undefined,
         jobTitleId: "",
@@ -610,6 +610,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                             <SelectTrigger><SelectValue /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                             <SelectItem value="MALE">{t("employees.genders.male")}</SelectItem>
                             <SelectItem value="FEMALE">{t("employees.genders.female")}</SelectItem>
                           </SelectContent>
@@ -861,6 +862,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                             <SelectTrigger><SelectValue /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                             <SelectItem value="FIXED_TERM">{t("employees.contractTypes.fixed_term")}</SelectItem>
                             <SelectItem value="INDEFINITE">{t("employees.contractTypes.indefinite")}</SelectItem>
                             <SelectItem value="TEMPORARY">{t("employees.contractTypes.temporary")}</SelectItem>
@@ -880,12 +882,12 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>فترة التجربة ({t("common.optional")})</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                        <Select onValueChange={(v) => field.onChange(v === "UNSPECIFIED" ? undefined : v)} value={field.value || "UNSPECIFIED"}>
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="غير محدد" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__none__">—</SelectItem>
+                            <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                             <SelectItem value="ONE_MONTH">شهر</SelectItem>
                             <SelectItem value="TWO_MONTHS">شهران</SelectItem>
                             <SelectItem value="THREE_MONTHS">3 شهور</SelectItem>
@@ -903,12 +905,12 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>نوع العمل ({t("common.optional")})</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                        <Select onValueChange={(v) => field.onChange(v === "UNSPECIFIED" ? undefined : v)} value={field.value || "UNSPECIFIED"}>
                           <FormControl>
-                            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="غير محدد" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__none__">—</SelectItem>
+                            <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                             <SelectItem value="FULL_TIME">دوام كامل</SelectItem>
                             <SelectItem value="PART_TIME">دوام جزئي</SelectItem>
                             <SelectItem value="REMOTE">عن بُعد</SelectItem>
@@ -951,12 +953,12 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>تقييم المقابلة ({t("common.optional")})</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                      <Select onValueChange={(v) => field.onChange(v === "UNSPECIFIED" ? undefined : v)} value={field.value || "UNSPECIFIED"}>
                         <FormControl>
-                          <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder="غير محدد" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="__none__">—</SelectItem>
+                          <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                           <SelectItem value="EXCELLENT">ممتاز</SelectItem>
                           <SelectItem value="VERY_GOOD">جيد جداً</SelectItem>
                           <SelectItem value="GOOD">جيد</SelectItem>
@@ -1036,14 +1038,14 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("employees.fields.educationLevel")} ({t("common.optional")})</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                        <Select onValueChange={(v) => field.onChange(v === "UNSPECIFIED" ? undefined : v)} value={field.value || "UNSPECIFIED"}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={t("employees.selectEducationLevel")} />
+                              <SelectValue placeholder="غير محدد" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__none__">—</SelectItem>
+                            <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                             {["PRIMARY", "INTERMEDIATE", "SECONDARY", "DIPLOMA", "BACHELOR", "POSTGRADUATE"].map((el) => (
                               <SelectItem key={el} value={el}>{t(`employees.educationLevels.${el}`)}</SelectItem>
                             ))}
@@ -1283,14 +1285,14 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("employees.fields.bloodType")} ({t("common.optional")})</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || "__none__"}>
+                        <Select onValueChange={(v) => field.onChange(v === "UNSPECIFIED" ? undefined : v)} value={field.value || "UNSPECIFIED"}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={t("employees.selectBloodType")} />
+                              <SelectValue placeholder="غير محدد" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__none__">—</SelectItem>
+                            <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                             {["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE"].map((bt) => (
                               <SelectItem key={bt} value={bt}>{t(`employees.bloodTypes.${bt}`)}</SelectItem>
                             ))}
@@ -1389,13 +1391,14 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>الحالة الاجتماعية ({t("common.optional")})</FormLabel>
-                      <Select value={field.value || ""} onValueChange={(v) => field.onChange(v || undefined)}>
+                      <Select value={field.value || "UNSPECIFIED"} onValueChange={(v) => field.onChange(v === "UNSPECIFIED" ? undefined : v)}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="اختر الحالة الاجتماعية" />
+                            <SelectValue placeholder="غير محدد" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                           <SelectItem value="SINGLE">أعزب</SelectItem>
                           <SelectItem value="MARRIED">متزوج</SelectItem>
                           <SelectItem value="DIVORCED">مطلق</SelectItem>

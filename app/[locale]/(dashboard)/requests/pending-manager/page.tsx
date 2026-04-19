@@ -14,6 +14,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePendingMyApproval, useApproveRequest, useRejectRequest } from "@/lib/hooks/use-requests";
+import { useEmployees } from "@/lib/hooks/use-employees";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { Request } from "@/types";
@@ -28,8 +29,13 @@ export default function PendingManagerPage() {
   const { data, isLoading } = usePendingMyApproval({ limit: 50 });
   const approveRequest = useApproveRequest();
   const rejectRequest = useRejectRequest();
+  const { data: allEmployeesData } = useEmployees({ limit: 500 });
 
   const requests: Request[] = (data as any)?.data?.items || (data as any)?.data || [];
+  const empMap = new Map(
+    ((allEmployeesData as any)?.data?.items || (allEmployeesData as any)?.items || [])
+      .map((e: any) => [e.id, e])
+  );
 
   const handleApproveConfirm = async (notes: string) => {
     if (selected) {
@@ -87,9 +93,10 @@ export default function PendingManagerPage() {
                 <TableRow key={req.id}>
                   <TableCell className="font-mono text-sm">{req.requestNumber}</TableCell>
                   <TableCell>
-                    {req.employee
-                      ? `${req.employee.firstNameAr} ${req.employee.lastNameAr}`
-                      : "—"}
+                    {(() => {
+                      const emp = (req as any).employee || empMap.get((req as any).employeeId);
+                      return emp ? `${emp.firstNameAr} ${emp.lastNameAr}` : "—";
+                    })()}
                   </TableCell>
                   <TableCell>{t(`requests.types.${req.type}`)}</TableCell>
                   <TableCell className="max-w-40 truncate">{req.reason}</TableCell>

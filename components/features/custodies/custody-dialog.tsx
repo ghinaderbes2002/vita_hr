@@ -70,7 +70,7 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
     },
   });
 
-  const { data: empData } = useEmployees({ limit: 100 });
+  const { data: empData } = useEmployees({ limit: 500 });
   const employees: any[] = (empData as any)?.data?.items || (empData as any)?.items || [];
 
   const createCustody = useCreateCustody();
@@ -134,7 +134,8 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
       payload.attachments = attachments.map((a) => ({ fileUrl: a.fileUrl, fileName: a.fileName }));
     }
     if (isEdit) {
-      await updateCustody.mutateAsync({ id: custody.id, data: payload });
+      const { employeeId, ...updatePayload } = payload;
+      await updateCustody.mutateAsync({ id: custody.id, data: updatePayload });
     } else {
       await createCustody.mutateAsync(payload);
     }
@@ -210,7 +211,7 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
                   <FormLabel>{t("custodies.fields.employee")}</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
                     <FormControl><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger></FormControl>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto">
                       {employees.map((emp: any) => (
                         <SelectItem key={emp.id} value={emp.id}>
                           {emp.firstNameAr} {emp.lastNameAr}

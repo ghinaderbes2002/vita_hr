@@ -33,7 +33,7 @@ export function LinkUserDialog({ open, onOpenChange, employee }: LinkUserDialogP
   const t = useTranslations();
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
-  const { data: usersData } = useUsers({});
+  const { data: usersData } = useUsers({ limit: 500 });
   const linkUser = useLinkUser();
   const { user, setUser } = useAuthStore();
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, Filter } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ export default function CustodiesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
+  const [expandedEmployees, setExpandedEmployees] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -60,6 +61,27 @@ export default function CustodiesPage() {
     (data as any)?.data?.data ||
     (data as any)?.data ||
     (Array.isArray(data) ? data : []);
+
+  // Group custodies by employee
+  const grouped = custodies.reduce<{ empKey: string; employee: any; items: Custody[] }[]>((acc, c) => {
+    const empKey = (c as any).employeeId || "unknown";
+    const existing = acc.find((g) => g.empKey === empKey);
+    if (existing) {
+      existing.items.push(c);
+    } else {
+      acc.push({ empKey, employee: (c as any).employee, items: [c] });
+    }
+    return acc;
+  }, []);
+
+  const toggleEmployee = (empKey: string) => {
+    setExpandedEmployees((prev) => {
+      const next = new Set(prev);
+      if (next.has(empKey)) next.delete(empKey);
+      else next.add(empKey);
+      return next;
+    });
+  };
 
   const handleEdit = (c: Custody) => { setSelected(c); setDialogOpen(true); };
   const handleReturn = (c: Custody) => { setSelected(c); setReturnDialogOpen(true); };
@@ -156,65 +178,74 @@ export default function CustodiesPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              custodies.map((c) => (
-                <TableRow key={c.id} className="cursor-pointer" onClick={() => router.push(`/${locale}/custodies/${c.id}`)}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{c.name}</p>
-                      {c.description && (
-                        <p className="text-xs text-muted-foreground">{c.description}</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{t(`custodies.categories.${c.category}`)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{c.serialNumber || "—"}</TableCell>
-                  <TableCell>
-                    {c.employee ? (
-                      <div>
-                        <p>{c.employee.firstNameAr} {c.employee.lastNameAr}</p>
-                        {c.employee.department && (
-                          <p className="text-xs text-muted-foreground">{c.employee.department.nameAr}</p>
-                        )}
+              grouped.map((group) => {
+                const isExpanded = expandedEmployees.has(group.empKey);
+                const empName = group.employee
+                  ? `${group.employee.firstNameAr} ${group.employee.lastNameAr}`
+                  : "—";
+                const deptName = group.employee?.department?.nameAr;
+                return [
+                  // Employee header row
+                  <TableRow
+                    key={`group-${group.empKey}`}
+                    className="cursor-pointer bg-muted/40 hover:bg-muted/60"
+                    onClick={() => toggleEmployee(group.empKey)}
+                  >
+                    <TableCell colSpan={3}>
+                      <div className="flex items-center gap-2 font-medium">
+                        {isExpanded
+                          ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                          : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        {empName}
+                        {deptName && <span className="text-xs text-muted-foreground font-normal">— {deptName}</span>}
                       </div>
-                    ) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {c.assignedDate ? format(new Date(c.assignedDate), "yyyy/MM/dd") : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_VARIANTS[c.status]}>
-                      {t(`custodies.statuses.${c.status}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(c)}>
-                          <Pencil className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        {c.status === "WITH_EMPLOYEE" && (
-                          <DropdownMenuItem onClick={() => handleReturn(c)}>
-                            <RotateCcw className="h-4 w-4 ml-2" />
-                            {t("custodies.returnCustody")}
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => handleDelete(c)} className="text-destructive">
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+                    <TableCell colSpan={4}>
+                      <Badge variant="outline" className="text-xs">{group.items.length} عهدة</Badge>
+                    </TableCell>
+                  </TableRow>,
+                  // Custody rows (shown when expanded)
+                  ...(isExpanded ? group.items.map((c) => (
+                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/30" onClick={() => router.push(`/${locale}/custodies/${c.id}`)}>
+                      <TableCell className="pr-8">
+                        <div>
+                          <p className="font-medium">{c.name}</p>
+                          {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{t(`custodies.categories.${c.category}`)}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{c.serialNumber || "—"}</TableCell>
+                      <TableCell />
+                      <TableCell>{c.assignedDate ? format(new Date(c.assignedDate), "yyyy/MM/dd") : "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANTS[c.status]}>{t(`custodies.statuses.${c.status}`)}</Badge>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(c)}>
+                              <Pencil className="h-4 w-4 ml-2" />{t("common.edit")}
+                            </DropdownMenuItem>
+                            {c.status === "WITH_EMPLOYEE" && (
+                              <DropdownMenuItem onClick={() => handleReturn(c)}>
+                                <RotateCcw className="h-4 w-4 ml-2" />{t("custodies.returnCustody")}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => handleDelete(c)} className="text-destructive">
+                              <Trash2 className="h-4 w-4 ml-2" />{t("common.delete")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )) : []),
+                ];
+              })
             )}
           </TableBody>
         </Table>

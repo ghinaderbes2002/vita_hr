@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   Users, Calendar, Clock, AlertCircle, PlusCircle, ClipboardList,
-  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight, UserPlus,
+  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight, UserPlus, Hourglass, Bell,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useEmployeesSummary, useExpiryDatesReport } from "@/lib/hooks/use-hr-reports";
 import { useLeaveRequests } from "@/lib/hooks/use-leave-requests";
+import { usePendingMyApproval } from "@/lib/hooks/use-requests";
 import { useJobApplicationStats } from "@/lib/hooks/use-job-applications";
 import { useTopAbsencesReport } from "@/lib/hooks/use-attendance-reports";
 import { useEmployees } from "@/lib/hooks/use-employees";
@@ -33,9 +34,11 @@ export default function DashboardPage() {
   const { data: summary, isLoading: summaryLoading } = useEmployeesSummary();
   const { data: employeesData, isLoading: employeesLoading } = useEmployees({ limit: 1 });
   const { data: pendingLeaves, isLoading: leavesLoading } = useLeaveRequests({ status: "PENDING_MANAGER", limit: 1 });
+  const { data: pendingHrLeaves } = useLeaveRequests({ status: "PENDING_HR", limit: 1 });
   const { data: jobStats, isLoading: jobStatsLoading } = useJobApplicationStats();
   const { data: expiryData, isLoading: expiryLoading } = useExpiryDatesReport(30);
   const { data: topAbsences, isLoading: absencesLoading } = useTopAbsencesReport({ year, month, limit: 5 });
+  const { data: pendingRequestsData } = usePendingMyApproval({ limit: 1 });
 
   const s = summary as any;
   const employeeTotal =
@@ -47,14 +50,15 @@ export default function DashboardPage() {
     "—";
 
   const pl = pendingLeaves as any;
-  const pendingLeavesCount =
-    pl?.total ??
-    pl?.data?.total ??
-    pl?.meta?.total ??
-    pl?.data?.meta?.total ??
-    "—";
+  const pendingManagerCount = pl?.total ?? pl?.data?.total ?? pl?.meta?.total ?? pl?.data?.meta?.total ?? 0;
+  const plHr = pendingHrLeaves as any;
+  const pendingHrCount = plHr?.total ?? plHr?.data?.total ?? plHr?.meta?.total ?? plHr?.data?.meta?.total ?? 0;
+  const pendingLeavesCount = leavesLoading ? "—" : (Number(pendingManagerCount) + Number(pendingHrCount)) || 0;
+  const totalPendingLeaves = typeof pendingLeavesCount === "number" ? pendingLeavesCount : 0;
 
   const pendingApplications = (jobStats as any)?.PENDING ?? (jobStats as any)?.pending ?? "—";
+  const pr = pendingRequestsData as any;
+  const pendingRequestsCount = Number(pr?.total ?? pr?.data?.total ?? pr?.meta?.total ?? pr?.data?.meta?.total ?? 0);
   const expiryCount = (expiryData as any)?.count ?? 0;
   const expiryItems: any[] = (expiryData as any)?.items || [];
   const absenceItems: any[] = (topAbsences as any)?.items || [];
@@ -69,12 +73,20 @@ export default function DashboardPage() {
       onClick: () => router.push(`/${locale}/employees`),
     },
     {
-      title: t("stats.onLeave"),
+      title: "الإجازات المعلقة",
       value: leavesLoading ? null : pendingLeavesCount,
-      icon: Calendar,
+      icon: Hourglass,
       iconBg: "bg-amber-50 dark:bg-amber-950",
       iconColor: "text-amber-600 dark:text-amber-400",
-      onClick: () => router.push(`/${locale}/reports/leave`),
+      onClick: () => router.push(`/${locale}/leaves/pending-approval`),
+    },
+    {
+      title: "الطلبات الإدارية المعلقة",
+      value: pendingRequestsCount,
+      icon: Bell,
+      iconBg: "bg-sky-50 dark:bg-sky-950",
+      iconColor: "text-sky-600 dark:text-sky-400",
+      onClick: () => router.push(`/${locale}/requests/pending-manager`),
     },
     {
       title: t("stats.pendingApplications"),
@@ -105,7 +117,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat, index) => (
           <Card
             key={index}
