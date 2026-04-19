@@ -43,20 +43,20 @@ import { Camera, Loader2, Paperclip, Plus, Trash2, Upload, X } from "lucide-reac
 type FormData = {
   firstNameAr: string; lastNameAr: string; firstNameEn: string; lastNameEn: string;
   email: string; phone?: string; mobile?: string; nationalId: string;
-  gender: "MALE" | "FEMALE"; dateOfBirth: string; departmentId: string; hireDate: string;
-  contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE" | "CONSULTANT" | "SERVICE_PROVIDER";
-  probationPeriod?: "ONE_MONTH" | "TWO_MONTHS" | "THREE_MONTHS" | "PERMANENT";
-  interviewEvaluation?: "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR";
+  gender: "MALE" | "FEMALE" | "UNSPECIFIED"; dateOfBirth: string; departmentId: string; hireDate: string;
+  contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE" | "CONSULTANT" | "SERVICE_PROVIDER" | "UNSPECIFIED";
+  probationPeriod?: "ONE_MONTH" | "TWO_MONTHS" | "THREE_MONTHS" | "PERMANENT" | "UNSPECIFIED";
+  interviewEvaluation?: "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR" | "UNSPECIFIED";
   employmentStatus?: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
-  workType?: "FULL_TIME" | "PART_TIME" | "REMOTE";
+  workType?: "FULL_TIME" | "PART_TIME" | "REMOTE" | "UNSPECIFIED";
   jobTitleId?: string; jobGradeId?: string; managerId?: string; basicSalary?: number;
   profilePhoto?: string;
-  bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE";
+  bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE" | "UNSPECIFIED";
   familyMembersCount?: number; chronicDiseases?: string; currentAddress?: string;
   isSmoker?: boolean;
   hasDrivingLicense?: boolean;
-  maritalStatus?: "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED";
-  educationLevel?: "PRIMARY" | "INTERMEDIATE" | "SECONDARY" | "DIPLOMA" | "BACHELOR" | "POSTGRADUATE";
+  maritalStatus?: "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED" | "UNSPECIFIED";
+  educationLevel?: "PRIMARY" | "INTERMEDIATE" | "SECONDARY" | "DIPLOMA" | "BACHELOR" | "POSTGRADUATE" | "UNSPECIFIED";
   universityYear?: number; religion?: string; yearsOfExperience?: number;
   certificate1?: string; specialization1?: string; university1?: string; certificateAttachment1?: string;
   certificate2?: string; specialization2?: string; university2?: string; certificateAttachment2?: string;
