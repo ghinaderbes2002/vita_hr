@@ -337,6 +337,7 @@
       "female": "Female"
     },
     "contractTypes": {
+      "unspecified": "Unspecified",
       "fixed_term": "Fixed Term",
       "indefinite": "Indefinite",
       "temporary": "Temporary",
@@ -662,7 +663,9 @@
       "BUSINESS_MISSION": "Business Mission",
       "DELEGATION": "Delegation",
       "HIRING_REQUEST": "Hiring Request",
-      "COMPLAINT": "Complaint"
+      "COMPLAINT": "Complaint",
+      "WORK_ACCIDENT": "Work Accident",
+      "REMOTE_WORK": "Remote Work"
     },
     "statuses": {
       "DRAFT": "Draft",

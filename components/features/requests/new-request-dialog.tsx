@@ -23,14 +23,61 @@ import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { useCheckUnreturnedCustodies } from "@/lib/hooks/use-custodies";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { RequestType } from "@/types";
-import { Loader2, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, Trash2, AlertTriangle, X } from "lucide-react";
 import { useState } from "react";
 
-const ALL_REQUEST_TYPES: RequestType[] = [
+const ALL_REQUEST_TYPES: (RequestType | "OVERTIME")[] = [
   "TRANSFER", "RESIGNATION", "REWARD", "OTHER",
-  "PENALTY_PROPOSAL", "OVERTIME_EMPLOYEE", "OVERTIME_MANAGER",
+  "PENALTY_PROPOSAL", "OVERTIME",
   "BUSINESS_MISSION", "DELEGATION", "HIRING_REQUEST", "COMPLAINT",
+  "WORK_ACCIDENT", "REMOTE_WORK",
 ];
+
+const INCIDENT_TYPES = [
+  { value: "EMPLOYEE_INJURY", label: "إصابة موظف" },
+  { value: "PATIENT_ACCIDENT", label: "حادث مريض" },
+  { value: "VISITOR_ACCIDENT", label: "حادث زائر" },
+  { value: "PROPERTY_DAMAGE", label: "تلف ممتلكات" },
+  { value: "BIOLOGICAL_CHEMICAL", label: "تعرض بيولوجي/كيميائي" },
+  { value: "MEDICATION_ERROR", label: "خطأ دوائي" },
+  { value: "OTHER", label: "أخرى" },
+];
+
+const CONTRIBUTING_FACTORS = [
+  { value: "SAFETY_PROCEDURES", label: "إجراءات السلامة" },
+  { value: "MEDICAL_DEVICE", label: "جهاز طبي" },
+  { value: "CHEMICAL_SPILL", label: "انسكاب كيميائي" },
+  { value: "CROWDING", label: "الازدحام" },
+  { value: "HUMAN_ERROR", label: "خطأ بشري" },
+  { value: "OTHER", label: "أخرى" },
+];
+
+const REMOTE_WORK_TYPES = [
+  { value: "TEMPORARY", label: "مؤقت" },
+  { value: "REGULAR", label: "منتظم" },
+  { value: "EMERGENCY", label: "طارئ" },
+];
+
+const JUSTIFICATION_OPTIONS = [
+  { value: "HEALTH", label: "أسباب صحية" },
+  { value: "FAMILY_CARE", label: "رعاية الأسرة" },
+  { value: "PRODUCTIVITY", label: "تحسين الإنتاجية" },
+  { value: "TRAVEL", label: "سفر" },
+  { value: "OTHER", label: "أخرى" },
+];
+
+const REQUIRED_TOOLS = [
+  { value: "LAPTOP", label: "لابتوب" },
+  { value: "PHONE", label: "هاتف" },
+  { value: "VPN", label: "VPN" },
+  { value: "SPECIFIC_SOFTWARE", label: "برنامج محدد" },
+  { value: "PERSONAL_DEVICE", label: "جهاز شخصي" },
+];
+
+const OVERTIME_TYPE_LABELS: Record<string, string> = {
+  OVERTIME_EMPLOYEE: "موظف",
+  OVERTIME_MANAGER: "مدير",
+};
 
 // Types that don't need a details section — reason field is enough
 const NO_DETAILS_TYPES: RequestType[] = [
@@ -38,7 +85,7 @@ const NO_DETAILS_TYPES: RequestType[] = [
 ];
 
 const formSchema = z.object({
-  type: z.enum(ALL_REQUEST_TYPES as [RequestType, ...RequestType[]]),
+  type: z.enum([...ALL_REQUEST_TYPES] as [string, ...string[]]),
   reason: z.string().min(1, "السبب مطلوب"),
   notes: z.string().optional(),
   // RESIGNATION
@@ -82,6 +129,25 @@ type FormData = z.infer<typeof formSchema>;
 type HiringPosition = { departmentId: string; jobTitle: string; count: string; reason: string };
 type RewardEmployee = { employeeId: string; rewardType: string; amount: string; reason: string };
 
+const defaultWorkAccident = {
+  incidentLocation: "", incidentType: "", incidentTypeOther: "",
+  affectedPersonName: "", affectedPersonJobTitle: "", affectedPersonId: "",
+  incidentTime: "", incidentTimeOfDay: "AM",
+  incidentDetails: "", contributingFactors: [] as string[],
+  immediateActions: {
+    firstAid: false, firstAidBy: "", hospitalTransfer: false, hospitalName: "",
+    supervisorNotified: false, supervisorName: "", supervisorNotifiedTime: "",
+  },
+  preventionRecommendations: "",
+};
+
+const defaultRemoteWork = {
+  remoteWorkType: "", temporaryDays: "", emergencyReason: "",
+  startDate: "", endDate: "", weeklyDaysCount: "", proposedDays: "",
+  justification: [] as string[], justificationOther: "",
+  tasks: [""] as string[], requiredTools: [] as string[], specificSoftware: "",
+};
+
 interface NewRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -97,6 +163,9 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
   const [rewardEmployees, setRewardEmployees] = useState<RewardEmployee[]>([
     { employeeId: "", rewardType: "", amount: "", reason: "" },
   ]);
+  const [overtimeSubType, setOvertimeSubType] = useState<"OVERTIME_EMPLOYEE" | "OVERTIME_MANAGER">("OVERTIME_EMPLOYEE");
+  const [workAccident, setWorkAccident] = useState(defaultWorkAccident);
+  const [remoteWork, setRemoteWork] = useState(defaultRemoteWork);
 
   const createRequest = useCreateRequest();
   const submitRequest = useSubmitRequest();
@@ -140,21 +209,15 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
           targetJobTitle: data.targetJobTitle,
           violationDescription: data.violationDescription,
         };
+      case "OVERTIME":
       case "OVERTIME_EMPLOYEE":
-        return {
-          overtimeDate: data.overtimeDate,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          totalHours: data.totalHours ? Number(data.totalHours) : undefined,
-          tasks: data.tasks,
-        };
       case "OVERTIME_MANAGER":
         return {
           overtimeDate: data.overtimeDate,
           startTime: data.startTime,
           endTime: data.endTime,
           totalHours: data.totalHours ? Number(data.totalHours) : undefined,
-          purpose: data.purpose,
+          ...(overtimeSubType === "OVERTIME_EMPLOYEE" ? { tasks: data.tasks } : { purpose: data.purpose }),
         };
       case "BUSINESS_MISSION":
         return {
@@ -193,6 +256,36 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
         };
       case "COMPLAINT":
         return { complaintDescription: data.complaintDescription };
+      case "WORK_ACCIDENT":
+        return {
+          incidentLocation: workAccident.incidentLocation,
+          incidentType: workAccident.incidentType,
+          incidentTypeOther: workAccident.incidentTypeOther || undefined,
+          affectedPersonName: workAccident.affectedPersonName,
+          affectedPersonJobTitle: workAccident.affectedPersonJobTitle || undefined,
+          affectedPersonId: workAccident.affectedPersonId || undefined,
+          incidentTime: workAccident.incidentTime,
+          incidentTimeOfDay: workAccident.incidentTimeOfDay,
+          incidentDetails: workAccident.incidentDetails,
+          contributingFactors: workAccident.contributingFactors,
+          immediateActions: workAccident.immediateActions,
+          preventionRecommendations: workAccident.preventionRecommendations || undefined,
+        };
+      case "REMOTE_WORK":
+        return {
+          remoteWorkType: remoteWork.remoteWorkType,
+          temporaryDays: remoteWork.temporaryDays ? Number(remoteWork.temporaryDays) : undefined,
+          emergencyReason: remoteWork.emergencyReason || undefined,
+          startDate: remoteWork.startDate,
+          endDate: remoteWork.endDate || undefined,
+          weeklyDaysCount: remoteWork.weeklyDaysCount ? Number(remoteWork.weeklyDaysCount) : undefined,
+          proposedDays: remoteWork.proposedDays || undefined,
+          justification: remoteWork.justification,
+          justificationOther: remoteWork.justificationOther || undefined,
+          tasks: remoteWork.tasks.filter(Boolean),
+          requiredTools: remoteWork.requiredTools,
+          specificSoftware: remoteWork.specificSoftware || undefined,
+        };
       default:
         return undefined;
     }
@@ -200,8 +293,9 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
 
   const onSubmit = async (data: FormData) => {
     try {
+      const actualType = data.type === "OVERTIME" ? overtimeSubType : data.type as RequestType;
       const created = await createRequest.mutateAsync({
-        type: data.type,
+        type: actualType,
         reason: data.reason,
         notes: data.notes || undefined,
         details: buildDetails(data),
@@ -213,6 +307,8 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
       form.reset({ type: "OTHER", reason: "", notes: "" });
       setHiringPositions([{ departmentId: "", jobTitle: "", count: "1", reason: "" }]);
       setRewardEmployees([{ employeeId: "", rewardType: "", amount: "", reason: "" }]);
+      setWorkAccident(defaultWorkAccident);
+      setRemoteWork(defaultRemoteWork);
     } catch {
       // Error handled by mutation
     }
@@ -247,7 +343,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
                     <SelectContent>
                       {ALL_REQUEST_TYPES.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {t(`requests.types.${type}`)}
+                          {type === "OVERTIME" ? "وقت إضافي مدير/موظف" : t(`requests.types.${type}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -368,9 +464,26 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
               </div>
             )}
 
-            {/* ── OVERTIME_EMPLOYEE ── */}
-            {selectedType === "OVERTIME_EMPLOYEE" && (
+            {/* ── OVERTIME (مدير / موظف) ── */}
+            {selectedType === "OVERTIME" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">النوع:</span>
+                  {(["OVERTIME_EMPLOYEE", "OVERTIME_MANAGER"] as const).map((sub) => (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setOvertimeSubType(sub)}
+                      className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                        overtimeSubType === sub
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-muted-foreground/30 hover:border-primary/50"
+                      }`}
+                    >
+                      {OVERTIME_TYPE_LABELS[sub]}
+                    </button>
+                  ))}
+                </div>
                 <p className="text-xs text-muted-foreground">إذا كان التاريخ هو اليوم لا يمكن تقديم الطلب بعد الساعة 12:00 ظهراً</p>
                 <FormField control={form.control} name="overtimeDate" render={({ field }) => (
                   <FormItem>
@@ -389,42 +502,21 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
                     <FormItem><FormLabel>إجمالي الساعات *</FormLabel><FormControl><Input {...field} type="number" min={0} step={0.5} /></FormControl></FormItem>
                   )} />
                 </div>
-                <FormField control={form.control} name="tasks" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>المهام المنجزة *</FormLabel>
-                    <FormControl><Textarea {...field} rows={2} placeholder="صف المهام التي أُنجزت..." /></FormControl>
-                  </FormItem>
-                )} />
-              </div>
-            )}
-
-            {/* ── OVERTIME_MANAGER ── */}
-            {selectedType === "OVERTIME_MANAGER" && (
-              <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
-                <p className="text-xs text-muted-foreground">إذا كان التاريخ هو اليوم لا يمكن تقديم الطلب بعد الساعة 12:00 ظهراً</p>
-                <FormField control={form.control} name="overtimeDate" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>تاريخ العمل الإضافي *</FormLabel>
-                    <FormControl><Input {...field} type="date" /></FormControl>
-                  </FormItem>
-                )} />
-                <div className="grid grid-cols-3 gap-3">
-                  <FormField control={form.control} name="startTime" render={({ field }) => (
-                    <FormItem><FormLabel>وقت البدء *</FormLabel><FormControl><Input {...field} type="time" /></FormControl></FormItem>
+                {overtimeSubType === "OVERTIME_EMPLOYEE" ? (
+                  <FormField control={form.control} name="tasks" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>المهام المنجزة *</FormLabel>
+                      <FormControl><Textarea {...field} rows={2} placeholder="صف المهام التي أُنجزت..." /></FormControl>
+                    </FormItem>
                   )} />
-                  <FormField control={form.control} name="endTime" render={({ field }) => (
-                    <FormItem><FormLabel>وقت الانتهاء *</FormLabel><FormControl><Input {...field} type="time" /></FormControl></FormItem>
+                ) : (
+                  <FormField control={form.control} name="purpose" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الغرض من العمل الإضافي *</FormLabel>
+                      <FormControl><Textarea {...field} rows={2} placeholder="اشرح الغرض..." /></FormControl>
+                    </FormItem>
                   )} />
-                  <FormField control={form.control} name="totalHours" render={({ field }) => (
-                    <FormItem><FormLabel>إجمالي الساعات *</FormLabel><FormControl><Input {...field} type="number" min={0} step={0.5} /></FormControl></FormItem>
-                  )} />
-                </div>
-                <FormField control={form.control} name="purpose" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>الغرض من العمل الإضافي *</FormLabel>
-                    <FormControl><Textarea {...field} rows={2} placeholder="اشرح الغرض..." /></FormControl>
-                  </FormItem>
-                )} />
+                )}
               </div>
             )}
 
@@ -620,6 +712,304 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
                     <FormControl><Textarea {...field} rows={4} placeholder="اشرح الشكوى بالتفصيل..." /></FormControl>
                   </FormItem>
                 )} />
+              </div>
+            )}
+
+            {/* ── WORK_ACCIDENT ── */}
+            {selectedType === "WORK_ACCIDENT" && (
+              <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
+                <p className="text-sm font-semibold">تفاصيل حادث العمل</p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">موقع الحادث *</label>
+                    <Input value={workAccident.incidentLocation} placeholder="القسم / الغرفة / المكان"
+                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentLocation: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">نوع الحادث *</label>
+                    <select
+                      value={workAccident.incidentType}
+                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentType: e.target.value }))}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="">اختر</option>
+                      {INCIDENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {workAccident.incidentType === "OTHER" && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">تفاصيل نوع الحادث *</label>
+                    <Input value={workAccident.incidentTypeOther} placeholder="اذكر نوع الحادث..."
+                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentTypeOther: e.target.value }))} />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">اسم المتضرر *</label>
+                    <Input value={workAccident.affectedPersonName} placeholder="الاسم الكامل"
+                      onChange={(e) => setWorkAccident((p) => ({ ...p, affectedPersonName: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">مسماه الوظيفي</label>
+                    <Input value={workAccident.affectedPersonJobTitle} placeholder="المسمى الوظيفي"
+                      onChange={(e) => setWorkAccident((p) => ({ ...p, affectedPersonJobTitle: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">رقم هوية المتضرر</label>
+                    <Input value={workAccident.affectedPersonId} placeholder="رقم الهوية"
+                      onChange={(e) => setWorkAccident((p) => ({ ...p, affectedPersonId: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">وقت الحادث *</label>
+                    <Input type="time" value={workAccident.incidentTime}
+                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentTime: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">ص / م</label>
+                    <select
+                      value={workAccident.incidentTimeOfDay}
+                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentTimeOfDay: e.target.value }))}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="AM">ص (AM)</option>
+                      <option value="PM">م (PM)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">تفاصيل الحادث *</label>
+                  <textarea
+                    value={workAccident.incidentDetails}
+                    rows={3}
+                    placeholder="صف ما حدث بالتفصيل..."
+                    onChange={(e) => setWorkAccident((p) => ({ ...p, incidentDetails: e.target.value }))}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">العوامل المساهمة</label>
+                  <div className="flex flex-wrap gap-2">
+                    {CONTRIBUTING_FACTORS.map((f) => {
+                      const checked = workAccident.contributingFactors.includes(f.value);
+                      return (
+                        <button key={f.value} type="button"
+                          onClick={() => setWorkAccident((p) => ({
+                            ...p,
+                            contributingFactors: checked
+                              ? p.contributingFactors.filter((x) => x !== f.value)
+                              : [...p.contributingFactors, f.value],
+                          }))}
+                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${checked ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+                        >
+                          {f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2 rounded border p-3">
+                  <p className="text-xs font-semibold">الإجراءات الفورية</p>
+                  <div className="space-y-2">
+                    {[
+                      { key: "firstAid", label: "تم تقديم إسعافات أولية" },
+                      { key: "hospitalTransfer", label: "تم نقله للمستشفى" },
+                      { key: "supervisorNotified", label: "تم إبلاغ المشرف" },
+                    ].map(({ key, label }) => (
+                      <div key={key}>
+                        <label className="flex items-center gap-2 cursor-pointer text-sm">
+                          <input type="checkbox"
+                            checked={(workAccident.immediateActions as any)[key]}
+                            onChange={(e) => setWorkAccident((p) => ({
+                              ...p, immediateActions: { ...p.immediateActions, [key]: e.target.checked },
+                            }))}
+                          />
+                          {label}
+                        </label>
+                        {key === "firstAid" && workAccident.immediateActions.firstAid && (
+                          <Input className="mt-1" placeholder="من قدم الإسعافات؟"
+                            value={workAccident.immediateActions.firstAidBy}
+                            onChange={(e) => setWorkAccident((p) => ({ ...p, immediateActions: { ...p.immediateActions, firstAidBy: e.target.value } }))} />
+                        )}
+                        {key === "hospitalTransfer" && workAccident.immediateActions.hospitalTransfer && (
+                          <Input className="mt-1" placeholder="اسم المستشفى"
+                            value={workAccident.immediateActions.hospitalName}
+                            onChange={(e) => setWorkAccident((p) => ({ ...p, immediateActions: { ...p.immediateActions, hospitalName: e.target.value } }))} />
+                        )}
+                        {key === "supervisorNotified" && workAccident.immediateActions.supervisorNotified && (
+                          <div className="grid grid-cols-2 gap-2 mt-1">
+                            <Input placeholder="اسم المشرف"
+                              value={workAccident.immediateActions.supervisorName}
+                              onChange={(e) => setWorkAccident((p) => ({ ...p, immediateActions: { ...p.immediateActions, supervisorName: e.target.value } }))} />
+                            <Input placeholder="وقت الإبلاغ"
+                              value={workAccident.immediateActions.supervisorNotifiedTime}
+                              onChange={(e) => setWorkAccident((p) => ({ ...p, immediateActions: { ...p.immediateActions, supervisorNotifiedTime: e.target.value } }))} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">توصيات الوقاية</label>
+                  <textarea
+                    value={workAccident.preventionRecommendations}
+                    rows={2}
+                    placeholder="اقتراحات لمنع تكرار الحادث..."
+                    onChange={(e) => setWorkAccident((p) => ({ ...p, preventionRecommendations: e.target.value }))}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── REMOTE_WORK ── */}
+            {selectedType === "REMOTE_WORK" && (
+              <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
+                <p className="text-sm font-semibold">تفاصيل طلب العمل عن بعد</p>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">نوع العمل عن بعد *</label>
+                  <div className="flex gap-2">
+                    {REMOTE_WORK_TYPES.map((t) => (
+                      <button key={t.value} type="button"
+                        onClick={() => setRemoteWork((p) => ({ ...p, remoteWorkType: t.value }))}
+                        className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${remoteWork.remoteWorkType === t.value ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {remoteWork.remoteWorkType === "TEMPORARY" && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">عدد الأيام *</label>
+                    <Input type="number" min={1} value={remoteWork.temporaryDays} placeholder="عدد الأيام"
+                      onChange={(e) => setRemoteWork((p) => ({ ...p, temporaryDays: e.target.value }))} />
+                  </div>
+                )}
+
+                {remoteWork.remoteWorkType === "EMERGENCY" && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">سبب الطارئ *</label>
+                    <Input value={remoteWork.emergencyReason} placeholder="اذكر سبب الطارئ"
+                      onChange={(e) => setRemoteWork((p) => ({ ...p, emergencyReason: e.target.value }))} />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">تاريخ البدء *</label>
+                    <Input type="date" value={remoteWork.startDate}
+                      onChange={(e) => setRemoteWork((p) => ({ ...p, startDate: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">تاريخ الانتهاء</label>
+                    <Input type="date" value={remoteWork.endDate}
+                      onChange={(e) => setRemoteWork((p) => ({ ...p, endDate: e.target.value }))} />
+                  </div>
+                </div>
+
+                {remoteWork.remoteWorkType === "REGULAR" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">عدد الأيام أسبوعياً *</label>
+                      <Input type="number" min={1} max={7} value={remoteWork.weeklyDaysCount}
+                        onChange={(e) => setRemoteWork((p) => ({ ...p, weeklyDaysCount: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">الأيام المقترحة *</label>
+                      <Input value={remoteWork.proposedDays} placeholder="مثال: الإثنين والأربعاء"
+                        onChange={(e) => setRemoteWork((p) => ({ ...p, proposedDays: e.target.value }))} />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">مبررات الطلب *</label>
+                  <div className="flex flex-wrap gap-2">
+                    {JUSTIFICATION_OPTIONS.map((j) => {
+                      const checked = remoteWork.justification.includes(j.value);
+                      return (
+                        <button key={j.value} type="button"
+                          onClick={() => setRemoteWork((p) => ({
+                            ...p,
+                            justification: checked
+                              ? p.justification.filter((x) => x !== j.value)
+                              : [...p.justification, j.value],
+                          }))}
+                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${checked ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+                        >
+                          {j.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {remoteWork.justification.includes("OTHER") && (
+                    <Input value={remoteWork.justificationOther} placeholder="اذكر المبرر..."
+                      onChange={(e) => setRemoteWork((p) => ({ ...p, justificationOther: e.target.value }))} />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium">المهام المخططة *</label>
+                    <button type="button"
+                      onClick={() => setRemoteWork((p) => ({ ...p, tasks: [...p.tasks, ""] }))}
+                      className="text-xs text-primary hover:underline flex items-center gap-1"
+                    >
+                      <Plus className="h-3 w-3" /> إضافة مهمة
+                    </button>
+                  </div>
+                  {remoteWork.tasks.map((task, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input value={task} placeholder={`مهمة ${i + 1}`}
+                        onChange={(e) => setRemoteWork((p) => ({ ...p, tasks: p.tasks.map((t, j) => j === i ? e.target.value : t) }))} />
+                      {remoteWork.tasks.length > 1 && (
+                        <button type="button" onClick={() => setRemoteWork((p) => ({ ...p, tasks: p.tasks.filter((_, j) => j !== i) }))}>
+                          <X className="h-4 w-4 text-destructive" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">الأدوات المطلوبة</label>
+                  <div className="flex flex-wrap gap-2">
+                    {REQUIRED_TOOLS.map((tool) => {
+                      const checked = remoteWork.requiredTools.includes(tool.value);
+                      return (
+                        <button key={tool.value} type="button"
+                          onClick={() => setRemoteWork((p) => ({
+                            ...p,
+                            requiredTools: checked
+                              ? p.requiredTools.filter((x) => x !== tool.value)
+                              : [...p.requiredTools, tool.value],
+                          }))}
+                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${checked ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+                        >
+                          {tool.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {remoteWork.requiredTools.includes("SPECIFIC_SOFTWARE") && (
+                    <Input value={remoteWork.specificSoftware} placeholder="اسم البرنامج المحدد"
+                      onChange={(e) => setRemoteWork((p) => ({ ...p, specificSoftware: e.target.value }))} />
+                  )}
+                </div>
               </div>
             )}
 

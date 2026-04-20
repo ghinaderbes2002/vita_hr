@@ -43,7 +43,7 @@
     "management": "الإدارة",
     "hr": "الموارد البشرية",
     "users": "إدارة المستخدمين",
-    "roles": "إدارة الأدوار",
+    "roles": "إدارة الصلاحيات",
     "employees": "الموظفون",
     "subordinates": "المرؤوسين",
     "departments": "الهيكل التنظيمي",
@@ -51,7 +51,7 @@
     "jobGrades": "الدرجات الوظيفية",
     "requests": "الطلبات الإدارية",
     "myRequests": "طلباتي",
-    "pendingManagerApproval": "بانتظار موافقة المدير",
+    "pendingManagerApproval": "بانتظار موافقتك",
     "allRequests": "جميع الطلبات",
     "workSchedules": "جداول العمل",
     "leaveTypes": "أنواع الإجازات",
@@ -60,7 +60,7 @@
     "leaves": "الإجازات",
     "myLeaves": "إجازاتي",
     "newRequest": "طلب جديد",
-    "pendingApproval": "بانتظار الموافقة",
+    "pendingApproval": "بانتظار موافقتك",
     "leaveCalendar": "تقويم الإجازات",
     "balances": "الأرصدة",
     "attendance": "الحضور",
@@ -263,6 +263,7 @@
       "female": "أنثى"
     },
     "contractTypes": {
+      "unspecified": "غير محدد",
       "fixed_term": "عقد محدد المدة",
       "indefinite": "عقد غير محدد المدة",
       "temporary": "مؤقت",
@@ -362,7 +363,7 @@
     "newRequestCardDescription": "املأ البيانات أدناه لإنشاء طلب إجازة جديد",
     "editRequest": "تعديل طلب الإجازة",
     "viewRequest": "عرض طلب الإجازة",
-    "pendingApproval": "بانتظار الموافقة",
+    "pendingApproval": "بانتظار موافقتك",
     "calendar": "تقويم الإجازات",
     "balances": "أرصدة الإجازات",
     "form": {
@@ -818,7 +819,7 @@
     }
   },
   "roles": {
-    "title": "إدارة الأدوار",
+    "title": "إدارة الصلاحيات",
     "description": "إدارة أدوار المستخدمين وصلاحياتهم",
     "addRole": "إضافة دور",
     "editRole": "تعديل دور",
@@ -866,8 +867,8 @@
     "newRequestDescription": "أنشئ طلباً جديداً",
     "adminRequest": "طلب إداري",
     "adminRequestDescription": "نقل، استقالة، مكافأة، تفويض وغيرها",
-    "pendingManagerApproval": "بانتظار موافقة المدير",
-    "pendingManagerDescription": "الطلبات المنتظرة للمراجعة والموافقة",
+    "pendingManagerApproval": "بانتظار موافقتك",
+    "pendingManagerDescription": "الطلبات التي تنتظر موافقتك",
     "allRequests": "جميع الطلبات",
     "allRequestsDescription": "عرض وإدارة جميع الطلبات الإدارية",
     "saveAsDraft": "حفظ كمسودة",
@@ -877,15 +878,18 @@
     "types": {
       "TRANSFER": "نقل",
       "RESIGNATION": "استقالة",
-      "REWARD": "مكافأة",
+      "REWARD": "اقتراح مكافأة",
       "OTHER": "أخرى",
       "PENALTY_PROPOSAL": "اقتراح عقوبة",
-      "OVERTIME_EMPLOYEE": "أوفرتايم موظف",
-      "OVERTIME_MANAGER": "أوفرتايم مدير",
+      "OVERTIME": "وقت إضافي مدير/موظف",
+      "OVERTIME_EMPLOYEE": "وقت إضافي موظف",
+      "OVERTIME_MANAGER": "وقت إضافي مدير",
       "BUSINESS_MISSION": "مهمة عمل",
       "DELEGATION": "تفويض",
       "HIRING_REQUEST": "طلب توظيف",
-      "COMPLAINT": "شكوى"
+      "COMPLAINT": "شكوى",
+      "WORK_ACCIDENT": "حادث عمل",
+      "REMOTE_WORK": "عمل عن بعد"
     },
     "statuses": {
       "DRAFT": "مسودة",

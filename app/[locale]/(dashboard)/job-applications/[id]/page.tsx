@@ -8,7 +8,6 @@ import {
   ArrowRight,
   Download,
   Linkedin,
-  Star,
   Phone,
   Mail,
   Building2,
@@ -17,6 +16,9 @@ import {
   Trophy,
   Send,
   RotateCcw,
+  Calendar,
+  Briefcase,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,25 +81,6 @@ const STATUS_CONFIG: Record<
   HIRED: { bg: "bg-purple-100 text-purple-800", label: "" },
 };
 
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button key={star} type="button" onClick={() => onChange(star)}>
-          <Star
-            className={`h-6 w-6 transition-colors ${star <= value ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
-          />
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export default function JobApplicationDetailPage() {
   const t = useTranslations();
@@ -224,40 +207,30 @@ export default function JobApplicationDetailPage() {
 
   const [reviewNotes, setReviewNotes] = useState("");
   const [rejectionNote, setRejectionNote] = useState("");
-  const [rating, setRating] = useState(0);
   const [actionStatus, setActionStatus] = useState<Exclude<
     JobApplicationStatus,
     "HIRED"
   > | null>(null);
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
 
-  const RATING_TO_EVALUATION: Record<
-    number,
-    "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR"
-  > = {
-    5: "EXCELLENT",
-    4: "VERY_GOOD",
-    3: "GOOD",
-    2: "ACCEPTABLE",
-    1: "POOR",
-  };
-
   const handleAction = (status: Exclude<JobApplicationStatus, "HIRED">) => {
     setActionStatus(status);
     setReviewNotes("");
     setRejectionNote("");
-    setRating(0);
   };
 
   const handleSubmit = async () => {
     if (!actionStatus) return;
+    const computedRating = evalData?.totalScore != null
+      ? Math.min(5, Math.max(1, Math.ceil(evalData.totalScore / 20)))
+      : 3;
     await updateApplication.mutateAsync({
       id,
       data: {
         status: actionStatus,
         reviewNotes: reviewNotes || undefined,
         rejectionNote: actionStatus === "REJECTED" ? rejectionNote : undefined,
-        rating: actionStatus === "ACCEPTED" ? rating : undefined,
+        rating: actionStatus === "ACCEPTED" ? computedRating : undefined,
       },
     });
     setActionStatus(null);
@@ -301,10 +274,9 @@ export default function JobApplicationDetailPage() {
         >
           {t(`jobApplications.statuses.${app.status}`)}
         </span>
-        {app.rating && (
-          <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-            <span className="font-medium">{app.rating}/5</span>
+        {evalData?.totalScore != null && (
+          <div className="flex items-center gap-1 text-sm font-medium text-primary">
+            <span>{evalData.totalScore.toFixed(1)}%</span>
           </div>
         )}
         {app.status === "ACCEPTED" && (
@@ -344,6 +316,25 @@ export default function JobApplicationDetailPage() {
                 {app.yearsOfExperience} {t("common.years")}
               </span>
             </div>
+            {app.currentlyEmployed != null && (
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                <span>
+                  يعمل حالياً: <strong>{app.currentlyEmployed ? "نعم" : "لا"}</strong>
+                </span>
+              </div>
+            )}
+            {app.availabilityToJoin && (
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span>
+                  تاريخ الانضمام المتاح:{" "}
+                  <strong>
+                    {(() => { try { return format(new Date(app.availabilityToJoin), "yyyy/MM/dd"); } catch { return app.availabilityToJoin; } })()}
+                  </strong>
+                </span>
+              </div>
+            )}
             {app.linkedinUrl && (
               <a
                 href={app.linkedinUrl}
@@ -385,7 +376,7 @@ export default function JobApplicationDetailPage() {
         </Card>
 
         {/* Reference 1 */}
-        {app.ref1Name && (
+        {app.ref1Name && app.ref1Name !== "-" && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
@@ -406,7 +397,7 @@ export default function JobApplicationDetailPage() {
         )}
 
         {/* Reference 2 */}
-        {app.ref2Name && (
+        {app.ref2Name && app.ref2Name !== "-" && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
@@ -515,13 +506,6 @@ export default function JobApplicationDetailPage() {
                 {t(`jobApplications.statuses.${actionStatus}`)}
               </p>
 
-              {actionStatus === "ACCEPTED" && (
-                <div className="space-y-2">
-                  <Label>{t("jobApplications.fields.rating")} *</Label>
-                  <StarRating value={rating} onChange={setRating} />
-                </div>
-              )}
-
               {actionStatus === "REJECTED" && (
                 <div className="space-y-2">
                   <Label>{t("jobApplications.fields.rejectionNote")} *</Label>
@@ -553,7 +537,6 @@ export default function JobApplicationDetailPage() {
                   onClick={handleSubmit}
                   disabled={
                     updateApplication.isPending ||
-                    (actionStatus === "ACCEPTED" && rating === 0) ||
                     (actionStatus === "REJECTED" && !rejectionNote.trim())
                   }
                 >
@@ -674,10 +657,18 @@ export default function JobApplicationDetailPage() {
         </CardContent>
       </Card>
 
-      <p className="text-xs text-muted-foreground">
-        {t("jobApplications.fields.createdAt")}:{" "}
-        {format(new Date(app.createdAt), "yyyy/MM/dd HH:mm")}
-      </p>
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" />
+          {t("jobApplications.fields.createdAt")}: {format(new Date(app.createdAt), "yyyy/MM/dd HH:mm")}
+        </span>
+        {app.updatedAt && app.updatedAt !== app.createdAt && (
+          <span className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" />
+            آخر تحديث: {format(new Date(app.updatedAt), "yyyy/MM/dd HH:mm")}
+          </span>
+        )}
+      </div>
 
       {/* Evaluation Dialog */}
       <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
@@ -901,7 +892,9 @@ export default function JobApplicationDetailPage() {
         open={addEmployeeOpen}
         onOpenChange={setAddEmployeeOpen}
         defaultInterviewEvaluation={
-          app.rating ? RATING_TO_EVALUATION[app.rating] : undefined
+          evalData?.totalScore != null
+            ? `${evalData.totalScore.toFixed(1)}%`
+            : undefined
         }
       />
     </div>

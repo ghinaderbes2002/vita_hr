@@ -7,7 +7,7 @@ import {
   ArrowRight, Mail, Building2, User, Briefcase,
   Paperclip, Heart, GraduationCap, MapPin, Users, FileDown,
   BadgeCheck, Cigarette, Award, ExternalLink,
-  Fingerprint, Plus, Trash2, Settings, Save,
+  Fingerprint, Plus, Trash2, Settings, Save, ClipboardList, Pencil, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TrainingCertificate, EmployeeAllowance } from "@/types";
-import { useEmployee } from "@/lib/hooks/use-employees";
+import { useEmployee, useUpdateEmployee } from "@/lib/hooks/use-employees";
 import { useEmployeeFingerprints, useRegisterFingerprint, useDeleteFingerprint } from "@/lib/hooks/use-employee-fingerprints";
 import { useBiometricDevices } from "@/lib/hooks/use-biometric-devices";
 import { useEmployeeAttendanceConfig, useUpsertAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
@@ -59,6 +59,24 @@ export default function EmployeeDetailsPage() {
 
   const { data: employee, isLoading } = useEmployee(employeeId);
   const emp = employee as any;
+  const updateEmployee = useUpdateEmployee();
+
+  // Evaluation edit state
+  const [evalEditField, setEvalEditField] = useState<"interviewEvaluation" | "exitInterviewEvaluation" | null>(null);
+  const [evalEditValue, setEvalEditValue] = useState("");
+
+  function openEvalEdit(field: "interviewEvaluation" | "exitInterviewEvaluation") {
+    setEvalEditField(field);
+    setEvalEditValue(emp?.[field] || "");
+  }
+
+  function saveEvalEdit() {
+    if (!evalEditField) return;
+    updateEmployee.mutate(
+      { id: employeeId, data: { [evalEditField]: evalEditValue || null } },
+      { onSuccess: () => setEvalEditField(null) }
+    );
+  }
 
   // Attendance config
   const { data: attendanceConfig } = useEmployeeAttendanceConfig(employeeId);
@@ -533,6 +551,57 @@ export default function EmployeeDetailsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* ─── HR Evaluations ────────────────────────────────── */}
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              تقييمات HR
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(["interviewEvaluation", "exitInterviewEvaluation"] as const).map((field) => {
+              const label = field === "interviewEvaluation" ? "تقييم مقابلة التوظيف" : "تقييم مقابلة الخروج";
+              const isEditing = evalEditField === field;
+              return (
+                <div key={field} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-muted-foreground">{label}</p>
+                    {!isEditing ? (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEvalEdit(field)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setEvalEditField(null)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={evalEditValue}
+                        rows={3}
+                        onChange={(e) => setEvalEditValue(e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                        placeholder="اكتب التقييم هنا..."
+                      />
+                      <Button size="sm" className="gap-1.5 w-full" onClick={saveEvalEdit} disabled={updateEmployee.isPending}>
+                        <Save className="h-3.5 w-3.5" />
+                        حفظ
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-sm">
+                      {emp?.[field] ? emp[field] : <span className="text-muted-foreground italic">لم يُملأ بعد</span>}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
 
         {/* ─── System Info ───────────────────────────────────── */}
         <Card>

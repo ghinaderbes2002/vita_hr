@@ -9,7 +9,9 @@ export type RequestType =
   | "BUSINESS_MISSION"
   | "DELEGATION"
   | "HIRING_REQUEST"
-  | "COMPLAINT";
+  | "COMPLAINT"
+  | "WORK_ACCIDENT"
+  | "REMOTE_WORK";
 
 export type RequestStatus =
   | "DRAFT"

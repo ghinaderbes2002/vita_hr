@@ -46,7 +46,7 @@ type FormData = {
   gender: "MALE" | "FEMALE" | "UNSPECIFIED"; dateOfBirth: string; departmentId: string; hireDate: string;
   contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE" | "CONSULTANT" | "SERVICE_PROVIDER" | "UNSPECIFIED";
   probationPeriod?: "ONE_MONTH" | "TWO_MONTHS" | "THREE_MONTHS" | "PERMANENT" | "UNSPECIFIED";
-  interviewEvaluation?: "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR" | "UNSPECIFIED";
+  interviewEvaluation?: string;
   employmentStatus?: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
   workType?: "FULL_TIME" | "PART_TIME" | "REMOTE" | "UNSPECIFIED";
   jobTitleId?: string; jobGradeId?: string; managerId?: string; basicSalary?: number;
@@ -173,7 +173,7 @@ interface EmployeeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employee?: Employee;
-  defaultInterviewEvaluation?: "EXCELLENT" | "VERY_GOOD" | "GOOD" | "ACCEPTABLE" | "POOR";
+  defaultInterviewEvaluation?: string;
 }
 
 export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewEvaluation }: EmployeeDialogProps) {
@@ -201,7 +201,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     lastNameAr: z.string().min(2, t("employees.fields.lastNameAr") + " " + t("common.required")),
     firstNameEn: z.string().min(2, t("employees.form.firstNameEnRequired")),
     lastNameEn: z.string().min(2, t("employees.form.lastNameEnRequired")),
-    email: z.string().email(t("employees.form.invalidEmail")),
+    email: z.string().email({ message: t("employees.form.invalidEmail") }),
     phone: z.string().optional(),
     mobile: z.string().optional(),
     nationalId: z.string().min(1, t("employees.form.nationalIdRequired")),
@@ -211,7 +211,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     hireDate: z.string().min(1, t("employees.form.hireDateRequired")),
     contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE", "CONSULTANT", "SERVICE_PROVIDER", "UNSPECIFIED"]),
     probationPeriod: z.enum(["ONE_MONTH", "TWO_MONTHS", "THREE_MONTHS", "PERMANENT", "UNSPECIFIED"]).optional(),
-    interviewEvaluation: z.enum(["EXCELLENT", "VERY_GOOD", "GOOD", "ACCEPTABLE", "POOR", "UNSPECIFIED"]).optional(),
+    interviewEvaluation: z.string().optional(),
     employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
     workType: z.enum(["FULL_TIME", "PART_TIME", "REMOTE", "UNSPECIFIED"]).optional(),
     jobTitleId: z.string().optional(),
@@ -272,7 +272,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       phone: "",
       mobile: "",
       nationalId: "",
-      gender: "UNSPECIFIED",
+      gender: "MALE",
       dateOfBirth: "",
       departmentId: "",
       hireDate: "",
@@ -370,7 +370,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         phone: "",
         mobile: "",
         nationalId: "",
-        gender: "UNSPECIFIED",
+        gender: "MALE",
         dateOfBirth: "",
         departmentId: "",
         hireDate: "",
@@ -437,6 +437,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           departmentId: data.departmentId,
           contractType: data.contractType,
           probationPeriod: data.probationPeriod || undefined,
+          interviewEvaluation: data.interviewEvaluation || undefined,
           employmentStatus: data.employmentStatus,
           workType: data.workType || undefined,
           jobTitleId: data.jobTitleId || undefined,
@@ -462,8 +463,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         await updateEmployee.mutateAsync({ id: employee.id, data: updateData });
       } else {
         const { employmentStatus, ...rest } = data;
+        const toISO = (d?: string) => d ? new Date(d + "T00:00:00.000Z").toISOString() : undefined;
         const createData: Record<string, any> = {
           ...rest,
+          hireDate: toISO(rest.hireDate),
+          dateOfBirth: toISO(rest.dateOfBirth),
           phone: rest.phone || undefined,
           mobile: rest.mobile || undefined,
           jobTitleId: rest.jobTitleId || undefined,
@@ -509,7 +513,9 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
             : t("employees.form.salaryOutOfRange")
         );
       } else {
-        console.error("💥 Backend says:", JSON.stringify(errData, null, 2));
+        const msg = errData?.error?.message || errData?.message || error?.message;
+        const errorText = Array.isArray(msg) ? msg.join("، ") : (msg || "حدث خطأ غير متوقع");
+        toast.error(errorText);
       }
     }
   };
@@ -610,7 +616,6 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                             <SelectTrigger><SelectValue /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
                             <SelectItem value="MALE">{t("employees.genders.male")}</SelectItem>
                             <SelectItem value="FEMALE">{t("employees.genders.female")}</SelectItem>
                           </SelectContent>
@@ -953,19 +958,9 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>تقييم المقابلة ({t("common.optional")})</FormLabel>
-                      <Select onValueChange={(v) => field.onChange(v === "UNSPECIFIED" ? undefined : v)} value={field.value || "UNSPECIFIED"}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="غير محدد" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
-                          <SelectItem value="EXCELLENT">ممتاز</SelectItem>
-                          <SelectItem value="VERY_GOOD">جيد جداً</SelectItem>
-                          <SelectItem value="GOOD">جيد</SelectItem>
-                          <SelectItem value="ACCEPTABLE">مقبول</SelectItem>
-                          <SelectItem value="POOR">ضعيف</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Textarea {...field} rows={3} placeholder="اكتب تقييم مقابلة التوظيف..." />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

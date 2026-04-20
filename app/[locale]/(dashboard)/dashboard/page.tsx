@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Users, Calendar, Clock, AlertCircle, PlusCircle, ClipboardList,
   Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight, UserPlus, Hourglass, Bell,
+  FileText, Upload, Trash, ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,9 @@ import { useJobApplicationStats } from "@/lib/hooks/use-job-applications";
 import { useTopAbsencesReport } from "@/lib/hooks/use-attendance-reports";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+
+const CONDUCT_DOC_KEY = "conduct_document";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
@@ -26,6 +30,37 @@ export default function DashboardPage() {
   const locale = useLocale();
   const router = useRouter();
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
+  const [conductDoc, setConductDoc] = useState<{ url: string; name: string } | null>(() => {
+    try { const s = localStorage.getItem(CONDUCT_DOC_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+  const [conductUploading, setConductUploading] = useState(false);
+  const [deleteConductOpen, setDeleteConductOpen] = useState(false);
+
+  const handleConductUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setConductUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Upload failed");
+      const { fileUrl, fileName } = await res.json();
+      const doc = { url: fileUrl, name: fileName || file.name };
+      setConductDoc(doc);
+      localStorage.setItem(CONDUCT_DOC_KEY, JSON.stringify(doc));
+    } catch {
+      alert("فشل رفع الملف");
+    } finally {
+      setConductUploading(false);
+    }
+  };
+
+  const removeConductDoc = () => {
+    setConductDoc(null);
+    localStorage.removeItem(CONDUCT_DOC_KEY);
+  };
 
   const today = new Date();
   const year = today.getFullYear();
@@ -263,6 +298,80 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      {/* Code of Conduct */}
+      <Card>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            مدونة السلوك
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {conductDoc && (
+              <>
+                <a
+                  href={conductDoc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 border border-primary/30 rounded px-2 py-1"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  عرض
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setDeleteConductOpen(true)}
+                  className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 border border-destructive/30 rounded px-2 py-1"
+                >
+                  <Trash className="h-3.5 w-3.5" />
+                  حذف
+                </button>
+              </>
+            )}
+            <label className="flex items-center gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded px-3 py-1.5 cursor-pointer transition-colors">
+              {conductUploading ? (
+                <span className="animate-pulse">جاري الرفع...</span>
+              ) : (
+                <>
+                  <Upload className="h-3.5 w-3.5" />
+                  {conductDoc ? "تغيير الوثيقة" : "رفع مدونة السلوك"}
+                </>
+              )}
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                disabled={conductUploading}
+                onChange={handleConductUpload}
+              />
+            </label>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {conductDoc ? (
+            <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30">
+              <FileText className="h-8 w-8 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{conductDoc.name}</p>
+                <p className="text-xs text-muted-foreground">وثيقة PDF مرفوعة</p>
+              </div>
+              <a
+                href={conductDoc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline shrink-0"
+              >
+                فتح
+              </a>
+            </div>
+          ) : (
+            <div className="text-center space-y-2 py-6 text-muted-foreground">
+              <FileText className="h-10 w-10 mx-auto opacity-30" />
+              <p className="text-sm">لم يتم رفع مدونة السلوك بعد</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
@@ -311,6 +420,15 @@ export default function DashboardPage() {
       </Card>
 
       <EmployeeDialog open={addEmployeeOpen} onOpenChange={setAddEmployeeOpen} />
+
+      <ConfirmDialog
+        open={deleteConductOpen}
+        onOpenChange={setDeleteConductOpen}
+        title="حذف مدونة السلوك"
+        description="هل أنت متأكد من حذف وثيقة مدونة السلوك؟ لا يمكن التراجع عن هذا الإجراء."
+        onConfirm={removeConductDoc}
+        variant="destructive"
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, GitBranch, List } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, GitBranch, List, Upload, Trash, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +23,7 @@ import { OrgChart } from "@/components/features/departments/org-chart";
 import { Department } from "@/types";
 
 const STORAGE_KEY = "dept_grade_map";
+const ORG_DOC_KEY = "org_chart_document";
 
 function loadMap(): Record<string, string> {
   try {
@@ -97,6 +98,38 @@ export default function DepartmentsPage() {
     setDialogOpen(true);
   };
 
+  const [deleteDocOpen, setDeleteDocOpen] = useState(false);
+  const [orgDoc, setOrgDoc] = useState<{ url: string; name: string; type: string } | null>(() => {
+    try { const s = localStorage.getItem(ORG_DOC_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+  const [docUploading, setDocUploading] = useState(false);
+
+  const handleOrgDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setDocUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Upload failed");
+      const { fileUrl, fileName } = await res.json();
+      const doc = { url: fileUrl, name: fileName || file.name, type: file.type };
+      setOrgDoc(doc);
+      localStorage.setItem(ORG_DOC_KEY, JSON.stringify(doc));
+    } catch {
+      alert("فشل رفع الملف");
+    } finally {
+      setDocUploading(false);
+    }
+  };
+
+  const removeOrgDoc = () => {
+    setOrgDoc(null);
+    localStorage.removeItem(ORG_DOC_KEY);
+  };
+
   const handleDelete = (dept: Department) => {
     setSelectedDept(dept);
     setDeleteDialogOpen(true);
@@ -141,6 +174,10 @@ export default function DepartmentsPage() {
           <TabsTrigger value="orgchart" className="flex items-center gap-2">
             <GitBranch className="h-4 w-4" />
             {t("departments.tabs.orgChart")}
+          </TabsTrigger>
+          <TabsTrigger value="orgdoc" className="flex items-center gap-2">
+            <FileImage className="h-4 w-4" />
+            وثيقة الهيكل
           </TabsTrigger>
         </TabsList>
 
@@ -228,6 +265,66 @@ export default function DepartmentsPage() {
           )}
         </TabsContent>
 
+        {/* Org Document Upload */}
+        <TabsContent value="orgdoc">
+          <div className="rounded-md border min-h-100 flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <p className="text-sm font-medium">وثيقة الهيكل التنظيمي (صورة أو PDF)</p>
+              <div className="flex items-center gap-2">
+                {orgDoc && (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteDocOpen(true)}
+                    className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 border border-destructive/30 rounded px-2 py-1"
+                  >
+                    <Trash className="h-3.5 w-3.5" />
+                    حذف
+                  </button>
+                )}
+                <label className="flex items-center gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded px-3 py-1.5 cursor-pointer transition-colors">
+                  {docUploading ? (
+                    <span className="animate-pulse">جاري الرفع...</span>
+                  ) : (
+                    <>
+                      <Upload className="h-3.5 w-3.5" />
+                      {orgDoc ? "تغيير الوثيقة" : "رفع وثيقة"}
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    disabled={docUploading}
+                    onChange={handleOrgDocUpload}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center p-6">
+              {!orgDoc ? (
+                <div className="text-center space-y-3 text-muted-foreground">
+                  <FileImage className="h-12 w-12 mx-auto opacity-30" />
+                  <p className="text-sm">لا توجد وثيقة مرفوعة</p>
+                  <p className="text-xs">ارفع صورة أو ملف PDF للهيكل التنظيمي</p>
+                </div>
+              ) : orgDoc.type === "application/pdf" ? (
+                <iframe
+                  src={orgDoc.url}
+                  className="w-full h-[70vh] rounded border"
+                  title="وثيقة الهيكل التنظيمي"
+                />
+              ) : (
+                <img
+                  src={orgDoc.url}
+                  alt="وثيقة الهيكل التنظيمي"
+                  className="max-w-full max-h-[70vh] object-contain rounded border"
+                />
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
         {/* Org Chart View */}
         <TabsContent value="orgchart">
           <div className="rounded-md border min-h-100">
@@ -255,6 +352,15 @@ export default function DepartmentsPage() {
         title={t("messages.confirmDelete")}
         description={t("messages.actionCantUndo")}
         onConfirm={confirmDelete}
+        variant="destructive"
+      />
+
+      <ConfirmDialog
+        open={deleteDocOpen}
+        onOpenChange={setDeleteDocOpen}
+        title="حذف وثيقة الهيكل التنظيمي"
+        description="هل أنت متأكد من حذف الوثيقة؟ لا يمكن التراجع عن هذا الإجراء."
+        onConfirm={removeOrgDoc}
         variant="destructive"
       />
     </div>

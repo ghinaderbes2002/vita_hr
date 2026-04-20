@@ -339,6 +339,7 @@
       "female": "Kadın"
     },
     "contractTypes": {
+      "unspecified": "Belirtilmemiş",
       "fixed_term": "Belirli Süreli",
       "indefinite": "Belirsiz Süreli",
       "temporary": "Geçici",
@@ -664,7 +665,9 @@
       "BUSINESS_MISSION": "İş Görevi",
       "DELEGATION": "Yetki Devri",
       "HIRING_REQUEST": "İşe Alım Talebi",
-      "COMPLAINT": "Şikayet"
+      "COMPLAINT": "Şikayet",
+      "WORK_ACCIDENT": "İş Kazası",
+      "REMOTE_WORK": "Uzaktan Çalışma"
     },
     "statuses": {
       "DRAFT": "Taslak",

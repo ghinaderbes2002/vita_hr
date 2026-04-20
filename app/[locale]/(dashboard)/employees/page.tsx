@@ -134,13 +134,13 @@ export default function EmployeesPage() {
             className="pr-10 bg-background"
           />
         </div>
-        <Select value={selectedDepartment} onValueChange={(v) => { setSelectedDepartment(v); setPage(1); }}>
+        <Select value={selectedDepartment || "all"} onValueChange={(v) => { setSelectedDepartment(v === "all" ? "" : v); setPage(1); }}>
           <SelectTrigger className="w-56 bg-background">
             <Filter className="h-4 w-4 ml-2" />
             <SelectValue placeholder={t("employees.filterByDepartment")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value=" ">{t("employees.allDepartments")}</SelectItem>
+            <SelectItem value="all">{t("employees.allDepartments")}</SelectItem>
             {departments.map((dept: any) => (
               <SelectItem key={dept.id} value={dept.id}>
                 {dept.nameAr}

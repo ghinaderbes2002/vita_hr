@@ -202,9 +202,9 @@ export default function PendingApprovalPage() {
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }} className="space-y-4">
         <TabsList>
           {!isHrManager && (
-            <TabsTrigger value="manager">بانتظار المدير ({activeTab === "manager" ? total : ""})</TabsTrigger>
+            <TabsTrigger value="manager">بانتظار موافقتك ({activeTab === "manager" ? total : ""})</TabsTrigger>
           )}
-          <TabsTrigger value="hr">بانتظار HR ({activeTab === "hr" ? total : ""})</TabsTrigger>
+          <TabsTrigger value="hr">بانتظار موافقة HR ({activeTab === "hr" ? total : ""})</TabsTrigger>
         </TabsList>
 
         {!isHrManager && (
