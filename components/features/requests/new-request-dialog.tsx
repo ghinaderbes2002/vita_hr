@@ -86,7 +86,7 @@ const NO_DETAILS_TYPES: RequestType[] = [
 
 const formSchema = z.object({
   type: z.enum([...ALL_REQUEST_TYPES] as [string, ...string[]]),
-  reason: z.string().min(1, "السبب مطلوب"),
+  reason: z.string().optional(),
   notes: z.string().optional(),
   // RESIGNATION
   effectiveDate: z.string().optional(),
@@ -296,7 +296,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
       const actualType = data.type === "OVERTIME" ? overtimeSubType : data.type as RequestType;
       const created = await createRequest.mutateAsync({
         type: actualType,
-        reason: data.reason,
+        reason: data.reason || "",
         notes: data.notes || undefined,
         details: buildDetails(data),
       });
@@ -353,20 +353,6 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
               )}
             />
 
-            {/* السبب — مطلوب لجميع الأنواع */}
-            <FormField
-              control={form.control}
-              name="reason"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("requests.fields.reason")} *</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={2} placeholder={t("requests.fields.reasonPlaceholder")} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {/* ── RESIGNATION ── */}
             {selectedType === "RESIGNATION" && (

@@ -162,6 +162,14 @@ export function useRequestApprovals(id: string) {
   });
 }
 
+export function useRequestSteps(id: string) {
+  return useQuery({
+    queryKey: ["request-steps", id],
+    queryFn: () => requestsApi.getSteps(id),
+    enabled: !!id,
+  });
+}
+
 export function useApproveRequest() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -193,6 +201,23 @@ export function useRejectRequest() {
     },
     onError: (error: any) => {
       if (error.response?.status === 403) return toast.error("غير مخوّل لرفض هذا الطلب");
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
+    },
+  });
+}
+
+export function useSubmitExitInterview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, any> }) =>
+      requestsApi.exitInterview(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      queryClient.invalidateQueries({ queryKey: ["request"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      toast.success("تم إرسال استمارة مقابلة الخروج بنجاح");
+    },
+    onError: (error: any) => {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });

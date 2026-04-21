@@ -28,6 +28,8 @@ export interface InterviewEvaluation {
   generalNotes?: string;
   decision?: InterviewDecision;
   proposedSalary?: number;
+  additionalConditions?: string;
+  salaryAfterConfirmation?: number;
   personalScore?: number;
   technicalScore?: number;
   computerScore?: number;
@@ -54,6 +56,8 @@ export interface CreateInterviewEvaluationData {
   generalNotes?: string;
   decision?: InterviewDecision;
   proposedSalary?: number;
+  additionalConditions?: string;
+  salaryAfterConfirmation?: number;
   personalScores?: ScoreEntry[];
   technicalScores?: QuestionScoreEntry[];
   computerScores?: ScoreEntry[];

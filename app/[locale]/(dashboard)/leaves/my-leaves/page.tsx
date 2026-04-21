@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Eye, Edit, Trash2, Send, XCircle } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Send, XCircle, CheckCircle2, UserCheck } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ import {
   useDeleteLeaveRequest,
   useSubmitLeaveRequest,
   useCancelLeaveRequest,
+  usePendingSubstituteRequests,
+  useSubstituteResponse,
 } from "@/lib/hooks/use-leave-requests";
 import { LeaveRequest } from "@/lib/api/leave-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,11 +55,17 @@ export default function MyLeavesPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [substituteDialogOpen, setSubstituteDialogOpen] = useState(false);
+  const [substituteRequest, setSubstituteRequest] = useState<LeaveRequest | null>(null);
+  const [substituteNotes, setSubstituteNotes] = useState("");
+  const [substituteAction, setSubstituteAction] = useState<"approve" | "reject">("approve");
 
   const { data, isLoading } = useMyLeaveRequests();
   const deleteRequest = useDeleteLeaveRequest();
   const submitRequest = useSubmitLeaveRequest();
   const cancelRequest = useCancelLeaveRequest();
+  const { data: pendingSubstitute, isLoading: loadingSubstitute, isFetching: fetchingSubstitute } = usePendingSubstituteRequests();
+  const substituteResponse = useSubstituteResponse();
 
   // Extract array from API response
   const requests = (data as any)?.items || (data as any)?.data?.items || [];
@@ -112,6 +120,27 @@ export default function MyLeavesPage() {
       setCancelReason("");
     }
   };
+
+  const openSubstituteDialog = (request: LeaveRequest, action: "approve" | "reject") => {
+    setSubstituteRequest(request);
+    setSubstituteAction(action);
+    setSubstituteNotes("");
+    setSubstituteDialogOpen(true);
+  };
+
+  const confirmSubstituteResponse = async () => {
+    if (!substituteRequest) return;
+    await substituteResponse.mutateAsync({
+      id: substituteRequest.id,
+      approved: substituteAction === "approve",
+      notes: substituteNotes || undefined,
+    });
+    setSubstituteDialogOpen(false);
+    setSubstituteRequest(null);
+    setSubstituteNotes("");
+  };
+
+  const pendingSubstituteList: LeaveRequest[] = Array.isArray(pendingSubstitute) ? pendingSubstitute : [];
 
   const renderTable = (requestsList: LeaveRequest[]) => (
     <Table>
@@ -212,6 +241,45 @@ export default function MyLeavesPage() {
         }
       />
 
+      {(loadingSubstitute || fetchingSubstitute || pendingSubstituteList.length > 0) && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-amber-800 font-semibold">
+            <UserCheck className="h-5 w-5" />
+            <span>طلبات تنتظر موافقتي كبديل ({pendingSubstituteList.length})</span>
+          </div>
+          {loadingSubstitute ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {pendingSubstituteList.map((req) => (
+                <div key={req.id} className="flex items-center justify-between bg-white rounded-md border p-3">
+                  <div className="space-y-0.5">
+                    <p className="font-medium text-sm">
+                      {req.employee?.firstNameAr} {req.employee?.lastNameAr}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {req.leaveType?.nameAr} — {format(new Date(req.startDate), "PPP", { locale: ar })} إلى {format(new Date(req.endDate), "PPP", { locale: ar })} ({req.totalDays} أيام)
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => openSubstituteDialog(req, "approve")}>
+                      <CheckCircle2 className="h-4 w-4 ml-1" />
+                      موافقة
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50" onClick={() => openSubstituteDialog(req, "reject")}>
+                      <XCircle className="h-4 w-4 ml-1" />
+                      رفض
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all">الكل ({requests.length})</TabsTrigger>
@@ -258,6 +326,39 @@ export default function MyLeavesPage() {
         description="هل أنت متأكد من إرسال هذا الطلب للموافقة؟ لن تتمكن من تعديله بعد الإرسال."
         onConfirm={confirmSubmit}
       />
+
+      <Dialog open={substituteDialogOpen} onOpenChange={setSubstituteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{substituteAction === "approve" ? "تأكيد الموافقة كبديل" : "تأكيد الرفض كبديل"}</DialogTitle>
+            <DialogDescription>
+              {substituteRequest && `${substituteRequest.employee?.firstNameAr} ${substituteRequest.employee?.lastNameAr} — ${substituteRequest.leaveType?.nameAr}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="sub-notes">ملاحظات (اختياري)</Label>
+            <Textarea
+              id="sub-notes"
+              rows={3}
+              value={substituteNotes}
+              onChange={(e) => setSubstituteNotes(e.target.value)}
+              placeholder="أضف ملاحظة إن أردت..."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubstituteDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant={substituteAction === "approve" ? "default" : "destructive"}
+              onClick={confirmSubstituteResponse}
+              disabled={substituteResponse.isPending}
+            >
+              {substituteAction === "approve" ? "موافق" : "رفض"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <DialogContent>

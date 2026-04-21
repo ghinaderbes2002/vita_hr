@@ -5,6 +5,7 @@ export type ProbationStatus =
   | "DRAFT"
   | "PENDING_SENIOR_MANAGER"
   | "PENDING_HR"
+  | "PENDING_MEETING_SCHEDULE"
   | "PENDING_CEO"
   | "PENDING_EMPLOYEE_ACKNOWLEDGMENT"
   | "COMPLETED"
@@ -16,7 +17,8 @@ export type ProbationRecommendation =
   | "CONFIRM_POSITION"
   | "EXTEND_PROBATION"
   | "TRANSFER_POSITION"
-  | "TERMINATE";
+  | "TERMINATE"
+  | "SALARY_RAISE";
 
 export interface ProbationCriterion {
   id: string;
@@ -59,6 +61,12 @@ export interface ProbationEvaluation {
   scores: ProbationEvaluationScore[];
   history?: ProbationHistoryEntry[];
   employee?: { firstNameAr: string; lastNameAr: string; employeeNumber: string };
+  proposedMeetingDate?: string;
+  confirmedMeetingDate?: string;
+  meetingNotes?: string;
+  meetingConfirmedByEmployee?: boolean;
+  meetingConfirmedByManager?: boolean;
+  meetingProposedAt?: string;
 }
 
 export interface CreateProbationEvaluationData {
@@ -80,6 +88,20 @@ export interface WorkflowActionData {
   recommendation?: ProbationRecommendation;
   overallRating?: ProbationScore;
   scores?: { criteriaId: string; score: ProbationScore }[];
+  proposedDate?: string;
+  confirmedDate?: string;
+}
+
+export interface ProposeMeetingData {
+  meetingProposedAt: string;
+}
+
+export interface ConfirmMeetingData {
+  confirmedBy: "employee" | "manager";
+}
+
+export interface CompleteProbationData {
+  decisionDocumentUrl: string;
 }
 
 export const probationEvaluationsApi = {
@@ -163,6 +185,21 @@ export const probationEvaluationsApi = {
 
   employeeAcknowledge: async (id: string, data?: WorkflowActionData) => {
     const response = await apiClient.post(`/probation/evaluations/${id}/employee-acknowledge`, data);
+    return response.data?.data || response.data;
+  },
+
+  proposeMeeting: async (id: string, data: ProposeMeetingData) => {
+    const response = await apiClient.patch(`/probation/evaluations/${id}/propose-meeting`, data);
+    return response.data?.data || response.data;
+  },
+
+  confirmMeeting: async (id: string, data: ConfirmMeetingData) => {
+    const response = await apiClient.patch(`/probation/evaluations/${id}/confirm-meeting`, data);
+    return response.data?.data || response.data;
+  },
+
+  complete: async (id: string, data: CompleteProbationData) => {
+    const response = await apiClient.patch(`/probation/evaluations/${id}/complete`, data);
     return response.data?.data || response.data;
   },
 };

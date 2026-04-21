@@ -40,8 +40,11 @@ export default function LeaveTypesPage() {
   // Debug: log API response
   console.log("Leave Types API response:", data);
 
-  // API returns array directly
-  const leaveTypes = Array.isArray(data) ? data : [];
+  const leaveTypes: LeaveType[] = Array.isArray(data)
+    ? data
+    : Array.isArray((data as any)?.data)
+    ? (data as any).data
+    : [];
 
   const handleEdit = (leaveType: LeaveType) => {
     setSelectedLeaveType(leaveType);

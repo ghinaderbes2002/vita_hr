@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ArrowRight, CheckCircle2, XCircle, Send, FileCheck,
-  Gavel, UserCheck, History,
+  Gavel, UserCheck, History, CalendarClock, CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,9 @@ import {
   useHrRejectProbation,
   useCeoDecideProbation,
   useEmployeeAcknowledgeProbation,
+  useProposeMeeting,
+  useConfirmMeeting,
+  useCompleteProbation,
 } from "@/lib/hooks/use-probation-evaluations";
 import {
   ProbationStatus, ProbationScore, ProbationRecommendation, WorkflowActionData,
@@ -39,6 +42,7 @@ const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                           "bg-gray-100 text-gray-600",
   PENDING_SENIOR_MANAGER:          "bg-blue-100 text-blue-700",
   PENDING_HR:                      "bg-purple-100 text-purple-700",
+  PENDING_MEETING_SCHEDULE:        "bg-orange-100 text-orange-700",
   PENDING_CEO:                     "bg-amber-100 text-amber-700",
   PENDING_EMPLOYEE_ACKNOWLEDGMENT: "bg-cyan-100 text-cyan-700",
   COMPLETED:                       "bg-green-100 text-green-700",
@@ -51,7 +55,8 @@ const SCORE_VALUES: ProbationScore[] = ["UNACCEPTABLE", "ACCEPTABLE", "GOOD", "V
 const RECOMMENDATION_VALUES: ProbationRecommendation[] = ["CONFIRM_POSITION", "EXTEND_PROBATION", "TRANSFER_POSITION", "TERMINATE"];
 
 const WORKFLOW_STATUSES: ProbationStatus[] = [
-  "DRAFT", "PENDING_SENIOR_MANAGER", "PENDING_HR", "PENDING_CEO", "PENDING_EMPLOYEE_ACKNOWLEDGMENT", "COMPLETED",
+  "DRAFT", "PENDING_SENIOR_MANAGER", "PENDING_HR",
+  "PENDING_MEETING_SCHEDULE", "PENDING_CEO", "PENDING_EMPLOYEE_ACKNOWLEDGMENT", "COMPLETED",
 ];
 
 function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
@@ -96,7 +101,9 @@ export default function ProbationEvaluationDetailPage() {
   const tCommon = useTranslations("common");
 
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
-  const [actionType, setActionType] = useState<"approve" | "reject" | "document" | "hr-reject" | "ceo" | "acknowledge" | "submit" | null>(null);
+  const [actionType, setActionType] = useState<"approve" | "reject" | "document" | "hr-reject" | "ceo" | "acknowledge" | "submit" | "propose-meeting" | "confirm-employee" | "confirm-manager" | "complete" | null>(null);
+  const [meetingDate, setMeetingDate] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
   const [actionForm, setActionForm] = useState<WorkflowActionData>({});
 
   const { data: evaluation, isLoading } = useProbationEvaluation(id);
@@ -109,6 +116,9 @@ export default function ProbationEvaluationDetailPage() {
   const hrReject = useHrRejectProbation();
   const ceoDecide = useCeoDecideProbation();
   const employeeAcknowledge = useEmployeeAcknowledgeProbation();
+  const proposeMeeting = useProposeMeeting();
+  const confirmMeeting = useConfirmMeeting();
+  const completeProbation = useCompleteProbation();
 
   const ev = evaluation as any;
   const hist = (history as any) || [];
@@ -134,6 +144,8 @@ export default function ProbationEvaluationDetailPage() {
   function openAction(type: typeof actionType) {
     setActionType(type);
     setActionForm({});
+    setMeetingDate("");
+    setDocumentUrl("");
     setActionDialogOpen(true);
   }
 
@@ -148,12 +160,25 @@ export default function ProbationEvaluationDetailPage() {
       case "hr-reject":   await hrReject.mutateAsync(opts); break;
       case "ceo":         await ceoDecide.mutateAsync(opts); break;
       case "acknowledge": await employeeAcknowledge.mutateAsync(opts); break;
+      case "propose-meeting":
+        await proposeMeeting.mutateAsync({ id, data: { meetingProposedAt: meetingDate } });
+        break;
+      case "confirm-employee":
+        await confirmMeeting.mutateAsync({ id, data: { confirmedBy: "employee" } });
+        break;
+      case "confirm-manager":
+        await confirmMeeting.mutateAsync({ id, data: { confirmedBy: "manager" } });
+        break;
+      case "complete":
+        await completeProbation.mutateAsync({ id, data: { decisionDocumentUrl: documentUrl } });
+        break;
     }
     setActionDialogOpen(false);
   }
 
   const isActionLoading = submit.isPending || seniorApprove.isPending || seniorReject.isPending ||
-    hrDocument.isPending || hrReject.isPending || ceoDecide.isPending || employeeAcknowledge.isPending;
+    hrDocument.isPending || hrReject.isPending || ceoDecide.isPending || employeeAcknowledge.isPending ||
+    proposeMeeting.isPending || confirmMeeting.isPending;
 
   const getActionDialogTitle = () => {
     const map: Record<string, string> = {
@@ -164,6 +189,8 @@ export default function ProbationEvaluationDetailPage() {
       "hr-reject": t("actionDialog.hrReject"),
       ceo: t("actionDialog.ceo"),
       acknowledge: t("actionDialog.acknowledge"),
+      "propose-meeting": t("actionDialog.proposeMeeting"),
+      "confirm-meeting": t("actionDialog.confirmMeeting"),
     };
     return actionType ? map[actionType] : "";
   };
@@ -214,6 +241,38 @@ export default function ProbationEvaluationDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Meeting info */}
+      {(ev.proposedMeetingDate || ev.confirmedMeetingDate || ev.status === "PENDING_MEETING_SCHEDULE") && (
+        <Card className="border-orange-200 bg-orange-50/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-orange-700">
+              <CalendarClock className="h-4 w-4" />
+              {t("detail.meetingSchedule")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            {ev.proposedMeetingDate && (
+              <div>
+                <p className="text-xs text-muted-foreground">{t("detail.proposedDate")}</p>
+                <p className="font-medium">{new Date(ev.proposedMeetingDate).toLocaleString()}</p>
+              </div>
+            )}
+            {ev.confirmedMeetingDate && (
+              <div>
+                <p className="text-xs text-muted-foreground">{t("detail.confirmedDate")}</p>
+                <p className="font-medium text-green-700">{new Date(ev.confirmedMeetingDate).toLocaleString()}</p>
+              </div>
+            )}
+            {ev.meetingNotes && (
+              <div className="sm:col-span-2">
+                <p className="text-xs text-muted-foreground">{t("detail.meetingNotes")}</p>
+                <p className="text-sm mt-0.5">{ev.meetingNotes}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Scores */}
       {ev.scores?.length > 0 && (
@@ -290,6 +349,20 @@ export default function ProbationEvaluationDetailPage() {
                   </Button>
                 </>
               )}
+              {ev.status === "PENDING_MEETING_SCHEDULE" && (
+                <>
+                  {!ev.proposedMeetingDate && canHrDocument && (
+                    <Button className="gap-2 bg-orange-600 hover:bg-orange-700" onClick={() => openAction("propose-meeting")}>
+                      <CalendarClock className="h-4 w-4" />{t("actions.proposeMeeting")}
+                    </Button>
+                  )}
+                  {ev.proposedMeetingDate && (
+                    <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("confirm-meeting")}>
+                      <CalendarCheck className="h-4 w-4" />{t("actions.confirmMeeting")}
+                    </Button>
+                  )}
+                </>
+              )}
               {ev.status === "PENDING_HR" && canHrDocument && (
                 <>
                   <Button className="gap-2 bg-purple-600 hover:bg-purple-700" onClick={() => openAction("document")}>
@@ -359,6 +432,20 @@ export default function ProbationEvaluationDetailPage() {
             <DialogTitle>{getActionDialogTitle()}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {(actionType === "propose-meeting" || actionType === "confirm-meeting") && (
+              <div className="space-y-1.5">
+                <Label htmlFor="meeting-date">
+                  {actionType === "propose-meeting" ? `${t("actionDialog.proposedDate")} *` : t("actionDialog.confirmedDateOptional")}
+                </Label>
+                <input
+                  id="meeting-date"
+                  type="datetime-local"
+                  value={meetingDate}
+                  onChange={(e) => setMeetingDate(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            )}
             {(actionType === "approve" || actionType === "ceo") && (
               <div className="space-y-1.5">
                 <Label>{t("actionDialog.overallRating")}</Label>
@@ -412,7 +499,8 @@ export default function ProbationEvaluationDetailPage() {
               disabled={
                 isActionLoading ||
                 (actionType?.includes("reject") && !actionForm.notes?.trim()) ||
-                (actionType === "ceo" && !actionForm.recommendation)
+                (actionType === "ceo" && !actionForm.recommendation) ||
+                (actionType === "propose-meeting" && !meetingDate)
               }
               className={actionType?.includes("reject") ? "bg-destructive hover:bg-destructive/90" : ""}
             >

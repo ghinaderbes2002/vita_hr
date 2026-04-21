@@ -102,7 +102,7 @@ interface LeaveRequestFormProps {
 export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequestFormProps) {
   const t = useTranslations();
   const { data: leaveTypesData } = useLeaveTypes();
-  const { data: employeesData } = useEmployees();
+  const { data: employeesData } = useEmployees({ limit: 500 });
 
   const formSchema = z.object({
     leaveTypeId: z.string().min(1, t("leaves.form.leaveTypeRequired")),

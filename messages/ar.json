@@ -116,6 +116,7 @@
     "leaveReports": "تقارير الإجازات",
     "attendanceReportsSummary": "تقارير الحضور",
     "evaluationReports": "تقارير التقييم",
+    "custodyReport": "تقرير العهد",
     "onboarding": "الإلحاق والإنهاء",
     "onboardingTemplates": "القوالب",
     "onboardingWorkflows": "لوحة المتابعة",
@@ -418,7 +419,8 @@
       "rejected": "مرفوض",
       "cancelled": "ملغي",
       "in_progress": "جارية",
-      "completed": "منتهية"
+      "completed": "منتهية",
+      "pending_substitute": "بانتظار موافقة البديل"
     },
     "tabs": {
       "all": "الكل",
@@ -898,7 +900,8 @@
       "IN_APPROVAL": "قيد الموافقة",
       "APPROVED": "مقبول",
       "REJECTED": "مرفوض",
-      "CANCELLED": "ملغي"
+      "CANCELLED": "ملغي",
+      "PENDING_EXIT_INTERVIEW": "بانتظار مقابلة الخروج"
     },
     "actions": {
       "submit": "تقديم",
@@ -1757,6 +1760,7 @@
       "DRAFT": "مسودة",
       "PENDING_SENIOR_MANAGER": "بانتظار المدير الأعلى",
       "PENDING_HR": "بانتظار HR",
+      "PENDING_MEETING_SCHEDULE": "جدولة الاجتماع",
       "PENDING_CEO": "بانتظار المدير التنفيذي",
       "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "بانتظار إقرار الموظف",
       "COMPLETED": "مكتمل",
@@ -1785,12 +1789,15 @@
       "HR_DOCUMENT": "توثيق HR",
       "HR_REJECT": "رفض HR",
       "CEO_DECIDE": "قرار المدير التنفيذي",
-      "EMPLOYEE_ACKNOWLEDGE": "إقرار الموظف"
+      "EMPLOYEE_ACKNOWLEDGE": "إقرار الموظف",
+      "PROPOSE_MEETING": "اقتراح موعد الاجتماع",
+      "CONFIRM_MEETING": "تأكيد موعد الاجتماع"
     },
     "workflow": {
       "DRAFT": "مسودة",
       "PENDING_SENIOR_MANAGER": "المدير الأعلى",
       "PENDING_HR": "HR",
+      "PENDING_MEETING_SCHEDULE": "جدولة الاجتماع",
       "PENDING_CEO": "المدير التنفيذي",
       "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "إقرار الموظف",
       "COMPLETED": "مكتمل"
@@ -1837,6 +1844,10 @@
       "overallRating": "التقييم العام",
       "finalRecommendation": "التوصية",
       "employeeAcknowledged": "وافق الموظف على التقييم",
+      "meetingSchedule": "موعد الاجتماع",
+      "proposedDate": "التاريخ المقترح",
+      "confirmedDate": "التاريخ المؤكد",
+      "meetingNotes": "ملاحظات الاجتماع",
       "availableActions": "الإجراءات المتاحة",
       "completed": "التقييم مكتمل — لا توجد إجراءات إضافية",
       "historyLog": "سجل الإجراءات",
@@ -1850,6 +1861,8 @@
       "hrReject": "رفض",
       "ceoDecide": "اتخاذ القرار النهائي",
       "acknowledge": "إقرار الموظف",
+      "proposeMeeting": "اقتراح موعد الاجتماع",
+      "confirmMeeting": "تأكيد موعد الاجتماع",
       "resubmit": "إعادة الإرسال بعد التعديل",
       "confirm": "تأكيد"
     },
@@ -1861,6 +1874,10 @@
       "hrReject": "رفض من HR",
       "ceo": "قرار المدير التنفيذي",
       "acknowledge": "إقرار الموظف",
+      "proposeMeeting": "اقتراح موعد الاجتماع",
+      "confirmMeeting": "تأكيد موعد الاجتماع",
+      "proposedDate": "التاريخ المقترح",
+      "confirmedDateOptional": "التاريخ النهائي (اختياري)",
       "overallRating": "التقييم العام",
       "recommendation": "التوصية",
       "notes": "ملاحظات",

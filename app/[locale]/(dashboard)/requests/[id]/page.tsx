@@ -10,10 +10,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/shared/page-header";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
-import { useRequest, useRequestApprovals, useApproveRequest, useRejectRequest } from "@/lib/hooks/use-requests";
+import { useRequest, useRequestApprovals, useRequestSteps, useApproveRequest, useRejectRequest, useSubmitExitInterview } from "@/lib/hooks/use-requests";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { useState } from "react";
 import { ApprovalStep, ApprovalStatus } from "@/types";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 
 
 // Human-readable labels for detail keys
@@ -137,11 +142,25 @@ export default function RequestDetailPage() {
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const { data: request, isLoading, error: requestError } = useRequest(id);
+  const { data: stepsData, isLoading: stepsLoading } = useRequestSteps(id);
   const { data: approvals, isLoading: approvalsLoading } = useRequestApprovals(id);
   const approveRequest = useApproveRequest();
   const rejectRequest = useRejectRequest();
+  const submitExitInterview = useSubmitExitInterview();
+  const { user } = useAuthStore();
 
-  const steps: ApprovalStep[] = Array.isArray(approvals) ? approvals : [];
+  const [exitForm, setExitForm] = useState({
+    resignationReason: "",
+    workEnvironmentRating: "",
+    managementRating: "",
+    suggestions: "",
+    wouldRejoin: "",
+  });
+
+  // prefer /steps endpoint, fall back to /approvals
+  const rawSteps = Array.isArray(stepsData) && stepsData.length > 0 ? stepsData : (Array.isArray(approvals) ? approvals : []);
+  const steps: ApprovalStep[] = rawSteps;
+  const isStepsLoading = stepsLoading && approvalsLoading;
 
   const handleApprove = async (notes: string) => {
     await approveRequest.mutateAsync({ id, notes: notes || undefined });
@@ -335,13 +354,122 @@ export default function RequestDetailPage() {
         </Card>
       )}
 
+      {/* Exit Interview Form */}
+      {request.status === "PENDING_EXIT_INTERVIEW" && (
+        <Card className="border-orange-200">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-orange-500" />
+              استمارة مقابلة الخروج
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(request as any).details?.exitInterview ? (
+              <div className="rounded-lg border p-4 bg-green-50 space-y-2">
+                <p className="text-sm font-medium text-green-700">تم تقديم استمارة الخروج</p>
+                <div className="space-y-1">
+                  {Object.entries((request as any).details.exitInterview).map(([k, v]) => (
+                    <div key={k} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{DETAIL_KEY_LABELS[k] || k}:</span>
+                      <span className="font-medium">{String(v ?? "—")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  تمت الموافقة على طلب استقالتك. يرجى ملء استمارة مقابلة الخروج لإتمام الإجراء.
+                </p>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label>سبب الاستقالة *</Label>
+                    <Textarea
+                      rows={3}
+                      value={exitForm.resignationReason}
+                      onChange={(e) => setExitForm((p) => ({ ...p, resignationReason: e.target.value }))}
+                      placeholder="اذكر السبب الرئيسي لاستقالتك..."
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>تقييم بيئة العمل (1–5)</Label>
+                      <Input
+                        type="number" min={1} max={5}
+                        value={exitForm.workEnvironmentRating}
+                        onChange={(e) => setExitForm((p) => ({ ...p, workEnvironmentRating: e.target.value }))}
+                        placeholder="4"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>تقييم الإدارة (1–5)</Label>
+                      <Input
+                        type="number" min={1} max={5}
+                        value={exitForm.managementRating}
+                        onChange={(e) => setExitForm((p) => ({ ...p, managementRating: e.target.value }))}
+                        placeholder="4"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>اقتراحات للتحسين</Label>
+                    <Textarea
+                      rows={2}
+                      value={exitForm.suggestions}
+                      onChange={(e) => setExitForm((p) => ({ ...p, suggestions: e.target.value }))}
+                      placeholder="اقتراحاتك لتحسين بيئة العمل..."
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>هل ترغب بالعودة مستقبلاً؟</Label>
+                    <div className="flex gap-3">
+                      {["نعم", "لا"].map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setExitForm((p) => ({ ...p, wouldRejoin: opt === "نعم" ? "true" : "false" }))}
+                          className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${
+                            exitForm.wouldRejoin === (opt === "نعم" ? "true" : "false")
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-muted-foreground/30 hover:border-primary/50"
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    disabled={!exitForm.resignationReason.trim() || submitExitInterview.isPending}
+                    onClick={() => submitExitInterview.mutate({
+                      id,
+                      data: {
+                        resignationReason: exitForm.resignationReason,
+                        workEnvironmentRating: exitForm.workEnvironmentRating ? Number(exitForm.workEnvironmentRating) : undefined,
+                        managementRating: exitForm.managementRating ? Number(exitForm.managementRating) : undefined,
+                        suggestions: exitForm.suggestions || undefined,
+                        wouldRejoin: exitForm.wouldRejoin ? exitForm.wouldRejoin === "true" : undefined,
+                      },
+                    })}
+                  >
+                    {submitExitInterview.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                    إرسال الاستمارة وإنهاء الخدمة
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Approval Steps Timeline */}
       <Card>
         <CardHeader>
           <CardTitle>مسار الموافقة</CardTitle>
         </CardHeader>
         <CardContent>
-          {approvalsLoading ? (
+          {isStepsLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full" />
@@ -361,15 +489,16 @@ export default function RequestDetailPage() {
                   .sort((a, b) => a.stepOrder - b.stepOrder)
                   .map((step, idx) => {
                     const isCurrent = step.status === "PENDING" && step.stepOrder === request.currentStepOrder;
+                    const isSkipped = step.status === "SKIPPED";
                     return (
-                      <div key={step.id} className="flex items-start gap-4 relative">
+                      <div key={step.id ?? idx} className={`flex items-start gap-4 relative ${isSkipped ? "opacity-60" : ""}`}>
                         <div className={`z-10 shrink-0 rounded-full p-1 ${isCurrent ? "bg-amber-100 ring-2 ring-amber-400" : "bg-background"}`}>
                           <ApprovalStatusIcon status={step.status} />
                         </div>
                         <div className="flex-1 min-w-0 pb-2">
                           <div className="flex items-center justify-between gap-2 flex-wrap">
                             <div>
-                              <span className="text-sm font-medium">
+                              <span className={`text-sm font-medium ${isSkipped ? "line-through text-muted-foreground" : ""}`}>
                                 {APPROVER_ROLE_LABELS[step.approverRole] || step.approverRole}
                               </span>
                               <span className="text-xs text-muted-foreground mr-2">
@@ -378,6 +507,11 @@ export default function RequestDetailPage() {
                             </div>
                             <ApprovalStatusBadge status={step.status} />
                           </div>
+                          {isSkipped && (
+                            <p className="text-xs text-muted-foreground mt-1 italic">
+                              تم تخطي هذه الخطوة تلقائياً (المدير المباشر = المدير التنفيذي)
+                            </p>
+                          )}
                           {step.reviewedAt && (
                             <p className="text-xs text-muted-foreground mt-1">
                               {new Date(step.reviewedAt).toLocaleDateString("ar-SA")}

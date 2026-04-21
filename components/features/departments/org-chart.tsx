@@ -1,28 +1,38 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Department, Employee } from "@/types";
-import { Building2, ChevronDown, ChevronRight, User, ZoomIn, ZoomOut, X } from "lucide-react";
+import {
+  Building2, ChevronDown, ChevronRight, User,
+  ZoomIn, ZoomOut, X, Maximize2, Search,
+  ChevronsDownUp, ChevronsUpDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { employeesApi } from "@/lib/api/employees";
 
-// PX_PER_GRADE must equal (card_height + 48) so same-grade nodes land at the
-// same Y regardless of how many intermediate levels exist between parent and child.
-// Card height ≈ 162px → 162 + 48 = 210.
 const PX_PER_GRADE = 210;
 
 function OrgChartNode({
-  dept, level = 0, onSelect,
+  dept, level = 0, onSelect, globalExpand, searchQuery,
 }: {
-  dept: Department; level?: number; onSelect: (dept: Department) => void;
+  dept: Department;
+  level?: number;
+  onSelect: (dept: Department) => void;
+  globalExpand: boolean | null;
+  searchQuery: string;
 }) {
   const locale = useLocale();
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = dept.children && dept.children.length > 0;
+
+  useEffect(() => {
+    if (globalExpand !== null) setIsExpanded(globalExpand);
+  }, [globalExpand]);
 
   const name = locale === "ar" ? dept.nameAr : dept.nameEn;
   const managerName = dept.manager
@@ -31,26 +41,33 @@ function OrgChartNode({
 
   const parentOrder = dept.grade?.order ?? 0;
 
+  const isHighlighted =
+    searchQuery.length >= 2 &&
+    (dept.nameAr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (dept.nameEn || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      dept.code.toLowerCase().includes(searchQuery.toLowerCase()));
+
   return (
     <div className="flex flex-col items-center">
-      {/* Card */}
       <div
         onClick={() => onSelect(dept)}
         className={cn(
-          "relative flex flex-col items-center rounded-xl border bg-card shadow-sm p-3 text-center transition-shadow hover:shadow-md cursor-pointer hover:border-primary/50",
+          "relative flex flex-col items-center rounded-xl border bg-card shadow-sm p-3 text-center transition-all hover:shadow-md cursor-pointer hover:border-primary/50",
           level === 0 ? "border-primary bg-primary/5 w-52" : "w-44",
-          dept.grade?.color && "border-l-4"
+          dept.grade?.color && "border-l-4",
+          isHighlighted && "ring-2 ring-amber-400 shadow-amber-100 shadow-md bg-amber-50"
         )}
         style={dept.grade?.color ? { borderLeftColor: dept.grade.color } : undefined}
       >
         <div className={cn(
           "mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted",
-          level === 0 && "bg-primary/20"
+          level === 0 && "bg-primary/20",
+          isHighlighted && "bg-amber-200"
         )}>
-          <Building2 className={cn("h-5 w-5 text-muted-foreground", level === 0 && "text-primary")} />
+          <Building2 className={cn("h-5 w-5 text-muted-foreground", level === 0 && "text-primary", isHighlighted && "text-amber-700")} />
         </div>
 
-        <p className={cn("font-semibold text-sm leading-tight", level === 0 && "text-base")}>{name}</p>
+        <p className={cn("font-semibold text-sm leading-tight", level === 0 && "text-base", isHighlighted && "text-amber-800")}>{name}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{dept.code}</p>
 
         {dept.grade && (
@@ -72,7 +89,7 @@ function OrgChartNode({
 
         {hasChildren && (
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
             className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 flex h-6 w-6 items-center justify-center rounded-full border bg-background shadow-sm hover:bg-muted transition-colors"
           >
             {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
@@ -80,7 +97,6 @@ function OrgChartNode({
         )}
       </div>
 
-      {/* Children */}
       {hasChildren && isExpanded && (
         <>
           <div className="w-px h-6 bg-border mt-3" />
@@ -98,7 +114,13 @@ function OrgChartNode({
               return (
                 <div key={child.id} className="flex flex-col items-center">
                   <div className="w-px bg-border" style={{ height: lineH }} />
-                  <OrgChartNode dept={child} level={level + 1} onSelect={onSelect} />
+                  <OrgChartNode
+                    dept={child}
+                    level={level + 1}
+                    onSelect={onSelect}
+                    globalExpand={globalExpand}
+                    searchQuery={searchQuery}
+                  />
                 </div>
               );
             })}
@@ -115,8 +137,6 @@ function OrgChartNode({
   );
 }
 
-// ─── Main OrgChart ────────────────────────────────────────────────────────────
-
 interface OrgChartProps {
   departments: Department[];
   allDepartments?: Department[];
@@ -127,6 +147,38 @@ export function OrgChart({ departments, allDepartments }: OrgChartProps) {
   const locale = useLocale();
   const [zoom, setZoom] = useState(1);
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
+  const [globalExpand, setGlobalExpand] = useState<boolean | null>(null);
+  const [search, setSearch] = useState("");
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button, a, input")) return;
+    isDragging.current = true;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    e.preventDefault();
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const dx = e.clientX - lastPos.current.x;
+      const dy = e.clientY - lastPos.current.y;
+      lastPos.current = { x: e.clientX, y: e.clientY };
+      setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
+    };
+    const onUp = () => { isDragging.current = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, []);
+
+  const zoomIn = () => setZoom((z) => Math.min(+(z + 0.1).toFixed(1), 2));
+  const zoomOut = () => setZoom((z) => Math.max(+(z - 0.1).toFixed(1), 0.3));
+  const resetView = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
 
   const { data: deptEmployees, isLoading: empLoading } = useQuery({
     queryKey: ["employees-by-dept", selectedDept?.id],
@@ -134,18 +186,12 @@ export function OrgChart({ departments, allDepartments }: OrgChartProps) {
     enabled: !!selectedDept,
   });
 
-  const zoomIn = () => setZoom((z) => Math.min(+(z + 0.1).toFixed(1), 2));
-  const zoomOut = () => setZoom((z) => Math.max(+(z - 0.1).toFixed(1), 0.3));
-  const zoomReset = () => setZoom(1);
-
-  // Build grade lookup from allDepartments (has localStorage grade info)
   const gradeMap = useMemo(() => {
     const map = new Map<string, Department>();
     (allDepartments || []).forEach((d) => map.set(d.id, d));
     return map;
   }, [allDepartments]);
 
-  // Recursively inject grade info into tree nodes
   const enrichTree = (nodes: Department[]): Department[] =>
     nodes.map((node) => {
       const enriched = gradeMap.get(node.id);
@@ -176,39 +222,95 @@ export function OrgChart({ departments, allDepartments }: OrgChartProps) {
     : "";
 
   return (
-    <div className="space-y-4">
-      {/* Zoom controls */}
-      <div className="flex items-center gap-1 border rounded-lg p-1 w-fit">
-        <button onClick={zoomOut} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="تصغير">
-          <ZoomOut className="h-4 w-4" />
+    <div className="space-y-3">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 flex-wrap p-3 border-b">
+        <div className="relative w-56">
+          <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="بحث عن قسم..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 text-sm pr-8"
+          />
+        </div>
+
+        <div className="h-5 w-px bg-border" />
+
+        <button
+          onClick={() => setGlobalExpand(true)}
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border hover:bg-muted transition-colors"
+        >
+          <ChevronsUpDown className="h-3.5 w-3.5" />
+          توسيع الكل
         </button>
-        <button onClick={zoomReset} className="px-2 py-1 rounded-md text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors min-w-12 text-center" title="إعادة ضبط">
-          {Math.round(zoom * 100)}%
+        <button
+          onClick={() => setGlobalExpand(false)}
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border hover:bg-muted transition-colors"
+        >
+          <ChevronsDownUp className="h-3.5 w-3.5" />
+          طي الكل
         </button>
-        <button onClick={zoomIn} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="تكبير">
-          <ZoomIn className="h-4 w-4" />
-        </button>
+
+        <div className="h-5 w-px bg-border" />
+
+        <div className="flex items-center gap-0.5 border rounded-lg p-0.5">
+          <button onClick={zoomOut} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <ZoomOut className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={resetView} className="px-2 py-1 rounded-md text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors min-w-12 text-center">
+            {Math.round(zoom * 100)}%
+          </button>
+          <button onClick={zoomIn} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <ZoomIn className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={resetView} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <p className="text-xs text-muted-foreground ms-auto hidden sm:block">
+          اسحب للتنقل • اضغط على قسم لعرض موظفيه
+        </p>
       </div>
 
       <div className="flex gap-4 items-start">
-        {/* Org tree */}
-        <div className="flex-1 overflow-auto p-8">
+        <div
+          ref={containerRef}
+          className="flex-1 overflow-hidden rounded-lg"
+          style={{
+            minHeight: "500px",
+            maxHeight: "75vh",
+            cursor: isDragging.current ? "grabbing" : "grab",
+            userSelect: "none",
+          }}
+          onMouseDown={onMouseDown}
+        >
           <div
             style={{
-              transform: `scale(${zoom})`,
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
               transformOrigin: "top center",
-              transition: "transform 0.15s ease",
+              transition: isDragging.current ? "none" : "transform 0.12s ease",
+              padding: "2rem",
+              width: "max-content",
+              minWidth: "100%",
             }}
           >
             <div className="flex gap-12 items-start min-w-max">
               {enrichedTree.map((dept) => (
-                <OrgChartNode key={dept.id} dept={dept} level={0} onSelect={setSelectedDept} />
+                <OrgChartNode
+                  key={dept.id}
+                  dept={dept}
+                  level={0}
+                  onSelect={setSelectedDept}
+                  globalExpand={globalExpand}
+                  searchQuery={search}
+                />
               ))}
             </div>
           </div>
         </div>
 
-        {/* Employees panel */}
         {selectedDept && (
           <div className="w-72 shrink-0 rounded-xl border bg-card shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">

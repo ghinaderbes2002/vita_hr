@@ -108,6 +108,7 @@
     "leaveReports": "Leave Reports",
     "attendanceReportsSummary": "Attendance Reports",
     "evaluationReports": "Evaluation Reports",
+    "custodyReport": "Custody Report",
     "onboarding": "Onboarding & Offboarding",
     "onboardingTemplates": "Templates",
     "onboardingWorkflows": "Workflows Dashboard"
@@ -499,7 +500,8 @@
       "rejected": "Rejected",
       "cancelled": "Cancelled",
       "in_progress": "In Progress",
-      "completed": "Completed"
+      "completed": "Completed",
+      "pending_substitute": "Pending Substitute Approval"
     },
     "tabs": {
       "all": "All",
@@ -673,7 +675,8 @@
       "PENDING_HR": "Pending HR",
       "APPROVED": "Approved",
       "REJECTED": "Rejected",
-      "CANCELLED": "Cancelled"
+      "CANCELLED": "Cancelled",
+      "PENDING_EXIT_INTERVIEW": "Pending Exit Interview"
     },
     "actions": {
       "submit": "Submit",
@@ -1633,6 +1636,7 @@
       "DRAFT": "Draft",
       "PENDING_SENIOR_MANAGER": "Pending Senior Manager",
       "PENDING_HR": "Pending HR",
+      "PENDING_MEETING_SCHEDULE": "Meeting Scheduling",
       "PENDING_CEO": "Pending CEO",
       "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "Pending Employee Acknowledgment",
       "COMPLETED": "Completed",
@@ -1661,12 +1665,15 @@
       "HR_DOCUMENT": "HR Documented",
       "HR_REJECT": "HR Rejected",
       "CEO_DECIDE": "CEO Decision",
-      "EMPLOYEE_ACKNOWLEDGE": "Employee Acknowledged"
+      "EMPLOYEE_ACKNOWLEDGE": "Employee Acknowledged",
+      "PROPOSE_MEETING": "Meeting Proposed",
+      "CONFIRM_MEETING": "Meeting Confirmed"
     },
     "workflow": {
       "DRAFT": "Draft",
       "PENDING_SENIOR_MANAGER": "Senior Manager",
       "PENDING_HR": "HR",
+      "PENDING_MEETING_SCHEDULE": "Meeting",
       "PENDING_CEO": "CEO",
       "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "Employee Ack.",
       "COMPLETED": "Completed"
@@ -1713,6 +1720,10 @@
       "overallRating": "Overall Rating",
       "finalRecommendation": "Recommendation",
       "employeeAcknowledged": "Employee acknowledged the evaluation",
+      "meetingSchedule": "Meeting Schedule",
+      "proposedDate": "Proposed Date",
+      "confirmedDate": "Confirmed Date",
+      "meetingNotes": "Meeting Notes",
       "availableActions": "Available Actions",
       "completed": "Evaluation completed — no further actions",
       "historyLog": "Action History",
@@ -1726,6 +1737,8 @@
       "hrReject": "Reject",
       "ceoDecide": "Make Final Decision",
       "acknowledge": "Employee Acknowledgment",
+      "proposeMeeting": "Propose Meeting Date",
+      "confirmMeeting": "Confirm Meeting Date",
       "resubmit": "Resubmit After Revision",
       "confirm": "Confirm"
     },
@@ -1737,6 +1750,10 @@
       "hrReject": "Reject from HR",
       "ceo": "CEO Decision",
       "acknowledge": "Employee Acknowledgment",
+      "proposeMeeting": "Propose Meeting",
+      "confirmMeeting": "Confirm Meeting",
+      "proposedDate": "Proposed Date *",
+      "confirmedDateOptional": "Final Date (optional)",
       "overallRating": "Overall Rating",
       "recommendation": "Recommendation",
       "notes": "Notes",

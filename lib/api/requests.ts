@@ -77,6 +77,11 @@ export const requestsApi = {
     return response.data.data;
   },
 
+  getSteps: async (id: string) => {
+    const response = await apiClient.get(`/requests/${id}/steps`);
+    return response.data?.data ?? response.data;
+  },
+
   approve: async (id: string, notes?: string) => {
     const response = await apiClient.post(`/requests/${id}/approve`, { notes });
     return response.data.data;
@@ -84,6 +89,11 @@ export const requestsApi = {
 
   reject: async (id: string, reason: string) => {
     const response = await apiClient.post(`/requests/${id}/reject`, { reason });
+    return response.data.data;
+  },
+
+  exitInterview: async (id: string, data: Record<string, any>) => {
+    const response = await apiClient.post(`/requests/${id}/exit-interview`, data);
     return response.data.data;
   },
 };

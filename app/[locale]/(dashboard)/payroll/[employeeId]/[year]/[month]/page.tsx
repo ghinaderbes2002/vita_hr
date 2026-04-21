@@ -8,6 +8,10 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { usePayslip } from "@/lib/hooks/use-payroll";
+import { useEmployeeAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
+import { useEmployee } from "@/lib/hooks/use-employees";
+import { useLocale } from "next-intl";
+import { Info } from "lucide-react";
 
 const MONTHS = [
   "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
@@ -40,7 +44,11 @@ export default function PayslipPage() {
   const year = Number(params.year);
   const month = Number(params.month);
 
+  const locale = useLocale();
   const { data, isLoading } = usePayslip(employeeId, year, month);
+  const { data: attendanceConfig } = useEmployeeAttendanceConfig(employeeId);
+  const { data: employeeData } = useEmployee(employeeId);
+  const salaryLinked = (attendanceConfig as any)?.salaryLinked !== false;
 
   if (isLoading) {
     return (
@@ -87,6 +95,14 @@ export default function PayslipPage() {
         </div>
       </div>
 
+      {/* Fixed Salary Notice */}
+      {!salaryLinked && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <Info className="h-4 w-4 shrink-0" />
+          هذا الموظف له راتب ثابت غير مرتبط بالحضور — لا تُطبق خصومات الغياب أو التأخر.
+        </div>
+      )}
+
       {/* Employee Info */}
       <Card>
         <CardHeader className="pb-3">
@@ -107,11 +123,19 @@ export default function PayslipPage() {
             </div>
             <div>
               <span className="text-muted-foreground">القسم:</span>{" "}
-              <span className="font-medium">{data.employee.department?.nameAr || "—"}</span>
+              <span className="font-medium">
+                {locale === "ar"
+                  ? (employeeData as any)?.department?.nameAr || data.employee.department?.nameAr || "—"
+                  : (employeeData as any)?.department?.nameEn || data.employee.department?.nameAr || "—"}
+              </span>
             </div>
             <div>
               <span className="text-muted-foreground">المسمى:</span>{" "}
-              <span className="font-medium">{data.employee.jobTitle?.nameAr || "—"}</span>
+              <span className="font-medium">
+                {locale === "ar"
+                  ? (employeeData as any)?.jobTitle?.nameAr || data.employee.jobTitle?.nameAr || "—"
+                  : (employeeData as any)?.jobTitle?.nameEn || data.employee.jobTitle?.nameAr || "—"}
+              </span>
             </div>
           </div>
         </CardContent>

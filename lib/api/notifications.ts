@@ -4,6 +4,7 @@ export type NotificationType =
   | "LEAVE_REQUEST_SUBMITTED"
   | "LEAVE_REQUEST_APPROVED"
   | "LEAVE_REQUEST_REJECTED"
+  | "LEAVE_REQUEST_PENDING_APPROVAL"
   | "GENERAL";
 
 export interface Notification {

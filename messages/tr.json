@@ -110,6 +110,7 @@
     "leaveReports": "İzin Raporları",
     "attendanceReportsSummary": "Devam Raporları",
     "evaluationReports": "Değerlendirme Raporları",
+    "custodyReport": "Emanet Raporu",
     "onboarding": "İşe Alım & Ayrılış",
     "onboardingTemplates": "Şablonlar",
     "onboardingWorkflows": "İş Akışı Paneli"
@@ -501,7 +502,8 @@
       "rejected": "Reddedildi",
       "cancelled": "İptal Edildi",
       "in_progress": "Devam Ediyor",
-      "completed": "Tamamlandı"
+      "completed": "Tamamlandı",
+      "pending_substitute": "Vekil Onayı Bekliyor"
     },
     "tabs": {
       "all": "Tümü",
@@ -675,7 +677,8 @@
       "PENDING_HR": "İK Bekliyor",
       "APPROVED": "Onaylandı",
       "REJECTED": "Reddedildi",
-      "CANCELLED": "İptal Edildi"
+      "CANCELLED": "İptal Edildi",
+      "PENDING_EXIT_INTERVIEW": "Çıkış Mülakatı Bekliyor"
     },
     "actions": {
       "submit": "Gönder",

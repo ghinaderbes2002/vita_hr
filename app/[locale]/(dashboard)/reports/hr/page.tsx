@@ -14,7 +14,7 @@ import {
 import {
   useEmployeesSummary, useTurnoverReport, useSalariesReport, useExpiryDatesReport,
 } from "@/lib/hooks/use-hr-reports";
-import { downloadCsv } from "@/lib/api/reports";
+import { downloadExcel } from "@/lib/utils/excel";
 
 const COLORS = ["#6366f1","#22c55e","#f59e0b","#ef4444","#8b5cf6","#14b8a6","#f97316","#ec4899"];
 
@@ -66,8 +66,13 @@ export default function HrReportsPage() {
           {tHr("employees.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-          onClick={() => downloadCsv("/reports/hr/employees-summary", "employees-summary")}>
-          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
+          onClick={() => {
+            const rows = [
+              ...((sum?.byDepartment || []).map((d: any) => ({ القسم: d.departmentAr, "عدد الموظفين": d.count }))),
+            ];
+            downloadExcel(rows, "employees-summary", "الموظفين");
+          }}>
+          <Download className="h-3.5 w-3.5" />Excel
         </Button>
       </div>
 
@@ -152,8 +157,11 @@ export default function HrReportsPage() {
             ))}
           </select>
           <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-            onClick={() => downloadCsv(`/reports/hr/turnover?year=${year}`, `turnover-${year}`)}>
-            <Download className="h-3.5 w-3.5" />{t("exportCsv")}
+            onClick={() => {
+              const rows = turnoverData.map(r => ({ الشهر: r.name, "موظفون جدد": r.hired, "منتهو الخدمة": r.terminated }));
+              downloadExcel(rows, `turnover-${year}`, "الدوران الوظيفي");
+            }}>
+            <Download className="h-3.5 w-3.5" />Excel
           </Button>
         </div>
       </div>
@@ -183,8 +191,15 @@ export default function HrReportsPage() {
           {tHr("salaries.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-          onClick={() => downloadCsv("/reports/hr/salaries", "salaries")}>
-          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
+          onClick={() => {
+            const rows = salList.map((r: any) => ({
+              القسم: r.departmentAr, "عدد الموظفين": r.employeeCount,
+              "إجمالي الرواتب": r.totalSalary, "متوسط الراتب": r.avgSalary,
+              "أدنى راتب": r.minSalary, "أعلى راتب": r.maxSalary, العملة: r.currency,
+            }));
+            downloadExcel(rows, "salaries", "الرواتب");
+          }}>
+          <Download className="h-3.5 w-3.5" />Excel
         </Button>
       </div>
 
@@ -230,8 +245,16 @@ export default function HrReportsPage() {
           {tHr("expiry.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-          onClick={() => downloadCsv("/reports/hr/expiry-dates?daysAhead=90", "expiry-dates")}>
-          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
+          onClick={() => {
+            const rows = (exp?.items || []).map((it: any) => ({
+              "رقم الموظف": it.employeeNumber, الاسم: `${it.firstNameAr} ${it.lastNameAr}`,
+              القسم: it.departmentAr, "نوع العقد": it.contractType,
+              "تاريخ انتهاء العقد": new Date(it.contractEndDate).toLocaleDateString(),
+              "الأيام المتبقية": it.daysRemaining,
+            }));
+            downloadExcel(rows, "expiry-dates", "انتهاء العقود");
+          }}>
+          <Download className="h-3.5 w-3.5" />Excel
         </Button>
       </div>
 

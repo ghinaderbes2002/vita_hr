@@ -14,7 +14,7 @@ import {
 import {
   useLeaveBalancesReport, useLeaveDistributionReport, useLeaveSummaryReport,
 } from "@/lib/hooks/use-leave-reports";
-import { downloadCsv } from "@/lib/api/reports";
+import { downloadExcel } from "@/lib/utils/excel";
 
 const COLORS = ["#6366f1","#22c55e","#f59e0b","#ef4444","#8b5cf6","#14b8a6","#f97316","#ec4899"];
 const STATUS_COLORS: Record<string, string> = {
@@ -83,8 +83,13 @@ export default function LeaveReportsPage() {
           {tLeave("summary.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-          onClick={() => downloadCsv(`/reports/leave/summary?year=${year}`, `leave-summary-${year}`)}>
-          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
+          onClick={() => {
+            const rows = (sum?.byStatus || []).map((s: any) => ({
+              الحالة: s.status, "عدد الطلبات": s.count, "إجمالي الأيام": s.totalDays,
+            }));
+            downloadExcel(rows, `leave-summary-${year}`, "ملخص الإجازات");
+          }}>
+          <Download className="h-3.5 w-3.5" />Excel
         </Button>
       </div>
 
@@ -160,8 +165,13 @@ export default function LeaveReportsPage() {
           {tLeave("distribution.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-          onClick={() => downloadCsv(`/reports/leave/distribution?year=${year}`, `leave-distribution-${year}`)}>
-          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
+          onClick={() => {
+            const rows = (dist?.byType || []).map((d: any) => ({
+              "نوع الإجازة": d.leaveTypeName, "عدد الطلبات": d.requestCount, "إجمالي الأيام": d.totalDays,
+            }));
+            downloadExcel(rows, `leave-distribution-${year}`, "توزيع الإجازات");
+          }}>
+          <Download className="h-3.5 w-3.5" />Excel
         </Button>
       </div>
 
@@ -221,8 +231,14 @@ export default function LeaveReportsPage() {
           {tLeave("balances.title")}
         </h2>
         <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-          onClick={() => downloadCsv(`/reports/leave/balances?year=${year}`, `leave-balances-${year}`)}>
-          <Download className="h-3.5 w-3.5" />{t("exportCsv")}
+          onClick={() => {
+            const rows = (bal?.details || []).map((d: any) => ({
+              "نوع الإجازة": d.leaveTypeName, "أيام مستحقة": d.totalDays,
+              "أيام مستخدمة": d.usedDays, "أيام متبقية": d.remainingDays,
+            }));
+            downloadExcel(rows, `leave-balances-${year}`, "أرصدة الإجازات");
+          }}>
+          <Download className="h-3.5 w-3.5" />Excel
         </Button>
       </div>
 

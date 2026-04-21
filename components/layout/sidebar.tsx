@@ -183,6 +183,7 @@ const navigation: NavItem[] = [
           { title: "nav.leaveReports", href: "/reports/leave", icon: FileBarChart },
           { title: "nav.attendanceReportsSummary", href: "/reports/attendance", icon: FileBarChart },
           { title: "nav.evaluationReports", href: "/reports/evaluation", icon: FileBarChart },
+          { title: "nav.custodyReport", href: "/reports/custody", icon: FileBarChart },
         ],
       },
       {

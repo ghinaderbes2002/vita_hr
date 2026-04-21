@@ -32,6 +32,8 @@ export interface LeaveRequest {
     firstNameAr: string;
     lastNameAr: string;
   };
+  substituteStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  substituteNotes?: string;
   managerNotes?: string;
   hrNotes?: string;
   cancelReason?: string;
@@ -42,6 +44,7 @@ export interface LeaveRequest {
 export type LeaveRequestStatus =
   | "DRAFT"
   | "PENDING"
+  | "PENDING_SUBSTITUTE"
   | "PENDING_MANAGER"
   | "MANAGER_APPROVED"
   | "MANAGER_REJECTED"
@@ -163,5 +166,18 @@ export const leaveRequestsApi = {
   // Delete leave request
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/leave-requests/${id}`);
+  },
+
+  // Get requests pending substitute approval (for the logged-in substitute)
+  getPendingSubstitute: async (): Promise<LeaveRequest[]> => {
+    const response = await apiClient.get("/leave-requests/pending-substitute");
+    const result = response.data?.data ?? response.data;
+    return Array.isArray(result) ? result : result?.items ?? [];
+  },
+
+  // Substitute responds (approve/reject)
+  substituteResponse: async (id: string, data: { approved: boolean; notes?: string }): Promise<LeaveRequest> => {
+    const response = await apiClient.post(`/leave-requests/${id}/substitute-response`, data);
+    return response.data?.data ?? response.data;
   },
 };

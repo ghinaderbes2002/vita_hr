@@ -17,7 +17,7 @@ import {
   useRecommendationsReport,
 } from "@/lib/hooks/use-evaluation-reports";
 import { useEvaluationPeriods } from "@/lib/hooks/use-evaluation-periods";
-import { downloadCsv } from "@/lib/api/reports";
+import { downloadExcel } from "@/lib/utils/excel";
 
 const GRADE_COLORS = ["#22c55e", "#84cc16", "#f59e0b", "#f97316", "#ef4444"];
 const RECOMMENDATION_COLORS: Record<string, string> = {
@@ -127,8 +127,13 @@ export default function EvaluationReportsPage() {
             <div className="flex items-center gap-2">
               <PeriodFilter />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-                onClick={() => downloadCsv(`/evaluation-reports/grade-distribution${periodId ? `?periodId=${periodId}` : ""}`, "grade-distribution")}>
-                <Download className="h-3.5 w-3.5" />CSV
+                onClick={() => {
+                  const rows = (grades?.gradeDistribution || []).map((g: any) => ({
+                    التقدير: g.label, العدد: g.count, "النسبة %": g.percentage,
+                  }));
+                  downloadExcel(rows, "grade-distribution", "توزيع التقديرات");
+                }}>
+                <Download className="h-3.5 w-3.5" />Excel
               </Button>
             </div>
           </div>
@@ -260,8 +265,14 @@ export default function EvaluationReportsPage() {
             <div className="flex items-center gap-2">
               <PeriodFilter />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-                onClick={() => downloadCsv(`/evaluation-reports/department-comparison${periodId ? `?periodId=${periodId}` : ""}`, "dept-comparison")}>
-                <Download className="h-3.5 w-3.5" />CSV
+                onClick={() => {
+                  const rows = (depts?.departments || []).map((d: any) => ({
+                    القسم: d.departmentAr, "عدد النماذج": d.totalForms,
+                    "مكتملة": d.completed, "متوسط النتيجة": d.avgScore, "أعلى نتيجة": d.topScore,
+                  }));
+                  downloadExcel(rows, "dept-comparison", "مقارنة الأقسام");
+                }}>
+                <Download className="h-3.5 w-3.5" />Excel
               </Button>
             </div>
           </div>
@@ -343,8 +354,16 @@ export default function EvaluationReportsPage() {
             <div className="flex items-center gap-2">
               <PeriodFilter />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-                onClick={() => downloadCsv(`/evaluation-reports/recommendations${periodId ? `?periodId=${periodId}` : ""}`, "recommendations")}>
-                <Download className="h-3.5 w-3.5" />CSV
+                onClick={() => {
+                  const rows = (recs?.items || []).map((it: any) => ({
+                    "رقم الموظف": it.employee.employeeNumber,
+                    الاسم: `${it.employee.firstNameAr} ${it.employee.lastNameAr}`,
+                    "النتيجة النهائية": it.finalScore, التوصية: it.hrRecommendation,
+                    "قرار المدير": it.gmStatus,
+                  }));
+                  downloadExcel(rows, "recommendations", "التوصيات");
+                }}>
+                <Download className="h-3.5 w-3.5" />Excel
               </Button>
             </div>
           </div>

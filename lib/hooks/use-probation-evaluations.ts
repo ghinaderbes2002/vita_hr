@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { probationEvaluationsApi, CreateProbationEvaluationData, WorkflowActionData } from "@/lib/api/probation-evaluations";
+import {
+  probationEvaluationsApi, CreateProbationEvaluationData, WorkflowActionData,
+  ProposeMeetingData, ConfirmMeetingData, CompleteProbationData,
+} from "@/lib/api/probation-evaluations";
 import { toast } from "sonner";
 
 export function useProbationCriteria() {
@@ -87,6 +90,51 @@ function makeWorkflowMutation(action: (id: string, data?: WorkflowActionData) =>
       onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
     });
   };
+}
+
+export function useProposeMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ProposeMeetingData }) =>
+      probationEvaluationsApi.proposeMeeting(id, data),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
+      qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
+      qc.invalidateQueries({ queryKey: ["probation-history", id] });
+      toast.success("تم اقتراح موعد الاجتماع بنجاح");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useConfirmMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ConfirmMeetingData }) =>
+      probationEvaluationsApi.confirmMeeting(id, data),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
+      qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
+      qc.invalidateQueries({ queryKey: ["probation-history", id] });
+      toast.success("تم تأكيد موعد الاجتماع");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useCompleteProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CompleteProbationData }) =>
+      probationEvaluationsApi.complete(id, data),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
+      qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
+      qc.invalidateQueries({ queryKey: ["probation-history", id] });
+      toast.success("تم إغلاق التقييم بنجاح");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
 }
 
 export const useSubmitProbation = makeWorkflowMutation(probationEvaluationsApi.submit, "تم الإرسال للمدير الأعلى");

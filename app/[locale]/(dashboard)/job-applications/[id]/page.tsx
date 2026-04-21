@@ -19,6 +19,7 @@ import {
   Calendar,
   Briefcase,
   Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,6 +109,8 @@ export default function JobApplicationDetailPage() {
     decision: InterviewDecision | "";
     generalNotes: string;
     proposedSalary: string;
+    additionalConditions: string;
+    salaryAfterConfirmation: string;
     personalScores: Record<string, number>;
     computerScores: Record<string, number>;
     technicalScores: Record<string, number>;
@@ -116,6 +119,8 @@ export default function JobApplicationDetailPage() {
     decision: "",
     generalNotes: "",
     proposedSalary: "",
+    additionalConditions: "",
+    salaryAfterConfirmation: "",
     personalScores: {},
     computerScores: {},
     technicalScores: {},
@@ -138,6 +143,8 @@ export default function JobApplicationDetailPage() {
         decision: evalData.decision || "",
         generalNotes: evalData.generalNotes || "",
         proposedSalary: evalData.proposedSalary?.toString() || "",
+        additionalConditions: evalData.additionalConditions || "",
+        salaryAfterConfirmation: evalData.salaryAfterConfirmation?.toString() || "",
         personalScores: Object.fromEntries(
           (evalData.personalScores || []).map((s: any) => [
             s.criterionId,
@@ -163,6 +170,8 @@ export default function JobApplicationDetailPage() {
         decision: "",
         generalNotes: "",
         proposedSalary: "",
+        additionalConditions: "",
+        salaryAfterConfirmation: "",
         personalScores: {},
         computerScores: {},
         technicalScores: {},
@@ -179,9 +188,9 @@ export default function JobApplicationDetailPage() {
       candidateName: app.fullName,
       decision: (evalForm.decision as InterviewDecision) || undefined,
       generalNotes: evalForm.generalNotes || undefined,
-      proposedSalary: evalForm.proposedSalary
-        ? Number(evalForm.proposedSalary)
-        : undefined,
+      proposedSalary: evalForm.proposedSalary ? Number(evalForm.proposedSalary) : undefined,
+      additionalConditions: evalForm.additionalConditions || undefined,
+      salaryAfterConfirmation: evalForm.salaryAfterConfirmation ? Number(evalForm.salaryAfterConfirmation) : undefined,
       personalScores: pCriteria.map((c: any) => ({
         criterionId: c.id,
         score: evalForm.personalScores[c.id] || 1,
@@ -207,13 +216,10 @@ export default function JobApplicationDetailPage() {
 
   const [reviewNotes, setReviewNotes] = useState("");
   const [rejectionNote, setRejectionNote] = useState("");
-  const [actionStatus, setActionStatus] = useState<Exclude<
-    JobApplicationStatus,
-    "HIRED"
-  > | null>(null);
+  const [actionStatus, setActionStatus] = useState<JobApplicationStatus | null>(null);
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
 
-  const handleAction = (status: Exclude<JobApplicationStatus, "HIRED">) => {
+  const handleAction = (status: JobApplicationStatus) => {
     setActionStatus(status);
     setReviewNotes("");
     setRejectionNote("");
@@ -328,10 +334,24 @@ export default function JobApplicationDetailPage() {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  تاريخ الانضمام المتاح:{" "}
+                  موعد الانضمام:{" "}
                   <strong>
-                    {(() => { try { return format(new Date(app.availabilityToJoin), "yyyy/MM/dd"); } catch { return app.availabilityToJoin; } })()}
+                    {({
+                      IMMEDIATELY: "فوراً",
+                      WITHIN_ONE_WEEK: "خلال أسبوع",
+                      WITHIN_TWO_WEEKS: "خلال أسبوعين",
+                      WITHIN_ONE_MONTH: "خلال شهر",
+                      MORE_THAN_ONE_MONTH: "أكثر من شهر",
+                    } as Record<string, string>)[app.availabilityToJoin] ?? app.availabilityToJoin}
                   </strong>
+                </span>
+              </div>
+            )}
+            {app.hasCompanyRelation != null && (
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span>
+                  علاقة بالشركة: <strong>{app.hasCompanyRelation ? "نعم" : "لا"}</strong>
                 </span>
               </div>
             )}
@@ -482,6 +502,15 @@ export default function JobApplicationDetailPage() {
                   {t("jobApplications.actions.reject")}
                 </Button>
               )}
+              {app.status !== "HIRED" && (
+                <Button
+                  variant="outline"
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                  onClick={() => handleAction("HIRED")}
+                >
+                  تم التوظيف
+                </Button>
+              )}
               {/* زر موافقة المدير التنفيذي */}
               {app.status === "ACCEPTED" &&
                 hasPermission("job-applications:ceo-approve") && (
@@ -507,16 +536,29 @@ export default function JobApplicationDetailPage() {
               </p>
 
               {actionStatus === "REJECTED" && (
-                <div className="space-y-2">
-                  <Label>{t("jobApplications.fields.rejectionNote")} *</Label>
-                  <Textarea
-                    rows={3}
-                    value={rejectionNote}
-                    onChange={(e) => setRejectionNote(e.target.value)}
-                    placeholder={t(
-                      "jobApplications.fields.rejectionNotePlaceholder",
-                    )}
-                  />
+                <div className="space-y-3">
+                  {/* Email warning */}
+                  <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="text-xs text-amber-800 space-y-0.5">
+                      <p className="font-semibold">سيتم إرسال بريد إلكتروني للمرشح</p>
+                      <p>
+                        عند حفظ هذا الرفض، سيتلقى <strong>{app.fullName}</strong> إشعاراً بالرفض
+                        على البريد <span className="font-mono">{app.email}</span>.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("jobApplications.fields.rejectionNote")} *</Label>
+                    <Textarea
+                      rows={3}
+                      value={rejectionNote}
+                      onChange={(e) => setRejectionNote(e.target.value)}
+                      placeholder={t(
+                        "jobApplications.fields.rejectionNotePlaceholder",
+                      )}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -628,9 +670,18 @@ export default function JobApplicationDetailPage() {
               {evalData.proposedSalary && (
                 <p className="text-sm text-muted-foreground">
                   الراتب المقترح:{" "}
-                  <strong>
-                    ${Number(evalData.proposedSalary).toLocaleString("en-US")}
-                  </strong>
+                  <strong>${Number(evalData.proposedSalary).toLocaleString("en-US")}</strong>
+                </p>
+              )}
+              {evalData.salaryAfterConfirmation && (
+                <p className="text-sm text-muted-foreground">
+                  الراتب بعد التثبيت:{" "}
+                  <strong>${Number(evalData.salaryAfterConfirmation).toLocaleString("en-US")}</strong>
+                </p>
+              )}
+              {evalData.additionalConditions && (
+                <p className="text-sm text-muted-foreground">
+                  شروط إضافية: <strong>{evalData.additionalConditions}</strong>
                 </p>
               )}
               {/* Transfer button */}
@@ -860,6 +911,15 @@ export default function JobApplicationDetailPage() {
               </div>
             </div>
             <div className="space-y-1.5">
+              <Label>الراتب بعد التثبيت ($)</Label>
+              <Input
+                type="number"
+                placeholder="اختياري"
+                value={evalForm.salaryAfterConfirmation}
+                onChange={(e) => setEvalForm({ ...evalForm, salaryAfterConfirmation: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label>ملاحظات عامة</Label>
               <Textarea
                 rows={3}
@@ -867,6 +927,15 @@ export default function JobApplicationDetailPage() {
                 onChange={(e) =>
                   setEvalForm({ ...evalForm, generalNotes: e.target.value })
                 }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>شروط إضافية</Label>
+              <Textarea
+                rows={2}
+                placeholder="مثال: يُلزم بفترة اختبار 3 أشهر"
+                value={evalForm.additionalConditions}
+                onChange={(e) => setEvalForm({ ...evalForm, additionalConditions: e.target.value })}
               />
             </div>
           </div>

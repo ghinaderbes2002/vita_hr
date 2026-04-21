@@ -13,7 +13,7 @@ import {
 import {
   useDailyReport, useMonthlyReport, useTopAbsencesReport, useOvertimeReport,
 } from "@/lib/hooks/use-attendance-reports";
-import { downloadCsv } from "@/lib/api/reports";
+import { downloadExcel } from "@/lib/utils/excel";
 
 export default function AttendanceReportsPage() {
   const t = useTranslations("reports");
@@ -139,8 +139,16 @@ export default function AttendanceReportsPage() {
             <div className="flex items-center gap-2">
               <YearMonthFilter year={absYear} setYear={setAbsYear} month={absMonth} setMonth={setAbsMonth} />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-                onClick={() => downloadCsv(`/attendance-reports/top-absences?year=${absYear}${absMonth ? `&month=${absMonth}` : ""}`, `top-absences-${absYear}`)}>
-                <Download className="h-3.5 w-3.5" />CSV
+                onClick={() => {
+                  const rows = (abs?.items || []).map((it: any) => ({
+                    "رقم الموظف": it.employee.employeeNumber,
+                    الاسم: `${it.employee.firstNameAr} ${it.employee.lastNameAr}`,
+                    "أيام الغياب": it.absenceCount, "عدد التأخرات": it.lateCount,
+                    "ساعات التأخر": it.totalLateHours?.toFixed(1),
+                  }));
+                  downloadExcel(rows, `top-absences-${absYear}`, "الغياب");
+                }}>
+                <Download className="h-3.5 w-3.5" />Excel
               </Button>
             </div>
           </div>
@@ -230,8 +238,15 @@ export default function AttendanceReportsPage() {
             <div className="flex items-center gap-2">
               <YearMonthFilter year={otYear} setYear={setOtYear} month={otMonth} setMonth={setOtMonth} />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-                onClick={() => downloadCsv(`/attendance-reports/overtime?year=${otYear}${otMonth ? `&month=${otMonth}` : ""}`, `overtime-${otYear}`)}>
-                <Download className="h-3.5 w-3.5" />CSV
+                onClick={() => {
+                  const rows = (ot?.items || []).map((it: any) => ({
+                    "رقم الموظف": it.employee.employeeNumber,
+                    الاسم: `${it.employee.firstNameAr} ${it.employee.lastNameAr}`,
+                    "أيام الإضافي": it.overtimeDays, "ساعات الإضافي": it.totalOvertimeHours?.toFixed(1),
+                  }));
+                  downloadExcel(rows, `overtime-${otYear}`, "العمل الإضافي");
+                }}>
+                <Download className="h-3.5 w-3.5" />Excel
               </Button>
             </div>
           </div>
@@ -301,8 +316,15 @@ export default function AttendanceReportsPage() {
               <input type="date" value={dailyDate} onChange={(e) => setDailyDate(e.target.value)}
                 className="h-8 rounded-md border bg-background px-2 text-sm" />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-                onClick={() => downloadCsv(`/attendance-reports/daily?date=${dailyDate}`, `daily-${dailyDate}`)}>
-                <Download className="h-3.5 w-3.5" />CSV
+                onClick={() => {
+                  const rows: any[] = day?.records || day?.items || day?.data || [];
+                  downloadExcel(rows.map(r => {
+                    const emp = r.employee ? `${r.employee.firstNameAr} ${r.employee.lastNameAr}` : "—";
+                    const { employee: _e, ...rest } = r;
+                    return { الموظف: emp, ...rest };
+                  }), `daily-${dailyDate}`, "يومي");
+                }}>
+                <Download className="h-3.5 w-3.5" />Excel
               </Button>
             </div>
           </div>
@@ -386,8 +408,15 @@ export default function AttendanceReportsPage() {
               <YearMonthFilter year={monthlyYear} setYear={setMonthlyYear}
                 month={monthlyMonth} setMonth={(m) => setMonthlyMonth(m ?? currentMonth)} showMonth />
               <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-                onClick={() => downloadCsv(`/attendance-reports/monthly?year=${monthlyYear}&month=${monthlyMonth}`, `monthly-${monthlyYear}-${monthlyMonth}`)}>
-                <Download className="h-3.5 w-3.5" />CSV
+                onClick={() => {
+                  const rows: any[] = mon?.items || mon?.records || mon?.data || [];
+                  downloadExcel(rows.map(r => {
+                    const emp = r.employee ? `${r.employee.firstNameAr} ${r.employee.lastNameAr}` : "—";
+                    const { employee: _e, ...rest } = r;
+                    return { الموظف: emp, ...rest };
+                  }), `monthly-${monthlyYear}-${monthlyMonth}`, "شهري");
+                }}>
+                <Download className="h-3.5 w-3.5" />Excel
               </Button>
             </div>
           </div>

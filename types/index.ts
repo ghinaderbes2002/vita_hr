@@ -20,7 +20,8 @@ export type RequestStatus =
   | "IN_APPROVAL"
   | "APPROVED"
   | "REJECTED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "PENDING_EXIT_INTERVIEW";
 
 export type ApproverRole =
   | "DIRECT_MANAGER"

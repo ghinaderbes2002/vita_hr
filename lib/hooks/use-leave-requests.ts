@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import {
   leaveRequestsApi,
   LeaveRequestStatus,
@@ -209,6 +210,35 @@ export function useDeleteLeaveRequest() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.deleteError"));
+    },
+  });
+}
+
+// Get requests pending MY substitute approval
+export function usePendingSubstituteRequests() {
+  const { user } = useAuthStore();
+  return useQuery({
+    queryKey: ["leave-requests", "pending-substitute", user?.id],
+    queryFn: () => leaveRequestsApi.getPendingSubstitute(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    enabled: !!user?.id,
+  });
+}
+
+// Respond as substitute (approve/reject)
+export function useSubstituteResponse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, approved, notes }: { id: string; approved: boolean; notes?: string }) =>
+      leaveRequestsApi.substituteResponse(id, { approved, notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leave-requests"] });
+      toast.success("تم إرسال ردك بنجاح");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
     },
   });
 }

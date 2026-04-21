@@ -1,8 +1,8 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useTheme } from "next-themes";
-import { Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink } from "lucide-react";
+import { Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ export function Header() {
   const t = useTranslations();
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuthStore();
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -114,16 +115,25 @@ export function Header() {
                 notifList.slice(0, 10).map((notif: any) => (
                   <div
                     key={notif.id}
-                    className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b last:border-0 ${!notif.isRead ? "bg-blue-50/50 dark:bg-blue-950/20" : ""}`}
+                    className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b last:border-0 ${
+                        !notif.isRead
+                          ? notif.type === "LEAVE_REQUEST_PENDING_APPROVAL"
+                            ? "bg-amber-50/60 dark:bg-amber-950/20"
+                            : "bg-blue-50/50 dark:bg-blue-950/20"
+                          : ""
+                      }`}
                     onClick={() => handleNotifClick(notif)}
                   >
+                    {notif.type === "LEAVE_REQUEST_PENDING_APPROVAL" && (
+                      <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <p className={`text-sm leading-snug ${!notif.isRead ? "font-medium" : "text-muted-foreground"}`}>
                           {notif.title}
                         </p>
                         {!notif.isRead && (
-                          <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+                          <span className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${notif.type === "LEAVE_REQUEST_PENDING_APPROVAL" ? "bg-amber-500" : "bg-blue-500"}`} />
                         )}
                       </div>
                       {notif.message && (
@@ -137,6 +147,16 @@ export function Header() {
                   </div>
                 ))
               )}
+            </div>
+            <div className="border-t px-4 py-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => router.push("/notifications")}
+              >
+                عرض جميع الإشعارات
+              </Button>
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
