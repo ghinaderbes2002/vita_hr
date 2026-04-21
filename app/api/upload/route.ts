@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     const host = request.headers.get("host") || request.nextUrl.host;
     const proto = request.headers.get("x-forwarded-proto") || request.nextUrl.protocol.replace(":", "") || "http";
-    const fileUrl = `${proto}://${host}/uploads/${safeName}`;
+    const fileUrl = `${proto}://${host}/api/uploads/${safeName}`;
 
     return NextResponse.json({ fileUrl, fileName: file.name });
   } catch {
