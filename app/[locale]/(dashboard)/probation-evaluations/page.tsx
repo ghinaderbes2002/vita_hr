@@ -35,6 +35,7 @@ const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                           "bg-gray-100 text-gray-600",
   PENDING_SENIOR_MANAGER:          "bg-blue-100 text-blue-700",
   PENDING_HR:                      "bg-purple-100 text-purple-700",
+  PENDING_MEETING_SCHEDULE:        "bg-orange-100 text-orange-700",
   PENDING_CEO:                     "bg-amber-100 text-amber-700",
   PENDING_EMPLOYEE_ACKNOWLEDGMENT: "bg-cyan-100 text-cyan-700",
   COMPLETED:                       "bg-green-100 text-green-700",
