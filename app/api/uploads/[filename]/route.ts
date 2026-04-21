@@ -4,10 +4,10 @@ import { join } from "path";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
-    const filename = params.filename;
+    const { filename } = await params;
     // Prevent path traversal
     if (filename.includes("..") || filename.includes("/")) {
       return new NextResponse("Not found", { status: 404 });
