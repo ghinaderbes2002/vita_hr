@@ -1655,7 +1655,8 @@
       "CONFIRM_POSITION": "Confirm in Current Position",
       "EXTEND_PROBATION": "Extend Probation Period",
       "TRANSFER_POSITION": "Transfer to Another Position",
-      "TERMINATE": "Terminate Contract"
+      "TERMINATE": "Terminate Contract",
+      "SALARY_RAISE": "Salary Raise"
     },
     "historyActions": {
       "CREATE": "Evaluation Created",
@@ -1690,7 +1691,8 @@
       "CONFIRM_POSITION": "Confirm",
       "EXTEND_PROBATION": "Extend",
       "TRANSFER_POSITION": "Transfer",
-      "TERMINATE": "Terminate"
+      "TERMINATE": "Terminate",
+      "SALARY_RAISE": "Salary Raise"
     },
     "empty": {
       "pendingTitle": "No Evaluations Pending Your Action",

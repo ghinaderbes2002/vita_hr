@@ -52,7 +52,7 @@ const STATUS_CLASSES: Record<ProbationStatus, string> = {
 };
 
 const SCORE_VALUES: ProbationScore[] = ["UNACCEPTABLE", "ACCEPTABLE", "GOOD", "VERY_GOOD", "EXCELLENT"];
-const RECOMMENDATION_VALUES: ProbationRecommendation[] = ["CONFIRM_POSITION", "EXTEND_PROBATION", "TRANSFER_POSITION", "TERMINATE"];
+const RECOMMENDATION_VALUES: ProbationRecommendation[] = ["CONFIRM_POSITION", "EXTEND_PROBATION", "TRANSFER_POSITION", "TERMINATE", "SALARY_RAISE"];
 
 const WORKFLOW_STATUSES: ProbationStatus[] = [
   "DRAFT", "PENDING_SENIOR_MANAGER", "PENDING_HR",
@@ -178,7 +178,7 @@ export default function ProbationEvaluationDetailPage() {
 
   const isActionLoading = submit.isPending || seniorApprove.isPending || seniorReject.isPending ||
     hrDocument.isPending || hrReject.isPending || ceoDecide.isPending || employeeAcknowledge.isPending ||
-    proposeMeeting.isPending || confirmMeeting.isPending;
+    proposeMeeting.isPending || confirmMeeting.isPending || completeProbation.isPending;
 
   const getActionDialogTitle = () => {
     const map: Record<string, string> = {
@@ -190,7 +190,9 @@ export default function ProbationEvaluationDetailPage() {
       ceo: t("actionDialog.ceo"),
       acknowledge: t("actionDialog.acknowledge"),
       "propose-meeting": t("actionDialog.proposeMeeting"),
-      "confirm-meeting": t("actionDialog.confirmMeeting"),
+      "confirm-employee": "تأكيد الموعد كموظف",
+      "confirm-manager": "تأكيد الموعد كمدير",
+      "complete": "إغلاق التقييم ورفع وثيقة القرار",
     };
     return actionType ? map[actionType] : "";
   };
@@ -351,14 +353,24 @@ export default function ProbationEvaluationDetailPage() {
               )}
               {ev.status === "PENDING_MEETING_SCHEDULE" && (
                 <>
-                  {!ev.proposedMeetingDate && canHrDocument && (
+                  {!ev.proposedMeetingDate && !ev.meetingProposedAt && canHrDocument && (
                     <Button className="gap-2 bg-orange-600 hover:bg-orange-700" onClick={() => openAction("propose-meeting")}>
                       <CalendarClock className="h-4 w-4" />{t("actions.proposeMeeting")}
                     </Button>
                   )}
-                  {ev.proposedMeetingDate && (
-                    <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("confirm-meeting")}>
-                      <CalendarCheck className="h-4 w-4" />{t("actions.confirmMeeting")}
+                  {(ev.proposedMeetingDate || ev.meetingProposedAt) && !ev.meetingConfirmedByEmployee && (
+                    <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={() => openAction("confirm-employee")}>
+                      <CalendarCheck className="h-4 w-4" />تأكيد كموظف
+                    </Button>
+                  )}
+                  {(ev.proposedMeetingDate || ev.meetingProposedAt) && !ev.meetingConfirmedByManager && (
+                    <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => openAction("confirm-manager")}>
+                      <CalendarCheck className="h-4 w-4" />تأكيد كمدير
+                    </Button>
+                  )}
+                  {ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager && canHrDocument && (
+                    <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("complete")}>
+                      <FileCheck className="h-4 w-4" />رفع وثيقة القرار وإغلاق التقييم
                     </Button>
                   )}
                 </>
@@ -432,16 +444,27 @@ export default function ProbationEvaluationDetailPage() {
             <DialogTitle>{getActionDialogTitle()}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {(actionType === "propose-meeting" || actionType === "confirm-meeting") && (
+            {actionType === "propose-meeting" && (
               <div className="space-y-1.5">
-                <Label htmlFor="meeting-date">
-                  {actionType === "propose-meeting" ? `${t("actionDialog.proposedDate")} *` : t("actionDialog.confirmedDateOptional")}
-                </Label>
+                <Label htmlFor="meeting-date">{t("actionDialog.proposedDate")} *</Label>
                 <input
                   id="meeting-date"
                   type="datetime-local"
                   value={meetingDate}
                   onChange={(e) => setMeetingDate(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            )}
+            {actionType === "complete" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="doc-url">رابط وثيقة القرار *</Label>
+                <input
+                  id="doc-url"
+                  type="url"
+                  value={documentUrl}
+                  onChange={(e) => setDocumentUrl(e.target.value)}
+                  placeholder="https://..."
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </div>
@@ -480,17 +503,19 @@ export default function ProbationEvaluationDetailPage() {
                 </Select>
               </div>
             )}
-            <div className="space-y-1.5">
-              <Label>
-                {actionType?.includes("reject") ? t("actionDialog.notesRequired") : t("actionDialog.notesOptional")}
-              </Label>
-              <Textarea
-                rows={3}
-                value={actionForm.notes || ""}
-                onChange={(e) => setActionForm({ ...actionForm, notes: e.target.value })}
-                placeholder={actionType?.includes("reject") ? t("actionDialog.rejectionReason") : t("actionDialog.notesPlaceholder")}
-              />
-            </div>
+            {!["propose-meeting", "confirm-employee", "confirm-manager", "complete"].includes(actionType ?? "") && (
+              <div className="space-y-1.5">
+                <Label>
+                  {actionType?.includes("reject") ? t("actionDialog.notesRequired") : t("actionDialog.notesOptional")}
+                </Label>
+                <Textarea
+                  rows={3}
+                  value={actionForm.notes || ""}
+                  onChange={(e) => setActionForm({ ...actionForm, notes: e.target.value })}
+                  placeholder={actionType?.includes("reject") ? t("actionDialog.rejectionReason") : t("actionDialog.notesPlaceholder")}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActionDialogOpen(false)}>{tCommon("cancel")}</Button>
@@ -500,7 +525,8 @@ export default function ProbationEvaluationDetailPage() {
                 isActionLoading ||
                 (actionType?.includes("reject") && !actionForm.notes?.trim()) ||
                 (actionType === "ceo" && !actionForm.recommendation) ||
-                (actionType === "propose-meeting" && !meetingDate)
+                (actionType === "propose-meeting" && !meetingDate) ||
+                (actionType === "complete" && !documentUrl.trim())
               }
               className={actionType?.includes("reject") ? "bg-destructive hover:bg-destructive/90" : ""}
             >

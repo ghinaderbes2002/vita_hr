@@ -1779,7 +1779,8 @@
       "CONFIRM_POSITION": "تثبيت في المنصب الحالي",
       "EXTEND_PROBATION": "تمديد فترة التجربة",
       "TRANSFER_POSITION": "نقل لمنصب آخر",
-      "TERMINATE": "إنهاء التعاقد"
+      "TERMINATE": "إنهاء التعاقد",
+      "SALARY_RAISE": "زيادة الراتب"
     },
     "historyActions": {
       "CREATE": "إنشاء التقييم",
@@ -1814,7 +1815,8 @@
       "CONFIRM_POSITION": "تثبيت",
       "EXTEND_PROBATION": "تمديد",
       "TRANSFER_POSITION": "نقل",
-      "TERMINATE": "إنهاء"
+      "TERMINATE": "إنهاء",
+      "SALARY_RAISE": "زيادة راتب"
     },
     "empty": {
       "pendingTitle": "لا توجد تقييمات بانتظار إجراءك",

@@ -233,7 +233,7 @@ export default function JobApplicationDetailPage() {
     await updateApplication.mutateAsync({
       id,
       data: {
-        status: actionStatus,
+        status: actionStatus as Exclude<JobApplicationStatus, "HIRED">,
         reviewNotes: reviewNotes || undefined,
         rejectionNote: actionStatus === "REJECTED" ? rejectionNote : undefined,
         rating: actionStatus === "ACCEPTED" ? computedRating : undefined,
