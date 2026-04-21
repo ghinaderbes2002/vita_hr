@@ -23,8 +23,9 @@ export async function POST(request: NextRequest) {
     await mkdir(uploadsDir, { recursive: true });
     await writeFile(join(uploadsDir, safeName), buffer);
 
-    const baseUrl = request.nextUrl.origin;
-    const fileUrl = `${baseUrl}/uploads/${safeName}`;
+    const host = request.headers.get("host") || request.nextUrl.host;
+    const proto = request.headers.get("x-forwarded-proto") || request.nextUrl.protocol.replace(":", "") || "http";
+    const fileUrl = `${proto}://${host}/uploads/${safeName}`;
 
     return NextResponse.json({ fileUrl, fileName: file.name });
   } catch {
