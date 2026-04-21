@@ -21,6 +21,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     CANCELLED: "secondary",
     IN_PROGRESS: "default",
     COMPLETED: "secondary",
+    PENDING_SUBSTITUTE: "outline",
   };
 
   const colors: Record<LeaveRequestStatus, string> = {
@@ -35,6 +36,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     CANCELLED: "bg-gray-100 text-gray-800",
     IN_PROGRESS: "bg-purple-100 text-purple-800",
     COMPLETED: "bg-gray-100 text-gray-800",
+    PENDING_SUBSTITUTE: "bg-amber-100 text-amber-800",
   };
 
   return (
