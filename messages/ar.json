@@ -1411,6 +1411,7 @@
       "serialNumber": "الرقم التسلسلي",
       "category": "الفئة",
       "employee": "الموظف",
+      "custodyCount": "عدد العهد",
       "assignedDate": "تاريخ التسليم",
       "returnedDate": "تاريخ الإرجاع",
       "status": "الحالة",

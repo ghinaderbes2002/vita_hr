@@ -153,7 +153,7 @@ export default function CustodiesPage() {
               <TableHead>{t("custodies.fields.name")}</TableHead>
               <TableHead>{t("custodies.fields.category")}</TableHead>
               <TableHead>{t("custodies.fields.serialNumber")}</TableHead>
-              <TableHead>{t("custodies.fields.employee")}</TableHead>
+              <TableHead>{t("custodies.fields.custodyCount")}</TableHead>
               <TableHead>{t("custodies.fields.assignedDate")}</TableHead>
               <TableHead>{t("custodies.fields.status")}</TableHead>
               <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
@@ -217,7 +217,9 @@ export default function CustodiesPage() {
                         <Badge variant="outline">{t(`custodies.categories.${c.category}`)}</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{c.serialNumber || "—"}</TableCell>
-                      <TableCell />
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{group.items.length} عهدة</Badge>
+                      </TableCell>
                       <TableCell>{c.assignedDate ? format(new Date(c.assignedDate), "yyyy/MM/dd") : "—"}</TableCell>
                       <TableCell>
                         <Badge variant={STATUS_VARIANTS[c.status]}>{t(`custodies.statuses.${c.status}`)}</Badge>

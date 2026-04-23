@@ -1287,6 +1287,7 @@
       "serialNumber": "Serial Number",
       "category": "Category",
       "employee": "Employee",
+      "custodyCount": "Custody Count",
       "assignedDate": "Assigned Date",
       "returnedDate": "Returned Date",
       "status": "Status",
