@@ -158,6 +158,9 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
 
   const submitData = async (data: FormData) => {
     const payload: any = { ...data };
+    if (!payload.serialNumber) delete payload.serialNumber;
+    if (!payload.description) delete payload.description;
+    if (!payload.notes) delete payload.notes;
     if (attachments.length > 0) {
       payload.attachments = attachments.map((a) => ({ fileUrl: a.fileUrl, fileName: a.fileName }));
     }
