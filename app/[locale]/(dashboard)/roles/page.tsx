@@ -106,7 +106,7 @@ export default function RolesPage() {
                   </TableCell>
                   <TableCell>{role.displayNameAr}</TableCell>
                   <TableCell>{role.displayNameEn}</TableCell>
-                  <TableCell className="max-w-xs truncate">
+                  <TableCell className="max-w-48 truncate text-muted-foreground">
                     {role.description || "-"}
                   </TableCell>
                   <TableCell>

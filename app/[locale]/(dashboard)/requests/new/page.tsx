@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { CalendarDays, FileText } from "lucide-react";
+import { CalendarDays, FileText, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import {
@@ -19,6 +19,7 @@ export default function NewRequestChoicePage() {
   const router = useRouter();
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [accidentDialogOpen, setAccidentDialogOpen] = useState(false);
   const createLeaveRequest = useCreateLeaveRequest();
 
   const handleLeaveSubmit = async (data: CreateLeaveRequestData) => {
@@ -34,7 +35,7 @@ export default function NewRequestChoicePage() {
         description={t("requests.newRequestDescription")}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-3xl">
         {/* طلب إجازة */}
         <Card
           className="cursor-pointer hover:border-primary hover:shadow-md transition-all"
@@ -72,6 +73,25 @@ export default function NewRequestChoicePage() {
           </CardHeader>
           <CardContent />
         </Card>
+
+        {/* تقديم حادث عمل */}
+        <Card
+          className="cursor-pointer hover:border-red-400 hover:shadow-md transition-all"
+          onClick={() => setAccidentDialogOpen(true)}
+        >
+          <CardHeader className="flex flex-row items-center gap-4 pb-2">
+            <div className="p-3 rounded-full bg-red-100 text-red-600">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div>
+              <CardTitle className="text-base">تقديم حادث عمل</CardTitle>
+              <CardDescription className="text-xs mt-1">
+                تسجيل وإبلاغ عن حادث عمل طارئ
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent />
+        </Card>
       </div>
 
       {/* ديالوق طلب الإجازة */}
@@ -91,6 +111,14 @@ export default function NewRequestChoicePage() {
       <NewRequestDialog
         open={adminDialogOpen}
         onOpenChange={setAdminDialogOpen}
+      />
+
+      {/* ديالوق تقرير حادث العمل */}
+      <NewRequestDialog
+        open={accidentDialogOpen}
+        onOpenChange={setAccidentDialogOpen}
+        defaultType="WORK_ACCIDENT"
+        title="تقرير حادث عمل"
       />
     </div>
   );

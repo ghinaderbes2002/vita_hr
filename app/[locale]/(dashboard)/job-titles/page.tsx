@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,8 @@ import { JobTitle } from "@/types";
 
 export default function JobTitlesPage() {
   const t = useTranslations();
+  const router = useRouter();
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -130,7 +133,11 @@ export default function JobTitlesPage() {
               </TableRow>
             ) : (
               titles.map((title) => (
-                <TableRow key={title.id}>
+                <TableRow
+                  key={title.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/${locale}/job-titles/${title.id}`)}
+                >
                   <TableCell className="font-medium">{title.code}</TableCell>
                   <TableCell>{title.nameAr}</TableCell>
                   <TableCell>{title.nameEn}</TableCell>
@@ -144,7 +151,7 @@ export default function JobTitlesPage() {
                   <TableCell className="max-w-48 truncate text-muted-foreground">
                     {title.description || "—"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">

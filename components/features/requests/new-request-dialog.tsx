@@ -24,13 +24,13 @@ import { useCheckUnreturnedCustodies } from "@/lib/hooks/use-custodies";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { RequestType } from "@/types";
 import { Loader2, Plus, Trash2, AlertTriangle, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const ALL_REQUEST_TYPES: (RequestType | "OVERTIME")[] = [
-  "TRANSFER", "RESIGNATION", "REWARD", "OTHER",
+  "TRANSFER", "RESIGNATION", "REWARD",
   "PENALTY_PROPOSAL", "OVERTIME",
   "BUSINESS_MISSION", "DELEGATION", "HIRING_REQUEST", "COMPLAINT",
-  "WORK_ACCIDENT", "REMOTE_WORK",
+  "WORK_ACCIDENT", "REMOTE_WORK", "OTHER",
 ];
 
 const INCIDENT_TYPES = [
@@ -151,9 +151,11 @@ const defaultRemoteWork = {
 interface NewRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultType?: string;
+  title?: string;
 }
 
-export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) {
+export function NewRequestDialog({ open, onOpenChange, defaultType, title }: NewRequestDialogProps) {
   const t = useTranslations();
   const { user } = useAuthStore();
   const [submitMode, setSubmitMode] = useState<"draft" | "submit">("draft");
@@ -181,8 +183,15 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { type: "OTHER", reason: "", notes: "" },
+    defaultValues: { type: defaultType || "OTHER", reason: "", notes: "" },
   });
+
+  // When the dialog opens with a specific defaultType, reset the form to that type
+  useEffect(() => {
+    if (open && defaultType) {
+      form.reset({ type: defaultType, reason: "", notes: "" });
+    }
+  }, [open, defaultType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedType = form.watch("type");
 
@@ -320,14 +329,17 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-130 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t("requests.newRequest")}</DialogTitle>
-          <DialogDescription>{t("requests.newRequestDescription")}</DialogDescription>
+          <DialogTitle>{title || t("requests.newRequest")}</DialogTitle>
+          {!defaultType && (
+            <DialogDescription>{t("requests.newRequestDescription")}</DialogDescription>
+          )}
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-            {/* نوع الطلب */}
+            {/* نوع الطلب — hidden when a defaultType is pre-selected */}
+            {!defaultType && (
             <FormField
               control={form.control}
               name="type"
@@ -352,7 +364,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
                 </FormItem>
               )}
             />
-
+            )}
 
             {/* ── RESIGNATION ── */}
             {selectedType === "RESIGNATION" && (

@@ -65,7 +65,7 @@ export function DepartmentDialog({ open, onOpenChange, department, onGradeMapped
   const createDepartment = useCreateDepartment();
   const updateDepartment = useUpdateDepartment();
   const { data: treeData } = useDepartmentTree();
-  const { data: employeesData } = useEmployees({});
+  const { data: employeesData } = useEmployees({ page: 1, limit: 500 });
   const { data: gradesData } = useJobGrades();
 
   const allGrades: any[] = Array.isArray(gradesData)
@@ -253,14 +253,12 @@ export function DepartmentDialog({ open, onOpenChange, department, onGradeMapped
                         <SelectValue placeholder={t("departments.selectManager")} />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <ScrollArea className="h-[200px]">
-                        {employees.map((emp: any) => (
-                          <SelectItem key={emp.id} value={emp.id}>
-                            {emp.firstNameAr} {emp.lastNameAr} ({emp.employeeNumber})
-                          </SelectItem>
-                        ))}
-                      </ScrollArea>
+                    <SelectContent className="max-h-[200px] overflow-y-auto">
+                      {employees.map((emp: any) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.firstNameAr} {emp.lastNameAr} ({emp.employeeNumber})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

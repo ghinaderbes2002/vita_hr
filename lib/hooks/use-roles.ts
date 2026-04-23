@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { rolesApi, CreateRoleData, UpdateRolePermissionsData } from "@/lib/api/roles";
+import { rolesApi, CreateRoleData, UpdateRolePermissionsData, UpdateRoleData } from "@/lib/api/roles";
 import { toast } from "sonner";
 
 export function useRoles() {
@@ -63,6 +63,22 @@ export function useDeleteRole() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast.success("تم حذف الدور بنجاح");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
+    },
+  });
+}
+
+export function useUpdateRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateRoleData }) =>
+      rolesApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      toast.success("تم تحديث الدور بنجاح");
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");

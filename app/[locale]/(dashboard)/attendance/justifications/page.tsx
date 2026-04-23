@@ -150,7 +150,7 @@ export default function JustificationsPage() {
                       </TableCell>
                       <TableCell>{item.alert?.date ? formatDate(item.alert.date) : "-"}</TableCell>
                       <TableCell>{typeLabels[item.justificationType] || item.justificationType}</TableCell>
-                      <TableCell className="max-w-xs text-sm">{item.descriptionAr}</TableCell>
+                      <TableCell className="max-w-48 truncate text-sm">{item.descriptionAr}</TableCell>
                       <TableCell><StatusBadge status={item.status} /></TableCell>
                       {(canManagerReview || canHrReview) && (
                         <TableCell>

@@ -9,6 +9,12 @@ export interface CreateRoleData {
   permissionIds?: string[];
 }
 
+export interface UpdateRoleData {
+  displayNameAr?: string;
+  displayNameEn?: string;
+  description?: string;
+}
+
 export interface UpdateRolePermissionsData {
   permissionIds: string[];
 }
@@ -26,6 +32,11 @@ export const rolesApi = {
 
   create: async (data: CreateRoleData): Promise<Role> => {
     const response = await apiClient.post("/roles", data);
+    return response.data.data;
+  },
+
+  update: async (id: string, data: UpdateRoleData): Promise<Role> => {
+    const response = await apiClient.patch(`/roles/${id}`, data);
     return response.data.data;
   },
 

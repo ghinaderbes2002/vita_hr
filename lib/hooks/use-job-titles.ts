@@ -9,6 +9,14 @@ export function useJobTitles(params?: { page?: number; limit?: number; gradeId?:
   });
 }
 
+export function useJobTitle(id: string) {
+  return useQuery({
+    queryKey: ["job-titles", id],
+    queryFn: () => jobTitlesApi.getById(id),
+    enabled: !!id,
+  });
+}
+
 export function useCreateJobTitle() {
   const queryClient = useQueryClient();
   return useMutation({

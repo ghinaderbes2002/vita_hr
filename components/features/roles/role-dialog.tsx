@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCreateRole, useUpdateRolePermissions, usePermissions, useRole } from "@/lib/hooks/use-roles";
+import { useCreateRole, useUpdateRolePermissions, usePermissions, useRole, useUpdateRole } from "@/lib/hooks/use-roles";
 import { Role } from "@/types";
 import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -61,6 +61,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   };
 
   const createRole = useCreateRole();
+  const updateRole = useUpdateRole();
   const updateRolePermissions = useUpdateRolePermissions();
   const { data: permissionsData } = usePermissions();
 
@@ -104,11 +105,20 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   const onSubmit = async (data: FormData) => {
     try {
       if (isEdit) {
-        // For edit, only update permissions
-        await updateRolePermissions.mutateAsync({
-          id: role.id,
-          data: { permissionIds: data.permissionIds || [] },
-        });
+        await Promise.all([
+          updateRole.mutateAsync({
+            id: role.id,
+            data: {
+              displayNameAr: data.displayNameAr,
+              displayNameEn: data.displayNameEn,
+              description: data.description,
+            },
+          }),
+          updateRolePermissions.mutateAsync({
+            id: role.id,
+            data: { permissionIds: data.permissionIds || [] },
+          })
+        ]);
       } else {
         // For create, send all data
         await createRole.mutateAsync(data);
@@ -120,7 +130,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     }
   };
 
-  const isLoading = createRole.isPending || updateRolePermissions.isPending;
+  const isLoading = createRole.isPending || updateRolePermissions.isPending || updateRole.isPending;
 
   // Group permissions by module
   const groupedPermissions = permissions.reduce((acc: any, permission) => {
@@ -164,7 +174,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                 <FormItem>
                   <FormLabel>{t("roles.fields.displayNameAr")}</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isEdit} dir="rtl" />
+                    <Input {...field} dir="rtl" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -178,7 +188,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                 <FormItem>
                   <FormLabel>{t("roles.fields.displayNameEn")}</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isEdit} dir="ltr" />
+                    <Input {...field} dir="ltr" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -192,7 +202,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                 <FormItem>
                   <FormLabel>{t("roles.fields.description")} ({t("common.optional")})</FormLabel>
                   <FormControl>
-                    <Textarea {...field} disabled={isEdit} />
+                    <Textarea {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

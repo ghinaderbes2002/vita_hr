@@ -93,14 +93,14 @@ export default function MyJustificationsPage() {
                     {item.alert?.date ? formatDate(item.alert.date) : "-"}
                   </TableCell>
                   <TableCell>{typeLabels[item.justificationType] || item.justificationType}</TableCell>
-                  <TableCell className="max-w-xs text-sm">{item.descriptionAr}</TableCell>
+                  <TableCell className="max-w-48 truncate text-sm">{item.descriptionAr}</TableCell>
                   <TableCell>
                     <Badge className={STATUS_CLASS[item.status] || "bg-gray-100 text-gray-700"}>
                       {statusLabels[item.status] || item.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{item.managerNotesAr || "-"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{item.hrNotesAr || "-"}</TableCell>
+                  <TableCell className="max-w-36 truncate text-sm text-muted-foreground">{item.managerNotesAr || "-"}</TableCell>
+                  <TableCell className="max-w-36 truncate text-sm text-muted-foreground">{item.hrNotesAr || "-"}</TableCell>
                 </TableRow>
               ))
             )}
