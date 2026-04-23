@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2, Paperclip, X, ImageIcon } from "lucide-react";
+import { toast } from "sonner";
+import heic2any from "heic2any";
 import { useCreateCustody, useUpdateCustody } from "@/lib/hooks/use-custodies";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { Custody } from "@/types";
@@ -137,17 +139,17 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
     e.target.value = "";
     for (const file of files) {
       try {
-        const compressed = await compressImage(file);
-        setAttachments((prev) => [
-          ...prev,
-          { fileName: file.name, fileUrl: compressed },
-        ]);
+        const isHeic = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+        let processedFile = file;
+        if (isHeic) {
+          const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.75 });
+          const blob = Array.isArray(converted) ? converted[0] : converted;
+          processedFile = new File([blob], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+        }
+        const compressed = await compressImage(processedFile);
+        setAttachments((prev) => [...prev, { fileName: processedFile.name, fileUrl: compressed }]);
       } catch {
-        // fallback: use original if compression fails
-        const reader = new FileReader();
-        reader.onload = () =>
-          setAttachments((prev) => [...prev, { fileName: file.name, fileUrl: reader.result as string }]);
-        reader.readAsDataURL(file);
+        toast.error(`${file.name}: تعذّر تحميل الصورة`);
       }
     }
   };
