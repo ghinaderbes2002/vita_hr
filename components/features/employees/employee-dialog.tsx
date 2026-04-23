@@ -359,7 +359,9 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       });
       setAttachments((employee as any).attachments || []);
       setTrainingCertificates((employee as any).trainingCertificates || []);
-      setAllowances((employee as any).allowances || []);
+      setAllowances(
+        ((employee as any).allowances || []).map((a: any) => ({ type: a.type, amount: a.amount }))
+      );
     } else {
       form.reset({
         firstNameAr: "",

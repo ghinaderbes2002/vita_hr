@@ -109,19 +109,47 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
     }
   }, [open, custody, defaultEmployeeId]);
 
-  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const MAX = 1024; // max width/height px
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+          else { width = Math.round((width * MAX) / height); height = MAX; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.75));
+      };
+      img.onerror = reject;
+      img.src = objectUrl;
+    });
+
+  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
+    e.target.value = "";
+    for (const file of files) {
+      try {
+        const compressed = await compressImage(file);
         setAttachments((prev) => [
           ...prev,
-          { fileName: file.name, fileUrl: reader.result as string },
+          { fileName: file.name, fileUrl: compressed },
         ]);
-      };
-      reader.readAsDataURL(file);
-    });
-    e.target.value = "";
+      } catch {
+        // fallback: use original if compression fails
+        const reader = new FileReader();
+        reader.onload = () =>
+          setAttachments((prev) => [...prev, { fileName: file.name, fileUrl: reader.result as string }]);
+        reader.readAsDataURL(file);
+      }
+    }
   };
 
   const removeAttachment = (index: number) => {

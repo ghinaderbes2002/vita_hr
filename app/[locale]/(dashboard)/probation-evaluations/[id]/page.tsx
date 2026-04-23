@@ -34,7 +34,7 @@ import {
   useCompleteProbation,
 } from "@/lib/hooks/use-probation-evaluations";
 import {
-  ProbationStatus, ProbationScore, ProbationRecommendation, WorkflowActionData,
+  ProbationStatus, ProbationRecommendation, WorkflowActionData,
 } from "@/lib/api/probation-evaluations";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 
@@ -51,8 +51,7 @@ const STATUS_CLASSES: Record<ProbationStatus, string> = {
   REJECTED_BY_CEO:                 "bg-red-100 text-red-700",
 };
 
-const SCORE_VALUES: ProbationScore[] = ["UNACCEPTABLE", "ACCEPTABLE", "GOOD", "VERY_GOOD", "EXCELLENT"];
-const RECOMMENDATION_VALUES: ProbationRecommendation[] = ["CONFIRM_POSITION", "EXTEND_PROBATION", "TRANSFER_POSITION", "TERMINATE", "SALARY_RAISE"];
+const RECOMMENDATION_VALUES: ProbationRecommendation[] = ["CONFIRM", "TRANSFER", "TERMINATE"];
 
 const WORKFLOW_STATUSES: ProbationStatus[] = [
   "DRAFT", "PENDING_SENIOR_MANAGER", "PENDING_HR",
@@ -164,10 +163,10 @@ export default function ProbationEvaluationDetailPage() {
         await proposeMeeting.mutateAsync({ id, data: { meetingProposedAt: meetingDate } });
         break;
       case "confirm-employee":
-        await confirmMeeting.mutateAsync({ id, data: { confirmedBy: "employee" } });
+        await confirmMeeting.mutateAsync({ id, data: { role: "employee" } });
         break;
       case "confirm-manager":
-        await confirmMeeting.mutateAsync({ id, data: { confirmedBy: "manager" } });
+        await confirmMeeting.mutateAsync({ id, data: { role: "manager" } });
         break;
       case "complete":
         await completeProbation.mutateAsync({ id, data: { decisionDocumentUrl: documentUrl } });
@@ -471,19 +470,17 @@ export default function ProbationEvaluationDetailPage() {
             )}
             {(actionType === "approve" || actionType === "ceo") && (
               <div className="space-y-1.5">
-                <Label>{t("actionDialog.overallRating")}</Label>
-                <Select
-                  value={actionForm.overallRating || "none"}
-                  onValueChange={(v) => setActionForm({ ...actionForm, overallRating: v === "none" ? undefined : v as ProbationScore })}
-                >
-                  <SelectTrigger><SelectValue placeholder={tCommon("select")} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">—</SelectItem>
-                    {SCORE_VALUES.map((sv) => (
-                      <SelectItem key={sv} value={sv}>{t(`scores.${sv}`)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>{t("actionDialog.overallRating")} (0 – 5)</Label>
+                <input
+                  type="number"
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  value={actionForm.overallRating ?? ""}
+                  onChange={(e) => setActionForm({ ...actionForm, overallRating: e.target.value === "" ? undefined : parseFloat(e.target.value) })}
+                  placeholder="مثال: 4.2"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
               </div>
             )}
             {actionType === "ceo" && (

@@ -29,7 +29,7 @@ import {
 } from "@/lib/hooks/use-probation-evaluations";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { ProbationStatus, ProbationScore, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
+import { ProbationStatus, ProbationRecommendation, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
 
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                           "bg-gray-100 text-gray-600",
@@ -44,8 +44,7 @@ const STATUS_CLASSES: Record<ProbationStatus, string> = {
   REJECTED_BY_CEO:                 "bg-red-100 text-red-700",
 };
 
-const SCORE_VALUES: ProbationScore[] = ["UNACCEPTABLE", "ACCEPTABLE", "GOOD", "VERY_GOOD", "EXCELLENT"];
-const RECOMMENDATION_VALUES = ["CONFIRM_POSITION", "EXTEND_PROBATION", "TRANSFER_POSITION", "TERMINATE"] as const;
+const RECOMMENDATION_VALUES: ProbationRecommendation[] = ["CONFIRM", "TRANSFER", "TERMINATE"];
 
 export default function ProbationEvaluationsPage() {
   const router = useRouter();
@@ -61,7 +60,7 @@ export default function ProbationEvaluationsPage() {
     evaluationDate: string;
     seniorManagerId: string;
     workAreasNote: string;
-    scores: Record<string, ProbationScore>;
+    scores: Record<string, number>;
   }>({
     employeeId: "", hireDate: "", probationEndDate: "",
     evaluationDate: new Date().toISOString().split("T")[0],
@@ -243,18 +242,16 @@ export default function ProbationEvaluationsPage() {
                   {criteriaList.map((c: any) => (
                     <div key={c.id} className="flex items-center justify-between gap-2">
                       <Label className="text-xs flex-1">{c.nameAr}</Label>
-                      <Select
-                        value={form.scores[c.id] || "none"}
-                        onValueChange={(v) => setForm({ ...form, scores: { ...form.scores, [c.id]: v === "none" ? undefined as any : v as ProbationScore } })}
-                      >
-                        <SelectTrigger className="w-32 h-7 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">—</SelectItem>
-                          {SCORE_VALUES.map((sv) => (
-                            <SelectItem key={sv} value={sv}>{t(`scores.${sv}`)}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <input
+                        type="number"
+                        min={0}
+                        max={5}
+                        step={0.1}
+                        value={form.scores[c.id] ?? ""}
+                        onChange={(e) => setForm({ ...form, scores: { ...form.scores, [c.id]: e.target.value === "" ? undefined as any : parseFloat(e.target.value) } })}
+                        placeholder="0–5"
+                        className="w-20 h-7 rounded-md border border-input bg-background px-2 text-xs"
+                      />
                     </div>
                   ))}
                 </div>

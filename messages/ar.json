@@ -1776,11 +1776,9 @@
       "EXCELLENT": "ممتاز"
     },
     "recommendations": {
-      "CONFIRM_POSITION": "تثبيت في المنصب الحالي",
-      "EXTEND_PROBATION": "تمديد فترة التجربة",
-      "TRANSFER_POSITION": "نقل لمنصب آخر",
-      "TERMINATE": "إنهاء التعاقد",
-      "SALARY_RAISE": "زيادة الراتب"
+      "CONFIRM": "تثبيت الموظف",
+      "TRANSFER": "نقل لمنصب آخر",
+      "TERMINATE": "إنهاء التعاقد"
     },
     "historyActions": {
       "CREATE": "إنشاء التقييم",
@@ -1812,11 +1810,9 @@
       "open": "فتح"
     },
     "recommendationShort": {
-      "CONFIRM_POSITION": "تثبيت",
-      "EXTEND_PROBATION": "تمديد",
-      "TRANSFER_POSITION": "نقل",
-      "TERMINATE": "إنهاء",
-      "SALARY_RAISE": "زيادة راتب"
+      "CONFIRM": "تثبيت",
+      "TRANSFER": "نقل",
+      "TERMINATE": "إنهاء"
     },
     "empty": {
       "pendingTitle": "لا توجد تقييمات بانتظار إجراءك",
