@@ -56,6 +56,7 @@ export interface ReviewJustificationData {
   decision: "APPROVE" | "REJECT";
   notesAr?: string;
   notes?: string;
+  applyDeduction?: boolean; // HR review only (§5.4)
 }
 
 export interface JustificationQueryParams {

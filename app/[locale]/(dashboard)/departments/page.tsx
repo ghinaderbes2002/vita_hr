@@ -24,6 +24,7 @@ import { Department } from "@/types";
 
 const STORAGE_KEY = "dept_grade_map";
 const ORG_DOC_KEY = "org_chart_document";
+const DEFAULT_ORG_DOC = { url: "/assets/images/هيكل.jpg", name: "الهيكل التنظيمي", type: "image/jpeg" };
 
 function loadMap(): Record<string, string> {
   try {
@@ -99,8 +100,8 @@ export default function DepartmentsPage() {
   };
 
   const [deleteDocOpen, setDeleteDocOpen] = useState(false);
-  const [orgDoc, setOrgDoc] = useState<{ url: string; name: string; type: string } | null>(() => {
-    try { const s = localStorage.getItem(ORG_DOC_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+  const [orgDoc, setOrgDoc] = useState<{ url: string; name: string; type: string }>(() => {
+    try { const s = localStorage.getItem(ORG_DOC_KEY); return s ? JSON.parse(s) : DEFAULT_ORG_DOC; } catch { return DEFAULT_ORG_DOC; }
   });
   const [docUploading, setDocUploading] = useState(false);
 
@@ -125,8 +126,10 @@ export default function DepartmentsPage() {
     }
   };
 
+  const isCustomOrgDoc = orgDoc.url !== DEFAULT_ORG_DOC.url;
+
   const removeOrgDoc = () => {
-    setOrgDoc(null);
+    setOrgDoc(DEFAULT_ORG_DOC);
     localStorage.removeItem(ORG_DOC_KEY);
   };
 
@@ -271,7 +274,7 @@ export default function DepartmentsPage() {
             <div className="flex items-center justify-between p-4 border-b">
               <p className="text-sm font-medium">وثيقة الهيكل التنظيمي (صورة أو PDF)</p>
               <div className="flex items-center gap-2">
-                {orgDoc && (
+                {isCustomOrgDoc && (
                   <button
                     type="button"
                     onClick={() => setDeleteDocOpen(true)}
@@ -302,13 +305,7 @@ export default function DepartmentsPage() {
             </div>
 
             <div className="flex-1 flex items-center justify-center p-6">
-              {!orgDoc ? (
-                <div className="text-center space-y-3 text-muted-foreground">
-                  <FileImage className="h-12 w-12 mx-auto opacity-30" />
-                  <p className="text-sm">لا توجد وثيقة مرفوعة</p>
-                  <p className="text-xs">ارفع صورة أو ملف PDF للهيكل التنظيمي</p>
-                </div>
-              ) : orgDoc.type === "application/pdf" ? (
+              {orgDoc.type === "application/pdf" ? (
                 <iframe
                   src={orgDoc.url}
                   className="w-full h-[70vh] rounded border"
@@ -320,7 +317,6 @@ export default function DepartmentsPage() {
                   alt="وثيقة الهيكل التنظيمي"
                   className="max-w-full max-h-[70vh] object-contain rounded border"
                 />
-              )}
             </div>
           </div>
         </TabsContent>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Clock, UserX, Coffee, Wallet, CreditCard,
-  Search, ChevronDown, ChevronUp,
+  Search, ChevronDown, ChevronUp, TrendingDown, TrendingUp, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +25,15 @@ import {
   useTempExitsReport,
   useMonthlyPayrollReport,
   useEmployeeCardReport,
+  useTopAbsencesReport,
+  useOvertimeReport,
 } from "@/lib/hooks/use-attendance-reports";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { LatenessReport, AbsenceReport, TempExitReport, MonthlyPayrollReport, EmployeeCardReport } from "@/lib/api/attendance-reports";
+import { TopAbsenceItem, OvertimeItem, downloadCsv } from "@/lib/api/reports";
 
-type TabKey = "lateness" | "absences" | "temp-exits" | "monthly-payroll" | "employee-card";
+type TabKey = "lateness" | "absences" | "temp-exits" | "monthly-payroll" | "employee-card" | "top-absences" | "overtime";
 
 const TAB_ICONS: Record<TabKey, any> = {
   "lateness": Clock,
@@ -38,9 +41,11 @@ const TAB_ICONS: Record<TabKey, any> = {
   "temp-exits": Coffee,
   "monthly-payroll": Wallet,
   "employee-card": CreditCard,
+  "top-absences": TrendingDown,
+  "overtime": TrendingUp,
 };
 
-const TAB_KEYS: TabKey[] = ["lateness", "absences", "temp-exits", "monthly-payroll", "employee-card"];
+const TAB_KEYS: TabKey[] = ["lateness", "absences", "temp-exits", "monthly-payroll", "employee-card", "top-absences", "overtime"];
 
 function formatTime(iso?: string) {
   if (!iso) return "—";
@@ -76,7 +81,7 @@ export default function BiometricReportsPage() {
   const departments = (departmentsData as any)?.data?.items || [];
   const employees = (employeesData as any)?.data?.items || [];
 
-  const isDateBased = !["monthly-payroll", "employee-card"].includes(activeTab);
+  const isDateBased = !["monthly-payroll", "employee-card", "top-absences", "overtime"].includes(activeTab);
   const filters = { from, to, departmentId: departmentId === "all" ? undefined : departmentId };
 
   const { data: latenessData, isLoading: latenessLoading } = useLatenessReport(filters, hasSearched && activeTab === "lateness");
@@ -84,8 +89,10 @@ export default function BiometricReportsPage() {
   const { data: tempExitsData, isLoading: tempExitsLoading } = useTempExitsReport(filters, hasSearched && activeTab === "temp-exits");
   const { data: payrollData, isLoading: payrollLoading } = useMonthlyPayrollReport(year, month, departmentId === "all" ? undefined : departmentId, hasSearched && activeTab === "monthly-payroll");
   const { data: cardData, isLoading: cardLoading } = useEmployeeCardReport(employeeId, year, month, hasSearched && activeTab === "employee-card");
+  const { data: topAbsencesData, isLoading: topAbsencesLoading } = useTopAbsencesReport({ year, month }, hasSearched && activeTab === "top-absences");
+  const { data: overtimeData, isLoading: overtimeLoading } = useOvertimeReport({ year, month }, hasSearched && activeTab === "overtime");
 
-  const isLoading = latenessLoading || absencesLoading || tempExitsLoading || payrollLoading || cardLoading;
+  const isLoading = latenessLoading || absencesLoading || tempExitsLoading || payrollLoading || cardLoading || topAbsencesLoading || overtimeLoading;
 
   const months = t.raw("months") as string[];
 
@@ -189,7 +196,7 @@ export default function BiometricReportsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                ) : (
+                ) : !["top-absences", "overtime"].includes(activeTab) ? (
                   <div className="space-y-1.5">
                     <Label>{t("filters.department")}</Label>
                     <Select value={departmentId} onValueChange={setDepartmentId}>
@@ -202,7 +209,7 @@ export default function BiometricReportsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                )}
+                ) : null}
               </>
             )}
             <Button onClick={handleSearch} className="gap-2" disabled={activeTab === "employee-card" && !employeeId}>
@@ -497,6 +504,136 @@ export default function BiometricReportsPage() {
                                 : <span className="text-muted-foreground">0</span>}
                             </TableCell>
                             <TableCell className="font-bold">{formatMinutes(row.netWorkedMinutes || 0)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent></Card>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Top Absences */}
+          {activeTab === "top-absences" && (() => {
+            const _ta = topAbsencesData as any;
+            const items: TopAbsenceItem[] = _ta?.items || (Array.isArray(_ta) ? _ta : []);
+            const totalAbsences = items.reduce((s, r) => s + r.absenceCount, 0);
+            const csvParams = `year=${year}&month=${month}`;
+            return (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="grid gap-4 sm:grid-cols-2 flex-1">
+                    <Card><CardContent className="py-4 flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{t("topAbsences.topEmployees")}</span>
+                      <span className="text-2xl font-bold">{items.length}</span>
+                    </CardContent></Card>
+                    <Card><CardContent className="py-4 flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{t("topAbsences.totalAbsences")}</span>
+                      <span className="text-2xl font-bold text-red-600">{totalAbsences}</span>
+                    </CardContent></Card>
+                  </div>
+                  <Button variant="outline" size="sm" className="gap-2 mr-4" onClick={() => downloadCsv(`/attendance-reports/top-absences?${csvParams}`, "top-absences")}>
+                    <Download className="h-4 w-4" />
+                    {t("topAbsences.exportCsv")}
+                  </Button>
+                </div>
+                {items.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">{t("topAbsences.noData")}</div>
+                ) : (
+                  <Card><CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>#</TableHead>
+                          <TableHead>{t("topAbsences.employee")}</TableHead>
+                          <TableHead>{t("topAbsences.absenceCount")}</TableHead>
+                          <TableHead>{t("topAbsences.lateCount")}</TableHead>
+                          <TableHead>{t("topAbsences.totalLateMinutes")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {items.map((row, idx) => (
+                          <TableRow key={row.employee.id}>
+                            <TableCell className="text-muted-foreground font-medium">{idx + 1}</TableCell>
+                            <TableCell className="font-medium">
+                              {row.employee.firstNameAr} {row.employee.lastNameAr}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="destructive">{t("topAbsences.daysUnit", { count: row.absenceCount })}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-amber-600 border-amber-300">
+                                {t("topAbsences.timesUnit", { count: row.lateCount })}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-amber-600 font-medium">
+                              {t("topAbsences.minutesUnit", { count: row.totalLateMinutes })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent></Card>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Overtime */}
+          {activeTab === "overtime" && (() => {
+            const _ot = overtimeData as any;
+            const items: OvertimeItem[] = _ot?.items || (Array.isArray(_ot) ? _ot : []);
+            const totalHours = _ot?.totalOvertimeHours ?? items.reduce((s, r) => s + r.totalOvertimeHours, 0);
+            const csvParams = `year=${year}&month=${month}`;
+            return (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="grid gap-4 sm:grid-cols-2 flex-1">
+                    <Card><CardContent className="py-4 flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{t("overtime.employeesCount")}</span>
+                      <span className="text-2xl font-bold">{items.length}</span>
+                    </CardContent></Card>
+                    <Card><CardContent className="py-4 flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{t("overtime.totalHours")}</span>
+                      <span className="text-2xl font-bold text-blue-600">{t("overtime.hoursUnit", { count: Math.round(totalHours) })}</span>
+                    </CardContent></Card>
+                  </div>
+                  <Button variant="outline" size="sm" className="gap-2 mr-4" onClick={() => downloadCsv(`/attendance-reports/overtime?${csvParams}`, "overtime")}>
+                    <Download className="h-4 w-4" />
+                    {t("overtime.exportCsv")}
+                  </Button>
+                </div>
+                {items.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">{t("overtime.noData")}</div>
+                ) : (
+                  <Card><CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("overtime.employee")}</TableHead>
+                          <TableHead>{t("overtime.overtimeDays")}</TableHead>
+                          <TableHead>{t("overtime.totalMinutes")}</TableHead>
+                          <TableHead>{t("overtime.totalHours")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {items.map((row) => (
+                          <TableRow key={row.employee.id}>
+                            <TableCell className="font-medium">
+                              {row.employee.firstNameAr} {row.employee.lastNameAr}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-blue-600 border-blue-300">
+                                {t("overtime.daysUnit", { count: row.overtimeDays })}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {t("overtime.minutesUnit", { count: row.totalOvertimeMinutes })}
+                            </TableCell>
+                            <TableCell className="font-bold text-blue-600">
+                              {t("overtime.hoursUnit", { count: Math.round(row.totalOvertimeHours) })}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

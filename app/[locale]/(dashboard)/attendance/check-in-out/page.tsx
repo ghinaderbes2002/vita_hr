@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { useCheckIn, useCheckOut, useMyAttendance } from "@/lib/hooks/use-attendance-records";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { formatTime } from "@/lib/utils/date";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
 
 export default function CheckInOutPage() {
@@ -70,14 +71,6 @@ export default function CheckInOutPage() {
     setNotes("");
   };
 
-  const formatTime = (dateString?: string) => {
-    if (!dateString) return "-";
-    try {
-      return format(new Date(dateString), "hh:mm a", { locale: ar });
-    } catch {
-      return "-";
-    }
-  };
 
   const isPending = checkIn.isPending || checkOut.isPending;
 

@@ -11,6 +11,7 @@ const typeConfig: Record<AlertType, { label: string }> = {
   EARLY_LEAVE: { label: "خروج مبكر" },
   MISSING_CLOCK_OUT: { label: "نسيان تسجيل الانصراف" },
   CONSECUTIVE_ABSENCE: { label: "غياب متتالي" },
+  LEAVE_ATTENDANCE_CONFLICT: { label: "تعارض إجازة مع حضور" },
 };
 
 export function AlertTypeBadge({ type }: AlertTypeBadgeProps) {

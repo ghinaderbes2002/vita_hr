@@ -45,7 +45,7 @@ import { AttendanceRecord, AttendanceStatus } from "@/lib/api/attendance-records
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { formatTime, formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 
 const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
@@ -155,22 +155,6 @@ export default function AttendanceRecordsPage() {
     });
   };
 
-  const formatTime = (dateString?: string) => {
-    if (!dateString) return "-";
-    try {
-      return format(new Date(dateString), "hh:mm a", { locale: ar });
-    } catch {
-      return "-";
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy", { locale: ar });
-    } catch {
-      return dateString;
-    }
-  };
 
   const formatDuration = (minutes?: number) => {
     if (minutes == null) return "-"; // null أو undefined فقط

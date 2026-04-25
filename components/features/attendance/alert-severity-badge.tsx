@@ -12,6 +12,7 @@ const severityConfig: Record<
   LOW: { label: "منخفضة", variant: "secondary" },
   MEDIUM: { label: "متوسطة", variant: "default" },
   HIGH: { label: "عالية", variant: "destructive" },
+  CRITICAL: { label: "حرجة", variant: "destructive" },
 };
 
 export function AlertSeverityBadge({ severity }: AlertSeverityBadgeProps) {

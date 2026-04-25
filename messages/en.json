@@ -1378,7 +1378,9 @@
       "absences": "Absences",
       "temp-exits": "Temp Exits",
       "monthly-payroll": "Payroll Sheet",
-      "employee-card": "Employee Card"
+      "employee-card": "Employee Card",
+      "top-absences": "Top Absences",
+      "overtime": "Overtime"
     },
     "filters": {
       "from": "From Date",
@@ -1475,6 +1477,31 @@
       "dayUnit": "{count} days",
       "minuteUnit": "{count} min",
       "breakUnit": "{actual} / {allowed} min"
+    },
+    "topAbsences": {
+      "noData": "No absence data for this period",
+      "exportCsv": "Export CSV",
+      "topEmployees": "Most Absent Employees",
+      "totalAbsences": "Total Absence Days",
+      "employee": "Employee",
+      "absenceCount": "Absence Days",
+      "lateCount": "Late Instances",
+      "totalLateMinutes": "Late Minutes",
+      "daysUnit": "{count} days",
+      "timesUnit": "{count} times",
+      "minutesUnit": "{count} min"
+    },
+    "overtime": {
+      "noData": "No overtime data for this period",
+      "exportCsv": "Export CSV",
+      "employeesCount": "Employees",
+      "totalHours": "Total Overtime Hours",
+      "employee": "Employee",
+      "overtimeDays": "Overtime Days",
+      "totalMinutes": "Total Minutes",
+      "hoursUnit": "{count} hrs",
+      "daysUnit": "{count} days",
+      "minutesUnit": "{count} min"
     }
   },
   "deductionPolicies": {

@@ -9,6 +9,7 @@ import {
   UpdateAttendanceRecordData,
   AttendanceQueryParams,
 } from "@/lib/api/attendance-records";
+export type { AttendanceBreak } from "@/lib/api/attendance-records";
 
 export function useMyAttendance(params: AttendanceQueryParams) {
   return useQuery({
@@ -96,6 +97,14 @@ export function useUpdateAttendanceRecord() {
     onError: (error: any) => {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.saveError"));
     },
+  });
+}
+
+export function useAttendanceRecordBreaks(id: string) {
+  return useQuery({
+    queryKey: ["attendance-records", id, "breaks"],
+    queryFn: () => attendanceRecordsApi.getBreaks(id),
+    enabled: !!id,
   });
 }
 

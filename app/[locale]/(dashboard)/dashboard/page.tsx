@@ -19,6 +19,7 @@ import { EmployeeDialog } from "@/components/features/employees/employee-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const CONDUCT_DOC_KEY = "conduct_document";
+const DEFAULT_CONDUCT_DOC = { url: "/assets/images/مدونة السلوك.pdf", name: "مدونة السلوك" };
 
 function StatCard({
   title, value, icon: Icon, iconBg, iconColor, onClick,
@@ -343,9 +344,10 @@ export default function DashboardPage() {
   const locale = useLocale();
   const router = useRouter();
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
-  const [conductDoc, setConductDoc] = useState<{ url: string; name: string } | null>(() => {
-    try { const s = localStorage.getItem(CONDUCT_DOC_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+  const [conductDoc, setConductDoc] = useState<{ url: string; name: string }>(() => {
+    try { const s = localStorage.getItem(CONDUCT_DOC_KEY); return s ? JSON.parse(s) : DEFAULT_CONDUCT_DOC; } catch { return DEFAULT_CONDUCT_DOC; }
   });
+  const isCustomConductDoc = conductDoc.url !== DEFAULT_CONDUCT_DOC.url;
   const [conductUploading, setConductUploading] = useState(false);
   const [deleteConductOpen, setDeleteConductOpen] = useState(false);
 
@@ -375,7 +377,7 @@ export default function DashboardPage() {
   };
 
   const removeConductDoc = () => {
-    setConductDoc(null);
+    setConductDoc(DEFAULT_CONDUCT_DOC);
     localStorage.removeItem(CONDUCT_DOC_KEY);
   };
 
@@ -430,42 +432,30 @@ export default function DashboardPage() {
             مدونة السلوك
           </CardTitle>
           <div className="flex items-center gap-2">
-            {conductDoc && (
-              <>
-                <a href={conductDoc.url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 border border-primary/30 rounded px-2 py-1">
-                  <ExternalLink className="h-3.5 w-3.5" />عرض
-                </a>
-                <button type="button" onClick={() => setDeleteConductOpen(true)}
-                  className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 border border-destructive/30 rounded px-2 py-1">
-                  <Trash className="h-3.5 w-3.5" />حذف
-                </button>
-              </>
+            <a href={conductDoc.url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 border border-primary/30 rounded px-2 py-1">
+              <ExternalLink className="h-3.5 w-3.5" />فتح
+            </a>
+            {isCustomConductDoc && (
+              <button type="button" onClick={() => setDeleteConductOpen(true)}
+                className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 border border-destructive/30 rounded px-2 py-1">
+                <Trash className="h-3.5 w-3.5" />حذف
+              </button>
             )}
             <label className="flex items-center gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded px-3 py-1.5 cursor-pointer transition-colors">
               {conductUploading ? <span className="animate-pulse">جاري الرفع...</span> : (
-                <><Upload className="h-3.5 w-3.5" />{conductDoc ? "تغيير الوثيقة" : "رفع مدونة السلوك"}</>
+                <><Upload className="h-3.5 w-3.5" />تغيير الوثيقة</>
               )}
               <input type="file" accept="application/pdf" className="hidden" disabled={conductUploading} onChange={handleConductUpload} />
             </label>
           </div>
         </CardHeader>
-        <CardContent>
-          {conductDoc ? (
-            <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30">
-              <FileText className="h-8 w-8 text-primary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{conductDoc.name}</p>
-                <p className="text-xs text-muted-foreground">وثيقة PDF مرفوعة</p>
-              </div>
-              <a href={conductDoc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">فتح</a>
-            </div>
-          ) : (
-            <div className="text-center space-y-2 py-6 text-muted-foreground">
-              <FileText className="h-10 w-10 mx-auto opacity-30" />
-              <p className="text-sm">لم يتم رفع مدونة السلوك بعد</p>
-            </div>
-          )}
+        <CardContent className="p-0">
+          <iframe
+            src={conductDoc.url}
+            className="w-full h-[75vh] rounded-b-lg border-t"
+            title="مدونة السلوك"
+          />
         </CardContent>
       </Card>
 

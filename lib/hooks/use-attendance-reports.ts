@@ -18,18 +18,20 @@ export function useMonthlyReport(params: { year: number; month: number; employee
   });
 }
 
-export function useTopAbsencesReport(params: { year: number; month?: number; limit?: number }) {
+export function useTopAbsencesReport(params: { year: number; month?: number; limit?: number }, enabled = true) {
   return useQuery({
     queryKey: ["reports-attendance-top-absences", params],
     queryFn: () => attendanceReportsApi.getTopAbsences(params),
+    enabled,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-export function useOvertimeReport(params: { year: number; month?: number }) {
+export function useOvertimeReport(params: { year: number; month?: number }, enabled = true) {
   return useQuery({
     queryKey: ["reports-attendance-overtime", params],
     queryFn: () => attendanceReportsApi.getOvertime(params),
+    enabled,
     staleTime: 5 * 60 * 1000,
   });
 }

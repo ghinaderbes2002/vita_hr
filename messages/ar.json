@@ -1502,7 +1502,9 @@
       "absences": "الغياب",
       "temp-exits": "الخروج المؤقت",
       "monthly-payroll": "كشف الرواتب",
-      "employee-card": "بطاقة الموظف"
+      "employee-card": "بطاقة الموظف",
+      "top-absences": "الأكثر غياباً",
+      "overtime": "الوقت الإضافي"
     },
     "filters": {
       "from": "من تاريخ",
@@ -1599,6 +1601,31 @@
       "dayUnit": "{count} يوم",
       "minuteUnit": "{count} دقيقة",
       "breakUnit": "{actual} / {allowed} د"
+    },
+    "topAbsences": {
+      "noData": "لا توجد بيانات غياب لهذه الفترة",
+      "exportCsv": "تصدير CSV",
+      "topEmployees": "الموظفون الأكثر غياباً",
+      "totalAbsences": "إجمالي أيام الغياب",
+      "employee": "الموظف",
+      "absenceCount": "أيام الغياب",
+      "lateCount": "مرات التأخر",
+      "totalLateMinutes": "دقائق التأخر",
+      "daysUnit": "{count} يوم",
+      "timesUnit": "{count} مرة",
+      "minutesUnit": "{count} د"
+    },
+    "overtime": {
+      "noData": "لا توجد بيانات وقت إضافي لهذه الفترة",
+      "exportCsv": "تصدير CSV",
+      "employeesCount": "الموظفون",
+      "totalHours": "إجمالي ساعات الوقت الإضافي",
+      "employee": "الموظف",
+      "overtimeDays": "أيام الوقت الإضافي",
+      "totalMinutes": "إجمالي الدقائق",
+      "hoursUnit": "{count} س",
+      "daysUnit": "{count} يوم",
+      "minutesUnit": "{count} د"
     }
   },
   "deductionPolicies": {

@@ -20,7 +20,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
 import { AttendanceRecord } from "@/lib/api/attendance-records";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { formatTime, formatDate, formatDuration } from "@/lib/utils/date";
 
 export default function MyAttendancePage() {
   const t = useTranslations();
@@ -40,32 +40,8 @@ export default function MyAttendancePage() {
   const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
 
-  const formatTime = (dateString?: string) => {
-    if (!dateString) return "-";
-    try {
-      return format(new Date(dateString), "hh:mm a", { locale: ar });
-    } catch {
-      return "-";
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy", { locale: ar });
-    } catch {
-      return dateString;
-    }
-  };
-
-  const formatDuration = (minutes?: number) => {
-    if (minutes == null) return "-"; // null أو undefined فقط
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}${t("attendance.hourShort")} ${mins}${t("attendance.minuteShort")}`;
-  };
-
   const formatLateMinutes = (minutes?: number) => {
-    if (minutes == null || minutes === 0) return "-";
+    if (minutes == null || minutes === 0) return "—";
     return `${minutes} دقيقة`;
   };
 

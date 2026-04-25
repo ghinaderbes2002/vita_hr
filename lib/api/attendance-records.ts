@@ -99,6 +99,16 @@ export interface AttendanceQueryParams {
   limit?: number;
 }
 
+export interface AttendanceBreak {
+  id: string;
+  attendanceRecordId: string;
+  breakOut: string;
+  breakIn?: string;
+  durationMinutes?: number;
+  reason?: string;
+  isAuthorized?: boolean;
+}
+
 export const attendanceRecordsApi = {
   checkIn: async (data: CheckInData): Promise<AttendanceRecord> => {
     const response = await apiClient.post("/attendance-records/check-in", data);
@@ -137,5 +147,10 @@ export const attendanceRecordsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/attendance-records/${id}`);
+  },
+
+  getBreaks: async (id: string): Promise<AttendanceBreak[]> => {
+    const response = await apiClient.get(`/attendance-records/${id}/breaks`);
+    return response.data?.data || response.data || [];
   },
 };
