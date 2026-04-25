@@ -184,6 +184,11 @@ const navigation: NavItem[] = [
           { title: "nav.attendanceReportsSummary", href: "/reports/attendance", icon: FileBarChart },
           { title: "nav.evaluationReports", href: "/reports/evaluation", icon: FileBarChart },
           { title: "nav.custodyReport", href: "/reports/custody", icon: FileBarChart },
+          { title: "ملخص الرواتب", href: "/reports/payroll-summary", icon: Wallet, permission: "attendance.reports.read" },
+          { title: "التأخر التراكمي", href: "/reports/lateness-accumulated", icon: FileBarChart, permission: "attendance.reports.read" },
+          { title: "تفصيل الخصومات", href: "/reports/deduction-breakdown", icon: FileBarChart, permission: "attendance.reports.read" },
+          { title: "حضور القسم", href: "/reports/department-attendance", icon: FileBarChart, permission: "attendance.reports.read" },
+          { title: "بطاقة الموظف", href: "/reports/employee-card", icon: FileBarChart, permission: "attendance.reports.read" },
         ],
       },
       {

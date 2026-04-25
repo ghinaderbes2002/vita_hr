@@ -199,6 +199,45 @@ export const attendanceReportsApi = {
     }));
   },
 
+  // === التقارير الجديدة ===
+
+  getPayrollSummary: async (params: {
+    year: number;
+    month: number;
+    departmentId?: string;
+  }) => {
+    const response = await apiClient.get("/attendance-reports/payroll-summary", { params });
+    return response.data?.data ?? response.data;
+  },
+
+  getDeductionBreakdown: async (params: {
+    year: number;
+    month: number;
+    departmentId?: string;
+    employeeId?: string;
+  }) => {
+    const response = await apiClient.get("/attendance-reports/deduction-breakdown", { params });
+    return response.data?.data ?? response.data;
+  },
+
+  getDepartmentAttendance: async (params: {
+    year: number;
+    month: number;
+    departmentId: string;
+  }) => {
+    const response = await apiClient.get("/attendance-reports/department-attendance", { params });
+    return response.data?.data ?? response.data;
+  },
+
+  getLatenessAccumulated: async (params: {
+    year: number;
+    month: number;
+    departmentId?: string;
+  }) => {
+    const response = await apiClient.get("/attendance-reports/lateness-accumulated", { params });
+    return response.data?.data ?? response.data;
+  },
+
   getEmployeeCard: async (
     employeeId: string,
     year: number,

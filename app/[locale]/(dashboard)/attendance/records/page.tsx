@@ -55,6 +55,7 @@ const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
   { value: "EARLY_LEAVE", label: "خروج مبكر" },
   { value: "HALF_DAY", label: "نصف يوم" },
   { value: "ON_LEAVE", label: "في إجازة" },
+  { value: "PARTIAL_LEAVE", label: "إجازة ساعية" },
   { value: "HOLIDAY", label: "عطلة رسمية" },
   { value: "WEEKEND", label: "إجازة أسبوعية" },
 ];
@@ -235,6 +236,10 @@ export default function AttendanceRecordsPage() {
               <TableHead>{t("attendance.fields.checkOutTime")}</TableHead>
               <TableHead>{t("attendance.fields.workHours")}</TableHead>
               <TableHead>{t("attendance.fields.lateMinutes")}</TableHead>
+              <TableHead>تعويض التأخر</TableHead>
+              <TableHead>أطول عمل متواصل</TableHead>
+              <TableHead>البصمات</TableHead>
+              <TableHead>نصف اليوم</TableHead>
               <TableHead>{t("attendance.fields.status")}</TableHead>
               <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
             </TableRow>
@@ -250,12 +255,17 @@ export default function AttendanceRecordsPage() {
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
             ) : filteredRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={12} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
@@ -296,6 +306,47 @@ export default function AttendanceRecordsPage() {
                     <span className="text-destructive font-medium">
                       {formatLateMinutes(record.lateMinutes)}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {(record as any).lateCompensatedMinutes > 0 ? (
+                      <span className="text-green-600 font-medium">
+                        +{(record as any).lateCompensatedMinutes} د
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center text-muted-foreground">
+                    {(() => {
+                      const v = (record as any).longestContinuousWorkMinutes;
+                      if (!v || v <= 0) return "—";
+                      return `${Math.floor(v / 60)}س ${v % 60}د`;
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {(() => {
+                      const ps = (record as any).punchSequenceStatus;
+                      if (!ps) return <span className="text-muted-foreground">—</span>;
+                      const cfg: Record<string, { icon: string; cls: string }> = {
+                        VALID:     { icon: "✓", cls: "text-green-600" },
+                        PARTIAL:   { icon: "⚠", cls: "text-amber-500" },
+                        INVALID:   { icon: "✗", cls: "text-red-600" },
+                        RECOMPUTED:{ icon: "↺", cls: "text-blue-500" },
+                      };
+                      const c = cfg[ps];
+                      return c ? (
+                        <span className={`font-bold text-base ${c.cls}`} title={ps}>{c.icon}</span>
+                      ) : <span className="text-muted-foreground">{ps}</span>;
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {(record as any).halfDayPeriod ? (
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                        {(record as any).halfDayPeriod === "AM" ? "صباحي" : "مسائي"}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 flex-wrap">

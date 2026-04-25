@@ -39,6 +39,20 @@ export interface LeaveRequest {
   cancelReason?: string;
   createdAt: string;
   updatedAt: string;
+  // حقول الإجازة الساعية
+  isHourlyLeave?: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+  durationHours?: number | null;
+  equivalentDays?: number | null;
+}
+
+export interface CreateHourlyLeaveData {
+  leaveTypeId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  reason?: string;
 }
 
 export type LeaveRequestStatus =
@@ -179,5 +193,11 @@ export const leaveRequestsApi = {
   substituteResponse: async (id: string, data: { approved: boolean; notes?: string }): Promise<LeaveRequest> => {
     const response = await apiClient.post(`/leave-requests/${id}/substitute-response`, data);
     return response.data?.data ?? response.data;
+  },
+
+  // Create hourly leave request
+  createHourly: async (data: CreateHourlyLeaveData): Promise<LeaveRequest> => {
+    const response = await apiClient.post("/leave-requests/hourly", data);
+    return response.data.data;
   },
 };

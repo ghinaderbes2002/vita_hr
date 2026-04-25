@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Send, X, Eye, Edit, Trash2, XCircle } from "lucide-react";
+import { Plus, Send, X, Eye, Edit, Trash2, XCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMyRequests, useSubmitRequest, useCancelRequest } from "@/lib/hooks/use-requests";
 import { NewRequestDialog } from "@/components/features/requests/new-request-dialog";
+import { HourlyLeaveForm } from "@/components/features/leave-requests/hourly-leave-form";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { StatusBadge } from "@/components/features/leave-requests/status-badge";
@@ -82,6 +83,8 @@ export default function MyRequestsPage() {
       setSelectedAdmin(null);
     }
   };
+
+  const [hourlyLeaveDialogOpen, setHourlyLeaveDialogOpen] = useState(false);
 
   // --- Leave requests state ---
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -167,7 +170,8 @@ export default function MyRequestsPage() {
           <TableHead>{t("leaves.fields.leaveType")}</TableHead>
           <TableHead>{t("leaves.fields.startDate")}</TableHead>
           <TableHead>{t("leaves.fields.endDate")}</TableHead>
-          <TableHead>{t("leaves.fields.totalDays")}</TableHead>
+          <TableHead>المدة</TableHead>
+          <TableHead>الوقت</TableHead>
           <TableHead>{t("leaves.fields.status")}</TableHead>
           <TableHead className="w-17.5">{t("common.actions")}</TableHead>
         </TableRow>
@@ -176,26 +180,42 @@ export default function MyRequestsPage() {
         {leaveLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
-              {Array.from({ length: 6 }).map((_, j) => (
+              {Array.from({ length: 7 }).map((_, j) => (
                 <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
               ))}
             </TableRow>
           ))
         ) : list.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="h-24 text-center">{t("common.noData")}</TableCell>
+            <TableCell colSpan={7} className="h-24 text-center">{t("common.noData")}</TableCell>
           </TableRow>
         ) : (
           list.map((request) => (
             <TableRow key={request.id}>
               <TableCell>
-                <Badge variant="outline" style={{ backgroundColor: request.leaveType?.color }}>
-                  {request.leaveType?.nameAr}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" style={{ backgroundColor: request.leaveType?.color }}>
+                    {request.leaveType?.nameAr}
+                  </Badge>
+                  {request.isHourlyLeave && (
+                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
+                      ساعية
+                    </span>
+                  )}
+                </div>
               </TableCell>
               <TableCell>{format(new Date(request.startDate), "PPP", { locale: ar })}</TableCell>
               <TableCell>{format(new Date(request.endDate), "PPP", { locale: ar })}</TableCell>
-              <TableCell>{request.totalDays} {t("common.days")}</TableCell>
+              <TableCell>
+                {request.isHourlyLeave && request.equivalentDays != null
+                  ? `${request.equivalentDays.toFixed(2)} يوم`
+                  : `${request.totalDays} ${t("common.days")}`}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {request.isHourlyLeave && request.startTime
+                  ? `${request.startTime} - ${request.endTime}`
+                  : "—"}
+              </TableCell>
               <TableCell><StatusBadge status={request.status} /></TableCell>
               <TableCell>
                 <DropdownMenu>
@@ -247,10 +267,16 @@ export default function MyRequestsPage() {
         title={t("requests.myRequests")}
         description={t("requests.myRequestsDescription")}
         actions={
-          <Button onClick={() => router.push(`/${locale}/requests/new`)}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("requests.newRequest")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setHourlyLeaveDialogOpen(true)}>
+              <Clock className="h-4 w-4 ml-2" />
+              إجازة ساعية
+            </Button>
+            <Button onClick={() => router.push(`/${locale}/requests/new`)}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("requests.newRequest")}
+            </Button>
+          </div>
         }
       />
 
@@ -426,6 +452,20 @@ export default function MyRequestsPage() {
               {substituteAction === "approve" ? "موافق" : "رفض"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog الإجازة الساعية */}
+      <Dialog open={hourlyLeaveDialogOpen} onOpenChange={setHourlyLeaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>طلب إجازة ساعية</DialogTitle>
+            <DialogDescription>تقديم طلب إجازة بالساعات ليوم واحد</DialogDescription>
+          </DialogHeader>
+          <HourlyLeaveForm
+            onSuccess={() => setHourlyLeaveDialogOpen(false)}
+            onCancel={() => setHourlyLeaveDialogOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

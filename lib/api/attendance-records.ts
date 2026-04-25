@@ -8,6 +8,7 @@ export type AttendanceStatus =
   | "EARLY_LEAVE"
   | "HALF_DAY"
   | "ON_LEAVE"
+  | "PARTIAL_LEAVE"
   | "HOLIDAY"
   | "WEEKEND";
 
@@ -49,6 +50,14 @@ export interface AttendanceRecord {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  // حقول جديدة من الباك
+  lateCompensatedMinutes?: number;
+  longestContinuousWorkMinutes?: number;
+  punchSequenceStatus?: "VALID" | "PARTIAL" | "INVALID" | "RECOMPUTED";
+  halfDayPeriod?: "AM" | "PM" | null;
+  hourlyLeaveMinutes?: number;
+  leaveStartTime?: string | null;
+  leaveEndTime?: string | null;
 }
 
 export interface CheckInData {

@@ -52,6 +52,21 @@ export interface PayslipSalary {
     totalDeduction: string | number;
   };
   netSalary: string | number;
+  // حقول جديدة من الباك
+  deductibleBaseSalary?: number;
+  excludedAllowancesAmount?: number;
+  workingDaysInMonth?: number;
+  employeeWorkingDays?: number;
+  proRationFactor?: number;
+  totalLateMinutesGross?: number;
+  totalLateMinutesEffective?: number;
+  totalCompensationMinutes?: number;
+  deductionBreakdown?: {
+    lateDeduction: number;
+    absenceDeduction: number;
+    breakOverLimitDeduction: number;
+    totalDeduction: number;
+  } | null;
 }
 
 export interface Payslip {

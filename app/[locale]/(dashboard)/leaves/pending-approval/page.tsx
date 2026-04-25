@@ -120,7 +120,8 @@ export default function PendingApprovalPage() {
           <TableHead>{t("leaves.fields.leaveType")}</TableHead>
           <TableHead>{t("leaves.fields.startDate")}</TableHead>
           <TableHead>{t("leaves.fields.endDate")}</TableHead>
-          <TableHead>{t("leaves.fields.totalDays")}</TableHead>
+          <TableHead>المدة</TableHead>
+          <TableHead>الوقت</TableHead>
           <TableHead>{t("common.actions")}</TableHead>
         </TableRow>
       </TableHeader>
@@ -133,12 +134,13 @@ export default function PendingApprovalPage() {
               <TableCell><Skeleton className="h-4 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
               <TableCell><Skeleton className="h-4 w-24" /></TableCell>
             </TableRow>
           ))
         ) : requestsList.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="h-24 text-center">
+            <TableCell colSpan={8} className="h-24 text-center">
               {t("common.noData")}
             </TableCell>
           </TableRow>
@@ -149,14 +151,28 @@ export default function PendingApprovalPage() {
                 {request.employee?.firstNameAr} {request.employee?.lastNameAr}
               </TableCell>
               <TableCell>
-                <Badge variant="outline" style={{ backgroundColor: request.leaveType?.color }}>
-                  {request.leaveType?.nameAr}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" style={{ backgroundColor: request.leaveType?.color }}>
+                    {request.leaveType?.nameAr}
+                  </Badge>
+                  {request.isHourlyLeave && (
+                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
+                      ساعية
+                    </span>
+                  )}
+                </div>
               </TableCell>
               <TableCell>{format(new Date(request.startDate), "PPP", { locale: ar })}</TableCell>
               <TableCell>{format(new Date(request.endDate), "PPP", { locale: ar })}</TableCell>
               <TableCell>
-                {request.totalDays} {t("common.days")}
+                {request.isHourlyLeave && request.equivalentDays != null
+                  ? `${request.equivalentDays.toFixed(2)} يوم`
+                  : `${request.totalDays} ${t("common.days")}`}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {request.isHourlyLeave && request.startTime
+                  ? `${request.startTime} - ${request.endTime}`
+                  : "—"}
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">

@@ -11,7 +11,8 @@ import { usePayslip } from "@/lib/hooks/use-payroll";
 import { useEmployeeAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
 import { useEmployee } from "@/lib/hooks/use-employees";
 import { useLocale } from "next-intl";
-import { Info } from "lucide-react";
+import { Info, Percent } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 const MONTHS = [
   "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
@@ -78,6 +79,15 @@ export default function PayslipPage() {
   const bonusAmount = Number(s.bonusAmount) || 0;
   const penaltyAmount = Number(s.penaltyAmount) || 0;
   const totalDeduction = Number(s.deductions?.totalDeduction) || 0;
+  const breakdown = s.deductionBreakdown ?? null;
+  const proRation = s.proRationFactor ?? null;
+  const excluded = Number(s.excludedAllowancesAmount ?? 0);
+  const deductibleBase = Number(s.deductibleBaseSalary ?? 0);
+  const workDaysInMonth = s.workingDaysInMonth ?? null;
+  const empWorkDays = s.employeeWorkingDays ?? null;
+  const totalLateGross = s.totalLateMinutesGross ?? null;
+  const totalLateEffective = s.totalLateMinutesEffective ?? null;
+  const compensationMins = s.totalCompensationMinutes ?? null;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -231,6 +241,87 @@ export default function PayslipPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* بطاقة نسبة الاحتساب وأيام العمل */}
+      {(proRation !== null || workDaysInMonth !== null) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Percent className="h-4 w-4" />
+              تفاصيل الاحتساب
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y text-sm">
+            {proRation !== null && (
+              <Row
+                label="نسبة الاحتساب"
+                value={proRation < 1 ? `${(proRation * 100).toFixed(0)}%` : "شهر كامل (100%)"}
+              />
+            )}
+            {workDaysInMonth !== null && (
+              <Row label="أيام العمل في الشهر" value={String(workDaysInMonth)} />
+            )}
+            {empWorkDays !== null && (
+              <Row label="أيام عمل الموظف الفعلية" value={String(empWorkDays)} />
+            )}
+            {deductibleBase > 0 && (
+              <Row label="وعاء الخصم الفعلي" value={money(deductibleBase)} />
+            )}
+            {excluded > 0 && (
+              <Row label="مستثنى من الوعاء (بدل طعام)" value={money(excluded)} variant="positive" />
+            )}
+            {totalLateGross !== null && (
+              <Row label="إجمالي دقائق التأخر (قبل السماحية)" value={`${totalLateGross} د`} />
+            )}
+            {compensationMins !== null && compensationMins > 0 && (
+              <Row label="دقائق التعويض (خروج متأخر)" value={`${compensationMins} د`} variant="positive" />
+            )}
+            {totalLateEffective !== null && (
+              <Row label="دقائق التأخر الفعلية" value={`${totalLateEffective} د`} variant="negative" />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* بطاقة تفصيل الخصومات */}
+      {breakdown && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-600" />
+              تفصيل الخصومات
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            <Row
+              label="خصم التأخر"
+              value={money(breakdown.lateDeduction)}
+              variant={breakdown.lateDeduction > 0 ? "negative" : undefined}
+            />
+            <Row
+              label="خصم الغياب"
+              value={money(breakdown.absenceDeduction)}
+              variant={breakdown.absenceDeduction > 0 ? "negative" : undefined}
+            />
+            {breakdown.breakOverLimitDeduction > 0 && (
+              <Row
+                label="خصم الاستراحة الزائدة"
+                value={money(breakdown.breakOverLimitDeduction)}
+                variant="negative"
+              />
+            )}
+            <div className="flex items-center justify-between py-2 border-t">
+              <span className="text-sm font-semibold">إجمالي الخصومات</span>
+              <span className="text-sm font-bold text-red-700">{money(breakdown.totalDeduction)}</span>
+            </div>
+            {excluded > 0 && (
+              <p className="text-xs text-muted-foreground pt-1">
+                * الخصم محسوب بعد استثناء {money(excluded)} (بدل الطعام)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

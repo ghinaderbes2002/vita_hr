@@ -108,3 +108,61 @@ export function useEmployeeCardReport(
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// ─── Hooks للتقارير الجديدة ──────────────────────────────────────────────────
+
+export function usePayrollSummaryReport(
+  year: number,
+  month: number,
+  departmentId?: string,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["reports-payroll-summary", { year, month, departmentId }],
+    queryFn: () => biometricApi.getPayrollSummary({ year, month, departmentId }),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useDeductionBreakdownReport(
+  year: number,
+  month: number,
+  opts?: { departmentId?: string; employeeId?: string },
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["reports-deduction-breakdown", { year, month, ...opts }],
+    queryFn: () => biometricApi.getDeductionBreakdown({ year, month, ...opts }),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useDepartmentAttendanceReport(
+  year: number,
+  month: number,
+  departmentId: string,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["reports-department-attendance", { year, month, departmentId }],
+    queryFn: () => biometricApi.getDepartmentAttendance({ year, month, departmentId }),
+    enabled: enabled && !!departmentId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useLatenessAccumulatedReport(
+  year: number,
+  month: number,
+  departmentId?: string,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["reports-lateness-accumulated", { year, month, departmentId }],
+    queryFn: () => biometricApi.getLatenessAccumulated({ year, month, departmentId }),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}

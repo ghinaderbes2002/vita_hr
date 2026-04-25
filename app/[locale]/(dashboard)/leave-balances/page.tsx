@@ -136,6 +136,7 @@ export default function LeaveBalancesPage() {
               <TableHead>{t("leaveBalances.fields.usedDays")}</TableHead>
               <TableHead>{t("leaveBalances.fields.pendingDays")}</TableHead>
               <TableHead>{t("leaveBalances.fields.remainingDays")}</TableHead>
+              <TableHead>ساعات ساعية</TableHead>
               <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -150,12 +151,13 @@ export default function LeaveBalancesPage() {
                   <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
             ) : filteredBalances.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
@@ -185,6 +187,24 @@ export default function LeaveBalancesPage() {
                     <Badge variant={balance.remainingDays > 0 ? "default" : "destructive"}>
                       {balance.remainingDays}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {(balance.usedHours != null && balance.usedHours > 0) || (balance.pendingHours != null && balance.pendingHours > 0) ? (
+                      <div className="text-xs space-y-0.5">
+                        {(balance.usedHours ?? 0) > 0 && (
+                          <div className="text-muted-foreground">
+                            مستخدمة: <span className="font-medium text-foreground">{balance.usedHours}س</span>
+                          </div>
+                        )}
+                        {(balance.pendingHours ?? 0) > 0 && (
+                          <div className="text-amber-600">
+                            معلقة: <span className="font-medium">{balance.pendingHours}س</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

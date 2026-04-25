@@ -15,6 +15,7 @@ const statusConfig: Record<
   EARLY_LEAVE: { label: "خروج مبكر", variant: "secondary", className: "bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-200" },
   HALF_DAY: { label: "نصف يوم", variant: "outline", className: "bg-sky-50 text-sky-700 border-sky-200" },
   ON_LEAVE: { label: "في إجازة", variant: "outline", className: "bg-blue-100 text-blue-700 border-blue-200" },
+  PARTIAL_LEAVE: { label: "إجازة ساعية", variant: "outline", className: "bg-indigo-100 text-indigo-700 border-indigo-200" },
   HOLIDAY: { label: "عطلة رسمية", variant: "outline", className: "bg-gray-200 text-gray-700 border-gray-300" },
   WEEKEND: { label: "إجازة أسبوعية", variant: "outline", className: "bg-gray-100 text-gray-500 border-gray-200" },
 };

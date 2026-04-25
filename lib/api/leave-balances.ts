@@ -27,6 +27,9 @@ export interface LeaveBalance {
   adjustedDays: number;
   createdAt: string;
   updatedAt: string;
+  // ساعات الإجازات الساعية
+  usedHours?: number;
+  pendingHours?: number;
 }
 
 export interface CreateLeaveBalanceData {

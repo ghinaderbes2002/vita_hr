@@ -6,6 +6,7 @@ import {
   leaveRequestsApi,
   LeaveRequestStatus,
   CreateLeaveRequestData,
+  CreateHourlyLeaveData,
   UpdateLeaveRequestData,
   ApproveData,
   RejectData,
@@ -224,6 +225,26 @@ export function usePendingSubstituteRequests() {
     gcTime: 0,
     refetchOnMount: true,
     enabled: !!user?.id,
+  });
+}
+
+// Create hourly leave request
+export function useCreateHourlyLeave() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateHourlyLeaveData) => leaveRequestsApi.createHourly(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leave-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["leave-balances"] });
+      toast.success("تم تقديم طلب الإجازة الساعية بنجاح");
+    },
+    onError: (error: any) => {
+      const msg = error.response?.data?.error?.message
+        || error.response?.data?.message
+        || "فشل تقديم طلب الإجازة الساعية";
+      toast.error(msg);
+    },
   });
 }
 

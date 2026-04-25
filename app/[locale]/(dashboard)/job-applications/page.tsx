@@ -429,7 +429,9 @@ export default function JobApplicationsPage() {
                         </TableCell>
                         <TableCell>{app.specialization}</TableCell>
                         <TableCell>{app.yearsOfExperience} {t("common.years")}</TableCell>
-                        <TableCell>{app.education}</TableCell>
+                        <TableCell className="max-w-45">
+                          <span className="block truncate" title={app.education}>{app.education}</span>
+                        </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg}`}>
                             {t(`jobApplications.statuses.${app.status}`)}
