@@ -34,9 +34,9 @@ export function MailList({ folder, onOpenMessage, search, onSearchChange, page, 
   const params = { page, limit: LIMIT, search: search || undefined };
 
   const folderKey = folder.toLowerCase() as Lowercase<MailFolder>;
-  const activeQuery = useQuery({
+  const activeQuery = useQuery<any>({
     queryKey: ["mail", folderKey, params],
-    queryFn: () => {
+    queryFn: (): Promise<any> => {
       switch (folder) {
         case "INBOX":   return mailApi.getInbox(params);
         case "SENT":    return mailApi.getSent(params);
