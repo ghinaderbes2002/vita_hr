@@ -370,12 +370,20 @@ export default function EmployeeDetailsPage() {
                     </div>
                   ))}
                   <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
-                    <span className="font-medium">الإجمالي</span>
-                    <span className="font-bold text-primary">
+                    <span className="text-muted-foreground">مجموع البدلات</span>
+                    <span className="font-medium">
                       ${allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString("en-US")}
                     </span>
                   </div>
                 </div>
+              </div>
+            )}
+            {emp.basicSalary && (
+              <div className="flex items-center justify-between text-sm border-t pt-2 mt-1">
+                <span className="font-semibold">الراتب الإجمالي</span>
+                <span className="font-bold text-primary">
+                  ${(Number(emp.basicSalary) + allowances.reduce((s, a) => s + Number(a.amount), 0)).toLocaleString("en-US")}
+                </span>
               </div>
             )}
           </CardContent>
