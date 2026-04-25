@@ -317,6 +317,7 @@ export default function DepartmentsPage() {
                   alt="وثيقة الهيكل التنظيمي"
                   className="max-w-full max-h-[70vh] object-contain rounded border"
                 />
+              )}
             </div>
           </div>
         </TabsContent>
