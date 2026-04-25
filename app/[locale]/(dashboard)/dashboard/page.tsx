@@ -431,24 +431,10 @@ export default function DashboardPage() {
             <FileText className="h-4 w-4 text-primary" />
             مدونة السلوك
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <a href={conductDoc.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 border border-primary/30 rounded px-2 py-1">
-              <ExternalLink className="h-3.5 w-3.5" />فتح
-            </a>
-            {isCustomConductDoc && (
-              <button type="button" onClick={() => setDeleteConductOpen(true)}
-                className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 border border-destructive/30 rounded px-2 py-1">
-                <Trash className="h-3.5 w-3.5" />حذف
-              </button>
-            )}
-            <label className="flex items-center gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded px-3 py-1.5 cursor-pointer transition-colors">
-              {conductUploading ? <span className="animate-pulse">جاري الرفع...</span> : (
-                <><Upload className="h-3.5 w-3.5" />تغيير الوثيقة</>
-              )}
-              <input type="file" accept="application/pdf" className="hidden" disabled={conductUploading} onChange={handleConductUpload} />
-            </label>
-          </div>
+          <a href={conductDoc.url} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 border border-primary/30 rounded px-2 py-1">
+            <ExternalLink className="h-3.5 w-3.5" />فتح
+          </a>
         </CardHeader>
         <CardContent className="p-0">
           <iframe

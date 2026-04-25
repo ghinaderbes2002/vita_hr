@@ -271,37 +271,8 @@ export default function DepartmentsPage() {
         {/* Org Document Upload */}
         <TabsContent value="orgdoc">
           <div className="rounded-md border min-h-100 flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
-              <p className="text-sm font-medium">وثيقة الهيكل التنظيمي (صورة أو PDF)</p>
-              <div className="flex items-center gap-2">
-                {isCustomOrgDoc && (
-                  <button
-                    type="button"
-                    onClick={() => setDeleteDocOpen(true)}
-                    className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 border border-destructive/30 rounded px-2 py-1"
-                  >
-                    <Trash className="h-3.5 w-3.5" />
-                    حذف
-                  </button>
-                )}
-                <label className="flex items-center gap-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded px-3 py-1.5 cursor-pointer transition-colors">
-                  {docUploading ? (
-                    <span className="animate-pulse">جاري الرفع...</span>
-                  ) : (
-                    <>
-                      <Upload className="h-3.5 w-3.5" />
-                      {orgDoc ? "تغيير الوثيقة" : "رفع وثيقة"}
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    className="hidden"
-                    disabled={docUploading}
-                    onChange={handleOrgDocUpload}
-                  />
-                </label>
-              </div>
+            <div className="flex items-center p-4 border-b">
+              <p className="text-sm font-medium">وثيقة الهيكل التنظيمي</p>
             </div>
 
             <div className="flex-1 flex items-center justify-center p-6">
