@@ -139,10 +139,8 @@ export default function AttendanceRecordsPage() {
       employeeId: manualForm.employeeId,
       date: manualForm.date,
       status: manualForm.status,
-      ...(manualForm.checkInTime && { checkInTime: `${manualForm.date}T${manualForm.checkInTime}:00` }),
-      ...(manualForm.checkOutTime && { checkOutTime: `${manualForm.date}T${manualForm.checkOutTime}:00` }),
-      isManualEntry: true,
-      manualEntryBy: user?.id || "",
+      ...(manualForm.checkInTime && { clockInTime: `${manualForm.date}T${manualForm.checkInTime}:00` }),
+      ...(manualForm.checkOutTime && { clockOutTime: `${manualForm.date}T${manualForm.checkOutTime}:00` }),
       manualEntryReason: manualForm.manualEntryReason,
     });
     setCreateDialogOpen(false);

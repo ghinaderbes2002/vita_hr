@@ -72,7 +72,7 @@ const navigation: NavItem[] = [
       { title: "nav.newRequest", href: "/requests/new", icon: PlusCircle, permission: "leave_requests:create" },
       { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
       { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read" },
-      { title: "nav.internalMail", href: "/mail", icon: Mail, permission: "mail:read_own" },
+      { title: "nav.internalMail", href: "/mail", icon: Mail },
     ],
   },
   {

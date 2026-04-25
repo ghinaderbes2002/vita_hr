@@ -73,17 +73,15 @@ export interface CheckOutData {
 export interface CreateAttendanceRecordData {
   employeeId: string;
   date: string;
-  checkInTime?: string;
-  checkOutTime?: string;
+  clockInTime?: string;
+  clockOutTime?: string;
   status: AttendanceStatus;
   workMinutes?: number;
-  checkInLocation?: string;
-  checkOutLocation?: string;
+  clockInLocation?: string;
+  clockOutLocation?: string;
   lateMinutes?: number;
   earlyLeaveMinutes?: number;
   overtimeMinutes?: number;
-  isManualEntry?: boolean;
-  manualEntryBy?: string;
   manualEntryReason?: string;
 }
 
