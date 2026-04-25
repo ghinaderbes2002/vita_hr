@@ -431,17 +431,13 @@ export default function DashboardPage() {
             <FileText className="h-4 w-4 text-primary" />
             مدونة السلوك
           </CardTitle>
-          <a href={conductDoc.url} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 border border-primary/30 rounded px-2 py-1">
-            <ExternalLink className="h-3.5 w-3.5" />فتح
-          </a>
         </CardHeader>
-        <CardContent className="p-0">
-          <iframe
-            src={conductDoc.url}
-            className="w-full h-[75vh] rounded-b-lg border-t"
-            title="مدونة السلوك"
-          />
+        <CardContent>
+          <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30">
+            <FileText className="h-8 w-8 text-primary shrink-0" />
+            <p className="text-sm font-medium flex-1">مدونة السلوك</p>
+            <a href={conductDoc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">فتح</a>
+          </div>
         </CardContent>
       </Card>
 
