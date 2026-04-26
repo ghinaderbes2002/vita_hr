@@ -59,6 +59,12 @@ const weekDays = [
   { value: 6, label: "السبت" },
 ];
 
+function parseWorkDays(workDays: any): number[] {
+  if (Array.isArray(workDays)) return workDays;
+  if (!workDays) return [];
+  try { return JSON.parse(workDays); } catch { return []; }
+}
+
 export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkScheduleDialogProps) {
   const t = useTranslations();
   const createSchedule = useCreateWorkSchedule();
@@ -72,7 +78,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
       nameEn: schedule?.nameEn || "",
       workStartTime: schedule?.workStartTime || "",
       workEndTime: schedule?.workEndTime || "",
-      workDays: schedule?.workDays ? JSON.parse(schedule.workDays) : [],
+      workDays: parseWorkDays(schedule?.workDays),
       lateToleranceMin: schedule?.lateToleranceMin || 0,
       earlyLeaveToleranceMin: schedule?.earlyLeaveToleranceMin || 0,
       isActive: schedule?.isActive ?? true,
@@ -88,7 +94,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
         nameEn: schedule?.nameEn || "",
         workStartTime: schedule?.workStartTime || "",
         workEndTime: schedule?.workEndTime || "",
-        workDays: schedule?.workDays ? JSON.parse(schedule.workDays) : [],
+        workDays: parseWorkDays(schedule?.workDays),
         lateToleranceMin: schedule?.lateToleranceMin || 0,
         earlyLeaveToleranceMin: schedule?.earlyLeaveToleranceMin || 0,
         isActive: schedule?.isActive ?? true,

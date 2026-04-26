@@ -156,10 +156,10 @@ export default function AttendanceRecordsPage() {
 
 
   const formatDuration = (minutes?: number) => {
-    if (minutes == null) return "-"; // null أو undefined فقط
+    if (minutes == null) return "-";
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}${t("attendance.hourShort")} ${mins}${t("attendance.minuteShort")}`;
+    return `${hours}:${String(mins).padStart(2, "0")}`;
   };
 
   const formatLateMinutes = (minutes?: number) => {
@@ -298,7 +298,7 @@ export default function AttendanceRecordsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {formatDuration(record.netWorkedMinutes ?? record.workedMinutes)}
+                    {formatDuration(record.workedMinutes)}
                   </TableCell>
                   <TableCell>
                     <span className="text-destructive font-medium">
@@ -318,7 +318,7 @@ export default function AttendanceRecordsPage() {
                     {(() => {
                       const v = (record as any).longestContinuousWorkMinutes;
                       if (!v || v <= 0) return "—";
-                      return `${Math.floor(v / 60)}س ${v % 60}د`;
+                      return `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
                     })()}
                   </TableCell>
                   <TableCell className="text-center">

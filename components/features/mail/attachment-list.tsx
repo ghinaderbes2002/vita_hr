@@ -4,9 +4,20 @@ import { useRef, useState } from "react";
 import { Paperclip, Download, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadAttachment } from "@/lib/hooks/use-mail";
-import { apiClient } from "@/lib/api/client";
 import type { MailAttachment } from "@/lib/api/mail";
 import { toast } from "sonner";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+function getToken(): string {
+  if (typeof document === "undefined") return "";
+  const cookie = document.cookie.split("; ").find((c) => c.startsWith("wso-token="));
+  if (cookie) return cookie.split("=")[1];
+  try {
+    const store = JSON.parse(localStorage.getItem("auth-storage") || "{}");
+    return store?.state?.accessToken || "";
+  } catch { return ""; }
+}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -15,20 +26,19 @@ function formatSize(bytes: number): string {
 }
 
 async function downloadFile(attachmentId: string, fileName: string) {
-  const response = await apiClient.get(`/mail/attachments/${attachmentId}/file`, {
-    responseType: "blob",
+  const url = `${API_BASE}/mail/attachments/${attachmentId}/file`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${getToken()}` },
   });
-  const blob = new Blob([response.data], {
-    type: response.headers["content-type"] ?? "application/octet-stream",
-  });
-  const objectUrl = URL.createObjectURL(blob);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
   const link = document.createElement("a");
-  link.href = objectUrl;
+  link.href = URL.createObjectURL(blob);
   link.download = fileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(objectUrl);
+  URL.revokeObjectURL(link.href);
 }
 
 interface ListProps {

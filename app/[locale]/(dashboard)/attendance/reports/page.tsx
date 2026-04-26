@@ -41,14 +41,11 @@ function minutesToHours(minutes: number) {
 }
 
 // ─── Daily Report ────────────────────────────────────────────────────────────
-function DailyReport() {
+function DailyReport({ departments }: { departments: any[] }) {
   const t = useTranslations();
   const [date, setDate] = useState(today);
   const [deptId, setDeptId] = useState("all");
   const [submitted, setSubmitted] = useState({ date: today, deptId: "" });
-
-  const { data: deptData } = useDepartments({ limit: 200 });
-  const departments = (deptData as any)?.data?.items || (deptData as any)?.data || [];
 
   const { data, isLoading } = useDailyReport({
     date: submitted.date,
@@ -157,15 +154,12 @@ function DailyReport() {
 }
 
 // ─── Monthly Report ───────────────────────────────────────────────────────────
-function MonthlyReport() {
+function MonthlyReport({ departments }: { departments: any[] }) {
   const t = useTranslations();
   const [year, setYear] = useState(String(currentYear));
   const [month, setMonth] = useState(String(currentMonth));
   const [deptId, setDeptId] = useState("all");
   const [submitted, setSubmitted] = useState({ year: currentYear, month: currentMonth, deptId: "" });
-
-  const { data: deptData } = useDepartments({ limit: 200 });
-  const departments = (deptData as any)?.data?.items || (deptData as any)?.data || [];
 
   const { data, isLoading } = useMonthlyReport({
     year: submitted.year,
@@ -269,15 +263,12 @@ function MonthlyReport() {
 }
 
 // ─── Summary Report ───────────────────────────────────────────────────────────
-function SummaryReport() {
+function SummaryReport({ departments }: { departments: any[] }) {
   const t = useTranslations();
   const [dateFrom, setDateFrom] = useState(firstOfMonth);
   const [dateTo, setDateTo] = useState(today);
   const [deptId, setDeptId] = useState("all");
   const [submitted, setSubmitted] = useState({ dateFrom: firstOfMonth, dateTo: today, deptId: "" });
-
-  const { data: deptData } = useDepartments({ limit: 200 });
-  const departments = (deptData as any)?.data?.items || (deptData as any)?.data || [];
 
   const { data, isLoading } = useSummaryReport({
     dateFrom: submitted.dateFrom,
@@ -362,15 +353,12 @@ function SummaryReport() {
 }
 
 // ─── Breaks Report ────────────────────────────────────────────────────────────
-function BreaksReport() {
+function BreaksReport({ departments }: { departments: any[] }) {
   const t = useTranslations();
   const [dateFrom, setDateFrom] = useState(firstOfMonth);
   const [dateTo, setDateTo] = useState(today);
   const [deptId, setDeptId] = useState("all");
   const [submitted, setSubmitted] = useState({ dateFrom: firstOfMonth, dateTo: today, deptId: "" });
-
-  const { data: deptData } = useDepartments({ limit: 200 });
-  const departments = (deptData as any)?.data?.items || (deptData as any)?.data || [];
 
   const { data, isLoading } = useBreaksReport({
     dateFrom: submitted.dateFrom,
@@ -465,6 +453,13 @@ function BreaksReport() {
 export default function AttendanceReportsPage() {
   const t = useTranslations();
 
+  const { data: deptData } = useDepartments({ limit: 200 });
+  const d = deptData as any;
+  const departments: any[] = Array.isArray(d?.data?.items) ? d.data.items
+    : Array.isArray(d?.data) ? d.data
+    : Array.isArray(d?.items) ? d.items
+    : Array.isArray(d) ? d : [];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -480,10 +475,10 @@ export default function AttendanceReportsPage() {
           <TabsTrigger value="breaks">{t("attendanceReports.breaks")}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="daily"><DailyReport /></TabsContent>
-        <TabsContent value="monthly"><MonthlyReport /></TabsContent>
-        <TabsContent value="summary"><SummaryReport /></TabsContent>
-        <TabsContent value="breaks"><BreaksReport /></TabsContent>
+        <TabsContent value="daily"><DailyReport departments={departments} /></TabsContent>
+        <TabsContent value="monthly"><MonthlyReport departments={departments} /></TabsContent>
+        <TabsContent value="summary"><SummaryReport departments={departments} /></TabsContent>
+        <TabsContent value="breaks"><BreaksReport departments={departments} /></TabsContent>
       </Tabs>
     </div>
   );
