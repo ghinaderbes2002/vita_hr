@@ -100,6 +100,7 @@
     "allCustodies": "كل العهد",
     "myCustodies": "عهدي",
     "internalMail": "البريد الداخلي",
+    "deductionPoliciesView": "سياسات الحسم",
     "jobApplications": "طلبات التوظيف",
     "allJobApplications": "كل الطلبات",
     "interviewPositions": "الشواغر الوظيفية",
@@ -1642,7 +1643,9 @@
     },
     "deductionType": {
       "MINUTE_BY_MINUTE": "دقيقة بدقيقة",
-      "TIERED": "متدرج (شرائح)"
+      "TIERED": "متدرج (شرائح)",
+      "IGNORE": "تجاهل",
+      "DOUBLE": "ضعف المدة"
     },
     "card": {
       "lateTolerance": "هامش التأخر",
@@ -2154,6 +2157,7 @@
         "MANAGER_APPROVED": "موافقة المدير",
         "MANAGER_REJECTED": "رفض المدير",
         "PENDING_HR": "بانتظار الموارد البشرية",
+        "PENDING_SUBSTITUTE": "بانتظار البديل",
         "APPROVED": "موافق عليه",
         "REJECTED": "مرفوض",
         "CANCELLED": "ملغى",

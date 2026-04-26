@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Paperclip, Download, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadAttachment } from "@/lib/hooks/use-mail";
+import { apiClient } from "@/lib/api/client";
 import type { MailAttachment } from "@/lib/api/mail";
+import { toast } from "sonner";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -12,12 +14,42 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+async function downloadFile(attachmentId: string, fileName: string) {
+  const response = await apiClient.get(`/mail/attachments/${attachmentId}/file`, {
+    responseType: "blob",
+  });
+  const blob = new Blob([response.data], {
+    type: response.headers["content-type"] ?? "application/octet-stream",
+  });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(objectUrl);
+}
+
 interface ListProps {
   attachments: MailAttachment[];
 }
 
 export function AttachmentList({ attachments }: ListProps) {
+  const [downloading, setDownloading] = useState<string | null>(null);
+
   if (attachments.length === 0) return null;
+
+  const handleDownload = async (a: MailAttachment) => {
+    setDownloading(a.id);
+    try {
+      await downloadFile(a.id, a.fileName);
+    } catch {
+      toast.error("فشل تنزيل الملف");
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   return (
     <div className="border rounded-md divide-y mt-4">
@@ -32,18 +64,18 @@ export function AttachmentList({ attachments }: ListProps) {
             <span className="text-sm truncate">{a.fileName}</span>
             <span className="text-xs text-muted-foreground shrink-0">{formatSize(a.fileSize)}</span>
           </div>
-          <a
-            href={a.fileUrl}
-            download={a.fileName}
-            target="_blank"
-            rel="noreferrer"
-            className="shrink-0"
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1 text-xs shrink-0"
+            disabled={downloading === a.id}
+            onClick={() => handleDownload(a)}
           >
-            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs">
-              <Download className="h-3.5 w-3.5" />
-              تنزيل
-            </Button>
-          </a>
+            {downloading === a.id
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Download className="h-3.5 w-3.5" />}
+            تنزيل
+          </Button>
         </div>
       ))}
     </div>

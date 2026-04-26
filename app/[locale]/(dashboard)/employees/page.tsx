@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,6 +38,7 @@ import { EmployeeDialog } from "@/components/features/employees/employee-dialog"
 import { LinkUserDialog } from "@/components/features/employees/link-user-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Pagination } from "@/components/shared/pagination";
+import { OrgTree } from "@/components/features/employees/org-tree";
 
 export default function EmployeesPage() {
   const t = useTranslations();
@@ -45,6 +46,7 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [view, setView] = useState<"list" | "tree">("list");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [linkUserDialogOpen, setLinkUserDialogOpen] = useState(false);
@@ -117,13 +119,47 @@ export default function EmployeesPage() {
         description={t("employees.description")}
         count={!isLoading && !selectedDepartment ? total : undefined}
         actions={
-          <Button onClick={() => { setSelectedEmployee(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("employees.addEmployee")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex rounded-md border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setView("list")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors ${
+                  view === "list" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                }`}
+              >
+                <List className="h-4 w-4" />
+                قائمة
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("tree")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors ${
+                  view === "tree" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                }`}
+              >
+                <Network className="h-4 w-4" />
+                شجرة
+              </button>
+            </div>
+            <Button onClick={() => { setSelectedEmployee(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("employees.addEmployee")}
+            </Button>
+          </div>
         }
       />
 
+      {/* Org Tree View */}
+      {view === "tree" && (
+        <div className="rounded-md border bg-card">
+          <OrgTree />
+        </div>
+      )}
+
+      {/* List View */}
+      {view === "list" && <>
       <div className="filter-bar">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -260,6 +296,7 @@ export default function EmployeesPage() {
           onPageChange={setPage}
         />
       )}
+      </>}
 
       <EmployeeDialog
         open={dialogOpen}

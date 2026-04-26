@@ -92,6 +92,7 @@
     "allCustodies": "All Custodies",
     "myCustodies": "My Custodies",
     "internalMail": "Internal Mail",
+    "deductionPoliciesView": "Deduction Policies",
     "jobApplications": "Job Applications",
     "allJobApplications": "All Applications",
     "interviewPositions": "Interview Positions",
@@ -1518,7 +1519,9 @@
     },
     "deductionType": {
       "MINUTE_BY_MINUTE": "Minute by Minute",
-      "TIERED": "Tiered"
+      "TIERED": "Tiered",
+      "IGNORE": "Ignore",
+      "DOUBLE": "Double Duration"
     },
     "card": {
       "lateTolerance": "Late Tolerance",
@@ -2030,6 +2033,7 @@
         "MANAGER_APPROVED": "Manager Approved",
         "MANAGER_REJECTED": "Manager Rejected",
         "PENDING_HR": "Pending HR",
+        "PENDING_SUBSTITUTE": "Pending Substitute",
         "APPROVED": "Approved",
         "REJECTED": "Rejected",
         "CANCELLED": "Cancelled",

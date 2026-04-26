@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { Plus, Pencil, Trash2, Star, Shield, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ import {
   CreateDeductionPolicyData,
   DeductionTier,
   DeductionType,
+  BreakDeductionType,
 } from "@/lib/api/deduction-policies";
 
 interface PolicyFormData {
@@ -45,7 +47,13 @@ interface PolicyFormData {
   absenceDeductionDays: number;
   repeatLateThreshold: string;
   repeatLatePenaltyDays: string;
-  breakOverLimitDeduction: DeductionType;
+  breakOverLimitDeduction: BreakDeductionType;
+}
+
+function parseTiers(tiers: DeductionTier[] | string | null | undefined): DeductionTier[] {
+  if (!tiers) return [];
+  if (Array.isArray(tiers)) return tiers;
+  try { return JSON.parse(tiers as string); } catch { return []; }
 }
 
 const EMPTY_FORM: PolicyFormData = {
@@ -53,16 +61,20 @@ const EMPTY_FORM: PolicyFormData = {
   lateToleranceMinutes: 0, lateDeductionType: "MINUTE_BY_MINUTE", lateDeductionTiers: [],
   earlyLeaveDeductionType: "MINUTE_BY_MINUTE", earlyLeaveTiers: [],
   absenceDeductionDays: 1, repeatLateThreshold: "", repeatLatePenaltyDays: "",
-  breakOverLimitDeduction: "MINUTE_BY_MINUTE",
+  breakOverLimitDeduction: "MINUTE_BY_MINUTE" as BreakDeductionType,
 };
 
 function formToData(form: PolicyFormData): CreateDeductionPolicyData {
   return {
-    nameAr: form.nameAr, nameEn: form.nameEn, isDefault: form.isDefault, isActive: form.isActive,
-    lateToleranceMinutes: form.lateToleranceMinutes, lateDeductionType: form.lateDeductionType,
-    lateDeductionTiers: form.lateDeductionType === "TIERED" ? form.lateDeductionTiers : undefined,
+    nameAr: form.nameAr,
+    nameEn: form.nameEn,
+    isDefault: form.isDefault,
+    lateToleranceMinutes: form.lateToleranceMinutes,
+    lateDeductionType: form.lateDeductionType,
+    lateDeductionTiers: form.lateDeductionType === "TIERED" && form.lateDeductionTiers.length
+      ? JSON.stringify(form.lateDeductionTiers)
+      : undefined,
     earlyLeaveDeductionType: form.earlyLeaveDeductionType,
-    earlyLeaveTiers: form.earlyLeaveDeductionType === "TIERED" ? form.earlyLeaveTiers : undefined,
     absenceDeductionDays: form.absenceDeductionDays,
     repeatLateThreshold: form.repeatLateThreshold ? Number(form.repeatLateThreshold) : undefined,
     repeatLatePenaltyDays: form.repeatLatePenaltyDays ? Number(form.repeatLatePenaltyDays) : undefined,
@@ -107,6 +119,8 @@ function TiersEditor({ tiers, onChange, t }: { tiers: DeductionTier[]; onChange:
 export default function DeductionPoliciesPage() {
   const t = useTranslations("deductionPolicies");
   const tCommon = useTranslations("common");
+  const searchParams = useSearchParams();
+  const readOnly = searchParams.get("view") === "readonly";
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -131,8 +145,8 @@ export default function DeductionPoliciesPage() {
     setForm({
       nameAr: policy.nameAr, nameEn: policy.nameEn, isDefault: policy.isDefault, isActive: policy.isActive,
       lateToleranceMinutes: policy.lateToleranceMinutes, lateDeductionType: policy.lateDeductionType,
-      lateDeductionTiers: policy.lateDeductionTiers || [], earlyLeaveDeductionType: policy.earlyLeaveDeductionType,
-      earlyLeaveTiers: policy.earlyLeaveTiers || [], absenceDeductionDays: policy.absenceDeductionDays,
+      lateDeductionTiers: parseTiers(policy.lateDeductionTiers), earlyLeaveDeductionType: policy.earlyLeaveDeductionType,
+      earlyLeaveTiers: parseTiers(policy.earlyLeaveTiers), absenceDeductionDays: policy.absenceDeductionDays,
       repeatLateThreshold: policy.repeatLateThreshold?.toString() || "",
       repeatLatePenaltyDays: policy.repeatLatePenaltyDays?.toString() || "",
       breakOverLimitDeduction: policy.breakOverLimitDeduction,
@@ -157,9 +171,11 @@ export default function DeductionPoliciesPage() {
         description={t("description")}
         count={policies.length}
         actions={
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" />{t("createPolicy")}
-          </Button>
+          !readOnly ? (
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="h-4 w-4" />{t("createPolicy")}
+            </Button>
+          ) : undefined
         }
       />
 
@@ -173,9 +189,11 @@ export default function DeductionPoliciesPage() {
           title={t("empty.title")}
           description={t("empty.description")}
           action={
-            <Button onClick={openCreate} variant="outline" className="gap-2">
-              <Plus className="h-4 w-4" />{t("createPolicy")}
-            </Button>
+            !readOnly ? (
+              <Button onClick={openCreate} variant="outline" className="gap-2">
+                <Plus className="h-4 w-4" />{t("createPolicy")}
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -215,10 +233,10 @@ export default function DeductionPoliciesPage() {
                     </span>
                   </div>
                 )}
-                {policy.lateDeductionType === "TIERED" && policy.lateDeductionTiers?.length ? (
+                {policy.lateDeductionType === "TIERED" && parseTiers(policy.lateDeductionTiers).length ? (
                   <div className="pt-1 border-t">
                     <p className="text-xs text-muted-foreground mb-1">{t("card.lateTiers")}</p>
-                    {policy.lateDeductionTiers.map((tier, i) => (
+                    {parseTiers(policy.lateDeductionTiers).map((tier, i) => (
                       <div key={i} className="text-xs flex gap-1">
                         <span>{tier.fromMinute}–{tier.toMinute ?? "∞"} د</span>
                         <span className="text-muted-foreground">←</span>
@@ -227,24 +245,26 @@ export default function DeductionPoliciesPage() {
                     ))}
                   </div>
                 ) : null}
-                <div className="flex items-center gap-2 pt-2 border-t">
-                  <Button variant="outline" size="sm" className="gap-1 flex-1 h-8 text-xs" onClick={() => openEdit(policy)}>
-                    <Pencil className="h-3 w-3" />{t("card.edit")}
-                  </Button>
-                  {!policy.isDefault && (
-                    <>
-                      <Button variant="outline" size="sm" className="gap-1 h-8 text-xs text-primary border-primary/30"
-                        onClick={() => updatePolicy.mutate({ id: policy.id, data: { isDefault: true } })}
-                        disabled={updatePolicy.isPending}>
-                        <CheckCircle2 className="h-3 w-3" />{t("card.setDefault")}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => { setSelectedPolicy(policy); setDeleteDialogOpen(true); }}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  )}
-                </div>
+                {!readOnly && (
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Button variant="outline" size="sm" className="gap-1 flex-1 h-8 text-xs" onClick={() => openEdit(policy)}>
+                      <Pencil className="h-3 w-3" />{t("card.edit")}
+                    </Button>
+                    {!policy.isDefault && (
+                      <>
+                        <Button variant="outline" size="sm" className="gap-1 h-8 text-xs text-primary border-primary/30"
+                          onClick={() => updatePolicy.mutate({ id: policy.id, data: { isDefault: true } })}
+                          disabled={updatePolicy.isPending}>
+                          <CheckCircle2 className="h-3 w-3" />{t("card.setDefault")}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => { setSelectedPolicy(policy); setDeleteDialogOpen(true); }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -335,11 +355,12 @@ export default function DeductionPoliciesPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>{t("form.breakDeduction")}</Label>
-                <Select value={form.breakOverLimitDeduction} onValueChange={(v) => setForm({ ...form, breakOverLimitDeduction: v as DeductionType })}>
+                <Select value={form.breakOverLimitDeduction} onValueChange={(v) => setForm({ ...form, breakOverLimitDeduction: v as BreakDeductionType })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="MINUTE_BY_MINUTE">{t("deductionType.MINUTE_BY_MINUTE")}</SelectItem>
-                    <SelectItem value="TIERED">{t("deductionType.TIERED")}</SelectItem>
+                    <SelectItem value="IGNORE">{t("deductionType.IGNORE")}</SelectItem>
+                    <SelectItem value="DOUBLE">{t("deductionType.DOUBLE")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

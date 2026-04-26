@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 
 export type DeductionType = "MINUTE_BY_MINUTE" | "TIERED";
+export type BreakDeductionType = "MINUTE_BY_MINUTE" | "IGNORE" | "DOUBLE";
 
 export interface DeductionTier {
   fromMinute: number;
@@ -21,7 +22,7 @@ export interface DeductionPolicy {
   absenceDeductionDays: number;
   repeatLateThreshold?: number | null;
   repeatLatePenaltyDays?: number | null;
-  breakOverLimitDeduction: DeductionType;
+  breakOverLimitDeduction: BreakDeductionType;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -33,13 +34,13 @@ export interface CreateDeductionPolicyData {
   isDefault?: boolean;
   lateToleranceMinutes?: number;
   lateDeductionType?: DeductionType;
-  lateDeductionTiers?: DeductionTier[];
+  lateDeductionTiers?: string;       // JSON.stringify(DeductionTier[])
   earlyLeaveDeductionType?: DeductionType;
-  earlyLeaveTiers?: DeductionTier[];
+  earlyLeaveTiers?: string;          // JSON.stringify(DeductionTier[])
   absenceDeductionDays?: number;
   repeatLateThreshold?: number;
   repeatLatePenaltyDays?: number;
-  breakOverLimitDeduction?: DeductionType;
+  breakOverLimitDeduction?: BreakDeductionType;
   isActive?: boolean;
 }
 

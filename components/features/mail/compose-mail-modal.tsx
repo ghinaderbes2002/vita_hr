@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Send, FileText, X, ChevronDown } from "lucide-react";
+import { useState, useRef } from "react";
+import { Send, FileText, X, Paperclip, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { UserSearchSelect } from "./user-search-select";
-import { useSendMail, useSaveDraft } from "@/lib/hooks/use-mail";
+import { useSendMail, useSaveDraft, useUploadAttachment } from "@/lib/hooks/use-mail";
 import { toast } from "sonner";
 
 interface Props {
@@ -38,9 +38,12 @@ export function ComposeMailModal({
   const [bccIds, setBccIds] = useState<string[]>([]);
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sendMail = useSendMail();
   const saveDraft = useSaveDraft();
+  const uploadAttachment = useUploadAttachment();
 
   const buildRecipients = () => [
     ...toIds.map((userId) => ({ userId, type: "TO" as const })),
@@ -48,17 +51,43 @@ export function ComposeMailModal({
     ...bccIds.map((userId) => ({ userId, type: "BCC" as const })),
   ];
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const oversized = files.filter((f) => f.size > 25 * 1024 * 1024);
+    if (oversized.length > 0) {
+      toast.error(`الملفات التالية تتجاوز 25MB: ${oversized.map((f) => f.name).join(", ")}`);
+      return;
+    }
+    setPendingFiles((prev) => {
+      const names = new Set(prev.map((f) => f.name));
+      return [...prev, ...files.filter((f) => !names.has(f.name))];
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (name: string) =>
+    setPendingFiles((prev) => prev.filter((f) => f.name !== name));
+
   const handleSend = async () => {
     if (!subject.trim()) { toast.error("الموضوع مطلوب"); return; }
     if (!body.trim()) { toast.error("نص الرسالة مطلوب"); return; }
     if (toIds.length === 0) { toast.error("يجب إضافة مستلم واحد على الأقل"); return; }
 
-    await sendMail.mutateAsync({
+    const message = await sendMail.mutateAsync({
       subject,
       body,
       recipients: buildRecipients(),
       parentMessageId: replyToMessageId,
     });
+
+    if (pendingFiles.length > 0 && message?.id) {
+      await Promise.all(
+        pendingFiles.map((file) =>
+          uploadAttachment.mutateAsync({ messageId: message.id, file }),
+        ),
+      );
+    }
+
     onClose();
   };
 
@@ -71,7 +100,7 @@ export function ComposeMailModal({
     onClose();
   };
 
-  const isPending = sendMail.isPending || saveDraft.isPending;
+  const isPending = sendMail.isPending || saveDraft.isPending || uploadAttachment.isPending;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -182,11 +211,60 @@ export function ComposeMailModal({
             />
           </div>
 
+          {/* Attachments */}
+          <div className="space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            {pendingFiles.length > 0 && (
+              <div className="border rounded-md divide-y">
+                {pendingFiles.map((file) => (
+                  <div key={file.name} className="flex items-center justify-between px-3 py-1.5 text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">{file.name}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {file.size < 1024 * 1024
+                          ? `${(file.size / 1024).toFixed(1)} KB`
+                          : `${(file.size / (1024 * 1024)).toFixed(1)} MB`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(file.name)}
+                      className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Actions */}
           <div className="flex items-center justify-between pt-1">
-            <Button variant="outline" onClick={onClose} disabled={isPending}>
-              إلغاء
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={onClose} disabled={isPending}>
+                إلغاء
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isPending}
+              >
+                <Paperclip className="h-4 w-4" />
+                إرفاق
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="secondary"
@@ -197,8 +275,10 @@ export function ComposeMailModal({
                 حفظ مسودة
               </Button>
               <Button onClick={handleSend} disabled={isPending}>
-                <Send className="h-4 w-4 ml-1.5" />
-                إرسال
+                {uploadAttachment.isPending
+                  ? <Loader2 className="h-4 w-4 ml-1.5 animate-spin" />
+                  : <Send className="h-4 w-4 ml-1.5" />}
+                {uploadAttachment.isPending ? "جاري رفع المرفقات..." : "إرسال"}
               </Button>
             </div>
           </div>

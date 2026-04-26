@@ -18,10 +18,13 @@ import { downloadExcel } from "@/lib/utils/excel";
 
 const COLORS = ["#6366f1","#22c55e","#f59e0b","#ef4444","#8b5cf6","#14b8a6","#f97316","#ec4899"];
 const STATUS_COLORS: Record<string, string> = {
-  APPROVED: "bg-green-100 text-green-700",
-  PENDING: "bg-amber-100 text-amber-700",
-  REJECTED: "bg-red-100 text-red-700",
-  CANCELLED: "bg-gray-100 text-gray-600",
+  APPROVED:            "bg-green-100 text-green-700",
+  PENDING_MANAGER:     "bg-amber-100 text-amber-700",
+  PENDING_HR:          "bg-orange-100 text-orange-700",
+  PENDING_SUBSTITUTE:  "bg-yellow-100 text-yellow-700",
+  DRAFT:               "bg-slate-100 text-slate-600",
+  REJECTED:            "bg-red-100 text-red-700",
+  CANCELLED:           "bg-gray-100 text-gray-600",
 };
 
 export default function LeaveReportsPage() {

@@ -54,6 +54,20 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
 
   const remove = (id: string) => onChange(value.filter((v) => v !== id));
 
+  const allVisibleSelected = options.length > 0 && options.every((o) => value.includes(o.id));
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      // أزل فقط الـ IDs الظاهرة حالياً
+      const visibleIds = new Set(options.map((o) => o.id));
+      onChange(value.filter((v) => !visibleIds.has(v)));
+    } else {
+      // أضف الظاهرين غير المحددين
+      const newIds = options.filter((o) => !value.includes(o.id)).map((o) => o.id);
+      onChange([...value, ...newIds]);
+    }
+  };
+
   // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -69,25 +83,34 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
     <div ref={containerRef} className="relative">
       {/* Selected badges */}
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-1.5">
-          {value.map((id) => {
-            const opt = options.find((o) => o.id === id) ?? rawItems.find((e: any) => e.userId === id);
-            const label = opt
-              ? (opt as any).label ?? `${(opt as any).firstNameAr} ${(opt as any).lastNameAr}`
-              : id;
-            return (
-              <Badge key={id} variant="secondary" className="gap-1 text-xs">
-                {label}
-                <button
-                  type="button"
-                  onClick={() => remove(id)}
-                  className="hover:text-destructive transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            );
-          })}
+        <div className="mb-1.5 space-y-1">
+          <div className="flex flex-wrap gap-1">
+            {value.map((id) => {
+              const opt = options.find((o) => o.id === id) ?? rawItems.find((e: any) => e.userId === id);
+              const label = opt
+                ? (opt as any).label ?? `${(opt as any).firstNameAr} ${(opt as any).lastNameAr}`
+                : id;
+              return (
+                <Badge key={id} variant="secondary" className="gap-1 text-xs">
+                  {label}
+                  <button
+                    type="button"
+                    onClick={() => remove(id)}
+                    className="hover:text-destructive transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+          >
+            مسح الكل ({value.length})
+          </button>
         </div>
       )}
 
@@ -115,23 +138,38 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
           ) : options.length === 0 ? (
             <p className="px-3 py-4 text-sm text-center text-muted-foreground">لا توجد نتائج</p>
           ) : (
-            options.map((opt) => {
-              const selected = value.includes(opt.id);
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => toggle(opt.id)}
-                  className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted transition-colors text-right",
-                    selected && "bg-primary/5",
-                  )}
-                >
-                  <span>{opt.label}</span>
-                  {selected && <Check className="h-4 w-4 text-primary" />}
-                </button>
-              );
-            })
+            <>
+              {/* Select All row */}
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className={cn(
+                  "w-full flex items-center justify-between px-3 py-2 text-sm font-medium border-b hover:bg-muted transition-colors text-right",
+                  allVisibleSelected && "bg-primary/5",
+                )}
+              >
+                <span>{allVisibleSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}</span>
+                {allVisibleSelected && <Check className="h-4 w-4 text-primary" />}
+              </button>
+
+              {options.map((opt) => {
+                const selected = value.includes(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => toggle(opt.id)}
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted transition-colors text-right",
+                      selected && "bg-primary/5",
+                    )}
+                  >
+                    <span>{opt.label}</span>
+                    {selected && <Check className="h-4 w-4 text-primary" />}
+                  </button>
+                );
+              })}
+            </>
           )}
         </div>
       )}

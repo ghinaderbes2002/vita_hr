@@ -26,10 +26,18 @@ export default function HrReportsPage() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
+  const [exchangeRate, setExchangeRate] = useState<number>(13000);
+
   const { data: summary, isLoading: summaryLoading } = useEmployeesSummary();
   const { data: turnover, isLoading: turnoverLoading } = useTurnoverReport(year);
   const { data: salaries, isLoading: salariesLoading } = useSalariesReport();
   const { data: expiry, isLoading: expiryLoading } = useExpiryDatesReport(90);
+
+  const toUSD = (amount: number | null | undefined, currency: string) => {
+    if (!amount) return "—";
+    if (currency === "USD") return amount.toLocaleString("en-US", { maximumFractionDigits: 0 });
+    return (amount / exchangeRate).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  };
 
   const sum = summary as any;
   const turn = turnover as any;
@@ -185,22 +193,37 @@ export default function HrReportsPage() {
       </Card>
 
       {/* ─── 3. Salaries ──────────────────────────────────────── */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Wallet className="h-5 w-5 text-primary" />
           {tHr("salaries.title")}
         </h2>
-        <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
-          onClick={() => {
-            const rows = salList.map((r: any) => ({
-              القسم: r.departmentAr, "عدد الموظفين": r.employeeCount,
-              "إجمالي الرواتب": r.totalSalary, "متوسط الراتب": r.avgSalary,
-              "أدنى راتب": r.minSalary, "أعلى راتب": r.maxSalary, العملة: r.currency,
-            }));
-            downloadExcel(rows, "salaries", "الرواتب");
-          }}>
-          <Download className="h-3.5 w-3.5" />Excel
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm border rounded-md px-2 h-8 bg-background">
+            <span className="text-muted-foreground whitespace-nowrap">1 USD =</span>
+            <input
+              type="number"
+              min={1}
+              value={exchangeRate}
+              onChange={(e) => setExchangeRate(Math.max(1, Number(e.target.value)))}
+              className="w-24 bg-transparent outline-none text-center font-medium"
+            />
+            <span className="text-muted-foreground">SYP</span>
+          </div>
+          <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
+            onClick={() => {
+              const rows = salList.map((r: any) => ({
+                القسم: r.departmentAr, "عدد الموظفين": r.employeeCount,
+                "إجمالي الرواتب (USD)": toUSD(r.totalSalary, r.currency),
+                "متوسط الراتب (USD)": toUSD(r.avgSalary, r.currency),
+                "أدنى راتب (USD)": toUSD(r.minSalary, r.currency),
+                "أعلى راتب (USD)": toUSD(r.maxSalary, r.currency),
+              }));
+              downloadExcel(rows, "salaries", "الرواتب");
+            }}>
+            <Download className="h-3.5 w-3.5" />Excel
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -214,10 +237,10 @@ export default function HrReportsPage() {
                   <tr>
                     <th className="px-4 py-3 text-right font-medium">{tHr("salaries.department")}</th>
                     <th className="px-4 py-3 text-center font-medium">{tHr("salaries.employees")}</th>
-                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.total")}</th>
-                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.avg")}</th>
-                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.min")}</th>
-                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.max")}</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.total")} (USD)</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.avg")} (USD)</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.min")} (USD)</th>
+                    <th className="px-4 py-3 text-center font-medium">{tHr("salaries.max")} (USD)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -225,10 +248,10 @@ export default function HrReportsPage() {
                     <tr key={row.departmentId || i} className="border-t hover:bg-muted/30">
                       <td className="px-4 py-3 font-medium">{row.departmentAr}</td>
                       <td className="px-4 py-3 text-center">{row.employeeCount}</td>
-                      <td className="px-4 py-3 text-center">{row.totalSalary?.toLocaleString()} {row.currency}</td>
-                      <td className="px-4 py-3 text-center">{row.avgSalary?.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-center text-green-600">{row.minSalary?.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-center text-primary font-semibold">{row.maxSalary?.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-center">$ {toUSD(row.totalSalary, row.currency)}</td>
+                      <td className="px-4 py-3 text-center">$ {toUSD(row.avgSalary, row.currency)}</td>
+                      <td className="px-4 py-3 text-center text-green-600">$ {toUSD(row.minSalary, row.currency)}</td>
+                      <td className="px-4 py-3 text-center text-primary font-semibold">$ {toUSD(row.maxSalary, row.currency)}</td>
                     </tr>
                   ))}
                 </tbody>
