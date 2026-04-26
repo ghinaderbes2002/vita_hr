@@ -12,7 +12,18 @@ import {
 export function useMyAlerts(params: AlertQueryParams) {
   return useQuery({
     queryKey: ["attendance-alerts", "my-alerts", params],
-    queryFn: () => attendanceAlertsApi.getMyAlerts(params),
+    queryFn: async () => {
+      try {
+        return await attendanceAlertsApi.getMyAlerts(params);
+      } catch (error: any) {
+        if (error.response?.data?.code === "EMPLOYEE_NOT_FOUND") {
+          return { items: [], total: 0, totalPages: 0 };
+        }
+        throw error;
+      }
+    },
+    retry: (failureCount, error: any) =>
+      error.response?.data?.code !== "EMPLOYEE_NOT_FOUND" && failureCount < 3,
   });
 }
 

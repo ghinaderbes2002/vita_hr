@@ -59,6 +59,7 @@ export default function PayrollPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [generateResult, setGenerateResult] = useState<{ generated: number; skipped: number; errors: number } | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const { data, isLoading } = usePayroll({ year, month, limit: 100 });
@@ -79,8 +80,8 @@ export default function PayrollPage() {
   };
 
   const handleGenerate = async () => {
-    await generatePayroll.mutateAsync({ year, month });
-    setGenerateOpen(false);
+    const result = await generatePayroll.mutateAsync({ year, month });
+    setGenerateResult({ generated: result.generated, skipped: result.skipped ?? 0, errors: result.errors ?? 0 });
   };
 
   return (
@@ -270,21 +271,50 @@ export default function PayrollPage() {
       </div>
 
       {/* Generate Confirm Dialog */}
-      <Dialog open={generateOpen} onOpenChange={setGenerateOpen}>
+      <Dialog open={generateOpen} onOpenChange={(open) => { setGenerateOpen(open); if (!open) setGenerateResult(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>توليد رواتب {MONTHS.find((m) => m.value === month)?.label} {year}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            سيتم توليد كشوف رواتب جميع الموظفين النشطين لشهر{" "}
-            <span className="font-medium">{MONTHS.find((m) => m.value === month)?.label} {year}</span>.
-            إذا كانت الرواتب محوّلة مسبقاً فلن يُعاد توليدها.
-          </p>
+
+          {generateResult ? (
+            <div className="space-y-2 py-2">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-green-600 text-base">✅</span>
+                <span>تم توليد: <span className="font-semibold">{generateResult.generated}</span> موظف</span>
+              </div>
+              {generateResult.skipped > 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-amber-500 text-base">⏭️</span>
+                  <span>تم تخطي: <span className="font-semibold">{generateResult.skipped}</span> موظف (كشوفهم معتمدة مسبقاً)</span>
+                </div>
+              )}
+              {generateResult.errors > 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-destructive text-base">❌</span>
+                  <span>أخطاء: <span className="font-semibold">{generateResult.errors}</span> موظف</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              سيتم توليد كشوف رواتب جميع الموظفين النشطين لشهر{" "}
+              <span className="font-medium">{MONTHS.find((m) => m.value === month)?.label} {year}</span>.
+              إذا كانت الرواتب معتمدة مسبقاً فلن يُعاد توليدها.
+            </p>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGenerateOpen(false)}>إلغاء</Button>
-            <Button onClick={handleGenerate} disabled={generatePayroll.isPending}>
-              {generatePayroll.isPending ? "جاري التوليد..." : "توليد الرواتب"}
-            </Button>
+            {generateResult ? (
+              <Button onClick={() => { setGenerateOpen(false); setGenerateResult(null); }}>إغلاق</Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setGenerateOpen(false)}>إلغاء</Button>
+                <Button onClick={handleGenerate} disabled={generatePayroll.isPending}>
+                  {generatePayroll.isPending ? "جاري التوليد..." : "توليد الرواتب"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

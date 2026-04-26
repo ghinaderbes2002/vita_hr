@@ -7,6 +7,14 @@ import {
   UpdateWorkScheduleData,
 } from "@/lib/api/work-schedules";
 
+export function useEmployeesMissingSchedule() {
+  return useQuery({
+    queryKey: ["employee-schedules", "missing"],
+    queryFn: () => workSchedulesApi.checkMissing(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useWorkSchedules() {
   return useQuery({
     queryKey: ["work-schedules"],

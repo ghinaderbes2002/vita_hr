@@ -46,6 +46,21 @@ export interface UpdateWorkScheduleData {
   description?: string;
 }
 
+export interface MissingScheduleEmployee {
+  id: string;
+  employeeNumber: string;
+  firstNameAr: string;
+  lastNameAr: string;
+  firstNameEn: string;
+  lastNameEn: string;
+  departmentId: string;
+}
+
+export interface MissingSchedulesResult {
+  count: number;
+  employees: MissingScheduleEmployee[];
+}
+
 export const workSchedulesApi = {
   getAll: async (): Promise<ApiResponse<WorkSchedule[]>> => {
     const response = await apiClient.get("/work-schedules");
@@ -69,5 +84,10 @@ export const workSchedulesApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/work-schedules/${id}`);
+  },
+
+  checkMissing: async (): Promise<MissingSchedulesResult> => {
+    const response = await apiClient.get("/employee-schedules/check/missing");
+    return response.data?.data || response.data;
   },
 };

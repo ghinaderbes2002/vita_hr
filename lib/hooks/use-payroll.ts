@@ -25,7 +25,9 @@ export function useGeneratePayroll() {
       payrollApi.generate(year, month),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["payroll"] });
-      toast.success(`تم توليد ${result.generated} كشف راتب بنجاح${result.errors > 0 ? ` (${result.errors} أخطاء)` : ""}`);
+      const skippedNote = result.skipped > 0 ? ` | تخطي: ${result.skipped}` : "";
+      const errorsNote = result.errors > 0 ? ` | أخطاء: ${result.errors}` : "";
+      toast.success(`تم توليد ${result.generated} كشف راتب${skippedNote}${errorsNote}`);
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء توليد الرواتب");

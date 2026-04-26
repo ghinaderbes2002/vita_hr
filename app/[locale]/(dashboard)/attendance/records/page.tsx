@@ -43,7 +43,7 @@ import { useAttendanceRecords, useDeleteAttendanceRecord, useCreateAttendanceRec
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
 import { AttendanceRecord, AttendanceStatus } from "@/lib/api/attendance-records";
 import { useEmployees } from "@/lib/hooks/use-employees";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { format } from "date-fns";
 import { formatTime, formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +62,8 @@ const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
 
 export default function AttendanceRecordsPage() {
   const t = useTranslations();
-  const { user } = useAuthStore();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission("attendance.records.create-manual");
   const [search, setSearch] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
@@ -173,10 +174,12 @@ export default function AttendanceRecordsPage() {
         title={t("attendance.recordsTitle")}
         description={t("attendance.recordsDescription")}
         actions={
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            إدخال يدوي
-          </Button>
+          canCreate && (
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              إدخال يدوي
+            </Button>
+          )
         }
       />
 
@@ -301,14 +304,21 @@ export default function AttendanceRecordsPage() {
                     {formatDuration(record.workedMinutes)}
                   </TableCell>
                   <TableCell>
-                    <span className="text-destructive font-medium">
-                      {formatLateMinutes(record.lateMinutes)}
-                    </span>
+                    <div>
+                      <span className="text-destructive font-medium">
+                        {formatLateMinutes(record.lateMinutes)}
+                      </span>
+                      {(record.lateCompensatedMinutes ?? 0) > 0 && record.lateMinutes != null && (
+                        <div className="text-xs text-muted-foreground">
+                          صافي: {Math.max(0, record.lateMinutes - (record.lateCompensatedMinutes ?? 0))} د
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {(record as any).lateCompensatedMinutes > 0 ? (
+                    {(record.lateCompensatedMinutes ?? 0) > 0 ? (
                       <span className="text-green-600 font-medium">
-                        +{(record as any).lateCompensatedMinutes} د
+                        +{record.lateCompensatedMinutes} د
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>

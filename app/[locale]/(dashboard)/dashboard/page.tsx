@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
+import { useEmployeesMissingSchedule } from "@/lib/hooks/use-work-schedules";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
@@ -177,6 +178,9 @@ function ManagerDashboard({ d, locale, router }: { d: any; locale: string; route
 
 // ── HR Dashboard ──────────────────────────────────────────────────────────────
 function HRDashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
+  const { data: missingData } = useEmployeesMissingSchedule();
+  const missingCount = missingData?.count ?? 0;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -189,6 +193,32 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
         <StatCard title="إجازات بانتظار HR" value={d.pendingLeaveHRCount ?? 0} icon={Hourglass}
           iconBg="bg-amber-50" iconColor="text-amber-600" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
       </div>
+
+      {missingCount > 0 && (
+        <Card
+          className="border-amber-200 bg-amber-50 cursor-pointer hover:bg-amber-100 transition-colors"
+          onClick={() => router.push(`/${locale}/work-schedules`)}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-100">
+                  <AlertCircle className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-amber-900 text-sm">
+                    {missingCount} موظف بدون جدول عمل
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    هؤلاء الموظفون لن يُحسب حضورهم بشكل صحيح
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-amber-600 shrink-0" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard title="تقييمات تجربة بانتظار HR" value={d.probationsPendingHR ?? 0} icon={ShieldCheck}

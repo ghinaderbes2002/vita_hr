@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Clock } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { useWorkSchedules, useDeleteWorkSchedule } from "@/lib/hooks/use-work-schedules";
+import { useWorkSchedules, useDeleteWorkSchedule, useEmployeesMissingSchedule } from "@/lib/hooks/use-work-schedules";
 import { WorkScheduleDialog } from "@/components/features/work-schedules/work-schedule-dialog";
 import { WorkSchedule } from "@/lib/api/work-schedules";
 
@@ -36,6 +36,8 @@ export default function WorkSchedulesPage() {
 
   const { data, isLoading } = useWorkSchedules();
   const deleteSchedule = useDeleteWorkSchedule();
+  const { data: missingData } = useEmployeesMissingSchedule();
+  const missingCount = missingData?.count ?? 0;
 
   // Extract array from API response
   const schedules = Array.isArray(data)
@@ -106,6 +108,15 @@ export default function WorkSchedulesPage() {
           </Button>
         }
       />
+
+      {missingCount > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="text-amber-800">
+            <span className="font-semibold">{missingCount} موظف</span> بدون جدول عمل محدد — سيتأثر حساب حضورهم
+          </span>
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
