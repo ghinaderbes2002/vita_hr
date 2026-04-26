@@ -89,6 +89,7 @@ export interface GeneratePayrollResult {
   year: number;
   month: number;
   generated: number;
+  skipped: number;
   errors: number;
   results: any[];
 }
