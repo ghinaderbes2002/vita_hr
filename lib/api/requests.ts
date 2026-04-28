@@ -96,4 +96,13 @@ export const requestsApi = {
     const response = await apiClient.post(`/requests/${id}/exit-interview`, data);
     return response.data.data;
   },
+
+  uploadHiringPdf: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append("contractPdf", file);
+    const response = await apiClient.post(`/requests/${id}/hiring-pdf`, formData, {
+      headers: { "Content-Type": undefined },
+    });
+    return response.data.data ?? response.data;
+  },
 };

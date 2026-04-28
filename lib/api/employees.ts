@@ -41,4 +41,23 @@ export const employeesApi = {
     const response = await apiClient.get(`/employees/department/${departmentId}`);
     return response.data.data;
   },
+
+  getManagerNotes: async (id: string): Promise<{ notes: string | null; updatedAt: string | null; updatedBy: string | null }> => {
+    const response = await apiClient.get(`/employees/${id}/manager-notes`);
+    return response.data.data ?? response.data;
+  },
+
+  updateManagerNotes: async (id: string, notes: string): Promise<void> => {
+    await apiClient.put(`/employees/${id}/manager-notes`, { notes });
+  },
+
+  getProbationReport: async (days: number): Promise<any[]> => {
+    const response = await apiClient.get("/employees/reports/probation-ending", { params: { days } });
+    return response.data?.data ?? response.data ?? [];
+  },
+
+  getContractReport: async (days: number): Promise<any[]> => {
+    const response = await apiClient.get("/employees/reports/contract-ending", { params: { days } });
+    return response.data?.data ?? response.data ?? [];
+  },
 };

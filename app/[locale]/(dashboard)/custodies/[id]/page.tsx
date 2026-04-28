@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
 import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
 import { useCustody, useDeleteCustody } from "@/lib/hooks/use-custodies";
+import { assetUrl } from "@/lib/utils";
 import { Custody, CustodyStatus } from "@/types";
 
 const STATUS_VARIANTS: Record<CustodyStatus, "default" | "secondary" | "destructive" | "outline"> = {
@@ -179,8 +180,8 @@ export default function CustodyDetailPage() {
                   onClick={() => setLightboxIndex(i)}
                   className="relative rounded-lg border overflow-hidden bg-muted aspect-square hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {att.fileUrl.startsWith("data:image") || att.fileUrl.startsWith("http") ? (
-                    <img src={att.fileUrl} alt={att.fileName} className="w-full h-full object-cover" />
+                  {att.fileUrl.startsWith("data:image") || att.fileUrl.startsWith("http") || att.fileUrl.startsWith("/app/") ? (
+                    <img src={assetUrl(att.fileUrl)} alt={att.fileName} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center p-2">
                       <span className="text-xs text-muted-foreground truncate text-center">{att.fileName}</span>
@@ -215,7 +216,7 @@ export default function CustodyDetailPage() {
               ‹
             </button>
             <img
-              src={attachments[lightboxIndex].fileUrl}
+              src={assetUrl(attachments[lightboxIndex].fileUrl)}
               alt={attachments[lightboxIndex].fileName}
               className="max-w-[80vw] max-h-[80vh] rounded-lg object-contain"
               onClick={(e) => e.stopPropagation()}

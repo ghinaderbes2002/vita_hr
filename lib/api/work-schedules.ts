@@ -46,6 +46,31 @@ export interface UpdateWorkScheduleData {
   description?: string;
 }
 
+export interface EmployeeSchedule {
+  id: string;
+  employeeId: string;
+  scheduleId: string;
+  schedule?: WorkSchedule;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssignScheduleDto {
+  employeeId: string;
+  scheduleId: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+}
+
+export interface UpdateEmployeeScheduleDto {
+  scheduleId?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+}
+
 export interface MissingScheduleEmployee {
   id: string;
   employeeNumber: string;
@@ -89,5 +114,24 @@ export const workSchedulesApi = {
   checkMissing: async (): Promise<MissingSchedulesResult> => {
     const response = await apiClient.get("/employee-schedules/check/missing");
     return response.data?.data || response.data;
+  },
+
+  getByEmployee: async (employeeId: string): Promise<EmployeeSchedule[]> => {
+    const response = await apiClient.get(`/employee-schedules/employee/${employeeId}`);
+    return response.data?.data || response.data || [];
+  },
+
+  assign: async (dto: AssignScheduleDto): Promise<EmployeeSchedule> => {
+    const response = await apiClient.post("/employee-schedules", dto);
+    return response.data?.data || response.data;
+  },
+
+  updateAssignment: async (id: string, dto: UpdateEmployeeScheduleDto): Promise<EmployeeSchedule> => {
+    const response = await apiClient.patch(`/employee-schedules/${id}`, dto);
+    return response.data?.data || response.data;
+  },
+
+  deleteAssignment: async (id: string): Promise<void> => {
+    await apiClient.delete(`/employee-schedules/${id}`);
   },
 };

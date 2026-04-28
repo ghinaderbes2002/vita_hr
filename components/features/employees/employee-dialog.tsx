@@ -49,6 +49,7 @@ type FormData = {
   interviewEvaluation?: string;
   employmentStatus?: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
   workType?: "FULL_TIME" | "PART_TIME" | "REMOTE" | "UNSPECIFIED";
+  contractEndDate?: string;
   jobTitleId?: string; jobGradeId?: string; managerId?: string; basicSalary?: number;
   profilePhoto?: string;
   bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE" | "UNSPECIFIED";
@@ -210,6 +211,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     departmentId: z.string().min(1, t("employees.form.departmentRequired")),
     hireDate: z.string().min(1, t("employees.form.hireDateRequired")),
     contractType: z.enum(["FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE", "CONSULTANT", "SERVICE_PROVIDER", "UNSPECIFIED"]),
+    contractEndDate: z.string().optional(),
     probationPeriod: z.enum(["ONE_MONTH", "TWO_MONTHS", "THREE_MONTHS", "PERMANENT", "UNSPECIFIED"]).optional(),
     interviewEvaluation: z.string().optional(),
     employmentStatus: z.enum(["ACTIVE", "INACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED"]).optional(),
@@ -277,6 +279,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       departmentId: "",
       hireDate: "",
       contractType: "UNSPECIFIED",
+      contractEndDate: "",
       probationPeriod: undefined,
       interviewEvaluation: defaultInterviewEvaluation,
       employmentStatus: "ACTIVE",
@@ -328,6 +331,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         departmentId: employee.departmentId || "",
         hireDate: toDateInput(employee.hireDate),
         contractType: (employee.contractType as any) || "UNSPECIFIED",
+        contractEndDate: toDateInput((employee as any).contractEndDate),
         probationPeriod: (employee as any).probationPeriod || undefined,
         interviewEvaluation: (employee as any).interviewEvaluation || undefined,
         employmentStatus: employee.employmentStatus || "ACTIVE",
@@ -377,6 +381,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         departmentId: "",
         hireDate: "",
         contractType: "UNSPECIFIED",
+        contractEndDate: "",
         employmentStatus: "ACTIVE",
         workType: undefined,
         jobTitleId: "",
@@ -438,6 +443,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           dateOfBirth: data.dateOfBirth,
           departmentId: data.departmentId,
           contractType: data.contractType,
+          contractEndDate: data.contractEndDate || null,
           probationPeriod: data.probationPeriod || undefined,
           interviewEvaluation: data.interviewEvaluation || undefined,
           employmentStatus: data.employmentStatus,
@@ -470,6 +476,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           ...rest,
           hireDate: toISO(rest.hireDate),
           dateOfBirth: toISO(rest.dateOfBirth),
+          contractEndDate: rest.contractEndDate ? toISO(rest.contractEndDate) : undefined,
           phone: rest.phone || undefined,
           mobile: rest.mobile || undefined,
           jobTitleId: rest.jobTitleId || undefined,
@@ -878,6 +885,21 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                             <SelectItem value="SERVICE_PROVIDER">{t("employees.contractTypes.service_provider")}</SelectItem>
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="contractEndDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>تاريخ انتهاء العقد ({t("common.optional")})</FormLabel>
+                        <FormControl><Input type="date" {...field} /></FormControl>
+                        <FormDescription className="text-xs">
+                          في حال الترك فارغاً، سيتم تعيينه تلقائياً لنهاية السنة
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

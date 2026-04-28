@@ -117,3 +117,38 @@ export function useEmployeesByDepartment(departmentId: string) {
     enabled: !!departmentId,
   });
 }
+
+export function useManagerNotes(employeeId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["employee-manager-notes", employeeId],
+    queryFn: () => employeesApi.getManagerNotes(employeeId),
+    enabled: !!employeeId && enabled,
+  });
+}
+
+export function useUpdateManagerNotes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ employeeId, notes }: { employeeId: string; notes: string }) =>
+      employeesApi.updateManagerNotes(employeeId, notes),
+    onSuccess: (_, { employeeId }) => {
+      queryClient.invalidateQueries({ queryKey: ["employee-manager-notes", employeeId] });
+      toast.success("تم حفظ الملاحظات");
+    },
+    onError: () => toast.error("فشل حفظ الملاحظات"),
+  });
+}
+
+export function useProbationReport(days: number) {
+  return useQuery({
+    queryKey: ["hr-report", "probation", days],
+    queryFn: () => employeesApi.getProbationReport(days),
+  });
+}
+
+export function useContractReport(days: number) {
+  return useQuery({
+    queryKey: ["hr-report", "contract", days],
+    queryFn: () => employeesApi.getContractReport(days),
+  });
+}

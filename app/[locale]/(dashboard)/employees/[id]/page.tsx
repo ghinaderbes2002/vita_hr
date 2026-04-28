@@ -8,6 +8,7 @@ import {
   Paperclip, Heart, GraduationCap, MapPin, Users, FileDown,
   BadgeCheck, Cigarette, Award, ExternalLink,
   Fingerprint, Plus, Trash2, Settings, Save, ClipboardList, Pencil, X,
+  Clock, CalendarDays, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,13 +25,17 @@ import {
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TrainingCertificate, EmployeeAllowance } from "@/types";
-import { useEmployee, useUpdateEmployee } from "@/lib/hooks/use-employees";
+import { useEmployee, useUpdateEmployee, useManagerNotes, useUpdateManagerNotes } from "@/lib/hooks/use-employees";
+import { assetUrl } from "@/lib/utils";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useEmployeeFingerprints, useRegisterFingerprint, useDeleteFingerprint } from "@/lib/hooks/use-employee-fingerprints";
 import { useBiometricDevices } from "@/lib/hooks/use-biometric-devices";
 import { useEmployeeAttendanceConfig, useUpsertAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
 import { EmployeeFingerprint } from "@/lib/api/employee-fingerprints";
 import { BiometricDevice } from "@/lib/api/biometric-devices";
 import { useEmployeeWorkflows, useOnboardingTemplates, useCreateOnboardingWorkflow } from "@/lib/hooks/use-onboarding";
+import { useEmployeeSchedules, useWorkSchedules, useAssignSchedule, useUpdateEmployeeSchedule, useDeleteEmployeeSchedule } from "@/lib/hooks/use-work-schedules";
+import { EmployeeSchedule } from "@/lib/api/work-schedules";
 import { Progress } from "@/components/ui/progress";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -60,6 +65,9 @@ export default function EmployeeDetailsPage() {
   const { data: employee, isLoading } = useEmployee(employeeId);
   const emp = employee as any;
   const updateEmployee = useUpdateEmployee();
+  const { hasPermission } = usePermissions();
+  const canReadNotes = hasPermission("employees:manager-notes:read");
+  const canWriteNotes = hasPermission("employees:manager-notes:write");
 
   // Evaluation edit state
   const [evalEditField, setEvalEditField] = useState<"interviewEvaluation" | "exitInterviewEvaluation" | null>(null);
@@ -75,6 +83,24 @@ export default function EmployeeDetailsPage() {
     updateEmployee.mutate(
       { id: employeeId, data: { [evalEditField]: evalEditValue || null } },
       { onSuccess: () => setEvalEditField(null) }
+    );
+  }
+
+  // Manager notes
+  const { data: managerNotesData } = useManagerNotes(employeeId, canReadNotes);
+  const updateManagerNotes = useUpdateManagerNotes();
+  const [notesEditing, setNotesEditing] = useState(false);
+  const [notesValue, setNotesValue] = useState("");
+
+  function openNotesEdit() {
+    setNotesValue((managerNotesData as any)?.notes || "");
+    setNotesEditing(true);
+  }
+
+  function saveNotes() {
+    updateManagerNotes.mutate(
+      { employeeId, notes: notesValue },
+      { onSuccess: () => setNotesEditing(false) }
     );
   }
 
@@ -110,6 +136,77 @@ export default function EmployeeDetailsPage() {
 
   const fpList: EmployeeFingerprint[] = (fingerprints as any) || [];
   const deviceList: BiometricDevice[] = (devicesData as any) || [];
+
+  // Contract end date inline edit
+  const [contractEditOpen, setContractEditOpen] = useState(false);
+  const [contractEditValue, setContractEditValue] = useState("");
+
+  function openContractEdit() {
+    setContractEditValue(emp?.contractEndDate ? new Date(emp.contractEndDate).toISOString().split("T")[0] : "");
+    setContractEditOpen(true);
+  }
+
+  function saveContractEdit() {
+    updateEmployee.mutate(
+      { id: employeeId, data: { contractEndDate: contractEditValue || null } },
+      { onSuccess: () => setContractEditOpen(false) }
+    );
+  }
+
+  // Employee schedules
+  const { data: empSchedules } = useEmployeeSchedules(employeeId);
+  const { data: workSchedulesData } = useWorkSchedules();
+  const assignSchedule = useAssignSchedule();
+  const updateEmpSchedule = useUpdateEmployeeSchedule();
+  const deleteEmpSchedule = useDeleteEmployeeSchedule();
+
+  const scheduleList: EmployeeSchedule[] = Array.isArray(empSchedules) ? empSchedules : [];
+  const allSchedules: any[] = (workSchedulesData as any)?.data || (workSchedulesData as any) || [];
+
+  const [schedDialogOpen, setSchedDialogOpen] = useState(false);
+  const [schedEditTarget, setSchedEditTarget] = useState<EmployeeSchedule | null>(null);
+  const [schedDeleteTarget, setSchedDeleteTarget] = useState<EmployeeSchedule | null>(null);
+  const [schedDeleteOpen, setSchedDeleteOpen] = useState(false);
+  const [schedForm, setSchedForm] = useState({ scheduleId: "", effectiveFrom: "", effectiveTo: "" });
+
+  function openAssignDialog() {
+    setSchedEditTarget(null);
+    setSchedForm({ scheduleId: "", effectiveFrom: "", effectiveTo: "" });
+    setSchedDialogOpen(true);
+  }
+
+  function openEditScheduleDialog(es: EmployeeSchedule) {
+    setSchedEditTarget(es);
+    setSchedForm({ scheduleId: es.scheduleId, effectiveFrom: "", effectiveTo: "" });
+    setSchedDialogOpen(true);
+  }
+
+  const schedEffectiveFromIsToday = (() => {
+    const today = new Date().toISOString().split("T")[0];
+    return today === today; // always today since we set it automatically
+  })();
+
+  function handleSaveSchedule() {
+    if (!schedForm.scheduleId) return;
+    const today = new Date().toISOString().split("T")[0];
+    const dto = { scheduleId: schedForm.scheduleId, effectiveFrom: today, effectiveTo: null };
+    if (schedEditTarget) {
+      updateEmpSchedule.mutate(
+        { id: schedEditTarget.id, dto },
+        { onSuccess: () => setSchedDialogOpen(false) }
+      );
+    } else {
+      assignSchedule.mutate(
+        { employeeId, ...dto },
+        { onSuccess: () => setSchedDialogOpen(false) }
+      );
+    }
+  }
+
+  function handleDeleteSchedule() {
+    if (!schedDeleteTarget) return;
+    deleteEmpSchedule.mutate(schedDeleteTarget.id, { onSuccess: () => setSchedDeleteOpen(false) });
+  }
 
   // Onboarding
   const { data: employeeWorkflows } = useEmployeeWorkflows(employeeId);
@@ -231,7 +328,7 @@ export default function EmployeeDetailsPage() {
           <div className="absolute -top-12 start-6">
             <div className="w-24 h-24 rounded-full border-4 border-background overflow-hidden bg-muted shadow-md">
               {emp.profilePhoto ? (
-                <img src={emp.profilePhoto} alt="profile" className="w-full h-full object-cover" />
+                <img src={assetUrl(emp.profilePhoto)} alt="profile" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-3xl font-bold">
                   {employee.firstNameAr?.[0]}
@@ -352,6 +449,21 @@ export default function EmployeeDetailsPage() {
               value={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("en-GB") : undefined}
             />
             <InfoRow label={t("employees.fields.contractType")} value={CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType} />
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-muted-foreground shrink-0 w-40">تاريخ انتهاء العقد</span>
+              <div className="flex items-center gap-1.5">
+                {emp.contractEndDate ? (
+                  <span className={`text-sm font-medium ${new Date(emp.contractEndDate) < new Date() ? "text-destructive" : ""}`}>
+                    {new Date(emp.contractEndDate).toLocaleDateString("en-GB")}
+                  </span>
+                ) : (
+                  <span className="text-sm text-muted-foreground italic">دائم</span>
+                )}
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openContractEdit}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
             <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `$${Number(emp.basicSalary).toLocaleString("en-US")}` : undefined} />
             {employee.manager && (
               <InfoRow
@@ -459,7 +571,7 @@ export default function EmployeeDetailsPage() {
                   {emp.university1 && <InfoRow label="الجامعة" value={emp.university1} />}
                   {emp.certificateAttachment1 && (
                     <a
-                      href={emp.certificateAttachment1}
+                      href={assetUrl(emp.certificateAttachment1)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-xs text-primary hover:underline"
@@ -478,7 +590,7 @@ export default function EmployeeDetailsPage() {
                   {emp.university2 && <InfoRow label="الجامعة" value={emp.university2} />}
                   {emp.certificateAttachment2 && (
                     <a
-                      href={emp.certificateAttachment2}
+                      href={assetUrl(emp.certificateAttachment2)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-xs text-primary hover:underline"
@@ -510,7 +622,7 @@ export default function EmployeeDetailsPage() {
                     <span className="text-sm font-medium">{cert.name}</span>
                     {cert.attachmentUrl && (
                       <a
-                        href={cert.attachmentUrl}
+                        href={assetUrl(cert.attachmentUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-xs text-primary hover:underline"
@@ -541,7 +653,7 @@ export default function EmployeeDetailsPage() {
                 {attachments.map((att) => (
                   <a
                     key={att.id}
-                    href={att.fileUrl}
+                    href={assetUrl(att.fileUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors group"
@@ -610,6 +722,58 @@ export default function EmployeeDetailsPage() {
             })}
           </CardContent>
         </Card>
+
+        {/* ─── Manager Notes ─────────────────────────────────── */}
+        {canReadNotes && (
+          <Card className="md:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-primary" />
+                ملاحظات المدير
+                {canWriteNotes && !notesEditing && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 ms-auto" onClick={openNotesEdit}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {notesEditing && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 ms-auto text-destructive" onClick={() => setNotesEditing(false)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {notesEditing ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={notesValue}
+                    rows={4}
+                    onChange={(e) => setNotesValue(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                    placeholder="اكتب الملاحظات هنا..."
+                  />
+                  <Button size="sm" className="gap-1.5 w-full" onClick={saveNotes} disabled={updateManagerNotes.isPending}>
+                    <Save className="h-3.5 w-3.5" />
+                    حفظ الملاحظات
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm whitespace-pre-wrap">
+                    {(managerNotesData as any)?.notes
+                      ? (managerNotesData as any).notes
+                      : <span className="text-muted-foreground italic">لا توجد ملاحظات</span>}
+                  </p>
+                  {(managerNotesData as any)?.updatedAt && (
+                    <p className="text-xs text-muted-foreground">
+                      آخر تعديل: {new Date((managerNotesData as any).updatedAt).toLocaleDateString("en-GB")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* ─── System Info ───────────────────────────────────── */}
         <Card>
@@ -742,6 +906,61 @@ export default function EmployeeDetailsPage() {
             )}
           </CardContent>
         </Card>
+
+      {/* ─── Schedule Assignments ──────────────────────────── */}
+      <Card className="md:col-span-3">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="h-4 w-4 text-primary" />
+            الورديات المعينة
+            <Badge variant="secondary" className="mr-auto">{scheduleList.length}</Badge>
+            <Button size="sm" variant="outline" className="gap-1.5 ms-auto h-7 text-xs" onClick={openAssignDialog}>
+              <Plus className="h-3.5 w-3.5" />
+              تعيين وردية
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {scheduleList.length === 0 ? (
+            <div className="flex items-center gap-2 justify-center py-6 text-sm text-muted-foreground">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              لا توجد وردية معينة لهذا الموظف
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {scheduleList.map((es) => (
+                <div key={es.id} className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Clock className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{es.schedule?.nameAr || es.scheduleId}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {new Date(es.effectiveFrom).toLocaleDateString("en-GB")}
+                        {es.effectiveTo ? ` ← ${new Date(es.effectiveTo).toLocaleDateString("en-GB")}` : " (دائم)"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant={es.isActive ? "default" : "secondary"} className={es.isActive ? "bg-green-600" : ""}>
+                      {es.isActive ? "نشط" : "منتهي"}
+                    </Badge>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditScheduleDialog(es)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => { setSchedDeleteTarget(es); setSchedDeleteOpen(true); }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ─── Onboarding Workflows ──────────────────────────── */}
       <Card className="md:col-span-3">
@@ -891,6 +1110,72 @@ export default function EmployeeDetailsPage() {
         title="حذف البصمة"
         description="هل أنت متأكد من حذف هذه البصمة؟"
         onConfirm={handleDeleteFingerprint}
+        variant="destructive"
+      />
+
+      {/* ─── Contract End Date Dialog ──────────────────────── */}
+      <Dialog open={contractEditOpen} onOpenChange={setContractEditOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>تعديل تاريخ انتهاء العقد</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label>تاريخ الانتهاء (اتركه فارغاً للعقد الدائم)</Label>
+              <Input
+                type="date"
+                value={contractEditValue}
+                onChange={(e) => setContractEditValue(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setContractEditOpen(false)}>إلغاء</Button>
+            <Button onClick={saveContractEdit} disabled={updateEmployee.isPending}>حفظ</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Assign / Edit Schedule Dialog ─────────────────── */}
+      <Dialog open={schedDialogOpen} onOpenChange={setSchedDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{schedEditTarget ? "تعديل الوردية" : "تعيين وردية للموظف"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>الوردية</Label>
+              <Select value={schedForm.scheduleId} onValueChange={(v) => setSchedForm({ ...schedForm, scheduleId: v })}>
+                <SelectTrigger><SelectValue placeholder="اختر الوردية" /></SelectTrigger>
+                <SelectContent>
+                  {allSchedules.filter((s: any) => s.isActive).map((s: any) => (
+                    <SelectItem key={s.id} value={s.id}>{s.nameAr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              الجدول سيُطبَّق ابتداءً من الغد، لأن اليوم الحالي يُحسَب بالجدول القديم
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSchedDialogOpen(false)}>إلغاء</Button>
+            <Button
+              onClick={handleSaveSchedule}
+              disabled={!schedForm.scheduleId || assignSchedule.isPending || updateEmpSchedule.isPending}
+            >
+              {schedEditTarget ? "حفظ التعديل" : "تعيين"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Delete Schedule Confirm ────────────────────────── */}
+      <ConfirmDialog
+        open={schedDeleteOpen}
+        onOpenChange={setSchedDeleteOpen}
+        title="حذف الوردية"
+        description={`هل أنت متأكد من حذف وردية "${schedDeleteTarget?.schedule?.nameAr || ""}"؟`}
+        onConfirm={handleDeleteSchedule}
         variant="destructive"
       />
 

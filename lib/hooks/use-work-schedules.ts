@@ -5,6 +5,8 @@ import {
   workSchedulesApi,
   CreateWorkScheduleData,
   UpdateWorkScheduleData,
+  AssignScheduleDto,
+  UpdateEmployeeScheduleDto,
 } from "@/lib/api/work-schedules";
 
 export function useEmployeesMissingSchedule() {
@@ -78,5 +80,51 @@ export function useDeleteWorkSchedule() {
     onError: (error: any) => {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.deleteError"));
     },
+  });
+}
+
+export function useEmployeeSchedules(employeeId: string) {
+  return useQuery({
+    queryKey: ["employee-schedules", "employee", employeeId],
+    queryFn: () => workSchedulesApi.getByEmployee(employeeId),
+    enabled: !!employeeId,
+  });
+}
+
+export function useAssignSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: AssignScheduleDto) => workSchedulesApi.assign(dto),
+    onSuccess: (_, { employeeId }) => {
+      queryClient.invalidateQueries({ queryKey: ["employee-schedules", "employee", employeeId] });
+      queryClient.invalidateQueries({ queryKey: ["employee-schedules", "missing"] });
+      toast.success("تم ربط الوردية بالموظف");
+    },
+    onError: () => toast.error("فشل ربط الوردية"),
+  });
+}
+
+export function useUpdateEmployeeSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateEmployeeScheduleDto }) =>
+      workSchedulesApi.updateAssignment(id, dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employee-schedules"] });
+      toast.success("تم تحديث الوردية");
+    },
+    onError: () => toast.error("فشل تحديث الوردية"),
+  });
+}
+
+export function useDeleteEmployeeSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => workSchedulesApi.deleteAssignment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employee-schedules"] });
+      toast.success("تم حذف الوردية");
+    },
+    onError: () => toast.error("فشل حذف الوردية"),
   });
 }

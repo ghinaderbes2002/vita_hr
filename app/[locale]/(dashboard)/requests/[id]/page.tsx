@@ -12,13 +12,17 @@ import { PageHeader } from "@/components/shared/page-header";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { useRequest, useRequestApprovals, useRequestSteps, useApproveRequest, useRejectRequest, useSubmitExitInterview } from "@/lib/hooks/use-requests";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ApprovalStep, ApprovalStatus } from "@/types";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { assetUrl } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileText, Upload, Download } from "lucide-react";
+import { useUploadHiringPdf } from "@/lib/hooks/use-requests";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { apiClient } from "@/lib/api/client";
 
 
 // Human-readable labels for detail keys
@@ -141,6 +145,29 @@ export default function RequestDetailPage() {
 
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const { hasPermission } = usePermissions();
+  const uploadHiringPdf = useUploadHiringPdf();
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { return; }
+    uploadHiringPdf.mutate({ id, file });
+  };
+
+  const handleDownloadPdf = async () => {
+    const SERVER_ORIGIN = (() => {
+      try { return new URL(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").origin; } catch { return "http://localhost:8000"; }
+    })();
+    const pdfUrl = (request as any)?.hiringContractPdfUrl;
+    const absoluteUrl = pdfUrl?.startsWith("http") ? pdfUrl : `${SERVER_ORIGIN}/${(pdfUrl || "").replace(/^\//, "")}`;
+    const res = await apiClient.get(absoluteUrl, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
   const { data: request, isLoading, error: requestError } = useRequest(id);
   const { data: stepsData, isLoading: stepsLoading } = useRequestSteps(id);
   const { data: approvals, isLoading: approvalsLoading } = useRequestApprovals(id);
@@ -275,7 +302,7 @@ export default function RequestDetailPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground text-sm">المرفق</span>
                   <a
-                    href={request.attachmentUrl}
+                    href={assetUrl(request.attachmentUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
@@ -321,6 +348,61 @@ export default function RequestDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Hiring Contract PDF */}
+      {request.type === "HIRING_REQUEST" && (
+        <Card className={(request as any).hiringContractPdfUrl ? "border-green-200" : "border-blue-200"}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-600" />
+              عقد التوظيف
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(request as any).hiringContractPdfUrl ? (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">تم رفع عقد التوظيف</p>
+                    {(request as any).hiringCompletedAt && (
+                      <p className="text-xs text-green-600 mt-0.5">
+                        {new Date((request as any).hiringCompletedAt).toLocaleDateString("en-GB")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5 border-green-300" onClick={handleDownloadPdf}>
+                  <Download className="h-3.5 w-3.5" />
+                  تحميل العقد
+                </Button>
+              </div>
+            ) : request.status === "APPROVED" && hasPermission("requests:hiring:complete") ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  تمت الموافقة على طلب التوظيف. يمكنك رفع عقد التوظيف بصيغة PDF.
+                </p>
+                <input ref={pdfInputRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfUpload} />
+                <Button
+                  variant="outline"
+                  className="gap-1.5"
+                  disabled={uploadHiringPdf.isPending}
+                  onClick={() => pdfInputRef.current?.click()}
+                >
+                  {uploadHiringPdf.isPending
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Upload className="h-4 w-4" />}
+                  {uploadHiringPdf.isPending ? "جاري الرفع..." : "رفع عقد التوظيف (PDF)"}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {request.status !== "APPROVED" ? "سيظهر رفع العقد بعد الموافقة على الطلب" : "لا يوجد عقد مرفوع بعد"}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Contextual Notes for REWARD / TRANSFER */}
       {request.type === "REWARD" && request.status === "APPROVED" && (

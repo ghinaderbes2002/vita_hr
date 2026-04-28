@@ -177,6 +177,12 @@ export function useUploadAttachment() {
       qc.invalidateQueries({ queryKey: ["mail", "message", messageId] });
       toast.success("تم رفع المرفق");
     },
-    onError: () => toast.error("فشل رفع المرفق"),
+    onError: (error: any) => {
+      if (error.response?.data?.error?.code === "EMPTY_FILE") {
+        toast.error("الملف فارغ أو لم يصل — يرجى اختيار الملف مرة ثانية");
+      } else {
+        toast.error("فشل رفع المرفق");
+      }
+    },
   });
 }

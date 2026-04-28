@@ -222,3 +222,20 @@ export function useSubmitExitInterview() {
     },
   });
 }
+
+export function useUploadHiringPdf() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      requestsApi.uploadHiringPdf(id, file),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["request", id] });
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      toast.success("تم رفع عقد التوظيف بنجاح");
+    },
+    onError: (error: any) => {
+      const msg = error.response?.data?.error?.message || error.response?.data?.message;
+      toast.error(msg || "فشل رفع العقد");
+    },
+  });
+}

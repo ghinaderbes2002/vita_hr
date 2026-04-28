@@ -192,6 +192,8 @@ const navigation: NavItem[] = [
           { title: "تفصيل الخصومات", href: "/reports/deduction-breakdown", icon: FileBarChart, permission: "attendance.reports.read" },
           { title: "حضور القسم", href: "/reports/department-attendance", icon: FileBarChart, permission: "attendance.reports.read" },
           { title: "بطاقة الموظف", href: "/reports/employee-card", icon: FileBarChart, permission: "attendance.reports.read" },
+          { title: "انتهاء فترة التجربة", href: "/reports/probation-ending", icon: FileBarChart, permission: "employees:probation-report:read" },
+          { title: "انتهاء العقود", href: "/reports/contract-ending", icon: FileBarChart, permission: "employees:contract-report:read" },
         ],
       },
       {

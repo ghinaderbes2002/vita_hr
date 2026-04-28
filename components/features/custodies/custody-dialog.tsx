@@ -23,6 +23,7 @@ import heic2any from "heic2any";
 import { useCreateCustody, useUpdateCustody } from "@/lib/hooks/use-custodies";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { Custody } from "@/types";
+import { assetUrl } from "@/lib/utils";
 
 const CATEGORIES = ["ELECTRONICS", "FURNITURE", "VEHICLE", "TOOLS", "KEYS", "UNIFORM", "OTHER"] as const;
 
@@ -312,8 +313,8 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
                 <div className="grid grid-cols-3 gap-2">
                   {attachments.map((att, i) => (
                     <div key={i} className="relative group rounded-lg border overflow-hidden bg-muted aspect-square">
-                      {att.fileUrl.startsWith("data:image") || att.fileUrl.startsWith("http") ? (
-                        <img src={att.fileUrl} alt={att.fileName} className="w-full h-full object-cover" />
+                      {att.fileUrl.startsWith("data:image") || att.fileUrl.startsWith("http") || att.fileUrl.startsWith("/app/") ? (
+                        <img src={assetUrl(att.fileUrl)} alt={att.fileName} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
                           <ImageIcon className="h-6 w-6 text-muted-foreground" />

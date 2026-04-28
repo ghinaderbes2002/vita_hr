@@ -1,23 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Paperclip, Download, Upload, Loader2 } from "lucide-react";
+import { Paperclip, Eye, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadAttachment } from "@/lib/hooks/use-mail";
 import type { MailAttachment } from "@/lib/api/mail";
+import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-
-function getToken(): string {
-  if (typeof document === "undefined") return "";
-  const cookie = document.cookie.split("; ").find((c) => c.startsWith("wso-token="));
-  if (cookie) return cookie.split("=")[1];
-  try {
-    const store = JSON.parse(localStorage.getItem("auth-storage") || "{}");
-    return store?.state?.accessToken || "";
-  } catch { return ""; }
-}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -25,20 +14,14 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-async function downloadFile(attachmentId: string, fileName: string) {
-  const url = `${API_BASE}/mail/attachments/${attachmentId}/file`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+async function openFile(attachmentId: string) {
+  const res = await apiClient.get(`/mail/attachments/${attachmentId}/file`, {
+    responseType: "blob",
+    headers: { "Cache-Control": "no-cache" },
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const blob = await res.blob();
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  const url = URL.createObjectURL(res.data);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 interface ListProps {
@@ -50,12 +33,12 @@ export function AttachmentList({ attachments }: ListProps) {
 
   if (attachments.length === 0) return null;
 
-  const handleDownload = async (a: MailAttachment) => {
+  const handleOpen = async (a: MailAttachment) => {
     setDownloading(a.id);
     try {
-      await downloadFile(a.id, a.fileName);
+      await openFile(a.id);
     } catch {
-      toast.error("فشل تنزيل الملف");
+      toast.error("فشل فتح الملف");
     } finally {
       setDownloading(null);
     }
@@ -79,12 +62,12 @@ export function AttachmentList({ attachments }: ListProps) {
             variant="ghost"
             className="h-7 gap-1 text-xs shrink-0"
             disabled={downloading === a.id}
-            onClick={() => handleDownload(a)}
+            onClick={() => handleOpen(a)}
           >
             {downloading === a.id
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <Download className="h-3.5 w-3.5" />}
-            تنزيل
+              : <Eye className="h-3.5 w-3.5" />}
+            فتح
           </Button>
         </div>
       ))}

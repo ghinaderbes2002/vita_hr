@@ -36,3 +36,21 @@ export function getApiErrorMessage(error: any, fallback = "حدث خطأ"): stri
     || error?.response?.data?.message
     || fallback;
 }
+
+const SERVER_ORIGIN = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").origin;
+  } catch {
+    return "http://localhost:8000";
+  }
+})();
+
+/**
+ * Resolves a backend asset path (e.g. "/app/uploads/file.png") to a full URL.
+ * Absolute URLs and data/blob URLs are returned as-is.
+ */
+export function assetUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  if (url.startsWith("http") || url.startsWith("blob:") || url.startsWith("data:")) return url;
+  return `${SERVER_ORIGIN}/${url.replace(/^\//, "")}`;
+}
