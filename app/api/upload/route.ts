@@ -1,33 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
+
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace(/\/$/, "");
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+    const auth = request.headers.get("authorization") || "";
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    const res = await fetch(`${BACKEND_URL}/documents/upload`, {
+      method: "POST",
+      headers: { ...(auth ? { Authorization: auth } : {}) },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return NextResponse.json({ error: err || "Upload failed" }, { status: res.status });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Sanitize filename: keep extension, replace unsafe chars
-    const ext = file.name.split(".").pop() ?? "bin";
-    const safeName = `${randomUUID()}.${ext}`;
-
-    const uploadsDir = join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
-    await writeFile(join(uploadsDir, safeName), buffer);
-
-    const host = request.headers.get("host") || request.nextUrl.host;
-    const proto = request.headers.get("x-forwarded-proto") || request.nextUrl.protocol.replace(":", "") || "http";
-    const fileUrl = `${proto}://${host}/api/uploads/${safeName}`;
-
-    return NextResponse.json({ fileUrl, fileName: file.name });
+    const data = await res.json();
+    const payload = data?.data || data;
+    return NextResponse.json({ fileUrl: payload.fileUrl, fileName: payload.fileName });
   } catch {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }

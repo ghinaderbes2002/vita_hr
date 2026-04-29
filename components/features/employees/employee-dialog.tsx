@@ -33,6 +33,10 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateEmployee, useUpdateEmployee, useEmployees } from "@/lib/hooks/use-employees";
+import { employeesApi } from "@/lib/api/employees";
+import { documentsApi } from "@/lib/api/documents";
+import { leaveBalancesApi } from "@/lib/api/leave-balances";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useJobGrades } from "@/lib/hooks/use-job-grades";
@@ -112,10 +116,13 @@ function PhotoPicker({ value, onChange, chooseLabel, removeLabel }: {
   );
 }
 
-function FilePicker({ value, onChange, labels }: {
+function FilePicker({ value, onChange, labels, uploadFn, onPendingFile, pendingFileName }: {
   value: string;
   onChange: (url: string) => void;
   labels: { change: string; choose: string; noFile: string; uploadError: string };
+  uploadFn?: (file: File) => Promise<string>;
+  onPendingFile?: (file: File | null) => void;
+  pendingFileName?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -124,22 +131,22 @@ function FilePicker({ value, onChange, labels }: {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) throw new Error("Upload failed");
-      const { fileUrl } = await res.json();
-      onChange(fileUrl);
-    } catch {
-      toast.error(labels.uploadError);
-    } finally {
-      setUploading(false);
+    if (uploadFn) {
+      setUploading(true);
+      try {
+        const fileUrl = await uploadFn(file);
+        onChange(fileUrl);
+      } catch {
+        toast.error(labels.uploadError);
+      } finally {
+        setUploading(false);
+      }
+    } else if (onPendingFile) {
+      onPendingFile(file);
     }
   };
 
-  const fileName = value ? value.split("/").pop() : null;
+  const displayName = value ? value.split("/").pop() : pendingFileName || null;
 
   return (
     <div className="flex items-center gap-2">
@@ -152,17 +159,18 @@ function FilePicker({ value, onChange, labels }: {
         onClick={() => inputRef.current?.click()}
       >
         {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-        {value ? labels.change : labels.choose}
+        {displayName ? labels.change : labels.choose}
       </Button>
-      {fileName && (
+      {displayName && (
         <>
-          <span className="text-sm text-muted-foreground truncate max-w-40" title={fileName}>{fileName}</span>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onChange("")}>
+          <span className="text-sm text-muted-foreground truncate max-w-40" title={displayName}>{displayName}</span>
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+            onClick={() => { onChange(""); onPendingFile?.(null); }}>
             <X className="h-3.5 w-3.5 text-destructive" />
           </Button>
         </>
       )}
-      {!value && !uploading && (
+      {!displayName && !uploading && (
         <span className="text-xs text-muted-foreground">{labels.noFile}</span>
       )}
       <input ref={inputRef} type="file" className="hidden" onChange={handleFile} />
@@ -180,6 +188,15 @@ interface EmployeeDialogProps {
 export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewEvaluation }: EmployeeDialogProps) {
   const t = useTranslations();
   const isEdit = !!employee;
+  const queryClient = useQueryClient();
+
+  const makeUploadFn = (docType: string, titleAr: string) =>
+    employee?.id
+      ? async (file: File): Promise<string> => {
+          const result = await documentsApi.upload({ file, employeeId: employee.id, type: docType, titleAr });
+          return result.fileUrl;
+        }
+      : undefined;
 
   const filePickerLabels = {
     change: t("employees.form.changeFile"),
@@ -244,6 +261,9 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attUploading, setAttUploading] = useState(false);
   const attInputRef = useRef<HTMLInputElement>(null);
+  const [pendingCert1, setPendingCert1] = useState<File | null>(null);
+  const [pendingCert2, setPendingCert2] = useState<File | null>(null);
+  const [pendingAttFiles, setPendingAttFiles] = useState<File[]>([]);
   const [trainingCertificates, setTrainingCertificates] = useState<TrainingCertificate[]>([]);
   const [allowances, setAllowances] = useState<Allowance[]>([]);
 
@@ -504,13 +524,44 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
           ...(allowances.length > 0 && { allowances }),
         };
-        await createEmployee.mutateAsync(createData);
+        const created = await createEmployee.mutateAsync(createData);
+        const newId = (created as any)?.data?.id || (created as any)?.id;
+        if (newId) {
+          leaveBalancesApi.initializeEmployee(newId, new Date().getFullYear()).catch(() => {});
+        }
+        if (newId && (pendingCert1 || pendingCert2 || pendingAttFiles.length > 0)) {
+          const fileUpdates: Record<string, any> = {};
+          if (pendingCert1) {
+            const r = await documentsApi.upload({ file: pendingCert1, employeeId: newId, type: "CERTIFICATE", titleAr: "شهادة 1" });
+            fileUpdates.certificateAttachment1 = r.fileUrl;
+          }
+          if (pendingCert2) {
+            const r = await documentsApi.upload({ file: pendingCert2, employeeId: newId, type: "CERTIFICATE", titleAr: "شهادة 2" });
+            fileUpdates.certificateAttachment2 = r.fileUrl;
+          }
+          if (pendingAttFiles.length > 0) {
+            const uploaded = await Promise.all(
+              pendingAttFiles.map((file) =>
+                documentsApi.upload({ file, employeeId: newId, type: "OTHER", titleAr: file.name })
+              )
+            );
+            fileUpdates.attachments = uploaded.map((r) => ({ fileUrl: r.fileUrl, fileName: r.fileName }));
+          }
+          if (Object.keys(fileUpdates).length > 0) {
+            await employeesApi.update(newId, fileUpdates);
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            queryClient.invalidateQueries({ queryKey: ["employee", newId] });
+          }
+        }
       }
       onOpenChange(false);
       form.reset();
       setAttachments([]);
       setTrainingCertificates([]);
       setAllowances([]);
+      setPendingCert1(null);
+      setPendingCert2(null);
+      setPendingAttFiles([]);
     } catch (error: any) {
       const errData = error?.response?.data;
       const code = errData?.error?.code || errData?.code;
@@ -1162,7 +1213,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       <FormItem>
                         <FormLabel>{t("employees.form.attachment")}</FormLabel>
                         <FormControl>
-                          <FilePicker value={field.value || ""} onChange={field.onChange} labels={filePickerLabels} />
+                          <FilePicker value={field.value || ""} onChange={field.onChange} labels={filePickerLabels}
+                            uploadFn={makeUploadFn("CERTIFICATE", "شهادة 1")}
+                            onPendingFile={!isEdit ? (f) => { setPendingCert1(f); } : undefined}
+                            pendingFileName={!isEdit ? (pendingCert1?.name) : undefined}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1215,7 +1270,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       <FormItem>
                         <FormLabel>{t("employees.form.attachment")}</FormLabel>
                         <FormControl>
-                          <FilePicker value={field.value || ""} onChange={field.onChange} labels={filePickerLabels} />
+                          <FilePicker value={field.value || ""} onChange={field.onChange} labels={filePickerLabels}
+                            uploadFn={makeUploadFn("CERTIFICATE", "شهادة 2")}
+                            onPendingFile={!isEdit ? (f) => { setPendingCert2(f); } : undefined}
+                            pendingFileName={!isEdit ? (pendingCert2?.name) : undefined}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1267,6 +1326,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                               value={cert.attachmentUrl || ""}
                               onChange={(url) => setTrainingCertificates((a) => a.map((x, j) => j === i ? { ...x, attachmentUrl: url } : x))}
                               labels={filePickerLabels}
+                              uploadFn={makeUploadFn("CERTIFICATE", cert.name || "شهادة تدريبية")}
                             />
                           </div>
                         </div>
@@ -1457,27 +1517,32 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       const files = Array.from(e.target.files || []);
                       e.target.value = "";
                       if (!files.length) return;
-                      setAttUploading(true);
-                      try {
-                        await Promise.all(
-                          files.map(async (file) => {
-                            const fd = new FormData();
-                            fd.append("file", file);
-                            const res = await fetch("/api/upload", { method: "POST", body: fd });
-                            if (!res.ok) throw new Error("Upload failed");
-                            const { fileUrl, fileName } = await res.json();
-                            setAttachments((a) => [...a, { fileUrl, fileName }]);
-                          })
-                        );
-                      } catch {
-                        toast.error(t("employees.form.uploadError"));
-                      } finally {
-                        setAttUploading(false);
+                      if (employee?.id) {
+                        setAttUploading(true);
+                        try {
+                          await Promise.all(
+                            files.map(async (file) => {
+                              const result = await documentsApi.upload({
+                                file,
+                                employeeId: employee.id,
+                                type: "OTHER",
+                                titleAr: file.name,
+                              });
+                              setAttachments((a) => [...a, { fileUrl: result.fileUrl, fileName: result.fileName }]);
+                            })
+                          );
+                        } catch {
+                          toast.error(t("employees.form.uploadError"));
+                        } finally {
+                          setAttUploading(false);
+                        }
+                      } else {
+                        setPendingAttFiles((prev) => [...prev, ...files]);
                       }
                     }}
                   />
 
-                  {attachments.length === 0 ? (
+                  {attachments.length === 0 && pendingAttFiles.length === 0 ? (
                     <div
                       className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 cursor-pointer hover:bg-muted/30 transition-colors"
                       onClick={() => !attUploading && attInputRef.current?.click()}
@@ -1493,13 +1558,18 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                         <div key={i} className="flex items-center gap-2 rounded-lg border p-2">
                           <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
                           <p className="flex-1 text-sm font-medium truncate">{att.fileName}</p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="shrink-0 h-7 w-7"
-                            onClick={() => setAttachments((a) => a.filter((_, j) => j !== i))}
-                          >
+                          <Button type="button" variant="ghost" size="icon" className="shrink-0 h-7 w-7"
+                            onClick={() => setAttachments((a) => a.filter((_, j) => j !== i))}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                      {pendingAttFiles.map((f, i) => (
+                        <div key={`pending-${i}`} className="flex items-center gap-2 rounded-lg border border-dashed p-2">
+                          <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <p className="flex-1 text-sm font-medium truncate">{f.name}</p>
+                          <Button type="button" variant="ghost" size="icon" className="shrink-0 h-7 w-7"
+                            onClick={() => setPendingAttFiles((a) => a.filter((_, j) => j !== i))}>
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         </div>

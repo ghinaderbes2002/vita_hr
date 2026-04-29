@@ -47,6 +47,8 @@ import {
 } from "@/lib/hooks/use-leave-requests";
 import { LeaveRequest } from "@/lib/api/leave-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function MyLeavesPage() {
   const t = useTranslations();
@@ -63,6 +65,9 @@ export default function MyLeavesPage() {
   const [hourlyLeaveDialogOpen, setHourlyLeaveDialogOpen] = useState(false);
 
   const { data, isLoading } = useMyLeaveRequests();
+  const { data: myBalances } = useMyLeaveBalances(new Date().getFullYear());
+  const sickBalance = (Array.isArray(myBalances) ? myBalances : [])
+    .find((b: any) => b.leaveType?.code === "SICK");
   const deleteRequest = useDeleteLeaveRequest();
   const submitRequest = useSubmitLeaveRequest();
   const cancelRequest = useCancelLeaveRequest();
@@ -264,6 +269,31 @@ export default function MyLeavesPage() {
           </div>
         }
       />
+
+      {sickBalance && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">الإجازة المرضية</span>
+                <span className="text-muted-foreground">
+                  {sickBalance.usedDays} / {sickBalance.totalDays} يوم مستخدم
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-orange-400 transition-all"
+                  style={{ width: `${Math.min(100, (sickBalance.usedDays / sickBalance.totalDays) * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                المتبقي: {sickBalance.remainingDays} يوم
+                {" · "}رصيد مدى الحياة (ليس سنوياً)
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {(loadingSubstitute || fetchingSubstitute || pendingSubstituteList.length > 0) && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">

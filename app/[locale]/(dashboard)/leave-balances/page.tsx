@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Settings2, Trash2, Sparkles, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,10 +26,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLeaveBalances, useDeleteLeaveBalance } from "@/lib/hooks/use-leave-balances";
+import { useLeaveBalances, useDeleteLeaveBalance, useInitializeEmployeeBalances } from "@/lib/hooks/use-leave-balances";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { BalanceDialog } from "@/components/features/leave-balances/balance-dialog";
 import { AdjustDialog } from "@/components/features/leave-balances/adjust-dialog";
@@ -41,43 +49,56 @@ export default function LeaveBalancesPage() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [search, setSearch] = useState("");
+  const [expandedEmployees, setExpandedEmployees] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedBalance, setSelectedBalance] = useState<LeaveBalance | null>(null);
+  const [initDialogOpen, setInitDialogOpen] = useState(false);
+  const [initEmployeeId, setInitEmployeeId] = useState("");
+  const [initYear, setInitYear] = useState(currentYear);
 
   const { data, isLoading } = useLeaveBalances({ year });
   const deleteBalance = useDeleteLeaveBalance();
+  const initializeBalances = useInitializeEmployeeBalances();
 
   const { data: employeesData } = useEmployees({ limit: 500 });
   const allEmployees = (employeesData as any)?.data?.items || (employeesData as any)?.items || [];
   const empMap = new Map(allEmployees.map((e: any) => [e.id, e]));
 
-  // Handle different API response formats
-  const balances = Array.isArray(data)
+  const balances: LeaveBalance[] = Array.isArray(data)
     ? data
     : (data as any)?.data?.items || (data as any)?.data || [];
 
-  const filteredBalances = balances.filter((balance: LeaveBalance) => {
-    const emp = balance.employee || empMap.get(balance.employeeId) as any;
-    const employeeName = emp ? `${emp.firstNameAr || ""} ${emp.lastNameAr || ""}` : "";
-    const leaveTypeName = balance.leaveType?.nameAr || "";
-    return (
-      employeeName.toLowerCase().includes(search.toLowerCase()) ||
-      leaveTypeName.toLowerCase().includes(search.toLowerCase())
-    );
+  // Group by employee
+  const grouped = balances.reduce<{ empId: string; employee: any; items: LeaveBalance[] }[]>((acc, b) => {
+    const existing = acc.find((g) => g.empId === b.employeeId);
+    const emp = b.employee || empMap.get(b.employeeId);
+    if (existing) {
+      existing.items.push(b);
+    } else {
+      acc.push({ empId: b.employeeId, employee: emp, items: [b] });
+    }
+    return acc;
+  }, []);
+
+  const filteredGroups = grouped.filter((g) => {
+    if (!search) return true;
+    const name = g.employee ? `${g.employee.firstNameAr || ""} ${g.employee.lastNameAr || ""}` : "";
+    return name.includes(search) || g.items.some((b) => b.leaveType?.nameAr?.includes(search));
   });
 
-  const handleAdjust = (balance: LeaveBalance) => {
-    setSelectedBalance(balance);
-    setAdjustDialogOpen(true);
+  const toggleEmployee = (empId: string) => {
+    setExpandedEmployees((prev) => {
+      const next = new Set(prev);
+      if (next.has(empId)) next.delete(empId);
+      else next.add(empId);
+      return next;
+    });
   };
 
-  const handleDelete = (balance: LeaveBalance) => {
-    setSelectedBalance(balance);
-    setDeleteDialogOpen(true);
-  };
-
+  const handleAdjust = (b: LeaveBalance) => { setSelectedBalance(b); setAdjustDialogOpen(true); };
+  const handleDelete = (b: LeaveBalance) => { setSelectedBalance(b); setDeleteDialogOpen(true); };
   const confirmDelete = async () => {
     if (selectedBalance) {
       await deleteBalance.mutateAsync(selectedBalance.id);
@@ -94,10 +115,16 @@ export default function LeaveBalancesPage() {
         title={t("leaveBalances.title")}
         description={t("leaveBalances.description")}
         actions={
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("leaveBalances.addBalance")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setInitEmployeeId(""); setInitYear(currentYear); setInitDialogOpen(true); }}>
+              <Sparkles className="h-4 w-4 ml-2" />
+              تهيئة أرصدة موظف
+            </Button>
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("leaveBalances.addBalance")}
+            </Button>
+          </div>
         }
       />
 
@@ -105,7 +132,7 @@ export default function LeaveBalancesPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={t("leaveBalances.searchPlaceholder")}
+            placeholder="بحث باسم الموظف أو نوع الإجازة..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pr-10"
@@ -117,9 +144,7 @@ export default function LeaveBalancesPage() {
           </SelectTrigger>
           <SelectContent>
             {years.map((y) => (
-              <SelectItem key={y} value={y.toString()}>
-                {y}
-              </SelectItem>
+              <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -129,9 +154,7 @@ export default function LeaveBalancesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("leaveBalances.fields.employee")}</TableHead>
-              <TableHead>{t("leaveBalances.fields.leaveType")}</TableHead>
-              <TableHead>{t("leaveBalances.fields.year")}</TableHead>
+              <TableHead>الموظف / نوع الإجازة</TableHead>
               <TableHead>{t("leaveBalances.fields.totalDays")}</TableHead>
               <TableHead>{t("leaveBalances.fields.usedDays")}</TableHead>
               <TableHead>{t("leaveBalances.fields.pendingDays")}</TableHead>
@@ -144,92 +167,102 @@ export default function LeaveBalancesPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                  {Array.from({ length: 7 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                  ))}
                 </TableRow>
               ))
-            ) : filteredBalances.length === 0 ? (
+            ) : filteredGroups.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredBalances.map((balance: LeaveBalance) => (
-                <TableRow key={balance.id}>
-                  <TableCell className="font-medium">
-                    {(() => {
-                      const emp = balance.employee || empMap.get(balance.employeeId) as any;
-                      return emp ? `${emp.firstNameAr} ${emp.lastNameAr}` : balance.employeeId;
-                    })()}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {balance.leaveType?.nameAr}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{balance.year}</TableCell>
-                  <TableCell>{balance.totalDays}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{balance.usedDays}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{balance.pendingDays}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={balance.remainingDays > 0 ? "default" : "destructive"}>
-                      {balance.remainingDays}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {(balance.usedHours != null && balance.usedHours > 0) || (balance.pendingHours != null && balance.pendingHours > 0) ? (
-                      <div className="text-xs space-y-0.5">
-                        {(balance.usedHours ?? 0) > 0 && (
-                          <div className="text-muted-foreground">
-                            مستخدمة: <span className="font-medium text-foreground">{balance.usedHours}س</span>
-                          </div>
-                        )}
-                        {(balance.pendingHours ?? 0) > 0 && (
-                          <div className="text-amber-600">
-                            معلقة: <span className="font-medium">{balance.pendingHours}س</span>
-                          </div>
+              filteredGroups.map((group) => {
+                const isExpanded = expandedEmployees.has(group.empId);
+                const empName = group.employee
+                  ? `${group.employee.firstNameAr} ${group.employee.lastNameAr}`
+                  : group.empId;
+                const deptName = group.employee?.department?.nameAr;
+
+                return [
+                  // صف الموظف
+                  <TableRow
+                    key={`emp-${group.empId}`}
+                    className="cursor-pointer bg-muted/40 hover:bg-muted/60 font-medium"
+                    onClick={() => toggleEmployee(group.empId)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {isExpanded
+                          ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                          : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        <span>{empName}</span>
+                        {deptName && (
+                          <span className="text-xs text-muted-foreground font-normal">— {deptName}</span>
                         )}
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleAdjust(balance)}>
-                          <Settings2 className="h-4 w-4 ml-2" />
-                          {t("leaveBalances.adjustBalance")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(balance)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+                    <TableCell colSpan={5}>
+                      <Badge variant="outline" className="text-xs">{group.items.length} نوع إجازة</Badge>
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>,
+
+                  // صفوف الأرصدة عند الفتح
+                  ...(isExpanded ? group.items.map((b) => (
+                    <TableRow key={b.id} className="hover:bg-muted/20">
+                      <TableCell className="pr-10">
+                        <Badge variant="outline" style={{ borderColor: b.leaveType?.nameAr ? undefined : undefined }}>
+                          {b.leaveType?.nameAr ?? "—"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{b.totalDays}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{b.usedDays}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{b.pendingDays}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={b.remainingDays > 0 ? "default" : "destructive"}>
+                          {b.remainingDays}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(b.usedHours ?? 0) > 0 || (b.pendingHours ?? 0) > 0 ? (
+                          <div className="text-xs space-y-0.5">
+                            {(b.usedHours ?? 0) > 0 && <div className="text-muted-foreground">مستخدمة: <span className="font-medium text-foreground">{b.usedHours}س</span></div>}
+                            {(b.pendingHours ?? 0) > 0 && <div className="text-amber-600">معلقة: <span className="font-medium">{b.pendingHours}س</span></div>}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleAdjust(b)}>
+                              <Settings2 className="h-4 w-4 ml-2" />
+                              {t("leaveBalances.adjustBalance")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(b)} className="text-destructive">
+                              <Trash2 className="h-4 w-4 ml-2" />
+                              {t("common.delete")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )) : []),
+                ];
+              })
             )}
           </TableBody>
         </Table>
@@ -251,6 +284,58 @@ export default function LeaveBalancesPage() {
         onConfirm={confirmDelete}
         variant="destructive"
       />
+
+      <Dialog open={initDialogOpen} onOpenChange={setInitDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>تهيئة أرصدة إجازات موظف</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>الموظف</Label>
+              <Select value={initEmployeeId} onValueChange={setInitEmployeeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر موظفاً" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allEmployees.map((emp: any) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.firstNameAr} {emp.lastNameAr}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>السنة</Label>
+              <Select value={initYear.toString()} onValueChange={(v) => setInitYear(parseInt(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              سيتم إنشاء أرصدة لجميع أنواع الإجازات النشطة تلقائياً. إذا كان الرصيد موجوداً مسبقاً لن يُعاد إنشاؤه.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInitDialogOpen(false)}>إلغاء</Button>
+            <Button
+              disabled={!initEmployeeId || initializeBalances.isPending}
+              onClick={async () => {
+                await initializeBalances.mutateAsync({ employeeId: initEmployeeId, year: initYear });
+                setInitDialogOpen(false);
+              }}
+            >
+              {initializeBalances.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              تهيئة الأرصدة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

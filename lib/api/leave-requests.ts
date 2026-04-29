@@ -45,6 +45,13 @@ export interface LeaveRequest {
   endTime?: string | null;
   durationHours?: number | null;
   equivalentDays?: number | null;
+  // خصم الراتب عند الاعتماد
+  deductionInfo?: {
+    fromDay: number;
+    toDay: number;
+    days: number;
+    deductionPercent: number;
+  }[] | null;
 }
 
 export interface CreateHourlyLeaveData {

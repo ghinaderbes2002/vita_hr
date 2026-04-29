@@ -1,6 +1,12 @@
 import { apiClient } from "./client";
 import { LeaveType, ApiResponse, PaginationParams } from "@/types";
 
+export interface SalaryDeductionRule {
+  fromDay: number;
+  toDay: number;
+  deductionPercent: number;
+}
+
 export interface CreateLeaveTypeData {
   code: string;
   nameAr: string;
@@ -10,6 +16,10 @@ export interface CreateLeaveTypeData {
   requiresApproval: boolean;
   allowHalfDay: boolean;
   color?: string;
+  minServiceMonths?: number | null;
+  maxLifetimeUsage?: number | null;
+  salaryDeductionRules?: SalaryDeductionRule[] | null;
+  maxHoursPerMonth?: number | null;
 }
 
 export interface UpdateLeaveTypeData {
@@ -21,6 +31,10 @@ export interface UpdateLeaveTypeData {
   allowHalfDay?: boolean;
   color?: string;
   isActive?: boolean;
+  minServiceMonths?: number | null;
+  maxLifetimeUsage?: number | null;
+  salaryDeductionRules?: SalaryDeductionRule[] | null;
+  maxHoursPerMonth?: number | null;
 }
 
 export const leaveTypesApi = {

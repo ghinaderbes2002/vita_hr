@@ -177,7 +177,19 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
                 <SelectContent>
                   {leaveTypes.map((type: any) => (
                     <SelectItem key={type.id} value={type.id}>
-                      {type.nameAr}
+                      <span className="flex items-center gap-2 w-full">
+                        <span>{type.nameAr}</span>
+                        {type.minServiceMonths && (
+                          <span className="text-xs text-muted-foreground">
+                            [{type.minServiceMonths} شهر خدمة]
+                          </span>
+                        )}
+                        {type.maxLifetimeUsage === 1 && (
+                          <span className="text-xs text-muted-foreground">
+                            [مرة واحدة مدى الحياة]
+                          </span>
+                        )}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

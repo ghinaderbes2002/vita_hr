@@ -1,12 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Paperclip, Eye, Upload, Loader2 } from "lucide-react";
+import { useRef } from "react";
+import { Paperclip, Upload, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadAttachment } from "@/lib/hooks/use-mail";
 import type { MailAttachment } from "@/lib/api/mail";
-import { apiClient } from "@/lib/api/client";
-import { toast } from "sonner";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -14,14 +13,10 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-async function openFile(attachmentId: string) {
-  const res = await apiClient.get(`/mail/attachments/${attachmentId}/file`, {
-    responseType: "blob",
-    headers: { "Cache-Control": "no-cache" },
-  });
-  const url = URL.createObjectURL(res.data);
-  window.open(url, "_blank");
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+function fileUrl(attachmentId: string): string {
+  const token = useAuthStore.getState().accessToken || "";
+  const base = `/api/mail-file/${attachmentId}`;
+  return token ? `${base}?t=${encodeURIComponent(token)}` : base;
 }
 
 interface ListProps {
@@ -29,20 +24,7 @@ interface ListProps {
 }
 
 export function AttachmentList({ attachments }: ListProps) {
-  const [downloading, setDownloading] = useState<string | null>(null);
-
   if (attachments.length === 0) return null;
-
-  const handleOpen = async (a: MailAttachment) => {
-    setDownloading(a.id);
-    try {
-      await openFile(a.id);
-    } catch {
-      toast.error("فشل فتح الملف");
-    } finally {
-      setDownloading(null);
-    }
-  };
 
   return (
     <div className="border rounded-md divide-y mt-4">
@@ -57,18 +39,15 @@ export function AttachmentList({ attachments }: ListProps) {
             <span className="text-sm truncate">{a.fileName}</span>
             <span className="text-xs text-muted-foreground shrink-0">{formatSize(a.fileSize)}</span>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 text-xs shrink-0"
-            disabled={downloading === a.id}
-            onClick={() => handleOpen(a)}
+          <a
+            href={fileUrl(a.id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors shrink-0"
           >
-            {downloading === a.id
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <Eye className="h-3.5 w-3.5" />}
+            <ExternalLink className="h-3.5 w-3.5" />
             فتح
-          </Button>
+          </a>
         </div>
       ))}
     </div>

@@ -60,7 +60,22 @@ export function useCreateLeaveRequest() {
       const msg = error.response?.data?.error?.message
         || error.response?.data?.message
         || t("messages.saveError");
-      toast.error(msg);
+      if (msg?.includes("استنفدت الحد الأقصى للإجازة المرضية")) {
+        toast.error(msg, {
+          description: "هل تريد تقديم إجازة بدون راتب بدلاً منها؟",
+          action: {
+            label: "طلب إجازة بدون راتب",
+            onClick: () => {
+              if (typeof window !== "undefined") {
+                window.location.href = "/leaves/new-request?type=UNPAID";
+              }
+            },
+          },
+          duration: 8000,
+        });
+      } else {
+        toast.error(msg);
+      }
     },
   });
 }

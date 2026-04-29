@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowRight, Edit, Send, XCircle } from "lucide-react";
+import { ArrowRight, Edit, Send, XCircle, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -257,6 +257,28 @@ export default function ViewLeaveRequestPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm whitespace-pre-wrap">{request.cancelReason}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {request.deductionInfo && request.deductionInfo.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-800">
+              <AlertTriangle className="h-5 w-5" />
+              تنبيه: يوجد خصم على الراتب لهذه الإجازة
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {request.deductionInfo.map((seg, i) => (
+              <div key={i} className="flex items-center justify-between rounded-md bg-amber-100 px-3 py-2 text-sm">
+                <span className="text-amber-900">
+                  الأيام {seg.fromDay} – {seg.toDay} ({seg.days} يوم)
+                </span>
+                <span className="font-semibold text-amber-800">خصم {seg.deductionPercent}% من الراتب الأساسي</span>
+              </div>
+            ))}
+            <p className="text-xs text-amber-700 pt-1">يُرجى مراجعة قسم المالية للتفاصيل.</p>
           </CardContent>
         </Card>
       )}

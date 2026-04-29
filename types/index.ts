@@ -300,6 +300,10 @@ export interface LeaveType {
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  minServiceMonths?: number | null;
+  maxLifetimeUsage?: number | null;
+  salaryDeductionRules?: { fromDay: number; toDay: number; deductionPercent: number }[] | null;
+  maxHoursPerMonth?: number | null;
 }
 
 export interface Holiday {

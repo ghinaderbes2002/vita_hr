@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useActiveLeaveTypes } from "@/lib/hooks/use-leave-types";
 import { useCreateHourlyLeave } from "@/lib/hooks/use-leave-requests";
+import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
 import { format } from "date-fns";
 
 interface HourlyLeaveFormProps {
@@ -36,6 +37,15 @@ export function HourlyLeaveForm({ onSuccess, onCancel }: HourlyLeaveFormProps) {
 
   const { data: leaveTypesData } = useActiveLeaveTypes();
   const leaveTypes: any[] = (leaveTypesData as any)?.data ?? leaveTypesData ?? [];
+
+  const { data: myBalances } = useMyLeaveBalances(new Date().getFullYear());
+  const balanceForType = leaveTypeId
+    ? (Array.isArray(myBalances) ? myBalances : []).find((b: any) => b.leaveTypeId === leaveTypeId)
+    : null;
+  const selectedType = leaveTypes.find((t: any) => t.id === leaveTypeId);
+  const maxHoursPerMonth: number | null = selectedType?.maxHoursPerMonth ?? null;
+  const usedHours: number = balanceForType?.usedHours ?? 0;
+  const pendingHours: number = balanceForType?.pendingHours ?? 0;
 
   const mutation = useCreateHourlyLeave();
 
@@ -87,6 +97,26 @@ export function HourlyLeaveForm({ onSuccess, onCancel }: HourlyLeaveFormProps) {
         </Select>
         {errors.leaveTypeId && <p className="text-xs text-red-600">{errors.leaveTypeId}</p>}
       </div>
+
+      {maxHoursPerMonth !== null && leaveTypeId && (
+        <div className="rounded-md bg-muted/50 px-3 py-2 text-sm space-y-1">
+          <div className="flex justify-between text-muted-foreground">
+            <span>الإجازات الساعية هذا الشهر</span>
+            <span>{usedHours + pendingHours} / {maxHoursPerMonth} ساعة</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-blue-400 transition-all"
+              style={{ width: `${Math.min(100, ((usedHours + pendingHours) / maxHoursPerMonth) * 100)}%` }}
+            />
+          </div>
+          {maxHoursPerMonth - usedHours - pendingHours > 0 ? (
+            <p className="text-xs text-muted-foreground">المتاح: {(maxHoursPerMonth - usedHours - pendingHours).toFixed(1)} ساعة</p>
+          ) : (
+            <p className="text-xs text-red-600">تجاوزت الحد الشهري</p>
+          )}
+        </div>
+      )}
 
       {/* التاريخ */}
       <div className="space-y-1">

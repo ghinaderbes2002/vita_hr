@@ -42,7 +42,7 @@ export const employeesApi = {
     return response.data.data;
   },
 
-  getManagerNotes: async (id: string): Promise<{ notes: string | null; updatedAt: string | null; updatedBy: string | null }> => {
+  getManagerNotes: async (id: string): Promise<{ managerNotes: string | null; managerNotesUpdatedAt: string | null; managerNotesUpdatedBy: string | null }> => {
     const response = await apiClient.get(`/employees/${id}/manager-notes`);
     return response.data.data ?? response.data;
   },

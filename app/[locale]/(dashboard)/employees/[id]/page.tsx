@@ -93,7 +93,7 @@ export default function EmployeeDetailsPage() {
   const [notesValue, setNotesValue] = useState("");
 
   function openNotesEdit() {
-    setNotesValue((managerNotesData as any)?.notes || "");
+    setNotesValue((managerNotesData as any)?.managerNotes || "");
     setNotesEditing(true);
   }
 
@@ -760,13 +760,13 @@ export default function EmployeeDetailsPage() {
               ) : (
                 <div className="space-y-2">
                   <p className="text-sm whitespace-pre-wrap">
-                    {(managerNotesData as any)?.notes
-                      ? (managerNotesData as any).notes
+                    {(managerNotesData as any)?.managerNotes
+                      ? (managerNotesData as any).managerNotes
                       : <span className="text-muted-foreground italic">لا توجد ملاحظات</span>}
                   </p>
-                  {(managerNotesData as any)?.updatedAt && (
+                  {(managerNotesData as any)?.managerNotesUpdatedAt && (
                     <p className="text-xs text-muted-foreground">
-                      آخر تعديل: {new Date((managerNotesData as any).updatedAt).toLocaleDateString("en-GB")}
+                      آخر تعديل: {new Date((managerNotesData as any).managerNotesUpdatedAt).toLocaleDateString("en-GB")}
                     </p>
                   )}
                 </div>
@@ -1151,10 +1151,6 @@ export default function EmployeeDetailsPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-              الجدول سيُطبَّق ابتداءً من الغد، لأن اليوم الحالي يُحسَب بالجدول القديم
             </div>
           </div>
           <DialogFooter>

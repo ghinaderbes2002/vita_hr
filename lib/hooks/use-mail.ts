@@ -141,7 +141,10 @@ export function useMoveMail() {
       mailApi.move(messageIds, folder),
     onSuccess: (_, { messageIds, folder }) => {
       removeFromCache(messageIds);
-      qc.invalidateQueries({ queryKey: ["mail"] });
+      // Invalidate only the target folder — do NOT refetch sent/inbox
+      // because the backend SENT view is message-ownership-based and won't
+      // reflect the move, causing the item to reappear after refetch.
+      qc.invalidateQueries({ queryKey: ["mail", folder.toLowerCase()] });
       if (folder === "ARCHIVE") toast.success("تم أرشفة الرسالة");
       else if (folder === "TRASH") toast.success("تم نقل الرسالة إلى المحذوفات");
     },
@@ -161,7 +164,9 @@ export function useDeleteMail() {
         );
         return { ...old, items: filtered, total: Math.max(0, (old.total ?? 0) - (old.items.length - filtered.length)) };
       });
-      qc.invalidateQueries({ queryKey: ["mail"] });
+      // Only refresh trash — same reason as useMoveMail: sent view is
+      // message-ownership-based, refetching it would bring the item back.
+      qc.invalidateQueries({ queryKey: ["mail", "trash"] });
       toast.success("تم حذف الرسالة");
     },
     onError: () => toast.error("فشل حذف الرسالة"),
