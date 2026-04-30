@@ -130,14 +130,14 @@ export function Header() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <p className={`text-sm leading-snug ${!notif.isRead ? "font-medium" : "text-muted-foreground"}`}>
-                          {notif.title}
+                          {notif.titleAr || notif.titleEn || notif.title}
                         </p>
                         {!notif.isRead && (
                           <span className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${notif.type === "LEAVE_REQUEST_PENDING_APPROVAL" ? "bg-amber-500" : "bg-blue-500"}`} />
                         )}
                       </div>
-                      {notif.message && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                      {(notif.messageAr || notif.message) && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.messageAr || notif.message}</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}

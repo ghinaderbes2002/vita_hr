@@ -85,6 +85,7 @@ export interface CreateLeaveRequestData {
   halfDayPeriod?: "MORNING" | "AFTERNOON";
   substituteId?: string;
   attachmentUrl?: string;
+  deceasedRelation?: "FIRST_DEGREE" | "SECOND_DEGREE";
 }
 
 export interface UpdateLeaveRequestData {

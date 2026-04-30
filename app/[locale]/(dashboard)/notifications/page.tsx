@@ -129,8 +129,8 @@ export default function NotificationsPage() {
               >
                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${!n.isRead ? "font-semibold" : "text-muted-foreground"}`}>{n.title}</p>
-                  {n.message && <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>}
+                  <p className={`text-sm ${!n.isRead ? "font-semibold" : "text-muted-foreground"}`}>{n.titleAr || n.titleEn || n.title}</p>
+                  {(n.messageAr || n.message) && <p className="text-xs text-muted-foreground mt-0.5">{n.messageAr || n.message}</p>}
                   <p className="text-xs text-amber-600 mt-1">
                     {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: ar })}
                   </p>

@@ -11,9 +11,13 @@ export interface Notification {
   id: string;
   userId: string;
   type: NotificationType;
-  title: string;
-  message: string;
+  titleAr: string;
+  titleEn: string;
+  messageAr: string;
+  messageEn: string;
   isRead: boolean;
+  data?: any;
+  readAt?: string | null;
   actionUrl?: string;
   createdAt: string;
 }
@@ -22,7 +26,9 @@ export const notificationsApi = {
   getAll: async (params?: { isRead?: boolean }): Promise<Notification[]> => {
     const response = await apiClient.get("/notifications", { params });
     const result = response.data?.data ?? response.data;
-    return Array.isArray(result) ? result : [];
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result?.items)) return result.items;
+    return [];
   },
 
   getUnreadCount: async (): Promise<number> => {

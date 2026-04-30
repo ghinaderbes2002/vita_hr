@@ -30,6 +30,7 @@ import { HourlyLeaveForm } from "@/components/features/leave-requests/hourly-lea
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { StatusBadge } from "@/components/features/leave-requests/status-badge";
+import { HolidaysCalendarView } from "@/components/features/holidays/holidays-calendar-view";
 import {
   useMyLeaveRequests,
   useDeleteLeaveRequest,
@@ -324,6 +325,7 @@ export default function MyRequestsPage() {
           <TabsList>
             <TabsTrigger value="leaves">{t("requests.tabs.leaveRequests")}</TabsTrigger>
             <TabsTrigger value="admin">{t("requests.tabs.adminRequests")}</TabsTrigger>
+            <TabsTrigger value="holidays">العطل الرسمية</TabsTrigger>
           </TabsList>
         </div>
 
@@ -343,6 +345,11 @@ export default function MyRequestsPage() {
             <TabsContent value="approved" className="rounded-md border mt-2">{renderLeaveTable(approvedLeaves)}</TabsContent>
             <TabsContent value="rejected" className="rounded-md border mt-2">{renderLeaveTable(rejectedLeaves)}</TabsContent>
           </Tabs>
+        </TabsContent>
+
+        {/* ===== Holidays Tab ===== */}
+        <TabsContent value="holidays">
+          <HolidaysCalendarView />
         </TabsContent>
 
         {/* ===== Admin Requests Tab ===== */}

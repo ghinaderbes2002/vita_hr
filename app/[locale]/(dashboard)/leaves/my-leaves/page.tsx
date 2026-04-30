@@ -49,6 +49,7 @@ import { LeaveRequest } from "@/lib/api/leave-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
 import { Card, CardContent } from "@/components/ui/card";
+import { HolidaysCalendarView } from "@/components/features/holidays/holidays-calendar-view";
 
 export default function MyLeavesPage() {
   const t = useTranslations();
@@ -341,6 +342,7 @@ export default function MyLeavesPage() {
           <TabsTrigger value="pending">معلق ({pendingRequests.length})</TabsTrigger>
           <TabsTrigger value="approved">معتمد ({approvedRequests.length})</TabsTrigger>
           <TabsTrigger value="rejected">مرفوض ({rejectedRequests.length})</TabsTrigger>
+          <TabsTrigger value="holidays">العطل الرسمية</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="rounded-md border">
@@ -361,6 +363,10 @@ export default function MyLeavesPage() {
 
         <TabsContent value="rejected" className="rounded-md border">
           {renderTable(rejectedRequests)}
+        </TabsContent>
+
+        <TabsContent value="holidays">
+          <HolidaysCalendarView />
         </TabsContent>
       </Tabs>
 

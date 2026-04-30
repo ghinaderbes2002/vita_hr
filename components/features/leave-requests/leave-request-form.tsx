@@ -91,6 +91,7 @@ type FormData = {
   halfDayPeriod?: "MORNING" | "AFTERNOON";
   substituteId?: string;
   attachmentUrl?: string;
+  deceasedRelation?: "FIRST_DEGREE" | "SECOND_DEGREE";
 };
 
 interface LeaveRequestFormProps {
@@ -113,6 +114,7 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
     halfDayPeriod: z.enum(["MORNING", "AFTERNOON"]).optional(),
     substituteId: z.string().optional(),
     attachmentUrl: z.string().optional(),
+    deceasedRelation: z.enum(["FIRST_DEGREE", "SECOND_DEGREE"]).optional(),
   });
 
   // Helper function to extract array
@@ -139,10 +141,14 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
       halfDayPeriod: initialData?.halfDayPeriod || undefined,
       substituteId: initialData?.substituteId || "",
       attachmentUrl: (initialData as any)?.attachmentUrl || "",
+      deceasedRelation: (initialData as any)?.deceasedRelation || undefined,
     },
   });
 
   const isHalfDay = form.watch("isHalfDay");
+  const selectedLeaveTypeId = form.watch("leaveTypeId");
+  const selectedLeaveType = leaveTypes.find((t: any) => t.id === selectedLeaveTypeId);
+  const isBereavement = selectedLeaveType?.code === "BEREAVEMENT";
 
   const handleSubmit = async (data: FormData) => {
     const submitData: CreateLeaveRequestData = {
@@ -154,6 +160,7 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
       halfDayPeriod: data.isHalfDay ? data.halfDayPeriod : undefined,
       substituteId: data.substituteId || undefined,
       ...(data.attachmentUrl && { attachmentUrl: data.attachmentUrl }),
+      ...(isBereavement && data.deceasedRelation && { deceasedRelation: data.deceasedRelation }),
     };
 
     await onSubmit(submitData);
@@ -198,6 +205,30 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
             </FormItem>
           )}
         />
+
+        {isBereavement && (
+          <FormField
+            control={form.control}
+            name="deceasedRelation"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>درجة القرابة <span className="text-destructive">*</span></FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر درجة القرابة" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="FIRST_DEGREE">قرابة أولى (أب، أم، زوج/زوجة، أبناء)</SelectItem>
+                    <SelectItem value="SECOND_DEGREE">قرابة ثانية (أخ، أخت، جد، جدة)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <FormField
