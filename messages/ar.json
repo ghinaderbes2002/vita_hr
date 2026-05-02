@@ -1791,47 +1791,52 @@
     },
     "status": {
       "DRAFT": "مسودة",
+      "PENDING_SELF_EVALUATION": "بانتظار التقييم الذاتي",
       "PENDING_SENIOR_MANAGER": "بانتظار المدير الأعلى",
       "PENDING_HR": "بانتظار HR",
       "PENDING_MEETING_SCHEDULE": "جدولة الاجتماع",
       "PENDING_CEO": "بانتظار المدير التنفيذي",
-      "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "بانتظار إقرار الموظف",
       "COMPLETED": "مكتمل",
       "REJECTED_BY_SENIOR": "مرفوض من المدير",
       "REJECTED_BY_HR": "مرفوض من HR",
       "REJECTED_BY_CEO": "مرفوض من المدير التنفيذي"
     },
     "scores": {
-      "UNACCEPTABLE": "غير مقبول",
-      "ACCEPTABLE": "مقبول",
-      "GOOD": "جيد",
-      "VERY_GOOD": "جيد جداً",
-      "EXCELLENT": "ممتاز"
+      "1": "غير مقبول",
+      "2": "مقبول",
+      "3": "جيد",
+      "4": "جيد جداً",
+      "5": "ممتاز"
     },
     "recommendations": {
-      "CONFIRM": "تثبيت الموظف",
-      "TRANSFER": "نقل لمنصب آخر",
-      "TERMINATE": "إنهاء التعاقد"
+      "CONFIRM_POSITION": "تثبيت في المنصب",
+      "EXTEND_PROBATION": "تمديد فترة التجربة",
+      "TRANSFER_POSITION": "نقل إلى منصب آخر",
+      "SALARY_RAISE": "رفع الراتب",
+      "TERMINATE": "إنهاء الخدمة"
     },
     "historyActions": {
       "CREATE": "إنشاء التقييم",
-      "SUBMIT": "إرسال للمدير الأعلى",
+      "SELF_EVALUATE": "تقييم ذاتي من الموظف",
       "SENIOR_APPROVE": "موافقة المدير الأعلى",
       "SENIOR_REJECT": "رفض المدير الأعلى",
       "HR_DOCUMENT": "توثيق HR",
       "HR_REJECT": "رفض HR",
       "CEO_DECIDE": "قرار المدير التنفيذي",
-      "EMPLOYEE_ACKNOWLEDGE": "إقرار الموظف",
       "PROPOSE_MEETING": "اقتراح موعد الاجتماع",
-      "CONFIRM_MEETING": "تأكيد موعد الاجتماع"
+      "MEETING_SCHEDULED": "جدولة موعد الاجتماع",
+      "CONFIRM_MEETING": "تأكيد موعد الاجتماع",
+      "MEETING_CONFIRMED": "تم تأكيد موعد الاجتماع",
+      "EVALUATION_CLOSED": "إغلاق التقييم النهائي",
+      "COMPLETE": "إغلاق التقييم"
     },
     "workflow": {
       "DRAFT": "مسودة",
+      "PENDING_SELF_EVALUATION": "تقييم ذاتي",
       "PENDING_SENIOR_MANAGER": "المدير الأعلى",
       "PENDING_HR": "HR",
-      "PENDING_MEETING_SCHEDULE": "جدولة الاجتماع",
       "PENDING_CEO": "المدير التنفيذي",
-      "PENDING_EMPLOYEE_ACKNOWLEDGMENT": "إقرار الموظف",
+      "PENDING_MEETING_SCHEDULE": "جدولة الاجتماع",
       "COMPLETED": "مكتمل"
     },
     "table": {
@@ -1843,8 +1848,10 @@
       "open": "فتح"
     },
     "recommendationShort": {
-      "CONFIRM": "تثبيت",
-      "TRANSFER": "نقل",
+      "CONFIRM_POSITION": "تثبيت",
+      "EXTEND_PROBATION": "تمديد",
+      "TRANSFER_POSITION": "نقل",
+      "SALARY_RAISE": "رفع راتب",
       "TERMINATE": "إنهاء"
     },
     "empty": {
@@ -1865,57 +1872,52 @@
       "createDraft": "إنشاء (مسودة)",
       "createTitle": "إنشاء تقييم فترة تجربة"
     },
-    "detail": {
-      "hireDate": "تاريخ التعيين",
-      "probationEnd": "نهاية فترة التجربة",
-      "evaluationDate": "تاريخ التقييم",
-      "workAreas": "مجالات العمل",
-      "criteriaResults": "نتائج المعايير",
-      "finalResult": "النتيجة النهائية",
-      "overallRating": "التقييم العام",
-      "finalRecommendation": "التوصية",
-      "employeeAcknowledged": "وافق الموظف على التقييم",
-      "meetingSchedule": "موعد الاجتماع",
-      "proposedDate": "التاريخ المقترح",
-      "confirmedDate": "التاريخ المؤكد",
-      "meetingNotes": "ملاحظات الاجتماع",
-      "availableActions": "الإجراءات المتاحة",
-      "completed": "التقييم مكتمل — لا توجد إجراءات إضافية",
-      "historyLog": "سجل الإجراءات",
-      "defaultTitle": "تقييم فترة التجربة"
-    },
     "actions": {
-      "submit": "إرسال للمدير الأعلى",
+      "selfEvaluate": "إجراء التقييم الذاتي",
       "approve": "موافقة وإرسال لـ HR",
       "reject": "رفض",
       "document": "توثيق وإرسال للمدير التنفيذي",
       "hrReject": "رفض",
       "ceoDecide": "اتخاذ القرار النهائي",
-      "acknowledge": "إقرار الموظف",
       "proposeMeeting": "اقتراح موعد الاجتماع",
       "confirmMeeting": "تأكيد موعد الاجتماع",
-      "resubmit": "إعادة الإرسال بعد التعديل",
       "confirm": "تأكيد"
     },
     "actionDialog": {
-      "submit": "إرسال التقييم",
+      "selfEvaluate": "التقييم الذاتي",
       "approve": "موافقة المدير الأعلى",
       "reject": "رفض التقييم",
       "document": "توثيق HR",
       "hrReject": "رفض من HR",
       "ceo": "قرار المدير التنفيذي",
-      "acknowledge": "إقرار الموظف",
       "proposeMeeting": "اقتراح موعد الاجتماع",
-      "confirmMeeting": "تأكيد موعد الاجتماع",
-      "proposedDate": "التاريخ المقترح",
-      "confirmedDateOptional": "التاريخ النهائي (اختياري)",
+      "proposedDate": "تاريخ ووقت الاجتماع المقترح",
       "overallRating": "التقييم العام",
       "recommendation": "التوصية",
-      "notes": "ملاحظات",
       "notesOptional": "ملاحظات (اختياري)",
-      "notesRequired": "ملاحظات *",
-      "rejectionReason": "سبب الرفض...",
+      "notesRequired": "سبب الرفض *",
+      "rejectionReason": "اكتب سبب الرفض...",
       "notesPlaceholder": "ملاحظات..."
+    },
+    "detail": {
+      "hireDate": "تاريخ التعيين",
+      "probationEnd": "نهاية فترة التجربة",
+      "workAreas": "مجالات العمل",
+      "criteriaResults": "نتائج المعايير",
+      "notes": "الملاحظات",
+      "selfEvaluationNotes": "ملاحظات التقييم الذاتي",
+      "evaluatorNotes": "ملاحظات المُقيِّم",
+      "finalResult": "النتيجة النهائية",
+      "overallRating": "التقييم العام",
+      "finalRecommendation": "التوصية",
+      "meetingSchedule": "موعد الاجتماع",
+      "proposedDate": "التاريخ المقترح",
+      "confirmedDate": "التاريخ المؤكد",
+      "availableActions": "الإجراءات المتاحة",
+      "completed": "التقييم مكتمل — لا توجد إجراءات إضافية",
+      "draftNote": "هذه مسودة — سيتم إرسالها للموظف تلقائياً عند إنشائها",
+      "historyLog": "سجل الإجراءات",
+      "defaultTitle": "تقييم فترة التجربة"
     }
   },
   "interviewPositions": {

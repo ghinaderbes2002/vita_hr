@@ -156,16 +156,16 @@ export default function AttendanceRecordsPage() {
   };
 
 
-  const formatDuration = (minutes?: number) => {
-    if (minutes == null) return "-";
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}:${String(mins).padStart(2, "0")}`;
+  const formatMinutes = (minutes?: number | null) => {
+    if (!minutes || minutes <= 0) return "—";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return h > 0 ? `${h}س ${m}د` : `${m}د`;
   };
 
-  const formatLateMinutes = (minutes?: number) => {
-    if (minutes == null || minutes === 0) return "-";
-    return `${minutes} دقيقة`;
+  const formatMins = (minutes?: number | null) => {
+    if (!minutes || minutes <= 0) return "—";
+    return `${minutes} د`;
   };
 
   return (
@@ -233,15 +233,14 @@ export default function AttendanceRecordsPage() {
             <TableRow>
               <TableHead>{t("attendance.fields.employee")}</TableHead>
               <TableHead>{t("attendance.fields.date")}</TableHead>
-              <TableHead>{t("attendance.fields.checkInTime")}</TableHead>
-              <TableHead>{t("attendance.fields.checkOutTime")}</TableHead>
-              <TableHead>{t("attendance.fields.workHours")}</TableHead>
-              <TableHead>{t("attendance.fields.lateMinutes")}</TableHead>
-              <TableHead>تعويض التأخر</TableHead>
-              <TableHead>أطول عمل متواصل</TableHead>
-              <TableHead>البصمات</TableHead>
-              <TableHead>نصف اليوم</TableHead>
+              <TableHead>دخول</TableHead>
+              <TableHead>خروج</TableHead>
+              <TableHead>ساعات العمل</TableHead>
               <TableHead>{t("attendance.fields.status")}</TableHead>
+              <TableHead>تأخر</TableHead>
+              <TableHead>مغادرة مبكرة</TableHead>
+              <TableHead>المصدر</TableHead>
+              <TableHead>البصمة</TableHead>
               <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -258,117 +257,59 @@ export default function AttendanceRecordsPage() {
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
             ) : filteredRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="h-24 text-center">
+                <TableCell colSpan={11} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
             ) : (
               filteredRecords.map((record: AttendanceRecord) => (
                 <TableRow key={record.id}>
+                  {/* الموظف */}
                   <TableCell>
-                    <div>
-                      <div className="font-medium">
-                        {record.employee
-                          ? `${record.employee.firstNameAr} ${record.employee.lastNameAr}`
-                          : "-"}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {record.employee?.employeeNumber || "-"}
-                      </div>
+                    <div className="font-medium leading-tight">
+                      {record.employee
+                        ? `${record.employee.firstNameAr} ${record.employee.lastNameAr}`
+                        : "—"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {record.employee?.employeeNumber || "—"}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">
+
+                  {/* التاريخ */}
+                  <TableCell className="font-medium text-sm">
                     {formatDate(record.date)}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      {formatTime(record.clockInTime)}
-                    </div>
+
+                  {/* دخول */}
+                  <TableCell className="text-sm">
+                    {record.clockInTime
+                      ? formatTime(record.clockInTime)
+                      : <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      {formatTime(record.clockOutTime)}
-                    </div>
+
+                  {/* خروج */}
+                  <TableCell className="text-sm">
+                    {record.clockOutTime
+                      ? formatTime(record.clockOutTime)
+                      : <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell>
-                    {formatDuration(record.workedMinutes)}
+
+                  {/* ساعات العمل الفعلية */}
+                  <TableCell className="text-sm font-medium">
+                    {formatMinutes(record.netWorkedMinutes ?? record.workedMinutes)}
                   </TableCell>
-                  <TableCell>
-                    <div>
-                      <span className="text-destructive font-medium">
-                        {formatLateMinutes(record.lateMinutes)}
-                      </span>
-                      {(record.lateCompensatedMinutes ?? 0) > 0 && record.lateMinutes != null && (
-                        <div className="text-xs text-muted-foreground">
-                          صافي: {Math.max(0, record.lateMinutes - (record.lateCompensatedMinutes ?? 0))} د
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {(record.lateCompensatedMinutes ?? 0) > 0 ? (
-                      <span className="text-green-600 font-medium">
-                        +{record.lateCompensatedMinutes} د
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center text-muted-foreground">
-                    {(() => {
-                      const v = (record as any).longestContinuousWorkMinutes;
-                      if (!v || v <= 0) return "—";
-                      return `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
-                    })()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {(() => {
-                      const ps = (record as any).punchSequenceStatus;
-                      if (!ps) return <span className="text-muted-foreground">—</span>;
-                      const cfg: Record<string, { icon: string; cls: string }> = {
-                        VALID:     { icon: "✓", cls: "text-green-600" },
-                        PARTIAL:   { icon: "⚠", cls: "text-amber-500" },
-                        INVALID:   { icon: "✗", cls: "text-red-600" },
-                        RECOMPUTED:{ icon: "↺", cls: "text-blue-500" },
-                      };
-                      const c = cfg[ps];
-                      return c ? (
-                        <span className={`font-bold text-base ${c.cls}`} title={ps}>{c.icon}</span>
-                      ) : <span className="text-muted-foreground">{ps}</span>;
-                    })()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {(record as any).halfDayPeriod ? (
-                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                        {(record as any).halfDayPeriod === "AM" ? "صباحي" : "مسائي"}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
+
+                  {/* الحالة */}
                   <TableCell>
                     <div className="flex items-center gap-1 flex-wrap">
                       <AttendanceStatusBadge status={record.status} />
-                      {record.isManualEntry && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-amber-50 text-amber-600 border-amber-200">
-                          يدوي
-                        </Badge>
-                      )}
-                      {record.interpretedAs === "DUPLICATE_IGNORED" && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-gray-50 text-gray-500 border-gray-200">
-                          مكرر
-                        </Badge>
-                      )}
                       {record.syncError && (
                         <span title={record.syncError}>
                           <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
@@ -376,6 +317,60 @@ export default function AttendanceRecordsPage() {
                       )}
                     </div>
                   </TableCell>
+
+                  {/* تأخر */}
+                  <TableCell>
+                    {(record.lateMinutes ?? 0) > 0 ? (
+                      <span className="text-destructive text-sm font-medium">
+                        {formatMins(record.lateMinutes)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+
+                  {/* مغادرة مبكرة */}
+                  <TableCell>
+                    {(record.earlyLeaveMinutes ?? 0) > 0 ? (
+                      <span className="text-orange-600 text-sm font-medium">
+                        {formatMins(record.earlyLeaveMinutes)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+
+                  {/* المصدر */}
+                  <TableCell>
+                    {record.isManualEntry ? (
+                      <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                        يدوي
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        بصمة
+                      </Badge>
+                    )}
+                  </TableCell>
+
+                  {/* حالة البصمة */}
+                  <TableCell className="text-center">
+                    {(() => {
+                      const ps = record.punchSequenceStatus;
+                      if (!ps) return <span className="text-muted-foreground text-xs">—</span>;
+                      const cfg: Record<string, { label: string; cls: string }> = {
+                        VALID:      { label: "✓ صحيحة",    cls: "text-green-600" },
+                        PARTIAL:    { label: "⚠ جزئية",    cls: "text-amber-500" },
+                        INVALID:    { label: "⚠ غير صحيحة", cls: "text-red-500" },
+                        RECOMPUTED: { label: "↺ محسوبة",    cls: "text-blue-500" },
+                      };
+                      const c = cfg[ps];
+                      return c
+                        ? <span className={`text-xs font-medium ${c.cls}`}>{c.label}</span>
+                        : <span className="text-xs text-muted-foreground">{ps}</span>;
+                    })()}
+                  </TableCell>
+
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

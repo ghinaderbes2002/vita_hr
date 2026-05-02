@@ -22,6 +22,7 @@ import { useEmployees } from "@/lib/hooks/use-employees";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { useCheckUnreturnedCustodies } from "@/lib/hooks/use-custodies";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { RequestType } from "@/types";
 import { Loader2, Plus, Trash2, AlertTriangle, X } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -31,6 +32,19 @@ const ALL_REQUEST_TYPES: (RequestType | "OVERTIME")[] = [
   "PENALTY_PROPOSAL", "OVERTIME",
   "BUSINESS_MISSION", "DELEGATION", "HIRING_REQUEST", "COMPLAINT",
   "WORK_ACCIDENT", "REMOTE_WORK", "OTHER",
+];
+
+const MANAGER_ONLY_TYPES = [
+  "HIRING_REQUEST",
+  "REWARD",
+  "PENALTY_PROPOSAL",
+  "OVERTIME_MANAGER",
+];
+
+const MANAGER_PERMISSIONS = [
+  "requests:hr-approve",
+  "requests:approve",
+  "requests:read-all-steps",
 ];
 
 const INCIDENT_TYPES = [
@@ -158,6 +172,15 @@ interface NewRequestDialogProps {
 export function NewRequestDialog({ open, onOpenChange, defaultType, title }: NewRequestDialogProps) {
   const t = useTranslations();
   const { user } = useAuthStore();
+  const { hasAnyPermission, isAdmin } = usePermissions();
+
+  const isManager = isAdmin() || hasAnyPermission(MANAGER_PERMISSIONS);
+
+  const availableTypes = ALL_REQUEST_TYPES.filter((type) => {
+    if (MANAGER_ONLY_TYPES.includes(type)) return isManager;
+    return true;
+  });
+
   const [submitMode, setSubmitMode] = useState<"draft" | "submit">("draft");
   const [hiringPositions, setHiringPositions] = useState<HiringPosition[]>([
     { departmentId: "", jobTitle: "", count: "1", reason: "" },
@@ -353,9 +376,11 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {ALL_REQUEST_TYPES.map((type) => (
+                      {availableTypes.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type === "OVERTIME" ? "وقت إضافي مدير/موظف" : t(`requests.types.${type}`)}
+                          {type === "OVERTIME"
+                            ? isManager ? "وقت إضافي مدير/موظف" : "وقت إضافي"
+                            : t(`requests.types.${type}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -465,23 +490,25 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
             {/* ── OVERTIME (مدير / موظف) ── */}
             {selectedType === "OVERTIME" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">النوع:</span>
-                  {(["OVERTIME_EMPLOYEE", "OVERTIME_MANAGER"] as const).map((sub) => (
-                    <button
-                      key={sub}
-                      type="button"
-                      onClick={() => setOvertimeSubType(sub)}
-                      className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                        overtimeSubType === sub
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "border-muted-foreground/30 hover:border-primary/50"
-                      }`}
-                    >
-                      {OVERTIME_TYPE_LABELS[sub]}
-                    </button>
-                  ))}
-                </div>
+                {isManager && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium">النوع:</span>
+                    {(["OVERTIME_EMPLOYEE", "OVERTIME_MANAGER"] as const).map((sub) => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => setOvertimeSubType(sub)}
+                        className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                          overtimeSubType === sub
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "border-muted-foreground/30 hover:border-primary/50"
+                        }`}
+                      >
+                        {OVERTIME_TYPE_LABELS[sub]}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">إذا كان التاريخ هو اليوم لا يمكن تقديم الطلب بعد الساعة 12:00 ظهراً</p>
                 <FormField control={form.control} name="overtimeDate" render={({ field }) => (
                   <FormItem>

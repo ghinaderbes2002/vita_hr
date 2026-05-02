@@ -8,8 +8,9 @@ import {
   Paperclip, Heart, GraduationCap, MapPin, Users, FileDown,
   BadgeCheck, Cigarette, Award, ExternalLink,
   Fingerprint, Plus, Trash2, Settings, Save, ClipboardList, Pencil, X,
-  Clock, CalendarDays, AlertTriangle,
+  Clock, CalendarDays, AlertTriangle, CheckCircle2,
 } from "lucide-react";
+import { PROBATION_RECOMMENDATION_OPTIONS } from "@/lib/api/probation-evaluations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -500,6 +501,43 @@ export default function EmployeeDetailsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* ─── Probation Result ──────────────────────────────── */}
+        {emp.probationResult && (
+          <Card className="border-green-200 bg-green-50/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-green-700">
+                <CheckCircle2 className="h-4 w-4" />
+                نتيجة تقييم التجربة
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y divide-border/50">
+              <div className="flex items-start justify-between py-2">
+                <span className="text-sm text-muted-foreground shrink-0 w-40">نتيجة التقييم</span>
+                <span className="text-sm font-semibold text-end flex-1">
+                  {PROBATION_RECOMMENDATION_OPTIONS.find(o => o.value === emp.probationResult)?.labelAr || emp.probationResult}
+                </span>
+              </div>
+              {emp.probationCompletedAt && (
+                <div className="flex items-start justify-between py-2">
+                  <span className="text-sm text-muted-foreground shrink-0 w-40">تاريخ الإغلاق</span>
+                  <span className="text-sm font-medium text-end flex-1">
+                    {new Date(emp.probationCompletedAt).toLocaleDateString("en-GB")}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-start justify-between py-2">
+                <span className="text-sm text-muted-foreground shrink-0 w-40">حالة التوظيف</span>
+                <span className={`text-sm font-semibold text-end flex-1 ${
+                  employee.employmentStatus === "ACTIVE" ? "text-green-700" :
+                  employee.employmentStatus === "TERMINATED" ? "text-destructive" : ""
+                }`}>
+                  {statusLabel}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ─── Additional Info ───────────────────────────────── */}
         {(bloodTypeLabel || educationLabel || emp.religion || emp.familyMembersCount || emp.chronicDiseases || emp.isSmoker !== undefined) && (

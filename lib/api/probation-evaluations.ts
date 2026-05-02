@@ -2,31 +2,47 @@ import { apiClient } from "./client";
 
 export type ProbationStatus =
   | "DRAFT"
+  | "PENDING_SELF_EVALUATION"
   | "PENDING_SENIOR_MANAGER"
   | "PENDING_HR"
   | "PENDING_CEO"
   | "PENDING_MEETING_SCHEDULE"
-  | "PENDING_EMPLOYEE_ACKNOWLEDGMENT"
   | "COMPLETED"
   | "REJECTED_BY_SENIOR"
   | "REJECTED_BY_HR"
   | "REJECTED_BY_CEO";
 
-export type ProbationRecommendation = "CONFIRM" | "TRANSFER" | "TERMINATE";
+// Scores are numeric 1–5: 1=غير مقبول, 2=مقبول, 3=جيد, 4=جيد جداً, 5=ممتاز
+export type ProbationScore = 1 | 2 | 3 | 4 | 5;
 
-export interface ProbationCriterion {
-  id: string;
-  nameAr: string;
-  nameEn?: string;
-  isCore: boolean;
-  isActive: boolean;
-  displayOrder: number;
-}
+export type ProbationRecommendation =
+  | "CONFIRM_POSITION"
+  | "EXTEND_PROBATION"
+  | "TRANSFER_POSITION"
+  | "SALARY_RAISE"
+  | "TERMINATE";
+
+export const PROBATION_SCORE_LABELS: Record<number, string> = {
+  1: "غير مقبول",
+  2: "مقبول",
+  3: "جيد",
+  4: "جيد جداً",
+  5: "ممتاز",
+};
+
+export const PROBATION_RECOMMENDATION_OPTIONS: { value: ProbationRecommendation; labelAr: string }[] = [
+  { value: "CONFIRM_POSITION",   labelAr: "تثبيت في المنصب" },
+  { value: "EXTEND_PROBATION",   labelAr: "تمديد فترة التجربة" },
+  { value: "TRANSFER_POSITION",  labelAr: "نقل إلى منصب آخر" },
+  { value: "SALARY_RAISE",       labelAr: "رفع الراتب" },
+  { value: "TERMINATE",          labelAr: "إنهاء الخدمة" },
+];
 
 export interface ProbationEvaluationScore {
   criteriaId: string;
-  score: number;
-  criteria?: { nameAr: string };
+  score: number | null;
+  selfScore: number | null;
+  criteria?: { id: string; nameAr: string; displayOrder?: number };
 }
 
 export interface ProbationHistoryEntry {
@@ -41,73 +57,74 @@ export interface ProbationEvaluation {
   employeeId: string;
   hireDate: string;
   probationEndDate: string;
-  evaluationDate?: string;
   evaluatorId: string;
   seniorManagerId?: string;
-  isDelegated: boolean;
-  delegationNote?: string;
   workAreasNote?: string;
   status: ProbationStatus;
-  overallRating?: number;
+  overallRating?: number | null;
   finalRecommendation?: ProbationRecommendation;
-  employeeAcknowledged?: boolean;
   evaluatorNotes?: string;
+  employeeNotes?: string;
   scores: ProbationEvaluationScore[];
   history?: ProbationHistoryEntry[];
   employee?: { firstNameAr: string; lastNameAr: string; employeeNumber: string };
   meetingProposedAt?: string;
-  proposedMeetingDate?: string;
   confirmedMeetingDate?: string;
   meetingConfirmedByEmployee?: boolean;
   meetingConfirmedByManager?: boolean;
 }
 
+// POST /probation-evaluations
 export interface CreateProbationEvaluationData {
   employeeId: string;
   hireDate: string;
   probationEndDate: string;
-  evaluationDate?: string;
   evaluatorId: string;
-  evaluatorNotes?: string;
   seniorManagerId?: string;
-  isDelegated?: boolean;
-  delegationNote?: string;
   workAreasNote?: string;
-  scores?: { criteriaId: string; score: number }[];
 }
 
-export interface WorkflowActionData {
+// POST /:id/self-evaluate
+export interface SelfEvaluateData {
   notes?: string;
-  recommendation?: ProbationRecommendation;
-  overallRating?: number;
-  scores?: { criteriaId: string; score: number }[];
+  scores: { criteriaId: string; score: number }[];
 }
 
+// POST /:id/senior-approve
+export interface SeniorApproveData {
+  overallRating: number;
+  recommendation: ProbationRecommendation;
+  notes?: string;
+  scores: { criteriaId: string; score: number }[];
+}
+
+// POST /:id/ceo-decide
+export interface CeoDecideData {
+  recommendation: ProbationRecommendation;
+  notes?: string;
+}
+
+// POST /:id/schedule-meeting
 export interface ProposeMeetingData {
   meetingProposedAt: string;
 }
 
+// POST /:id/confirm-meeting
 export interface ConfirmMeetingData {
   role: "employee" | "manager";
 }
 
+// POST /:id/close-evaluation
 export interface CompleteProbationData {
   decisionDocumentUrl?: string;
 }
 
+// Generic reject / hr-document body
+export interface WorkflowNotesData {
+  notes?: string;
+}
+
 export const probationEvaluationsApi = {
-  // Criteria (separate endpoints, not part of evaluations base)
-  getCriteria: async (): Promise<ProbationCriterion[]> => {
-    const response = await apiClient.get("/probation/criteria");
-    return response.data?.data || response.data;
-  },
-
-  getCriteriaByJobTitle: async (jobTitleId: string): Promise<ProbationCriterion[]> => {
-    const response = await apiClient.get(`/probation/criteria/by-job-title/${jobTitleId}`);
-    return response.data?.data || response.data;
-  },
-
-  // Evaluations
   getAll: async (params?: { status?: string }) => {
     const response = await apiClient.get("/probation-evaluations", { params });
     return response.data?.data || response.data;
@@ -119,7 +136,7 @@ export const probationEvaluationsApi = {
   },
 
   getByEmployee: async (employeeId: string): Promise<ProbationEvaluation[]> => {
-    const response = await apiClient.get(`/probation-evaluations/by-employee/${employeeId}`);
+    const response = await apiClient.get(`/probation-evaluations/employee/${employeeId}`);
     return response.data?.data || response.data;
   },
 
@@ -143,39 +160,33 @@ export const probationEvaluationsApi = {
     return response.data?.data || response.data;
   },
 
-  // Workflow actions
-  submit: async (id: string, data?: WorkflowActionData) => {
-    const response = await apiClient.post(`/probation-evaluations/${id}/submit`, data);
+  selfEvaluate: async (id: string, data: SelfEvaluateData) => {
+    const response = await apiClient.post(`/probation-evaluations/${id}/self-evaluate`, data);
     return response.data?.data || response.data;
   },
 
-  seniorApprove: async (id: string, data?: WorkflowActionData) => {
+  seniorApprove: async (id: string, data: SeniorApproveData) => {
     const response = await apiClient.post(`/probation-evaluations/${id}/senior-approve`, data);
     return response.data?.data || response.data;
   },
 
-  seniorReject: async (id: string, data?: WorkflowActionData) => {
+  seniorReject: async (id: string, data?: WorkflowNotesData) => {
     const response = await apiClient.post(`/probation-evaluations/${id}/senior-reject`, data);
     return response.data?.data || response.data;
   },
 
-  hrDocument: async (id: string, data?: WorkflowActionData) => {
+  hrDocument: async (id: string, data?: WorkflowNotesData) => {
     const response = await apiClient.post(`/probation-evaluations/${id}/hr-document`, data);
     return response.data?.data || response.data;
   },
 
-  hrReject: async (id: string, data?: WorkflowActionData) => {
+  hrReject: async (id: string, data?: WorkflowNotesData) => {
     const response = await apiClient.post(`/probation-evaluations/${id}/hr-reject`, data);
     return response.data?.data || response.data;
   },
 
-  ceoDecide: async (id: string, data?: WorkflowActionData) => {
+  ceoDecide: async (id: string, data: CeoDecideData) => {
     const response = await apiClient.post(`/probation-evaluations/${id}/ceo-decide`, data);
-    return response.data?.data || response.data;
-  },
-
-  employeeAcknowledge: async (id: string, data?: WorkflowActionData) => {
-    const response = await apiClient.post(`/probation-evaluations/${id}/employee-acknowledge`, data);
     return response.data?.data || response.data;
   },
 
@@ -190,7 +201,7 @@ export const probationEvaluationsApi = {
   },
 
   complete: async (id: string, data?: CompleteProbationData) => {
-    const response = await apiClient.post(`/probation-evaluations/${id}/close`, data);
+    const response = await apiClient.post(`/probation-evaluations/${id}/close-evaluation`, data);
     return response.data?.data || response.data;
   },
 };

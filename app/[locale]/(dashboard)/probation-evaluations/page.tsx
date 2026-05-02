@@ -25,26 +25,23 @@ import {
   useProbationEvaluations,
   usePendingMyAction,
   useCreateProbationEvaluation,
-  useProbationCriteria,
 } from "@/lib/hooks/use-probation-evaluations";
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { ProbationStatus, ProbationRecommendation, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
+import { ProbationStatus, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
 
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
-  DRAFT:                           "bg-gray-100 text-gray-600",
-  PENDING_SENIOR_MANAGER:          "bg-blue-100 text-blue-700",
-  PENDING_HR:                      "bg-purple-100 text-purple-700",
-  PENDING_MEETING_SCHEDULE:        "bg-orange-100 text-orange-700",
-  PENDING_CEO:                     "bg-amber-100 text-amber-700",
-  PENDING_EMPLOYEE_ACKNOWLEDGMENT: "bg-cyan-100 text-cyan-700",
-  COMPLETED:                       "bg-green-100 text-green-700",
-  REJECTED_BY_SENIOR:              "bg-red-100 text-red-700",
-  REJECTED_BY_HR:                  "bg-red-100 text-red-700",
-  REJECTED_BY_CEO:                 "bg-red-100 text-red-700",
+  DRAFT:                    "bg-gray-100 text-gray-600",
+  PENDING_SELF_EVALUATION:  "bg-indigo-100 text-indigo-700",
+  PENDING_SENIOR_MANAGER:   "bg-blue-100 text-blue-700",
+  PENDING_HR:               "bg-purple-100 text-purple-700",
+  PENDING_CEO:              "bg-amber-100 text-amber-700",
+  PENDING_MEETING_SCHEDULE: "bg-orange-100 text-orange-700",
+  COMPLETED:                "bg-green-100 text-green-700",
+  REJECTED_BY_SENIOR:       "bg-red-100 text-red-700",
+  REJECTED_BY_HR:           "bg-red-100 text-red-700",
+  REJECTED_BY_CEO:          "bg-red-100 text-red-700",
 };
-
-const RECOMMENDATION_VALUES: ProbationRecommendation[] = ["CONFIRM", "TRANSFER", "TERMINATE"];
 
 export default function ProbationEvaluationsPage() {
   const router = useRouter();
@@ -57,25 +54,20 @@ export default function ProbationEvaluationsPage() {
     employeeId: string;
     hireDate: string;
     probationEndDate: string;
-    evaluationDate: string;
     seniorManagerId: string;
     workAreasNote: string;
-    scores: Record<string, number>;
   }>({
     employeeId: "", hireDate: "", probationEndDate: "",
-    evaluationDate: new Date().toISOString().split("T")[0],
-    seniorManagerId: "", workAreasNote: "", scores: {},
+    seniorManagerId: "", workAreasNote: "",
   });
 
   const { data: allEvals, isLoading: allLoading } = useProbationEvaluations();
   const { data: pendingEvals, isLoading: pendingLoading } = usePendingMyAction();
-  const { data: criteria } = useProbationCriteria();
   const { data: employeesData } = useEmployees({ limit: 100 });
   const createEval = useCreateProbationEvaluation();
 
   const evals: any[] = (tab === "all" ? (allEvals as any) : (pendingEvals as any)) || [];
   const isLoading = tab === "all" ? allLoading : pendingLoading;
-  const criteriaList: any[] = (criteria as any) || [];
   const employees: any[] = (employeesData as any)?.data?.items || [];
   const employeeMap = Object.fromEntries(employees.map((e: any) => [e.id, e]));
 
@@ -85,13 +77,9 @@ export default function ProbationEvaluationsPage() {
       employeeId: form.employeeId,
       hireDate: form.hireDate,
       probationEndDate: form.probationEndDate,
-      evaluationDate: form.evaluationDate || undefined,
       evaluatorId: user?.id || "",
       seniorManagerId: form.seniorManagerId || undefined,
       workAreasNote: form.workAreasNote || undefined,
-      scores: criteriaList
-        .filter((c) => form.scores[c.id])
-        .map((c) => ({ criteriaId: c.id, score: form.scores[c.id] })),
     };
     createEval.mutate(payload, { onSuccess: () => setCreateOpen(false) });
   }
@@ -224,10 +212,6 @@ export default function ProbationEvaluationsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>{t("form.evaluationDate")}</Label>
-              <Input type="date" value={form.evaluationDate} onChange={(e) => setForm({ ...form, evaluationDate: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
               <Label>{t("form.workAreasNote")}</Label>
               <Input
                 value={form.workAreasNote}
@@ -235,28 +219,6 @@ export default function ProbationEvaluationsPage() {
                 placeholder={t("form.workAreasNotePlaceholder")}
               />
             </div>
-            {criteriaList.length > 0 && (
-              <div className="space-y-2 rounded-lg border p-3">
-                <p className="text-sm font-medium">{t("form.criteriaScoring")}</p>
-                <div className="space-y-2">
-                  {criteriaList.map((c: any) => (
-                    <div key={c.id} className="flex items-center justify-between gap-2">
-                      <Label className="text-xs flex-1">{c.nameAr}</Label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={5}
-                        step={0.1}
-                        value={form.scores[c.id] ?? ""}
-                        onChange={(e) => setForm({ ...form, scores: { ...form.scores, [c.id]: e.target.value === "" ? undefined as any : parseFloat(e.target.value) } })}
-                        placeholder="0–5"
-                        className="w-20 h-7 rounded-md border border-input bg-background px-2 text-xs"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>{tCommon("cancel")}</Button>

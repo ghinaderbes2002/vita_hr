@@ -1,17 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  probationEvaluationsApi, CreateProbationEvaluationData, WorkflowActionData,
-  ProposeMeetingData, ConfirmMeetingData, CompleteProbationData,
+  probationEvaluationsApi,
+  CreateProbationEvaluationData,
+  SelfEvaluateData,
+  SeniorApproveData,
+  CeoDecideData,
+  WorkflowNotesData,
+  ProposeMeetingData,
+  ConfirmMeetingData,
+  CompleteProbationData,
 } from "@/lib/api/probation-evaluations";
 import { toast } from "sonner";
 
-export function useProbationCriteria() {
-  return useQuery({
-    queryKey: ["probation-criteria"],
-    queryFn: () => probationEvaluationsApi.getCriteria(),
-    staleTime: 10 * 60 * 1000,
-  });
-}
+const invalidateAll = (qc: ReturnType<typeof useQueryClient>, id: string) => {
+  qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
+  qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
+  qc.invalidateQueries({ queryKey: ["probation-pending-my-action"] });
+  qc.invalidateQueries({ queryKey: ["probation-history", id] });
+};
+
 
 export function useProbationEvaluations() {
   return useQuery({
@@ -55,7 +62,10 @@ export function useCreateProbationEvaluation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateProbationEvaluationData) => probationEvaluationsApi.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["probation-evaluations"] }); toast.success("تم إنشاء التقييم بنجاح"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
+      toast.success("تم إنشاء التقييم بنجاح");
+    },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
@@ -74,22 +84,82 @@ export function useUpdateProbationEvaluation() {
   });
 }
 
-// Workflow actions — generic factory
-function makeWorkflowMutation(action: (id: string, data?: WorkflowActionData) => Promise<any>, successMsg: string) {
-  return function useWorkflowAction() {
-    const qc = useQueryClient();
-    return useMutation({
-      mutationFn: ({ id, data }: { id: string; data?: WorkflowActionData }) => action(id, data),
-      onSuccess: (_, { id }) => {
-        qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
-        qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
-        qc.invalidateQueries({ queryKey: ["probation-pending-my-action"] });
-        qc.invalidateQueries({ queryKey: ["probation-history", id] });
-        toast.success(successMsg);
-      },
-      onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
-    });
-  };
+export function useSelfEvaluateProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: SelfEvaluateData }) =>
+      probationEvaluationsApi.selfEvaluate(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تم إرسال التقييم الذاتي");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useSeniorApproveProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: SeniorApproveData }) =>
+      probationEvaluationsApi.seniorApprove(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تمت الموافقة وإرسالها لـ HR");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useSeniorRejectProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data?: WorkflowNotesData }) =>
+      probationEvaluationsApi.seniorReject(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تم الرفض");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useHrDocumentProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data?: WorkflowNotesData }) =>
+      probationEvaluationsApi.hrDocument(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تم التوثيق وإرساله للمدير التنفيذي");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useHrRejectProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data?: WorkflowNotesData }) =>
+      probationEvaluationsApi.hrReject(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تم الرفض من HR");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useCeoDecideProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CeoDecideData }) =>
+      probationEvaluationsApi.ceoDecide(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تم اتخاذ القرار النهائي");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
 }
 
 export function useProposeMeeting() {
@@ -98,10 +168,8 @@ export function useProposeMeeting() {
     mutationFn: ({ id, data }: { id: string; data: ProposeMeetingData }) =>
       probationEvaluationsApi.proposeMeeting(id, data),
     onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
-      qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
-      qc.invalidateQueries({ queryKey: ["probation-history", id] });
-      toast.success("تم اقتراح موعد الاجتماع بنجاح");
+      invalidateAll(qc, id);
+      toast.success("تم اقتراح موعد الاجتماع");
     },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
@@ -113,9 +181,7 @@ export function useConfirmMeeting() {
     mutationFn: ({ id, data }: { id: string; data: ConfirmMeetingData }) =>
       probationEvaluationsApi.confirmMeeting(id, data),
     onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
-      qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
-      qc.invalidateQueries({ queryKey: ["probation-history", id] });
+      invalidateAll(qc, id);
       toast.success("تم تأكيد موعد الاجتماع");
     },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
@@ -125,22 +191,13 @@ export function useConfirmMeeting() {
 export function useCompleteProbation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CompleteProbationData }) =>
+    mutationFn: ({ id, data }: { id: string; employeeId?: string; data?: CompleteProbationData }) =>
       probationEvaluationsApi.complete(id, data),
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ["probation-evaluation", id] });
-      qc.invalidateQueries({ queryKey: ["probation-evaluations"] });
-      qc.invalidateQueries({ queryKey: ["probation-history", id] });
+    onSuccess: (_, { id, employeeId }) => {
+      invalidateAll(qc, id);
+      if (employeeId) qc.invalidateQueries({ queryKey: ["employee", employeeId] });
       toast.success("تم إغلاق التقييم بنجاح");
     },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });
 }
-
-export const useSubmitProbation = makeWorkflowMutation(probationEvaluationsApi.submit, "تم الإرسال للمدير الأعلى");
-export const useSeniorApproveProbation = makeWorkflowMutation(probationEvaluationsApi.seniorApprove, "تمت الموافقة وإرسالها لـ HR");
-export const useSeniorRejectProbation = makeWorkflowMutation(probationEvaluationsApi.seniorReject, "تم الرفض وإعادته للمقيّم");
-export const useHrDocumentProbation = makeWorkflowMutation(probationEvaluationsApi.hrDocument, "تم التوثيق وإرساله للمدير التنفيذي");
-export const useHrRejectProbation = makeWorkflowMutation(probationEvaluationsApi.hrReject, "تم الرفض من HR");
-export const useCeoDecideProbation = makeWorkflowMutation(probationEvaluationsApi.ceoDecide, "تم اتخاذ القرار النهائي");
-export const useEmployeeAcknowledgeProbation = makeWorkflowMutation(probationEvaluationsApi.employeeAcknowledge, "تم إقرار الموظف — التقييم مكتمل");
