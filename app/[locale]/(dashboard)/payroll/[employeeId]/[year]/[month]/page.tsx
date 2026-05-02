@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { ArrowRight, DollarSign, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ArrowRight, DollarSign, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -73,6 +73,10 @@ export default function PayslipPage() {
     );
   }
 
+  const now = new Date();
+  const isCurrentOrFutureMonth = year > now.getFullYear() ||
+    (year === now.getFullYear() && month >= now.getMonth() + 1);
+
   const s = data.salary;
   const bonusDetails = Array.isArray(s.bonusDetails) ? s.bonusDetails : [];
   const penaltyDetails = Array.isArray(s.penaltyDetails) ? s.penaltyDetails : [];
@@ -104,6 +108,19 @@ export default function PayslipPage() {
           </p>
         </div>
       </div>
+
+      {/* Current/Future Month Warning */}
+      {isCurrentOrFutureMonth && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">تحذير: الشهر لم ينته بعد</p>
+            <p className="text-xs mt-0.5 text-amber-700">
+              هذا الراتب محسوب على أساس الشهر كاملاً، لكن الشهر لم ينتهِ بعد — الأيام غير المسجّلة تُحتسب غيابات. الأرقام الظاهرة غير نهائية.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Fixed Salary Notice */}
       {!salaryLinked && (
@@ -164,7 +181,7 @@ export default function PayslipPage() {
           )}
           <div className="flex items-center justify-between py-2">
             <span className="text-sm font-semibold">الراتب الإجمالي</span>
-            <span className="text-sm font-bold">{money(s.grossSalary)} ر.س</span>
+            <span className="text-sm font-bold">{money(s.grossSalary)}</span>
           </div>
 
           <Separator className="my-1" />
@@ -185,7 +202,7 @@ export default function PayslipPage() {
                   {bonusDetails.map((b, i) => (
                     <div key={i} className="flex items-center justify-between text-xs text-green-700">
                       <span>{b.reason}</span>
-                      <span className="font-mono">+${(b.amount || 0).toLocaleString("en-US")} ر.س</span>
+                      <span className="font-mono">+${(b.amount || 0).toLocaleString("en-US")}</span>
                     </div>
                   ))}
                 </div>
@@ -218,7 +235,7 @@ export default function PayslipPage() {
                   {penaltyDetails.map((p, i) => (
                     <div key={i} className="flex items-center justify-between text-xs text-red-700">
                       <span>{p.description}</span>
-                      <span className="font-mono">-${(p.amount || 0).toLocaleString("en-US")} ر.س</span>
+                      <span className="font-mono">-${(p.amount || 0).toLocaleString("en-US")}</span>
                     </div>
                   ))}
                 </div>
@@ -231,7 +248,7 @@ export default function PayslipPage() {
           {/* Net Salary */}
           <div className="flex items-center justify-between py-3">
             <span className="text-base font-bold">صافي الراتب</span>
-            <span className="text-lg font-bold text-primary">{money(s.netSalary)} ر.س</span>
+            <span className="text-lg font-bold text-primary">{money(s.netSalary)}</span>
           </div>
 
           {/* Formula note */}

@@ -134,7 +134,7 @@ export const attendanceRecordsApi = {
 
   getAll: async (params: AttendanceQueryParams): Promise<ApiResponse<AttendanceRecord[]>> => {
     const response = await apiClient.get("/attendance-records", { params });
-    return response.data;
+return response.data;
   },
 
   getById: async (id: string): Promise<AttendanceRecord> => {
