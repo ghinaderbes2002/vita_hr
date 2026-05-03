@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Search, MoreHorizontal, Trash2, Calendar, Clock, Plus, Filter, AlertTriangle } from "lucide-react";
+import { Search, MoreHorizontal, Trash2, Calendar, Plus, Filter, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -160,7 +160,7 @@ export default function AttendanceRecordsPage() {
     if (!minutes || minutes <= 0) return "—";
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    return h > 0 ? `${h}س ${m}د` : `${m}د`;
+    return `${h}:${m.toString().padStart(2, "0")}`;
   };
 
   const formatMins = (minutes?: number | null) => {
