@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Search, MoreHorizontal, Trash2, Calendar, Plus, Filter, AlertTriangle } from "lucide-react";
+import { Search, Calendar, Plus, Filter, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,12 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import {
   Select,
   SelectContent,
@@ -39,7 +34,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Pagination } from "@/components/shared/pagination";
-import { useAttendanceRecords, useDeleteAttendanceRecord, useCreateAttendanceRecord } from "@/lib/hooks/use-attendance-records";
+import { useAttendanceRecords, useCreateAttendanceRecord } from "@/lib/hooks/use-attendance-records";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
 import { AttendanceRecord, AttendanceStatus } from "@/lib/api/attendance-records";
 import { useEmployees } from "@/lib/hooks/use-employees";
@@ -65,9 +60,7 @@ export default function AttendanceRecordsPage() {
   const { hasPermission } = usePermissions();
   const canCreate = hasPermission("attendance.records.create-manual");
   const [search, setSearch] = useState("");
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Manual entry form state
@@ -96,7 +89,6 @@ export default function AttendanceRecordsPage() {
     limit: LIMIT,
     ...(statusFilter !== "ALL" && { status: statusFilter as AttendanceStatus }),
   });
-  const deleteRecord = useDeleteAttendanceRecord();
   const createRecord = useCreateAttendanceRecord();
   const { data: employeesData } = useEmployees({ limit: 200 });
 
@@ -120,19 +112,6 @@ export default function AttendanceRecordsPage() {
       record.employee?.employeeNumber?.toLowerCase().includes(searchLower)
     );
   });
-
-  const handleDelete = (record: AttendanceRecord) => {
-    setSelectedRecord(record);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (selectedRecord) {
-      await deleteRecord.mutateAsync(selectedRecord.id);
-      setDeleteDialogOpen(false);
-      setSelectedRecord(null);
-    }
-  };
 
   const handleCreateManual = async () => {
     if (!manualForm.employeeId || !manualForm.date || !manualForm.manualEntryReason) return;
@@ -241,7 +220,6 @@ export default function AttendanceRecordsPage() {
               <TableHead>مغادرة مبكرة</TableHead>
               <TableHead>المصدر</TableHead>
               <TableHead>البصمة</TableHead>
-              <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -371,24 +349,6 @@ export default function AttendanceRecordsPage() {
                     })()}
                   </TableCell>
 
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(record)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -406,14 +366,6 @@ export default function AttendanceRecordsPage() {
         />
       )}
 
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title={t("messages.confirmDelete")}
-        description={t("messages.actionCantUndo")}
-        onConfirm={confirmDelete}
-        variant="destructive"
-      />
 
       {/* Manual Entry Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>

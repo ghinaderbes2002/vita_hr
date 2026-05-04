@@ -109,14 +109,6 @@ export default function WorkSchedulesPage() {
         }
       />
 
-      {missingCount > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
-          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-          <span className="text-amber-800">
-            <span className="font-semibold">{missingCount} موظف</span> بدون جدول عمل محدد — سيتأثر حساب حضورهم
-          </span>
-        </div>
-      )}
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">

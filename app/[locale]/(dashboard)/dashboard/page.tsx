@@ -471,6 +471,23 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Org Chart — for all roles */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            الهيكل التنظيمي
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30">
+            <ExternalLink className="h-5 w-5 text-primary shrink-0" />
+            <p className="text-sm font-medium flex-1">الهيكل التنظيمي</p>
+            <a href="/assets/images/هيكل.jpg" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">فتح</a>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
