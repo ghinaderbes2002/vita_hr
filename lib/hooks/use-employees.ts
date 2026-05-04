@@ -18,6 +18,13 @@ export function useEmployee(id: string) {
   });
 }
 
+export function useMyEmployee() {
+  return useQuery({
+    queryKey: ["employee-my-profile"],
+    queryFn: () => employeesApi.getMyProfile(),
+  });
+}
+
 export function useCreateEmployee() {
   const queryClient = useQueryClient();
 

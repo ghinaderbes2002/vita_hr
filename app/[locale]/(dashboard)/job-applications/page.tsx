@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   Eye, Users, Clock, CheckCircle, XCircle, Briefcase, UserCheck,
-  LayoutList, Kanban, Star, GripVertical,
+  LayoutList, Kanban, Star, GripVertical, ExternalLink,
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
@@ -260,6 +260,26 @@ export default function JobApplicationsPage() {
   const [view, setView] = useState<"list" | "pipeline">("list");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [page, setPage] = useState(1);
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem("job-application-favorites");
+      return new Set(stored ? JSON.parse(stored) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  const toggleFavorite = (id: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      localStorage.setItem("job-application-favorites", JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   const { data, isLoading } = useJobApplications(
     view === "pipeline"
@@ -313,6 +333,13 @@ export default function JobApplicationsPage() {
         title={t("jobApplications.title")}
         description={t("jobApplications.description")}
         actions={
+          <div className="flex items-center gap-2">
+          <a href="https://vitaxirpro.com/join-us" target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm">
+              <ExternalLink className="h-4 w-4 ml-2" />
+              تقييم مقابلة
+            </Button>
+          </a>
           <div className="flex items-center gap-1 rounded-lg border bg-muted p-1">
             <Button
               variant={view === "list" ? "default" : "ghost"}
@@ -332,6 +359,7 @@ export default function JobApplicationsPage() {
               <Kanban className="h-4 w-4 ml-1" />
               بورد
             </Button>
+          </div>
           </div>
         }
       />
@@ -388,12 +416,27 @@ export default function JobApplicationsPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant={showFavorites ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFavorites((v) => !v)}
+              className="gap-2"
+            >
+              <Star className={`h-4 w-4 ${showFavorites ? "fill-white" : "fill-none"}`} />
+              المفضلة
+              {favorites.size > 0 && (
+                <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${showFavorites ? "bg-white/20" : "bg-red-100 text-red-600"}`}>
+                  {favorites.size}
+                </span>
+              )}
+            </Button>
           </div>
 
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"></TableHead>
                   <TableHead>{t("jobApplications.fields.fullName")}</TableHead>
                   <TableHead>{t("jobApplications.fields.specialization")}</TableHead>
                   <TableHead>{t("jobApplications.fields.yearsOfExperience")}</TableHead>
@@ -407,20 +450,31 @@ export default function JobApplicationsPage() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 8 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                       ))}
                     </TableRow>
                   ))
-                ) : applications.length === 0 ? (
+                ) : applications.filter((a) => !showFavorites || favorites.has(a.id)).length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">{t("common.noData")}</TableCell>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      {showFavorites ? "لا يوجد طلبات في المفضلة" : t("common.noData")}
+                    </TableCell>
                   </TableRow>
                 ) : (
-                  applications.map((app) => {
+                  applications.filter((a) => !showFavorites || favorites.has(a.id)).map((app) => {
                     const statusCfg = STATUS_CONFIG[app.status];
+                    const isFav = favorites.has(app.id);
                     return (
                       <TableRow key={app.id}>
+                        <TableCell>
+                          <button
+                            onClick={() => toggleFavorite(app.id)}
+                            className="p-1 rounded hover:bg-muted transition-colors"
+                          >
+                            <Star className={`h-4 w-4 transition-colors ${isFav ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                          </button>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <p className="font-medium">{app.fullName}</p>

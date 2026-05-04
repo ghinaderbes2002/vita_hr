@@ -18,6 +18,23 @@ export interface WorkSchedule {
   description?: string;
   createdAt: string;
   updatedAt: string;
+  employeeSchedules?: {
+    id: string;
+    employeeId: string;
+    effectiveFrom: string;
+    effectiveTo: string | null;
+    isActive: boolean;
+    employee?: {
+      id: string;
+      employeeNumber: string;
+      firstNameAr: string;
+      lastNameAr: string;
+      firstNameEn?: string;
+      lastNameEn?: string;
+      department?: { nameAr: string };
+      jobTitle?: { nameAr: string };
+    };
+  }[];
 }
 
 export interface CreateWorkScheduleData {

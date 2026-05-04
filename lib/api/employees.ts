@@ -14,6 +14,11 @@ export const employeesApi = {
     return response.data.data;
   },
 
+  getMyProfile: async (): Promise<Employee> => {
+    const response = await apiClient.get("/employees/my");
+    return response.data?.data || response.data;
+  },
+
   create: async (data: Record<string, any>): Promise<Employee> => {
     const response = await apiClient.post("/employees", data);
     return response.data.data;

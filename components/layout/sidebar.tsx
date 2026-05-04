@@ -74,6 +74,7 @@ const navigation: NavItem[] = [
       { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read" },
       { title: "nav.internalMail", href: "/mail", icon: Mail },
       { title: "nav.deductionPoliciesView", href: "/deduction-policies?view=readonly", icon: ShieldCheck },
+      { title: "nav.myProfile", href: "/my-profile", icon: UserCircle },
     ],
   },
   {

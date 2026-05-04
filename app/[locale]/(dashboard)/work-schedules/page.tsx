@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
 import { useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Clock, AlertTriangle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,6 +31,8 @@ import { WorkSchedule } from "@/lib/api/work-schedules";
 
 export default function WorkSchedulesPage() {
   const t = useTranslations();
+  const router = useRouter();
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -143,26 +147,28 @@ export default function WorkSchedulesPage() {
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
             ) : filteredSchedules.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
             ) : (
               filteredSchedules.map((schedule: WorkSchedule) => (
-                <TableRow key={schedule.id}>
+                <TableRow
+                  key={schedule.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => router.push(`/${locale}/work-schedules/${schedule.id}`)}
+                >
                   <TableCell className="font-medium">{schedule.code}</TableCell>
                   <TableCell>
-                    <div>
-                      <div className="font-medium">{schedule.nameAr}</div>
-                      <div className="text-sm text-muted-foreground">{schedule.nameEn}</div>
-                    </div>
+                    <div className="font-medium">{schedule.nameAr}</div>
+                    <div className="text-sm text-muted-foreground">{schedule.nameEn}</div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -181,7 +187,7 @@ export default function WorkSchedulesPage() {
                       {schedule.isActive ? t("workSchedules.statuses.active") : t("workSchedules.statuses.inactive")}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
