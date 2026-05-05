@@ -51,6 +51,7 @@ interface NavItem {
   href?: string;
   icon: any;
   permission?: string;
+  separator?: boolean;
   /** إخفاء القسم لأصحاب هذه الأدوار */
   hiddenForRoles?: string[];
   /** إظهار القسم دائماً لأصحاب هذه الأدوار بغض النظر عن الصلاحية */
@@ -60,10 +61,12 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "nav.internalMail", href: "/mail", icon: Mail, separator: true },
   {
     title: "nav.employeePortal",
     icon: UserCircle,
     children: [
+      { title: "nav.myProfile", href: "/my-profile", icon: UserCircle },
       { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck, permission: "attendance.records.read-own" },
       // { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn, permission: "attendance.records.check-in" },
       { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell, permission: "attendance.alerts.read-own" },
@@ -72,9 +75,7 @@ const navigation: NavItem[] = [
       { title: "nav.newRequest", href: "/requests/new", icon: PlusCircle, permission: "leave_requests:create" },
       { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
       { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read" },
-      { title: "nav.internalMail", href: "/mail", icon: Mail },
       { title: "nav.deductionPoliciesView", href: "/deduction-policies?view=readonly", icon: ShieldCheck },
-      { title: "nav.myProfile", href: "/my-profile", icon: UserCircle },
     ],
   },
   {
@@ -381,7 +382,7 @@ export function Sidebar() {
             return null;
           }
 
-          const showSeparator = index > 0 && item.children && !isCollapsed;
+          const showSeparator = (index > 0 && item.children && !isCollapsed) || (item.separator && !isCollapsed);
 
           const active = item.href ? isActive(item.href) : false;
           const isExpanded = expanded.includes(item.title);
@@ -516,20 +517,22 @@ export function Sidebar() {
           }
 
           return (
-            <Link
-              key={item.href}
-              href={item.href!}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors font-medium",
-                "hover:bg-muted",
-                active ? "bg-primary text-primary-foreground" : "",
-                isCollapsed && "justify-center gap-0"
-              )}
-              title={isCollapsed ? t(item.title) : undefined}
-            >
-              <item.icon className="h-5 w-5" />
-              {!isCollapsed && <span>{t(item.title)}</span>}
-            </Link>
+            <div key={item.href}>
+              {item.separator && !isCollapsed && <div className="my-2 border-t" />}
+              <Link
+                href={item.href!}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors font-medium",
+                  "hover:bg-muted",
+                  active ? "bg-primary text-primary-foreground" : "",
+                  isCollapsed && "justify-center gap-0"
+                )}
+                title={isCollapsed ? t(item.title) : undefined}
+              >
+                <item.icon className="h-5 w-5" />
+                {!isCollapsed && <span>{t(item.title)}</span>}
+              </Link>
+            </div>
           );
         })}
       </nav>

@@ -81,7 +81,7 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
     format(new Date(new Date().getFullYear(), 11, 31), "yyyy-MM-dd")
   );
 
-  const LIMIT = 10;
+  const LIMIT = 25;
   const { data, isLoading } = useAttendanceRecords({
     dateFrom,
     dateTo,

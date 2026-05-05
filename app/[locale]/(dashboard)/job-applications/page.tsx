@@ -337,7 +337,7 @@ export default function JobApplicationsPage() {
           <a href="https://vitaxirpro.com/join-us" target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="sm">
               <ExternalLink className="h-4 w-4 ml-2" />
-              تقييم مقابلة
+              تقديم طلب مقابلة
             </Button>
           </a>
           <div className="flex items-center gap-1 rounded-lg border bg-muted p-1">
