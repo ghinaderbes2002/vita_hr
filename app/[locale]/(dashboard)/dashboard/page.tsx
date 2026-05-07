@@ -1,12 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
-  Users, Calendar, Clock, AlertCircle, PlusCircle, ClipboardList,
+  Users, Calendar, Clock, AlertCircle, PlusCircle,
   Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight,
-  UserPlus, Bell, FileText, Upload, Trash, ExternalLink, Hourglass,
+  UserPlus, Bell, FileText, ExternalLink, Hourglass,
   CheckCircle2, UserCheck, BarChart3, DollarSign, ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,25 +22,25 @@ const CONDUCT_DOC_KEY = "conduct_document";
 const DEFAULT_CONDUCT_DOC = { url: "/assets/images/مدونة السلوك.pdf", name: "مدونة السلوك" };
 
 function StatCard({
-  title, value, icon: Icon, iconBg, iconColor, onClick,
+  title, value, icon: Icon, iconBg, onClick,
 }: {
   title: string; value: any; icon: any;
-  iconBg: string; iconColor: string; onClick?: () => void;
+  iconBg: string; onClick?: () => void;
 }) {
   return (
-    <Card className="border shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={onClick}>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-muted-foreground font-medium truncate">{title}</p>
+            <p className="text-xs text-muted-foreground font-medium truncate">{title}</p>
             {value === null || value === undefined ? (
-              <Skeleton className="h-9 w-16 mt-2" />
+              <Skeleton className="h-8 w-16 mt-2" />
             ) : (
-              <p className="text-3xl font-bold mt-2 tracking-tight">{value}</p>
+              <p className="text-3xl font-bold mt-1.5 tracking-tight">{value}</p>
             )}
           </div>
-          <div className={`p-3 rounded-xl shrink-0 ${iconBg}`}>
-            <Icon className={`h-5 w-5 ${iconColor}`} />
+          <div className={`p-3.5 rounded-full shrink-0 ${iconBg}`}>
+            <Icon className="h-5 w-5 text-white" />
           </div>
         </div>
       </CardContent>
@@ -54,13 +54,13 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="رصيد الإجازات" value={d.leaveBalance?.[0]?.balance ?? "—"} icon={Calendar}
-          iconBg="bg-blue-50" iconColor="text-blue-600" onClick={() => router.push(`/${locale}/leaves/my-leaves`)} />
+          iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/leaves/my-leaves`)} />
         <StatCard title="الطلبات المعلقة" value={d.pendingRequests?.length ?? 0} icon={Hourglass}
-          iconBg="bg-amber-50" iconColor="text-amber-600" onClick={() => router.push(`/${locale}/requests/my-requests`)} />
+          iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/my-requests`)} />
         <StatCard title="وثائق منتهية الصلاحية" value={d.expiringDocuments?.length ?? 0} icon={AlertCircle}
-          iconBg="bg-red-50" iconColor="text-red-600" />
+          iconBg="bg-red-500" />
         <StatCard title="الأهداف النشطة" value={d.goals?.length ?? 0} icon={TrendingUp}
-          iconBg="bg-green-50" iconColor="text-green-600" />
+          iconBg="bg-green-500" />
       </div>
 
       {d.todayAttendance && (
@@ -116,13 +116,13 @@ function ManagerDashboard({ d, locale, router }: { d: any; locale: string; route
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="حاضرون اليوم" value={d.teamAttendanceToday?.present ?? "—"} icon={UserCheck}
-          iconBg="bg-green-50" iconColor="text-green-600" />
+          iconBg="bg-green-500" />
         <StatCard title="غائبون اليوم" value={d.teamAttendanceToday?.absent ?? "—"} icon={UserX}
-          iconBg="bg-red-50" iconColor="text-red-600" />
+          iconBg="bg-red-500" />
         <StatCard title="متأخرون اليوم" value={d.teamAttendanceToday?.late ?? "—"} icon={Clock}
-          iconBg="bg-amber-50" iconColor="text-amber-600" />
+          iconBg="bg-amber-500" />
         <StatCard title="إجازات بانتظار موافقتي" value={d.pendingLeaveApprovals ?? 0} icon={Hourglass}
-          iconBg="bg-purple-50" iconColor="text-purple-600" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
+          iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -182,23 +182,23 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="إجمالي الموظفين" value={d.totalEmployees ?? "—"} icon={Users}
-          iconBg="bg-blue-50" iconColor="text-blue-600" onClick={() => router.push(`/${locale}/employees`)} />
+          iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/employees`)} />
         <StatCard title="وثائق منتهية الصلاحية" value={d.expiringDocumentsCount ?? 0} icon={FileWarning}
-          iconBg="bg-red-50" iconColor="text-red-600" onClick={() => router.push(`/${locale}/reports/hr`)} />
+          iconBg="bg-red-500" onClick={() => router.push(`/${locale}/reports/hr`)} />
         <StatCard title="عقود منتهية" value={d.expiringContractsCount ?? 0} icon={AlertCircle}
-          iconBg="bg-orange-50" iconColor="text-orange-600" />
+          iconBg="bg-orange-500" />
         <StatCard title="إجازات بانتظار HR" value={d.pendingLeaveHRCount ?? 0} icon={Hourglass}
-          iconBg="bg-amber-50" iconColor="text-amber-600" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
+          iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
       </div>
 
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard title="تقييمات تجربة بانتظار HR" value={d.probationsPendingHR ?? 0} icon={ShieldCheck}
-          iconBg="bg-purple-50" iconColor="text-purple-600" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
+          iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
         <StatCard title="تقييمات أداء بانتظار HR" value={d.evaluationsPendingHR ?? 0} icon={BarChart3}
-          iconBg="bg-indigo-50" iconColor="text-indigo-600" onClick={() => router.push(`/${locale}/evaluations`)} />
+          iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/evaluations`)} />
         <StatCard title="مناصب شاغرة" value={d.activePositions ?? 0} icon={Briefcase}
-          iconBg="bg-green-50" iconColor="text-green-600" onClick={() => router.push(`/${locale}/job-applications`)} />
+          iconBg="bg-green-500" onClick={() => router.push(`/${locale}/job-applications`)} />
       </div>
 
       {d.payrollStatus && (
@@ -254,18 +254,18 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="غيابات هذا الشهر"
           value={Array.isArray(d.monthlyAbsences) ? d.monthlyAbsences.length : (d.monthlyAbsences ?? "—")}
-          icon={UserX} iconBg="bg-red-50" iconColor="text-red-600" />
+          icon={UserX} iconBg="bg-red-500" />
         <StatCard title="إجازات معتمدة هذا الشهر"
           value={Array.isArray(d.approvedLeavesThisMonth) ? d.approvedLeavesThisMonth.length : (d.approvedLeavesThisMonth ?? "—")}
-          icon={CheckCircle2} iconBg="bg-green-50" iconColor="text-green-600" />
+          icon={CheckCircle2} iconBg="bg-green-500" />
         <StatCard title="طلبات بانتظار موافقة CEO"
           value={Array.isArray(d.pendingCeoRequestApprovals) ? d.pendingCeoRequestApprovals.length : (d.pendingCeoRequestApprovals ?? 0)}
-          icon={Bell} iconBg="bg-amber-50" iconColor="text-amber-600"
+          icon={Bell} iconBg="bg-amber-500"
           onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
         <StatCard title="تقييمات تجربة بانتظار CEO"
           value={Array.isArray(d.probationsPendingCEO) ? d.probationsPendingCEO.length : (d.probationsPendingCEO ?? 0)}
           icon={ShieldCheck}
-          iconBg="bg-purple-50" iconColor="text-purple-600" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
+          iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
       </div>
 
       {d.finalStageCandidates?.length > 0 && (
@@ -307,13 +307,13 @@ function CFODashboard({ d, locale, router }: { d: any; locale: string; router: a
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="إجمالي الرواتب الأساسية" value={d.payrollTotals ? fmt(d.payrollTotals.totalBasic) : "—"} icon={DollarSign}
-          iconBg="bg-blue-50" iconColor="text-blue-600" onClick={() => router.push(`/${locale}/payroll`)} />
+          iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/payroll`)} />
         <StatCard title="صافي الرواتب" value={d.payrollTotals ? fmt(d.payrollTotals.totalNet) : "—"} icon={TrendingUp}
-          iconBg="bg-green-50" iconColor="text-green-600" />
+          iconBg="bg-green-500" />
         <StatCard title="عدد العمل الإضافي المعتمد" value={d.approvedOvertimeCount ?? 0} icon={Clock}
-          iconBg="bg-amber-50" iconColor="text-amber-600" />
+          iconBg="bg-amber-500" />
         <StatCard title="إجازات غير مدفوعة معتمدة" value={d.unpaidApprovedLeaves ?? 0} icon={Calendar}
-          iconBg="bg-red-50" iconColor="text-red-600" />
+          iconBg="bg-red-500" />
       </div>
 
       {d.allowances?.length > 0 && (
@@ -349,34 +349,11 @@ export default function DashboardPage() {
   const [conductDoc, setConductDoc] = useState<{ url: string; name: string }>(() => {
     try { const s = localStorage.getItem(CONDUCT_DOC_KEY); return s ? JSON.parse(s) : DEFAULT_CONDUCT_DOC; } catch { return DEFAULT_CONDUCT_DOC; }
   });
-  const isCustomConductDoc = conductDoc.url !== DEFAULT_CONDUCT_DOC.url;
-  const [conductUploading, setConductUploading] = useState(false);
   const [deleteConductOpen, setDeleteConductOpen] = useState(false);
 
   const { data, isLoading } = useDashboard();
   const d = data as any;
   const role = d?.role;
-
-  const handleConductUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setConductUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) throw new Error();
-      const { fileUrl, fileName } = await res.json();
-      const doc = { url: fileUrl, name: fileName || file.name };
-      setConductDoc(doc);
-      localStorage.setItem(CONDUCT_DOC_KEY, JSON.stringify(doc));
-    } catch {
-      alert("فشل رفع الملف");
-    } finally {
-      setConductUploading(false);
-    }
-  };
 
   const removeConductDoc = () => {
     setConductDoc(DEFAULT_CONDUCT_DOC);
@@ -404,19 +381,47 @@ export default function DashboardPage() {
     : user?.fullName || user?.username || "—";
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">لوحة التحكم</h1>
-        <p className="text-muted-foreground mt-1">
-          مرحباً، {displayName}
-          {employeeInfo?.jobTitle && (
-            <span className="text-xs mr-2">· {typeof employeeInfo.jobTitle === "string" ? employeeInfo.jobTitle : employeeInfo.jobTitle?.nameAr}</span>
-          )}
-          {employeeInfo?.department && (
-            <span className="text-xs">· {typeof employeeInfo.department === "string" ? employeeInfo.department : employeeInfo.department?.nameAr}</span>
-          )}
-        </p>
+    <div className="space-y-5">
+      {/* ── Hero Banner ─────────────────────────────────────────────────── */}
+      <div
+        className="relative rounded-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(to right, oklch(0.188 0.078 272) 0%, oklch(0.218 0.082 262) 32%, oklch(0.355 0.092 52) 68%, oklch(0.435 0.105 38) 100%)",
+          padding: "2rem 2.5rem 1.75rem",
+        }}
+      >
+        {/* Subtle warm glow on start/right side */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse 55% 100% at 90% 50%, oklch(0.702 0.191 47.604 / 0.14) 0%, transparent 70%)"
+          }}
+        />
+        {/* Subtle cool glow on end/left side */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse 40% 80% at 5% 50%, oklch(0.45 0.12 270 / 0.18) 0%, transparent 70%)"
+          }}
+        />
+
+        <div className="relative z-10 flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-bold text-white tracking-tight">لوحة التحكم</h1>
+            <p className="mt-1 text-white/70 text-base">
+              مرحباً {displayName}
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95"
+              onClick={() => router.push(`/${locale}/requests/my-requests`)}
+            >
+              <PlusCircle className="h-4 w-4" />
+              طلب جديد
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Role-based content */}

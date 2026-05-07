@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useTheme } from "next-themes";
-import { Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle } from "lucide-react";
+import { Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -49,8 +49,12 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/90 backdrop-blur-md px-6 shadow-sm">
-      <div className="flex-1" />
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between px-5">
+      {/* START (right in RTL) — ERP Workspace */}
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        {/* <span className="text-xs font-medium hidden sm:inline">ERP Workspace</span>
+        <Settings className="h-4 w-4" /> */}
+      </div>
 
       <div className="flex items-center gap-2">
         {/* Language */}
@@ -164,19 +168,20 @@ export function Header() {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-10 w-10 rounded-full">
-              <Avatar>
+            <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent transition-colors outline-none">
+              <div className="hidden sm:block text-start leading-tight">
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+                <p className="text-sm font-semibold">{user?.fullName || "User"}</p>
+              </div>
+              <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.profileImage} />
-                <AvatarFallback>{user?.fullName?.charAt(0) || "U"}</AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">
+                  {user?.fullName?.charAt(0) || "U"}
+                </AvatarFallback>
               </Avatar>
-            </Button>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <div className="p-2">
-              <p className="text-sm font-medium">{user?.fullName || "User"}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
-            </div>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="ml-2 h-4 w-4" />
               {t("user.logout")}

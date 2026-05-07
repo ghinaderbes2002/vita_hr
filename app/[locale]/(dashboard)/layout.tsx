@@ -36,7 +36,7 @@ export default function DashboardLayout({
 
   return (
     <AuthRefreshProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <Sidebar />
         <div
           className="transition-all duration-300"

@@ -329,24 +329,28 @@ export function Sidebar() {
 
   return (
     <aside className={cn(
-      "fixed top-0 z-40 h-screen bg-background flex flex-col transition-all duration-300",
+      "fixed top-0 z-40 h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300",
       isCollapsed ? "w-16" : "w-64",
-      isRTL ? "right-0 border-l" : "left-0 border-r"
+      isRTL ? "right-0 border-l border-sidebar-border" : "left-0 border-r border-sidebar-border"
     )}>
+
       {/* Logo */}
-      <div className="flex h-16 items-center border-b px-3 shrink-0 justify-between">
+      <div className="flex h-14 items-center border-b border-sidebar-border px-3 shrink-0 justify-between">
         {!isCollapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">V</span>
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/40">
+              <span className="text-primary-foreground font-extrabold text-sm">V</span>
             </div>
-            <span className="font-bold text-xl">Vita HR</span>
+            <div className="flex flex-col leading-none">
+              <span className="font-extrabold text-base tracking-tight text-sidebar-accent-foreground">Vita HR</span>
+              <span className="text-[10px] text-sidebar-foreground/60 tracking-widest uppercase">System</span>
+            </div>
           </Link>
         )}
         {isCollapsed && (
           <Link href="/dashboard" className="mx-auto">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">V</span>
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/40">
+              <span className="text-primary-foreground font-extrabold text-sm">V</span>
             </div>
           </Link>
         )}
@@ -354,24 +358,24 @@ export function Sidebar() {
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={cn("h-8 w-8", isCollapsed && "mx-auto mt-2")}
+          className={cn("h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md", isCollapsed && "mx-auto mt-2")}
         >
           {isCollapsed ? (
-            isRTL ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />
+            isRTL ? <ChevronsLeft className="h-3.5 w-3.5" /> : <ChevronsRight className="h-3.5 w-3.5" />
           ) : (
-            isRTL ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />
+            isRTL ? <ChevronsRight className="h-3.5 w-3.5" /> : <ChevronsLeft className="h-3.5 w-3.5" />
           )}
         </Button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto p-2.5 space-y-0.5">
         {!mounted ? (
           Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
               className={cn(
-                "h-9 rounded-lg bg-muted/50 animate-pulse",
+                "h-9 rounded-lg bg-sidebar-accent/50 animate-pulse",
                 isCollapsed ? "w-9 mx-auto" : "w-full"
               )}
             />
@@ -397,7 +401,7 @@ export function Sidebar() {
 
             return (
               <div key={item.title}>
-                {showSeparator && <div className="my-2 border-t" />}
+                {showSeparator && <div className="my-2 border-t border-sidebar-border" />}
                 <button
                   onClick={() => {
                     if (isCollapsed) {
@@ -409,7 +413,7 @@ export function Sidebar() {
                   }}
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium",
-                    "hover:bg-muted transition-colors",
+                    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
                     isCollapsed && "justify-center"
                   )}
                   title={isCollapsed ? t(item.title) : undefined}
@@ -451,7 +455,7 @@ export function Sidebar() {
                               onClick={() => toggle(child.title)}
                               className={cn(
                                 "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm",
-                                "hover:bg-muted transition-colors"
+                                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                               )}
                             >
                               <div className="flex items-center gap-3">
@@ -476,7 +480,7 @@ export function Sidebar() {
                                     href={grandChild.href!}
                                     className={cn(
                                       "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                                      "hover:bg-muted",
+                                      "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                                       isActive(grandChild.href!)
                                         ? "bg-primary text-primary-foreground font-medium"
                                         : ""
@@ -499,7 +503,7 @@ export function Sidebar() {
                           href={child.href!}
                           className={cn(
                             "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                            "hover:bg-muted",
+                            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                             isActive(child.href!)
                               ? "bg-primary text-primary-foreground font-medium"
                               : ""
@@ -518,12 +522,12 @@ export function Sidebar() {
 
           return (
             <div key={item.href}>
-              {item.separator && !isCollapsed && <div className="my-2 border-t" />}
+              {item.separator && !isCollapsed && <div className="my-2 border-t border-sidebar-border" />}
               <Link
                 href={item.href!}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors font-medium",
-                  "hover:bg-muted",
+                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                   active ? "bg-primary text-primary-foreground" : "",
                   isCollapsed && "justify-center gap-0"
                 )}
