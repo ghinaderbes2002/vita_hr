@@ -28,6 +28,8 @@ import { useJobTitles, useDeleteJobTitle } from "@/lib/hooks/use-job-titles";
 import { JobTitleDialog } from "@/components/features/job-titles/job-title-dialog";
 import { Pagination } from "@/components/shared/pagination";
 import { JobTitle } from "@/types";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function JobTitlesPage() {
   const t = useTranslations();
@@ -87,10 +89,12 @@ export default function JobTitlesPage() {
         title={t("jobTitles.title")}
         description={t("jobTitles.description")}
         actions={
-          <Button onClick={() => { setSelectedTitle(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("jobTitles.addTitle")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.JOB_TITLES.CREATE}>
+            <Button onClick={() => { setSelectedTitle(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("jobTitles.addTitle")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -159,17 +163,21 @@ export default function JobTitlesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(title)}>
-                          <Pencil className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(title)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.JOB_TITLES.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleEdit(title)}>
+                            <Pencil className="h-4 w-4 ml-2" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.JOB_TITLES.DELETE}>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(title)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

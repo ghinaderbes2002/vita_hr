@@ -29,6 +29,8 @@ import {
 import { useEmployees } from "@/lib/hooks/use-employees";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { ProbationStatus, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                    "bg-gray-100 text-gray-600",
@@ -91,10 +93,12 @@ export default function ProbationEvaluationsPage() {
         description={t("description")}
         count={evals.length}
         actions={
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {t("newEvaluation")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.PROBATION.SUBMIT}>
+            <Button onClick={() => setCreateOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t("newEvaluation")}
+            </Button>
+          </ActionGuard>
         }
       />
 

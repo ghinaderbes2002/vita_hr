@@ -18,6 +18,8 @@ import { useEmployees } from "@/lib/hooks/use-employees";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { Request } from "@/types";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function PendingManagerPage() {
   const t = useTranslations();
@@ -116,19 +118,23 @@ export default function PendingManagerPage() {
                           <Eye className="h-4 w-4 ml-2" />
                           {t("common.view")}
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => { setSelected(req); setApproveDialogOpen(true); }}
-                        >
-                          <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
-                          {t("requests.actions.approve")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => { setSelected(req); setRejectDialogOpen(true); }}
-                          className="text-destructive"
-                        >
-                          <XCircle className="h-4 w-4 ml-2" />
-                          {t("requests.actions.reject")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.REQUESTS.MANAGER_APPROVE}>
+                          <DropdownMenuItem
+                            onClick={() => { setSelected(req); setApproveDialogOpen(true); }}
+                          >
+                            <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
+                            {t("requests.actions.approve")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.REQUESTS.MANAGER_REJECT}>
+                          <DropdownMenuItem
+                            onClick={() => { setSelected(req); setRejectDialogOpen(true); }}
+                            className="text-destructive"
+                          >
+                            <XCircle className="h-4 w-4 ml-2" />
+                            {t("requests.actions.reject")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

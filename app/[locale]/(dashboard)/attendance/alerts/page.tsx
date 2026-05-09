@@ -51,6 +51,8 @@ import { AlertSeverityBadge } from "@/components/features/attendance/alert-sever
 import { AlertStatusBadge } from "@/components/features/attendance/alert-status-badge";
 import { AlertTypeBadge } from "@/components/features/attendance/alert-type-badge";
 import { AttendanceAlert, AlertStatus, AlertType, AlertSeverity } from "@/lib/api/attendance-alerts";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 import {
   Select,
   SelectContent,
@@ -258,24 +260,30 @@ export default function AttendanceAlertsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {alert.status === "OPEN" && (
-                        <DropdownMenuItem onClick={() => handleAcknowledge(alert)}>
-                          <Eye className="h-4 w-4 ml-2" />
-                          إقرار بالتنبيه
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.ATTENDANCE_ALERTS.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleAcknowledge(alert)}>
+                            <Eye className="h-4 w-4 ml-2" />
+                            إقرار بالتنبيه
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       )}
                       {alert.status !== "RESOLVED" && (
-                        <DropdownMenuItem onClick={() => handleResolve(alert)}>
-                          <CheckCircle2 className="h-4 w-4 ml-2" />
-                          حل التنبيه
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.ATTENDANCE_ALERTS.RESOLVE}>
+                          <DropdownMenuItem onClick={() => handleResolve(alert)}>
+                            <CheckCircle2 className="h-4 w-4 ml-2" />
+                            حل التنبيه
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       )}
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(alert)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 ml-2" />
-                        {t("common.delete")}
-                      </DropdownMenuItem>
+                      <ActionGuard permission={PERMISSIONS.ATTENDANCE_ALERTS.DELETE}>
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(alert)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 ml-2" />
+                          {t("common.delete")}
+                        </DropdownMenuItem>
+                      </ActionGuard>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -293,10 +301,12 @@ export default function AttendanceAlertsPage() {
         title="تنبيهات الحضور"
         description="إدارة تنبيهات حضور وانصراف الموظفين"
         actions={
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 ml-2" />
-            إضافة تنبيه
-          </Button>
+          <ActionGuard permission={PERMISSIONS.ATTENDANCE_ALERTS.CREATE}>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 ml-2" />
+              إضافة تنبيه
+            </Button>
+          </ActionGuard>
         }
       />
 

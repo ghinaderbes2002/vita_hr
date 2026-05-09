@@ -48,6 +48,8 @@ import {
   useDeleteEvaluationCriteria,
 } from "@/lib/hooks/use-evaluation-criteria";
 import { EvaluationCriteria, CriteriaCategory } from "@/lib/api/evaluation-criteria";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function EvaluationCriteriaPage() {
   const t = useTranslations();
@@ -202,17 +204,21 @@ export default function EvaluationCriteriaPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(c)}>
-                        <Edit className="h-4 w-4 ml-2" />
-                        {t("common.edit")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(c)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 ml-2" />
-                        {t("common.delete")}
-                      </DropdownMenuItem>
+                      <ActionGuard permission={PERMISSIONS.EVALUATION_CRITERIA.UPDATE}>
+                        <DropdownMenuItem onClick={() => handleEdit(c)}>
+                          <Edit className="h-4 w-4 ml-2" />
+                          {t("common.edit")}
+                        </DropdownMenuItem>
+                      </ActionGuard>
+                      <ActionGuard permission={PERMISSIONS.EVALUATION_CRITERIA.DELETE}>
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(c)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 ml-2" />
+                          {t("common.delete")}
+                        </DropdownMenuItem>
+                      </ActionGuard>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -230,10 +236,12 @@ export default function EvaluationCriteriaPage() {
         title={t("evaluationCriteria.title")}
         description={t("evaluationCriteria.description")}
         actions={
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("evaluationCriteria.addCriteria")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.EVALUATION_CRITERIA.CREATE}>
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("evaluationCriteria.addCriteria")}
+            </Button>
+          </ActionGuard>
         }
       />
 

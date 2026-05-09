@@ -32,29 +32,18 @@ export default function MailPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] overflow-hidden rounded-lg border bg-background shadow-sm">
-      {/* Folder sidebar */}
-      <aside className="w-48 shrink-0 border-l flex flex-col bg-muted/20">
-        <div className="p-3 border-b">
-          <Button
-            className="w-full gap-2"
-            size="sm"
-            onClick={() => setComposeOpen(true)}
-          >
-            <PenSquare className="h-4 w-4" />
-            رسالة جديدة
-          </Button>
-        </div>
-
-        <nav className="flex-1 py-2 space-y-0.5 px-2">
+    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden rounded-lg border bg-background shadow-sm">
+      {/* Folder app bar */}
+      <div className="flex items-center gap-1 px-3 py-2 border-b bg-muted/20">
+        <nav className="flex-1 flex items-center gap-1 overflow-x-auto">
           {FOLDERS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => handleFolderChange(key)}
               className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-right",
+                "flex items-center gap-2 px-3 h-9 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                 activeFolder === key
-                  ? "bg-primary text-primary-foreground font-medium"
+                  ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
@@ -63,24 +52,19 @@ export default function MailPage() {
             </button>
           ))}
         </nav>
-      </aside>
+
+        <Button
+          className="gap-2 shrink-0"
+          size="sm"
+          onClick={() => setComposeOpen(true)}
+        >
+          <PenSquare className="h-4 w-4" />
+          رسالة جديدة
+        </Button>
+      </div>
 
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Folder title bar */}
-        <div className="px-4 py-3 border-b flex items-center gap-2">
-          {(() => {
-            const f = FOLDERS.find((f) => f.key === activeFolder)!;
-            const Icon = f.icon;
-            return (
-              <>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-                <h1 className="text-sm font-semibold">{f.label}</h1>
-              </>
-            );
-          })()}
-        </div>
-
         {openMessageId ? (
           <MailDetail
             messageId={openMessageId}

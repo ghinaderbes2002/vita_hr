@@ -1,5 +1,7 @@
 import axios from "axios";
+import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { AUTH_ERROR_CODES } from "@/lib/permissions/error-codes";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -62,7 +64,24 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    const errorCode = error.response?.data?.code;
+
+    // Rate limit (429) — handle globally, except on login (login page shows its own message)
+    if (error.response?.status === 429) {
+      if (!originalRequest?.url?.includes('/auth/login')) {
+        toast.error("تجاوزت الحد المسموح، يرجى الانتظار قليلاً والمحاولة مجدداً");
+      }
+      return Promise.reject(error);
+    }
+
+    // Insufficient permissions (403)
+    if (errorCode === AUTH_ERROR_CODES.INSUFFICIENT_PERMISSIONS) {
+      toast.error("ليس لديك صلاحية لهذا الإجراء");
+      return Promise.reject(error);
+    }
+
     // Only try to refresh if we get a 401 and haven't retried this request yet
+    // Token revoked / invalid both trigger refresh attempt
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // If already refreshing, queue this request
@@ -108,7 +127,8 @@ apiClient.interceptors.response.use(
 
         // Only redirect to login if we're not already there
         if (typeof window !== "undefined" && !window.location.pathname.includes('/login')) {
-          window.location.href = "/ar/login";
+          const currentLocale = window.location.pathname.split('/')[1] || 'ar';
+          window.location.href = `/${currentLocale}/login`;
         }
 
         return Promise.reject(refreshError);

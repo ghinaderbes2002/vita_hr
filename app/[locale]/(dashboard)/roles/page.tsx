@@ -24,6 +24,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRoles, useDeleteRole } from "@/lib/hooks/use-roles";
 import { RoleDialog } from "@/components/features/roles/role-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function RolesPage() {
   const t = useTranslations();
@@ -58,10 +60,12 @@ export default function RolesPage() {
         title={t("roles.title")}
         description={t("roles.description")}
         actions={
-          <Button onClick={() => { setSelectedRole(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("roles.addRole")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.ROLES.CREATE}>
+            <Button onClick={() => { setSelectedRole(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("roles.addRole")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -122,17 +126,21 @@ export default function RolesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(role)}>
-                          <Pencil className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(role)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.ROLES.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleEdit(role)}>
+                            <Pencil className="h-4 w-4 ml-2" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.ROLES.DELETE}>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(role)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

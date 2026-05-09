@@ -35,6 +35,8 @@ import { UserDialog } from "@/components/features/users/user-dialog";
 import { AssignRolesDialog } from "@/components/features/users/assign-roles-dialog";
 import { ChangePasswordDialog } from "@/components/features/users/change-password-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function UsersPage() {
   const t = useTranslations();
@@ -96,10 +98,12 @@ export default function UsersPage() {
         title={t("users.title")}
         description={t("users.description")}
         actions={
-          <Button onClick={() => { setSelectedUser(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("users.addUser")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.USERS.CREATE}>
+            <Button onClick={() => { setSelectedUser(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("users.addUser")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -187,25 +191,33 @@ export default function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(user)}>
-                          <Pencil className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleAssignRoles(user)}>
-                          <Shield className="h-4 w-4 ml-2" />
-                          {t("users.assignRoles")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleChangePassword(user)}>
-                          <KeyRound className="h-4 w-4 ml-2" />
-                          تغيير كلمة المرور
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(user)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.USERS.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleEdit(user)}>
+                            <Pencil className="h-4 w-4 ml-2" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.USERS.ASSIGN_ROLES}>
+                          <DropdownMenuItem onClick={() => handleAssignRoles(user)}>
+                            <Shield className="h-4 w-4 ml-2" />
+                            {t("users.assignRoles")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.USERS.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleChangePassword(user)}>
+                            <KeyRound className="h-4 w-4 ml-2" />
+                            تغيير كلمة المرور
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.USERS.DELETE}>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(user)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

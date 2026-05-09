@@ -43,6 +43,8 @@ import { BalanceDialog } from "@/components/features/leave-balances/balance-dial
 import { AdjustDialog } from "@/components/features/leave-balances/adjust-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { LeaveBalance } from "@/lib/api/leave-balances";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function LeaveBalancesPage() {
   const t = useTranslations();
@@ -116,14 +118,18 @@ export default function LeaveBalancesPage() {
         description={t("leaveBalances.description")}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setInitEmployeeId(""); setInitYear(currentYear); setInitDialogOpen(true); }}>
-              <Sparkles className="h-4 w-4 ml-2" />
-              تهيئة أرصدة موظف
-            </Button>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 ml-2" />
-              {t("leaveBalances.addBalance")}
-            </Button>
+            <ActionGuard permission={PERMISSIONS.LEAVE_BALANCES.INITIALIZE}>
+              <Button variant="outline" onClick={() => { setInitEmployeeId(""); setInitYear(currentYear); setInitDialogOpen(true); }}>
+                <Sparkles className="h-4 w-4 ml-2" />
+                تهيئة أرصدة موظف
+              </Button>
+            </ActionGuard>
+            <ActionGuard permission={PERMISSIONS.LEAVE_BALANCES.CREATE}>
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 ml-2" />
+                {t("leaveBalances.addBalance")}
+              </Button>
+            </ActionGuard>
           </div>
         }
       />
@@ -248,14 +254,18 @@ export default function LeaveBalancesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleAdjust(b)}>
-                              <Settings2 className="h-4 w-4 ml-2" />
-                              {t("leaveBalances.adjustBalance")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(b)} className="text-destructive">
-                              <Trash2 className="h-4 w-4 ml-2" />
-                              {t("common.delete")}
-                            </DropdownMenuItem>
+                            <ActionGuard permission={PERMISSIONS.LEAVE_BALANCES.ADJUST}>
+                              <DropdownMenuItem onClick={() => handleAdjust(b)}>
+                                <Settings2 className="h-4 w-4 ml-2" />
+                                {t("leaveBalances.adjustBalance")}
+                              </DropdownMenuItem>
+                            </ActionGuard>
+                            <ActionGuard permission={PERMISSIONS.LEAVE_BALANCES.DELETE}>
+                              <DropdownMenuItem onClick={() => handleDelete(b)} className="text-destructive">
+                                <Trash2 className="h-4 w-4 ml-2" />
+                                {t("common.delete")}
+                              </DropdownMenuItem>
+                            </ActionGuard>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

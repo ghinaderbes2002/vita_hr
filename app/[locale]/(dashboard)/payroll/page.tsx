@@ -25,6 +25,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { usePayroll, useGeneratePayroll } from "@/lib/hooks/use-payroll";
 import { PayrollItem, BonusDetail, PenaltyDetail } from "@/lib/api/payroll";
 import { useEmployees } from "@/lib/hooks/use-employees";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const MONTHS = [
   { value: 1, label: "يناير" }, { value: 2, label: "فبراير" },
@@ -90,10 +92,12 @@ export default function PayrollPage() {
         title="كشوف الرواتب"
         description="عرض وتوليد رواتب الموظفين"
         actions={
-          <Button onClick={() => setGenerateOpen(true)} className="gap-2">
-            <Play className="h-4 w-4" />
-            توليد الرواتب
-          </Button>
+          <ActionGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.GENERATE}>
+            <Button onClick={() => setGenerateOpen(true)} className="gap-2">
+              <Play className="h-4 w-4" />
+              توليد الرواتب
+            </Button>
+          </ActionGuard>
         }
       />
 

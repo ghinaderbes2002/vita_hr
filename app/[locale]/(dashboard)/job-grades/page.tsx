@@ -26,6 +26,8 @@ import { useJobGrades, useDeleteJobGrade } from "@/lib/hooks/use-job-grades";
 import { JobGradeDialog } from "@/components/features/job-grades/job-grade-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { JobGrade } from "@/lib/api/job-grades";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function JobGradesPage() {
   const t = useTranslations();
@@ -72,10 +74,12 @@ export default function JobGradesPage() {
         title={t("jobGrades.title")}
         description={t("jobGrades.description")}
         actions={
-          <Button onClick={() => { setSelectedGrade(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("jobGrades.addGrade")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.JOB_GRADES.CREATE}>
+            <Button onClick={() => { setSelectedGrade(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("jobGrades.addGrade")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -154,17 +158,21 @@ export default function JobGradesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(grade)}>
-                          <Pencil className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(grade)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.JOB_GRADES.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleEdit(grade)}>
+                            <Pencil className="h-4 w-4 ml-2" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.JOB_GRADES.DELETE}>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(grade)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

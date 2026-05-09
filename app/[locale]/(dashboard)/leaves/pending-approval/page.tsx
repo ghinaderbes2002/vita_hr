@@ -50,8 +50,8 @@ export default function PendingApprovalPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [actionType, setActionType] = useState<"manager" | "hr">("manager");
 
-  const { hasRole } = usePermissions();
-  const isHrManager = hasRole("hr_manager") || hasRole("مدير الموارد البشرية");
+  const { hasPermission } = usePermissions();
+  const isHrManager = hasPermission("leave_requests:approve_hr");
 
   const [activeTab, setActiveTab] = useState<"manager" | "hr">(isHrManager ? "hr" : "manager");
   const [page, setPage] = useState(1);

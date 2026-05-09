@@ -39,6 +39,8 @@ import { LinkUserDialog } from "@/components/features/employees/link-user-dialog
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Pagination } from "@/components/shared/pagination";
 import { OrgTree } from "@/components/features/employees/org-tree";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function EmployeesPage() {
   const t = useTranslations();
@@ -143,10 +145,12 @@ export default function EmployeesPage() {
                 شجرة
               </button>
             </div>
-            <Button onClick={() => { setSelectedEmployee(null); setDialogOpen(true); }}>
-              <Plus className="h-4 w-4 ml-2" />
-              {t("employees.addEmployee")}
-            </Button>
+            <ActionGuard permission={PERMISSIONS.EMPLOYEES.CREATE}>
+              <Button onClick={() => { setSelectedEmployee(null); setDialogOpen(true); }}>
+                <Plus className="h-4 w-4 ml-2" />
+                {t("employees.addEmployee")}
+              </Button>
+            </ActionGuard>
           </div>
         }
       />
@@ -262,21 +266,27 @@ export default function EmployeesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(employee); }}>
-                          <Pencil className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleLinkUser(employee); }}>
-                          <Link className="h-4 w-4 ml-2" />
-                          {t("employees.linkUser")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => { e.stopPropagation(); handleDelete(employee); }}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(employee); }}>
+                            <Pencil className="h-4 w-4 ml-2" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.USERS.ASSIGN_ROLES}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleLinkUser(employee); }}>
+                            <Link className="h-4 w-4 ml-2" />
+                            {t("employees.linkUser")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.EMPLOYEES.DELETE}>
+                          <DropdownMenuItem
+                            onClick={(e) => { e.stopPropagation(); handleDelete(employee); }}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
