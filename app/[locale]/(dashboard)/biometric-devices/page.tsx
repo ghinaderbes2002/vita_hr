@@ -26,6 +26,8 @@ import {
   useDeleteBiometricDevice,
 } from "@/lib/hooks/use-biometric-devices";
 import { BiometricDevice, CreateBiometricDeviceData, UpdateBiometricDeviceData } from "@/lib/api/biometric-devices";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 interface DeviceFormData {
   serialNumber: string;
@@ -135,10 +137,12 @@ export default function BiometricDevicesPage() {
         description={t("description")}
         count={deviceList.length}
         actions={
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {t("addDevice")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.BIOMETRIC_DEVICES.CREATE}>
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t("addDevice")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -194,10 +198,12 @@ export default function BiometricDevicesPage() {
               title={t("empty.title")}
               description={t("empty.description")}
               action={
-                <Button onClick={openCreate} variant="outline" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  {t("addDevice")}
-                </Button>
+                <ActionGuard permission={PERMISSIONS.BIOMETRIC_DEVICES.CREATE}>
+                  <Button onClick={openCreate} variant="outline" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    {t("addDevice")}
+                  </Button>
+                </ActionGuard>
               }
             />
           ) : (
@@ -253,22 +259,26 @@ export default function BiometricDevicesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openEdit(device)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => openDelete(device)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <ActionGuard permission={PERMISSIONS.BIOMETRIC_DEVICES.UPDATE}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openEdit(device)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </ActionGuard>
+                          <ActionGuard permission={PERMISSIONS.BIOMETRIC_DEVICES.DELETE}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => openDelete(device)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </ActionGuard>
                         </div>
                       </TableCell>
                     </TableRow>

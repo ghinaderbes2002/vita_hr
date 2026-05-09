@@ -25,6 +25,8 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
 import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
 import { Custody, CustodyStatus } from "@/types";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const STATUS_VARIANTS: Record<CustodyStatus, "default" | "secondary" | "destructive" | "outline"> = {
   WITH_EMPLOYEE: "default",
@@ -105,10 +107,12 @@ export default function CustodiesPage() {
         description={t("custodies.description")}
         count={!isLoading ? custodies.length : undefined}
         actions={
-          <Button onClick={() => { setSelected(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("custodies.addCustody")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.CUSTODIES.CREATE}>
+            <Button onClick={() => { setSelected(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("custodies.addCustody")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -230,17 +234,23 @@ export default function CustodiesPage() {
                             <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(c)}>
-                              <Pencil className="h-4 w-4 ml-2" />{t("common.edit")}
-                            </DropdownMenuItem>
-                            {c.status === "WITH_EMPLOYEE" && (
-                              <DropdownMenuItem onClick={() => handleReturn(c)}>
-                                <RotateCcw className="h-4 w-4 ml-2" />{t("custodies.returnCustody")}
+                            <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
+                              <DropdownMenuItem onClick={() => handleEdit(c)}>
+                                <Pencil className="h-4 w-4 ml-2" />{t("common.edit")}
                               </DropdownMenuItem>
+                            </ActionGuard>
+                            {c.status === "WITH_EMPLOYEE" && (
+                              <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
+                                <DropdownMenuItem onClick={() => handleReturn(c)}>
+                                  <RotateCcw className="h-4 w-4 ml-2" />{t("custodies.returnCustody")}
+                                </DropdownMenuItem>
+                              </ActionGuard>
                             )}
-                            <DropdownMenuItem onClick={() => handleDelete(c)} className="text-destructive">
-                              <Trash2 className="h-4 w-4 ml-2" />{t("common.delete")}
-                            </DropdownMenuItem>
+                            <ActionGuard permission={PERMISSIONS.CUSTODIES.DELETE}>
+                              <DropdownMenuItem onClick={() => handleDelete(c)} className="text-destructive">
+                                <Trash2 className="h-4 w-4 ml-2" />{t("common.delete")}
+                              </DropdownMenuItem>
+                            </ActionGuard>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

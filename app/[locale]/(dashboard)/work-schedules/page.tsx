@@ -28,6 +28,8 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useWorkSchedules, useDeleteWorkSchedule, useEmployeesMissingSchedule } from "@/lib/hooks/use-work-schedules";
 import { WorkScheduleDialog } from "@/components/features/work-schedules/work-schedule-dialog";
 import { WorkSchedule } from "@/lib/api/work-schedules";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function WorkSchedulesPage() {
   const t = useTranslations();
@@ -106,10 +108,12 @@ export default function WorkSchedulesPage() {
         title={t("workSchedules.title")}
         description={t("workSchedules.description")}
         actions={
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("workSchedules.addSchedule")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.WORK_SCHEDULES.CREATE}>
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("workSchedules.addSchedule")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -195,17 +199,21 @@ export default function WorkSchedulesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(schedule)}>
-                          <Edit className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(schedule)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.WORK_SCHEDULES.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleEdit(schedule)}>
+                            <Edit className="h-4 w-4 ml-2" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.WORK_SCHEDULES.DELETE}>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(schedule)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

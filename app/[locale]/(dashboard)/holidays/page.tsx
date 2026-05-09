@@ -36,6 +36,8 @@ import { HolidayDialog } from "@/components/features/holidays/holiday-dialog";
 import { HolidaysCalendarView } from "@/components/features/holidays/holidays-calendar-view";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Holiday } from "@/types";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function HolidaysPage() {
   const t = useTranslations();
@@ -96,10 +98,12 @@ export default function HolidaysPage() {
         title={t("holidays.title")}
         description={t("holidays.description")}
         actions={
-          <Button onClick={() => { setSelectedHoliday(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("holidays.addHoliday")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.HOLIDAYS.CREATE}>
+            <Button onClick={() => { setSelectedHoliday(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("holidays.addHoliday")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -204,14 +208,18 @@ export default function HolidaysPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(holiday)}>
-                            <Pencil className="h-4 w-4 ml-2" />
-                            {t("common.edit")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(holiday)} className="text-destructive">
-                            <Trash2 className="h-4 w-4 ml-2" />
-                            {t("common.delete")}
-                          </DropdownMenuItem>
+                          <ActionGuard permission={PERMISSIONS.HOLIDAYS.UPDATE}>
+                            <DropdownMenuItem onClick={() => handleEdit(holiday)}>
+                              <Pencil className="h-4 w-4 ml-2" />
+                              {t("common.edit")}
+                            </DropdownMenuItem>
+                          </ActionGuard>
+                          <ActionGuard permission={PERMISSIONS.HOLIDAYS.DELETE}>
+                            <DropdownMenuItem onClick={() => handleDelete(holiday)} className="text-destructive">
+                              <Trash2 className="h-4 w-4 ml-2" />
+                              {t("common.delete")}
+                            </DropdownMenuItem>
+                          </ActionGuard>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

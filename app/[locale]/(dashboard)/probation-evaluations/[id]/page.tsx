@@ -175,13 +175,13 @@ export default function ProbationEvaluationDetailPage() {
 
   const ev = evaluation as any;
   const hist = (history as any) || [];
-  const { hasRole, hasAnyPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin } = usePermissions();
 
   const { data: employeeRecord } = useEmployee(ev?.employeeId || "");
 
-  const canSeniorApprove = isAdmin() || hasRole("senior_manager") || hasRole("manager") || hasAnyPermission(["probation:approve", "probation:*"]);
-  const canHrDocument    = isAdmin() || hasRole("hr") || hasRole("hr_manager") || hasAnyPermission(["probation:hr-document", "probation:*", "hr:*"]);
-  const canCeoDecide     = isAdmin() || hasRole("ceo") || hasRole("general_manager") || hasAnyPermission(["probation:ceo-decide", "probation:*"]);
+  const canSeniorApprove = isAdmin() || hasPermission("probation:senior-review");
+  const canHrDocument    = isAdmin() || hasPermission("probation:hr-review");
+  const canCeoDecide     = isAdmin() || hasPermission("probation:ceo-review");
 
   if (isLoading) {
     return (

@@ -29,6 +29,9 @@ import { TrainingCertificate, EmployeeAllowance } from "@/types";
 import { useEmployee, useUpdateEmployee, useManagerNotes, useUpdateManagerNotes } from "@/lib/hooks/use-employees";
 import { assetUrl } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { FieldGuard } from "@/components/permissions/field-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useEmployeeFingerprints, useRegisterFingerprint, useDeleteFingerprint } from "@/lib/hooks/use-employee-fingerprints";
 import { useBiometricDevices } from "@/lib/hooks/use-biometric-devices";
 import { useEmployeeAttendanceConfig, useUpsertAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
@@ -460,45 +463,53 @@ export default function EmployeeDetailsPage() {
                 ) : (
                   <span className="text-sm text-muted-foreground italic">دائم</span>
                 )}
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openContractEdit}>
-                  <Pencil className="h-3 w-3" />
-                </Button>
+                <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openContractEdit}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </ActionGuard>
               </div>
             </div>
-            <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `$${Number(emp.basicSalary).toLocaleString("en-US")}` : undefined} />
+            <FieldGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.READ} hideEntirely>
+              <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `$${Number(emp.basicSalary).toLocaleString("en-US")}` : undefined} />
+            </FieldGuard>
             {employee.manager && (
               <InfoRow
                 label={t("employees.fields.manager")}
                 value={`${(employee.manager as any).firstNameAr} ${(employee.manager as any).lastNameAr}`}
               />
             )}
-            {allowances.length > 0 && (
-              <div className="pt-2">
-                <span className="text-sm text-muted-foreground block mb-2">البدلات</span>
-                <div className="space-y-1">
-                  {allowances.map((al, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{ALLOWANCE_TYPE_LABELS[al.type] || al.type}</span>
-                      <span className="font-medium">${Number(al.amount).toLocaleString("en-US")}</span>
+            <FieldGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.READ} hideEntirely>
+              <>
+                {allowances.length > 0 && (
+                  <div className="pt-2">
+                    <span className="text-sm text-muted-foreground block mb-2">البدلات</span>
+                    <div className="space-y-1">
+                      {allowances.map((al, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{ALLOWANCE_TYPE_LABELS[al.type] || al.type}</span>
+                          <span className="font-medium">${Number(al.amount).toLocaleString("en-US")}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
+                        <span className="text-muted-foreground">مجموع البدلات</span>
+                        <span className="font-medium">
+                          ${allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString("en-US")}
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                  <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
-                    <span className="text-muted-foreground">مجموع البدلات</span>
-                    <span className="font-medium">
-                      ${allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString("en-US")}
+                  </div>
+                )}
+                {emp.basicSalary && (
+                  <div className="flex items-center justify-between text-sm border-t pt-2 mt-1">
+                    <span className="font-semibold">الراتب الإجمالي</span>
+                    <span className="font-bold text-primary">
+                      ${(Number(emp.basicSalary) + allowances.reduce((s, a) => s + Number(a.amount), 0)).toLocaleString("en-US")}
                     </span>
                   </div>
-                </div>
-              </div>
-            )}
-            {emp.basicSalary && (
-              <div className="flex items-center justify-between text-sm border-t pt-2 mt-1">
-                <span className="font-semibold">الراتب الإجمالي</span>
-                <span className="font-bold text-primary">
-                  ${(Number(emp.basicSalary) + allowances.reduce((s, a) => s + Number(a.amount), 0)).toLocaleString("en-US")}
-                </span>
-              </div>
-            )}
+                )}
+              </>
+            </FieldGuard>
           </CardContent>
         </Card>
 

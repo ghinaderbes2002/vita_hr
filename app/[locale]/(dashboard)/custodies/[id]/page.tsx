@@ -15,6 +15,8 @@ import { ReturnCustodyDialog } from "@/components/features/custodies/return-cust
 import { useCustody, useDeleteCustody } from "@/lib/hooks/use-custodies";
 import { assetUrl } from "@/lib/utils";
 import { Custody, CustodyStatus } from "@/types";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const STATUS_VARIANTS: Record<CustodyStatus, "default" | "secondary" | "destructive" | "outline"> = {
   WITH_EMPLOYEE: "default",
@@ -92,20 +94,26 @@ export default function CustodyDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil className="h-4 w-4 ml-1.5" />
-            {t("common.edit")}
-          </Button>
-          {custody.status === "WITH_EMPLOYEE" && (
-            <Button variant="outline" size="sm" onClick={() => setReturnOpen(true)}>
-              <RotateCcw className="h-4 w-4 ml-1.5" />
-              {t("custodies.returnCustody")}
+          <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-4 w-4 ml-1.5" />
+              {t("common.edit")}
             </Button>
+          </ActionGuard>
+          {custody.status === "WITH_EMPLOYEE" && (
+            <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
+              <Button variant="outline" size="sm" onClick={() => setReturnOpen(true)}>
+                <RotateCcw className="h-4 w-4 ml-1.5" />
+                {t("custodies.returnCustody")}
+              </Button>
+            </ActionGuard>
           )}
-          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="h-4 w-4 ml-1.5" />
-            {t("common.delete")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.CUSTODIES.DELETE}>
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-4 w-4 ml-1.5" />
+              {t("common.delete")}
+            </Button>
+          </ActionGuard>
         </div>
       </div>
 

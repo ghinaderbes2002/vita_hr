@@ -26,6 +26,8 @@ import { useLeaveTypes, useDeleteLeaveType } from "@/lib/hooks/use-leave-types";
 import { LeaveTypeDialog } from "@/components/features/leave-types/leave-type-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { LeaveType } from "@/types";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function LeaveTypesPage() {
   const t = useTranslations();
@@ -70,10 +72,12 @@ export default function LeaveTypesPage() {
         title={t("leaveTypes.title")}
         description={t("leaveTypes.description")}
         actions={
-          <Button onClick={() => { setSelectedLeaveType(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("leaveTypes.addLeaveType")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.LEAVE_TYPES.CREATE}>
+            <Button onClick={() => { setSelectedLeaveType(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("leaveTypes.addLeaveType")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -163,17 +167,21 @@ export default function LeaveTypesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(leaveType)}>
-                          <Pencil className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(leaveType)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.LEAVE_TYPES.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleEdit(leaveType)}>
+                            <Pencil className="h-4 w-4 ml-2" />
+                            {t("common.edit")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.LEAVE_TYPES.DELETE}>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(leaveType)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

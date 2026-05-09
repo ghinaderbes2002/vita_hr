@@ -44,6 +44,8 @@ import {
 import { EvaluationPeriod, PeriodStatus } from "@/lib/api/evaluation-periods";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 export default function EvaluationPeriodsPage() {
   const t = useTranslations();
@@ -184,10 +186,12 @@ export default function EvaluationPeriodsPage() {
         title={t("evaluationPeriods.title")}
         description={t("evaluationPeriods.description")}
         actions={
-          <Button onClick={handleCreate}>
-            <Plus className="h-4 w-4 ml-2" />
-            {t("evaluationPeriods.addPeriod")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.EVALUATION_PERIODS.CREATE}>
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 ml-2" />
+              {t("evaluationPeriods.addPeriod")}
+            </Button>
+          </ActionGuard>
         }
       />
 
@@ -249,35 +253,45 @@ export default function EvaluationPeriodsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(period)}>
-                          <Edit className="h-4 w-4 ml-2" />
-                          {t("common.edit")}
-                        </DropdownMenuItem>
-                        {period.status === "DRAFT" && (
-                          <DropdownMenuItem onClick={() => handleOpen(period)}>
-                            <PlayCircle className="h-4 w-4 ml-2" />
-                            {t("evaluationPeriods.openPeriod")}
+                        <ActionGuard permission={PERMISSIONS.EVALUATION_PERIODS.UPDATE}>
+                          <DropdownMenuItem onClick={() => handleEdit(period)}>
+                            <Edit className="h-4 w-4 ml-2" />
+                            {t("common.edit")}
                           </DropdownMenuItem>
+                        </ActionGuard>
+                        {period.status === "DRAFT" && (
+                          <ActionGuard permission={PERMISSIONS.EVALUATION_PERIODS.MANAGE}>
+                            <DropdownMenuItem onClick={() => handleOpen(period)}>
+                              <PlayCircle className="h-4 w-4 ml-2" />
+                              {t("evaluationPeriods.openPeriod")}
+                            </DropdownMenuItem>
+                          </ActionGuard>
                         )}
                         {(period.status === "DRAFT" || period.status === "OPEN") && (
-                          <DropdownMenuItem onClick={() => handleGenerateForms(period)}>
-                            <FileText className="h-4 w-4 ml-2" />
-                            {t("evaluationPeriods.generateForms")}
-                          </DropdownMenuItem>
+                          <ActionGuard permission={PERMISSIONS.EVALUATION_PERIODS.MANAGE}>
+                            <DropdownMenuItem onClick={() => handleGenerateForms(period)}>
+                              <FileText className="h-4 w-4 ml-2" />
+                              {t("evaluationPeriods.generateForms")}
+                            </DropdownMenuItem>
+                          </ActionGuard>
                         )}
                         {period.status === "OPEN" && (
-                          <DropdownMenuItem onClick={() => handleClose(period)}>
-                            <StopCircle className="h-4 w-4 ml-2" />
-                            {t("evaluationPeriods.closePeriod")}
-                          </DropdownMenuItem>
+                          <ActionGuard permission={PERMISSIONS.EVALUATION_PERIODS.MANAGE}>
+                            <DropdownMenuItem onClick={() => handleClose(period)}>
+                              <StopCircle className="h-4 w-4 ml-2" />
+                              {t("evaluationPeriods.closePeriod")}
+                            </DropdownMenuItem>
+                          </ActionGuard>
                         )}
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(period)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          {t("common.delete")}
-                        </DropdownMenuItem>
+                        <ActionGuard permission={PERMISSIONS.EVALUATION_PERIODS.DELETE}>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(period)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            {t("common.delete")}
+                          </DropdownMenuItem>
+                        </ActionGuard>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

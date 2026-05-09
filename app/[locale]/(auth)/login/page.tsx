@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +23,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const t = useTranslations("auth");
+  const locale = useLocale();
   const { login } = useAuthStore();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -40,12 +41,14 @@ export default function LoginPage() {
     setLocalLoading(true);
     try {
       await login(data.username, data.password);
-      router.push("/ar/dashboard");
+      router.push(`/${locale}/dashboard`);
     } catch (error: any) {
       let errorMessage = "خطأ في تسجيل الدخول";
 
       if (error.code === "ECONNABORTED" || error.code === "ERR_NETWORK") {
         errorMessage = "لا يمكن الاتصال بالخادم - تحقق من الاتصال بالإنترنت";
+      } else if (error.response?.status === 429) {
+        errorMessage = "محاولات كثيرة. انتظر دقيقة قبل المحاولة مرة أخرى.";
       } else if (error.response?.status === 401) {
         errorMessage = "اسم المستخدم أو كلمة المرور غير صحيحة";
       } else if (error.response?.data?.message) {

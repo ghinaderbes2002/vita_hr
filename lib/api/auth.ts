@@ -1,4 +1,4 @@
-import { apiClient, refreshClient } from "./client";
+import { refreshClient } from "./client";
 import { User } from "@/types";
 
 interface LoginResponse {
@@ -36,8 +36,10 @@ export const authApi = {
     return response.data.data;
   },
 
-  me: async (): Promise<User> => {
-    const response = await apiClient.get("/auth/me");
-    return response.data.data;
-  },
+  // TODO: backend endpoint not implemented yet (feature/permissions-upgrade)
+  // أعد تفعيلها عندما يضيف الباك GET /auth/me
+  // me: async (): Promise<User> => {
+  //   const response = await apiClient.get("/auth/me");
+  //   return response.data.data;
+  // },
 };
