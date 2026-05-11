@@ -66,15 +66,15 @@ const navigation: NavItem[] = [
     title: "nav.employeePortal",
     icon: UserCircle,
     children: [
+      { title: "nav.newRequest", href: "/requests/new", icon: PlusCircle, permission: "leave_requests:create" },
       { title: "nav.myProfile", href: "/my-profile", icon: UserCircle },
       { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck, permission: "attendance.records.read-own" },
       // { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn, permission: "attendance.records.check-in" },
       { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell, permission: "attendance.alerts.read-own" },
       { title: "nav.myJustifications", href: "/attendance/my-justifications", icon: FileText, permission: "attendance.justifications.read-own" },
       { title: "nav.myRequests", href: "/requests/my-requests", icon: FileText, permission: "leave_requests:read" },
-      { title: "nav.newRequest", href: "/requests/new", icon: PlusCircle, permission: "leave_requests:create" },
       { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
-      { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read" },
+      { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read", showForRoles: ["موظف"] },
       { title: "nav.deductionPoliciesView", href: "/deduction-policies?view=readonly", icon: ShieldCheck },
     ],
   },
@@ -131,6 +131,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.jobApplications",
         icon: Briefcase,
+        hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
           { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase },
@@ -146,6 +147,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.onboarding",
         icon: LayoutList,
+        hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.onboardingTemplates", href: "/onboarding/templates", icon: ClipboardList },
           { title: "nav.onboardingWorkflows", href: "/onboarding/workflows", icon: LayoutList },
@@ -154,6 +156,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.custodies",
         icon: Package,
+        hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.allCustodies", href: "/custodies", icon: Package, permission: "custodies:read" },
         ],
@@ -161,6 +164,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.biometricDevices",
         icon: Fingerprint,
+        hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.allBiometricDevices", href: "/biometric-devices", icon: Fingerprint },
           { title: "nav.biometricReports", href: "/attendance/biometric-reports", icon: FileBarChart },
@@ -169,6 +173,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.deductionPolicies",
         icon: ShieldCheck,
+        hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck },
         ],
@@ -183,6 +188,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.hrReports",
         icon: FileBarChart,
+        hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.hrReportsSummary", href: "/reports/hr", icon: FileBarChart },
           { title: "nav.leaveReports", href: "/reports/leave", icon: FileBarChart },
