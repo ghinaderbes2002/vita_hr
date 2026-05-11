@@ -201,7 +201,7 @@ export interface Employee {
   departmentId: string;
   department?: Department;
   jobTitleId?: string;
-  jobTitle?: { id: string; nameAr: string; nameEn: string; code: string };
+  jobTitle?: { id: string; nameAr: string; nameEn: string; code: string; description?: string };
   jobGradeId?: string;
   jobGrade?: { id: string; nameAr: string; nameEn: string; code: string; color?: string; minSalary?: number; maxSalary?: number };
   managerId?: string;

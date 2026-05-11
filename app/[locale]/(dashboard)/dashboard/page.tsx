@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useLocale } from "next-intl";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
@@ -352,6 +353,7 @@ export default function DashboardPage() {
   const [deleteConductOpen, setDeleteConductOpen] = useState(false);
 
   const { data, isLoading } = useDashboard();
+  const { data: myProfile } = useMyEmployee();
   const d = data as any;
   const role = d?.role;
 
@@ -430,6 +432,32 @@ export default function DashboardPage() {
       {role === "HR" && <HRDashboard d={d} locale={locale} router={router} />}
       {role === "CEO" && <CEODashboard d={d} locale={locale} router={router} />}
       {role === "CFO" && <CFODashboard d={d} locale={locale} router={router} />}
+
+      {/* Job Title Card — for all roles */}
+      {employeeInfo?.jobTitle && (
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full shrink-0 bg-amber-50 border border-amber-200">
+                <Briefcase className="h-5 w-5 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground font-medium mb-1">المسمى الوظيفي</p>
+                <p className="text-base font-bold text-foreground">
+                  {locale === "ar"
+                    ? employeeInfo.jobTitle.nameAr
+                    : (employeeInfo.jobTitle.nameEn || employeeInfo.jobTitle.nameAr)}
+                </p>
+                {(myProfile?.jobTitle?.description || employeeInfo.jobTitle.description) && (
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                    {myProfile?.jobTitle?.description || employeeInfo.jobTitle.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Code of Conduct — for all roles */}
       <Card>
