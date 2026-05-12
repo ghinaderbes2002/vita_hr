@@ -192,10 +192,10 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
             <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="كل الحالات" />
+              <SelectValue placeholder="جميع الحالات" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">كل الحالات</SelectItem>
+              <SelectItem value="ALL">جميع الحالات</SelectItem>
               {ALL_STATUSES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}

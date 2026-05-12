@@ -778,7 +778,7 @@ export default function EmployeeDetailsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <ClipboardList className="h-4 w-4 text-primary" />
-                ملاحظات المدير
+                {t("employees.managerNotes")}
                 {canWriteNotes && !notesEditing && (
                   <Button variant="ghost" size="icon" className="h-7 w-7 ms-auto" onClick={openNotesEdit}>
                     <Pencil className="h-3.5 w-3.5" />

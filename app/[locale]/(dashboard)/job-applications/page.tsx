@@ -423,7 +423,7 @@ export default function JobApplicationsPage() {
               className="gap-2"
             >
               <Star className={`h-4 w-4 ${showFavorites ? "fill-white" : "fill-none"}`} />
-              المفضلة
+              قائمة المواهب
               {favorites.size > 0 && (
                 <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${showFavorites ? "bg-white/20" : "bg-red-100 text-red-600"}`}>
                   {favorites.size}
@@ -458,7 +458,7 @@ export default function JobApplicationsPage() {
                 ) : applications.filter((a) => !showFavorites || favorites.has(a.id)).length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
-                      {showFavorites ? "لا يوجد طلبات في المفضلة" : t("common.noData")}
+                      {showFavorites ? "لا يوجد طلبات في قائمة المواهب" : t("common.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (

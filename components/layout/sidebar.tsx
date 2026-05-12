@@ -82,7 +82,7 @@ const navigation: NavItem[] = [
     
     title: "nav.management",
     icon: Settings,
-    hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية", "dep_manager", "مدير قسم"],
+    hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية", "dep_manager", "مدير قسم", "DIRECT_MANAGER"],
     children: [
       { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
       { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read" },
@@ -90,7 +90,6 @@ const navigation: NavItem[] = [
       { title: "nav.jobTitles", href: "/job-titles", icon: FileText, permission: "job-titles:read" },
       { title: "nav.jobGrades", href: "/job-grades", icon: GraduationCap, permission: "job-grades:read" },
       { title: "nav.employees", href: "/employees", icon: Users, permission: "employees:read" },
-      { title: "nav.subordinates", href: "/employees/subordinates", icon: UserCheck, permission: "employees:read" },
     ],
   },
   {
@@ -138,13 +137,6 @@ const navigation: NavItem[] = [
         ],
       },
       {
-        title: "nav.probationEvaluations",
-        icon: UserRoundCheck,
-        children: [
-          { title: "nav.allProbationEvaluations", href: "/probation-evaluations", icon: ClipboardPen },
-        ],
-      },
-      {
         title: "nav.onboarding",
         icon: LayoutList,
         hiddenForRoles: ["DIRECT_MANAGER"],
@@ -167,7 +159,6 @@ const navigation: NavItem[] = [
         hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.allBiometricDevices", href: "/biometric-devices", icon: Fingerprint },
-          { title: "nav.biometricReports", href: "/attendance/biometric-reports", icon: FileBarChart },
         ],
       },
       {
@@ -178,13 +169,7 @@ const navigation: NavItem[] = [
           { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck },
         ],
       },
-      {
-        title: "nav.payroll",
-        icon: Wallet,
-        children: [
-          { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "payroll:read" },
-        ],
-      },
+      { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "payroll:read" },
       {
         title: "nav.hrReports",
         icon: FileBarChart,
@@ -202,13 +187,8 @@ const navigation: NavItem[] = [
           { title: "بطاقة الموظف", href: "/reports/employee-card", icon: FileBarChart, permission: "attendance.reports.read" },
           { title: "انتهاء فترة التجربة", href: "/reports/probation-ending", icon: FileBarChart, permission: "employees:probation-report:read" },
           { title: "انتهاء العقود", href: "/reports/contract-ending", icon: FileBarChart, permission: "employees:contract-report:read" },
+          { title: "nav.biometricReports", href: "/attendance/biometric-reports", icon: FileBarChart },
         ],
-      },
-      {
-        title: "nav.auditLogs",
-        href: "/audit-logs",
-        icon: ClipboardSignature,
-        permission: "audit:read",
       },
       {
         title: "nav.evaluations",
@@ -218,9 +198,17 @@ const navigation: NavItem[] = [
           { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.allProbationEvaluations", href: "/probation-evaluations", icon: UserRoundCheck },
         ],
       },
     ],
+  },
+  {
+    title: "nav.auditLogs",
+    href: "/audit-logs",
+    icon: ClipboardSignature,
+    permission: "audit:read",
+    separator: true,
   },
 ];
 

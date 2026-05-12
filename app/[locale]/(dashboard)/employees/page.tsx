@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network, UserCheck } from "lucide-react";
+import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,6 +46,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 export default function EmployeesPage() {
   const t = useTranslations();
   const router = useRouter();
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
@@ -122,6 +124,14 @@ export default function EmployeesPage() {
         count={!isLoading && !selectedDepartment ? total : undefined}
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/${locale}/employees/subordinates`)}
+              className="flex items-center gap-1.5"
+            >
+              <UserCheck className="h-4 w-4" />
+              المرؤوسين
+            </Button>
             {/* View toggle */}
             <div className="flex rounded-md border overflow-hidden">
               <button

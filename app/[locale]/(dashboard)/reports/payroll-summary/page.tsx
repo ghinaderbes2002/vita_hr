@@ -108,10 +108,10 @@ export default function PayrollSummaryPage() {
 
         <Select value={deptId || "all"} onValueChange={(v) => setDeptId(v === "all" ? "" : v)}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="كل الأقسام" />
+            <SelectValue placeholder="جميع الأقسام" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كل الأقسام</SelectItem>
+            <SelectItem value="all">جميع الأقسام</SelectItem>
             {depts.map((d: any) => (
               <SelectItem key={d.id} value={d.id}>{d.nameAr}</SelectItem>
             ))}
