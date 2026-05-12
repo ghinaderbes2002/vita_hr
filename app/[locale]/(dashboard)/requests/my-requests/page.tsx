@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Send, X, Eye, Edit, Trash2, XCircle, Clock } from "lucide-react";
+import { Plus, Send, X, Eye, Edit, Trash2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMyRequests, useSubmitRequest, useCancelRequest } from "@/lib/hooks/use-requests";
 import { NewRequestDialog } from "@/components/features/requests/new-request-dialog";
-import { HourlyLeaveForm } from "@/components/features/leave-requests/hourly-leave-form";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { StatusBadge } from "@/components/features/leave-requests/status-badge";
@@ -84,8 +83,6 @@ export default function MyRequestsPage() {
       setSelectedAdmin(null);
     }
   };
-
-  const [hourlyLeaveDialogOpen, setHourlyLeaveDialogOpen] = useState(false);
 
   // --- Leave requests state ---
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -269,10 +266,6 @@ export default function MyRequestsPage() {
         description={t("requests.myRequestsDescription")}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setHourlyLeaveDialogOpen(true)}>
-              <Clock className="h-4 w-4 ml-2" />
-              إجازة ساعية
-            </Button>
             <Button onClick={() => router.push(`/${locale}/requests/new`)}>
               <Plus className="h-4 w-4 ml-2" />
               {t("requests.newRequest")}
@@ -456,19 +449,6 @@ export default function MyRequestsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog الإجازة الساعية */}
-      <Dialog open={hourlyLeaveDialogOpen} onOpenChange={setHourlyLeaveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>طلب إجازة ساعية</DialogTitle>
-            <DialogDescription>تقديم طلب إجازة بالساعات ليوم واحد</DialogDescription>
-          </DialogHeader>
-          <HourlyLeaveForm
-            onSuccess={() => setHourlyLeaveDialogOpen(false)}
-            onCancel={() => setHourlyLeaveDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
 
       {/* New admin request dialog */}
       <NewRequestDialog open={newDialogOpen} onOpenChange={setNewDialogOpen} />

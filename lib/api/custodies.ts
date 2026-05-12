@@ -77,4 +77,9 @@ export const custodiesApi = {
     const response = await apiClient.get(`/custodies/employee/${employeeId}/check`);
     return response.data.data as { hasUnreturned: boolean };
   },
+
+  getMyCustodies: async () => {
+    const response = await apiClient.get("/custodies/my");
+    return response.data;
+  },
 };

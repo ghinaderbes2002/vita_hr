@@ -15,7 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
-import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
+import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
@@ -112,12 +113,17 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
 }
 
 // ── MANAGER Dashboard ─────────────────────────────────────────────────────────
-function ManagerDashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
+function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: string; router: any; employeeId?: string }) {
+  const { data: subordinatesData } = useSubordinates(employeeId || "");
+  const subordinatesCount = Array.isArray(subordinatesData)
+    ? subordinatesData.length
+    : ((subordinatesData as any)?.data?.length ?? (subordinatesData as any)?.length ?? "—");
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="حاضرون اليوم" value={d.teamAttendanceToday?.present ?? "—"} icon={UserCheck}
-          iconBg="bg-green-500" />
+        <StatCard title="المرؤوسين" value={subordinatesCount} icon={Users}
+          iconBg="bg-green-500" onClick={() => router.push(`/${locale}/employees/subordinates`)} />
         <StatCard title="غائبون اليوم" value={d.teamAttendanceToday?.absent ?? "—"} icon={UserX}
           iconBg="bg-red-500" />
         <StatCard title="متأخرون اليوم" value={d.teamAttendanceToday?.late ?? "—"} icon={Clock}
@@ -357,6 +363,10 @@ export default function DashboardPage() {
   const d = data as any;
   const role = d?.role;
 
+  const jobTitleId = (d?.employee?.jobTitle?.id ?? "") as string;
+  const { data: jobTitleData } = useJobTitle(jobTitleId);
+  const jobTitleDescription = (jobTitleData as any)?.description as string | undefined;
+
   const removeConductDoc = () => {
     setConductDoc(DEFAULT_CONDUCT_DOC);
     localStorage.removeItem(CONDUCT_DOC_KEY);
@@ -378,6 +388,7 @@ export default function DashboardPage() {
   }
 
   const employeeInfo = d?.employee;
+
   const displayName = employeeInfo
     ? `${employeeInfo.firstNameAr} ${employeeInfo.lastNameAr}`
     : user?.fullName || user?.username || "—";
@@ -428,7 +439,7 @@ export default function DashboardPage() {
 
       {/* Role-based content */}
       {role === "EMPLOYEE" && <EmployeeDashboard d={d} locale={locale} router={router} />}
-      {role === "MANAGER" && <ManagerDashboard d={d} locale={locale} router={router} />}
+      {role === "MANAGER" && <ManagerDashboard d={d} locale={locale} router={router} employeeId={d?.employee?.id} />}
       {role === "HR" && <HRDashboard d={d} locale={locale} router={router} />}
       {role === "CEO" && <CEODashboard d={d} locale={locale} router={router} />}
       {role === "CFO" && <CFODashboard d={d} locale={locale} router={router} />}
@@ -436,25 +447,33 @@ export default function DashboardPage() {
       {/* Job Title Card — for all roles */}
       {employeeInfo?.jobTitle && (
         <Card>
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full shrink-0 bg-amber-50 border border-amber-200">
-                <Briefcase className="h-5 w-5 text-amber-600" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-primary" />
+              المسمى الوظيفي
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="font-semibold text-foreground mb-2">
+              {locale === "ar"
+                ? employeeInfo.jobTitle.nameAr
+                : (employeeInfo.jobTitle.nameEn || employeeInfo.jobTitle.nameAr)}
+            </p>
+            {jobTitleDescription && (
+              <div className="text-sm text-muted-foreground leading-relaxed space-y-1">
+                {jobTitleDescription
+                  .replace(/\r\n/g, '\n')
+                  .replace(/\r/g, '\n')
+                  .replace(/([^\n])\s+(\d+)\.\s/g, '$1\n$2. ')
+                  .replace(/([^\n])\s*[•·]\s*/g, '$1\n• ')
+                  .split('\n')
+                  .map((l: string) => l.trim())
+                  .filter(Boolean)
+                  .map((line: string, i: number) => (
+                    <p key={i}>{line}</p>
+                  ))}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground font-medium mb-1">المسمى الوظيفي</p>
-                <p className="text-base font-bold text-foreground">
-                  {locale === "ar"
-                    ? employeeInfo.jobTitle.nameAr
-                    : (employeeInfo.jobTitle.nameEn || employeeInfo.jobTitle.nameAr)}
-                </p>
-                {(myProfile?.jobTitle?.description || employeeInfo.jobTitle.description) && (
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                    {myProfile?.jobTitle?.description || employeeInfo.jobTitle.description}
-                  </p>
-                )}
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}

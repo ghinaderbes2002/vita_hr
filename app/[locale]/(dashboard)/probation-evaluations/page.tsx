@@ -194,7 +194,14 @@ export default function ProbationEvaluationsPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>{t("form.employee")} *</Label>
-              <Select value={form.employeeId} onValueChange={(v) => setForm({ ...form, employeeId: v })}>
+              <Select
+                value={form.employeeId}
+                onValueChange={(v) => {
+                  const emp = employeeMap[v];
+                  const hireDate = emp?.hireDate ? emp.hireDate.split("T")[0] : form.hireDate;
+                  setForm({ ...form, employeeId: v, hireDate });
+                }}
+              >
                 <SelectTrigger><SelectValue placeholder={t("form.employeePlaceholder")} /></SelectTrigger>
                 <SelectContent>
                   {employees.map((e: any) => (

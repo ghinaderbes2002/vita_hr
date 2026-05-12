@@ -18,6 +18,14 @@ export function useEmployee(id: string) {
   });
 }
 
+export function useEmployeeBasic(id: string) {
+  return useQuery({
+    queryKey: ["employee-basic", id],
+    queryFn: () => employeesApi.getBasicById(id),
+    enabled: !!id,
+  });
+}
+
 export function useMyEmployee() {
   return useQuery({
     queryKey: ["employee-my-profile"],

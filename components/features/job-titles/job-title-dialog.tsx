@@ -221,7 +221,7 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
                 <FormItem>
                   <FormLabel>{t("jobTitles.fields.description")} ({t("common.optional")})</FormLabel>
                   <FormControl>
-                    <Textarea {...field} placeholder={t("jobTitles.fields.description")} rows={3} />
+                    <Textarea {...field} placeholder={t("jobTitles.fields.description")} rows={8} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

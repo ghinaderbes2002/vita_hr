@@ -14,6 +14,11 @@ export const employeesApi = {
     return response.data.data;
   },
 
+  getBasicById: async (id: string): Promise<Partial<Employee> & { department?: { id: string; nameAr: string; nameEn: string } }> => {
+    const response = await apiClient.get(`/employees/${id}/basic`);
+    return response.data?.data ?? response.data;
+  },
+
   getMyProfile: async (): Promise<Employee> => {
     const response = await apiClient.get("/employees/my");
     return response.data?.data || response.data;

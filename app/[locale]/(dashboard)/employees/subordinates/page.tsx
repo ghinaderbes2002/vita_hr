@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Search } from "lucide-react";
 import {
@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEmployees, useSubordinates } from "@/lib/hooks/use-employees";
+import { useEmployees, useSubordinates, useMyEmployee } from "@/lib/hooks/use-employees";
 import { Label } from "@/components/ui/label";
 
 export default function SubordinatesPage() {
@@ -30,8 +30,17 @@ export default function SubordinatesPage() {
   const [selectedManagerId, setSelectedManagerId] = useState<string>("");
   const [search, setSearch] = useState("");
 
+  const { data: myProfile } = useMyEmployee();
+  const myEmployeeId = (myProfile as any)?.id || "";
+
   const { data: allEmployeesData } = useEmployees({ limit: 100 });
   const { data: subordinatesData, isLoading } = useSubordinates(selectedManagerId);
+
+  useEffect(() => {
+    if (myEmployeeId && !selectedManagerId) {
+      setSelectedManagerId(myEmployeeId);
+    }
+  }, [myEmployeeId]);
 
   const allEmployees = (allEmployeesData as any)?.items || (allEmployeesData as any)?.data?.items || [];
 

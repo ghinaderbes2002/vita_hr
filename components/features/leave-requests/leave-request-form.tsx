@@ -15,7 +15,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -29,12 +28,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
 import { useEmployees } from "@/lib/hooks/use-employees";
-import { CreateLeaveRequestData, LeaveRequest } from "@/lib/api/leave-requests";
+import { CreateLeaveRequestData, CreateHourlyLeaveData, LeaveRequest } from "@/lib/api/leave-requests";
 import { useState } from "react";
 import { toast } from "sonner";
+
+const formSchema = z.object({
+  leaveTypeId: z.string().min(1),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
+  date: z.date().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  reason: z.string().optional(),
+  halfDayPeriod: z.enum(["MORNING", "AFTERNOON"]).optional(),
+  substituteId: z.string().optional(),
+  attachmentUrl: z.string().optional(),
+  deceasedRelation: z.enum(["FIRST_DEGREE", "SECOND_DEGREE"]).optional(),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 function FilePicker({ value, onChange, labels }: {
   value: string;
@@ -82,40 +96,17 @@ function FilePicker({ value, onChange, labels }: {
   );
 }
 
-type FormData = {
-  leaveTypeId: string;
-  startDate: Date;
-  endDate: Date;
-  reason: string;
-  isHalfDay: boolean;
-  halfDayPeriod?: "MORNING" | "AFTERNOON";
-  substituteId?: string;
-  attachmentUrl?: string;
-  deceasedRelation?: "FIRST_DEGREE" | "SECOND_DEGREE";
-};
-
 interface LeaveRequestFormProps {
   onSubmit: (data: CreateLeaveRequestData) => Promise<void>;
+  onHourlySubmit?: (data: CreateHourlyLeaveData) => Promise<void>;
   initialData?: LeaveRequest;
   isLoading?: boolean;
 }
 
-export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequestFormProps) {
+export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoading }: LeaveRequestFormProps) {
   const t = useTranslations();
   const { data: leaveTypesData } = useLeaveTypes();
   const { data: employeesData } = useEmployees({ limit: 500 });
-
-  const formSchema = z.object({
-    leaveTypeId: z.string().min(1, t("leaves.form.leaveTypeRequired")),
-    startDate: z.date(),
-    endDate: z.date(),
-    reason: z.string().min(5, t("leaves.form.reasonMinLength")),
-    isHalfDay: z.boolean(),
-    halfDayPeriod: z.enum(["MORNING", "AFTERNOON"]).optional(),
-    substituteId: z.string().optional(),
-    attachmentUrl: z.string().optional(),
-    deceasedRelation: z.enum(["FIRST_DEGREE", "SECOND_DEGREE"]).optional(),
-  });
 
   // Helper function to extract array
   const extractArray = (data: any): any[] => {
@@ -127,7 +118,9 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
     return [];
   };
 
-  const leaveTypes = extractArray(leaveTypesData);
+  const leaveTypes = extractArray(leaveTypesData).filter(
+    (lt: any) => !lt.nameAr?.includes("طارئ") && !lt.nameEn?.toLowerCase().includes("emergency")
+  );
   const employees = extractArray(employeesData);
 
   const form = useForm<FormData>({
@@ -136,8 +129,10 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
       leaveTypeId: initialData?.leaveTypeId || "",
       startDate: initialData?.startDate ? new Date(initialData.startDate) : undefined,
       endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
+      date: undefined,
+      startTime: "09:00",
+      endTime: "11:00",
       reason: initialData?.reason || "",
-      isHalfDay: initialData?.isHalfDay || false,
       halfDayPeriod: initialData?.halfDayPeriod || undefined,
       substituteId: initialData?.substituteId || "",
       attachmentUrl: (initialData as any)?.attachmentUrl || "",
@@ -145,19 +140,53 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
     },
   });
 
-  const isHalfDay = form.watch("isHalfDay");
   const selectedLeaveTypeId = form.watch("leaveTypeId");
+  const watchedStartTime = form.watch("startTime");
+  const watchedEndTime = form.watch("endTime");
   const selectedLeaveType = leaveTypes.find((t: any) => t.id === selectedLeaveTypeId);
   const isBereavement = selectedLeaveType?.code === "BEREAVEMENT";
+  const isHourlyType = selectedLeaveType != null && selectedLeaveType.maxHoursPerMonth != null;
+  const isHalfDayType = selectedLeaveType?.allowHalfDay === true && !isHourlyType;
+
+  const watchedStartDate = form.watch("startDate");
+  const watchedEndDate = form.watch("endDate");
+
+  const durationMinutes = (() => {
+    if (!watchedStartTime || !watchedEndTime) return 0;
+    const [sh, sm] = watchedStartTime.split(":").map(Number);
+    const [eh, em] = watchedEndTime.split(":").map(Number);
+    return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+  })();
+
+  const totalDaysPreview = (() => {
+    if (isHourlyType || isHalfDayType) return null;
+    if (!watchedStartDate || !watchedEndDate) return null;
+    const diff = Math.round((watchedEndDate.getTime() - watchedStartDate.getTime()) / 86400000) + 1;
+    return diff > 0 ? diff : null;
+  })();
 
   const handleSubmit = async (data: FormData) => {
+    if (isHourlyType) {
+      if (!data.date || !data.startTime || !data.endTime) return;
+      const hourlyData: CreateHourlyLeaveData = {
+        leaveTypeId: data.leaveTypeId,
+        date: format(data.date, "yyyy-MM-dd"),
+        startTime: data.startTime,
+        endTime: data.endTime,
+        reason: data.reason || undefined,
+      };
+      await onHourlySubmit?.(hourlyData);
+      return;
+    }
+
+    if (!data.startDate || !data.endDate) return;
     const submitData: CreateLeaveRequestData = {
       leaveTypeId: data.leaveTypeId,
       startDate: format(data.startDate, "yyyy-MM-dd"),
       endDate: format(data.endDate, "yyyy-MM-dd"),
-      reason: data.reason,
-      isHalfDay: data.isHalfDay,
-      halfDayPeriod: data.isHalfDay ? data.halfDayPeriod : undefined,
+      reason: data.reason || "",
+      isHalfDay: isHalfDayType,
+      halfDayPeriod: isHalfDayType ? data.halfDayPeriod : undefined,
       substituteId: data.substituteId || undefined,
       ...(data.attachmentUrl && { attachmentUrl: data.attachmentUrl }),
       ...(isBereavement && data.deceasedRelation && { deceasedRelation: data.deceasedRelation }),
@@ -230,97 +259,169 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
           />
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="startDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>{t("leaves.fields.startDate")}</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-right font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? format(field.value, "PPP") : <span>{t("leaves.form.selectDate")}</span>}
-                        <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {isHourlyType ? (
+          <>
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>{t("leaves.fields.startDate")}</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-right font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? format(field.value, "PPP") : <span>{t("leaves.form.selectDate")}</span>}
+                          <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="endDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>{t("leaves.fields.endDate")}</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>وقت البداية</FormLabel>
                     <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-right font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? format(field.value, "PPP") : <span>{t("leaves.form.selectDate")}</span>}
-                        <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
-                      </Button>
+                      <Input type="time" {...field} />
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>وقت الانتهاء</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <FormField
-          control={form.control}
-          name="isHalfDay"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>{t("leaves.form.halfDay")}</FormLabel>
-                <FormDescription>{t("leaves.form.halfDayDescription")}</FormDescription>
+            {durationMinutes > 0 && (
+              <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-700">
+                المدة: {Math.floor(durationMinutes / 60)} ساعة
+                {durationMinutes % 60 > 0 ? ` و ${durationMinutes % 60} دقيقة` : ""}
               </div>
-            </FormItem>
-          )}
-        />
+            )}
+          </>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>{t("leaves.fields.startDate")}</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-right font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? format(field.value, "PPP") : <span>{t("leaves.form.selectDate")}</span>}
+                          <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(d) => {
+                          field.onChange(d);
+                          if (isHalfDayType && d) form.setValue("endDate", d);
+                        }}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        {isHalfDay && (
+            {!isHalfDayType && (
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>{t("leaves.fields.endDate")}</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-right font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? format(field.value, "PPP") : <span>{t("leaves.form.selectDate")}</span>}
+                            <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
+        )}
+
+        {totalDaysPreview !== null && (
+          <div className="rounded-md bg-blue-50 border border-blue-100 px-4 py-2.5 flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">عدد الأيام</span>
+            <span className="font-semibold text-blue-700">{totalDaysPreview} {totalDaysPreview === 1 ? "يوم" : "أيام"}</span>
+          </div>
+        )}
+
+        {isHalfDayType && (
           <FormField
             control={form.control}
             name="halfDayPeriod"
@@ -401,7 +502,6 @@ export function LeaveRequestForm({ onSubmit, initialData, isLoading }: LeaveRequ
                   }}
                 />
               </FormControl>
-              <FormDescription>{t("leaves.form.attachmentsDescription")}</FormDescription>
               <FormMessage />
             </FormItem>
           )}

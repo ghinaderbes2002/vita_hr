@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { LeaveRequestForm } from "@/components/features/leave-requests/leave-request-form";
 import { NewRequestDialog } from "@/components/features/requests/new-request-dialog";
-import { useCreateLeaveRequest } from "@/lib/hooks/use-leave-requests";
-import { CreateLeaveRequestData } from "@/lib/api/leave-requests";
+import { useCreateLeaveRequest, useCreateHourlyLeave } from "@/lib/hooks/use-leave-requests";
+import { CreateLeaveRequestData, CreateHourlyLeaveData } from "@/lib/api/leave-requests";
 
 export default function NewRequestChoicePage() {
   const t = useTranslations();
@@ -21,9 +21,16 @@ export default function NewRequestChoicePage() {
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [accidentDialogOpen, setAccidentDialogOpen] = useState(false);
   const createLeaveRequest = useCreateLeaveRequest();
+  const createHourlyLeave = useCreateHourlyLeave();
 
   const handleLeaveSubmit = async (data: CreateLeaveRequestData) => {
     await createLeaveRequest.mutateAsync(data);
+    setLeaveDialogOpen(false);
+    router.push("/leaves/my-leaves");
+  };
+
+  const handleHourlyLeaveSubmit = async (data: CreateHourlyLeaveData) => {
+    await createHourlyLeave.mutateAsync(data);
     setLeaveDialogOpen(false);
     router.push("/leaves/my-leaves");
   };
@@ -102,7 +109,8 @@ export default function NewRequestChoicePage() {
           </DialogHeader>
           <LeaveRequestForm
             onSubmit={handleLeaveSubmit}
-            isLoading={createLeaveRequest.isPending}
+            onHourlySubmit={handleHourlyLeaveSubmit}
+            isLoading={createLeaveRequest.isPending || createHourlyLeave.isPending}
           />
         </DialogContent>
       </Dialog>

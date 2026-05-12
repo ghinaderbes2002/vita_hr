@@ -39,7 +39,7 @@ import {
   PROBATION_RECOMMENDATION_OPTIONS,
 } from "@/lib/api/probation-evaluations";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useEmployee } from "@/lib/hooks/use-employees";
+import { useEmployeeBasic } from "@/lib/hooks/use-employees";
 
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                    "bg-gray-100 text-gray-600",
@@ -177,7 +177,7 @@ export default function ProbationEvaluationDetailPage() {
   const hist = (history as any) || [];
   const { hasPermission, isAdmin } = usePermissions();
 
-  const { data: employeeRecord } = useEmployee(ev?.employeeId || "");
+  const { data: employeeRecord } = useEmployeeBasic(ev?.employeeId || "");
 
   const canSeniorApprove = isAdmin() || hasPermission("probation:senior-review");
   const canHrDocument    = isAdmin() || hasPermission("probation:hr-review");
@@ -463,25 +463,25 @@ export default function ProbationEvaluationDetailPage() {
             <div>
               <p className="text-xs text-muted-foreground">نتيجة التقييم</p>
               <p className="font-medium mt-0.5">
-                {employeeRecord.probationResult
-                  ? (PROBATION_RECOMMENDATION_OPTIONS.find(o => o.value === employeeRecord.probationResult)?.labelAr || employeeRecord.probationResult)
+                {ev.finalRecommendation
+                  ? (PROBATION_RECOMMENDATION_OPTIONS.find((o: any) => o.value === ev.finalRecommendation)?.labelAr || ev.finalRecommendation)
                   : "—"}
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">تاريخ الإغلاق</p>
               <p className="font-medium mt-0.5">
-                {employeeRecord.probationCompletedAt
-                  ? new Date(employeeRecord.probationCompletedAt).toLocaleDateString()
+                {ev.updatedAt
+                  ? new Date(ev.updatedAt).toLocaleDateString()
                   : "—"}
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">حالة التوظيف</p>
               <p className="font-medium mt-0.5">
-                {employeeRecord.employmentStatus === "ACTIVE"    && "نشط ✓"}
-                {employeeRecord.employmentStatus === "TERMINATED" && "منتهية الخدمة"}
-                {employeeRecord.employmentStatus !== "ACTIVE" && employeeRecord.employmentStatus !== "TERMINATED" && employeeRecord.employmentStatus}
+                {employeeRecord?.employmentStatus === "ACTIVE"     && "نشط ✓"}
+                {employeeRecord?.employmentStatus === "TERMINATED"  && "منتهية الخدمة"}
+                {employeeRecord?.employmentStatus !== "ACTIVE" && employeeRecord?.employmentStatus !== "TERMINATED" && (employeeRecord?.employmentStatus || "—")}
               </p>
             </div>
           </CardContent>

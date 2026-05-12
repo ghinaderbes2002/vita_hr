@@ -24,6 +24,13 @@ export function useCustody(id: string) {
   });
 }
 
+export function useMyCustodies() {
+  return useQuery({
+    queryKey: ["custodies", "my"],
+    queryFn: () => custodiesApi.getMyCustodies(),
+  });
+}
+
 export function useEmployeeCustodies(employeeId: string) {
   return useQuery({
     queryKey: ["custodies", "employee", employeeId],

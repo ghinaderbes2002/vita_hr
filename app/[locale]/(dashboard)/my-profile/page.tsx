@@ -1,12 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { User, Mail, Briefcase, MapPin } from "lucide-react";
+import { User, Mail, Briefcase, MapPin, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
@@ -46,6 +47,11 @@ export default function MyProfilePage() {
   const t = useTranslations();
   const { data: employee, isLoading } = useMyEmployee();
   const emp = employee as any;
+  const currentYear = new Date().getFullYear();
+  const { data: balancesData, isLoading: balancesLoading } = useMyLeaveBalances(currentYear);
+  const balances: any[] = Array.isArray(balancesData)
+    ? balancesData
+    : (balancesData as any)?.data?.items ?? (balancesData as any)?.data ?? [];
 
   if (isLoading) {
     return (
@@ -180,6 +186,70 @@ export default function MyProfilePage() {
         </Card>
 
       </div>
+
+      {/* أرصدة الإجازات */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            أرصدة الإجازات {currentYear}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {balancesLoading ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20" />
+              ))}
+            </div>
+          ) : balances.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">{t("common.noData")}</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {balances.map((bal: any) => {
+                const total = bal.totalDays ?? 0;
+                const used = bal.usedDays ?? 0;
+                const pending = bal.pendingDays ?? 0;
+                const remaining = bal.remainingDays ?? (total - used - pending);
+                const usedPct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+                const pendingPct = total > 0 ? Math.min(100 - usedPct, (pending / total) * 100) : 0;
+                const name = bal.leaveType?.nameAr ?? bal.leaveTypeId;
+
+                return (
+                  <div key={bal.leaveTypeId} className="rounded-lg border bg-card p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{name}</span>
+                      <span className="text-xs text-muted-foreground">{total} يوم</span>
+                    </div>
+
+                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden flex">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${usedPct}%` }}
+                      />
+                      {pending > 0 && (
+                        <div
+                          className="h-full bg-amber-400 transition-all"
+                          style={{ width: `${pendingPct}%` }}
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>متبقي: <span className="font-semibold text-foreground">{remaining}</span></span>
+                      <div className="flex gap-3">
+                        {used > 0 && <span>مستخدم: {used}</span>}
+                        {pending > 0 && <span className="text-amber-600">معلق: {pending}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
