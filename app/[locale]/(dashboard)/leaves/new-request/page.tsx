@@ -17,7 +17,7 @@ export default function NewRequestPage() {
 
   const handleSubmit = async (data: CreateLeaveRequestData) => {
     await createRequest.mutateAsync(data);
-    router.push("/leaves/my-leaves");
+    router.push("/requests/my-requests");
   };
 
   return (

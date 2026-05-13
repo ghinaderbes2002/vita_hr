@@ -71,6 +71,11 @@ export const attendanceAlertsApi = {
     return response.data;
   },
 
+  getMyTeam: async (params: AlertQueryParams): Promise<ApiResponse<AttendanceAlert[]>> => {
+    const response = await apiClient.get("/attendance-alerts/my-team", { params });
+    return response.data;
+  },
+
   getById: async (id: string): Promise<AttendanceAlert> => {
     const response = await apiClient.get(`/attendance-alerts/${id}`);
     return response.data.data;

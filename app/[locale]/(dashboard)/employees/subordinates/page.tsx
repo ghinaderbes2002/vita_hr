@@ -112,7 +112,6 @@ export default function SubordinatesPage() {
                   <TableHead>{t("employees.fields.email")}</TableHead>
                   <TableHead>{t("employees.fields.phone")}</TableHead>
                   <TableHead>{t("employees.fields.department")}</TableHead>
-                  <TableHead>{t("employees.fields.contractType")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -120,14 +119,14 @@ export default function SubordinatesPage() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 6 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>
@@ -142,11 +141,6 @@ export default function SubordinatesPage() {
                         <Badge variant="outline">
                           {employee.department?.nameAr || "-"}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {t(`employees.contractTypes.${employee.contractType?.toLowerCase()}`)}
-                        </span>
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(employee.employmentStatus)}>

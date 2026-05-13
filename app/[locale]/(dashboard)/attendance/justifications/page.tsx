@@ -19,9 +19,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
 import {
   useAllJustifications,
+  useMyTeamJustifications,
   useManagerReviewJustification,
   useHrReviewJustification,
 } from "@/lib/hooks/use-attendance-justifications";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { AttendanceJustification, JustificationStatus } from "@/lib/api/attendance-justifications";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { format } from "date-fns";
@@ -51,7 +53,12 @@ function StatusBadge({ status }: { status: JustificationStatus }) {
 
 export default function JustificationsPage() {
   const t = useTranslations();
+  const { user } = useAuthStore();
   const { hasPermission } = usePermissions();
+
+  const isDirectManager = (user as any)?.roles?.some((r: any) =>
+    ["DIRECT_MANAGER", "مدير مباشر"].includes(typeof r === "string" ? r : r?.name)
+  );
 
   const canManagerReview = hasPermission("attendance.justifications.manager-review");
   const canHrReview = hasPermission("attendance.justifications.hr-review");
@@ -68,7 +75,10 @@ export default function JustificationsPage() {
 
   const LIMIT = 10;
   const statusFilter = activeTab === "all" ? undefined : activeTab as JustificationStatus;
-  const { data, isLoading } = useAllJustifications({ status: statusFilter, page, limit: LIMIT });
+  const { data: allData, isLoading: allLoading } = useAllJustifications({ status: statusFilter, page, limit: LIMIT });
+  const { data: teamData, isLoading: teamLoading } = useMyTeamJustifications({ status: statusFilter, page, limit: LIMIT });
+  const data = isDirectManager ? teamData : allData;
+  const isLoading = isDirectManager ? teamLoading : allLoading;
   const managerReview = useManagerReviewJustification();
   const hrReview = useHrReviewJustification();
 

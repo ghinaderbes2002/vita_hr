@@ -17,6 +17,8 @@ export interface LeaveBalance {
     code: string;
     nameAr: string;
     nameEn: string;
+    isUnlimited?: boolean;
+    maxHoursPerMonth?: number | null;
   };
   year: number;
   totalDays: number;

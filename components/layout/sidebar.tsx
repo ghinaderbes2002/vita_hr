@@ -265,7 +265,6 @@ export function Sidebar() {
       // But exclude specific known sub-routes
       const knownSubRoutes = [
         "/employees/subordinates",
-        "/leaves/my-leaves",
         "/leaves/new-request",
         "/requests/new",
         "/leaves/pending-approval",

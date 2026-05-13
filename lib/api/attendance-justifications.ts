@@ -87,6 +87,12 @@ export const attendanceJustificationsApi = {
     return response.data;
   },
 
+  // Direct Manager: get team justifications from JWT
+  getMyTeam: async (params?: JustificationQueryParams): Promise<any> => {
+    const response = await apiClient.get("/attendance-justifications/my-team", { params });
+    return response.data;
+  },
+
   // Get single
   getById: async (id: string): Promise<AttendanceJustification> => {
     const response = await apiClient.get(`/attendance-justifications/${id}`);

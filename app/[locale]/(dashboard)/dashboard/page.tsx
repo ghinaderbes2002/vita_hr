@@ -56,7 +56,7 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="رصيد الإجازات" value={d.leaveBalance?.[0]?.balance ?? "—"} icon={Calendar}
-          iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/leaves/my-leaves`)} />
+          iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/requests/my-requests`)} />
         <StatCard title="الطلبات المعلقة" value={d.pendingRequests?.length ?? 0} icon={Hourglass}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/my-requests`)} />
         <StatCard title="وثائق منتهية الصلاحية" value={d.expiringDocuments?.length ?? 0} icon={AlertCircle}
@@ -532,7 +532,7 @@ export default function DashboardPage() {
             <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/requests/my-requests`)}>
               <PlusCircle className="h-5 w-5" /><span className="text-xs">طلب جديد</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/leaves/my-leaves`)}>
+            <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/requests/my-requests`)}>
               <Calendar className="h-5 w-5" /><span className="text-xs">إجازاتي</span>
             </Button>
             {(role === "HR" || role === "CEO") && (

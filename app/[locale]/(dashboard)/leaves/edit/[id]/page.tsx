@@ -22,7 +22,7 @@ export default function EditLeaveRequestPage() {
 
   const handleSubmit = async (data: UpdateLeaveRequestData) => {
     await updateRequest.mutateAsync({ id, data });
-    router.push("/leaves/my-leaves");
+    router.push("/requests/my-requests");
   };
 
   if (isLoading) {

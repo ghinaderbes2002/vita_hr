@@ -27,6 +27,13 @@ export function useMyAlerts(params: AlertQueryParams) {
   });
 }
 
+export function useMyTeamAlerts(params: AlertQueryParams) {
+  return useQuery({
+    queryKey: ["attendance-alerts", "my-team", params],
+    queryFn: () => attendanceAlertsApi.getMyTeam(params),
+  });
+}
+
 export function useAttendanceAlerts(params: AlertQueryParams) {
   return useQuery({
     queryKey: ["attendance-alerts", params],

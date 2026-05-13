@@ -207,40 +207,71 @@ export default function MyProfilePage() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {balances.map((bal: any) => {
+                const isUnlimited = bal.leaveType?.isUnlimited === true;
+                const maxHours = bal.leaveType?.maxHoursPerMonth ?? null;
+                const isHourly = isUnlimited && maxHours !== null;
+                const usedHours = bal.usedHours ?? 0;
+                const pendingHours = bal.pendingHours ?? 0;
+                const remainingHours = maxHours !== null ? Math.max(0, maxHours - usedHours - pendingHours) : null;
+
                 const total = bal.totalDays ?? 0;
                 const used = bal.usedDays ?? 0;
                 const pending = bal.pendingDays ?? 0;
                 const remaining = bal.remainingDays ?? (total - used - pending);
-                const usedPct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
-                const pendingPct = total > 0 ? Math.min(100 - usedPct, (pending / total) * 100) : 0;
+                const usedPct = !isUnlimited && total > 0 ? Math.min(100, (used / total) * 100) : 0;
+                const pendingPct = !isUnlimited && total > 0 ? Math.min(100 - usedPct, (pending / total) * 100) : 0;
+                const hourlyUsedPct = isHourly && maxHours ? Math.min(100, (usedHours / maxHours) * 100) : 0;
+                const hourlyPendingPct = isHourly && maxHours ? Math.min(100 - hourlyUsedPct, (pendingHours / maxHours) * 100) : 0;
                 const name = bal.leaveType?.nameAr ?? bal.leaveTypeId;
 
                 return (
                   <div key={bal.leaveTypeId} className="rounded-lg border bg-card p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{name}</span>
-                      <span className="text-xs text-muted-foreground">{total} يوم</span>
+                      {isHourly
+                        ? <span className="text-xs text-muted-foreground">{maxHours} ساعة/شهر</span>
+                        : isUnlimited
+                          ? <span className="text-xs font-medium text-blue-600">غير محدود</span>
+                          : <span className="text-xs text-muted-foreground">{total} يوم</span>
+                      }
                     </div>
 
-                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden flex">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${usedPct}%` }}
-                      />
-                      {pending > 0 && (
-                        <div
-                          className="h-full bg-amber-400 transition-all"
-                          style={{ width: `${pendingPct}%` }}
-                        />
-                      )}
-                    </div>
+                    {(isHourly || !isUnlimited) && (
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden flex">
+                        <div className="h-full bg-primary transition-all"
+                          style={{ width: `${isHourly ? hourlyUsedPct : usedPct}%` }} />
+                        {(isHourly ? pendingHours > 0 : pending > 0) && (
+                          <div className="h-full bg-amber-400 transition-all"
+                            style={{ width: `${isHourly ? hourlyPendingPct : pendingPct}%` }} />
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>متبقي: <span className="font-semibold text-foreground">{remaining}</span></span>
-                      <div className="flex gap-3">
-                        {used > 0 && <span>مستخدم: {used}</span>}
-                        {pending > 0 && <span className="text-amber-600">معلق: {pending}</span>}
-                      </div>
+                      {isHourly ? (
+                        <>
+                          <span>متبقي: <span className="font-semibold text-foreground">{remainingHours} س</span></span>
+                          <div className="flex gap-3">
+                            {usedHours > 0 && <span>مستخدم: {usedHours} س</span>}
+                            {pendingHours > 0 && <span className="text-amber-600">معلق: {pendingHours} س</span>}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            متبقي:{" "}
+                            <span className="font-semibold text-foreground">
+                              {isUnlimited ? "غير محدود" : remaining}
+                            </span>
+                          </span>
+                          {!isUnlimited && (
+                            <div className="flex gap-3">
+                              {used > 0 && <span>مستخدم: {used}</span>}
+                              {pending > 0 && <span className="text-amber-600">معلق: {pending}</span>}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 );

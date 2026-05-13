@@ -26,13 +26,13 @@ export default function NewRequestChoicePage() {
   const handleLeaveSubmit = async (data: CreateLeaveRequestData) => {
     await createLeaveRequest.mutateAsync(data);
     setLeaveDialogOpen(false);
-    router.push("/leaves/my-leaves");
+    router.push("/requests/my-requests");
   };
 
   const handleHourlyLeaveSubmit = async (data: CreateHourlyLeaveData) => {
     await createHourlyLeave.mutateAsync(data);
     setLeaveDialogOpen(false);
-    router.push("/leaves/my-leaves");
+    router.push("/requests/my-requests");
   };
 
   return (

@@ -224,7 +224,7 @@ export default function LeaveBalancesPage() {
                           {b.leaveType?.nameAr ?? "—"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{b.totalDays}</TableCell>
+                      <TableCell>{b.leaveType?.isUnlimited ? "—" : b.totalDays}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{b.usedDays}</Badge>
                       </TableCell>
@@ -232,9 +232,10 @@ export default function LeaveBalancesPage() {
                         <Badge variant="outline">{b.pendingDays}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={b.remainingDays > 0 ? "default" : "destructive"}>
-                          {b.remainingDays}
-                        </Badge>
+                        {b.leaveType?.isUnlimited
+                          ? <span className="text-xs font-medium text-blue-600">غير محدود</span>
+                          : <Badge variant={b.remainingDays > 0 ? "default" : "destructive"}>{b.remainingDays}</Badge>
+                        }
                       </TableCell>
                       <TableCell>
                         {(b.usedHours ?? 0) > 0 || (b.pendingHours ?? 0) > 0 ? (

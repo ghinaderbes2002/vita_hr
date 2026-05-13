@@ -21,6 +21,13 @@ export function useAllJustifications(params?: JustificationQueryParams) {
   });
 }
 
+export function useMyTeamJustifications(params?: JustificationQueryParams) {
+  return useQuery({
+    queryKey: ["justifications", "my-team", params],
+    queryFn: () => attendanceJustificationsApi.getMyTeam(params),
+  });
+}
+
 export function useCreateJustification() {
   const queryClient = useQueryClient();
   return useMutation({

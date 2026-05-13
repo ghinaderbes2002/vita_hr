@@ -42,11 +42,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
   useAttendanceAlerts,
+  useMyTeamAlerts,
   useCreateAttendanceAlert,
   useUpdateAttendanceAlert,
   useResolveAttendanceAlert,
   useDeleteAttendanceAlert,
 } from "@/lib/hooks/use-attendance-alerts";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { AlertSeverityBadge } from "@/components/features/attendance/alert-severity-badge";
 import { AlertStatusBadge } from "@/components/features/attendance/alert-status-badge";
 import { AlertTypeBadge } from "@/components/features/attendance/alert-type-badge";
@@ -67,6 +69,11 @@ import { ar } from "date-fns/locale";
 
 export default function AttendanceAlertsPage() {
   const t = useTranslations();
+  const { user } = useAuthStore();
+  const isDirectManager = (user as any)?.roles?.some((r: any) =>
+    ["DIRECT_MANAGER", "مدير مباشر"].includes(typeof r === "string" ? r : r?.name)
+  );
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"all" | AlertStatus>("all");
@@ -89,7 +96,10 @@ export default function AttendanceAlertsPage() {
 
   const LIMIT = 10;
   const queryParams = activeTab === "all" ? { page, limit: LIMIT } : { status: activeTab, page, limit: LIMIT };
-  const { data, isLoading } = useAttendanceAlerts(queryParams);
+  const { data: allData, isLoading: allLoading } = useAttendanceAlerts(queryParams);
+  const { data: teamData, isLoading: teamLoading } = useMyTeamAlerts(queryParams);
+  const data = isDirectManager ? teamData : allData;
+  const isLoading = isDirectManager ? teamLoading : allLoading;
   const { data: employeesData } = useEmployees({ limit: 100 });
   const createAlert = useCreateAttendanceAlert();
   const updateAlert = useUpdateAttendanceAlert();

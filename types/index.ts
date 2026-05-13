@@ -298,6 +298,7 @@ export interface LeaveType {
   isPaid: boolean;
   requiresApproval: boolean;
   allowHalfDay: boolean;
+  isUnlimited?: boolean;
   color?: string;
   isActive?: boolean;
   createdAt?: string;
