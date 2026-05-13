@@ -88,26 +88,6 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
         </Card>
       )}
 
-      {d.leaveBalance?.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-primary" />
-              أرصدة الإجازات
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {d.leaveBalance.map((lb: any) => (
-                <div key={lb.leaveTypeName} className="rounded-lg border px-3 py-2 text-sm text-center">
-                  <p className="text-muted-foreground text-xs">{lb.leaveTypeName}</p>
-                  <p className="font-bold text-lg mt-0.5">{lb.balance}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

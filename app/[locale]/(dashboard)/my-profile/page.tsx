@@ -192,12 +192,12 @@ export default function MyProfilePage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-primary" />
-            أرصدة الإجازات {currentYear}
+            أرصدة الإجازات ({currentYear})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {balancesLoading ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-20" />
               ))}
@@ -205,77 +205,31 @@ export default function MyProfilePage() {
           ) : balances.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">{t("common.noData")}</p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {balances.map((bal: any) => {
-                const isUnlimited = bal.leaveType?.isUnlimited === true;
-                const maxHours = bal.leaveType?.maxHoursPerMonth ?? null;
-                const isHourly = isUnlimited && maxHours !== null;
-                const usedHours = bal.usedHours ?? 0;
-                const pendingHours = bal.pendingHours ?? 0;
-                const remainingHours = maxHours !== null ? Math.max(0, maxHours - usedHours - pendingHours) : null;
-
-                const total = bal.totalDays ?? 0;
-                const used = bal.usedDays ?? 0;
-                const pending = bal.pendingDays ?? 0;
-                const remaining = bal.remainingDays ?? (total - used - pending);
-                const usedPct = !isUnlimited && total > 0 ? Math.min(100, (used / total) * 100) : 0;
-                const pendingPct = !isUnlimited && total > 0 ? Math.min(100 - usedPct, (pending / total) * 100) : 0;
-                const hourlyUsedPct = isHourly && maxHours ? Math.min(100, (usedHours / maxHours) * 100) : 0;
-                const hourlyPendingPct = isHourly && maxHours ? Math.min(100 - hourlyUsedPct, (pendingHours / maxHours) * 100) : 0;
-                const name = bal.leaveType?.nameAr ?? bal.leaveTypeId;
-
-                return (
-                  <div key={bal.leaveTypeId} className="rounded-lg border bg-card p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{name}</span>
-                      {isHourly
-                        ? <span className="text-xs text-muted-foreground">{maxHours} ساعة/شهر</span>
-                        : isUnlimited
-                          ? <span className="text-xs font-medium text-blue-600">غير محدود</span>
-                          : <span className="text-xs text-muted-foreground">{total} يوم</span>
-                      }
-                    </div>
-
-                    {(isHourly || !isUnlimited) && (
-                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden flex">
-                        <div className="h-full bg-primary transition-all"
-                          style={{ width: `${isHourly ? hourlyUsedPct : usedPct}%` }} />
-                        {(isHourly ? pendingHours > 0 : pending > 0) && (
-                          <div className="h-full bg-amber-400 transition-all"
-                            style={{ width: `${isHourly ? hourlyPendingPct : pendingPct}%` }} />
-                        )}
-                      </div>
-                    )}
-
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {balances.map((b: any) => (
+                <div key={b.id} className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                  <div className="text-sm font-medium truncate">{b.leaveType?.nameAr ?? "—"}</div>
+                  {b.leaveType?.isUnlimited ? (
+                    <div className="text-xs text-blue-600 font-medium">غير محدود</div>
+                  ) : (
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      {isHourly ? (
-                        <>
-                          <span>متبقي: <span className="font-semibold text-foreground">{remainingHours} س</span></span>
-                          <div className="flex gap-3">
-                            {usedHours > 0 && <span>مستخدم: {usedHours} س</span>}
-                            {pendingHours > 0 && <span className="text-amber-600">معلق: {pendingHours} س</span>}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <span>
-                            متبقي:{" "}
-                            <span className="font-semibold text-foreground">
-                              {isUnlimited ? "غير محدود" : remaining}
-                            </span>
-                          </span>
-                          {!isUnlimited && (
-                            <div className="flex gap-3">
-                              {used > 0 && <span>مستخدم: {used}</span>}
-                              {pending > 0 && <span className="text-amber-600">معلق: {pending}</span>}
-                            </div>
-                          )}
-                        </>
-                      )}
+                      <span>متبقي</span>
+                      <span className={`font-semibold text-sm ${b.remainingDays > 0 ? "text-green-600" : "text-red-500"}`}>
+                        {b.remainingDays} / {b.totalDays}
+                      </span>
                     </div>
-                  </div>
-                );
-              })}
+                  )}
+                  {((b.usedHours ?? 0) > 0 || (b.pendingHours ?? 0) > 0) && (
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      {(b.usedHours ?? 0) > 0 && <div>مستخدمة: <span className="font-medium text-foreground">{b.usedHours}س</span></div>}
+                      {(b.pendingHours ?? 0) > 0 && <div>معلقة: <span className="font-medium text-amber-600">{b.pendingHours}س</span></div>}
+                    </div>
+                  )}
+                  {b.pendingDays > 0 && (
+                    <div className="text-xs text-amber-600">معلق: {b.pendingDays} يوم</div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
