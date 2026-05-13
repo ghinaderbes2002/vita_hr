@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Users, Calendar, Clock, AlertCircle, PlusCircle,
   Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight,
-  UserPlus, Bell, FileText, ExternalLink, Hourglass,
+  UserPlus, Bell, FileText, ExternalLink, Hourglass, ClipboardCheck,
   CheckCircle2, UserCheck, BarChart3, DollarSign, ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,10 +124,10 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="المرؤوسين" value={subordinatesCount} icon={Users}
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/employees/subordinates`)} />
-        <StatCard title="غائبون اليوم" value={d.teamAttendanceToday?.absent ?? "—"} icon={UserX}
-          iconBg="bg-red-500" />
-        <StatCard title="متأخرون اليوم" value={d.teamAttendanceToday?.late ?? "—"} icon={Clock}
-          iconBg="bg-amber-500" />
+        <StatCard title="تقييمات التجربة" value="" icon={ClipboardCheck}
+          iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
+        <StatCard title="طلبات بانتظار موافقتي" value="" icon={FileText}
+          iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
         <StatCard title="إجازات بانتظار موافقتي" value={d.pendingLeaveApprovals ?? 0} icon={Hourglass}
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
       </div>

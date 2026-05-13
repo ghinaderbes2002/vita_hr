@@ -535,8 +535,8 @@
     "tabs": {
       "all": "الكل",
       "open": "مفتوحة",
-      "acknowledged": "تم الإقرار",
-      "resolved": "محلولة"
+      "acknowledged": "تم التبرير",
+      "resolved": "مكتملة"
     },
     "alertFields": {
       "message": "الرسالة",
