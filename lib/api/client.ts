@@ -80,9 +80,17 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Endpoints that should fail silently on 401 — no logout triggered
+    const SILENT_FAIL_PATHS = [
+      "/employees/my",
+      "/notifications/unread-count",
+      "/notifications",
+    ];
+    const isSilentPath = SILENT_FAIL_PATHS.some((p) => originalRequest?.url?.includes(p));
+
     // Only try to refresh if we get a 401 and haven't retried this request yet
     // Token revoked / invalid both trigger refresh attempt
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isSilentPath) {
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -115,20 +123,25 @@ apiClient.interceptors.response.use(
         } else {
           throw new Error("No token after refresh");
         }
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         // Process queue with error
         processQueue(refreshError, null);
 
-        // Only logout and redirect if refresh actually failed
-        console.error('❌ Token refresh failed:', refreshError);
+        // Only logout for definitive auth failures (401/403 from refresh endpoint).
+        // Network errors, timeouts, and server errors (5xx) should NOT cause logout —
+        // they are transient and the current token may still be valid.
+        const refreshStatus = refreshError?.response?.status;
+        const isDefinitiveAuthFailure = refreshStatus === 401 || refreshStatus === 403;
 
-        // Clear auth state silently
-        useAuthStore.getState().logout();
-
-        // Only redirect to login if we're not already there
-        if (typeof window !== "undefined" && !window.location.pathname.includes('/login')) {
-          const currentLocale = window.location.pathname.split('/')[1] || 'ar';
-          window.location.href = `/${currentLocale}/login`;
+        if (isDefinitiveAuthFailure) {
+          console.error('❌ Token refresh failed — session expired, logging out');
+          useAuthStore.getState().logout();
+          if (typeof window !== "undefined" && !window.location.pathname.includes('/login')) {
+            const currentLocale = window.location.pathname.split('/')[1] || 'ar';
+            window.location.href = `/${currentLocale}/login`;
+          }
+        } else {
+          console.error('❌ Token refresh failed (transient error, staying logged in):', refreshError?.message);
         }
 
         return Promise.reject(refreshError);
