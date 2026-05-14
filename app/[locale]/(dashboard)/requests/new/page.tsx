@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { LeaveRequestForm } from "@/components/features/leave-requests/leave-request-form";
 import { NewRequestDialog } from "@/components/features/requests/new-request-dialog";
-import { useCreateLeaveRequest, useCreateHourlyLeave } from "@/lib/hooks/use-leave-requests";
+import { useCreateLeaveRequest, useCreateHourlyLeave, useMyHourlyUsedHours } from "@/lib/hooks/use-leave-requests";
+import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
 import { CreateLeaveRequestData, CreateHourlyLeaveData } from "@/lib/api/leave-requests";
 
 export default function NewRequestChoicePage() {
@@ -22,6 +23,21 @@ export default function NewRequestChoicePage() {
   const [accidentDialogOpen, setAccidentDialogOpen] = useState(false);
   const createLeaveRequest = useCreateLeaveRequest();
   const createHourlyLeave = useCreateHourlyLeave();
+
+  const { data: leaveTypesData } = useLeaveTypes();
+  const leaveTypesArr: any[] = (() => {
+    const d = leaveTypesData as any;
+    if (!d) return [];
+    if (Array.isArray(d)) return d;
+    return d?.data?.items || d?.data || d?.items || [];
+  })();
+  const hourlyLeaveType = leaveTypesArr.find((lt: any) => lt.maxHoursPerMonth != null);
+  const { data: hourlyStatsData } = useMyHourlyUsedHours(hourlyLeaveType?.id);
+  const hourlyStats = hourlyLeaveType && hourlyStatsData ? {
+    usedHours: hourlyStatsData.usedHours,
+    pendingHours: hourlyStatsData.pendingHours,
+    monthlyLimit: hourlyLeaveType.maxHoursPerMonth,
+  } : undefined;
 
   const handleLeaveSubmit = async (data: CreateLeaveRequestData) => {
     await createLeaveRequest.mutateAsync(data);
@@ -111,6 +127,7 @@ export default function NewRequestChoicePage() {
             onSubmit={handleLeaveSubmit}
             onHourlySubmit={handleHourlyLeaveSubmit}
             isLoading={createLeaveRequest.isPending || createHourlyLeave.isPending}
+            hourlyStats={hourlyStats}
           />
         </DialogContent>
       </Dialog>

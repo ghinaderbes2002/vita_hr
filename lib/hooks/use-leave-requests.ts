@@ -243,6 +243,43 @@ export function usePendingSubstituteRequests() {
   });
 }
 
+// Calculate used/pending hourly leave hours this month for a specific leave type
+export function useMyHourlyUsedHours(leaveTypeId: string | undefined) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  return useQuery({
+    queryKey: ["leave-requests", "my", "hourly-stats", leaveTypeId, year, month],
+    queryFn: async () => {
+      const res = await leaveRequestsApi.getMyRequests({ leaveTypeId, isHourlyLeave: true });
+      const items: any[] = (res as any)?.data?.items || (res as any)?.items || (res as any)?.data || [];
+      const monthStart = new Date(year, month, 1);
+      const monthEnd = new Date(year, month + 1, 0);
+
+      let usedHours = 0;
+      let pendingHours = 0;
+      let deductedHours = 0;
+
+      items.forEach((r: any) => {
+        const d = new Date(r.startDate || r.date || r.createdAt);
+        if (d < monthStart || d > monthEnd) return;
+        const h = r.durationHours ?? 0;
+        if (["APPROVED", "IN_PROGRESS", "COMPLETED"].includes(r.status)) {
+          usedHours += h;
+          if (r.deductionInfo?.overLimitHours) deductedHours += r.deductionInfo.overLimitHours;
+        } else if (["PENDING_MANAGER", "PENDING_HR", "MANAGER_APPROVED"].includes(r.status)) {
+          pendingHours += h;
+        }
+      });
+
+      return { usedHours, pendingHours, deductedHours };
+    },
+    enabled: !!leaveTypeId,
+    staleTime: 30_000,
+  });
+}
+
 // Create hourly leave request
 export function useCreateHourlyLeave() {
   const queryClient = useQueryClient();

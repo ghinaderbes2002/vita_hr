@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
+import { useMyHourlyUsedHours } from "@/lib/hooks/use-leave-requests";
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
@@ -52,6 +53,9 @@ export default function MyProfilePage() {
   const balances: any[] = Array.isArray(balancesData)
     ? balancesData
     : (balancesData as any)?.data?.items ?? (balancesData as any)?.data ?? [];
+
+  const hourlyBalance = balances.find((b: any) => b.leaveType?.maxHoursPerMonth != null);
+  const { data: hourlyStats } = useMyHourlyUsedHours(hourlyBalance?.leaveTypeId);
 
   if (isLoading) {
     return (
@@ -206,30 +210,56 @@ export default function MyProfilePage() {
             <p className="text-sm text-muted-foreground text-center py-4">{t("common.noData")}</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {balances.map((b: any) => (
-                <div key={b.id} className="rounded-lg border bg-muted/30 p-3 space-y-2">
-                  <div className="text-sm font-medium truncate">{b.leaveType?.nameAr ?? "—"}</div>
-                  {b.leaveType?.isUnlimited ? (
-                    <div className="text-xs text-blue-600 font-medium">غير محدود</div>
-                  ) : (
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>متبقي</span>
-                      <span className={`font-semibold text-sm ${b.remainingDays > 0 ? "text-green-600" : "text-red-500"}`}>
-                        {b.remainingDays} / {b.totalDays}
-                      </span>
-                    </div>
-                  )}
-                  {((b.usedHours ?? 0) > 0 || (b.pendingHours ?? 0) > 0) && (
-                    <div className="text-xs text-muted-foreground space-y-0.5">
-                      {(b.usedHours ?? 0) > 0 && <div>مستخدمة: <span className="font-medium text-foreground">{b.usedHours}س</span></div>}
-                      {(b.pendingHours ?? 0) > 0 && <div>معلقة: <span className="font-medium text-amber-600">{b.pendingHours}س</span></div>}
-                    </div>
-                  )}
-                  {b.pendingDays > 0 && (
-                    <div className="text-xs text-amber-600">معلق: {b.pendingDays} يوم</div>
-                  )}
-                </div>
-              ))}
+              {balances.map((b: any) => {
+                const isHourly = b.leaveType?.maxHoursPerMonth != null;
+                const monthlyLimit = b.leaveType?.maxHoursPerMonth ?? 0;
+                const stats = isHourly && hourlyStats ? hourlyStats : null;
+
+                return (
+                  <div key={b.id} className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                    <div className="text-sm font-medium truncate">{b.leaveType?.nameAr ?? "—"}</div>
+
+                    {isHourly ? (
+                      <div className="text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">✅ مدفوع</span>
+                          <span className="font-medium text-green-600">{monthlyLimit} ساعة/شهر</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">📊 مستخدم</span>
+                          <span className="font-medium">{stats ? stats.usedHours.toFixed(1) : (b.usedHours ?? 0)}س</span>
+                        </div>
+                        {(stats ? stats.pendingHours : (b.pendingHours ?? 0)) > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">⏳ معلق</span>
+                            <span className="font-medium text-amber-600">{stats ? stats.pendingHours.toFixed(1) : b.pendingHours}س</span>
+                          </div>
+                        )}
+                        {(stats?.deductedHours ?? 0) > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">⚠️ مخصوم</span>
+                            <span className="font-medium text-red-600">{stats!.deductedHours.toFixed(1)}س (من الراتب)</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : b.leaveType?.isUnlimited ? (
+                      <div className="text-xs text-blue-600 font-medium">غير محدود</div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>متبقي</span>
+                          <span className={`font-semibold text-sm ${b.remainingDays > 0 ? "text-green-600" : "text-red-500"}`}>
+                            {b.remainingDays} / {b.totalDays}
+                          </span>
+                        </div>
+                        {b.pendingDays > 0 && (
+                          <div className="text-xs text-amber-600">معلق: {b.pendingDays} يوم</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>

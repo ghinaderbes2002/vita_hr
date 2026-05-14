@@ -191,13 +191,18 @@ export default function MyRequestsPage() {
           list.map((request) => (
             <TableRow key={request.id}>
               <TableCell>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <Badge variant="outline" style={{ backgroundColor: request.leaveType?.color }}>
                     {request.leaveType?.nameAr}
                   </Badge>
                   {request.isHourlyLeave && (
                     <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
                       ساعية
+                    </span>
+                  )}
+                  {(request.deductionInfo as any)?.overLimitHours > 0 && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 font-medium">
+                      ⚠️ خصم راتب ({(request.deductionInfo as any).overLimitHours}س)
                     </span>
                   )}
                 </div>

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2, Paperclip, X } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Paperclip, X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Form,
@@ -101,9 +101,10 @@ interface LeaveRequestFormProps {
   onHourlySubmit?: (data: CreateHourlyLeaveData) => Promise<void>;
   initialData?: LeaveRequest;
   isLoading?: boolean;
+  hourlyStats?: { usedHours: number; pendingHours: number; monthlyLimit: number };
 }
 
-export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoading }: LeaveRequestFormProps) {
+export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoading, hourlyStats }: LeaveRequestFormProps) {
   const t = useTranslations();
   const { data: leaveTypesData } = useLeaveTypes();
   const { data: employeesData } = useEmployees({ limit: 500 });
@@ -156,6 +157,13 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
     const [sh, sm] = watchedStartTime.split(":").map(Number);
     const [eh, em] = watchedEndTime.split(":").map(Number);
     return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+  })();
+
+  const requestedHours = durationMinutes / 60;
+  const overLimitHours = (() => {
+    if (!isHourlyType || !hourlyStats || requestedHours <= 0) return 0;
+    const total = hourlyStats.usedHours + hourlyStats.pendingHours + requestedHours;
+    return Math.max(0, total - hourlyStats.monthlyLimit);
   })();
 
   const totalDaysPreview = (() => {
@@ -336,6 +344,18 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
               <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-700">
                 المدة: {Math.floor(durationMinutes / 60)} ساعة
                 {durationMinutes % 60 > 0 ? ` و ${durationMinutes % 60} دقيقة` : ""}
+              </div>
+            )}
+
+            {overLimitHours > 0 && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  <span className="font-semibold">{overLimitHours.toFixed(1)} ساعة</span> من طلبك ستُخصم من راتبك
+                  {hourlyStats && (
+                    <span className="text-amber-600"> (الحد الشهري المدفوع: {hourlyStats.monthlyLimit} ساعة، المستخدم: {(hourlyStats.usedHours + hourlyStats.pendingHours).toFixed(1)} ساعة)</span>
+                  )}
+                </span>
               </div>
             )}
           </>

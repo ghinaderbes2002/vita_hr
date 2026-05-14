@@ -45,13 +45,13 @@ export interface LeaveRequest {
   endTime?: string | null;
   durationHours?: number | null;
   equivalentDays?: number | null;
-  // خصم الراتب عند الاعتماد
+  // خصم الراتب للإجازة الساعية عند تجاوز الحد الشهري
   deductionInfo?: {
-    fromDay: number;
-    toDay: number;
-    days: number;
-    deductionPercent: number;
-  }[] | null;
+    overLimitHours: number;
+    paidHours: number;
+    monthlyLimit: number;
+    reason: string;
+  } | null;
 }
 
 export interface CreateHourlyLeaveData {
@@ -114,6 +114,8 @@ export const leaveRequestsApi = {
   getMyRequests: async (params?: {
     status?: LeaveRequestStatus;
     year?: number;
+    leaveTypeId?: string;
+    isHourlyLeave?: boolean;
   }): Promise<ApiResponse<LeaveRequest[]>> => {
     const response = await apiClient.get("/leave-requests/my/requests", { params });
     return response.data;
