@@ -261,27 +261,29 @@ export default function ViewLeaveRequestPage() {
         </Card>
       )}
 
-      {request.deductionInfo && request.deductionInfo.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-800">
-              <AlertTriangle className="h-5 w-5" />
-              تنبيه: يوجد خصم على الراتب لهذه الإجازة
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {request.deductionInfo.map((seg, i) => (
-              <div key={i} className="flex items-center justify-between rounded-md bg-amber-100 px-3 py-2 text-sm">
-                <span className="text-amber-900">
-                  الأيام {seg.fromDay} – {seg.toDay} ({seg.days} يوم)
-                </span>
-                <span className="font-semibold text-amber-800">خصم {seg.deductionPercent}% من الراتب الأساسي</span>
+      {request.deductionInfo != null && (request.deductionInfo as any).overLimitHours > 0 && (() => {
+        const d = request.deductionInfo!;
+        return (
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-800">
+                <AlertTriangle className="h-5 w-5" />
+                تنبيه: يوجد خصم على الراتب لهذه الإجازة
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center justify-between rounded-md bg-amber-100 px-3 py-2 text-sm">
+                <span className="text-amber-900">{d.reason}</span>
+                <span className="font-semibold text-amber-800">{d.overLimitHours} ساعة تُخصم من الراتب</span>
               </div>
-            ))}
-            <p className="text-xs text-amber-700 pt-1">يُرجى مراجعة قسم المالية للتفاصيل.</p>
-          </CardContent>
-        </Card>
-      )}
+              <div className="flex gap-4 text-xs text-amber-700 pt-1">
+                <span>الحد الشهري المدفوع: {d.monthlyLimit} ساعة</span>
+                <span>المدفوع فعلاً: {d.paidHours} ساعة</span>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <ConfirmDialog
         open={submitDialogOpen}
