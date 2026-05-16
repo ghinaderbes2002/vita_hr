@@ -301,7 +301,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -477,13 +477,14 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t("leaves.fields.substitute")} {t("common.optional")}</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={(v) => field.onChange(v === "none" ? "" : v)} value={field.value || "none"}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={t("leaves.form.selectSubstitute")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  <SelectItem value="none">— بدون بديل —</SelectItem>
                   {employees.map((emp: any) => (
                     <SelectItem key={emp.id} value={emp.id}>
                       {emp.firstNameAr} {emp.lastNameAr}
