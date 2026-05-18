@@ -11,6 +11,7 @@ import {
   Clock, CalendarDays, AlertTriangle, CheckCircle2,
 } from "lucide-react";
 import { PROBATION_RECOMMENDATION_OPTIONS } from "@/lib/api/probation-evaluations";
+import { useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,8 +70,43 @@ export default function EmployeeDetailsPage() {
   const { data: employee, isLoading } = useEmployee(employeeId);
   const emp = employee as any;
   const updateEmployee = useUpdateEmployee();
-  const { hasPermission } = usePermissions();
+
+  const { data: probationEvals } = useProbationEvaluationsByEmployee(employeeId);
+  const completedEval = (probationEvals as any[])?.find((e: any) => e.status === "COMPLETED");
+
+  // Export
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  async function handleExport() {
+    setExportLoading(true);
+    setExportError(null);
+    try {
+      const { blob, filename } = await (await import("@/lib/api/employees")).employeesApi.exportFullProfile(employeeId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportDialogOpen(false);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      setExportError(
+        status === 403 ? "ليس لديك صلاحية لتصدير ملف هذا الموظف" :
+        status === 404 ? "الموظف غير موجود" :
+        "خطأ في التحضير، حاول مرة أخرى"
+      );
+    } finally {
+      setExportLoading(false);
+    }
+  }
+  const { hasPermission, isAdmin } = usePermissions();
   const canReadNotes = hasPermission("employees:manager-notes:read");
+  const canExport = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.EXPORT);
   const canWriteNotes = hasPermission("employees:manager-notes:write");
 
   // Evaluation edit state
@@ -319,10 +355,18 @@ export default function EmployeeDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" onClick={() => router.back()} className="gap-2">
-        <ArrowRight className="h-4 w-4" />
-        {t("common.back")}
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => router.back()} className="gap-2">
+          <ArrowRight className="h-4 w-4" />
+          {t("common.back")}
+        </Button>
+        {canExport && (
+          <Button variant="outline" className="gap-2" onClick={() => { setExportError(null); setExportDialogOpen(true); }}>
+            <FileDown className="h-4 w-4" />
+            تصدير ملف كامل
+          </Button>
+        )}
+      </div>
 
       {/* ─── Hero Card ─────────────────────────────────────────── */}
       <Card className="overflow-hidden">
@@ -529,6 +573,17 @@ export default function EmployeeDetailsPage() {
                   {PROBATION_RECOMMENDATION_OPTIONS.find(o => o.value === emp.probationResult)?.labelAr || emp.probationResult}
                 </span>
               </div>
+              {completedEval?.finalScorePercent != null && (
+                <div className="flex items-start justify-between py-2">
+                  <span className="text-sm text-muted-foreground shrink-0 w-40">النسبة النهائية</span>
+                  <span className={`text-sm font-bold text-end flex-1 ${
+                    completedEval.finalScorePercent >= 70 ? "text-green-700" :
+                    completedEval.finalScorePercent >= 50 ? "text-amber-600" : "text-red-600"
+                  }`}>
+                    {Number(completedEval.finalScorePercent).toFixed(1)}%
+                  </span>
+                </div>
+              )}
               {emp.probationCompletedAt && (
                 <div className="flex items-start justify-between py-2">
                   <span className="text-sm text-muted-foreground shrink-0 w-40">تاريخ الإغلاق</span>
@@ -853,7 +908,7 @@ export default function EmployeeDetailsPage() {
         </Card>
 
         {/* ─── Attendance Config ─────────────────────────────── */}
-        <Card>
+        {(isAdmin() || hasPermission(PERMISSIONS.ATTENDANCE_RECORDS.UPDATE)) && <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Settings className="h-4 w-4 text-primary" />
@@ -891,7 +946,7 @@ export default function EmployeeDetailsPage() {
               حفظ الإعدادات
             </Button>
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* ─── Fingerprints ──────────────────────────────────── */}
         <Card className="md:col-span-2">
@@ -1223,6 +1278,49 @@ export default function EmployeeDetailsPage() {
         onConfirm={handleDeleteSchedule}
         variant="destructive"
       />
+
+      {/* ─── Export Dialog ──────────────────────────────────── */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileDown className="h-4 w-4" />
+              تصدير الملف الشامل
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              سيتم تصدير ملف Excel يحوي كل معلومات الموظف (المعلومات الأساسية، الحضور، الإجازات، التقييمات، الراتب).
+            </p>
+            <p className="text-sm text-muted-foreground">
+              قد يستغرق التحضير بضع ثوانٍ.
+            </p>
+            {exportError && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {exportError}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)} disabled={exportLoading}>
+              إلغاء
+            </Button>
+            <Button onClick={handleExport} disabled={exportLoading} className="gap-2">
+              {exportLoading ? (
+                <>
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  جارٍ التحضير...
+                </>
+              ) : (
+                <>
+                  <FileDown className="h-3.5 w-3.5" />
+                  تصدير
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

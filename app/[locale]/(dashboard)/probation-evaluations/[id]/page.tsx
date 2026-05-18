@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ArrowRight, CheckCircle2, XCircle, FileCheck,
-  Gavel, History, CalendarClock, CalendarCheck, ClipboardEdit,
+  Gavel, History, CalendarClock, CalendarCheck, ClipboardEdit, AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,7 @@ import {
 } from "@/lib/api/probation-evaluations";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useEmployeeBasic } from "@/lib/hooks/use-employees";
+import { FinalScoreCard } from "@/components/features/probation-evaluations/final-score-card";
 
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                    "bg-gray-100 text-gray-600",
@@ -116,7 +117,7 @@ function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
   const activeIdx = isRejected ? -1 : currentIdx;
 
   return (
-    <div className="flex items-center gap-0 overflow-x-auto">
+    <div className="flex items-center overflow-x-auto pb-1">
       {WORKFLOW_STATUSES.map((step, i) => {
         const done = activeIdx > i;
         const active = activeIdx === i;
@@ -126,10 +127,10 @@ function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                 isRejected ? "bg-red-100 text-red-500" :
                 done ? "bg-primary text-primary-foreground" :
-                active ? "bg-primary/20 text-primary border-2 border-primary" :
+                active ? "bg-primary/20 text-primary border-2 border-primary animate-pulse" :
                 "bg-muted text-muted-foreground"
               }`}>
-                {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                {done ? <CheckCircle2 className="h-4 w-4" /> : active ? "●" : "○"}
               </div>
               <span className="text-[10px] text-center text-muted-foreground leading-tight hidden sm:block w-20">
                 {t(`workflow.${step}`)}
@@ -141,6 +142,96 @@ function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function StatusBanner({
+  status,
+  canSeniorApprove,
+  canHrDocument,
+  canCeoDecide,
+  onAction,
+  t,
+}: {
+  status: ProbationStatus;
+  canSeniorApprove: boolean;
+  canHrDocument: boolean;
+  canCeoDecide: boolean;
+  onAction: (type: ActionType) => void;
+  t: any;
+}) {
+  if (status === "COMPLETED") {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+        <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+        <span className="text-sm font-medium text-green-800">مكتمل — تم إغلاق هذا التقييم</span>
+      </div>
+    );
+  }
+
+  if (status.startsWith("REJECTED")) {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+        <XCircle className="h-5 w-5 text-red-600 shrink-0" />
+        <span className="text-sm font-medium text-red-800">
+          {status === "REJECTED_BY_SENIOR" && "مرفوض من المدير المباشر"}
+          {status === "REJECTED_BY_HR" && "مرفوض من HR"}
+          {status === "REJECTED_BY_CEO" && "مرفوض من الرئيس التنفيذي"}
+        </span>
+      </div>
+    );
+  }
+
+  const bannerConfig: Partial<Record<ProbationStatus, { msg: string; btnLabel?: string; action?: ActionType; color: string }>> = {
+    PENDING_SELF_EVALUATION: {
+      msg: "بانتظار إكمال التقييم الذاتي من الموظف",
+      btnLabel: "ابدأ التقييم",
+      action: "self-evaluate",
+      color: "border-indigo-200 bg-indigo-50 text-indigo-800",
+    },
+    PENDING_SENIOR_MANAGER: {
+      msg: "بانتظار مراجعة المدير المباشر",
+      btnLabel: canSeniorApprove ? "راجع التقييم" : undefined,
+      action: "approve",
+      color: "border-blue-200 bg-blue-50 text-blue-800",
+    },
+    PENDING_HR: {
+      msg: "بانتظار اعتماد HR",
+      btnLabel: canHrDocument ? "اعتماد HR" : undefined,
+      action: "document",
+      color: "border-purple-200 bg-purple-50 text-purple-800",
+    },
+    PENDING_CEO: {
+      msg: "بانتظار الاعتماد النهائي من الرئيس التنفيذي",
+      btnLabel: canCeoDecide ? "اتخاذ القرار" : undefined,
+      action: "ceo",
+      color: "border-amber-200 bg-amber-50 text-amber-800",
+    },
+    PENDING_MEETING_SCHEDULE: {
+      msg: "بانتظار جدولة الاجتماع الختامي",
+      color: "border-orange-200 bg-orange-50 text-orange-800",
+    },
+  };
+
+  const cfg = bannerConfig[status];
+  if (!cfg) return null;
+
+  return (
+    <div className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 ${cfg.color}`}>
+      <div className="flex items-center gap-3">
+        <AlertCircle className="h-5 w-5 shrink-0" />
+        <span className="text-sm font-medium">{cfg.msg}</span>
+      </div>
+      {cfg.btnLabel && cfg.action && (
+        <button
+          type="button"
+          onClick={() => onAction(cfg.action!)}
+          className="shrink-0 rounded-md bg-white/70 px-3 py-1.5 text-xs font-semibold hover:bg-white transition-colors border border-current/20"
+        >
+          {cfg.btnLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -318,6 +409,16 @@ export default function ProbationEvaluationDetailPage() {
         </Badge>
       </div>
 
+      {/* Status Banner */}
+      <StatusBanner
+        status={ev.status as ProbationStatus}
+        canSeniorApprove={canSeniorApprove}
+        canHrDocument={canHrDocument}
+        canCeoDecide={canCeoDecide}
+        onAction={openAction}
+        t={t}
+      />
+
       {/* Workflow Stepper */}
       <Card>
         <CardContent className="py-4 overflow-x-auto">
@@ -425,6 +526,16 @@ export default function ProbationEvaluationDetailPage() {
         </Card>
       )}
 
+      {/* Final score percentages */}
+      <FinalScoreCard
+        finalScorePercent={ev.finalScorePercent}
+        managerScorePercent={ev.managerScorePercent}
+        selfScorePercent={ev.selfScorePercent}
+        managerWeight={ev.managerWeight}
+        selfWeight={ev.selfWeight}
+        scores={evScores}
+      />
+
       {/* Final result */}
       {(ev.overallRating || ev.finalRecommendation) && (
         <Card className="border-primary/30">
@@ -459,7 +570,7 @@ export default function ProbationEvaluationDetailPage() {
               سجل الموظف بعد الإغلاق
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3 text-sm">
+          <CardContent className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">نتيجة التقييم</p>
               <p className="font-medium mt-0.5">
@@ -468,6 +579,17 @@ export default function ProbationEvaluationDetailPage() {
                   : "—"}
               </p>
             </div>
+            {ev.finalScorePercent != null && (
+              <div>
+                <p className="text-xs text-muted-foreground">النسبة النهائية</p>
+                <p className={`font-bold text-xl mt-0.5 ${
+                  ev.finalScorePercent >= 70 ? "text-green-700" :
+                  ev.finalScorePercent >= 50 ? "text-amber-600" : "text-red-600"
+                }`}>
+                  {ev.finalScorePercent.toFixed(1)}%
+                </p>
+              </div>
+            )}
             <div>
               <p className="text-xs text-muted-foreground">تاريخ الإغلاق</p>
               <p className="font-medium mt-0.5">

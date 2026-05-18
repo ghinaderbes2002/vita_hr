@@ -390,7 +390,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                           field.onChange(d);
                           if (isHalfDayType && d) form.setValue("endDate", d);
                         }}
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => { const t = new Date(); t.setHours(0,0,0,0); return date < t; }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -427,7 +427,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date < new Date()}
+                          disabled={(date) => { const t = new Date(); t.setHours(0,0,0,0); return date < t; }}
                           initialFocus
                         />
                       </PopoverContent>

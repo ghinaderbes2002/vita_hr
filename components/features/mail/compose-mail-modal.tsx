@@ -22,6 +22,7 @@ interface Props {
   replyToMessageId?: string;
   defaultSubject?: string;
   defaultToIds?: string[];
+  defaultBody?: string;
 }
 
 export function ComposeMailModal({
@@ -30,9 +31,10 @@ export function ComposeMailModal({
   replyToMessageId,
   defaultSubject = "",
   defaultToIds = [],
+  defaultBody = "",
 }: Props) {
   const [subject, setSubject] = useState(defaultSubject);
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(defaultBody);
   const [toIds, setToIds] = useState<string[]>(defaultToIds);
   const [ccIds, setCcIds] = useState<string[]>([]);
   const [bccIds, setBccIds] = useState<string[]>([]);

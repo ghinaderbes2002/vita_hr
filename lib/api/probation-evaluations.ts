@@ -65,6 +65,11 @@ export interface ProbationEvaluation {
   finalRecommendation?: ProbationRecommendation;
   evaluatorNotes?: string;
   employeeNotes?: string;
+  managerScorePercent?: number | null;
+  selfScorePercent?: number | null;
+  finalScorePercent?: number | null;
+  managerWeight?: number;
+  selfWeight?: number;
   scores: ProbationEvaluationScore[];
   history?: ProbationHistoryEntry[];
   employee?: { firstNameAr: string; lastNameAr: string; employeeNumber: string };

@@ -1,17 +1,22 @@
 import { apiClient } from "./client";
 import { ApiResponse } from "@/types";
 
+export type ShiftType = "DAY" | "NIGHT" | "FLEXIBLE";
+
 export interface WorkSchedule {
   id: string;
   code: string;
   nameAr: string;
   nameEn: string;
+  shiftType: ShiftType;
   workStartTime: string;
   workEndTime: string;
   workDays: string; // JSON string like "[0,1,2,3,4]"
   lateToleranceMin: number;
   earlyLeaveToleranceMin: number;
   overtimeAfterMin: number;
+  minimumWorkMinutes?: number;
+  requiresContinuousWork?: boolean;
   requireCheckIn: boolean;
   requireCheckOut: boolean;
   isActive: boolean;
@@ -41,11 +46,14 @@ export interface CreateWorkScheduleData {
   code: string;
   nameAr: string;
   nameEn: string;
-  workStartTime: string;
-  workEndTime: string;
+  shiftType: ShiftType;
+  workStartTime?: string;
+  workEndTime?: string;
   workDays: string;
-  lateToleranceMin: number;
-  earlyLeaveToleranceMin: number;
+  lateToleranceMin?: number;
+  earlyLeaveToleranceMin?: number;
+  minimumWorkMinutes?: number;
+  requiresContinuousWork?: boolean;
   isActive: boolean;
   description?: string;
 }
@@ -54,11 +62,14 @@ export interface UpdateWorkScheduleData {
   code?: string;
   nameAr?: string;
   nameEn?: string;
+  shiftType?: ShiftType;
   workStartTime?: string;
   workEndTime?: string;
   workDays?: string;
   lateToleranceMin?: number;
   earlyLeaveToleranceMin?: number;
+  minimumWorkMinutes?: number;
+  requiresContinuousWork?: boolean;
   isActive?: boolean;
   description?: string;
 }

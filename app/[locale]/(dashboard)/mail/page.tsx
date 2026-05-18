@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Inbox, Send, FileText, Archive, Trash2, PenSquare } from "lucide-react";
+import { Inbox, Send, FileText, Archive, Trash2, PenSquare, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MailList } from "@/components/features/mail/mail-list";
 import { MailDetail } from "@/components/features/mail/mail-detail";
 import { ComposeMailModal } from "@/components/features/mail/compose-mail-modal";
+import { EmployeeDirectorySheet } from "@/components/features/mail/employee-directory-sheet";
 import type { MailFolder } from "@/lib/api/mail";
 
 const FOLDERS: { key: MailFolder; label: string; icon: any }[] = [
@@ -21,6 +22,7 @@ export default function MailPage() {
   const [activeFolder, setActiveFolder] = useState<MailFolder>("INBOX");
   const [openMessageId, setOpenMessageId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [directoryOpen, setDirectoryOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
@@ -54,6 +56,15 @@ export default function MailPage() {
         </nav>
 
         <Button
+          variant="outline"
+          className="gap-2 shrink-0"
+          size="sm"
+          onClick={() => setDirectoryOpen(true)}
+        >
+          <Users className="h-4 w-4" />
+          دليل الموظفين
+        </Button>
+        <Button
           className="gap-2 shrink-0"
           size="sm"
           onClick={() => setComposeOpen(true)}
@@ -85,6 +96,11 @@ export default function MailPage() {
       <ComposeMailModal
         open={composeOpen}
         onClose={() => setComposeOpen(false)}
+      />
+
+      <EmployeeDirectorySheet
+        open={directoryOpen}
+        onOpenChange={setDirectoryOpen}
       />
     </div>
   );

@@ -27,7 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useWorkSchedules, useDeleteWorkSchedule, useEmployeesMissingSchedule } from "@/lib/hooks/use-work-schedules";
 import { WorkScheduleDialog } from "@/components/features/work-schedules/work-schedule-dialog";
-import { WorkSchedule } from "@/lib/api/work-schedules";
+import { WorkSchedule, ShiftType } from "@/lib/api/work-schedules";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 
@@ -84,6 +84,12 @@ export default function WorkSchedulesPage() {
     }
   };
 
+  const SHIFT_TYPE_CONFIG: Record<ShiftType, { label: string; className: string }> = {
+    DAY:      { label: "🌤 نهاري",  className: "bg-blue-100 text-blue-800 border-blue-200" },
+    NIGHT:    { label: "🌙 ليلي",   className: "bg-purple-100 text-purple-800 border-purple-200" },
+    FLEXIBLE: { label: "🕐 مرن",    className: "bg-green-100 text-green-800 border-green-200" },
+  };
+
   const getWorkDaysText = (workDaysJson: string) => {
     try {
       const days = JSON.parse(workDaysJson) as number[];
@@ -135,6 +141,7 @@ export default function WorkSchedulesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>{t("workSchedules.fields.code")}</TableHead>
+              <TableHead>نوع الوردية</TableHead>
               <TableHead>{t("workSchedules.fields.name")}</TableHead>
               <TableHead>{t("workSchedules.fields.workTimes")}</TableHead>
               <TableHead>{t("workSchedules.fields.workDays")}</TableHead>
@@ -158,7 +165,7 @@ export default function WorkSchedulesPage() {
               ))
             ) : filteredSchedules.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
@@ -171,16 +178,30 @@ export default function WorkSchedulesPage() {
                 >
                   <TableCell className="font-medium">{schedule.code}</TableCell>
                   <TableCell>
+                    {(() => {
+                      const cfg = SHIFT_TYPE_CONFIG[schedule.shiftType as ShiftType];
+                      return cfg ? (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cfg.className}`}>
+                          {cfg.label}
+                        </span>
+                      ) : null;
+                    })()}
+                  </TableCell>
+                  <TableCell>
                     <div className="font-medium">{schedule.nameAr}</div>
                     <div className="text-sm text-muted-foreground">{schedule.nameEn}</div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {schedule.workStartTime} - {schedule.workEndTime}
+                    {schedule.shiftType === "FLEXIBLE" ? (
+                      <span className="text-sm text-muted-foreground">
+                        {schedule.minimumWorkMinutes ? `${Math.round(schedule.minimumWorkMinutes / 60)} س / يوم` : "مرن"}
                       </span>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span>{schedule.workStartTime} - {schedule.workEndTime}</span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm">{getWorkDaysText(schedule.workDays)}</TableCell>
                   <TableCell>

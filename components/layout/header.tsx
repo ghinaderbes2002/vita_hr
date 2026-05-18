@@ -43,9 +43,19 @@ export function Header() {
     router.push("/login");
   };
 
+  const EVAL_NOTIF_TYPES = ["PROBATION_END_REMINDER", "EVALUATION_ASSIGNED"];
+
+  const getEvalLink = (notif: any): string | null => {
+    const evalId = notif.data?.evaluationId;
+    if (!evalId) return null;
+    return `/${locale}/probation-evaluations/${evalId}`;
+  };
+
   const handleNotifClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
-    if (notif.actionUrl) router.push(notif.actionUrl);
+    const evalLink = EVAL_NOTIF_TYPES.includes(notif.type) ? getEvalLink(notif) : null;
+    const target = evalLink || notif.actionUrl;
+    if (target) router.push(target);
   };
 
   return (
@@ -146,6 +156,15 @@ export function Header() {
                       <p className="text-xs text-muted-foreground mt-1">
                         {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
                       </p>
+                      {EVAL_NOTIF_TYPES.includes(notif.type) && getEvalLink(notif) && (
+                        <button
+                          type="button"
+                          className="mt-1.5 text-xs text-primary font-medium hover:underline"
+                          onClick={(e) => { e.stopPropagation(); router.push(getEvalLink(notif)!); }}
+                        >
+                          اذهب للتقييم ←
+                        </button>
+                      )}
                     </div>
                     {notif.actionUrl && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
                   </div>

@@ -61,6 +61,16 @@ export const employeesApi = {
     await apiClient.put(`/employees/${id}/manager-notes`, { notes });
   },
 
+  exportFullProfile: async (id: string): Promise<{ blob: Blob; filename: string }> => {
+    const response = await apiClient.get(`/employees/${id}/export-full`, {
+      responseType: "blob",
+    });
+    const disposition: string = response.headers["content-disposition"] || "";
+    const match = disposition.match(/filename[^;=\n]*=(['"]?)([^'";\n]+)\1/);
+    const filename = match?.[2]?.trim() || `employee-${id}.xlsx`;
+    return { blob: response.data as Blob, filename };
+  },
+
   getProbationReport: async (days: number): Promise<any[]> => {
     const response = await apiClient.get("/employees/reports/probation-ending", { params: { days } });
     return response.data?.data ?? response.data ?? [];

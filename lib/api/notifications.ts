@@ -5,6 +5,18 @@ export type NotificationType =
   | "LEAVE_REQUEST_APPROVED"
   | "LEAVE_REQUEST_REJECTED"
   | "LEAVE_REQUEST_PENDING_APPROVAL"
+  | "ATTENDANCE_ALERT"
+  | "ATTENDANCE_JUSTIFICATION"
+  | "EVALUATION_ASSIGNED"
+  | "PROBATION_END_REMINDER"
+  | "DOCUMENT_EXPIRY"
+  | "BIRTHDAY"
+  | "WELCOME"
+  | "CONTRACT_EXPIRY"
+  | "ADDITIONAL_ASSIGNMENT_REQUEST"
+  | "ADDITIONAL_ASSIGNMENT_DECISION"
+  | "ONBOARDING_TASK"
+  | "EMPLOYEES_WITHOUT_SCHEDULE"
   | "GENERAL";
 
 export interface Notification {
@@ -23,7 +35,7 @@ export interface Notification {
 }
 
 export const notificationsApi = {
-  getAll: async (params?: { isRead?: boolean }): Promise<Notification[]> => {
+  getAll: async (params?: { isRead?: boolean; page?: number; limit?: number }): Promise<Notification[]> => {
     const response = await apiClient.get("/notifications", { params });
     const result = response.data?.data ?? response.data;
     if (Array.isArray(result)) return result;

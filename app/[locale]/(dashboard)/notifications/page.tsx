@@ -1,99 +1,118 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow, format } from "date-fns";
 import { ar } from "date-fns/locale";
 import {
   Bell, CheckCheck, AlertTriangle, CheckCircle2, XCircle, Info, ExternalLink,
-  Clock, FileWarning, CalendarX, User,
+  Clock, FileWarning, CalendarX, User, ClipboardList, FileCheck, Briefcase,
+  Cake, UserPlus, FileX, ListTodo, UserX, Filter, ChevronDown,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ComposeMailModal } from "@/components/features/mail/compose-mail-modal";
 import { useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
+import type { NotificationType } from "@/lib/api/notifications";
 
-const TYPE_CONFIG: Record<string, { icon: any; color: string; label: string }> = {
-  LEAVE_REQUEST_PENDING_APPROVAL: {
-    icon: AlertTriangle,
-    color: "text-amber-500 bg-amber-50",
-    label: "تأخر الموافقة",
-  },
-  LEAVE_REQUEST_SUBMITTED: {
-    icon: Bell,
-    color: "text-blue-500 bg-blue-50",
-    label: "طلب إجازة جديد",
-  },
-  LEAVE_REQUEST_APPROVED: {
-    icon: CheckCircle2,
-    color: "text-green-500 bg-green-50",
-    label: "إجازة مقبولة",
-  },
-  LEAVE_REQUEST_REJECTED: {
-    icon: XCircle,
-    color: "text-red-500 bg-red-50",
-    label: "إجازة مرفوضة",
-  },
-  PROBATION_END_REMINDER: {
-    icon: Clock,
-    color: "text-orange-500 bg-orange-50",
-    label: "انتهاء فترة التجربة",
-  },
-  CONTRACT_EXPIRY: {
-    icon: CalendarX,
-    color: "text-red-500 bg-red-50",
-    label: "انتهاء العقد",
-  },
-  EMPLOYEES_WITHOUT_SCHEDULE: {
-    icon: FileWarning,
-    color: "text-amber-500 bg-amber-50",
-    label: "بدون جدول دوام",
-  },
-  GENERAL: {
-    icon: Info,
-    color: "text-gray-500 bg-gray-100",
-    label: "عام",
-  },
+const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+  LEAVE_REQUEST_SUBMITTED:        { icon: Bell,          color: "text-blue-600",   bg: "bg-blue-100",   label: "طلب إجازة جديد" },
+  LEAVE_REQUEST_APPROVED:         { icon: CheckCircle2,  color: "text-green-600",  bg: "bg-green-100",  label: "إجازة مقبولة" },
+  LEAVE_REQUEST_REJECTED:         { icon: XCircle,       color: "text-red-600",    bg: "bg-red-100",    label: "إجازة مرفوضة" },
+  LEAVE_REQUEST_PENDING_APPROVAL: { icon: AlertTriangle, color: "text-amber-600",  bg: "bg-amber-100",  label: "تأخر الموافقة" },
+  ATTENDANCE_ALERT:               { icon: AlertTriangle, color: "text-red-600",    bg: "bg-red-100",    label: "تنبيه حضور" },
+  ATTENDANCE_JUSTIFICATION:       { icon: FileCheck,     color: "text-orange-600", bg: "bg-orange-100", label: "تبرير حضور" },
+  EVALUATION_ASSIGNED:            { icon: ClipboardList, color: "text-purple-600", bg: "bg-purple-100", label: "تقييم التجربة" },
+  PROBATION_END_REMINDER:         { icon: Clock,         color: "text-orange-600", bg: "bg-orange-100", label: "انتهاء التجربة" },
+  DOCUMENT_EXPIRY:                { icon: FileWarning,   color: "text-red-600",    bg: "bg-red-100",    label: "انتهاء وثيقة" },
+  BIRTHDAY:                       { icon: Cake,          color: "text-pink-600",   bg: "bg-pink-100",   label: "عيد ميلاد 🎂" },
+  WELCOME:                        { icon: UserPlus,      color: "text-green-600",  bg: "bg-green-100",  label: "ترحيب" },
+  CONTRACT_EXPIRY:                { icon: FileX,         color: "text-red-600",    bg: "bg-red-100",    label: "انتهاء العقد" },
+  ADDITIONAL_ASSIGNMENT_REQUEST:  { icon: Briefcase,     color: "text-indigo-600", bg: "bg-indigo-100", label: "تكليف إضافي" },
+  ADDITIONAL_ASSIGNMENT_DECISION: { icon: CheckCircle2,  color: "text-green-600",  bg: "bg-green-100",  label: "قرار التكليف" },
+  ONBOARDING_TASK:                { icon: ListTodo,      color: "text-orange-600", bg: "bg-orange-100", label: "مهمة تأهيل" },
+  EMPLOYEES_WITHOUT_SCHEDULE:     { icon: UserX,         color: "text-gray-600",   bg: "bg-gray-100",   label: "بدون جدول" },
+  GENERAL:                        { icon: Info,          color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },
 };
+
+const EVAL_TYPES = ["PROBATION_END_REMINDER", "EVALUATION_ASSIGNED"];
+
+const TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(TYPE_CONFIG).map(([k, v]) => [k, v.label])
+);
 
 function getConfig(type: string) {
   return TYPE_CONFIG[type] ?? TYPE_CONFIG.GENERAL;
 }
 
+const PAGE_SIZE = 15;
+
 export default function NotificationsPage() {
   const locale = useLocale();
   const router = useRouter();
+  const [tab, setTab] = useState<"all" | "unread" | "read">("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeToIds, setComposeToIds] = useState<string[]>([]);
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
 
   const { data: notifications = [], isLoading } = useNotifications();
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
 
   const notifList: any[] = Array.isArray(notifications) ? notifications : [];
+
+  const filtered = notifList.filter((n) => {
+    if (tab === "unread" && n.isRead) return false;
+    if (tab === "read" && !n.isRead) return false;
+    if (typeFilter !== "all" && n.type !== typeFilter) return false;
+    return true;
+  });
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = filtered.length > visibleCount;
   const unreadCount = notifList.filter((n) => !n.isRead).length;
-  const pendingApprovalList = notifList.filter((n) => n.type === "LEAVE_REQUEST_PENDING_APPROVAL");
-  const hrAlertList = notifList.filter((n) =>
-    ["PROBATION_END_REMINDER", "CONTRACT_EXPIRY", "EMPLOYEES_WITHOUT_SCHEDULE"].includes(n.type)
-  );
+
+  const usedTypes = [...new Set(notifList.map((n) => n.type as string))];
 
   const handleClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
-    if (notif.actionUrl) router.push(notif.actionUrl);
+    const evalLink = EVAL_TYPES.includes(notif.type) && notif.data?.evaluationId
+      ? `/${locale}/probation-evaluations/${notif.data.evaluationId}`
+      : null;
+    const target = evalLink || notif.actionUrl;
+    if (target) router.push(target);
   };
 
-  const handleViewEmployee = (e: React.MouseEvent, employeeId: string) => {
-    e.stopPropagation();
-    router.push(`/${locale}/employees/${employeeId}`);
+  const handleBirthdayGreeting = (notif: any) => {
+    if (!notif.isRead) markAsRead.mutate(notif.id);
+    const name = notif.data?.employeeName || "";
+    const userId = notif.data?.userId;
+    setComposeSubject(`تهنئة بعيد الميلاد — ${name}`);
+    setComposeBody(`عزيزي ${name}،\n\nبمناسبة عيد ميلادك، نتمنى لك عاماً مليئاً بالصحة والسعادة والنجاح.\n\nكل عام وأنت بخير! 🎂`);
+    setComposeToIds(userId ? [userId] : []);
+    setComposeOpen(true);
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-5 max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">الإشعارات</h1>
           {unreadCount > 0 && (
-            <p className="text-sm text-muted-foreground mt-1">{unreadCount} إشعار غير مقروء</p>
+            <p className="text-sm text-muted-foreground mt-0.5">{unreadCount} غير مقروء</p>
           )}
         </div>
         {unreadCount > 0 && (
@@ -110,173 +129,183 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* Pending Approval Alert Section */}
-      {pendingApprovalList.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/40">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2 text-amber-700">
-              <AlertTriangle className="h-4 w-4" />
-              إجازات طبية تنتظر الموافقة منذ أكثر من 48 ساعة
-              <Badge className="bg-amber-500 text-white ms-auto">{pendingApprovalList.length}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {pendingApprovalList.map((n) => (
-              <div
-                key={n.id}
-                className={`flex items-start gap-3 rounded-lg border border-amber-200 bg-white px-4 py-3 cursor-pointer hover:bg-amber-50 transition-colors ${!n.isRead ? "border-amber-400" : ""}`}
-                onClick={() => handleClick(n)}
-              >
-                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${!n.isRead ? "font-semibold" : "text-muted-foreground"}`}>{n.titleAr || n.titleEn || n.title}</p>
-                  {(n.messageAr || n.message) && <p className="text-xs text-muted-foreground mt-0.5">{n.messageAr || n.message}</p>}
-                  <p className="text-xs text-amber-600 mt-1">
-                    {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: ar })}
-                  </p>
-                </div>
-                {n.actionUrl && (
-                  <div className="flex items-center gap-1 text-xs text-amber-600 shrink-0">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    عرض الطلب
-                  </div>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      {/* Tabs + Filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setVisibleCount(PAGE_SIZE); }}>
+          <TabsList>
+            <TabsTrigger value="all">
+              الكل
+              {notifList.length > 0 && (
+                <Badge variant="secondary" className="mr-1.5 h-4 px-1.5 text-[10px]">{notifList.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="unread">
+              غير مقروء
+              {unreadCount > 0 && (
+                <Badge className="mr-1.5 h-4 px-1.5 text-[10px] bg-blue-500">{unreadCount}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="read">مقروء</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-      {/* HR Alerts Section */}
-      {hrAlertList.length > 0 && (
-        <Card className="border-red-200 bg-red-50/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2 text-red-700">
-              <FileWarning className="h-4 w-4" />
-              تنبيهات HR
-              <Badge className="bg-red-500 text-white ms-auto">{hrAlertList.length}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {hrAlertList.map((n) => {
-              const cfg = getConfig(n.type);
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 h-9">
+              <Filter className="h-3.5 w-3.5" />
+              {typeFilter === "all" ? "كل الأنواع" : TYPE_LABELS[typeFilter] || typeFilter}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+            <DropdownMenuItem onClick={() => { setTypeFilter("all"); setVisibleCount(PAGE_SIZE); }}>
+              كل الأنواع
+            </DropdownMenuItem>
+            {usedTypes.map((type) => (
+              <DropdownMenuItem key={type} onClick={() => { setTypeFilter(type); setVisibleCount(PAGE_SIZE); }}>
+                {TYPE_LABELS[type] || type}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* List */}
+      <div className="rounded-lg border divide-y overflow-hidden">
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex gap-3 px-4 py-4">
+              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-64" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center text-muted-foreground">
+            <Bell className="h-10 w-10 mx-auto mb-3 opacity-20" />
+            <p className="text-sm">لا توجد إشعارات</p>
+          </div>
+        ) : (
+          <>
+            {visible.map((notif) => {
+              const cfg = getConfig(notif.type);
               const Icon = cfg.icon;
-              const employeeId = n.data?.employeeId;
+              const isBirthday = notif.type === "BIRTHDAY";
+              const evalLink = EVAL_TYPES.includes(notif.type) && notif.data?.evaluationId
+                ? `/${locale}/probation-evaluations/${notif.data.evaluationId}`
+                : null;
+
               return (
                 <div
-                  key={n.id}
-                  className={`flex items-start gap-3 rounded-lg border bg-white px-4 py-3 cursor-pointer hover:bg-red-50 transition-colors ${!n.isRead ? "border-red-300" : "border-red-100"}`}
-                  onClick={() => handleClick(n)}
+                  key={notif.id}
+                  className={`flex items-start gap-4 px-5 py-4 cursor-pointer hover:bg-muted/40 transition-colors ${
+                    isBirthday
+                      ? "bg-pink-50/60 hover:bg-pink-50"
+                      : !notif.isRead
+                      ? "bg-blue-50/30"
+                      : ""
+                  }`}
+                  onClick={() => handleClick(notif)}
                 >
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${cfg.color}`}>
-                    <Icon className="h-4 w-4" />
+                  {/* Icon */}
+                  <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${cfg.bg}`}>
+                    <Icon className={`h-4 w-4 ${cfg.color}`} />
                   </div>
+
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${!n.isRead ? "font-semibold" : "text-muted-foreground"}`}>
-                      {n.titleAr || n.title}
-                    </p>
-                    {(n.messageAr || n.message) && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{n.messageAr || n.message}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={`text-sm leading-snug ${!notif.isRead ? "font-semibold" : "text-muted-foreground"}`}>
+                        {notif.titleAr || notif.titleEn || notif.title}
+                      </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {!notif.isRead && (
+                          <span className={`h-2 w-2 rounded-full ${cfg.color.replace("text-", "bg-")}`} />
+                        )}
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${cfg.color} border-current/20`}>
+                          {cfg.label}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {(notif.messageAr || notif.message) && (
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                        {notif.messageAr || notif.message}
+                      </p>
                     )}
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <Badge variant="outline" className="text-xs">{cfg.label}</Badge>
-                      {n.data?.daysRemaining !== undefined && (
-                        <span className="text-xs text-red-600 font-medium">
-                          متبقٍ: {n.data.daysRemaining} يوم
-                        </span>
+
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      {format(new Date(notif.createdAt), "yyyy/MM/dd HH:mm")} ·{" "}
+                      {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
+                    </p>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {evalLink && (
+                        <button
+                          type="button"
+                          className="text-xs text-primary font-medium hover:underline"
+                          onClick={(e) => { e.stopPropagation(); router.push(evalLink); }}
+                        >
+                          اذهب للتقييم ←
+                        </button>
+                      )}
+                      {isBirthday && (
+                        <button
+                          type="button"
+                          className="text-xs text-pink-600 font-medium hover:underline flex items-center gap-1"
+                          onClick={(e) => { e.stopPropagation(); handleBirthdayGreeting(notif); }}
+                        >
+                          <Cake className="h-3 w-3" />
+                          إرسال تهنئة
+                        </button>
+                      )}
+                      {notif.data?.employeeId && !isBirthday && (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/employees/${notif.data.employeeId}`); }}
+                        >
+                          <User className="h-3 w-3" />
+                          عرض الموظف
+                        </button>
                       )}
                     </div>
                   </div>
-                  {employeeId && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 shrink-0 h-7 text-xs"
-                      onClick={(e) => handleViewEmployee(e, employeeId)}
-                    >
-                      <User className="h-3 w-3" />
-                      عرض الموظف
-                    </Button>
+
+                  {notif.actionUrl && !evalLink && (
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
                   )}
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
-      )}
 
-      {/* All Notifications */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" />
-            جميع الإشعارات
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="space-y-2 p-4">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-            </div>
-          ) : notifList.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              <Bell className="h-10 w-10 mx-auto mb-3 opacity-20" />
-              <p className="text-sm">لا توجد إشعارات</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {notifList.map((notif) => {
-                const cfg = getConfig(notif.type);
-                const Icon = cfg.icon;
-                return (
-                  <div
-                    key={notif.id}
-                    className={`flex items-start gap-4 px-5 py-4 cursor-pointer hover:bg-muted/40 transition-colors ${
-                      !notif.isRead
-                        ? notif.type === "LEAVE_REQUEST_PENDING_APPROVAL"
-                          ? "bg-amber-50/50"
-                          : "bg-blue-50/30"
-                        : ""
-                    }`}
-                    onClick={() => handleClick(notif)}
-                  >
-                    <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${cfg.color}`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm leading-snug ${!notif.isRead ? "font-semibold" : "text-muted-foreground"}`}>
-                          {notif.titleAr || notif.title}
-                        </p>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {!notif.isRead && (
-                            <span className={`h-2 w-2 rounded-full ${
-                              ["CONTRACT_EXPIRY","PROBATION_END_REMINDER","EMPLOYEES_WITHOUT_SCHEDULE"].includes(notif.type)
-                                ? "bg-red-500"
-                                : notif.type === "LEAVE_REQUEST_PENDING_APPROVAL"
-                                ? "bg-amber-500"
-                                : "bg-blue-500"
-                            }`} />
-                          )}
-                          <Badge variant="outline" className="text-xs">{cfg.label}</Badge>
-                        </div>
-                      </div>
-                      {(notif.messageAr || notif.message) && (
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{notif.messageAr || notif.message}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1.5">
-                        {format(new Date(notif.createdAt), "yyyy/MM/dd HH:mm")} &middot;{" "}
-                        {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
-                      </p>
-                    </div>
-                    {notif.actionUrl && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {hasMore && (
+              <div className="px-5 py-3 text-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground"
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                >
+                  تحميل المزيد ({filtered.length - visibleCount} متبقٍ)
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <ComposeMailModal
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        defaultToIds={composeToIds}
+        defaultSubject={composeSubject}
+        defaultBody={composeBody}
+      />
     </div>
   );
 }

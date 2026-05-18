@@ -21,6 +21,7 @@ export const PERMISSIONS = {
     MANAGER_NOTES_WRITE: "employees:manager-notes:write",
     PROBATION_REPORT: "employees:probation-report:read",
     CONTRACT_REPORT: "employees:contract-report:read",
+    EXPORT: "employees:export",
   },
 
   DEPARTMENTS: {

@@ -42,6 +42,7 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { format } from "date-fns";
 import { formatTime, formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
+import { BreaksDrawer } from "@/components/features/attendance/breaks-drawer";
 
 const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
   { value: "PRESENT", label: "حاضر" },
@@ -57,8 +58,11 @@ const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
 
 export default function AttendanceRecordsPage() {
   const t = useTranslations();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, isAdmin } = usePermissions();
   const canCreate = hasPermission("attendance.records.create-manual");
+  const canManageBreaks = isAdmin() || hasPermission("attendance.breaks.manage");
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [breaksDrawerOpen, setBreaksDrawerOpen] = useState(false);
   const [search, setSearch] = useState("");
 const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -246,14 +250,25 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
                 </TableCell>
               </TableRow>
             ) : (
-              filteredRecords.map((record: AttendanceRecord) => (
-                <TableRow key={record.id}>
+              filteredRecords.map((record: AttendanceRecord) => {
+                const isExempt = (record as any).employee?.attendanceConfig?.salaryLinked === false;
+                return (
+                <TableRow
+                  key={record.id}
+                  className={`cursor-pointer hover:bg-muted/40 ${isExempt ? "opacity-60 bg-muted/30" : ""}`}
+                  onClick={() => { setSelectedRecord(record); setBreaksDrawerOpen(true); }}
+                >
                   {/* الموظف */}
                   <TableCell>
-                    <div className="font-medium leading-tight">
+                    <div className="font-medium leading-tight flex items-center gap-1.5 flex-wrap">
                       {record.employee
                         ? `${record.employee.firstNameAr} ${record.employee.lastNameAr}`
                         : "—"}
+                      {isExempt && (
+                        <span className="text-[10px] text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-1.5 py-0.5">
+                          معفى
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {record.employee?.employeeNumber || "—"}
@@ -350,7 +365,7 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
                   </TableCell>
 
                 </TableRow>
-              ))
+              );})
             )}
           </TableBody>
         </Table>
@@ -366,6 +381,14 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
         />
       )}
 
+
+      {/* Breaks Drawer */}
+      <BreaksDrawer
+        record={selectedRecord}
+        open={breaksDrawerOpen}
+        onOpenChange={setBreaksDrawerOpen}
+        canManage={canManageBreaks}
+      />
 
       {/* Manual Entry Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>

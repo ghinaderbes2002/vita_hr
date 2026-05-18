@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network, UserCheck } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network, UserCheck, BellOff } from "lucide-react";
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,7 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [exemptFilter, setExemptFilter] = useState<"all" | "exempt" | "linked">("all");
   const [view, setView] = useState<"list" | "tree">("list");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -72,9 +73,16 @@ export default function EmployeesPage() {
 
   // Use department-filtered employees if a department is selected, otherwise use all employees
   const isLoading = selectedDepartment ? departmentEmployeesLoading : allEmployeesLoading;
-  const employees = selectedDepartment
+  const rawEmployees: any[] = selectedDepartment
     ? (departmentEmployees || [])
     : ((allEmployeesData as any)?.data?.items || []);
+
+  const employees = rawEmployees.filter((e: any) => {
+    const linked = e.attendanceConfig?.salaryLinked ?? true;
+    if (exemptFilter === "exempt") return linked === false;
+    if (exemptFilter === "linked") return linked === true;
+    return true;
+  });
 
   const handleEdit = (employee: any) => {
     setSelectedEmployee(employee);
@@ -155,6 +163,17 @@ export default function EmployeesPage() {
             className="pr-10 bg-background"
           />
         </div>
+        <Select value={exemptFilter} onValueChange={(v) => { setExemptFilter(v as any); setPage(1); }}>
+          <SelectTrigger className="w-48 bg-background">
+            <BellOff className="h-4 w-4 ml-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الموظفين</SelectItem>
+            <SelectItem value="exempt">المعفيون من البصمة</SelectItem>
+            <SelectItem value="linked">مرتبطون بالراتب</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={selectedDepartment || "all"} onValueChange={(v) => { setSelectedDepartment(v === "all" ? "" : v); setPage(1); }}>
           <SelectTrigger className="w-56 bg-background">
             <Filter className="h-4 w-4 ml-2" />
@@ -216,7 +235,17 @@ export default function EmployeesPage() {
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => router.push(`/employees/${employee.id}`)}
                 >
-                  <TableCell className="font-medium">{employee.firstNameAr}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {employee.firstNameAr}
+                      {(employee as any).attendanceConfig?.salaryLinked === false && (
+                        <span className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-1.5 py-0.5">
+                          <BellOff className="h-2.5 w-2.5" />
+                          معفى
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{employee.lastNameAr}</TableCell>
                   <TableCell>{employee.email}</TableCell>
                   <TableCell>{employee.phone || "-"}</TableCell>
