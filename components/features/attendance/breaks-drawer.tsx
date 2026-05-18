@@ -11,22 +11,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { AttendanceRecord } from "@/lib/api/attendance-records";
-import { AttendanceBreak, BreakType, BREAK_TYPE_LABELS } from "@/lib/api/attendance-breaks";
+import { AttendanceBreak, BREAK_TYPE_LABELS } from "@/lib/api/attendance-breaks";
 import {
   useAttendanceBreaks,
   useAuthorizeBreak,
   useRejectBreak,
-  useUpdateBreakType,
 } from "@/lib/hooks/use-attendance-breaks";
 import { formatTime } from "@/lib/utils/date";
 
-const BREAK_TYPES: BreakType[] = ["PRAYER", "MEAL", "PERSONAL", "WORK_RELATED", "OTHER"];
 
 function StatusBadge({ status }: { status: AttendanceBreak["status"] }) {
   if (status === "AUTHORIZED")
@@ -40,8 +35,7 @@ function formatDuration(minutes: number | null) {
   if (!minutes || minutes <= 0) return "—";
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m} د`;
-  return m === 0 ? `${h} س` : `${h} س ${m} د`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
 interface BreakCardProps {
@@ -52,16 +46,14 @@ interface BreakCardProps {
 }
 
 function BreakCard({ brk, index, recordId, canManage }: BreakCardProps) {
-  const [actionDialog, setActionDialog] = useState<"authorize" | "reject" | "type" | null>(null);
+  const [actionDialog, setActionDialog] = useState<"authorize" | "reject" | null>(null);
   const [reason, setReason] = useState("");
-  const [newType, setNewType] = useState<BreakType>(brk.type || "OTHER");
 
   const authorize = useAuthorizeBreak();
   const reject = useRejectBreak();
-  const updateType = useUpdateBreakType();
 
   const isPending =
-    authorize.isPending || reject.isPending || updateType.isPending;
+    authorize.isPending || reject.isPending;
 
   function handleAuthorize() {
     authorize.mutate(
@@ -74,13 +66,6 @@ function BreakCard({ brk, index, recordId, canManage }: BreakCardProps) {
     reject.mutate(
       { breakId: brk.id, reason, recordId },
       { onSuccess: () => { setActionDialog(null); setReason(""); } }
-    );
-  }
-
-  function handleUpdateType() {
-    updateType.mutate(
-      { breakId: brk.id, type: newType, recordId },
-      { onSuccess: () => setActionDialog(null) }
     );
   }
 
@@ -162,15 +147,6 @@ function BreakCard({ brk, index, recordId, canManage }: BreakCardProps) {
                 رفض
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={() => { setNewType(brk.type || "OTHER"); setActionDialog("type"); }}
-              disabled={isPending}
-            >
-              تعديل النوع
-            </Button>
           </div>
         )}
       </div>
@@ -223,27 +199,6 @@ function BreakCard({ brk, index, recordId, canManage }: BreakCardProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Update type dialog */}
-      <Dialog open={actionDialog === "type"} onOpenChange={(o) => !o && setActionDialog(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader><DialogTitle>تعديل نوع الاستراحة</DialogTitle></DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label>النوع</Label>
-            <Select value={newType} onValueChange={(v) => setNewType(v as BreakType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {BREAK_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>{BREAK_TYPE_LABELS[t]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setActionDialog(null)}>إلغاء</Button>
-            <Button onClick={handleUpdateType} disabled={updateType.isPending}>حفظ</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
@@ -271,7 +226,7 @@ export function BreaksDrawer({ record, open, onOpenChange, canManage = false }: 
     if (!minutes) return "—";
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    return `${h} س ${m.toString().padStart(2, "0")} د`;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
   }
 
   return (

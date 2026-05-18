@@ -48,6 +48,9 @@ interface PolicyFormData {
   repeatLateThreshold: string;
   repeatLatePenaltyDays: string;
   breakOverLimitDeduction: BreakDeductionType;
+  holidayOvertimeMultiplier: string;
+  internalMissionDailyRate: string;
+  externalMissionDailyRate: string;
 }
 
 function parseTiers(tiers: DeductionTier[] | string | null | undefined): DeductionTier[] {
@@ -62,6 +65,7 @@ const EMPTY_FORM: PolicyFormData = {
   earlyLeaveDeductionType: "MINUTE_BY_MINUTE", earlyLeaveTiers: [],
   absenceDeductionDays: 1, repeatLateThreshold: "", repeatLatePenaltyDays: "",
   breakOverLimitDeduction: "MINUTE_BY_MINUTE" as BreakDeductionType,
+  holidayOvertimeMultiplier: "2", internalMissionDailyRate: "", externalMissionDailyRate: "",
 };
 
 function formToData(form: PolicyFormData): CreateDeductionPolicyData {
@@ -79,6 +83,9 @@ function formToData(form: PolicyFormData): CreateDeductionPolicyData {
     repeatLateThreshold: form.repeatLateThreshold ? Number(form.repeatLateThreshold) : undefined,
     repeatLatePenaltyDays: form.repeatLatePenaltyDays ? Number(form.repeatLatePenaltyDays) : undefined,
     breakOverLimitDeduction: form.breakOverLimitDeduction,
+    holidayOvertimeMultiplier: form.holidayOvertimeMultiplier ? Number(form.holidayOvertimeMultiplier) : undefined,
+    internalMissionDailyRate: form.internalMissionDailyRate ? Number(form.internalMissionDailyRate) : undefined,
+    externalMissionDailyRate: form.externalMissionDailyRate ? Number(form.externalMissionDailyRate) : undefined,
   };
 }
 
@@ -150,6 +157,9 @@ export default function DeductionPoliciesPage() {
       repeatLateThreshold: policy.repeatLateThreshold?.toString() || "",
       repeatLatePenaltyDays: policy.repeatLatePenaltyDays?.toString() || "",
       breakOverLimitDeduction: policy.breakOverLimitDeduction,
+      holidayOvertimeMultiplier: policy.holidayOvertimeMultiplier?.toString() || "2",
+      internalMissionDailyRate: policy.internalMissionDailyRate?.toString() || "",
+      externalMissionDailyRate: policy.externalMissionDailyRate?.toString() || "",
     });
     setDialogOpen(true);
   }
@@ -245,6 +255,30 @@ export default function DeductionPoliciesPage() {
                     ))}
                   </div>
                 ) : null}
+                {(policy as any)._count?.employees > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                    <Shield className="h-3.5 w-3.5" />
+                    مستخدمة من {(policy as any)._count.employees} موظف — التعديل يؤثر على الرواتب القادمة
+                  </div>
+                )}
+                {policy.holidayOvertimeMultiplier != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">معامل إضافي عطل</span>
+                    <span className="font-medium">{policy.holidayOvertimeMultiplier}×</span>
+                  </div>
+                )}
+                {policy.internalMissionDailyRate != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">أجر مهمة داخلية</span>
+                    <span className="font-medium">{policy.internalMissionDailyRate} $</span>
+                  </div>
+                )}
+                {policy.externalMissionDailyRate != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">أجر مهمة خارجية</span>
+                    <span className="font-medium">{policy.externalMissionDailyRate} $</span>
+                  </div>
+                )}
                 {!readOnly && (
                   <div className="flex items-center gap-2 pt-2 border-t">
                     <Button variant="outline" size="sm" className="gap-1 flex-1 h-8 text-xs" onClick={() => openEdit(policy)}>
@@ -377,6 +411,56 @@ export default function DeductionPoliciesPage() {
                 <Input type="number" step="0.25" value={form.repeatLatePenaltyDays} onChange={(e) => setForm({ ...form, repeatLatePenaltyDays: e.target.value })} placeholder="0.5" min={0} />
               </div>
             </div>
+
+            {/* Mission rates + holiday overtime */}
+            <div className="space-y-3 rounded-lg border p-3">
+              <p className="text-sm font-medium">إعدادات المهمات والإضافي</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>معامل الإضافي - أيام عطل</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min={1}
+                    value={form.holidayOvertimeMultiplier}
+                    onChange={(e) => setForm({ ...form, holidayOvertimeMultiplier: e.target.value })}
+                    placeholder="2"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>أجر يوم المهمة الداخلية (USD)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={form.internalMissionDailyRate}
+                    onChange={(e) => setForm({ ...form, internalMissionDailyRate: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>أجر يوم المهمة الخارجية (USD)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={form.externalMissionDailyRate}
+                  onChange={(e) => setForm({ ...form, externalMissionDailyRate: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            {selectedPolicy && (selectedPolicy as any)._count?.employees > 0 && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <Shield className="h-4 w-4 shrink-0 mt-0.5" />
+                <p>
+                  هذه السياسة مستخدمة من <strong>{(selectedPolicy as any)._count.employees} موظف</strong>.
+                  التعديل سيؤثر على حسابات الراتب القادمة لهم.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{tCommon("cancel")}</Button>

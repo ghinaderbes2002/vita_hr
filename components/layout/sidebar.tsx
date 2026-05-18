@@ -42,6 +42,8 @@ import {
   LayoutList,
   ClipboardSignature,
   Mail,
+  Banknote,
+  Award,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -169,7 +171,15 @@ const navigation: NavItem[] = [
           { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck },
         ],
       },
-      { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+      {
+        title: "إدارة الرواتب",
+        icon: Wallet,
+        children: [
+          { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "payroll:read" },
+          { title: "سلف الرواتب", href: "/salary-advances", icon: Banknote, permission: "payroll:read" },
+          { title: "عمولات المبيعات", href: "/sales-commissions", icon: Award, permission: "payroll:read" },
+        ],
+      },
       {
         title: "nav.hrReports",
         icon: FileBarChart,

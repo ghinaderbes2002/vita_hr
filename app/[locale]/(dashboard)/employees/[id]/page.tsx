@@ -28,7 +28,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TrainingCertificate, EmployeeAllowance } from "@/types";
 import { useEmployee, useUpdateEmployee, useManagerNotes, useUpdateManagerNotes } from "@/lib/hooks/use-employees";
-import { assetUrl } from "@/lib/utils";
+import { assetUrl, formatUSD } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { FieldGuard } from "@/components/permissions/field-guard";
@@ -42,6 +42,159 @@ import { useEmployeeWorkflows, useOnboardingTemplates, useCreateOnboardingWorkfl
 import { useEmployeeSchedules, useWorkSchedules, useAssignSchedule, useUpdateEmployeeSchedule, useDeleteEmployeeSchedule } from "@/lib/hooks/use-work-schedules";
 import { EmployeeSchedule } from "@/lib/api/work-schedules";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import { useSalaryAdvances } from "@/lib/hooks/use-salary-advances";
+import { useSalesCommissions } from "@/lib/hooks/use-sales-commissions";
+import { CreateSalaryAdvanceDialog } from "@/components/features/payroll/create-salary-advance-dialog";
+import { CreateCommissionDialog } from "@/components/features/payroll/create-commission-dialog";
+
+const MONTHS_AR = [
+  "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+];
+
+const ADVANCE_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "نشطة", COMPLETED: "مكتملة", CANCELLED: "ملغاة",
+};
+const ADVANCE_STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  ACTIVE: "default", COMPLETED: "secondary", CANCELLED: "destructive",
+};
+
+function _EmployeeFinancialTabs({ employeeId }: { employeeId: string }) {
+  const [advanceOpen, setAdvanceOpen] = useState(false);
+  const [commissionOpen, setCommissionOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("advances");
+
+  const { data: advancesData } = useSalaryAdvances({ employeeId, limit: 50 });
+  const { data: commissionsData } = useSalesCommissions({ employeeId, limit: 50 });
+
+  const advances = advancesData?.items || [];
+  const commissions = commissionsData?.items || [];
+
+  return (
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between mb-3">
+          <TabsList>
+            <TabsTrigger value="advances">
+              السلف <Badge variant="secondary" className="mr-2 text-xs">{advances.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="commissions">
+              العمولات <Badge variant="secondary" className="mr-2 text-xs">{commissions.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+          {activeTab === "advances" ? (
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setAdvanceOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              إضافة سلفة
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setCommissionOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              إضافة عمولة
+            </Button>
+          )}
+        </div>
+
+        <TabsContent value="advances">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>المبلغ الإجمالي</TableHead>
+                    <TableHead>قيمة القسط</TableHead>
+                    <TableHead>الأقساط</TableHead>
+                    <TableHead>الرصيد</TableHead>
+                    <TableHead>بداية الخصم</TableHead>
+                    <TableHead>الحالة</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {advances.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground h-16">لا توجد سلف</TableCell>
+                    </TableRow>
+                  ) : (
+                    advances.map((adv) => (
+                      <TableRow key={adv.id}>
+                        <TableCell className="font-mono text-sm">{formatUSD(adv.totalAmount)}</TableCell>
+                        <TableCell className="font-mono text-sm">{formatUSD(adv.installmentAmount)}</TableCell>
+                        <TableCell className="text-sm">{adv.paidInstallments} / {adv.totalInstallments}</TableCell>
+                        <TableCell className="font-mono text-sm">{formatUSD(adv.remainingBalance)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {MONTHS_AR[adv.startMonth]} {adv.startYear}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={ADVANCE_STATUS_VARIANTS[adv.status] || "outline"}>
+                            {ADVANCE_STATUS_LABELS[adv.status] || adv.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="commissions">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>الشهر / السنة</TableHead>
+                    <TableHead>المبلغ</TableHead>
+                    <TableHead>الوصف</TableHead>
+                    <TableHead>الحالة</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {commissions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground h-16">لا توجد عمولات</TableCell>
+                    </TableRow>
+                  ) : (
+                    commissions.map((com) => (
+                      <TableRow key={com.id}>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {MONTHS_AR[com.month]} {com.year}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm font-medium">{formatUSD(com.amount)}</TableCell>
+                        <TableCell className="text-sm max-w-[200px] truncate">{com.description}</TableCell>
+                        <TableCell>
+                          <Badge variant={com.status === "CONFIRMED" ? "default" : "outline"}>
+                            {com.status === "CONFIRMED" ? "معتمدة" : "مسودة"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <CreateSalaryAdvanceDialog
+        open={advanceOpen}
+        onOpenChange={setAdvanceOpen}
+        defaultEmployeeId={employeeId}
+      />
+      <CreateCommissionDialog
+        open={commissionOpen}
+        onOpenChange={setCommissionOpen}
+        defaultEmployeeId={employeeId}
+      />
+    </div>
+  );
+}
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800 border-green-200",
@@ -516,6 +669,7 @@ export default function EmployeeDetailsPage() {
             </div>
             <FieldGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.READ} hideEntirely>
               <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `$${Number(emp.basicSalary).toLocaleString("en-US")}` : undefined} />
+              <InfoRow label="الأجر اليومي" value={emp.dailyWage ? `$${Number(emp.dailyWage).toFixed(2)}` : undefined} />
             </FieldGuard>
             {employee.manager && (
               <InfoRow
@@ -1116,6 +1270,11 @@ export default function EmployeeDetailsPage() {
       </Card>
 
       </div>
+
+      {/* ─── Salary Advances & Commissions ──────────────────── */}
+      <FieldGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.READ} hideEntirely>
+        <_EmployeeFinancialTabs employeeId={employeeId} />
+      </FieldGuard>
 
       {/* ─── Start Workflow Dialog ─────────────────────────── */}
       <Dialog open={wfDialogOpen} onOpenChange={setWfDialogOpen}>

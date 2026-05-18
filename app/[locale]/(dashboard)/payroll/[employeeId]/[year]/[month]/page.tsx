@@ -1,37 +1,53 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowRight, DollarSign, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
+import {
+  ArrowRight, DollarSign, TrendingUp, TrendingDown,
+  AlertTriangle, Clock, Calendar, Briefcase, Info, Percent,
+  FileEdit,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { usePayslip } from "@/lib/hooks/use-payroll";
+import { usePayslip, useUpdatePayrollNote } from "@/lib/hooks/use-payroll";
 import { useEmployeeAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
 import { useEmployee } from "@/lib/hooks/use-employees";
 import { useLocale } from "next-intl";
-import { Info, Percent } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatUSD, formatUSDRounded } from "@/lib/utils";
+import { AddOtherDeductionDialog } from "@/components/features/payroll/add-other-deduction-dialog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const MONTHS = [
   "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
 ];
 
-function money(val: string | number | undefined): string {
-  return "$" + (Number(val) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function Row({ label, value, variant }: { label: string; value: string; variant?: "positive" | "negative" | "neutral" }) {
+function Row({
+  label,
+  value,
+  variant,
+  sub,
+}: {
+  label: string;
+  value: string;
+  variant?: "positive" | "negative";
+  sub?: string;
+}) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <div>
+        <span className="text-sm text-muted-foreground">{label}</span>
+        {sub && <p className="text-xs text-muted-foreground/70">{sub}</p>}
+      </div>
       <span className={`text-sm font-medium ${
         variant === "positive" ? "text-green-700" :
         variant === "negative" ? "text-red-600" : ""
       }`}>
-        {variant === "positive" ? "+" : variant === "negative" ? "-" : ""}{value}
+        {value}
       </span>
     </div>
   );
@@ -40,16 +56,24 @@ function Row({ label, value, variant }: { label: string; value: string; variant?
 export default function PayslipPage() {
   const params = useParams();
   const router = useRouter();
+  const locale = useLocale();
+  const { hasPermission } = usePermissions();
 
   const employeeId = params.employeeId as string;
   const year = Number(params.year);
   const month = Number(params.month);
 
-  const locale = useLocale();
   const { data, isLoading } = usePayslip(employeeId, year, month);
   const { data: attendanceConfig } = useEmployeeAttendanceConfig(employeeId);
   const { data: employeeData } = useEmployee(employeeId);
+  const updateNote = useUpdatePayrollNote();
+
+  const [deductionOpen, setDeductionOpen] = useState(false);
+  const [noteEditing, setNoteEditing] = useState(false);
+  const [noteValue, setNoteValue] = useState("");
+
   const salaryLinked = (attendanceConfig as any)?.salaryLinked !== false;
+  const canEdit = hasPermission(PERMISSIONS.ATTENDANCE_PAYROLL.GENERATE);
 
   if (isLoading) {
     return (
@@ -74,24 +98,45 @@ export default function PayslipPage() {
   }
 
   const now = new Date();
-  const isCurrentOrFutureMonth = year > now.getFullYear() ||
+  const isCurrentOrFutureMonth =
+    year > now.getFullYear() ||
     (year === now.getFullYear() && month >= now.getMonth() + 1);
 
   const s = data.salary;
+  const leaves = data.leaves;
+  const attendance = data.attendance;
+  const missions = data.missions;
+  const deductions = s.deductions;
+
   const bonusDetails = Array.isArray(s.bonusDetails) ? s.bonusDetails : [];
   const penaltyDetails = Array.isArray(s.penaltyDetails) ? s.penaltyDetails : [];
   const bonusAmount = Number(s.bonusAmount) || 0;
   const penaltyAmount = Number(s.penaltyAmount) || 0;
-  const totalDeduction = Number(s.deductions?.totalDeduction) || 0;
+  const totalDeduction = Number(deductions?.totalDeduction) || 0;
+  const unpaidLeaveAmt = Number(deductions?.unpaidLeaveAmount) || 0;
+  const hourlyLeaveAmt = Number(deductions?.hourlyLeaveAmount) || 0;
+  const advanceDeduction = Number(deductions?.advanceDeduction) || 0;
+  const otherDeduction = Number(deductions?.otherDeductionAmount) || 0;
+  const commissionAmt = Number(s.commissionAmount) || 0;
   const breakdown = s.deductionBreakdown ?? null;
   const proRation = s.proRationFactor ?? null;
   const excluded = Number(s.excludedAllowancesAmount ?? 0);
   const deductibleBase = Number(s.deductibleBaseSalary ?? 0);
-  const workDaysInMonth = s.workingDaysInMonth ?? null;
-  const empWorkDays = s.employeeWorkingDays ?? null;
-  const totalLateGross = s.totalLateMinutesGross ?? null;
+  const workDaysInMonth = s.workingDaysInMonth ?? attendance?.workingDays ?? null;
+  const empWorkDays = s.employeeWorkingDays ?? attendance?.presentDays ?? null;
   const totalLateEffective = s.totalLateMinutesEffective ?? null;
   const compensationMins = s.totalCompensationMinutes ?? null;
+
+  const roundedNet = s.roundedNetSalary != null
+    ? Number(s.roundedNetSalary)
+    : null;
+  const netDisplay = roundedNet != null ? formatUSDRounded(roundedNet) : formatUSD(s.netSalary);
+
+  const handleNoteSave = async () => {
+    if (!data.payrollId) return;
+    await updateNote.mutateAsync({ payrollId: data.payrollId, notes: noteValue });
+    setNoteEditing(false);
+  };
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -107,26 +152,36 @@ export default function PayslipPage() {
             {data.employee.firstNameAr} {data.employee.lastNameAr} · {data.employee.employeeNumber}
           </p>
         </div>
+        {canEdit && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mr-auto gap-2"
+            onClick={() => setDeductionOpen(true)}
+          >
+            <TrendingDown className="h-4 w-4" />
+            خصم إضافي
+          </Button>
+        )}
       </div>
 
-      {/* Current/Future Month Warning */}
+      {/* Warnings */}
       {isCurrentOrFutureMonth && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">تحذير: الشهر لم ينته بعد</p>
             <p className="text-xs mt-0.5 text-amber-700">
-              هذا الراتب محسوب على أساس الشهر كاملاً، لكن الشهر لم ينتهِ بعد — الأيام غير المسجّلة تُحتسب غيابات. الأرقام الظاهرة غير نهائية.
+              هذا الراتب محسوب على أساس الشهر كاملاً، الأرقام غير نهائية.
             </p>
           </div>
         </div>
       )}
 
-      {/* Fixed Salary Notice */}
       {!salaryLinked && (
         <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <Info className="h-4 w-4 shrink-0" />
-          هذا الموظف له راتب ثابت غير مرتبط بالحضور — لا تُطبق خصومات الغياب أو التأخر.
+          هذا الموظف له راتب ثابت غير مرتبط بالحضور.
         </div>
       )}
 
@@ -138,7 +193,7 @@ export default function PayslipPage() {
             بيانات الموظف
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1 text-sm">
+        <CardContent className="text-sm">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <span className="text-muted-foreground">الاسم:</span>{" "}
@@ -152,21 +207,149 @@ export default function PayslipPage() {
               <span className="text-muted-foreground">القسم:</span>{" "}
               <span className="font-medium">
                 {locale === "ar"
-                  ? (employeeData as any)?.department?.nameAr || data.employee.department?.nameAr || "—"
-                  : (employeeData as any)?.department?.nameEn || data.employee.department?.nameAr || "—"}
+                  ? (employeeData as any)?.department?.nameAr || data.employee.department || "—"
+                  : (employeeData as any)?.department?.nameEn || data.employee.department || "—"}
               </span>
             </div>
             <div>
               <span className="text-muted-foreground">المسمى:</span>{" "}
               <span className="font-medium">
                 {locale === "ar"
-                  ? (employeeData as any)?.jobTitle?.nameAr || data.employee.jobTitle?.nameAr || "—"
-                  : (employeeData as any)?.jobTitle?.nameEn || data.employee.jobTitle?.nameAr || "—"}
+                  ? (employeeData as any)?.jobTitle?.nameAr || data.employee.jobTitle || "—"
+                  : (employeeData as any)?.jobTitle?.nameEn || data.employee.jobTitle || "—"}
               </span>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Attendance Card */}
+      {attendance && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              الحضور والغياب
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {workDaysInMonth != null && <Row label="أيام العمل في الشهر" value={String(workDaysInMonth)} />}
+            {empWorkDays != null && <Row label="أيام الحضور الفعلية" value={String(empWorkDays)} />}
+            {attendance.absentDays > 0 && (
+              <Row label="أيام الغياب" value={String(attendance.absentDays)} variant="negative" />
+            )}
+            {attendance.lateDays > 0 && (
+              <Row label="أيام التأخر" value={String(attendance.lateDays)} />
+            )}
+            {totalLateEffective != null && totalLateEffective > 0 && (
+              <Row label="دقائق التأخر الفعلية" value={`${totalLateEffective} د`} variant="negative" />
+            )}
+            {compensationMins != null && compensationMins > 0 && (
+              <Row label="دقائق التعويض" value={`${compensationMins} د`} variant="positive" />
+            )}
+            {attendance.overtimeWorkdayMinutes > 0 && (
+              <Row label="أوفرتايم أيام عمل" value={`${attendance.overtimeWorkdayMinutes} د`} variant="positive" />
+            )}
+            {attendance.overtimeHolidayMinutes > 0 && (
+              <Row label="أوفرتايم أيام إجازة" value={`${attendance.overtimeHolidayMinutes} د`} variant="positive" />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Leaves Card */}
+      {leaves && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              الإجازات
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {leaves.paidLeaveDays > 0 && (
+              <Row label="إجازة مدفوعة" value={`${leaves.paidLeaveDays} يوم`} />
+            )}
+            {leaves.sickLeaveDays > 0 && (
+              <Row label="إجازة مرضية" value={`${leaves.sickLeaveDays} يوم`} />
+            )}
+            {leaves.unpaidLeaveDays > 0 && (
+              <Row
+                label="إجازة غير مدفوعة"
+                value={`${leaves.unpaidLeaveDays} يوم (${formatUSD(unpaidLeaveAmt)})`}
+                variant="negative"
+              />
+            )}
+            {leaves.hourlyLeaveMinutes > 0 && (
+              <Row
+                label="إجازات ساعية"
+                value={`${leaves.hourlyLeaveMinutes} د (${formatUSD(hourlyLeaveAmt)})`}
+                variant="negative"
+              />
+            )}
+            {leaves.paidLeaveDays === 0 && leaves.sickLeaveDays === 0 &&
+             leaves.unpaidLeaveDays === 0 && leaves.hourlyLeaveMinutes === 0 && (
+              <p className="text-sm text-muted-foreground py-2">لا إجازات هذا الشهر</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Missions Card */}
+      {missions && (missions.internalMissionDays > 0 || missions.externalMissionDays > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Briefcase className="h-4 w-4" />
+              المهمات
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {missions.internalMissionDays > 0 && (
+              <Row
+                label="مهمات داخلية"
+                value={`${missions.internalMissionDays} يوم (${formatUSD(missions.internalMissionAmount)})`}
+                variant="positive"
+              />
+            )}
+            {missions.externalMissionDays > 0 && (
+              <Row
+                label="مهمات خارجية"
+                value={`${missions.externalMissionDays} يوم (${formatUSD(missions.externalMissionAmount)})`}
+                variant="positive"
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Overtime Card */}
+      {attendance && (attendance.overtimeWorkdayMinutes > 0 || attendance.overtimeHolidayMinutes > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+              العمل الإضافي
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {attendance.overtimeWorkdayMinutes > 0 && (
+              <Row
+                label="إضافي أيام العمل"
+                value={`${attendance.overtimeWorkdayMinutes} د — ${formatUSD(s.overtimeWorkdayPay ?? 0)}`}
+                variant="positive"
+              />
+            )}
+            {attendance.overtimeHolidayMinutes > 0 && (
+              <Row
+                label="إضافي أيام الإجازة"
+                value={`${attendance.overtimeHolidayMinutes} د — ${formatUSD(s.overtimeHolidayPay ?? 0)}`}
+                variant="positive"
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Salary Breakdown */}
       <Card>
@@ -174,14 +357,23 @@ export default function PayslipPage() {
           <CardTitle className="text-base">تفاصيل الراتب</CardTitle>
         </CardHeader>
         <CardContent className="divide-y">
-          <Row label="الراتب الأساسي" value={money(s.basicSalary)} />
-          <Row label={`البدلات (${money(s.allowances?.total)} إجمالي)`} value={money(s.allowances?.total)} />
+          <Row label="الراتب الأساسي" value={formatUSD(s.basicSalary)} />
+          {Number(s.allowances?.total) > 0 && (
+            <Row label="البدلات" value={formatUSD(s.allowances?.total)} />
+          )}
           {Number(s.overtimePay) > 0 && (
-            <Row label="أجر العمل الإضافي" value={money(s.overtimePay)} variant="positive" />
+            <Row label="أجر العمل الإضافي" value={formatUSD(s.overtimePay)} variant="positive" />
+          )}
+          {((missions?.internalMissionAmount ?? 0) > 0 || (missions?.externalMissionAmount ?? 0) > 0) && (
+            <Row
+              label="بدل المهمات"
+              value={formatUSD((missions?.internalMissionAmount || 0) + (missions?.externalMissionAmount || 0))}
+              variant="positive"
+            />
           )}
           <div className="flex items-center justify-between py-2">
             <span className="text-sm font-semibold">الراتب الإجمالي</span>
-            <span className="text-sm font-bold">{money(s.grossSalary)}</span>
+            <span className="text-sm font-bold">{formatUSD(s.grossSalary)}</span>
           </div>
 
           <Separator className="my-1" />
@@ -195,14 +387,15 @@ export default function PayslipPage() {
                   المكافآت
                 </span>
                 <Badge className="bg-green-50 text-green-700 border-green-200 font-mono text-xs">
-                  +{money(s.bonusAmount)}                </Badge>
+                  +{formatUSD(bonusAmount)}
+                </Badge>
               </div>
               {bonusDetails.length > 0 && (
                 <div className="pr-4 pb-2 space-y-1">
-                  {bonusDetails.map((b, i) => (
+                  {bonusDetails.map((b: any, i: number) => (
                     <div key={i} className="flex items-center justify-between text-xs text-green-700">
                       <span>{b.reason}</span>
-                      <span className="font-mono">+${(b.amount || 0).toLocaleString("en-US")}</span>
+                      <span className="font-mono">+{formatUSD(b.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -210,13 +403,53 @@ export default function PayslipPage() {
             </div>
           )}
 
+          {/* Commission */}
+          {commissionAmt > 0 && (
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-emerald-700 font-medium">عمولة المبيعات</span>
+              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-mono text-xs">
+                +{formatUSD(commissionAmt)}
+              </Badge>
+            </div>
+          )}
+
+          <Separator className="my-1" />
+
           {/* Deductions */}
           {totalDeduction > 0 && (
-            <Row
-              label={`خصومات الحضور (${money(s.deductions?.attendanceDeduction)} + غياب ${money(s.deductions?.absenceDeduction)})`}
-              value={money(totalDeduction)}
-              variant="negative"
-            />
+            <div className="py-2 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-red-600 font-medium flex items-center gap-1">
+                  <TrendingDown className="h-3.5 w-3.5" />
+                  خصومات الحضور
+                </span>
+                <span className="text-sm font-medium text-red-600">-{formatUSD(totalDeduction)}</span>
+              </div>
+              {Number(deductions?.attendanceDeduction) > 0 && (
+                <div className="flex justify-between text-xs text-red-600 pr-4">
+                  <span>تأخر</span>
+                  <span>-{formatUSD(deductions?.attendanceDeduction)}</span>
+                </div>
+              )}
+              {Number(deductions?.absenceDeduction) > 0 && (
+                <div className="flex justify-between text-xs text-red-600 pr-4">
+                  <span>غياب</span>
+                  <span>-{formatUSD(deductions?.absenceDeduction)}</span>
+                </div>
+              )}
+              {unpaidLeaveAmt > 0 && (
+                <div className="flex justify-between text-xs text-red-600 pr-4">
+                  <span>إجازة غير مدفوعة</span>
+                  <span>-{formatUSD(unpaidLeaveAmt)}</span>
+                </div>
+              )}
+              {hourlyLeaveAmt > 0 && (
+                <div className="flex justify-between text-xs text-red-600 pr-4">
+                  <span>إجازة ساعية</span>
+                  <span>-{formatUSD(hourlyLeaveAmt)}</span>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Penalties */}
@@ -228,18 +461,44 @@ export default function PayslipPage() {
                   الجزاءات
                 </span>
                 <Badge className="bg-red-50 text-red-700 border-red-200 font-mono text-xs">
-                  -{money(s.penaltyAmount)}                </Badge>
+                  -{formatUSD(penaltyAmount)}
+                </Badge>
               </div>
               {penaltyDetails.length > 0 && (
                 <div className="pr-4 pb-2 space-y-1">
-                  {penaltyDetails.map((p, i) => (
+                  {penaltyDetails.map((p: any, i: number) => (
                     <div key={i} className="flex items-center justify-between text-xs text-red-700">
                       <span>{p.description}</span>
-                      <span className="font-mono">-${(p.amount || 0).toLocaleString("en-US")}</span>
+                      <span className="font-mono">-{formatUSD(p.amount)}</span>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Advance Deduction */}
+          {advanceDeduction > 0 && (
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-orange-700 font-medium">خصم السلفة</span>
+              <Badge className="bg-orange-50 text-orange-700 border-orange-200 font-mono text-xs">
+                -{formatUSD(advanceDeduction)}
+              </Badge>
+            </div>
+          )}
+
+          {/* Other Deduction */}
+          {otherDeduction > 0 && (
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <span className="text-sm text-red-600 font-medium">خصم إضافي</span>
+                {deductions?.otherDeductionNotes && (
+                  <p className="text-xs text-muted-foreground">{deductions.otherDeductionNotes}</p>
+                )}
+              </div>
+              <Badge className="bg-red-50 text-red-700 border-red-200 font-mono text-xs">
+                -{formatUSD(otherDeduction)}
+              </Badge>
             </div>
           )}
 
@@ -248,18 +507,17 @@ export default function PayslipPage() {
           {/* Net Salary */}
           <div className="flex items-center justify-between py-3">
             <span className="text-base font-bold">صافي الراتب</span>
-            <span className="text-lg font-bold text-primary">{money(s.netSalary)}</span>
+            <span className="text-lg font-bold text-primary">{netDisplay}</span>
           </div>
-
-          {/* Formula note */}
-          <div className="py-2">
-            <p className="text-xs text-muted-foreground">
-              المعادلة: الراتب الإجمالي ({money(s.grossSalary)}) + المكافآت ({money(bonusAmount)}) − الخصومات ({money(totalDeduction)}) − الجزاءات ({money(penaltyAmount)}) = {money(s.netSalary)}            </p>
-          </div>
+          {roundedNet != null && Math.abs(roundedNet - Number(s.netSalary)) > 0.01 && (
+            <p className="text-xs text-muted-foreground pb-2">
+              المبلغ الدقيق: {formatUSD(s.netSalary)} — تم التقريب
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* بطاقة نسبة الاحتساب وأيام العمل */}
+      {/* Pro-ration / Calculation Details */}
       {(proRation !== null || workDaysInMonth !== null) && (
         <Card>
           <CardHeader className="pb-3">
@@ -275,69 +533,103 @@ export default function PayslipPage() {
                 value={proRation < 1 ? `${(proRation * 100).toFixed(0)}%` : "شهر كامل (100%)"}
               />
             )}
-            {workDaysInMonth !== null && (
-              <Row label="أيام العمل في الشهر" value={String(workDaysInMonth)} />
-            )}
-            {empWorkDays !== null && (
-              <Row label="أيام عمل الموظف الفعلية" value={String(empWorkDays)} />
-            )}
             {deductibleBase > 0 && (
-              <Row label="وعاء الخصم الفعلي" value={money(deductibleBase)} />
+              <Row label="وعاء الخصم الفعلي" value={formatUSD(deductibleBase)} />
             )}
             {excluded > 0 && (
-              <Row label="مستثنى من الوعاء (بدل طعام)" value={money(excluded)} variant="positive" />
-            )}
-            {totalLateGross !== null && (
-              <Row label="إجمالي دقائق التأخر (قبل السماحية)" value={`${totalLateGross} د`} />
-            )}
-            {compensationMins !== null && compensationMins > 0 && (
-              <Row label="دقائق التعويض (خروج متأخر)" value={`${compensationMins} د`} variant="positive" />
-            )}
-            {totalLateEffective !== null && (
-              <Row label="دقائق التأخر الفعلية" value={`${totalLateEffective} د`} variant="negative" />
+              <Row label="مستثنى من الوعاء (بدل طعام)" value={formatUSD(excluded)} variant="positive" />
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* بطاقة تفصيل الخصومات */}
+      {/* Breakdown */}
       {breakdown && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-red-600" />
-              تفصيل الخصومات
+              تفصيل خصومات الحضور
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y">
             <Row
               label="خصم التأخر"
-              value={money(breakdown.lateDeduction)}
+              value={formatUSD(breakdown.lateDeduction)}
               variant={breakdown.lateDeduction > 0 ? "negative" : undefined}
             />
             <Row
               label="خصم الغياب"
-              value={money(breakdown.absenceDeduction)}
+              value={formatUSD(breakdown.absenceDeduction)}
               variant={breakdown.absenceDeduction > 0 ? "negative" : undefined}
             />
             {breakdown.breakOverLimitDeduction > 0 && (
               <Row
                 label="خصم الاستراحة الزائدة"
-                value={money(breakdown.breakOverLimitDeduction)}
+                value={formatUSD(breakdown.breakOverLimitDeduction)}
                 variant="negative"
               />
             )}
             <div className="flex items-center justify-between py-2 border-t">
               <span className="text-sm font-semibold">إجمالي الخصومات</span>
-              <span className="text-sm font-bold text-red-700">{money(breakdown.totalDeduction)}</span>
+              <span className="text-sm font-bold text-red-700">{formatUSD(breakdown.totalDeduction)}</span>
             </div>
-            {excluded > 0 && (
-              <p className="text-xs text-muted-foreground pt-1">
-                * الخصم محسوب بعد استثناء {money(excluded)} (بدل الطعام)
-              </p>
-            )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Notes */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <FileEdit className="h-4 w-4" />
+              ملاحظات
+            </span>
+            {canEdit && !noteEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => { setNoteValue(data.notes || ""); setNoteEditing(true); }}
+              >
+                تعديل
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {noteEditing ? (
+            <div className="space-y-2">
+              <textarea
+                className="w-full rounded-md border px-3 py-2 text-sm min-h-20 bg-background"
+                value={noteValue}
+                onChange={(e) => setNoteValue(e.target.value)}
+                placeholder="أضف ملاحظة..."
+                dir="rtl"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setNoteEditing(false)}>إلغاء</Button>
+                <Button size="sm" onClick={handleNoteSave} disabled={updateNote.isPending}>حفظ</Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {data.notes || "لا توجد ملاحظات"}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Deduction Dialog */}
+      {data.payrollId && (
+        <AddOtherDeductionDialog
+          open={deductionOpen}
+          onOpenChange={setDeductionOpen}
+          payrollId={data.payrollId}
+          currentAmount={otherDeduction}
+          currentNotes={deductions?.otherDeductionNotes || ""}
+        />
       )}
     </div>
   );

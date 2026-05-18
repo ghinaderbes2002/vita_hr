@@ -846,6 +846,15 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       </FormItem>
                     )}
                   />
+
+                  {isEdit && (employee as any)?.dailyWage != null && (
+                    <div className="space-y-1.5">
+                      <p className="text-sm font-medium leading-none">الأجر اليومي</p>
+                      <div className="flex h-9 items-center rounded-md border bg-muted/50 px-3 text-sm text-muted-foreground">
+                        {Number((employee as any).dailyWage).toFixed(2)} $
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <FormField

@@ -31,6 +31,26 @@ export function formatCurrency(value: string | number | null | undefined, curren
 /**
  * Extract error message from API error response (supports both old and new backend error formats).
  */
+export function formatUSD(
+  value: number | string | null | undefined,
+): string {
+  const n = Number(value ?? 0);
+  return (
+    "$" +
+    n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
+}
+
+export function formatUSDRounded(
+  value: number | string | null | undefined,
+): string {
+  const n = Math.round(Number(value ?? 0));
+  return "$" + n.toLocaleString("en-US");
+}
+
 export function getApiErrorMessage(error: any, fallback = "حدث خطأ"): string {
   return error?.response?.data?.error?.message
     || error?.response?.data?.message

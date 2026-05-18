@@ -23,9 +23,13 @@ export interface DeductionPolicy {
   repeatLateThreshold?: number | null;
   repeatLatePenaltyDays?: number | null;
   breakOverLimitDeduction: BreakDeductionType;
+  holidayOvertimeMultiplier?: number | null;
+  internalMissionDailyRate?: number | null;
+  externalMissionDailyRate?: number | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  _count?: { employees?: number };
 }
 
 export interface CreateDeductionPolicyData {
@@ -34,13 +38,16 @@ export interface CreateDeductionPolicyData {
   isDefault?: boolean;
   lateToleranceMinutes?: number;
   lateDeductionType?: DeductionType;
-  lateDeductionTiers?: string;       // JSON.stringify(DeductionTier[])
+  lateDeductionTiers?: string;
   earlyLeaveDeductionType?: DeductionType;
-  earlyLeaveTiers?: string;          // JSON.stringify(DeductionTier[])
+  earlyLeaveTiers?: string;
   absenceDeductionDays?: number;
   repeatLateThreshold?: number;
   repeatLatePenaltyDays?: number;
   breakOverLimitDeduction?: BreakDeductionType;
+  holidayOvertimeMultiplier?: number;
+  internalMissionDailyRate?: number;
+  externalMissionDailyRate?: number;
   isActive?: boolean;
 }
 

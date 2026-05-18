@@ -143,7 +143,7 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
     if (!minutes || minutes <= 0) return "—";
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    return `${h}:${m.toString().padStart(2, "0")}`;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
   };
 
   const formatMins = (minutes?: number | null) => {
@@ -223,7 +223,6 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
               <TableHead>تأخر</TableHead>
               <TableHead>مغادرة مبكرة</TableHead>
               <TableHead>المصدر</TableHead>
-              <TableHead>البصمة</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -240,12 +239,11 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
             ) : filteredRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
@@ -346,23 +344,6 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
                     )}
                   </TableCell>
 
-                  {/* حالة البصمة */}
-                  <TableCell className="text-center">
-                    {(() => {
-                      const ps = record.punchSequenceStatus;
-                      if (!ps) return <span className="text-muted-foreground text-xs">—</span>;
-                      const cfg: Record<string, { label: string; cls: string }> = {
-                        VALID:      { label: "✓ صحيحة",    cls: "text-green-600" },
-                        PARTIAL:    { label: "⚠ جزئية",    cls: "text-amber-500" },
-                        INVALID:    { label: "⚠ غير صحيحة", cls: "text-red-500" },
-                        RECOMPUTED: { label: "↺ محسوبة",    cls: "text-blue-500" },
-                      };
-                      const c = cfg[ps];
-                      return c
-                        ? <span className={`text-xs font-medium ${c.cls}`}>{c.label}</span>
-                        : <span className="text-xs text-muted-foreground">{ps}</span>;
-                    })()}
-                  </TableCell>
 
                 </TableRow>
               );})
