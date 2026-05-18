@@ -13,6 +13,33 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function decodeFileName(name: string): string {
+  // Try URL-encoding fix first
+  if (name.includes("%")) {
+    try {
+      const urlDecoded = decodeURIComponent(name);
+      if (urlDecoded !== name) return urlDecoded;
+    } catch {
+      // not URL encoded
+    }
+  }
+
+  // Fix UTF-8 mojibake: bytes were stored/transmitted as Latin-1 but are actually UTF-8
+  // Check if string looks like mojibake (Latin-extended chars, no real Arabic Unicode)
+  if (/[À-ÿ]/.test(name) && !/[؀-ۿ]/.test(name)) {
+    try {
+      const bytes = new Uint8Array(name.length);
+      for (let i = 0; i < name.length; i++) bytes[i] = name.charCodeAt(i) & 0xFF;
+      const decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      if (decoded !== name) return decoded;
+    } catch {
+      // not valid UTF-8 bytes, keep original
+    }
+  }
+
+  return name;
+}
+
 function fileUrl(attachmentId: string): string {
   const token = useAuthStore.getState().accessToken || "";
   const base = `/api/mail-file/${attachmentId}`;
@@ -36,7 +63,7 @@ export function AttachmentList({ attachments }: ListProps) {
         <div key={a.id} className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-2 min-w-0">
             <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="text-sm truncate">{a.fileName}</span>
+            <span className="text-sm truncate">{decodeFileName(a.fileName)}</span>
             <span className="text-xs text-muted-foreground shrink-0">{formatSize(a.fileSize)}</span>
           </div>
           <a
