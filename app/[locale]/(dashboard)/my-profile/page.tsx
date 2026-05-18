@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
-import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { useMyEmployee, useEmployeeBasic } from "@/lib/hooks/use-employees";
 import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
 import { useMyHourlyUsedHours } from "@/lib/hooks/use-leave-requests";
 
@@ -48,6 +48,8 @@ export default function MyProfilePage() {
   const t = useTranslations();
   const { data: employee, isLoading } = useMyEmployee();
   const emp = employee as any;
+  const { data: basicData } = useEmployeeBasic(emp?.id);
+  const deptWithParent = (basicData as any)?.department ?? (employee?.department as any);
   const currentYear = new Date().getFullYear();
   const { data: balancesData, isLoading: balancesLoading } = useMyLeaveBalances(currentYear);
   const balances: any[] = Array.isArray(balancesData)
@@ -165,11 +167,7 @@ export default function MyProfilePage() {
           <CardContent className="divide-y divide-border/50">
             <InfoRow
               label={t("employees.fields.department")}
-              value={(() => {
-                const dept = employee.department as any;
-                if (!dept) return undefined;
-                return dept.parent?.nameAr ? `${dept.parent.nameAr} > ${dept.nameAr}` : dept.nameAr;
-              })()}
+              value={deptWithParent ? (deptWithParent.parent?.nameAr ? `${deptWithParent.parent.nameAr} > ${deptWithParent.nameAr}` : deptWithParent.nameAr) : undefined}
             />
             <InfoRow label={t("employees.fields.jobTitle")} value={emp.jobTitle?.nameAr} />
             <InfoRow label={t("employees.fields.jobGrade")} value={emp.jobGrade?.nameAr} />
