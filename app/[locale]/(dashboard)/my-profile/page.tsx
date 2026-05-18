@@ -163,7 +163,14 @@ export default function MyProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border/50">
-            <InfoRow label={t("employees.fields.department")} value={(employee.department as any)?.nameAr} />
+            <InfoRow
+              label={t("employees.fields.department")}
+              value={(() => {
+                const dept = employee.department as any;
+                if (!dept) return undefined;
+                return dept.parent?.nameAr ? `${dept.parent.nameAr} > ${dept.nameAr}` : dept.nameAr;
+              })()}
+            />
             <InfoRow label={t("employees.fields.jobTitle")} value={emp.jobTitle?.nameAr} />
             <InfoRow label={t("employees.fields.jobGrade")} value={emp.jobGrade?.nameAr} />
             <InfoRow

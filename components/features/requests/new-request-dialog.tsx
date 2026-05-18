@@ -39,9 +39,11 @@ const MANAGER_ONLY_TYPES = [
   "REWARD",
   "PENALTY_PROPOSAL",
   "OVERTIME_MANAGER",
+  "BUSINESS_MISSION",
 ];
 
 const MANAGER_PERMISSIONS = [
+  "requests:manager-approve",
   "requests:hr-approve",
   "requests:approve",
   "requests:read-all-steps",
