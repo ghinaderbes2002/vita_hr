@@ -64,11 +64,26 @@ function FilePicker({ value, onChange, labels }: {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+
+      const tokenCookie = typeof document !== "undefined"
+        ? document.cookie.split("; ").find((c) => c.startsWith("wso-token="))
+        : undefined;
+      const token = tokenCookie?.split("=")[1] || "";
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+
+      if (!res.ok) throw new Error(`${res.status}`);
+
       const json = await res.json();
       if (json.fileUrl) {
         onChange(json.fileUrl);
         setFileName(json.fileName || file.name);
+      } else {
+        throw new Error("no fileUrl");
       }
     } catch {
       toast.error(labels.uploadError);
