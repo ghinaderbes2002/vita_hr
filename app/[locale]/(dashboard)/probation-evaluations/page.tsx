@@ -26,8 +26,9 @@ import {
   usePendingMyAction,
   useCreateProbationEvaluation,
 } from "@/lib/hooks/use-probation-evaluations";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployees, useSubordinates } from "@/lib/hooks/use-employees";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ProbationStatus, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -63,14 +64,21 @@ export default function ProbationEvaluationsPage() {
     seniorManagerId: "", workAreasNote: "",
   });
 
+  const { isAdmin } = usePermissions();
+  const managerEmployeeId = user?.employeeId || "";
+  const showAllEmployees = isAdmin() || !managerEmployeeId;
+
   const { data: allEvals, isLoading: allLoading } = useProbationEvaluations();
   const { data: pendingEvals, isLoading: pendingLoading } = usePendingMyAction();
-  const { data: employeesData } = useEmployees({ limit: 100 });
+  const { data: allEmployeesData } = useEmployees({ limit: 200 });
+  const { data: subordinatesData } = useSubordinates(managerEmployeeId);
   const createEval = useCreateProbationEvaluation();
 
   const evals: any[] = (tab === "all" ? (allEvals as any) : (pendingEvals as any)) || [];
   const isLoading = tab === "all" ? allLoading : pendingLoading;
-  const employees: any[] = (employeesData as any)?.data?.items || [];
+  const employees: any[] = showAllEmployees
+    ? ((allEmployeesData as any)?.data?.items || [])
+    : (Array.isArray(subordinatesData) ? subordinatesData : []);
   const employeeMap = Object.fromEntries(employees.map((e: any) => [e.id, e]));
 
   function handleCreate() {

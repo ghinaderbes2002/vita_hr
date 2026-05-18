@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateRequest, useSubmitRequest } from "@/lib/hooks/use-requests";
 import { useDepartments } from "@/lib/hooks/use-departments";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployees, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { useCheckUnreturnedCustodies } from "@/lib/hooks/use-custodies";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -194,14 +194,20 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   const [workAccident, setWorkAccident] = useState(defaultWorkAccident);
   const [remoteWork, setRemoteWork] = useState(defaultRemoteWork);
 
+  const managerEmployeeId = user?.employeeId || "";
+  const showAllEmployees = isAdmin() || !managerEmployeeId;
+
   const createRequest = useCreateRequest();
   const submitRequest = useSubmitRequest();
   const { data: deptData } = useDepartments({ limit: 100 });
-  const { data: empData } = useEmployees({ limit: 100 });
+  const { data: empData } = useEmployees({ limit: 200 });
+  const { data: subordinatesData } = useSubordinates(managerEmployeeId);
   const { data: titlesData } = useJobTitles({ limit: 100 });
 
   const departments: any[] = (deptData as any)?.data?.items || (deptData as any)?.data || [];
-  const employees: any[] = (empData as any)?.data?.items || (empData as any)?.items || [];
+  const employees: any[] = showAllEmployees
+    ? ((empData as any)?.data?.items || (empData as any)?.items || [])
+    : (Array.isArray(subordinatesData) ? subordinatesData : []);
   const jobTitles: any[] = Array.isArray(titlesData)
     ? titlesData
     : (titlesData as any)?.data?.items || (titlesData as any)?.data || [];
