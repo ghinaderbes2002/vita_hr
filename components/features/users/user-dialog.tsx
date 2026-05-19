@@ -26,7 +26,7 @@ import { useCreateUser, useUpdateUser } from "@/lib/hooks/use-users";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
-  username: z.string().min(3, "يجب أن يكون 3 أحرف على الأقل"),
+  username: z.string().min(3, "يجب أن يكون 3 أحرف على الأقل").regex(/^\S+$/, "لا يُسمح بالمسافات في اسم المستخدم"),
   email: z.string().email("البريد الإلكتروني غير صحيح"),
   password: z.string().optional(),
   fullName: z.string().min(2, "يجب أن يكون حرفين على الأقل"),
@@ -172,7 +172,12 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                 <FormItem>
                   <FormLabel>{t("users.fields.username")}</FormLabel>
                   <FormControl>
-                    <Input {...field} disabled={isEdit} className={isEdit ? "opacity-60" : ""} />
+                    <Input
+                      {...field}
+                      disabled={isEdit}
+                      className={isEdit ? "opacity-60" : ""}
+                      onChange={(e) => field.onChange(e.target.value.replace(/\s/g, ""))}
+                    />
                   </FormControl>
                   {isEdit && (
                     <p className="text-xs text-muted-foreground">لا يمكن تغيير اسم المستخدم</p>

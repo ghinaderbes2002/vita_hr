@@ -40,7 +40,7 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setLocalLoading(true);
     try {
-      await login(data.username, data.password);
+      await login(data.username.trim(), data.password.trim());
       router.push(`/${locale}/dashboard`);
     } catch (error: any) {
       let errorMessage = "خطأ في تسجيل الدخول";
@@ -114,6 +114,7 @@ export default function LoginPage() {
                   {...register("username")}
                   className="h-11 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
                   placeholder="أدخل اسم المستخدم"
+                  onKeyDown={(e) => { if (e.key === " ") e.preventDefault(); }}
                 />
                 {errors.username && (
                   <p className="text-sm text-destructive">
@@ -133,6 +134,7 @@ export default function LoginPage() {
                     {...register("password")}
                     className="h-11 pl-10 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
                     placeholder="أدخل كلمة المرور"
+                    onKeyDown={(e) => { if (e.key === " ") e.preventDefault(); }}
                   />
                   <Button
                     type="button"
