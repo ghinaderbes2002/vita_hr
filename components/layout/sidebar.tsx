@@ -174,6 +174,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.payrollManagement",
         icon: Wallet,
+        hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "payroll:read" },
           { title: "nav.salaryAdvances", href: "/salary-advances", icon: Banknote, permission: "payroll:read" },

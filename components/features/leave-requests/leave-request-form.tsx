@@ -245,8 +245,8 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                       <span className="flex items-center gap-2 w-full">
                         <span>{type.nameAr}</span>
                         {type.minServiceMonths && (
-                          <span className="text-xs text-muted-foreground">
-                            [{type.minServiceMonths} شهر خدمة]
+                          <span className="text-xs text-muted-foreground" dir="ltr">
+                            {type.minServiceMonths} شهر خدمة
                           </span>
                         )}
                         {type.maxLifetimeUsage === 1 && (
