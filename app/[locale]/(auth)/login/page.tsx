@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const schema = z.object({
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const locale = useLocale();
   const { login } = useAuthStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
   const [localLoading, setLocalLoading] = useState(false);
 
@@ -41,6 +43,7 @@ export default function LoginPage() {
     setLocalLoading(true);
     try {
       await login(data.username.trim(), data.password.trim());
+      queryClient.clear();
       router.push(`/${locale}/dashboard`);
     } catch (error: any) {
       let errorMessage = "خطأ في تسجيل الدخول";

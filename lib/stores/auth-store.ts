@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { authApi } from "@/lib/api/auth";
 import { User } from "@/types";
+import { globalQueryClient } from "@/components/providers/query-provider";
 
 interface AuthState {
   user: User | null;
@@ -66,6 +67,9 @@ export const useAuthStore = create<AuthState>()(
             }
           } catch {}
 
+          // Clear any cached data from a previous session before setting new user
+          globalQueryClient?.clear();
+
           set({
             user: userWithEmployee,
             accessToken: response.accessToken,
@@ -95,6 +99,8 @@ export const useAuthStore = create<AuthState>()(
           });
           // Clear the auth token cookie
           document.cookie = "wso-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          // Clear React Query cache so next user doesn't see previous user's data
+          globalQueryClient?.clear();
         }
       },
 
