@@ -108,7 +108,7 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
           iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
         <StatCard title="طلبات بانتظار موافقتي" value="" icon={FileText}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
-        <StatCard title="إجازات بانتظار موافقتي" value={d.pendingLeaveApprovals ?? 0} icon={Hourglass}
+        <StatCard title="إجازات بانتظار موافقتي" value={typeof d.pendingLeaveApprovals === "number" ? d.pendingLeaveApprovals : Array.isArray(d.pendingLeaveApprovals) ? d.pendingLeaveApprovals.length : (d.pendingLeaveApprovals?.total ?? d.pendingLeaveApprovals?.count ?? 0)} icon={Hourglass}
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
       </div>
 

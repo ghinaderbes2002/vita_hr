@@ -41,6 +41,12 @@ export function useCreateEmployee() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       toast.success("تم إنشاء الموظف بنجاح");
+      setTimeout(() => {
+        toast.warning("تذكير: لا تنسَ إضافة بصمة الموظف", { duration: 6000 });
+      }, 800);
+      setTimeout(() => {
+        toast.warning("تذكير: لا تنسَ تنسيب الموظف لوردية عمل", { duration: 6000 });
+      }, 1600);
     },
     onError: (error: any) => {
       const errData = error.response?.data?.error;
