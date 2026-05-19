@@ -54,15 +54,16 @@ export default function CustodiesPage() {
     search: search || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     category: categoryFilter !== "all" ? categoryFilter : undefined,
-    limit: 50,
+    limit: 500,
   });
 
   const deleteCustody = useDeleteCustody();
 
+  const raw = (data as any)?.data;
   const custodies: Custody[] =
-    (data as any)?.data?.data ||
-    (data as any)?.data ||
-    (Array.isArray(data) ? data : []);
+    Array.isArray(raw?.items) ? raw.items :
+    Array.isArray(raw) ? raw :
+    Array.isArray(data) ? data : [];
 
   // Group custodies by employee
   const grouped = custodies.reduce<{ empKey: string; employee: any; items: Custody[] }[]>((acc, c) => {
@@ -221,9 +222,7 @@ export default function CustodiesPage() {
                         <Badge variant="outline">{t(`custodies.categories.${c.category}`)}</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{c.serialNumber || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">{group.items.length} عهدة</Badge>
-                      </TableCell>
+                      <TableCell />
                       <TableCell>{c.assignedDate ? format(new Date(c.assignedDate), "yyyy/MM/dd") : "—"}</TableCell>
                       <TableCell>
                         <Badge variant={STATUS_VARIANTS[c.status]}>{t(`custodies.statuses.${c.status}`)}</Badge>

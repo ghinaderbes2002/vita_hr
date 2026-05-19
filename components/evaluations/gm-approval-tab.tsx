@@ -42,7 +42,7 @@ export function GmApprovalTab({ form }: GmApprovalTabProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>موافقة المدير العام</CardTitle>
+          <CardTitle>موافقة المدير التنفيذي</CardTitle>
           <CardDescription>
             الموافقة النهائية على نموذج التقييم
           </CardDescription>
@@ -147,7 +147,7 @@ export function GmApprovalTab({ form }: GmApprovalTabProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>ملاحظات المدير العام (اختياري)</Label>
+              <Label>ملاحظات المدير التنفيذي (اختياري)</Label>
               <Textarea
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
@@ -172,7 +172,7 @@ export function GmApprovalTab({ form }: GmApprovalTabProps) {
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
                   {form.status === "COMPLETED"
-                    ? "تم إرسال قرار المدير العام وإغلاق التقييم"
+                    ? "تم إرسال قرار المدير التنفيذي وإغلاق التقييم"
                     : form.status === "HR_REVIEW" || form.status === "MANAGER_SUBMITTED"
                     ? "بانتظار مراجعة الموارد البشرية أولاً"
                     : "لا يمكن تعديل هذا النموذج"}

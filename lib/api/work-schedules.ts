@@ -43,17 +43,15 @@ export interface WorkSchedule {
 }
 
 export interface CreateWorkScheduleData {
-  code: string;
+  code?: string;
   nameAr: string;
   nameEn: string;
-  shiftType: ShiftType;
-  workStartTime?: string;
-  workEndTime?: string;
+  workStartTime: string;
+  workEndTime: string;
   workDays: string;
   lateToleranceMin?: number;
   earlyLeaveToleranceMin?: number;
-  minimumWorkMinutes?: number;
-  requiresContinuousWork?: boolean;
+  overtimeAfterMin?: number;
   isActive: boolean;
   description?: string;
 }
@@ -62,14 +60,12 @@ export interface UpdateWorkScheduleData {
   code?: string;
   nameAr?: string;
   nameEn?: string;
-  shiftType?: ShiftType;
   workStartTime?: string;
   workEndTime?: string;
   workDays?: string;
   lateToleranceMin?: number;
   earlyLeaveToleranceMin?: number;
-  minimumWorkMinutes?: number;
-  requiresContinuousWork?: boolean;
+  overtimeAfterMin?: number;
   isActive?: boolean;
   description?: string;
 }

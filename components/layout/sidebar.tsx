@@ -172,12 +172,12 @@ const navigation: NavItem[] = [
         ],
       },
       {
-        title: "إدارة الرواتب",
+        title: "nav.payrollManagement",
         icon: Wallet,
         children: [
           { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "payroll:read" },
-          { title: "سلف الرواتب", href: "/salary-advances", icon: Banknote, permission: "payroll:read" },
-          { title: "عمولات المبيعات", href: "/sales-commissions", icon: Award, permission: "payroll:read" },
+          { title: "nav.salaryAdvances", href: "/salary-advances", icon: Banknote, permission: "payroll:read" },
+          { title: "nav.salesCommissions", href: "/sales-commissions", icon: Award, permission: "payroll:read" },
         ],
       },
       {

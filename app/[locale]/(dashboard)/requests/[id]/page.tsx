@@ -115,7 +115,7 @@ const APPROVER_ROLE_LABELS: Record<string, string> = {
   DEPARTMENT_MANAGER: "مدير القسم",
   TARGET_MANAGER: "مدير الموظف المستهدف",
   HR: "الموارد البشرية",
-  CEO: "المدير العام",
+  CEO: "المدير التنفيذي",
   CFO: "المدير المالي",
 };
 

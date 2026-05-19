@@ -65,7 +65,10 @@ export const custodiesApi = {
 
   getByEmployee: async (employeeId: string) => {
     const response = await apiClient.get(`/custodies/employee/${employeeId}`);
-    return response.data;
+    const d = response.data;
+    return Array.isArray(d?.data?.items) ? d.data.items :
+           Array.isArray(d?.data) ? d.data :
+           Array.isArray(d) ? d : [];
   },
 
   getEmployeeSummary: async (employeeId: string) => {

@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ملفات الحضور — Vita HR</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header .logo {
+      background: #2563eb;
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+
+    header span {
+      font-size: 12px;
+      color: #8b949e;
+      margin-right: 4px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 0 32px;
+    }
+
+    .tab {
+      padding: 12px 20px;
+      font-size: 13px;
+      color: #8b949e;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .tab:hover { color: #e6edf3; }
+
+    .tab.active {
+      color: #e6edf3;
+      border-bottom-color: #2563eb;
+      font-weight: 600;
+    }
+
+    .tab .badge {
+      display: inline-flex;
+      align-items: center;
+      background: #21262d;
+      color: #8b949e;
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 20px;
+      margin-right: 6px;
+      border: 1px solid #30363d;
+    }
+
+    .content {
+      padding: 24px 32px;
+    }
+
+    .file-panel { display: none; }
+    .file-panel.active { display: block; }
+
+    .file-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 10px 16px;
+    }
+
+    .file-path {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .file-path .segment { color: #8b949e; }
+    .file-path .filename { color: #79c0ff; font-weight: 600; }
+
+    .copy-btn {
+      margin-right: auto;
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .copy-btn:hover { background: #30363d; }
+    .copy-btn.copied { color: #3fb950; border-color: #3fb950; }
+
+    .code-block {
+      border: 1px solid #30363d;
+      border-radius: 0 0 8px 8px;
+      overflow: hidden;
+    }
+
+    .line-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .line-table tr:hover { background: #1c2128; }
+
+    .line-num {
+      width: 50px;
+      min-width: 50px;
+      text-align: left;
+      padding: 0 16px;
+      color: #484f58;
+      user-select: none;
+      border-left: 1px solid #21262d;
+    }
+
+    html[dir="rtl"] .line-num {
+      text-align: right;
+      border-left: none;
+      border-right: 1px solid #21262d;
+    }
+
+    .line-code {
+      padding: 0 16px;
+      white-space: pre;
+      color: #e6edf3;
+      direction: ltr;
+      text-align: left;
+    }
+
+    /* Syntax highlighting */
+    .kw  { color: #ff7b72; }   /* keywords */
+    .st  { color: #a5d6ff; }   /* strings */
+    .cm  { color: #8b949e; font-style: italic; } /* comments */
+    .fn  { color: #d2a8ff; }   /* functions */
+    .ty  { color: #ffa657; }   /* types */
+    .op  { color: #ff7b72; }   /* operators */
+    .num { color: #79c0ff; }   /* numbers */
+    .at  { color: #79c0ff; }   /* attributes/JSX */
+    .jsx { color: #7ee787; }   /* JSX tags */
+
+    .meta-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .meta-pill .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .dot-blue  { background: #79c0ff; }
+    .dot-green { background: #3fb950; }
+
+    .changes-summary {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+
+    .changes-summary h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e6edf3;
+      margin-bottom: 10px;
+    }
+
+    .change-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #21262d;
+      font-size: 13px;
+    }
+
+    .change-item:last-child { border-bottom: none; }
+
+    .change-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .tag-fix  { background: #0e4429; color: #3fb950; border: 1px solid #238636; }
+    .tag-rm   { background: #3d1a1a; color: #ff7b72; border: 1px solid #da3633; }
+    .tag-hide { background: #1c2f5e; color: #79c0ff; border: 1px solid #1f6feb; }
+
+    .change-desc { color: #c9d1d9; line-height: 1.5; }
+    .change-desc code {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      color: #a5d6ff;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">V</div>
+  <h1>Vita HR — ملفات الحضور</h1>
+  <span>آخر تعديل: 18 مايو 2026</span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('records')">
+    سجلات الحضور
+    <span class="badge">records/page.tsx</span>
+  </div>
+  <div class="tab" onclick="switchTab('drawer')">
+    تفاصيل الاستراحات
+    <span class="badge">breaks-drawer.tsx</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ═══════════════════════════════════════════════════
+       FILE 1: attendance/records/page.tsx
+  ════════════════════════════════════════════════════ -->
+  <div class="file-panel active" id="panel-records">
+
+    <div class="changes-summary">
+      <h3>التعديلات المُطبَّقة</h3>
+      <div class="change-item">
+        <span class="change-tag tag-fix">إصلاح</span>
+        <span class="change-desc">
+          تنسيق ساعات العمل — <code>formatMinutes</code> تعرض الآن <code>HH:MM</code>
+          (مثلاً <code>07:20</code> بدل <code>7:20</code>) بإضافة <code>padStart(2,"0")</code> للساعات
+        </span>
+      </div>
+      <div class="change-item">
+        <span class="change-tag tag-hide">إخفاء</span>
+        <span class="change-desc">
+          حذف عمود <code>البصمة</code> (punchSequenceStatus) من الجدول — الـ Header والـ TableCell
+          والـ colSpan من <code>11</code> إلى <code>9</code>
+        </span>
+      </div>
+    </div>
+
+    <div class="file-header">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="#8b949e"><path d="M3.75 1.5a.25.25 0 00-.25.25v11.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25V6H9.75A1.75 1.75 0 018 4.25V1.5H3.75zm5.75.56v2.19c0 .138.112.25.25.25h2.19L9.5 2.06zM2 1.75C2 .784 2.784 0 3.75 0h5.086c.464 0 .909.184 1.237.513l3.414 3.414c.329.328.513.773.513 1.237v8.086A1.75 1.75 0 0112.25 15h-8.5A1.75 1.75 0 012 13.25V1.75z"/></svg>
+      <span class="file-path">
+        <span class="segment">app / [locale] / (dashboard) / attendance / records / </span><span class="filename">page.tsx</span>
+      </span>
+      <button class="copy-btn" onclick="copyCode('code-records', this)">نسخ</button>
+    </div>
+
+    <div class="code-block">
+      <table class="line-table" id="code-records-table"><tbody id="code-records"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       FILE 2: breaks-drawer.tsx
+  ════════════════════════════════════════════════════ -->
+  <div class="file-panel" id="panel-drawer">
+
+    <div class="changes-summary">
+      <h3>التعديلات المُطبَّقة</h3>
+      <div class="change-item">
+        <span class="change-tag tag-fix">إصلاح</span>
+        <span class="change-desc">
+          تنسيق المدة — <code>formatDuration</code> و <code>formatNetWork</code> تعرضان الآن
+          <code>HH:MM</code> (مثلاً <code>04:14</code> بدل <code>4 س 14 د</code>)
+        </span>
+      </div>
+      <div class="change-item">
+        <span class="change-tag tag-rm">حذف</span>
+        <span class="change-desc">
+          إزالة زر <code>تعديل النوع</code> ودياlog تعديل نوع الاستراحة،
+          وحذف <code>useUpdateBreakType</code> و <code>BREAK_TYPES</code> و <code>Select</code> الزائدة
+        </span>
+      </div>
+    </div>
+
+    <div class="file-header">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="#8b949e"><path d="M3.75 1.5a.25.25 0 00-.25.25v11.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25V6H9.75A1.75 1.75 0 018 4.25V1.5H3.75zm5.75.56v2.19c0 .138.112.25.25.25h2.19L9.5 2.06zM2 1.75C2 .784 2.784 0 3.75 0h5.086c.464 0 .909.184 1.237.513l3.414 3.414c.329.328.513.773.513 1.237v8.086A1.75 1.75 0 0112.25 15h-8.5A1.75 1.75 0 012 13.25V1.75z"/></svg>
+      <span class="file-path">
+        <span class="segment">components / features / attendance / </span><span class="filename">breaks-drawer.tsx</span>
+      </span>
+      <button class="copy-btn" onclick="copyCode('code-drawer', this)">نسخ</button>
+    </div>
+
+    <div class="code-block">
+      <table class="line-table" id="code-drawer-table"><tbody id="code-drawer"></tbody></table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Tab switching ───────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.file-panel').forEach(p => p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ─── Copy code ───────────────────────────────────────────
+function copyCode(id, btn) {
+  const rows = document.querySelectorAll('#' + id + ' .line-code');
+  const text = Array.from(rows).map(r => r.innerText).join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ تم النسخ';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'نسخ'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ─── Syntax highlight (simple) ───────────────────────────
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function highlight(line) {
+  let s = esc(line);
+  // comments
+  s = s.replace(/(\/\/.*$)/gm, '<span class="cm">$1</span>');
+  s = s.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="cm">$1</span>');
+  if (s.includes('cm">')) return s;
+  // strings
+  s = s.replace(/(&quot;[^&]*?&quot;|&#x27;[^&#]*?&#x27;|`[^`]*`)/g, '<span class="st">$1</span>');
+  // jsx tags
+  s = s.replace(/(&lt;\/?)([\w.]+)/g, (m, p1, p2) => {
+    const jsx = ['div','span','p','h1','h2','Table','TableHead','TableRow','TableCell','TableBody',
+      'TableHeader','Badge','Button','Input','Select','SelectTrigger','SelectValue','SelectContent',
+      'SelectItem','Dialog','DialogContent','DialogHeader','DialogTitle','DialogFooter',
+      'Sheet','SheetContent','SheetHeader','SheetTitle','Label','Textarea','Skeleton',
+      'PageHeader','Pagination','BreaksDrawer','AttendanceStatusBadge','BreakCard',
+      'AlertTriangle','Search','Calendar','Plus','Filter','Coffee','Clock','CheckCircle2','XCircle'];
+    if (jsx.includes(p2)) return `<span class="op">${p1}</span><span class="jsx">${p2}</span>`;
+    return m;
+  });
+  // keywords
+  s = s.replace(/\b(import|export|from|default|function|const|let|var|return|if|else|async|await|true|false|null|undefined|type|interface|extends|implements|new)\b/g,
+    '<span class="kw">$1</span>');
+  // types
+  s = s.replace(/\b(string|number|boolean|void|any|Record|Array|Promise|React|useState|useEffect)\b/g,
+    '<span class="ty">$1</span>');
+  return s;
+}
+
+function renderCode(tbodyId, lines) {
+  const tbody = document.getElementById(tbodyId);
+  lines.forEach((line, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="line-num">${i + 1}</td><td class="line-code">${highlight(line)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ─── FILE 1: attendance/records/page.tsx ─────────────────
+const recordsCode = `"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { Search, Calendar, Plus, Filter, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { PageHeader } from "@/components/shared/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Pagination } from "@/components/shared/pagination";
+import { useAttendanceRecords, useCreateAttendanceRecord } from "@/lib/hooks/use-attendance-records";
+import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
+import { AttendanceRecord, AttendanceStatus } from "@/lib/api/attendance-records";
+import { useEmployees } from "@/lib/hooks/use-employees";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { format } from "date-fns";
+import { formatTime, formatDate } from "@/lib/utils/date";
+import { Badge } from "@/components/ui/badge";
+import { BreaksDrawer } from "@/components/features/attendance/breaks-drawer";
+
+const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
+  { value: "PRESENT", label: "حاضر" },
+  { value: "ABSENT", label: "غائب" },
+  { value: "LATE", label: "متأخر" },
+  { value: "EARLY_LEAVE", label: "خروج مبكر" },
+  { value: "HALF_DAY", label: "نصف يوم" },
+  { value: "ON_LEAVE", label: "في إجازة" },
+  { value: "PARTIAL_LEAVE", label: "إجازة ساعية" },
+  { value: "HOLIDAY", label: "عطلة رسمية" },
+  { value: "WEEKEND", label: "إجازة أسبوعية" },
+];
+
+export default function AttendanceRecordsPage() {
+  const t = useTranslations();
+  const { hasPermission, isAdmin } = usePermissions();
+  const canCreate = hasPermission("attendance.records.create-manual");
+  const canManageBreaks = isAdmin() || hasPermission("attendance.breaks.manage");
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [breaksDrawerOpen, setBreaksDrawerOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  const [manualForm, setManualForm] = useState({
+    employeeId: "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    checkInTime: "",
+    checkOutTime: "",
+    status: "PRESENT" as AttendanceStatus,
+    manualEntryReason: "",
+  });
+
+  const [page, setPage] = useState(1);
+  const [dateFrom, setDateFrom] = useState(
+    format(new Date(new Date().getFullYear(), 0, 1), "yyyy-MM-dd")
+  );
+  const [dateTo, setDateTo] = useState(
+    format(new Date(new Date().getFullYear(), 11, 31), "yyyy-MM-dd")
+  );
+
+  const LIMIT = 25;
+  const { data, isLoading } = useAttendanceRecords({
+    dateFrom,
+    dateTo,
+    page,
+    limit: LIMIT,
+    ...(statusFilter !== "ALL" && { status: statusFilter as AttendanceStatus }),
+  });
+  const createRecord = useCreateAttendanceRecord();
+  const { data: employeesData } = useEmployees({ limit: 200 });
+
+  const employees: any[] = (employeesData as any)?.data?.items || [];
+  const records = (data as any)?.items || (data as any)?.data?.items || [];
+  const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
+  const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
+  const meta = total > 0 ? { total, totalPages } : null;
+
+  const filteredRecords = records.filter((record: AttendanceRecord) => {
+    if (!search) return true;
+    const searchLower = search.toLowerCase();
+    const employeeNameAr = \`\${record.employee?.firstNameAr || ""} \${record.employee?.lastNameAr || ""}\`.trim();
+    const employeeNameEn = \`\${record.employee?.firstNameEn || ""} \${record.employee?.lastNameEn || ""}\`.trim();
+    return (
+      employeeNameAr.toLowerCase().includes(searchLower) ||
+      employeeNameEn.toLowerCase().includes(searchLower) ||
+      record.employee?.employeeNumber?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const handleCreateManual = async () => {
+    if (!manualForm.employeeId || !manualForm.date || !manualForm.manualEntryReason) return;
+    await createRecord.mutateAsync({
+      employeeId: manualForm.employeeId,
+      date: manualForm.date,
+      status: manualForm.status,
+      ...(manualForm.checkInTime && { clockInTime: \`\${manualForm.date}T\${manualForm.checkInTime}:00\` }),
+      ...(manualForm.checkOutTime && { clockOutTime: \`\${manualForm.date}T\${manualForm.checkOutTime}:00\` }),
+      manualEntryReason: manualForm.manualEntryReason,
+    });
+    setCreateDialogOpen(false);
+    setManualForm({
+      employeeId: "",
+      date: format(new Date(), "yyyy-MM-dd"),
+      checkInTime: "",
+      checkOutTime: "",
+      status: "PRESENT",
+      manualEntryReason: "",
+    });
+  };
+
+  // ✅ إصلاح: ساعات العمل بصيغة HH:MM (padStart على الساعات أيضاً)
+  const formatMinutes = (minutes?: number | null) => {
+    if (!minutes || minutes <= 0) return "—";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return \`\${h.toString().padStart(2, "0")}:\${m.toString().padStart(2, "0")}\`;
+  };
+
+  const formatMins = (minutes?: number | null) => {
+    if (!minutes || minutes <= 0) return "—";
+    return \`\${minutes} د\`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={t("attendance.recordsTitle")}
+        description={t("attendance.recordsDescription")}
+        actions={
+          canCreate && (
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              إدخال يدوي
+            </Button>
+          )
+        }
+      />
+
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("attendance.searchPlaceholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pr-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-auto" />
+        </div>
+        <span className="text-muted-foreground">{t("attendance.dateTo")}</span>
+        <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-auto" />
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="جميع الحالات" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">جميع الحالات</SelectItem>
+              {ALL_STATUSES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("attendance.fields.employee")}</TableHead>
+              <TableHead>{t("attendance.fields.date")}</TableHead>
+              <TableHead>دخول</TableHead>
+              <TableHead>خروج</TableHead>
+              <TableHead>ساعات العمل</TableHead>
+              <TableHead>{t("attendance.fields.status")}</TableHead>
+              <TableHead>تأخر</TableHead>
+              <TableHead>مغادرة مبكرة</TableHead>
+              <TableHead>المصدر</TableHead>
+              {/* ✅ حُذف عمود البصمة (punchSequenceStatus) */}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                </TableRow>
+              ))
+            ) : filteredRecords.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="h-24 text-center">
+                  {t("common.noData")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredRecords.map((record: AttendanceRecord) => {
+                const isExempt = (record as any).employee?.attendanceConfig?.salaryLinked === false;
+                return (
+                  <TableRow
+                    key={record.id}
+                    className={\`cursor-pointer hover:bg-muted/40 \${isExempt ? "opacity-60 bg-muted/30" : ""}\`}
+                    onClick={() => { setSelectedRecord(record); setBreaksDrawerOpen(true); }}
+                  >
+                    <TableCell>
+                      <div className="font-medium leading-tight flex items-center gap-1.5 flex-wrap">
+                        {record.employee
+                          ? \`\${record.employee.firstNameAr} \${record.employee.lastNameAr}\`
+                          : "—"}
+                        {isExempt && (
+                          <span className="text-[10px] text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-1.5 py-0.5">
+                            معفى
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {record.employee?.employeeNumber || "—"}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium text-sm">{formatDate(record.date)}</TableCell>
+                    <TableCell className="text-sm">
+                      {record.clockInTime ? formatTime(record.clockInTime) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {record.clockOutTime ? formatTime(record.clockOutTime) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium">
+                      {formatMinutes(record.netWorkedMinutes ?? record.workedMinutes)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <AttendanceStatusBadge status={record.status} />
+                        {record.syncError && (
+                          <span title={record.syncError}>
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {(record.lateMinutes ?? 0) > 0 ? (
+                        <span className="text-destructive text-sm font-medium">{formatMins(record.lateMinutes)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(record.earlyLeaveMinutes ?? 0) > 0 ? (
+                        <span className="text-orange-600 text-sm font-medium">{formatMins(record.earlyLeaveMinutes)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {record.isManualEntry ? (
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">يدوي</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">بصمة</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {meta && (
+        <Pagination page={page} totalPages={meta.totalPages} total={meta.total} limit={LIMIT} onPageChange={setPage} />
+      )}
+
+      <BreaksDrawer
+        record={selectedRecord}
+        open={breaksDrawerOpen}
+        onOpenChange={setBreaksDrawerOpen}
+        canManage={canManageBreaks}
+      />
+
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>إدخال سجل حضور يدوي</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>الموظف *</Label>
+              <Select value={manualForm.employeeId} onValueChange={(v) => setManualForm({ ...manualForm, employeeId: v })}>
+                <SelectTrigger><SelectValue placeholder="اختر الموظف" /></SelectTrigger>
+                <SelectContent>
+                  {employees.map((e: any) => (
+                    <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr} — {e.employeeNumber}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>التاريخ *</Label>
+                <Input type="date" value={manualForm.date} onChange={(e) => setManualForm({ ...manualForm, date: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>الحالة *</Label>
+                <Select value={manualForm.status} onValueChange={(v) => setManualForm({ ...manualForm, status: v as AttendanceStatus })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ALL_STATUSES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>وقت الدخول</Label>
+                <Input type="time" value={manualForm.checkInTime} onChange={(e) => setManualForm({ ...manualForm, checkInTime: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>وقت الخروج</Label>
+                <Input type="time" value={manualForm.checkOutTime} onChange={(e) => setManualForm({ ...manualForm, checkOutTime: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>سبب الإدخال اليدوي *</Label>
+              <Textarea
+                value={manualForm.manualEntryReason}
+                onChange={(e) => setManualForm({ ...manualForm, manualEntryReason: e.target.value })}
+                placeholder="مثال: نسيان تسجيل البصمة"
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>إلغاء</Button>
+            <Button
+              onClick={handleCreateManual}
+              disabled={!manualForm.employeeId || !manualForm.date || !manualForm.manualEntryReason || createRecord.isPending}
+            >
+              {createRecord.isPending ? "جاري الحفظ..." : "حفظ السجل"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}`;
+
+// ─── FILE 2: breaks-drawer.tsx ───────────────────────────
+const drawerCode = `"use client";
+
+import { useState } from "react";
+import { CheckCircle2, XCircle, Coffee, Clock } from "lucide-react";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+// ✅ حُذف: Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+import { AttendanceRecord } from "@/lib/api/attendance-records";
+import { AttendanceBreak, BREAK_TYPE_LABELS } from "@/lib/api/attendance-breaks";
+// ✅ حُذف: useUpdateBreakType
+import {
+  useAttendanceBreaks,
+  useAuthorizeBreak,
+  useRejectBreak,
+} from "@/lib/hooks/use-attendance-breaks";
+import { formatTime } from "@/lib/utils/date";
+
+// ✅ حُذف: const BREAK_TYPES = [...]
+
+function StatusBadge({ status }: { status: AttendanceBreak["status"] }) {
+  if (status === "AUTHORIZED")
+    return <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">مُعتمد</Badge>;
+  if (status === "REJECTED")
+    return <Badge className="bg-red-100 text-red-700 border-red-200 text-xs">مرفوض</Badge>;
+  return <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">بانتظار الاعتماد</Badge>;
+}
+
+// ✅ إصلاح: صيغة HH:MM بدل "X س Y د"
+function formatDuration(minutes: number | null) {
+  if (!minutes || minutes <= 0) return "—";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return \`\${h.toString().padStart(2, "0")}:\${m.toString().padStart(2, "0")}\`;
+}
+
+interface BreakCardProps {
+  brk: AttendanceBreak;
+  index: number;
+  recordId: string;
+  canManage: boolean;
+}
+
+function BreakCard({ brk, index, recordId, canManage }: BreakCardProps) {
+  // ✅ حُذف: "type" من union type — لا يوجد dialog تعديل النوع
+  const [actionDialog, setActionDialog] = useState<"authorize" | "reject" | null>(null);
+  const [reason, setReason] = useState("");
+
+  const authorize = useAuthorizeBreak();
+  const reject = useRejectBreak();
+  // ✅ حُذف: useUpdateBreakType, newType, setNewType, handleUpdateType
+
+  const isPending = authorize.isPending || reject.isPending;
+
+  function handleAuthorize() {
+    authorize.mutate(
+      { breakId: brk.id, reason, recordId },
+      { onSuccess: () => { setActionDialog(null); setReason(""); } }
+    );
+  }
+
+  function handleReject() {
+    reject.mutate(
+      { breakId: brk.id, reason, recordId },
+      { onSuccess: () => { setActionDialog(null); setReason(""); } }
+    );
+  }
+
+  return (
+    <>
+      <div className="rounded-lg border p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Coffee className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-sm font-medium">
+              {index}. {brk.type ? BREAK_TYPE_LABELS[brk.type] : "غير محدد"}
+            </span>
+          </div>
+          <StatusBadge status={brk.status} />
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>
+            {formatTime(brk.startTime)}
+            {brk.endTime ? \` ← \${formatTime(brk.endTime)}\` : " (لم يُسجَّل الخروج بعد)"}
+          </span>
+          {brk.durationMinutes != null && (
+            <Badge variant="outline" className="text-xs">
+              {formatDuration(brk.durationMinutes)}
+            </Badge>
+          )}
+        </div>
+
+        {brk.reason && (
+          <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">{brk.reason}</p>
+        )}
+        {brk.rejectionReason && (
+          <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">سبب الرفض: {brk.rejectionReason}</p>
+        )}
+
+        {canManage && (
+          <div className="flex gap-1.5 flex-wrap pt-1">
+            {brk.status === "PENDING" && (
+              <>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs gap-1 bg-green-600 hover:bg-green-700"
+                  onClick={() => { setReason(""); setActionDialog("authorize"); }}
+                  disabled={isPending}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  اعتماد
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => { setReason(""); setActionDialog("reject"); }}
+                  disabled={isPending}
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  رفض
+                </Button>
+              </>
+            )}
+            {brk.status === "AUTHORIZED" && (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 text-xs gap-1"
+                onClick={() => { setReason(""); setActionDialog("reject"); }}
+                disabled={isPending}
+              >
+                <XCircle className="h-3.5 w-3.5" />
+                رفض
+              </Button>
+            )}
+            {/* ✅ حُذف: زر "تعديل النوع" */}
+          </div>
+        )}
+      </div>
+
+      <Dialog open={actionDialog === "authorize"} onOpenChange={(o) => !o && setActionDialog(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>اعتماد الاستراحة</DialogTitle></DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>ملاحظة (اختياري)</Label>
+            <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="سبب الاعتماد..." />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionDialog(null)}>إلغاء</Button>
+            <Button onClick={handleAuthorize} disabled={authorize.isPending} className="bg-green-600 hover:bg-green-700">اعتماد</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={actionDialog === "reject"} onOpenChange={(o) => !o && setActionDialog(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>رفض الاستراحة</DialogTitle></DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>سبب الرفض *</Label>
+            <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="اذكر سبب الرفض..." />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionDialog(null)}>إلغاء</Button>
+            <Button variant="destructive" onClick={handleReject} disabled={!reason.trim() || reject.isPending}>رفض</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* ✅ حُذف: dialog "تعديل نوع الاستراحة" */}
+    </>
+  );
+}
+
+interface BreaksDrawerProps {
+  record: AttendanceRecord | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  canManage?: boolean;
+}
+
+export function BreaksDrawer({ record, open, onOpenChange, canManage = false }: BreaksDrawerProps) {
+  const { data: breaks, isLoading } = useAttendanceBreaks(record?.id || "");
+  const brkList: AttendanceBreak[] = (breaks as any) || [];
+
+  const totalBreakMinutes = brkList.reduce((s, b) => s + (b.durationMinutes || 0), 0);
+  const allowedMinutes: number | undefined = (record as any)?.employee?.attendanceConfig?.allowedBreakMinutes;
+
+  const exceeded =
+    allowedMinutes != null && totalBreakMinutes > allowedMinutes
+      ? totalBreakMinutes - allowedMinutes
+      : null;
+
+  // ✅ إصلاح: صيغة HH:MM
+  function formatNetWork(minutes?: number | null) {
+    if (!minutes) return "—";
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return \`\${h.toString().padStart(2, "0")}:\${m.toString().padStart(2, "0")}\`;
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
+        <SheetHeader className="pb-4">
+          <SheetTitle className="text-base">
+            تفاصيل اليوم —{" "}
+            {record?.date
+              ? new Date(record.date).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })
+              : ""}
+          </SheetTitle>
+        </SheetHeader>
+
+        {record && (
+          <>
+            <div className="rounded-lg border p-3 mb-4 space-y-1.5 text-sm">
+              {record.employee && (
+                <div className="font-medium text-base">
+                  {record.employee.firstNameAr} {record.employee.lastNameAr}
+                </div>
+              )}
+              <div className="flex gap-4 text-muted-foreground">
+                <span>الدخول: <strong className="text-foreground">{record.clockInTime ? formatTime(record.clockInTime) : "—"}</strong></span>
+                <span>الخروج: <strong className="text-foreground">{record.clockOutTime ? formatTime(record.clockOutTime) : "—"}</strong></span>
+              </div>
+              <div className="text-muted-foreground">
+                الصافي: <strong className="text-foreground">{formatNetWork((record as any).netWorkedMinutes ?? record.workedMinutes)}</strong>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold flex items-center gap-1.5">
+                  <Coffee className="h-4 w-4 text-amber-600" />
+                  الاستراحات
+                  {!isLoading && (
+                    <Badge variant="secondary" className="text-xs">{brkList.length}</Badge>
+                  )}
+                </p>
+                {!isLoading && totalBreakMinutes > 0 && (
+                  <span className={\`text-xs font-medium \${exceeded ? "text-red-600" : "text-muted-foreground"}\`}>
+                    المجموع: {formatDuration(totalBreakMinutes)}
+                    {exceeded != null && \` ⚠ تجاوز \${formatDuration(exceeded)}\`}
+                  </span>
+                )}
+              </div>
+
+              {allowedMinutes != null && (
+                <p className="text-xs text-muted-foreground">
+                  المسموح: {formatDuration(allowedMinutes)}
+                </p>
+              )}
+
+              {isLoading ? (
+                <div className="space-y-2">
+                  {[1, 2].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+                </div>
+              ) : brkList.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground border rounded-lg">
+                  لا توجد استراحات مسجلة لهذا اليوم
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {brkList.map((brk, i) => (
+                    <BreakCard
+                      key={brk.id}
+                      brk={brk}
+                      index={i + 1}
+                      recordId={record.id}
+                      canManage={canManage}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}`;
+
+renderCode('code-records', recordsCode.split('\n'));
+renderCode('code-drawer', drawerCode.split('\n'));
+</script>
+</body>
+</html>

@@ -158,7 +158,7 @@ export function useGmApproval() {
       evaluationFormsApi.gmApproval(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["evaluation-forms"] });
-      toast.success("تم إرسال قرار المدير العام بنجاح");
+      toast.success("تم إرسال قرار المدير التنفيذي بنجاح");
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ أثناء إرسال القرار");
