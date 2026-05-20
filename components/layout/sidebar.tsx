@@ -13,7 +13,6 @@ import {
   Building2,
   Users,
   Shield,
-  UserCheck,
   Briefcase,
   CalendarDays,
   Calendar,
@@ -23,7 +22,6 @@ import {
   Clock,
   Clock3,
   ClipboardCheck,
-  LogIn,
   ClipboardList,
   AlertCircle,
   Bell,
@@ -174,7 +172,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.payrollManagement",
         icon: Wallet,
-        hiddenForRoles: ["DIRECT_MANAGER"],
+        hiddenForRoles: ["DIRECT_MANAGER", "CFO", "General Manager", "Follow-up official", "موظف", "HR_Specialist"],
         children: [
           { title: "nav.payrollList", href: "/payroll", icon: Wallet },
           { title: "nav.salaryAdvances", href: "/salary-advances", icon: Banknote },
