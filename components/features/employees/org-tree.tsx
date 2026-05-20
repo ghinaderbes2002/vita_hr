@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Users2, Building2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { cn } from "@/lib/utils";
 
 interface OrgNode {
@@ -164,11 +164,10 @@ function NodeCard({
 
 /* ─── OrgTree (exported) ────────────────────────────────────── */
 export function OrgTree() {
-  const { data, isLoading } = useEmployees({ limit: 500 });
+  const { data, isLoading } = useEmployeesBasicList();
 
   const employees: any[] = useMemo(() => {
-    const d = data as any;
-    return d?.data?.items ?? d?.items ?? (Array.isArray(d) ? d : []);
+    return Array.isArray(data) ? data : [];
   }, [data]);
 
   const roots = useMemo(() => buildTree(employees), [employees]);

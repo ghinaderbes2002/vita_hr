@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateDepartment, useUpdateDepartment, useDepartmentTree } from "@/lib/hooks/use-departments";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useJobGrades } from "@/lib/hooks/use-job-grades";
 import { Department } from "@/types";
 import { Loader2 } from "lucide-react";
@@ -65,16 +65,14 @@ export function DepartmentDialog({ open, onOpenChange, department, onGradeMapped
   const createDepartment = useCreateDepartment();
   const updateDepartment = useUpdateDepartment();
   const { data: treeData } = useDepartmentTree();
-  const { data: employeesData } = useEmployees({ page: 1, limit: 500 });
+  const { data: employeesData } = useEmployeesBasicList();
   const { data: gradesData } = useJobGrades();
 
   const allGrades: any[] = Array.isArray(gradesData)
     ? gradesData
     : (gradesData as any)?.data?.items || (gradesData as any)?.data || [];
 
-  const employees = Array.isArray(employeesData)
-    ? employeesData
-    : (employeesData as any)?.data?.items || (employeesData as any)?.data || [];
+  const employees = Array.isArray(employeesData) ? employeesData : [];
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),

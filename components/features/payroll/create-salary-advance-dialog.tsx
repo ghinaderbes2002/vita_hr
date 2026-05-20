@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useCreateSalaryAdvance } from "@/lib/hooks/use-salary-advances";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 
 const MONTHS = [
   { value: 1, label: "يناير" },
@@ -61,8 +61,8 @@ interface Props {
 export function CreateSalaryAdvanceDialog({ open, onOpenChange, defaultEmployeeId }: Props) {
   const now = new Date();
   const create = useCreateSalaryAdvance();
-  const { data: empData } = useEmployees({ limit: 500 });
-  const employees: any[] = (empData as any)?.data?.items || (empData as any)?.items || [];
+  const { data: empData } = useEmployeesBasicList();
+  const employees: any[] = Array.isArray(empData) ? empData : [];
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema) as any,

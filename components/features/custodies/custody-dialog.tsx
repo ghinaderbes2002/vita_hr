@@ -21,7 +21,7 @@ import { Loader2, Paperclip, X, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import heic2any from "heic2any";
 import { useCreateCustody, useUpdateCustody } from "@/lib/hooks/use-custodies";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { Custody } from "@/types";
 import { assetUrl } from "@/lib/utils";
 
@@ -73,8 +73,8 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
     },
   });
 
-  const { data: empData } = useEmployees({ limit: 500 });
-  const employees: any[] = (empData as any)?.data?.items || (empData as any)?.items || [];
+  const { data: empData } = useEmployeesBasicList();
+  const employees: any[] = Array.isArray(empData) ? empData : [];
 
   const createCustody = useCreateCustody();
   const updateCustody = useUpdateCustody();

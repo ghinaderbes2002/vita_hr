@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCreateEmployee, useUpdateEmployee, useEmployees } from "@/lib/hooks/use-employees";
+import { useCreateEmployee, useUpdateEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { employeesApi } from "@/lib/api/employees";
 import { documentsApi } from "@/lib/api/documents";
 import { leaveBalancesApi } from "@/lib/api/leave-balances";
@@ -269,12 +269,12 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
 
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
-  const { data: allEmployeesData } = useEmployees({ limit: 100 });
+  const { data: allEmployeesData } = useEmployeesBasicList();
   const { data: departmentsData } = useDepartments({ limit: 100 });
   const { data: gradesData } = useJobGrades();
   const { data: titlesData } = useJobTitles({ limit: 500 });
 
-  const allEmployees = (allEmployeesData as any)?.data?.items || (allEmployeesData as any)?.items || [];
+  const allEmployees = Array.isArray(allEmployeesData) ? allEmployeesData : [];
   const departments = (departmentsData as any)?.data?.items || [];
   const jobGrades = Array.isArray(gradesData)
     ? gradesData

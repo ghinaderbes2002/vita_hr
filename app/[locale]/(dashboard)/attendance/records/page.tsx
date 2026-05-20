@@ -37,7 +37,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { useAttendanceRecords, useCreateAttendanceRecord } from "@/lib/hooks/use-attendance-records";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
 import { AttendanceRecord, AttendanceStatus } from "@/lib/api/attendance-records";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { format } from "date-fns";
 import { formatTime, formatDate } from "@/lib/utils/date";
@@ -94,9 +94,9 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
     ...(statusFilter !== "ALL" && { status: statusFilter as AttendanceStatus }),
   });
   const createRecord = useCreateAttendanceRecord();
-  const { data: employeesData } = useEmployees({ limit: 200 });
+  const { data: employeesData } = useEmployeesBasicList();
 
-  const employees: any[] = (employeesData as any)?.data?.items || [];
+  const employees: any[] = Array.isArray(employeesData) ? employeesData : [];
 
   const records = (data as any)?.items || (data as any)?.data?.items || [];
   const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;

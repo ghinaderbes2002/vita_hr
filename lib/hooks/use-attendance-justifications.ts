@@ -45,7 +45,7 @@ export function useCreateJustification() {
         ALERT_NOT_OWNED: "هذا التنبيه ليس خاصاً بك",
         ALERT_TYPE_NOT_JUSTIFIABLE: "هذا النوع من التنبيهات لا يقبل تبريراً",
         JUSTIFICATION_ALREADY_EXISTS: "يوجد تبرير سابق لهذا التنبيه",
-        JUSTIFICATION_DEADLINE_PASSED: "انتهت مهلة تقديم التبرير (24 ساعة)",
+        JUSTIFICATION_DEADLINE_PASSED: "انتهت مهلة تقديم التبرير (7 أيام)",
       };
       toast.error(errorMap[code] || msg || "حدث خطأ أثناء إرسال التبرير");
     },

@@ -29,7 +29,7 @@ import {
   useOvertimeReport,
 } from "@/lib/hooks/use-attendance-reports";
 import { useDepartments } from "@/lib/hooks/use-departments";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { LatenessReport, AbsenceReport, TempExitReport, MonthlyPayrollReport, EmployeeCardReport } from "@/lib/api/attendance-reports";
 import { TopAbsenceItem, OvertimeItem, downloadCsv } from "@/lib/api/reports";
 
@@ -76,10 +76,10 @@ export default function BiometricReportsPage() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const { data: departmentsData } = useDepartments({});
-  const { data: employeesData } = useEmployees({ limit: 200 });
+  const { data: employeesData } = useEmployeesBasicList();
 
   const departments = (departmentsData as any)?.data?.items || [];
-  const employees = (employeesData as any)?.data?.items || [];
+  const employees = Array.isArray(employeesData) ? employeesData : [];
 
   const isDateBased = !["monthly-payroll", "employee-card", "top-absences", "overtime"].includes(activeTab);
   const filters = { from, to, departmentId: departmentId === "all" ? undefined : departmentId };

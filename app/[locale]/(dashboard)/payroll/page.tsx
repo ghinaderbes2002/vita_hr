@@ -28,7 +28,7 @@ import {
   useResetMonthPayroll,
 } from "@/lib/hooks/use-payroll";
 import { PayrollItem, BonusDetail, PenaltyDetail } from "@/lib/api/payroll";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { isResigned } from "@/lib/utils/employee-labels";
@@ -78,9 +78,9 @@ export default function PayrollPage() {
   const generatePayroll = useGeneratePayroll();
   const exportXlsx = useExportPayrollXlsx();
   const resetMonth = useResetMonthPayroll();
-  const { data: empData } = useEmployees({ limit: 500 });
+  const { data: empData } = useEmployeesBasicList();
 
-  const allEmployees: any[] = (empData as any)?.data?.items || (empData as any)?.items || (empData as any)?.data || [];
+  const allEmployees: any[] = Array.isArray(empData) ? empData : [];
   const empMap = new Map(allEmployees.map((e: any) => [e.id, e]));
 
   const allItems: PayrollItem[] = data?.items || [];

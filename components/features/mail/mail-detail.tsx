@@ -181,6 +181,7 @@ export function MailDetail({ messageId, onBack }: Props) {
           defaultToIds={defaultToIds}
         />
       )}
+
     </div>
   );
 }

@@ -11,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useEmployees, useEmployeeBasic } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useEmployeeBasic } from "@/lib/hooks/use-employees";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -41,6 +41,15 @@ function EmployeeDetail({ employeeId }: { employeeId: string }) {
 
   return (
     <div className="mt-2 rounded-lg border bg-muted/30 p-3 space-y-2 text-sm">
+      {emp.profilePhoto && (
+        <div className="flex justify-center pb-1">
+          <img
+            src={emp.profilePhoto}
+            alt={`${emp.firstNameAr} ${emp.lastNameAr}`}
+            className="h-20 w-20 rounded-full object-cover border-2 border-primary/20"
+          />
+        </div>
+      )}
       {(emp.mobile || emp.phone) && (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Phone className="h-3.5 w-3.5 shrink-0" />
@@ -67,13 +76,15 @@ export function EmployeeDirectorySheet({ open, onOpenChange }: Props) {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data, isLoading } = useEmployees({ search: search || undefined, limit: 50 });
+  const { data: allData, isLoading } = useEmployeesBasicList();
 
-  const employees: any[] = Array.isArray((data as any)?.data?.items)
-    ? (data as any).data.items
-    : Array.isArray((data as any)?.items)
-    ? (data as any).items
-    : [];
+  const allEmployeesList: any[] = Array.isArray(allData) ? allData : [];
+  const employees: any[] = search
+    ? allEmployeesList.filter((e: any) =>
+        `${e.firstNameAr} ${e.lastNameAr}`.includes(search) ||
+        `${e.firstNameEn} ${e.lastNameEn}`.toLowerCase().includes(search.toLowerCase())
+      )
+    : allEmployeesList;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

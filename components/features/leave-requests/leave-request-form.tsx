@@ -29,7 +29,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { CreateLeaveRequestData, CreateHourlyLeaveData, LeaveRequest } from "@/lib/api/leave-requests";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -50,6 +51,21 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const ONES = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة",
+  "عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر",
+  "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
+const TENS = ["", "", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+
+function toArabicMonths(n: number): string {
+  if (n <= 0) return "";
+  if (n < 20) return `${ONES[n]} ${n <= 2 ? "شهر" : "أشهر"} خدمة`;
+  const tens = Math.floor(n / 10);
+  const ones = n % 10;
+  const tensWord = TENS[tens];
+  const onesWord = ones > 0 ? `${ONES[ones]} و` : "";
+  return `${onesWord}${tensWord} شهراً خدمة`;
+}
+
 function FilePicker({ value, onChange, labels }: {
   value: string;
   onChange: (url: string) => void;
@@ -58,21 +74,20 @@ function FilePicker({ value, onChange, labels }: {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [fileName, setFileName] = useState<string>("");
+  const { accessToken, user } = useAuthStore();
 
   const handleFile = async (file: File) => {
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
-
-      const tokenCookie = typeof document !== "undefined"
-        ? document.cookie.split("; ").find((c) => c.startsWith("wso-token="))
-        : undefined;
-      const token = tokenCookie?.split("=")[1] || "";
+      if (user?.employeeId) fd.append("employeeId", user.employeeId);
+      fd.append("type", "OTHER");
+      fd.append("titleAr", file.name);
 
       const res = await fetch("/api/upload", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
         body: fd,
       });
 
@@ -122,7 +137,7 @@ interface LeaveRequestFormProps {
 export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoading, hourlyStats }: LeaveRequestFormProps) {
   const t = useTranslations();
   const { data: leaveTypesData } = useLeaveTypes();
-  const { data: employeesData } = useEmployees({ limit: 500 });
+  const { data: employeesData } = useEmployeesBasicList();
 
   // Helper function to extract array
   const extractArray = (data: any): any[] => {
@@ -162,7 +177,8 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
   const selectedLeaveType = leaveTypes.find((t: any) => t.id === selectedLeaveTypeId);
   const isBereavement = selectedLeaveType?.code === "BEREAVEMENT";
   const isHourlyType = selectedLeaveType != null && selectedLeaveType.maxHoursPerMonth != null;
-  const isHalfDayType = selectedLeaveType?.allowHalfDay === true && !isHourlyType;
+  const isAnnualLeave = selectedLeaveType?.code === "ANNUAL" || selectedLeaveType?.nameAr?.includes("سنوية");
+  const isHalfDayType = selectedLeaveType?.allowHalfDay === true && !isHourlyType && !isAnnualLeave;
 
   const watchedStartDate = form.watch("startDate");
   const watchedEndDate = form.watch("endDate");
@@ -244,9 +260,9 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                     <SelectItem key={type.id} value={type.id}>
                       <span className="flex items-center gap-2 w-full">
                         <span>{type.nameAr}</span>
-                        {type.minServiceMonths && (
-                          <span className="text-xs text-muted-foreground" dir="ltr">
-                            {type.minServiceMonths} شهر خدمة
+                          {type.minServiceMonths && (
+                          <span className="text-xs text-muted-foreground">
+                            [{toArabicMonths(type.minServiceMonths)}]
                           </span>
                         )}
                         {type.maxLifetimeUsage === 1 && (
@@ -442,7 +458,16 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => { const t = new Date(); t.setHours(0,0,0,0); return date < t; }}
+                          disabled={(date) => {
+                            if (isAnnualLeave && watchedStartDate) {
+                              const minDate = new Date(watchedStartDate);
+                              minDate.setDate(minDate.getDate() + 1);
+                              minDate.setHours(0, 0, 0, 0);
+                              return date < minDate;
+                            }
+                            const t = new Date(); t.setHours(0,0,0,0); return date < t;
+                          }}
+                          defaultMonth={isAnnualLeave && watchedStartDate ? (() => { const d = new Date(watchedStartDate); d.setDate(d.getDate() + 1); return d; })() : undefined}
                           initialFocus
                         />
                       </PopoverContent>

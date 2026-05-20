@@ -115,7 +115,12 @@ export default function DepartmentsPage() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const token = document.cookie.split("; ").find((c) => c.startsWith("wso-token="))?.split("=")[1] || "";
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
       if (!res.ok) throw new Error("Upload failed");
       const { fileUrl, fileName } = await res.json();
       const doc = { url: fileUrl, name: fileName || file.name, type: file.type };

@@ -23,6 +23,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useCreateWorkSchedule, useUpdateWorkSchedule } from "@/lib/hooks/use-work-schedules";
 import { WorkSchedule } from "@/lib/api/work-schedules";
@@ -31,14 +34,22 @@ const formSchema = z.object({
   code: z.string().optional(),
   nameAr: z.string().min(1, "الاسم بالعربي مطلوب"),
   nameEn: z.string().min(1, "الاسم بالإنجليزي مطلوب"),
-  workStartTime: z.string().min(1, "وقت بداية العمل مطلوب"),
-  workEndTime: z.string().min(1, "وقت نهاية العمل مطلوب"),
+  shiftType: z.enum(["DAY", "NIGHT", "FLEXIBLE"]),
+  workStartTime: z.string().optional(),
+  workEndTime: z.string().optional(),
+  minimumWorkHours: z.number().min(1, "يجب أن يكون ساعة على الأقل").optional(),
+  requiresContinuousWork: z.boolean().optional(),
   workDays: z.array(z.number()).min(1, "يجب اختيار يوم واحد على الأقل"),
   lateToleranceMin: z.number().min(0).optional(),
   earlyLeaveToleranceMin: z.number().min(0).optional(),
   isActive: z.boolean(),
   description: z.string().optional(),
-});
+}).refine((data) => {
+  if (data.shiftType !== "FLEXIBLE") {
+    return !!data.workStartTime && !!data.workEndTime;
+  }
+  return true;
+}, { message: "وقت البداية والنهاية مطلوبان", path: ["workStartTime"] });
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -73,8 +84,11 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
     code: schedule?.code || "",
     nameAr: schedule?.nameAr || "",
     nameEn: schedule?.nameEn || "",
+    shiftType: (schedule?.shiftType as any) || "DAY",
     workStartTime: schedule?.workStartTime || "",
     workEndTime: schedule?.workEndTime || "",
+    minimumWorkHours: schedule?.minimumWorkMinutes ? Math.round(schedule.minimumWorkMinutes / 60) : 8,
+    requiresContinuousWork: schedule?.requiresContinuousWork ?? false,
     workDays: parseWorkDays(schedule?.workDays),
     lateToleranceMin: schedule?.lateToleranceMin ?? 0,
     earlyLeaveToleranceMin: schedule?.earlyLeaveToleranceMin ?? 0,
@@ -87,6 +101,9 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
     defaultValues,
   });
 
+  const shiftType = form.watch("shiftType");
+  const isFlexible = shiftType === "FLEXIBLE";
+
   useEffect(() => {
     if (open) form.reset(defaultValues);
   }, [open, schedule]);
@@ -96,16 +113,23 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
       const submitData: any = {
         nameAr: data.nameAr,
         nameEn: data.nameEn,
-        workStartTime: data.workStartTime,
-        workEndTime: data.workEndTime,
+        shiftType: data.shiftType,
         workDays: JSON.stringify(data.workDays),
-        lateToleranceMin: Number(data.lateToleranceMin ?? 0),
-        earlyLeaveToleranceMin: Number(data.earlyLeaveToleranceMin ?? 0),
         isActive: Boolean(data.isActive),
       };
 
       if (data.code) submitData.code = data.code;
       if (data.description) submitData.description = data.description;
+
+      if (!isFlexible) {
+        submitData.workStartTime = data.workStartTime;
+        submitData.workEndTime = data.workEndTime;
+        submitData.lateToleranceMin = Number(data.lateToleranceMin ?? 0);
+        submitData.earlyLeaveToleranceMin = Number(data.earlyLeaveToleranceMin ?? 0);
+      } else {
+        submitData.minimumWorkMinutes = (data.minimumWorkHours ?? 8) * 60;
+        submitData.requiresContinuousWork = data.requiresContinuousWork ?? false;
+      }
 
       if (schedule) {
         await updateSchedule.mutateAsync({ id: schedule.id, data: submitData });
@@ -122,7 +146,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-175 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {schedule ? "تعديل جدول عمل" : "إضافة جدول عمل"}
@@ -130,6 +154,38 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+            {/* نوع الوردية */}
+            <FormField
+              control={form.control}
+              name="shiftType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>نوع الوردية</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      className="flex gap-6"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="DAY" id="shift-day" />
+                        <Label htmlFor="shift-day">نهاري</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="NIGHT" id="shift-night" />
+                        <Label htmlFor="shift-night">ليلي</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="FLEXIBLE" id="shift-flex" />
+                        <Label htmlFor="shift-flex">مرن</Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* حقل نشط */}
             <FormField
@@ -176,36 +232,125 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
               />
             </div>
 
-            {/* حقول الوقت */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="workStartTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>وقت بداية العمل</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="time" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="workEndTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>وقت نهاية العمل</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="time" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* حقول الوقت — نهاري / ليلي فقط */}
+            {!isFlexible && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="workStartTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>وقت بداية العمل</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="time" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="workEndTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>وقت نهاية العمل</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="time" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="lateToleranceMin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>تسامح التأخير (دقيقة)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            value={field.value ?? 0}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="earlyLeaveToleranceMin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>تسامح الخروج المبكر (دقيقة)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            value={field.value ?? 0}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* إعدادات الوردية المرنة */}
+            {isFlexible && (
+              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900 p-4 space-y-4">
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">إعدادات الوردية المرنة</p>
+
+                <FormField
+                  control={form.control}
+                  name="minimumWorkHours"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الحد الأدنى للساعات اليومية</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={24}
+                            className="w-24"
+                            value={field.value ?? 8}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 8)}
+                          />
+                          <span className="text-sm text-muted-foreground">ساعة / يوم</span>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="requiresContinuousWork"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <FormLabel className="text-sm">يجب أن تكون ساعات العمل متواصلة</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value ?? false}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* أيام العمل */}
             <FormField
               control={form.control}
               name="workDays"
@@ -234,44 +379,6 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                 </FormItem>
               )}
             />
-
-            {/* تسامح التأخير */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="lateToleranceMin"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>تسامح التأخير (دقيقة)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        value={field.value ?? 0}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="earlyLeaveToleranceMin"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>تسامح الخروج المبكر (دقيقة)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        value={field.value ?? 0}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             <FormField
               control={form.control}

@@ -26,7 +26,7 @@ import {
   usePendingMyAction,
   useCreateProbationEvaluation,
 } from "@/lib/hooks/use-probation-evaluations";
-import { useEmployees, useSubordinates } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useSubordinates } from "@/lib/hooks/use-employees";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ProbationStatus, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
@@ -70,14 +70,14 @@ export default function ProbationEvaluationsPage() {
 
   const { data: allEvals, isLoading: allLoading } = useProbationEvaluations();
   const { data: pendingEvals, isLoading: pendingLoading } = usePendingMyAction();
-  const { data: allEmployeesData } = useEmployees({ limit: 200 });
+  const { data: allEmployeesData } = useEmployeesBasicList();
   const { data: subordinatesData } = useSubordinates(managerEmployeeId);
   const createEval = useCreateProbationEvaluation();
 
   const evals: any[] = (tab === "all" ? (allEvals as any) : (pendingEvals as any)) || [];
   const isLoading = tab === "all" ? allLoading : pendingLoading;
   const employees: any[] = showAllEmployees
-    ? ((allEmployeesData as any)?.data?.items || [])
+    ? (Array.isArray(allEmployeesData) ? allEmployeesData : [])
     : (Array.isArray(subordinatesData) ? subordinatesData : []);
   const employeeMap = Object.fromEntries(employees.map((e: any) => [e.id, e]));
 

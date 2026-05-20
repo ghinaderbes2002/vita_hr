@@ -46,6 +46,7 @@ export interface CreateWorkScheduleData {
   code?: string;
   nameAr: string;
   nameEn: string;
+  shiftType?: ShiftType;
   workStartTime: string;
   workEndTime: string;
   workDays: string;
@@ -60,6 +61,7 @@ export interface UpdateWorkScheduleData {
   code?: string;
   nameAr?: string;
   nameEn?: string;
+  shiftType?: ShiftType;
   workStartTime?: string;
   workEndTime?: string;
   workDays?: string;

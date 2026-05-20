@@ -14,7 +14,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePendingMyApproval, useApproveRequest, useRejectRequest } from "@/lib/hooks/use-requests";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { Request } from "@/types";
@@ -31,11 +31,11 @@ export default function PendingManagerPage() {
   const { data, isLoading } = usePendingMyApproval({ limit: 50 });
   const approveRequest = useApproveRequest();
   const rejectRequest = useRejectRequest();
-  const { data: allEmployeesData } = useEmployees({ limit: 500 });
+  const { data: allEmployeesData } = useEmployeesBasicList();
 
   const requests: Request[] = (data as any)?.data?.items || (data as any)?.data || [];
   const empMap = new Map(
-    ((allEmployeesData as any)?.data?.items || (allEmployeesData as any)?.items || [])
+    (Array.isArray(allEmployeesData) ? allEmployeesData : [])
       .map((e: any) => [e.id, e])
   );
 

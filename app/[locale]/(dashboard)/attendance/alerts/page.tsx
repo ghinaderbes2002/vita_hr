@@ -62,7 +62,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { Pagination } from "@/components/shared/pagination";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -100,15 +100,13 @@ export default function AttendanceAlertsPage() {
   const { data: teamData, isLoading: teamLoading } = useMyTeamAlerts(queryParams);
   const data = isDirectManager ? teamData : allData;
   const isLoading = isDirectManager ? teamLoading : allLoading;
-  const { data: employeesData } = useEmployees({ limit: 100 });
+  const { data: employeesData } = useEmployeesBasicList();
   const createAlert = useCreateAttendanceAlert();
   const updateAlert = useUpdateAttendanceAlert();
   const resolveAlert = useResolveAttendanceAlert();
   const deleteAlert = useDeleteAttendanceAlert();
 
-  const employees = Array.isArray(employeesData)
-    ? employeesData
-    : (employeesData as any)?.data?.items || (employeesData as any)?.data || [];
+  const employees = Array.isArray(employeesData) ? employeesData : [];
 
   const alerts = (data as any)?.items || (data as any)?.data?.items || [];
   const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;

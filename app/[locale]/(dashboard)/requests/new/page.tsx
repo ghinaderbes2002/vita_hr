@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { LeaveRequestForm } from "@/components/features/leave-requests/leave-request-form";
 import { NewRequestDialog } from "@/components/features/requests/new-request-dialog";
-import { useCreateLeaveRequest, useCreateHourlyLeave, useMyHourlyUsedHours } from "@/lib/hooks/use-leave-requests";
+import { useCreateLeaveRequest, useCreateHourlyLeave, useSubmitLeaveRequest, useMyHourlyUsedHours } from "@/lib/hooks/use-leave-requests";
 import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
 import { CreateLeaveRequestData, CreateHourlyLeaveData } from "@/lib/api/leave-requests";
 
@@ -23,6 +23,7 @@ export default function NewRequestChoicePage() {
   const [accidentDialogOpen, setAccidentDialogOpen] = useState(false);
   const createLeaveRequest = useCreateLeaveRequest();
   const createHourlyLeave = useCreateHourlyLeave();
+  const submitLeaveRequest = useSubmitLeaveRequest();
 
   const { data: leaveTypesData } = useLeaveTypes();
   const leaveTypesArr: any[] = (() => {
@@ -40,13 +41,19 @@ export default function NewRequestChoicePage() {
   } : undefined;
 
   const handleLeaveSubmit = async (data: CreateLeaveRequestData) => {
-    await createLeaveRequest.mutateAsync(data);
+    const created = await createLeaveRequest.mutateAsync(data);
+    if (created?.id) {
+      await submitLeaveRequest.mutateAsync(created.id);
+    }
     setLeaveDialogOpen(false);
     router.push("/requests/my-requests");
   };
 
   const handleHourlyLeaveSubmit = async (data: CreateHourlyLeaveData) => {
-    await createHourlyLeave.mutateAsync(data);
+    const created = await createHourlyLeave.mutateAsync(data);
+    if (created?.id) {
+      await submitLeaveRequest.mutateAsync(created.id);
+    }
     setLeaveDialogOpen(false);
     router.push("/requests/my-requests");
   };
@@ -126,7 +133,7 @@ export default function NewRequestChoicePage() {
           <LeaveRequestForm
             onSubmit={handleLeaveSubmit}
             onHourlySubmit={handleHourlyLeaveSubmit}
-            isLoading={createLeaveRequest.isPending || createHourlyLeave.isPending}
+            isLoading={createLeaveRequest.isPending || createHourlyLeave.isPending || submitLeaveRequest.isPending}
             hourlyStats={hourlyStats}
           />
         </DialogContent>

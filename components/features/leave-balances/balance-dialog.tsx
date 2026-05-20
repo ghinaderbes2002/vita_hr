@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCreateLeaveBalance } from "@/lib/hooks/use-leave-balances";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
 import { Loader2 } from "lucide-react";
 
@@ -50,7 +50,7 @@ interface BalanceDialogProps {
 export function BalanceDialog({ open, onOpenChange }: BalanceDialogProps) {
   const t = useTranslations();
   const createBalance = useCreateLeaveBalance();
-  const { data: employeesData } = useEmployees();
+  const { data: employeesData } = useEmployeesBasicList();
   const { data: leaveTypesData } = useLeaveTypes();
 
   // Helper function to extract array from various API response formats

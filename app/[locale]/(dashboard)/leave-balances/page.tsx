@@ -38,7 +38,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLeaveBalances, useDeleteLeaveBalance, useInitializeEmployeeBalances } from "@/lib/hooks/use-leave-balances";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { BalanceDialog } from "@/components/features/leave-balances/balance-dialog";
 import { AdjustDialog } from "@/components/features/leave-balances/adjust-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -64,8 +64,8 @@ export default function LeaveBalancesPage() {
   const deleteBalance = useDeleteLeaveBalance();
   const initializeBalances = useInitializeEmployeeBalances();
 
-  const { data: employeesData } = useEmployees({ limit: 500 });
-  const allEmployees = (employeesData as any)?.data?.items || (employeesData as any)?.items || [];
+  const { data: employeesData } = useEmployeesBasicList();
+  const allEmployees = Array.isArray(employeesData) ? employeesData : [];
   const empMap = new Map(allEmployees.map((e: any) => [e.id, e]));
 
   const balances: LeaveBalance[] = Array.isArray(data)

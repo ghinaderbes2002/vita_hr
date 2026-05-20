@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEmployees, useSubordinates, useMyEmployee } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useSubordinates, useMyEmployee } from "@/lib/hooks/use-employees";
 import { Label } from "@/components/ui/label";
 
 export default function SubordinatesPage() {
@@ -33,7 +33,7 @@ export default function SubordinatesPage() {
   const { data: myProfile } = useMyEmployee();
   const myEmployeeId = (myProfile as any)?.id || "";
 
-  const { data: allEmployeesData } = useEmployees({ limit: 100 });
+  const { data: allEmployeesData } = useEmployeesBasicList();
   const { data: subordinatesData, isLoading } = useSubordinates(selectedManagerId);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function SubordinatesPage() {
     }
   }, [myEmployeeId]);
 
-  const allEmployees = (allEmployeesData as any)?.items || (allEmployeesData as any)?.data?.items || [];
+  const allEmployees = Array.isArray(allEmployeesData) ? allEmployeesData : [];
 
   const subordinates = Array.isArray(subordinatesData)
     ? subordinatesData

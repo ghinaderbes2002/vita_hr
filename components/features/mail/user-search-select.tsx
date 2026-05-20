@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 
 interface UserOption {
   id: string;
@@ -25,20 +25,23 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading } = useEmployees({ search: query || undefined, limit: 30 });
+  const { data, isLoading } = useEmployeesBasicList();
 
-  const rawItems: any[] = Array.isArray((data as any)?.data?.items)
-    ? (data as any).data.items
-    : Array.isArray((data as any)?.items)
-    ? (data as any).items
-    : Array.isArray(data)
-    ? data
-    : [];
+  const allItems: any[] = Array.isArray(data) ? data : [];
+  const rawItems: any[] = query
+    ? allItems.filter((e: any) =>
+        `${e.firstNameAr} ${e.lastNameAr}`.includes(query) ||
+        `${e.firstNameEn} ${e.lastNameEn}`.toLowerCase().includes(query.toLowerCase())
+      )
+    : allItems;
 
   const options: UserOption[] = rawItems
-    .filter((e: any) => e.userId && !exclude.includes(e.userId))
+    .filter((e: any) => {
+      const id = e.userId || e.id;
+      return id && !exclude.includes(id);
+    })
     .map((e: any) => ({
-      id: e.userId,  // userId مو employee.id — البريد بيستخدم user IDs
+      id: e.userId || e.id,
       label: `${e.firstNameAr} ${e.lastNameAr}`,
     }));
 
@@ -49,6 +52,8 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
       onChange(value.filter((v) => v !== id));
     } else {
       onChange([...value, id]);
+      setOpen(false);
+      setQuery("");
     }
   };
 

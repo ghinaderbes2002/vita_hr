@@ -12,7 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useOnboardingWorkflows } from "@/lib/hooks/use-onboarding";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { WorkflowType, WorkflowStatus } from "@/lib/api/onboarding";
 import { format } from "date-fns";
 
@@ -39,8 +39,8 @@ export default function OnboardingWorkflowsPage() {
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
-  const { data: employeesData } = useEmployees({ limit: 100 });
-  const employees: any[] = (employeesData as any)?.data?.items || [];
+  const { data: employeesData } = useEmployeesBasicList();
+  const employees: any[] = Array.isArray(employeesData) ? employeesData : [];
   const employeeMap = Object.fromEntries(employees.map((e: any) => [e.id, e]));
 
   const list: any[] = Array.isArray(workflows) ? workflows : [];

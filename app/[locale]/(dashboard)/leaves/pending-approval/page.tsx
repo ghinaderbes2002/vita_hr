@@ -50,10 +50,14 @@ export default function PendingApprovalPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [actionType, setActionType] = useState<"manager" | "hr">("manager");
 
-  const { hasPermission } = usePermissions();
-  const isHrManager = hasPermission("leave_requests:approve_hr");
+  const { hasPermission, isAdmin } = usePermissions();
+  const canApproveHr      = isAdmin() || hasPermission("leave_requests:approve_hr");
+  const showManagerTab    = isAdmin() || !canApproveHr;
+  const showHrTab         = canApproveHr;
 
-  const [activeTab, setActiveTab] = useState<"manager" | "hr">(isHrManager ? "hr" : "manager");
+  const [activeTab, setActiveTab] = useState<"manager" | "hr">(
+    canApproveHr && !isAdmin() ? "hr" : "manager"
+  );
   const [page, setPage] = useState(1);
   const LIMIT = 10;
 
@@ -217,21 +221,25 @@ export default function PendingApprovalPage() {
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }} className="space-y-4">
         <TabsList>
-          {!isHrManager && (
+          {showManagerTab && (
             <TabsTrigger value="manager">بانتظار موافقتك ({activeTab === "manager" ? total : ""})</TabsTrigger>
           )}
-          <TabsTrigger value="hr">بانتظار موافقة HR ({activeTab === "hr" ? total : ""})</TabsTrigger>
+          {showHrTab && (
+            <TabsTrigger value="hr">بانتظار موافقة HR ({activeTab === "hr" ? total : ""})</TabsTrigger>
+          )}
         </TabsList>
 
-        {!isHrManager && (
+        {showManagerTab && (
           <TabsContent value="manager" className="rounded-md border">
             {renderTable(requests, "manager")}
           </TabsContent>
         )}
 
-        <TabsContent value="hr" className="rounded-md border">
-          {renderTable(requests, "hr")}
-        </TabsContent>
+        {showHrTab && (
+          <TabsContent value="hr" className="rounded-md border">
+            {renderTable(requests, "hr")}
+          </TabsContent>
+        )}
       </Tabs>
 
       {meta && (

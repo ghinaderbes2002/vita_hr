@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useWorkSchedule } from "@/lib/hooks/use-work-schedules";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 
 export default function WorkScheduleDetailPage() {
   const params = useParams();
@@ -25,8 +25,8 @@ export default function WorkScheduleDetailPage() {
   const id = params.id as string;
 
   const { data: schedule, isLoading } = useWorkSchedule(id);
-  const { data: employeesData } = useEmployees({ limit: 1000 });
-  const allEmployees: any[] = (employeesData as any)?.data?.items || (employeesData as any)?.data || (employeesData as any) || [];
+  const { data: employeesData } = useEmployeesBasicList();
+  const allEmployees: any[] = Array.isArray(employeesData) ? employeesData : [];
   const employeeMap = new Map(allEmployees.map((e: any) => [e.id, e]));
 
   if (isLoading) {

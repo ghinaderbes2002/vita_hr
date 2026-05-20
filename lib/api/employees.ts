@@ -19,6 +19,14 @@ export const employeesApi = {
     return response.data?.data ?? response.data;
   },
 
+  getBasicList: async (): Promise<{ id: string; firstNameAr: string; lastNameAr: string; firstNameEn?: string; lastNameEn?: string; employeeNumber?: string; userId?: string; department?: { id: string; nameAr: string; nameEn: string }; employmentStatus?: string }[]> => {
+    const response = await apiClient.get("/employees/basic");
+    const d = response.data;
+    return Array.isArray(d?.data?.items) ? d.data.items :
+           Array.isArray(d?.data) ? d.data :
+           Array.isArray(d) ? d : [];
+  },
+
   getMyProfile: async (): Promise<Employee> => {
     const response = await apiClient.get("/employees/my");
     return response.data?.data || response.data;

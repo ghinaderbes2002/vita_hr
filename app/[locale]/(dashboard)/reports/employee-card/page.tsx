@@ -7,14 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEmployees } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 
 export default function EmployeeCardIndexPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const { data, isLoading } = useEmployees({ search: search || undefined, limit: 20 });
+  const { data: allData, isLoading } = useEmployeesBasicList();
 
-  const employees: any[] = (data as any)?.data?.items ?? (data as any)?.items ?? [];
+  const allEmployeesList: any[] = Array.isArray(allData) ? allData : [];
+  const employees: any[] = search
+    ? allEmployeesList.filter((e: any) =>
+        `${e.firstNameAr} ${e.lastNameAr}`.includes(search) ||
+        `${e.firstNameEn} ${e.lastNameEn}`.toLowerCase().includes(search.toLowerCase())
+      )
+    : allEmployeesList;
 
   return (
     <div className="space-y-6 p-6">
