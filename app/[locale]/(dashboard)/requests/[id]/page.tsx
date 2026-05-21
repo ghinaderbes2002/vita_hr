@@ -368,7 +368,7 @@ export default function RequestDetailPage() {
                     <div key={key}>
                       <div className="flex justify-between items-start gap-4">
                         <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
-                        <span className="text-sm font-medium text-right">{value} ساعة</span>
+                        <span className="text-sm font-medium text-right">{String(value)} ساعة</span>
                       </div>
                       <Separator className="mt-3" />
                     </div>
@@ -378,7 +378,7 @@ export default function RequestDetailPage() {
                     <div key={key}>
                       <div className="flex justify-between items-start gap-4">
                         <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
-                        <span className="text-sm font-medium text-right">{value} يوم</span>
+                        <span className="text-sm font-medium text-right">{String(value)} يوم</span>
                       </div>
                       <Separator className="mt-3" />
                     </div>
