@@ -1,13 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Inbox, Send, FileText, Archive, Trash2, PenSquare, Users } from "lucide-react";
+import { Inbox, Send, FileText, Archive, Trash2, PenSquare, Users, FolderOpen, FolderPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { MailList } from "@/components/features/mail/mail-list";
 import { MailDetail } from "@/components/features/mail/mail-detail";
 import { ComposeMailModal } from "@/components/features/mail/compose-mail-modal";
 import { EmployeeDirectorySheet } from "@/components/features/mail/employee-directory-sheet";
+import { useArchiveFolders, useCreateArchiveFolder, useDeleteArchiveFolder } from "@/lib/hooks/use-mail";
 import type { MailFolder } from "@/lib/api/mail";
 
 const FOLDERS: { key: MailFolder; label: string; icon: any }[] = [
@@ -25,12 +34,36 @@ export default function MailPage() {
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [archiveFolderId, setArchiveFolderId] = useState<string | undefined>(undefined);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const { data: archiveFolders = [] } = useArchiveFolders();
+  const createFolder = useCreateArchiveFolder();
+  const deleteFolder = useDeleteArchiveFolder();
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    await createFolder.mutateAsync(newFolderName.trim());
+    setNewFolderName("");
+    setNewFolderOpen(false);
+  };
+
+  const handleDeleteFolder = async (id: string) => {
+    if (archiveFolderId === id) setArchiveFolderId(undefined);
+    await deleteFolder.mutateAsync(id);
+  };
 
   const handleFolderChange = (folder: MailFolder) => {
     setActiveFolder(folder);
     setOpenMessageId(null);
     setSearch("");
     setPage(1);
+    setArchiveFolderId(undefined);
+    setDateFrom("");
+    setDateTo("");
   };
 
   return (
@@ -74,6 +107,53 @@ export default function MailPage() {
         </Button>
       </div>
 
+      {/* Archive sub-folder navigation */}
+      {activeFolder === "ARCHIVE" && !openMessageId && (
+        <div className="flex items-center gap-1 px-3 py-1.5 border-b bg-muted/10 overflow-x-auto">
+          <button
+            onClick={() => { setArchiveFolderId(undefined); setPage(1); }}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 h-7 rounded text-xs font-medium transition-colors whitespace-nowrap",
+              !archiveFolderId
+                ? "bg-primary/15 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            الكل
+          </button>
+          {archiveFolders.map((af) => (
+            <div
+              key={af.id}
+              className={cn(
+                "group flex items-center gap-1 px-2 h-7 rounded text-xs font-medium transition-colors whitespace-nowrap cursor-pointer",
+                archiveFolderId === af.id
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+              onClick={() => { setArchiveFolderId(af.id); setPage(1); }}
+            >
+              <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+              {af.name}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleDeleteFolder(af.id); }}
+                className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity ml-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setNewFolderOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 h-7 rounded text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap border border-dashed"
+          >
+            <FolderPlus className="h-3.5 w-3.5 shrink-0" />
+            مجلد جديد
+          </button>
+        </div>
+      )}
+
       {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {openMessageId ? (
@@ -89,6 +169,11 @@ export default function MailPage() {
             onSearchChange={setSearch}
             page={page}
             onPageChange={setPage}
+            archiveFolderId={archiveFolderId}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={(v) => { setDateFrom(v); setPage(1); }}
+            onDateToChange={(v) => { setDateTo(v); setPage(1); }}
           />
         )}
       </main>
@@ -102,6 +187,33 @@ export default function MailPage() {
         open={directoryOpen}
         onOpenChange={setDirectoryOpen}
       />
+
+      {/* Create archive folder dialog */}
+      <Dialog open={newFolderOpen} onOpenChange={(v) => { if (!v) { setNewFolderOpen(false); setNewFolderName(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderPlus className="h-4 w-4" />
+              مجلد أرشيف جديد
+            </DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            placeholder="اسم المجلد..."
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleCreateFolder(); }}
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setNewFolderOpen(false); setNewFolderName(""); }}>
+              إلغاء
+            </Button>
+            <Button onClick={handleCreateFolder} disabled={!newFolderName.trim() || createFolder.isPending}>
+              إنشاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

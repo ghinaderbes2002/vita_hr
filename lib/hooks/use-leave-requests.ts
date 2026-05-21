@@ -22,16 +22,21 @@ export function useMyLeaveRequests(params?: { status?: LeaveRequestStatus; year?
 }
 
 // Get all leave requests (HR/Manager)
-export function useLeaveRequests(params?: {
-  status?: LeaveRequestStatus;
-  employeeId?: string;
-  year?: number;
-  page?: number;
-  limit?: number;
-}) {
+export function useLeaveRequests(
+  params?: {
+    status?: LeaveRequestStatus;
+    employeeId?: string;
+    managerId?: string;
+    year?: number;
+    page?: number;
+    limit?: number;
+  },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: ["leave-requests", params],
     queryFn: () => leaveRequestsApi.getAll(params),
+    enabled: options?.enabled ?? true,
   });
 }
 

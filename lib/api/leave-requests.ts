@@ -11,6 +11,10 @@ export interface LeaveRequest {
     firstNameEn: string;
     lastNameEn: string;
   };
+  employeeFirstNameAr?: string | null;
+  employeeLastNameAr?: string | null;
+  employeeFirstNameEn?: string | null;
+  employeeLastNameEn?: string | null;
   leaveTypeId: string;
   leaveType?: {
     id: string;
@@ -125,6 +129,7 @@ export const leaveRequestsApi = {
   getAll: async (params?: {
     status?: LeaveRequestStatus;
     employeeId?: string;
+    managerId?: string;
     year?: number;
     page?: number;
     limit?: number;

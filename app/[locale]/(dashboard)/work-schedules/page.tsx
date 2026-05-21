@@ -193,13 +193,26 @@ export default function WorkSchedulesPage() {
                   </TableCell>
                   <TableCell>
                     {schedule.shiftType === "FLEXIBLE" ? (
-                      <span className="text-sm text-muted-foreground">
-                        {schedule.minimumWorkMinutes ? `${Math.round(schedule.minimumWorkMinutes / 60)} س / يوم` : "مرن"}
+                      <span className="text-sm" dir="ltr">
+                        {schedule.minimumWorkMinutes
+                          ? `${Math.round(schedule.minimumWorkMinutes / 60)} ساعات / يوم`
+                          : "مرن"}
                       </span>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{schedule.workStartTime} - {schedule.workEndTime}</span>
+                      <div className="space-y-0.5">
+                        <div className="text-sm" dir="ltr">
+                          {(() => {
+                            if (!schedule.workStartTime || !schedule.workEndTime) return "—";
+                            const [sh, sm] = schedule.workStartTime.split(":").map(Number);
+                            const [eh, em] = schedule.workEndTime.split(":").map(Number);
+                            const hrs = Math.round((eh * 60 + em - sh * 60 - sm) / 60);
+                            return `${hrs} ساعات / يوم`;
+                          })()}
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1" dir="ltr">
+                          <Clock className="h-3 w-3" />
+                          {schedule.workStartTime} - {schedule.workEndTime}
+                        </div>
                       </div>
                     )}
                   </TableCell>

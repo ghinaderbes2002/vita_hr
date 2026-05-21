@@ -81,8 +81,6 @@ function FilePicker({ value, onChange, labels }: {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      if (user?.employeeId) fd.append("employeeId", user.employeeId);
-      fd.append("type", "OTHER");
       fd.append("titleAr", file.name);
 
       const res = await fetch("/api/upload", {

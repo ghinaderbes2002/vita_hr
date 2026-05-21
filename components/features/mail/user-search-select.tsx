@@ -36,12 +36,9 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
     : allItems;
 
   const options: UserOption[] = rawItems
-    .filter((e: any) => {
-      const id = e.userId || e.id;
-      return id && !exclude.includes(id);
-    })
+    .filter((e: any) => e.id && !exclude.includes(e.id))
     .map((e: any) => ({
-      id: e.userId || e.id,
+      id: e.id,
       label: `${e.firstNameAr} ${e.lastNameAr}`,
     }));
 
@@ -91,7 +88,7 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
         <div className="mb-1.5 space-y-1">
           <div className="flex flex-wrap gap-1">
             {value.map((id) => {
-              const opt = options.find((o) => o.id === id) ?? rawItems.find((e: any) => e.userId === id);
+              const opt = options.find((o) => o.id === id) ?? rawItems.find((e: any) => e.id === id);
               const label = opt
                 ? (opt as any).label ?? `${(opt as any).firstNameAr} ${(opt as any).lastNameAr}`
                 : id;

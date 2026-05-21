@@ -1,14 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Archive, Trash2, Reply, ReplyAll } from "lucide-react";
+import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { useMailMessage, useDeleteMail, useMoveMail } from "@/lib/hooks/use-mail";
+import { useMailMessage, useMailThread, useArchiveFolders, useDeleteMail, useMoveMail } from "@/lib/hooks/use-mail";
 import { AttachmentList } from "./attachment-list";
 import { ComposeMailModal } from "./compose-mail-modal";
 import { EmployeeName } from "./employee-name";
@@ -20,10 +27,21 @@ interface Props {
 
 export function MailDetail({ messageId, onBack }: Props) {
   const { data, isLoading } = useMailMessage(messageId);
+  const { data: thread = [] } = useMailThread(messageId);
+  const { data: archiveFolders = [] } = useArchiveFolders();
   const deleteMail = useDeleteMail();
   const moveMail   = useMoveMail();
-  const [replyOpen, setReplyOpen] = useState(false);
-  const [replyAll, setReplyAll]   = useState(false);
+  const [replyOpen, setReplyOpen]       = useState(false);
+  const [replyAll, setReplyAll]         = useState(false);
+  const [forwardOpen, setForwardOpen]   = useState(false);
+  const [expandedIds, setExpandedIds]   = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   if (isLoading) {
     return (
@@ -48,14 +66,15 @@ export function MailDetail({ messageId, onBack }: Props) {
     (r) => r.type === "CC" && r.folder !== "SENT"
   ) ?? [];
 
-  const senderName = message.sender
-    ? `${message.sender.firstNameAr} ${message.sender.lastNameAr}`
+  const senderInfo = message.senderInfo ?? message.sender;
+  const senderName = senderInfo
+    ? `${senderInfo.firstNameAr} ${senderInfo.lastNameAr}`
     : null;
 
   const defaultSubject = `رد: ${message.subject}`;
   const defaultToIds = replyAll
-    ? toRecipients.map((r) => r.recipientId)
-    : [message.senderId];
+    ? toRecipients.map((r) => (r as any).employeeInfo?.employeeId ?? r.recipientId)
+    : [(senderInfo as any)?.employeeId ?? message.senderId];
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -84,19 +103,57 @@ export function MailDetail({ messageId, onBack }: Props) {
           <ReplyAll className="h-4 w-4" />
           رد على الكل
         </Button>
-        <Separator orientation="vertical" className="h-5" />
         <Button
           variant="ghost"
           size="sm"
           className="gap-1.5"
-          onClick={async () => {
-            await moveMail.mutateAsync({ messageIds: [messageId], folder: "ARCHIVE" });
-            onBack();
-          }}
+          onClick={() => setForwardOpen(true)}
         >
-          <Archive className="h-4 w-4" />
-          أرشفة
+          <Forward className="h-4 w-4" />
+          تحويل
         </Button>
+        <Separator orientation="vertical" className="h-5" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5" disabled={moveMail.isPending}>
+              <Archive className="h-4 w-4" />
+              أرشفة
+              <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-40">
+            <DropdownMenuItem
+              onClick={async () => {
+                await moveMail.mutateAsync({ messageIds: [messageId], folder: "ARCHIVE" });
+                onBack();
+              }}
+            >
+              <Archive className="h-4 w-4 ml-2" />
+              الأرشيف العام
+            </DropdownMenuItem>
+            {archiveFolders.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                {archiveFolders.map((af) => (
+                  <DropdownMenuItem
+                    key={af.id}
+                    onClick={async () => {
+                      await moveMail.mutateAsync({
+                        messageIds: [messageId],
+                        folder: "ARCHIVE",
+                        archiveFolderId: af.id,
+                      });
+                      onBack();
+                    }}
+                  >
+                    <FolderOpen className="h-4 w-4 ml-2" />
+                    {af.name}
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           variant="ghost"
           size="sm"
@@ -128,13 +185,16 @@ export function MailDetail({ messageId, onBack }: Props) {
             <span className="text-muted-foreground w-10 shrink-0 pt-0.5">إلى:</span>
             <div className="flex flex-wrap gap-1">
               {toRecipients.length > 0
-                ? toRecipients.map((r) => (
-                    <Badge key={r.id} variant="secondary" className="text-xs">
-                      {r.recipient
-                        ? `${r.recipient.firstNameAr} ${r.recipient.lastNameAr}`
-                        : <EmployeeName userId={r.recipientId} />}
-                    </Badge>
-                  ))
+                ? toRecipients.map((r) => {
+                    const info = r.employeeInfo ?? r.recipient;
+                    return (
+                      <Badge key={r.id} variant="secondary" className="text-xs">
+                        {info
+                          ? `${info.firstNameAr} ${info.lastNameAr}`
+                          : <EmployeeName userId={r.recipientId} />}
+                      </Badge>
+                    );
+                  })
                 : <span className="text-muted-foreground">—</span>}
             </div>
           </div>
@@ -142,13 +202,16 @@ export function MailDetail({ messageId, onBack }: Props) {
             <div className="flex items-start gap-2">
               <span className="text-muted-foreground w-10 shrink-0 pt-0.5">نسخة:</span>
               <div className="flex flex-wrap gap-1">
-                {ccRecipients.map((r) => (
-                  <Badge key={r.id} variant="outline" className="text-xs">
-                    {r.recipient
-                      ? `${r.recipient.firstNameAr} ${r.recipient.lastNameAr}`
-                      : <EmployeeName userId={r.recipientId} />}
-                  </Badge>
-                ))}
+                {ccRecipients.map((r) => {
+                  const info = r.employeeInfo ?? r.recipient;
+                  return (
+                    <Badge key={r.id} variant="outline" className="text-xs">
+                      {info
+                        ? `${info.firstNameAr} ${info.lastNameAr}`
+                        : <EmployeeName userId={r.recipientId} />}
+                    </Badge>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -169,6 +232,60 @@ export function MailDetail({ messageId, onBack }: Props) {
         {message.attachments && message.attachments.length > 0 && (
           <AttachmentList attachments={message.attachments} />
         )}
+
+        {/* Thread */}
+        {thread.length > 1 && (
+          <div className="mt-4">
+            <Separator className="mb-3" />
+            <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground font-medium">
+              <MessageSquare className="h-3.5 w-3.5" />
+              المحادثة ({thread.length} رسائل)
+            </div>
+            <div className="space-y-2">
+              {thread
+                .filter((m) => m.id !== messageId)
+                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                .map((m) => {
+                  const expanded = expandedIds.has(m.id);
+                  const senderN = m.sender
+                    ? `${m.sender.firstNameAr} ${m.sender.lastNameAr}`
+                    : null;
+                  return (
+                    <div key={m.id} className="border rounded-md overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(m.id)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 transition-colors text-right"
+                      >
+                        {expanded
+                          ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                        <span className="font-medium w-28 shrink-0 truncate">
+                          {senderN ?? <EmployeeName userId={m.senderId} />}
+                        </span>
+                        <span className="flex-1 truncate text-muted-foreground text-xs">
+                          {m.body.slice(0, 80)}{m.body.length > 80 ? "..." : ""}
+                        </span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {format(new Date(m.createdAt), "d MMM", { locale: ar })}
+                        </span>
+                      </button>
+                      {expanded && (
+                        <div className="px-4 py-3 border-t bg-muted/10 text-sm leading-relaxed whitespace-pre-wrap">
+                          {m.body}
+                          {m.attachments && m.attachments.length > 0 && (
+                            <div className="mt-2">
+                              <AttachmentList attachments={m.attachments} />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Reply modal */}
@@ -179,6 +296,16 @@ export function MailDetail({ messageId, onBack }: Props) {
           replyToMessageId={messageId}
           defaultSubject={defaultSubject}
           defaultToIds={defaultToIds}
+        />
+      )}
+
+      {/* Forward modal */}
+      {forwardOpen && (
+        <ComposeMailModal
+          open={forwardOpen}
+          onClose={() => setForwardOpen(false)}
+          forwardMessageId={messageId}
+          defaultSubject={`Fwd: ${message.subject}`}
         />
       )}
 

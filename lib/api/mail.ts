@@ -33,6 +33,13 @@ export interface MailRecipient {
     lastNameEn: string;
     employeeNumber?: string;
   };
+  employeeInfo?: {
+    firstNameAr: string;
+    lastNameAr: string;
+    firstNameEn: string;
+    lastNameEn: string;
+    employeeId: string;
+  };
 }
 
 export interface MailAttachment {
@@ -55,6 +62,13 @@ export interface MailMessage {
     firstNameEn: string;
     lastNameEn: string;
     employeeNumber?: string;
+  };
+  senderInfo?: {
+    firstNameAr: string;
+    lastNameAr: string;
+    firstNameEn: string;
+    lastNameEn: string;
+    employeeId: string;
   };
   subject: string;
   body: string;
@@ -92,12 +106,15 @@ export interface MailQueryParams {
   page?: number;
   limit?: number;
   search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  archiveFolderId?: string;
 }
 
 export interface SendMailDto {
   subject: string;
-  body: string;
-  recipients: { userId: string; type: RecipientType }[];
+  body?: string;
+  recipients: { employeeId: string; type: RecipientType }[];
   departmentIds?: string[];
   parentMessageId?: string;
 }
@@ -105,7 +122,20 @@ export interface SendMailDto {
 export interface SaveDraftDto {
   subject?: string;
   body?: string;
-  recipients?: { userId: string; type: RecipientType }[];
+  recipients?: { employeeId: string; type: RecipientType }[];
+}
+
+export interface ForwardMailDto {
+  recipients: { employeeId: string; type: RecipientType }[];
+  subject?: string;
+  body?: string;
+}
+
+export interface ArchiveFolder {
+  id: string;
+  name: string;
+  userId: string;
+  createdAt: string;
 }
 
 export const mailApi = {
@@ -129,12 +159,17 @@ export const mailApi = {
     return res.data.data;
   },
 
+  forward: async (messageId: string, dto: ForwardMailDto): Promise<MailMessage> => {
+    const res = await apiClient.post(`/mail/${messageId}/forward`, dto);
+    return res.data.data;
+  },
+
   getInbox: async (params?: MailQueryParams): Promise<MailListResponse> => {
     const res = await apiClient.get("/mail/inbox", { params });
     return res.data.data;
   },
 
-  getSent: async (params?: MailQueryParams): Promise<SentListResponse> => {
+  getSent: async (params?: MailQueryParams): Promise<MailListResponse> => {
     const res = await apiClient.get("/mail/sent", { params });
     return res.data.data;
   },
@@ -159,6 +194,12 @@ export const mailApi = {
     return res.data.data;
   },
 
+  getThread: async (messageId: string): Promise<MailMessage[]> => {
+    const res = await apiClient.get(`/mail/thread/${messageId}`);
+    const d = res.data?.data ?? res.data;
+    return Array.isArray(d) ? d : [];
+  },
+
   updateRead: async (messageIds: string[], isRead: boolean): Promise<{ updated: number }> => {
     const res = await apiClient.patch("/mail/read", { messageIds, isRead });
     return res.data.data;
@@ -169,14 +210,34 @@ export const mailApi = {
     return res.data.data;
   },
 
-  move: async (messageIds: string[], folder: MailFolder): Promise<{ moved: number }> => {
-    const res = await apiClient.patch("/mail/move", { messageIds, folder });
+  move: async (messageIds: string[], folder: MailFolder, archiveFolderId?: string): Promise<{ moved: number }> => {
+    const res = await apiClient.patch("/mail/move", {
+      messageIds,
+      folder,
+      ...(archiveFolderId ? { archiveFolderId } : {}),
+    });
     return res.data.data;
   },
 
   delete: async (messageId: string): Promise<{ deleted: boolean }> => {
     const res = await apiClient.delete(`/mail/${messageId}`);
     return res.data.data;
+  },
+
+  // Archive Folders
+  getArchiveFolders: async (): Promise<ArchiveFolder[]> => {
+    const res = await apiClient.get("/mail/archive-folders");
+    const d = res.data?.data ?? res.data;
+    return Array.isArray(d) ? d : [];
+  },
+
+  createArchiveFolder: async (name: string): Promise<ArchiveFolder> => {
+    const res = await apiClient.post("/mail/archive-folders", { name });
+    return res.data?.data ?? res.data;
+  },
+
+  deleteArchiveFolder: async (id: string): Promise<void> => {
+    await apiClient.delete(`/mail/archive-folders/${id}`);
   },
 
   uploadAttachment: async (

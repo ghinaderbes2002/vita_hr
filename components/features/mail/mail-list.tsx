@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Search, Archive, Trash2, MailOpen, CheckSquare, Square } from "lucide-react";
+import { Star, Search, Archive, Trash2, MailOpen, CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,14 +24,30 @@ interface Props {
   onSearchChange: (v: string) => void;
   page: number;
   onPageChange: (p: number) => void;
+  archiveFolderId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  onDateFromChange?: (v: string) => void;
+  onDateToChange?: (v: string) => void;
 }
 
 const LIMIT = 20;
 
-export function MailList({ folder, onOpenMessage, search, onSearchChange, page, onPageChange }: Props) {
+export function MailList({
+  folder, onOpenMessage, search, onSearchChange, page, onPageChange,
+  archiveFolderId, dateFrom, dateTo, onDateFromChange, onDateToChange,
+}: Props) {
   const [selected, setSelected] = useState<string[]>([]);
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
-  const params = { page, limit: LIMIT, search: search || undefined };
+  const params = {
+    page,
+    limit: LIMIT,
+    search: search || undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    archiveFolderId: archiveFolderId || undefined,
+  };
 
   const folderKey = folder.toLowerCase() as Lowercase<MailFolder>;
   const activeQuery = useQuery<any>({
@@ -51,31 +67,40 @@ export function MailList({ folder, onOpenMessage, search, onSearchChange, page, 
   const updateStar = useUpdateStar();
   const moveMail   = useMoveMail();
 
-  const isSentOrDraft = folder === "SENT" || folder === "DRAFTS";
+  // DRAFTS still returns message objects directly; all other folders return recipient-wrapped items
+  const isDraft = folder === "DRAFTS";
   const items: any[] = activeQuery.data?.items ?? [];
   const total: number = activeQuery.data?.total ?? 0;
   const totalPages = Math.ceil(total / LIMIT) || 1;
 
   const getMessageId = (item: any): string =>
-    isSentOrDraft ? item.id : item.messageId;
+    isDraft ? item.id : (item.messageId ?? item.message?.id);
 
   const getSubject = (item: any): string =>
-    isSentOrDraft ? item.subject : item.message?.subject ?? "(بدون موضوع)";
+    isDraft ? item.subject : item.message?.subject ?? "(بدون موضوع)";
 
   const getSender = (item: any): { name: string | null; id: string | null } => {
-    if (isSentOrDraft) return { name: "أنت", id: null };
-    const s = item.message?.sender;
+    if (isDraft) return { name: "مسودة", id: null };
+    if (folder === "SENT") {
+      // Show first TO recipient name
+      const toR = item.message?.recipients?.find((r: any) => r.type === "TO");
+      const info = toR?.employeeInfo ?? toR?.recipient;
+      if (info?.firstNameAr) return { name: `${info.firstNameAr} ${info.lastNameAr}`, id: null };
+      if (toR?.recipientId) return { name: null, id: toR.recipientId };
+      return { name: "—", id: null };
+    }
+    const s = item.message?.senderInfo ?? item.message?.sender;
     if (s?.firstNameAr) return { name: `${s.firstNameAr} ${s.lastNameAr}`, id: null };
     return { name: null, id: item.message?.senderId ?? null };
   };
 
   const getDate = (item: any): string => {
-    const d = isSentOrDraft ? item.createdAt : item.message?.createdAt ?? item.createdAt;
+    const d = isDraft ? item.createdAt : item.message?.createdAt ?? item.createdAt;
     return format(new Date(d), "d MMM", { locale: ar });
   };
 
   const isUnread = (item: any): boolean =>
-    !isSentOrDraft && !item.isRead;
+    !isDraft && folder !== "SENT" && !item.isRead;
 
   const isStarred = (item: any): boolean =>
     !!(item.isStarred ?? item.message?.isStarred);
@@ -115,49 +140,96 @@ export function MailList({ folder, onOpenMessage, search, onSearchChange, page, 
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30">
-        <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="بحث في الرسائل..."
-            value={search}
-            onChange={(e) => { onSearchChange(e.target.value); onPageChange(1); }}
-            className="pr-9 h-8 text-sm"
-          />
-        </div>
-
-        {selected.length > 0 && (
-          <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs"
-              onClick={() => updateRead.mutate({ messageIds: selected, isRead: true })}
-            >
-              <MailOpen className="h-3.5 w-3.5 ml-1" />
-              مقروء
-            </Button>
-            {folder !== "ARCHIVE" && (
+      <div className="flex flex-col gap-1.5 px-4 py-2 border-b bg-muted/30">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="بحث في الرسائل..."
+              value={search}
+              onChange={(e) => { onSearchChange(e.target.value); onPageChange(1); }}
+              className="pr-9 h-8 text-sm"
+            />
+          </div>
+          <Button
+            size="sm"
+            variant={showDateFilter || dateFrom || dateTo ? "secondary" : "ghost"}
+            className="h-8 gap-1.5 text-xs shrink-0"
+            onClick={() => setShowDateFilter((v) => !v)}
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            تصفية بالتاريخ
+            {(dateFrom || dateTo) && (
+              <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+            )}
+          </Button>
+          {selected.length > 0 && (
+            <div className="flex items-center gap-1 border-r pr-2">
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-8 text-xs"
-                onClick={() => { moveMail.mutate({ messageIds: selected, folder: "ARCHIVE" }); clearSelect(); }}
+                onClick={() => updateRead.mutate({ messageIds: selected, isRead: true })}
               >
-                <Archive className="h-3.5 w-3.5 ml-1" />
-                أرشفة
+                <MailOpen className="h-3.5 w-3.5 ml-1" />
+                مقروء
               </Button>
+              {folder !== "ARCHIVE" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-xs"
+                  onClick={() => { moveMail.mutate({ messageIds: selected, folder: "ARCHIVE" }); clearSelect(); }}
+                >
+                  <Archive className="h-3.5 w-3.5 ml-1" />
+                  أرشفة
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 text-xs text-red-600 hover:text-red-700"
+                onClick={() => { moveMail.mutate({ messageIds: selected, folder: "TRASH" }); clearSelect(); }}
+              >
+                <Trash2 className="h-3.5 w-3.5 ml-1" />
+                حذف
+              </Button>
+              <span className="text-xs text-muted-foreground">{selected.length} محدد</span>
+            </div>
+          )}
+        </div>
+
+        {/* Date filter row */}
+        {showDateFilter && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">من:</span>
+              <Input
+                type="date"
+                value={dateFrom ?? ""}
+                onChange={(e) => onDateFromChange?.(e.target.value)}
+                className="h-7 text-xs w-36"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">إلى:</span>
+              <Input
+                type="date"
+                value={dateTo ?? ""}
+                onChange={(e) => onDateToChange?.(e.target.value)}
+                className="h-7 text-xs w-36"
+              />
+            </div>
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => { onDateFromChange?.(""); onDateToChange?.(""); }}
+                className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1"
+              >
+                <X className="h-3.5 w-3.5" />
+                مسح
+              </button>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs text-red-600 hover:text-red-700"
-              onClick={() => { moveMail.mutate({ messageIds: selected, folder: "TRASH" }); clearSelect(); }}
-            >
-              <Trash2 className="h-3.5 w-3.5 ml-1" />
-              حذف
-            </Button>
-            <span className="text-xs text-muted-foreground">{selected.length} محدد</span>
           </div>
         )}
       </div>

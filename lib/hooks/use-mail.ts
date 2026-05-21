@@ -5,6 +5,7 @@ import {
   MailQueryParams,
   SendMailDto,
   SaveDraftDto,
+  ForwardMailDto,
   MailFolder,
 } from "@/lib/api/mail";
 
@@ -47,6 +48,14 @@ export function useMailMessage(messageId: string | null) {
   return useQuery({
     queryKey: ["mail", "message", messageId],
     queryFn: () => mailApi.getById(messageId!),
+    enabled: !!messageId,
+  });
+}
+
+export function useMailThread(messageId: string | null) {
+  return useQuery({
+    queryKey: ["mail", "thread", messageId],
+    queryFn: () => mailApi.getThread(messageId!),
     enabled: !!messageId,
   });
 }
@@ -104,6 +113,19 @@ export function useReplyAllMail() {
   });
 }
 
+export function useForwardMail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ messageId, dto }: { messageId: string; dto: ForwardMailDto }) =>
+      mailApi.forward(messageId, dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mail", "sent"] });
+      toast.success("تم تحويل الرسالة بنجاح");
+    },
+    onError: () => toast.error("فشل تحويل الرسالة"),
+  });
+}
+
 export function useUpdateRead() {
   const qc = useQueryClient();
   return useMutation({
@@ -137,13 +159,10 @@ export function useMoveMail() {
   };
 
   return useMutation({
-    mutationFn: ({ messageIds, folder }: { messageIds: string[]; folder: MailFolder }) =>
-      mailApi.move(messageIds, folder),
+    mutationFn: ({ messageIds, folder, archiveFolderId }: { messageIds: string[]; folder: MailFolder; archiveFolderId?: string }) =>
+      mailApi.move(messageIds, folder, archiveFolderId),
     onSuccess: (_, { messageIds, folder }) => {
       removeFromCache(messageIds);
-      // Invalidate only the target folder — do NOT refetch sent/inbox
-      // because the backend SENT view is message-ownership-based and won't
-      // reflect the move, causing the item to reappear after refetch.
       qc.invalidateQueries({ queryKey: ["mail", folder.toLowerCase()] });
       if (folder === "ARCHIVE") toast.success("تم أرشفة الرسالة");
       else if (folder === "TRASH") toast.success("تم نقل الرسالة إلى المحذوفات");
@@ -164,8 +183,6 @@ export function useDeleteMail() {
         );
         return { ...old, items: filtered, total: Math.max(0, (old.total ?? 0) - (old.items.length - filtered.length)) };
       });
-      // Only refresh trash — same reason as useMoveMail: sent view is
-      // message-ownership-based, refetching it would bring the item back.
       qc.invalidateQueries({ queryKey: ["mail", "trash"] });
       toast.success("تم حذف الرسالة");
     },
@@ -189,5 +206,39 @@ export function useUploadAttachment() {
         toast.error("فشل رفع المرفق");
       }
     },
+  });
+}
+
+// Archive Folders
+export function useArchiveFolders() {
+  return useQuery({
+    queryKey: ["mail", "archive-folders"],
+    queryFn: () => mailApi.getArchiveFolders(),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useCreateArchiveFolder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => mailApi.createArchiveFolder(name),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mail", "archive-folders"] });
+      toast.success("تم إنشاء المجلد");
+    },
+    onError: () => toast.error("فشل إنشاء المجلد"),
+  });
+}
+
+export function useDeleteArchiveFolder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => mailApi.deleteArchiveFolder(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mail", "archive-folders"] });
+      qc.invalidateQueries({ queryKey: ["mail", "archive"] });
+      toast.success("تم حذف المجلد");
+    },
+    onError: () => toast.error("فشل حذف المجلد"),
   });
 }

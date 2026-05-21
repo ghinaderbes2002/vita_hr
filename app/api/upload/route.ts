@@ -6,11 +6,36 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const auth = request.headers.get("authorization") || "";
+    const authHeader = auth ? { Authorization: auth } : {};
+
+    // جلب employeeId من الباك باستخدام الـ token
+    let employeeId = formData.get("employeeId") as string | null;
+    if (!employeeId) {
+      try {
+        const profileRes = await fetch(`${BACKEND_URL}/employees/my`, {
+          headers: authHeader,
+        });
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          employeeId = profile?.data?.id || profile?.id || null;
+        }
+      } catch {}
+    }
+
+    if (!employeeId) {
+      return NextResponse.json({ error: "لم يتم العثور على سجل الموظف" }, { status: 400 });
+    }
+
+    const uploadForm = new FormData();
+    uploadForm.append("file", formData.get("file") as File);
+    uploadForm.append("employeeId", employeeId);
+    uploadForm.append("type", (formData.get("type") as string) || "OTHER");
+    uploadForm.append("titleAr", (formData.get("titleAr") as string) || "مرفق");
 
     const res = await fetch(`${BACKEND_URL}/documents/upload`, {
       method: "POST",
-      headers: { ...(auth ? { Authorization: auth } : {}) },
-      body: formData,
+      headers: authHeader,
+      body: uploadForm,
     });
 
     if (!res.ok) {

@@ -34,10 +34,12 @@ import {
   useApproveHr,
   useRejectHr,
 } from "@/lib/hooks/use-leave-requests";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { LeaveRequest } from "@/lib/api/leave-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { Pagination } from "@/components/shared/pagination";
 
 export default function PendingApprovalPage() {
@@ -51,6 +53,8 @@ export default function PendingApprovalPage() {
   const [actionType, setActionType] = useState<"manager" | "hr">("manager");
 
   const { hasPermission, isAdmin } = usePermissions();
+  const { user } = useAuthStore();
+  const { data: myEmployee } = useMyEmployee();
   const canApproveHr      = isAdmin() || hasPermission("leave_requests:approve_hr");
   const showManagerTab    = isAdmin() || !canApproveHr;
   const showHrTab         = canApproveHr;
@@ -61,8 +65,21 @@ export default function PendingApprovalPage() {
   const [page, setPage] = useState(1);
   const LIMIT = 10;
 
+  // Use employee profile ID for manager filtering; fall back to auth store if already available
+  const managerEmployeeId = (myEmployee as any)?.id ?? user?.employeeId;
+  const needsManagerFilter = activeTab === "manager" && !isAdmin();
+
   const activeStatus = activeTab === "manager" ? "PENDING_MANAGER" : "PENDING_HR";
-  const { data, isLoading } = useLeaveRequests({ status: activeStatus as any, page, limit: LIMIT });
+  const { data, isLoading } = useLeaveRequests(
+    {
+      status: activeStatus as any,
+      page,
+      limit: LIMIT,
+      managerId: needsManagerFilter ? managerEmployeeId : undefined,
+    },
+    // Block the query for the manager tab until we have the employeeId — prevents showing all requests
+    { enabled: !needsManagerFilter || !!managerEmployeeId },
+  );
   const approveManager = useApproveManager();
   const rejectManager = useRejectManager();
   const approveHr = useApproveHr();
@@ -152,7 +169,8 @@ export default function PendingApprovalPage() {
           requestsList.map((request: LeaveRequest) => (
             <TableRow key={request.id}>
               <TableCell className="font-medium">
-                {request.employee?.firstNameAr} {request.employee?.lastNameAr}
+                {request.employeeFirstNameAr ?? request.employee?.firstNameAr}{" "}
+                {request.employeeLastNameAr ?? request.employee?.lastNameAr}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1.5">
@@ -332,7 +350,8 @@ export default function PendingApprovalPage() {
                     <div>
                       <label className="text-sm text-muted-foreground">الموظف</label>
                       <p className="font-medium">
-                        {selectedRequest.employee?.firstNameAr} {selectedRequest.employee?.lastNameAr}
+                        {selectedRequest.employeeFirstNameAr ?? selectedRequest.employee?.firstNameAr}{" "}
+                        {selectedRequest.employeeLastNameAr ?? selectedRequest.employee?.lastNameAr}
                       </p>
                     </div>
                     <div>

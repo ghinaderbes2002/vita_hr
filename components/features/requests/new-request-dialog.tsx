@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateRequest, useSubmitRequest } from "@/lib/hooks/use-requests";
 import { useDepartments } from "@/lib/hooks/use-departments";
-import { useEmployeesBasicList, useSubordinates } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { useCheckUnreturnedCustodies } from "@/lib/hooks/use-custodies";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -26,12 +26,13 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { RequestType } from "@/types";
 import { Loader2, Plus, Trash2, AlertTriangle, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 const ALL_REQUEST_TYPES: (RequestType | "OVERTIME")[] = [
   "TRANSFER", "RESIGNATION", "REWARD",
   "PENALTY_PROPOSAL", "OVERTIME",
   "BUSINESS_MISSION", "DELEGATION", "HIRING_REQUEST", "COMPLAINT",
-  "WORK_ACCIDENT", "REMOTE_WORK", "OTHER",
+  "REMOTE_WORK", "OTHER",
 ];
 
 const MANAGER_ONLY_TYPES = [
@@ -91,8 +92,8 @@ const REQUIRED_TOOLS = [
 ];
 
 const OVERTIME_TYPE_LABELS: Record<string, string> = {
-  OVERTIME_EMPLOYEE: "موظف",
-  OVERTIME_MANAGER: "مدير",
+  OVERTIME_EMPLOYEE: "تكليف موظف",
+  OVERTIME_MANAGER: "تكليف مدير",
 };
 
 // Types that don't need a details section — reason field is enough
@@ -116,12 +117,15 @@ const formSchema = z.object({
   targetEmployeeId: z.string().optional(),
   targetJobTitle: z.string().optional(),
   violationDescription: z.string().optional(),
-  // OVERTIME_EMPLOYEE / OVERTIME_MANAGER
+  // OVERTIME_EMPLOYEE
   overtimeDate: z.string().optional(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   totalHours: z.string().optional(),
   tasks: z.string().optional(),
+  // OVERTIME_MANAGER
+  overtimeStartDate: z.string().optional(),
+  overtimeEndDate: z.string().optional(),
   purpose: z.string().optional(),
   // BUSINESS_MISSION
   missionType: z.string().optional(),
@@ -191,10 +195,12 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
     { employeeId: "", rewardType: "", amount: "", reason: "" },
   ]);
   const [overtimeSubType, setOvertimeSubType] = useState<"OVERTIME_EMPLOYEE" | "OVERTIME_MANAGER">("OVERTIME_EMPLOYEE");
+  const [overtimeManagerEmployeeIds, setOvertimeManagerEmployeeIds] = useState<string[]>([]);
   const [workAccident, setWorkAccident] = useState(defaultWorkAccident);
   const [remoteWork, setRemoteWork] = useState(defaultRemoteWork);
 
-  const managerEmployeeId = user?.employeeId || "";
+  const { data: myEmployee } = useMyEmployee();
+  const managerEmployeeId = (myEmployee as any)?.id || user?.employeeId || "";
   const showAllEmployees = isAdmin() || !managerEmployeeId;
 
   const createRequest = useCreateRequest();
@@ -251,20 +257,36 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
         };
       case "OVERTIME":
       case "OVERTIME_EMPLOYEE":
-      case "OVERTIME_MANAGER":
+        if (data.type === "OVERTIME" && overtimeSubType === "OVERTIME_MANAGER") {
+          return {
+            startDate: data.overtimeStartDate,
+            endDate: data.overtimeEndDate,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            purpose: data.purpose,
+            employeeIds: overtimeManagerEmployeeIds,
+          };
+        }
         return {
           overtimeDate: data.overtimeDate,
           startTime: data.startTime,
           endTime: data.endTime,
-          totalHours: data.totalHours ? Number(data.totalHours) : undefined,
-          ...(overtimeSubType === "OVERTIME_EMPLOYEE" ? { tasks: data.tasks } : { purpose: data.purpose }),
+          tasks: data.tasks,
+        };
+      case "OVERTIME_MANAGER":
+        return {
+          startDate: data.overtimeStartDate,
+          endDate: data.overtimeEndDate,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          purpose: data.purpose,
+          employeeIds: overtimeManagerEmployeeIds,
         };
       case "BUSINESS_MISSION":
         return {
           missionType: data.missionType,
           startDate: data.missionStartDate,
           endDate: data.missionEndDate,
-          totalDays: data.totalDays ? Number(data.totalDays) : undefined,
           destination: data.destination,
           missionReason: data.missionReason,
         };
@@ -334,6 +356,13 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   const onSubmit = async (data: FormData) => {
     try {
       const actualType = data.type === "OVERTIME" ? overtimeSubType : data.type as RequestType;
+
+      if (actualType === "OVERTIME_MANAGER") {
+        if (!data.overtimeStartDate) { toast.error("تاريخ البدء مطلوب"); return; }
+        if (!data.overtimeEndDate) { toast.error("تاريخ الانتهاء مطلوب"); return; }
+        if (!data.purpose?.trim()) { toast.error("أسباب التكليف الإضافي مطلوبة"); return; }
+        if (overtimeManagerEmployeeIds.length === 0) { toast.error("يجب اختيار موظف واحد على الأقل"); return; }
+      }
       const created = await createRequest.mutateAsync({
         type: actualType,
         reason: data.reason || "",
@@ -347,6 +376,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
       form.reset({ type: "OTHER", reason: "", notes: "" });
       setHiringPositions([{ departmentId: "", jobTitle: "", count: "1", reason: "" }]);
       setRewardEmployees([{ employeeId: "", rewardType: "", amount: "", reason: "" }]);
+      setOvertimeManagerEmployeeIds([]);
       setWorkAccident(defaultWorkAccident);
       setRemoteWork(defaultRemoteWork);
     } catch {
@@ -387,7 +417,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                       {availableTypes.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type === "OVERTIME"
-                            ? isManager ? "وقت إضافي مدير/موظف" : "وقت إضافي"
+                            ? "طلب تكليف إضافي"
                             : t(`requests.types.${type}`)}
                         </SelectItem>
                       ))}
@@ -517,38 +547,88 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     ))}
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">إذا كان التاريخ هو اليوم لا يمكن تقديم الطلب بعد الساعة 12:00 ظهراً</p>
-                <FormField control={form.control} name="overtimeDate" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>تاريخ العمل الإضافي *</FormLabel>
-                    <FormControl><Input {...field} type="date" /></FormControl>
-                  </FormItem>
-                )} />
-                <div className="grid grid-cols-3 gap-3">
+                {overtimeSubType === "OVERTIME_EMPLOYEE" && (
+                  <>
+                    <p className="text-xs text-muted-foreground">إذا كان التاريخ هو اليوم لا يمكن تقديم الطلب بعد الساعة 12:00 ظهراً</p>
+                    <FormField control={form.control} name="overtimeDate" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>تاريخ التكليف الإضافي *</FormLabel>
+                        <FormControl><Input {...field} type="date" /></FormControl>
+                      </FormItem>
+                    )} />
+                  </>
+                )}
+                <div className="grid grid-cols-2 gap-3">
                   <FormField control={form.control} name="startTime" render={({ field }) => (
                     <FormItem><FormLabel>وقت البدء *</FormLabel><FormControl><Input {...field} type="time" /></FormControl></FormItem>
                   )} />
                   <FormField control={form.control} name="endTime" render={({ field }) => (
                     <FormItem><FormLabel>وقت الانتهاء *</FormLabel><FormControl><Input {...field} type="time" /></FormControl></FormItem>
                   )} />
-                  <FormField control={form.control} name="totalHours" render={({ field }) => (
-                    <FormItem><FormLabel>إجمالي الساعات *</FormLabel><FormControl><Input {...field} type="number" min={0} step={0.5} /></FormControl></FormItem>
-                  )} />
                 </div>
                 {overtimeSubType === "OVERTIME_EMPLOYEE" ? (
                   <FormField control={form.control} name="tasks" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>المهام المنجزة *</FormLabel>
-                      <FormControl><Textarea {...field} rows={2} placeholder="صف المهام التي أُنجزت..." /></FormControl>
+                      <FormLabel>أسباب التكليف الإضافي *</FormLabel>
+                      <FormControl><Textarea {...field} rows={2} placeholder="اذكر أسباب التكليف الإضافي..." /></FormControl>
                     </FormItem>
                   )} />
                 ) : (
-                  <FormField control={form.control} name="purpose" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>الغرض من العمل الإضافي *</FormLabel>
-                      <FormControl><Textarea {...field} rows={2} placeholder="اشرح الغرض..." /></FormControl>
-                    </FormItem>
-                  )} />
+                  /* ── OVERTIME_MANAGER extra fields ── */
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField control={form.control} name="overtimeStartDate" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>تاريخ البدء *</FormLabel>
+                          <FormControl><Input {...field} type="date" /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="overtimeEndDate" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>تاريخ الانتهاء *</FormLabel>
+                          <FormControl><Input {...field} type="date" /></FormControl>
+                        </FormItem>
+                      )} />
+                    </div>
+                    <FormField control={form.control} name="purpose" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>أسباب التكليف الإضافي *</FormLabel>
+                        <FormControl><Textarea {...field} rows={2} placeholder="اذكر أسباب التكليف الإضافي..." /></FormControl>
+                      </FormItem>
+                    )} />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        الموظفون المعنيون *
+                        {overtimeManagerEmployeeIds.length > 0 && (
+                          <span className="mr-1 text-xs text-muted-foreground">({overtimeManagerEmployeeIds.length} محدد)</span>
+                        )}
+                      </label>
+                      {Array.isArray(subordinatesData) && subordinatesData.length === 0 && (
+                        <p className="text-xs text-muted-foreground">لا يوجد مرؤوسون مرتبطون بحسابك</p>
+                      )}
+                      <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
+                        {(Array.isArray(subordinatesData) ? subordinatesData : []).map((emp: any) => {
+                          const selected = overtimeManagerEmployeeIds.includes(emp.id);
+                          return (
+                            <button
+                              key={emp.id}
+                              type="button"
+                              onClick={() => setOvertimeManagerEmployeeIds((prev) =>
+                                selected ? prev.filter((id) => id !== emp.id) : [...prev, emp.id]
+                              )}
+                              className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                                selected
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "border-muted-foreground/30 hover:border-primary/50"
+                              }`}
+                            >
+                              {emp.firstNameAr} {emp.lastNameAr}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -568,15 +648,12 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     </Select>
                   </FormItem>
                 )} />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <FormField control={form.control} name="missionStartDate" render={({ field }) => (
                     <FormItem><FormLabel>تاريخ البدء *</FormLabel><FormControl><Input {...field} type="date" /></FormControl></FormItem>
                   )} />
                   <FormField control={form.control} name="missionEndDate" render={({ field }) => (
                     <FormItem><FormLabel>تاريخ الانتهاء *</FormLabel><FormControl><Input {...field} type="date" /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="totalDays" render={({ field }) => (
-                    <FormItem><FormLabel>إجمالي الأيام *</FormLabel><FormControl><Input {...field} type="number" min={1} /></FormControl></FormItem>
                   )} />
                 </div>
                 <FormField control={form.control} name="destination" render={({ field }) => (
