@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/shared/page-header";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { useRequest, useRequestApprovals, useRequestSteps, useApproveRequest, useRejectRequest, useSubmitExitInterview } from "@/lib/hooks/use-requests";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { useRef, useState } from "react";
 import { ApprovalStep, ApprovalStatus } from "@/types";
@@ -70,6 +71,7 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
   employees: "الموظفون",
   rewardType: "نوع المكافأة",
   employeeId: "الموظف",
+  employeeIds: "الموظفون المعنيون",
 };
 
 function formatDetailKey(key: string): string {
@@ -80,29 +82,36 @@ function isUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
-function renderDetailValue(value: any) {
+function renderDetailValue(value: any, employeeMap: Record<string, string> = {}) {
   if (value === null || value === undefined) return "—";
 
-  // Array of objects (e.g. positions)
+  // Array
   if (Array.isArray(value)) {
     if (value.length === 0) return "—";
 
     // Array of primitives
     if (typeof value[0] !== "object") {
-      return <span>{value.join("، ")}</span>;
+      const labels = value.map((v: any) =>
+        typeof v === "string" && isUUID(v) ? (employeeMap[v] ?? v) : String(v)
+      );
+      return <span>{labels.join("، ")}</span>;
     }
 
-    // Array of objects — render as mini table
+    // Array of objects — render as mini cards
     return (
       <div className="space-y-2 w-full">
         {value.map((item: any, i: number) => (
           <div key={i} className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
             {Object.entries(item).map(([k, v]) => {
-              if (k === "departmentId" || (typeof v === "string" && isUUID(v as string))) return null;
+              if (k === "departmentId") return null;
+              const display = typeof v === "string" && isUUID(v as string)
+                ? (employeeMap[v as string] ?? null)
+                : String(v ?? "—");
+              if (display === null) return null;
               return (
                 <div key={k} className="flex items-start justify-between gap-2 text-xs">
                   <span className="text-muted-foreground shrink-0">{formatDetailKey(k)}:</span>
-                  <span className="font-medium text-right">{String(v ?? "—")}</span>
+                  <span className="font-medium text-right">{display}</span>
                 </div>
               );
             })}
@@ -126,8 +135,10 @@ function renderDetailValue(value: any) {
     );
   }
 
-  // UUID string — skip or show shortened
-  if (typeof value === "string" && isUUID(value)) return null;
+  // UUID string — look up name, hide raw ID if not found
+  if (typeof value === "string" && isUUID(value)) {
+    return employeeMap[value] ? <span>{employeeMap[value]}</span> : null;
+  }
 
   return <span>{String(value)}</span>;
 }
@@ -190,6 +201,12 @@ export default function RequestDetailPage() {
     window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
+  const { data: empListData } = useEmployeesBasicList();
+  const employeeMap: Record<string, string> = {};
+  for (const emp of (Array.isArray(empListData) ? empListData : [])) {
+    employeeMap[(emp as any).id] = `${(emp as any).firstNameAr} ${(emp as any).lastNameAr}`;
+  }
+
   const { data: request, isLoading, error: requestError } = useRequest(id);
   const { data: stepsData, isLoading: stepsLoading } = useRequestSteps(id);
   const { data: approvals, isLoading: approvalsLoading } = useRequestApprovals(id);
@@ -346,7 +363,7 @@ export default function RequestDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {Object.entries(request.details).map(([key, value]) => {
-                const rendered = renderDetailValue(value);
+                const rendered = renderDetailValue(value, employeeMap);
                 if (rendered === null) return null;
                 const isComplex = Array.isArray(value) || (typeof value === "object" && value !== null);
                 return (
