@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const auth = request.headers.get("authorization") || "";
-    const authHeader = auth ? { Authorization: auth } : {};
+    const authHeader: Record<string, string> = auth ? { Authorization: auth } : {};
 
     // جلب employeeId من الباك باستخدام الـ token
     let employeeId = formData.get("employeeId") as string | null;
