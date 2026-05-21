@@ -71,7 +71,7 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
   employees: "الموظفون",
   rewardType: "نوع المكافأة",
   employeeId: "الموظف",
-  employeeIds: "الموظفون المعنيون",
+  employeeIds: "الموظف",
 };
 
 function formatDetailKey(key: string): string {
@@ -363,6 +363,27 @@ export default function RequestDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {Object.entries(request.details).map(([key, value]) => {
+                if (key === "totalHours" && value != null)
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between items-start gap-4">
+                        <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
+                        <span className="text-sm font-medium text-right">{value} ساعة</span>
+                      </div>
+                      <Separator className="mt-3" />
+                    </div>
+                  );
+                if (key === "totalDays" && value != null)
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between items-start gap-4">
+                        <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
+                        <span className="text-sm font-medium text-right">{value} يوم</span>
+                      </div>
+                      <Separator className="mt-3" />
+                    </div>
+                  );
+
                 const rendered = renderDetailValue(value, employeeMap);
                 if (rendered === null) return null;
                 const isComplex = Array.isArray(value) || (typeof value === "object" && value !== null);

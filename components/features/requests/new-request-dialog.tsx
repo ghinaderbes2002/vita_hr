@@ -231,6 +231,30 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   }, [open, defaultType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedType = form.watch("type");
+  const watchedStartTime      = form.watch("startTime");
+  const watchedEndTime        = form.watch("endTime");
+  const watchedMissionStart   = form.watch("missionStartDate");
+  const watchedMissionEnd     = form.watch("missionEndDate");
+  const watchedOvertimeStart  = form.watch("overtimeStartDate");
+  const watchedOvertimeEnd    = form.watch("overtimeEndDate");
+
+  const calcHours = (s: string | undefined, e: string | undefined): number | null => {
+    if (!s || !e) return null;
+    const [sh, sm] = s.split(":").map(Number);
+    const [eh, em] = e.split(":").map(Number);
+    const diff = (eh * 60 + em) - (sh * 60 + sm);
+    return diff > 0 ? Math.round(diff / 60 * 100) / 100 : null;
+  };
+
+  const calcDays = (s: string | undefined, e: string | undefined): number | null => {
+    if (!s || !e) return null;
+    const diff = Math.round((new Date(e).getTime() - new Date(s).getTime()) / 86400000) + 1;
+    return diff > 0 ? diff : null;
+  };
+
+  const previewHours = calcHours(watchedStartTime, watchedEndTime);
+  const previewMissionDays = calcDays(watchedMissionStart, watchedMissionEnd);
+  const previewOvertimeDays = calcDays(watchedOvertimeStart, watchedOvertimeEnd);
 
   const { data: custodyCheck } = useCheckUnreturnedCustodies(
     user?.employeeId || "",
@@ -566,6 +590,9 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormItem><FormLabel>وقت الانتهاء *</FormLabel><FormControl><Input {...field} type="time" /></FormControl></FormItem>
                   )} />
                 </div>
+                {previewHours !== null && (
+                  <p className="text-xs text-muted-foreground text-left">إجمالي الساعات: <span className="font-semibold text-foreground">{previewHours} ساعة</span></p>
+                )}
                 {overtimeSubType === "OVERTIME_EMPLOYEE" ? (
                   <FormField control={form.control} name="tasks" render={({ field }) => (
                     <FormItem>
@@ -590,6 +617,9 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                         </FormItem>
                       )} />
                     </div>
+                    {previewOvertimeDays !== null && (
+                      <p className="text-xs text-muted-foreground text-left">إجمالي الأيام: <span className="font-semibold text-foreground">{previewOvertimeDays} يوم</span></p>
+                    )}
                     <FormField control={form.control} name="purpose" render={({ field }) => (
                       <FormItem>
                         <FormLabel>أسباب التكليف الإضافي *</FormLabel>
@@ -656,6 +686,9 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormItem><FormLabel>تاريخ الانتهاء *</FormLabel><FormControl><Input {...field} type="date" /></FormControl></FormItem>
                   )} />
                 </div>
+                {previewMissionDays !== null && (
+                  <p className="text-xs text-muted-foreground text-left">إجمالي الأيام: <span className="font-semibold text-foreground">{previewMissionDays} يوم</span></p>
+                )}
                 <FormField control={form.control} name="destination" render={({ field }) => (
                   <FormItem>
                     <FormLabel>الوجهة *</FormLabel>
