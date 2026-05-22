@@ -7,8 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { useMyEmployee, useEmployeeBasic } from "@/lib/hooks/use-employees";
-import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
+import { useMyLeaveBalances, useHourlyBalance } from "@/lib/hooks/use-leave-balances";
 import { useMyHourlyUsedHours } from "@/lib/hooks/use-leave-requests";
+import { AlertTriangle, Clock } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
@@ -50,8 +52,11 @@ export default function MyProfilePage() {
   const emp = employee as any;
   const { data: basicData } = useEmployeeBasic(emp?.id);
   const deptWithParent = (basicData as any)?.department ?? (employee?.department as any);
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
   const { data: balancesData, isLoading: balancesLoading } = useMyLeaveBalances(currentYear);
+  const { data: hourlyMonthly } = useHourlyBalance(emp?.id ?? "", currentYear, currentMonth);
   const balances: any[] = Array.isArray(balancesData)
     ? balancesData
     : (balancesData as any)?.data?.items ?? (balancesData as any)?.data ?? [];
@@ -269,6 +274,67 @@ export default function MyProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* رصيد الإجازة الساعية الشهري */}
+      {hourlyMonthly && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              رصيد الإجازة الساعية — {new Date(currentYear, currentMonth - 1).toLocaleDateString("ar-SA", { month: "long", year: "numeric" })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const maxMin = hourlyMonthly.usedByRequestsMinutes + hourlyMonthly.usedByTardinessMinutes + hourlyMonthly.remainingMinutes;
+              const usedMin = hourlyMonthly.usedByRequestsMinutes + hourlyMonthly.usedByTardinessMinutes;
+              const remMin = hourlyMonthly.remainingMinutes;
+              const pct = maxMin > 0 ? Math.round((usedMin / maxMin) * 100) : 0;
+              const fmt = (m: number) => { const h = Math.floor(m / 60); const mm = m % 60; return h ? `${h}:${String(mm).padStart(2,"0")} س` : `${mm} د`; };
+              const isDepleted = remMin === 0 && maxMin > 0;
+              const isLow = !isDepleted && remMin > 0 && remMin < 30;
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <p className="text-xs text-muted-foreground mb-1">الحد الأقصى</p>
+                      <p className="text-sm font-semibold">{fmt(maxMin)}</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <p className="text-xs text-muted-foreground mb-1">المستخدم</p>
+                      <p className="text-sm font-semibold">{fmt(usedMin)}</p>
+                    </div>
+                    <div className={`rounded-lg border p-3 ${isDepleted ? "bg-red-50 border-red-200" : isLow ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200"}`}>
+                      <p className="text-xs text-muted-foreground mb-1">المتبقي</p>
+                      <p className={`text-sm font-semibold ${isDepleted ? "text-red-600" : isLow ? "text-amber-600" : "text-green-600"}`}>{fmt(remMin)}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Progress value={pct} className="h-2" />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>إجازات: {fmt(hourlyMonthly.usedByRequestsMinutes)}</span>
+                      <span>تأخيرات: {fmt(hourlyMonthly.usedByTardinessMinutes)}</span>
+                      <span>{pct}% مستخدم</span>
+                    </div>
+                  </div>
+                  {isDepleted && (
+                    <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      استنفدت رصيدك الشهري — أي تأخير قادم سيُحسم من راتبك
+                    </div>
+                  )}
+                  {isLow && (
+                    <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      رصيدك قارب على النفاد ({fmt(remMin)} متبقي)
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
     </div>
   );

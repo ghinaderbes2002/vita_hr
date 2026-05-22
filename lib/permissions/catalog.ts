@@ -213,6 +213,49 @@ export const PERMISSIONS = {
     UPDATE: "biometric.mappings.update",
     DELETE: "biometric.mappings.delete",
   },
+  // ── Clinic Module ──────────────────────────────────────────
+  CLINIC_PATIENTS: {
+    VIEW:             "clinic.patients.view",
+    CREATE:           "clinic.patients.create",
+    EDIT:             "clinic.patients.edit",
+    DELETE:           "clinic.patients.delete",
+    VIEW_DOCUMENTS:   "clinic.patients.view_documents",
+    UPLOAD_DOCUMENTS: "clinic.patients.upload_documents",
+    VIEW_CONSENTS:    "clinic.patients.view_consents",
+  },
+  CLINIC_PROSTHETICS: {
+    CASE_VIEW:         "clinic.prosthetics.case.view",
+    CASE_CREATE:       "clinic.prosthetics.case.create",
+    ASSESSMENT_CREATE: "clinic.prosthetics.assessment.create",
+    COMMITTEE_OPINION: "clinic.prosthetics.committee.opinion",
+    COMMITTEE_DECIDE:  "clinic.prosthetics.committee.decide",
+    COMMITTEE_SIGN:    "clinic.prosthetics.committee.sign",
+    COMPONENTS_ADD:    "clinic.prosthetics.components.add",
+    GAIT_CREATE:       "clinic.prosthetics.gait.create",
+    DELIVERY_CREATE:   "clinic.prosthetics.delivery.create",
+    DELIVERY_APPROVE:  "clinic.prosthetics.delivery.approve",
+  },
+  CLINIC_PHYSIO: {
+    CASE_VIEW:         "clinic.physio.case.view",
+    CASE_CREATE:       "clinic.physio.case.create",
+    ASSESSMENT_CREATE: "clinic.physio.assessment.create",
+    PLAN_SIGN:         "clinic.physio.plan.sign",
+    SESSIONS_CREATE:   "clinic.physio.sessions.create",
+  },
+  CLINIC_APPOINTMENTS: {
+    VIEW:   "clinic.appointments.view",
+    CREATE: "clinic.appointments.create",
+    CANCEL: "clinic.appointments.cancel",
+  },
+  CLINIC_INVENTORY: {
+    VIEW:   "clinic.inventory.view",
+    MANAGE: "clinic.inventory.manage",
+    ISSUE:  "clinic.inventory.issue",
+  },
+  CLINIC_REPORTS: {
+    VIEW_CLINICAL: "clinic.reports.view_clinical",
+    VIEW_DONOR:    "clinic.reports.view_donor",
+  },
 } as const;
 
 type ExtractValues<T> = T extends Record<string, infer U>

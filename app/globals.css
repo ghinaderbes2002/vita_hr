@@ -314,3 +314,25 @@
     box-shadow: 0 1px 3px oklch(0 0 0 / 0.05);
   }
 }
+
+@media print {
+  aside,
+  header,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  main {
+    margin-inline-start: 0 !important;
+    padding: 1rem !important;
+  }
+
+  .rounded-lg,
+  .rounded-md {
+    border-radius: 0 !important;
+  }
+}

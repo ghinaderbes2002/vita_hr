@@ -2,7 +2,11 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useTheme } from "next-themes";
-import { Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle, Settings } from "lucide-react";
+import {
+  Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle, Settings,
+  Clock, AlertCircle, RotateCcw, FileText, AlertOctagon, Coffee, DollarSign,
+  Stethoscope, CalendarClock, Package, Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -45,6 +49,39 @@ export function Header() {
 
   const EVAL_NOTIF_TYPES = ["PROBATION_END_REMINDER", "EVALUATION_ASSIGNED"];
 
+  type NotifCfg = {
+    icon: React.ComponentType<{ className?: string }> | null;
+    iconClass: string;
+    bgClass: string;
+    dotClass: string;
+    route?: string;
+  };
+
+  const NOTIF_CONFIG: Record<string, NotifCfg> = {
+    LEAVE_REQUEST_PENDING_APPROVAL:  { icon: AlertTriangle, iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",  dotClass: "bg-amber-500" },
+    TARDINESS_BALANCE_USED:          { icon: Clock,         iconClass: "text-yellow-500", bgClass: "bg-yellow-50/60 dark:bg-yellow-950/20", dotClass: "bg-yellow-500", route: "/leaves/my-hourly-balance" },
+    TARDINESS_BALANCE_LOW:           { icon: AlertCircle,   iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/leaves/my-hourly-balance" },
+    TARDINESS_BALANCE_DEPLETED:      { icon: AlertTriangle, iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500",    route: "/leaves/my-hourly-balance" },
+    TARDINESS_COMPENSATION_DUE:      { icon: Bell,          iconClass: "text-yellow-500", bgClass: "bg-yellow-50/60 dark:bg-yellow-950/20", dotClass: "bg-yellow-500" },
+    TARDINESS_DEDUCTION_PENDING:     { icon: DollarSign,    iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500",    route: "/payroll" },
+    TARDINESS_OFFSET_RESTORED:       { icon: RotateCcw,     iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500",  route: "/leaves/my-hourly-balance" },
+    MONTHLY_PAYROLL_READY:           { icon: FileText,      iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500",   route: "/payroll" },
+    ATTENDANCE_NEEDS_REVIEW:         { icon: AlertOctagon,  iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/attendance/needs-review" },
+    BREAK_EXCEEDED:                  { icon: Coffee,        iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/attendance/records" },
+    ANOMALY_OVERTIME:                { icon: AlertCircle,   iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/attendance/needs-review" },
+    ANOMALY_MANY_STAMPS:             { icon: AlertCircle,   iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/attendance/needs-review" },
+    ANOMALY_NO_STAMP:                { icon: AlertCircle,   iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500",    route: "/attendance/needs-review" },
+    CLINIC_APPOINTMENT_REMINDER:     { icon: CalendarClock, iconClass: "text-teal-500",   bgClass: "bg-teal-50/60 dark:bg-teal-950/20",     dotClass: "bg-teal-500",   route: "/clinic/appointments" },
+    CLINIC_CASE_STATUS_CHANGED:      { icon: Stethoscope,   iconClass: "text-indigo-500", bgClass: "bg-indigo-50/60 dark:bg-indigo-950/20", dotClass: "bg-indigo-500", route: "/clinic/prosthetics" },
+    CLINIC_LOW_STOCK:                { icon: Package,       iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/clinic/inventory" },
+    CLINIC_COMMITTEE_PENDING:        { icon: Users,         iconClass: "text-purple-500", bgClass: "bg-purple-50/60 dark:bg-purple-950/20", dotClass: "bg-purple-500", route: "/clinic/prosthetics" },
+    CLINIC_DELIVERY_READY:           { icon: Stethoscope,   iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500",  route: "/clinic/prosthetics" },
+  };
+
+  const DEFAULT_NOTIF_CFG: NotifCfg = {
+    icon: null, iconClass: "text-blue-500", bgClass: "bg-blue-50/50 dark:bg-blue-950/20", dotClass: "bg-blue-500",
+  };
+
   const getEvalLink = (notif: any): string | null => {
     const evalId = notif.data?.evaluationId;
     if (!evalId) return null;
@@ -54,7 +91,8 @@ export function Header() {
   const handleNotifClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
     const evalLink = EVAL_NOTIF_TYPES.includes(notif.type) ? getEvalLink(notif) : null;
-    const target = evalLink || notif.actionUrl;
+    const configRoute = NOTIF_CONFIG[notif.type]?.route;
+    const target = evalLink || notif.actionUrl || configRoute;
     if (target) router.push(target);
   };
 
@@ -126,49 +164,47 @@ export function Header() {
                   لا توجد إشعارات
                 </div>
               ) : (
-                notifList.slice(0, 10).map((notif: any) => (
-                  <div
-                    key={notif.id}
-                    className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b last:border-0 ${
-                        !notif.isRead
-                          ? notif.type === "LEAVE_REQUEST_PENDING_APPROVAL"
-                            ? "bg-amber-50/60 dark:bg-amber-950/20"
-                            : "bg-blue-50/50 dark:bg-blue-950/20"
-                          : ""
-                      }`}
-                    onClick={() => handleNotifClick(notif)}
-                  >
-                    {notif.type === "LEAVE_REQUEST_PENDING_APPROVAL" && (
-                      <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm leading-snug ${!notif.isRead ? "font-medium" : "text-muted-foreground"}`}>
-                          {notif.titleAr || notif.titleEn || notif.title}
+                notifList.slice(0, 10).map((notif: any) => {
+                  const cfg = NOTIF_CONFIG[notif.type] ?? DEFAULT_NOTIF_CFG;
+                  const NotifIcon = cfg.icon;
+                  return (
+                    <div
+                      key={notif.id}
+                      className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b last:border-0 ${!notif.isRead ? cfg.bgClass : ""}`}
+                      onClick={() => handleNotifClick(notif)}
+                    >
+                      {NotifIcon && (
+                        <NotifIcon className={`h-4 w-4 ${cfg.iconClass} shrink-0 mt-0.5`} />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className={`text-sm leading-snug ${!notif.isRead ? "font-medium" : "text-muted-foreground"}`}>
+                            {notif.titleAr || notif.titleEn || notif.title}
+                          </p>
+                          {!notif.isRead && (
+                            <span className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${cfg.dotClass}`} />
+                          )}
+                        </div>
+                        {(notif.messageAr || notif.message) && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.messageAr || notif.message}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
                         </p>
-                        {!notif.isRead && (
-                          <span className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${notif.type === "LEAVE_REQUEST_PENDING_APPROVAL" ? "bg-amber-500" : "bg-blue-500"}`} />
+                        {EVAL_NOTIF_TYPES.includes(notif.type) && getEvalLink(notif) && (
+                          <button
+                            type="button"
+                            className="mt-1.5 text-xs text-primary font-medium hover:underline"
+                            onClick={(e) => { e.stopPropagation(); router.push(getEvalLink(notif)!); }}
+                          >
+                            اذهب للتقييم ←
+                          </button>
                         )}
                       </div>
-                      {(notif.messageAr || notif.message) && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.messageAr || notif.message}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
-                      </p>
-                      {EVAL_NOTIF_TYPES.includes(notif.type) && getEvalLink(notif) && (
-                        <button
-                          type="button"
-                          className="mt-1.5 text-xs text-primary font-medium hover:underline"
-                          onClick={(e) => { e.stopPropagation(); router.push(getEvalLink(notif)!); }}
-                        >
-                          اذهب للتقييم ←
-                        </button>
-                      )}
+                      {notif.actionUrl && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
                     </div>
-                    {notif.actionUrl && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
             <div className="border-t px-4 py-2">

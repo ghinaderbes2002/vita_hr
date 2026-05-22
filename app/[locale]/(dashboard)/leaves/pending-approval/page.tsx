@@ -169,8 +169,8 @@ export default function PendingApprovalPage() {
           requestsList.map((request: LeaveRequest) => (
             <TableRow key={request.id}>
               <TableCell className="font-medium">
-                {request.employeeFirstNameAr ?? request.employee?.firstNameAr}{" "}
-                {request.employeeLastNameAr ?? request.employee?.lastNameAr}
+                {(request.employeeFirstNameAr || request.employee?.firstNameAr)}{" "}
+                {(request.employeeLastNameAr || request.employee?.lastNameAr)}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1.5">
@@ -189,7 +189,12 @@ export default function PendingApprovalPage() {
               <TableCell>
                 {request.isHourlyLeave && request.equivalentDays != null
                   ? `${request.equivalentDays.toFixed(2)} يوم`
-                  : `${request.totalDays} ${t("common.days")}`}
+                  : (() => {
+                      const days = request.totalDays > 0
+                        ? request.totalDays
+                        : Math.max(1, Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1);
+                      return `${days} ${t("common.days")}`;
+                    })()}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {request.isHourlyLeave && request.startTime
@@ -350,8 +355,8 @@ export default function PendingApprovalPage() {
                     <div>
                       <label className="text-sm text-muted-foreground">الموظف</label>
                       <p className="font-medium">
-                        {selectedRequest.employeeFirstNameAr ?? selectedRequest.employee?.firstNameAr}{" "}
-                        {selectedRequest.employeeLastNameAr ?? selectedRequest.employee?.lastNameAr}
+                        {(selectedRequest.employeeFirstNameAr || selectedRequest.employee?.firstNameAr)}{" "}
+                        {(selectedRequest.employeeLastNameAr || selectedRequest.employee?.lastNameAr)}
                       </p>
                     </div>
                     <div>
@@ -376,7 +381,12 @@ export default function PendingApprovalPage() {
                     </div>
                     <div>
                       <label className="text-sm text-muted-foreground">عدد الأيام</label>
-                      <p className="font-medium">{selectedRequest.totalDays} يوم</p>
+                      <p className="font-medium">
+                        {selectedRequest.totalDays > 0
+                          ? selectedRequest.totalDays
+                          : Math.max(1, Math.round((new Date(selectedRequest.endDate).getTime() - new Date(selectedRequest.startDate).getTime()) / 86400000) + 1)
+                        } يوم
+                      </p>
                     </div>
                     <div>
                       <label className="text-sm text-muted-foreground">الحالة</label>

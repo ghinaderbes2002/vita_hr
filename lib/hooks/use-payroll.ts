@@ -2,6 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { payrollApi } from "@/lib/api/payroll";
 import { toast } from "sonner";
 
+export function usePayrollByEmployee(employeeId: string, year: number, month: number) {
+  return useQuery({
+    queryKey: ["payroll-by-employee", employeeId, year, month],
+    queryFn: () => payrollApi.getByEmployee(employeeId, year, month),
+    enabled: !!(employeeId && year && month),
+    retry: false,
+  });
+}
+
 export function usePayroll(params?: {
   year?: number;
   month?: number;
@@ -116,6 +125,15 @@ export function useUpdatePayrollNote() {
           "حدث خطأ",
       );
     },
+  });
+}
+
+export function useDownloadPayslipPDF() {
+  return useMutation({
+    mutationFn: ({ payrollId, filename }: { payrollId: string; filename?: string }) =>
+      payrollApi.downloadPDF(payrollId, filename),
+    onSuccess: () => toast.success("تم تنزيل كشف الراتب PDF"),
+    onError: () => toast.error("فشل تنزيل الكشف"),
   });
 }
 

@@ -169,6 +169,60 @@ export interface PayslipResponse {
   confirmedAt?: string | null;
 }
 
+export interface TardinessBreakdown {
+  totalLateMinutes: number;
+  compensatedSameDay: number;
+  justifiedMinutes: number;
+  offsetByHourlyBalance: number;
+  pendingDeductionMinutes: number;
+  deductionAmount: number;
+}
+
+export interface MonthlyPayrollResponse {
+  id: string;
+  employeeId: string;
+  year: number;
+  month: number;
+  workingDays: number;
+  presentDays: number;
+  absentDays: number;
+  absentUnjustified: number;
+  totalLateMinutes: number;
+  tardinessCompensatedMinutes: number;
+  tardinessJustifiedMinutes: number;
+  tardinessOffsetMinutes: number;
+  tardinessUncompensatedMinutes: number;
+  tardinessDeductionAmount: number;
+  hourlyBalanceSummary: {
+    maxMonthlyMinutes: number;
+    usedByEmployeeRequests: number;
+    usedByTardinessOffset: number;
+    totalUsed: number;
+    remaining: number;
+  };
+  hourlyRate: number;
+  dailyRate: number;
+  minuteRate: number;
+  basicSalary: number;
+  allowancesTotal: number;
+  overtimePay: number;
+  bonusAmount: number;
+  commissionAmount: number;
+  grossSalary: number;
+  netSalary: number;
+  roundedNetSalary: number;
+  deductionBreakdown: {
+    tardiness?: TardinessBreakdown;
+    earlyLeave?: Record<string, any>;
+    breakOverLimit?: Record<string, any>;
+    absence?: Record<string, any>;
+    hourlyLeave?: Record<string, any>;
+    sickLeave?: Record<string, any>;
+    [key: string]: any;
+  };
+  employee?: PayrollItem["employee"];
+}
+
 // legacy — يُبقى للتوافق مع الكود القديم
 export interface Payslip {
   employee: {
@@ -275,8 +329,28 @@ export const payrollApi = {
     return data?.data ?? data;
   },
 
+  downloadPDF: async (payrollId: string, filename?: string): Promise<void> => {
+    const response = await apiClient.get(`/payroll/${payrollId}/download`, {
+      responseType: "blob",
+    });
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename ?? `payslip-${payrollId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+
   resetMonth: async (year: number, month: number) => {
     const { data } = await apiClient.post(`/payroll/reset/${year}/${month}`);
+    return data?.data ?? data;
+  },
+
+  getByEmployee: async (employeeId: string, year: number, month: number): Promise<MonthlyPayrollResponse> => {
+    const { data } = await apiClient.get(`/payroll/${employeeId}/${year}/${month}`);
     return data?.data ?? data;
   },
 };

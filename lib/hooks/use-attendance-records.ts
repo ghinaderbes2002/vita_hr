@@ -8,8 +8,10 @@ import {
   CreateAttendanceRecordData,
   UpdateAttendanceRecordData,
   AttendanceQueryParams,
+  InterpretedType,
+  NeedsReviewQueryParams,
 } from "@/lib/api/attendance-records";
-export type { AttendanceBreak } from "@/lib/api/attendance-records";
+export type { AttendanceBreak, RawStamp, InterpretedType, NeedsReviewResponse } from "@/lib/api/attendance-records";
 
 export function useMyAttendance(params: AttendanceQueryParams) {
   return useQuery({
@@ -121,5 +123,84 @@ export function useDeleteAttendanceRecord() {
     onError: (error: any) => {
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || t("messages.deleteError"));
     },
+  });
+}
+
+export function useRawStamps(recordId: string) {
+  return useQuery({
+    queryKey: ["attendance-records", recordId, "raw-stamps"],
+    queryFn: () => attendanceRecordsApi.getRawStamps(recordId),
+    enabled: !!recordId,
+  });
+}
+
+export function useUpdateStampInterpretation(recordId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ logId, interpretedAs }: { logId: string; interpretedAs: InterpretedType }) =>
+      attendanceRecordsApi.updateInterpretation(logId, { interpretedAs }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
+      toast.success("تم تحديث التفسير");
+    },
+    onError: () => toast.error("فشل تحديث التفسير"),
+  });
+}
+
+export function useDeleteStamp(recordId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (logId: string) => attendanceRecordsApi.deleteStamp(logId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
+      toast.success("تم حذف البصمة");
+    },
+    onError: () => toast.error("فشل حذف البصمة"),
+  });
+}
+
+export function useRecomputeRecord(recordId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => attendanceRecordsApi.recompute(recordId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
+      toast.success("تمت إعادة الحساب بنجاح");
+    },
+    onError: () => toast.error("فشلت إعادة الحساب"),
+  });
+}
+
+export function useApproveRecord(recordId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => attendanceRecordsApi.approveRecord(recordId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", "needs-review"] });
+      toast.success("تم اعتماد السجل");
+    },
+    onError: () => toast.error("فشل اعتماد السجل"),
+  });
+}
+
+export function useAddManualStamp(recordId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { timestamp: string; interpretedAs: InterpretedType }) =>
+      attendanceRecordsApi.addManualStamp(recordId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
+      toast.success("تمت إضافة البصمة اليدوية");
+    },
+    onError: () => toast.error("فشلت إضافة البصمة"),
+  });
+}
+
+export function useNeedsReview(params?: NeedsReviewQueryParams) {
+  return useQuery({
+    queryKey: ["attendance-records", "needs-review", params],
+    queryFn: () => attendanceRecordsApi.getNeedsReview(params),
   });
 }

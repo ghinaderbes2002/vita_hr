@@ -5,7 +5,16 @@ import {
   AdjustBalanceData,
   CarryOverData,
 } from "@/lib/api/leave-balances";
+export type { HourlyBalanceResponse } from "@/lib/api/leave-balances";
 import { toast } from "sonner";
+
+export function useHourlyBalance(employeeId: string, year?: number, month?: number) {
+  return useQuery({
+    queryKey: ["leave-balances", "hourly-monthly", employeeId, year, month],
+    queryFn: () => leaveBalancesApi.getHourlyMonthly(employeeId, year, month),
+    enabled: !!employeeId,
+  });
+}
 
 export function useMyLeaveBalances(year?: number) {
   return useQuery({

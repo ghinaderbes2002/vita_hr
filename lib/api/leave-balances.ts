@@ -52,6 +52,22 @@ export interface CarryOverData {
   carryOverDays: number;
 }
 
+export interface HourlyBalanceResponse {
+  employeeId: string;
+  year: number;
+  month: number;
+  leaveTypeId: string;
+  totalHours: number;
+  usedByRequestsHours: number;
+  usedByTardinessHours: number;
+  totalUsedHours: number;
+  remainingHours: number;
+  usedByRequestsMinutes: number;
+  usedByTardinessMinutes: number;
+  totalUsedMinutes: number;
+  remainingMinutes: number;
+}
+
 export const leaveBalancesApi = {
   getMyBalance: async (year?: number): Promise<LeaveBalance[]> => {
     const params = year ? { year } : {};
@@ -94,5 +110,12 @@ export const leaveBalancesApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/leave-balances/${id}`);
+  },
+
+  getHourlyMonthly: async (employeeId: string, year?: number, month?: number): Promise<HourlyBalanceResponse> => {
+    const response = await apiClient.get(`/leave-balances/${employeeId}/hourly-monthly`, {
+      params: { year, month },
+    });
+    return response.data?.data ?? response.data;
   },
 };

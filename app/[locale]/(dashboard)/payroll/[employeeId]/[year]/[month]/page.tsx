@@ -5,14 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowRight, DollarSign, TrendingUp, TrendingDown,
   AlertTriangle, Clock, Calendar, Briefcase, Info, Percent,
-  FileEdit,
+  FileEdit, CheckCircle2, Coffee, Download, Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { usePayslip, useUpdatePayrollNote } from "@/lib/hooks/use-payroll";
+import { usePayslip, useUpdatePayrollNote, usePayrollByEmployee, useDownloadPayslipPDF } from "@/lib/hooks/use-payroll";
 import { useEmployeeAttendanceConfig } from "@/lib/hooks/use-employee-attendance-config";
 import { useEmployee } from "@/lib/hooks/use-employees";
 import { useLocale } from "next-intl";
@@ -64,9 +64,11 @@ export default function PayslipPage() {
   const month = Number(params.month);
 
   const { data, isLoading } = usePayslip(employeeId, year, month);
+  const { data: monthly } = usePayrollByEmployee(employeeId, year, month);
   const { data: attendanceConfig } = useEmployeeAttendanceConfig(employeeId);
   const { data: employeeData } = useEmployee(employeeId);
   const updateNote = useUpdatePayrollNote();
+  const downloadPDF = useDownloadPayslipPDF();
 
   const [deductionOpen, setDeductionOpen] = useState(false);
   const [noteEditing, setNoteEditing] = useState(false);
@@ -119,6 +121,16 @@ export default function PayslipPage() {
   const otherDeduction = Number(deductions?.otherDeductionAmount) || 0;
   const commissionAmt = Number(s.commissionAmount) || 0;
   const breakdown = s.deductionBreakdown ?? null;
+  const hbs = monthly?.hourlyBalanceSummary;
+  const bol = monthly?.deductionBreakdown?.breakOverLimit as any;
+
+  const fmMin = (min: number | null | undefined): string => {
+    const n = Number(min);
+    if (!n || isNaN(n)) return "—";
+    const h = Math.floor(n / 60);
+    const m = n % 60;
+    return h > 0 ? `${h}:${String(m).padStart(2, "0")} س` : `${n} د`;
+  };
   const proRation = s.proRationFactor ?? null;
   const excluded = Number(s.excludedAllowancesAmount ?? 0);
   const deductibleBase = Number(s.deductibleBaseSalary ?? 0);
@@ -152,17 +164,43 @@ export default function PayslipPage() {
             {data.employee.firstNameAr} {data.employee.lastNameAr} · {data.employee.employeeNumber}
           </p>
         </div>
-        {canEdit && (
+        <div className="mr-auto flex items-center gap-2 print:hidden">
           <Button
             variant="outline"
             size="sm"
-            className="mr-auto gap-2"
-            onClick={() => setDeductionOpen(true)}
+            className="gap-2"
+            onClick={() => window.print()}
           >
-            <TrendingDown className="h-4 w-4" />
-            خصم إضافي
+            <Printer className="h-4 w-4" />
+            طباعة
           </Button>
-        )}
+          {data.payrollId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => downloadPDF.mutate({
+                payrollId: data.payrollId,
+                filename: `كشف-راتب-${data.employee?.firstNameAr ?? ""}-${MONTHS[month]}-${year}.pdf`,
+              })}
+              disabled={downloadPDF.isPending}
+            >
+              <Download className="h-4 w-4" />
+              {downloadPDF.isPending ? "جاري التنزيل..." : "تنزيل PDF"}
+            </Button>
+          )}
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setDeductionOpen(true)}
+            >
+              <TrendingDown className="h-4 w-4" />
+              خصم إضافي
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Warnings */}
@@ -222,6 +260,32 @@ export default function PayslipPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Rates */}
+      {monthly && (monthly.dailyRate || monthly.hourlyRate) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Percent className="h-4 w-4" />
+              المعدلات المُطبَّقة
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "تكلفة اليوم",   val: `${formatUSD(monthly.dailyRate)}` },
+                { label: "تكلفة الساعة",  val: `${formatUSD(monthly.hourlyRate)}` },
+                { label: "تكلفة الدقيقة", val: `${Number(monthly.minuteRate).toFixed(4)}` },
+              ].map(({ label, val }) => (
+                <div key={label} className="rounded-md bg-muted/30 p-2.5 text-center">
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="text-sm font-medium mt-0.5 tabular-nums">{val}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Attendance Card */}
       {attendance && (
@@ -347,6 +411,88 @@ export default function PayslipPage() {
                 variant="positive"
               />
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tardiness breakdown */}
+      {monthly && monthly.totalLateMinutes > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-500" />
+              التأخير — تفصيل
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            <Row label="إجمالي دقائق التأخير"           value={fmMin(monthly.totalLateMinutes)} />
+            {monthly.tardinessCompensatedMinutes > 0 && (
+              <Row label="معوَّض بنفس اليوم (عمل إضافي)" value={fmMin(monthly.tardinessCompensatedMinutes)} variant="positive" />
+            )}
+            {monthly.tardinessJustifiedMinutes > 0 && (
+              <Row label="مبرَّر باعتماد"                value={fmMin(monthly.tardinessJustifiedMinutes)} variant="positive" />
+            )}
+            {monthly.tardinessOffsetMinutes > 0 && (
+              <Row label="مغطى من رصيد الإجازة الساعية"  value={fmMin(monthly.tardinessOffsetMinutes)} variant="positive" />
+            )}
+            <Row
+              label="يُحسم من الراتب"
+              value={fmMin(monthly.tardinessUncompensatedMinutes)}
+              variant={monthly.tardinessUncompensatedMinutes > 0 ? "negative" : undefined}
+            />
+            <Row
+              label="مبلغ الحسم"
+              value={formatUSD(monthly.tardinessDeductionAmount)}
+              variant={monthly.tardinessDeductionAmount > 0 ? "negative" : undefined}
+            />
+            {monthly.tardinessDeductionAmount === 0 && (
+              <div className="flex items-center gap-1.5 py-2 text-sm text-green-700">
+                <CheckCircle2 className="h-4 w-4" />
+                لا حسم تأخير هذا الشهر
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Hourly balance summary */}
+      {hbs && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-500" />
+              رصيد الإجازة الساعية — الشهر
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            <Row label="الحد الأقصى الشهري"       value={fmMin(hbs.maxMonthlyMinutes)} />
+            <Row label="استخدمت كإجازة"           value={fmMin(hbs.usedByEmployeeRequests)} />
+            <Row label="استخدمت كتعويض تأخير"     value={fmMin(hbs.usedByTardinessOffset)} />
+            <Row label="إجمالي المستخدم"          value={fmMin(hbs.totalUsed)} />
+            <Row
+              label="المتبقي"
+              value={fmMin(hbs.remaining)}
+              variant={hbs.remaining === 0 ? "negative" : "positive"}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Break over limit */}
+      {bol && (Number(bol.overLimitMinutes) > 0 || Number(bol.deductionAmount) > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Coffee className="h-4 w-4 text-orange-500" />
+              البريكات — تجاوز الحد
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {bol.totalBreakMinutes != null && <Row label="إجمالي وقت البريك"   value={fmMin(bol.totalBreakMinutes)} />}
+            {bol.allowedBreakMinutes != null && <Row label="الحد المسموح"       value={fmMin(bol.allowedBreakMinutes)} />}
+            <Row label="الوقت الزائد"         value={fmMin(bol.overLimitMinutes)} variant="negative" />
+            {bol.deductibleMinutes != null && <Row label="الدقائق المحسومة"   value={fmMin(bol.deductibleMinutes)} variant="negative" />}
+            <Row label="مبلغ الحسم"           value={formatUSD(bol.deductionAmount)} variant="negative" />
           </CardContent>
         </Card>
       )}

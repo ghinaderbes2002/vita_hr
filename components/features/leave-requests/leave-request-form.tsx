@@ -459,13 +459,12 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                           disabled={(date) => {
                             if (isAnnualLeave && watchedStartDate) {
                               const minDate = new Date(watchedStartDate);
-                              minDate.setDate(minDate.getDate() + 1);
                               minDate.setHours(0, 0, 0, 0);
                               return date < minDate;
                             }
                             const t = new Date(); t.setHours(0,0,0,0); return date < t;
                           }}
-                          defaultMonth={isAnnualLeave && watchedStartDate ? (() => { const d = new Date(watchedStartDate); d.setDate(d.getDate() + 1); return d; })() : undefined}
+                          defaultMonth={isAnnualLeave && watchedStartDate ? watchedStartDate : undefined}
                           initialFocus
                         />
                       </PopoverContent>

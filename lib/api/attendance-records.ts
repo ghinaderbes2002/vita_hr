@@ -53,11 +53,40 @@ export interface AttendanceRecord {
   // حقول جديدة من الباك
   lateCompensatedMinutes?: number;
   longestContinuousWorkMinutes?: number;
-  punchSequenceStatus?: "VALID" | "PARTIAL" | "INVALID" | "RECOMPUTED";
+  punchSequenceStatus?: "VALID" | "PARTIAL" | "NEEDS_REVIEW" | "INVALID";
   halfDayPeriod?: "AM" | "PM" | null;
   hourlyLeaveMinutes?: number;
   leaveStartTime?: string | null;
   leaveEndTime?: string | null;
+}
+
+export type InterpretedType = "CLOCK_IN" | "CLOCK_OUT" | "BREAK_OUT" | "BREAK_IN" | "EXCLUDED";
+
+export interface RawStamp {
+  id: string;
+  deviceSN: string;
+  timestamp: string;
+  rawType: number;
+  interpretedAs: InterpretedType | null;
+  pairIndex: number | null;
+  syncError: string | null;
+  createdAt: string;
+}
+
+export interface NeedsReviewQueryParams {
+  employeeId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface NeedsReviewResponse {
+  items: AttendanceRecord[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface CheckInData {
@@ -159,5 +188,47 @@ return response.data;
   getBreaks: async (id: string): Promise<AttendanceBreak[]> => {
     const response = await apiClient.get(`/attendance-records/${id}/breaks`);
     return response.data?.data || response.data || [];
+  },
+
+  getRawStamps: async (recordId: string): Promise<RawStamp[]> => {
+    const response = await apiClient.get(`/attendance-records/${recordId}/raw-stamps`);
+    const d = response.data?.data ?? response.data;
+    return Array.isArray(d) ? d : [];
+  },
+
+  updateInterpretation: async (logId: string, data: { interpretedAs: InterpretedType }): Promise<RawStamp> => {
+    const response = await apiClient.patch(`/attendance-records/raw-stamps/${logId}/interpretation`, data);
+    return response.data?.data ?? response.data;
+  },
+
+  deleteStamp: async (logId: string): Promise<void> => {
+    await apiClient.delete(`/attendance-records/raw-stamps/${logId}`);
+  },
+
+  recompute: async (recordId: string): Promise<AttendanceRecord> => {
+    const response = await apiClient.post(`/attendance-records/${recordId}/recompute`);
+    return response.data?.data ?? response.data;
+  },
+
+  approveRecord: async (recordId: string): Promise<AttendanceRecord> => {
+    const response = await apiClient.post(`/attendance-records/${recordId}/approve`);
+    return response.data?.data ?? response.data;
+  },
+
+  addManualStamp: async (recordId: string, data: { timestamp: string; interpretedAs: InterpretedType }): Promise<RawStamp> => {
+    const response = await apiClient.post(`/attendance-records/${recordId}/add-manual-stamp`, data);
+    return response.data?.data ?? response.data;
+  },
+
+  getNeedsReview: async (params?: NeedsReviewQueryParams): Promise<NeedsReviewResponse> => {
+    const response = await apiClient.get("/attendance-records/needs-review", { params });
+    const d = response.data?.data ?? response.data;
+    return {
+      items: d?.items ?? [],
+      page: d?.page ?? 1,
+      limit: d?.limit ?? 20,
+      total: d?.total ?? 0,
+      totalPages: d?.totalPages ?? 0,
+    };
   },
 };

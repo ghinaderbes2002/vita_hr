@@ -212,7 +212,12 @@ export default function MyRequestsPage() {
               <TableCell>
                 {request.isHourlyLeave && request.equivalentDays != null
                   ? `${request.equivalentDays.toFixed(2)} يوم`
-                  : `${request.totalDays} ${t("common.days")}`}
+                  : (() => {
+                      const days = request.totalDays > 0
+                        ? request.totalDays
+                        : Math.max(1, Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1);
+                      return `${days} ${t("common.days")}`;
+                    })()}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {request.isHourlyLeave && request.startTime
@@ -298,7 +303,7 @@ export default function MyRequestsPage() {
                       {req.employee?.firstNameAr} {req.employee?.lastNameAr}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {req.leaveType?.nameAr} — {format(new Date(req.startDate), "PPP", { locale: ar })} إلى {format(new Date(req.endDate), "PPP", { locale: ar })} ({req.totalDays} أيام)
+                      {req.leaveType?.nameAr} — {format(new Date(req.startDate), "PPP", { locale: ar })} إلى {format(new Date(req.endDate), "PPP", { locale: ar })} ({req.totalDays > 0 ? req.totalDays : Math.max(1, Math.round((new Date(req.endDate).getTime() - new Date(req.startDate).getTime()) / 86400000) + 1)} أيام)
                     </p>
                   </div>
                   <div className="flex gap-2">

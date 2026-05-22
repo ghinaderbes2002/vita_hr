@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Search, Calendar, Plus, Filter, AlertTriangle } from "lucide-react";
+import { Search, Calendar, Plus, Filter, AlertTriangle, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,6 +43,14 @@ import { format } from "date-fns";
 import { formatTime, formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 import { BreaksDrawer } from "@/components/features/attendance/breaks-drawer";
+import { RawStampsDrawer } from "@/components/features/attendance/raw-stamps-drawer";
+
+const PUNCH_STATUS_CFG: Record<string, { label: string; className: string }> = {
+  NEEDS_REVIEW: { label: "بحاجة مراجعة", className: "bg-amber-50 text-amber-700 border-amber-300" },
+  PARTIAL:      { label: "جزئي",         className: "bg-orange-50 text-orange-700 border-orange-300" },
+  INVALID:      { label: "غير صالح",     className: "bg-red-50 text-red-700 border-red-300" },
+  VALID:        { label: "صالح",         className: "bg-green-50 text-green-700 border-green-300" },
+};
 
 const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
   { value: "PRESENT", label: "حاضر" },
@@ -63,6 +71,7 @@ export default function AttendanceRecordsPage() {
   const canManageBreaks = isAdmin() || hasPermission("attendance.breaks.manage");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [breaksDrawerOpen, setBreaksDrawerOpen] = useState(false);
+  const [stampsRecordId, setStampsRecordId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -223,6 +232,8 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
               <TableHead>تأخر</TableHead>
               <TableHead>مغادرة مبكرة</TableHead>
               <TableHead>المصدر</TableHead>
+              <TableHead>حالة البصمة</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -239,6 +250,8 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                 </TableRow>
               ))
             ) : filteredRecords.length === 0 ? (
@@ -344,6 +357,30 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
                     )}
                   </TableCell>
 
+                  {/* حالة البصمة */}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    {record.punchSequenceStatus && PUNCH_STATUS_CFG[record.punchSequenceStatus] ? (
+                      <Badge variant="outline" className={`text-xs ${PUNCH_STATUS_CFG[record.punchSequenceStatus].className}`}>
+                        {record.punchSequenceStatus !== "VALID" && <AlertTriangle className="h-3 w-3 ml-1" />}
+                        {PUNCH_STATUS_CFG[record.punchSequenceStatus].label}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+
+                  {/* مراجعة البصمات */}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      title="مراجعة البصمات"
+                      onClick={() => setStampsRecordId(record.id)}
+                    >
+                      <Fingerprint className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
 
                 </TableRow>
               );})
@@ -370,6 +407,15 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
         onOpenChange={setBreaksDrawerOpen}
         canManage={canManageBreaks}
       />
+
+      {/* Raw Stamps Drawer */}
+      {stampsRecordId && (
+        <RawStampsDrawer
+          recordId={stampsRecordId}
+          open={!!stampsRecordId}
+          onClose={() => setStampsRecordId(null)}
+        />
+      )}
 
       {/* Manual Entry Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>

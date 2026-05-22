@@ -42,6 +42,9 @@ import {
   Mail,
   Banknote,
   Award,
+  Stethoscope,
+  Heart,
+  Activity,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -104,6 +107,7 @@ const navigation: NavItem[] = [
         children: [
           { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
           { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
+          { title: "nav.needsReview", href: "/attendance/needs-review", icon: AlertCircle, permission: "attendance.records.read" },
           { title: "nav.attendanceAlerts", href: "/attendance/alerts", icon: AlertCircle, permission: "attendance.alerts.read" },
           { title: "nav.attendanceJustifications", href: "/attendance/justifications", icon: FileText, permission: "attendance.justifications.read" },
           { title: "nav.attendanceReports", href: "/attendance/reports", icon: FileBarChart, permission: "attendance.reports.read" },
@@ -189,6 +193,7 @@ const navigation: NavItem[] = [
           { title: "nav.attendanceReportsSummary", href: "/reports/attendance", icon: FileBarChart },
           { title: "nav.evaluationReports", href: "/reports/evaluation", icon: FileBarChart },
           { title: "nav.custodyReport", href: "/reports/custody", icon: FileBarChart },
+          { title: "تقرير الحضور الشهري", href: "/reports/attendance-monthly-summary", icon: FileBarChart, permission: "attendance.reports.read" },
           { title: "ملخص الرواتب", href: "/reports/payroll-summary", icon: Wallet, permission: "attendance.reports.read" },
           { title: "التأخر التراكمي", href: "/reports/lateness-accumulated", icon: FileBarChart, permission: "attendance.reports.read" },
           { title: "تفصيل الخصومات", href: "/reports/deduction-breakdown", icon: FileBarChart, permission: "attendance.reports.read" },
@@ -210,6 +215,20 @@ const navigation: NavItem[] = [
           { title: "nav.allProbationEvaluations", href: "/probation-evaluations", icon: UserRoundCheck },
         ],
       },
+    ],
+  },
+  {
+    title: "nav.clinic",
+    icon: Stethoscope,
+    separator: true,
+    permission: "clinic.patients.view",
+    children: [
+      { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view" },
+      { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
+      { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
+      { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
+      { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
+      { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor" },
     ],
   },
   {
@@ -292,7 +311,15 @@ export function Sidebar() {
         "/requests/all",
         "/attendance/reports",
         "/attendance/alerts",
+        "/reports/attendance-monthly-summary",
         "/custodies/my-custodies",
+        "/clinic/patients",
+        "/clinic/patients/new",
+        "/clinic/prosthetics",
+        "/clinic/physio",
+        "/clinic/appointments",
+        "/clinic/inventory",
+        "/clinic/reports",
       ];
 
       // If current path is a known sub-route, don't match parent

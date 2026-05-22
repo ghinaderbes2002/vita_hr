@@ -118,7 +118,14 @@
     "onboarding": "Onboarding & Offboarding",
     "onboardingTemplates": "Templates",
     "onboardingWorkflows": "Workflows Dashboard",
-    "auditLogs": "Audit Logs"
+    "auditLogs": "Audit Logs",
+    "clinic": "Medical Clinic",
+    "clinicPatients": "Patients",
+    "clinicProsthetics": "Prosthetics",
+    "clinicPhysio": "Physiotherapy",
+    "clinicAppointments": "Appointments",
+    "clinicInventory": "Medical Inventory",
+    "clinicReports": "Clinic Reports"
   },
   "user": {
     "logout": "Logout",
@@ -2169,6 +2176,192 @@
         "gmDecision": "GM Decision",
         "gmApproved": "Approved",
         "gmRejected": "Rejected"
+      }
+    }
+  },
+  "clinic": {
+    "patients": {
+      "title": "Patients",
+      "newPatient": "New Patient",
+      "patientNumber": "Patient Number",
+      "searchPlaceholder": "Search by name, patient number, or ID",
+      "duplicateFound": "This patient already exists",
+      "openFile": "Open Patient File",
+      "continueRegistration": "Continue Registration",
+      "fields": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "identityType": "Identity Type",
+        "idNumber": "ID Number",
+        "dateOfBirth": "Date of Birth",
+        "gender": "Gender",
+        "height": "Height (cm)",
+        "weight": "Weight (kg)",
+        "bmi": "BMI",
+        "governorate": "Governorate",
+        "city": "City",
+        "address": "Address",
+        "phone": "Phone",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "educationLevel": "Education Level",
+        "maritalStatus": "Marital Status",
+        "livingStatus": "Living Status",
+        "financialStatus": "Financial Status",
+        "receivesHumanitarianAid": "Receives Humanitarian Aid",
+        "centerAccessMethod": "How they reached the center",
+        "photo": "Photo",
+        "idDocumentFront": "ID Front",
+        "idDocumentBack": "ID Back",
+        "documentConsent": "Documentation Consent",
+        "mediaConsent": "Media Consent",
+        "signature": "Signature",
+        "notes": "Notes",
+        "activeCases": "Active Cases",
+        "lastVisit": "Last Visit"
+      },
+      "steps": {
+        "identity": "Basic Identity",
+        "contact": "Address & Contact",
+        "socioeconomic": "Socioeconomic Info",
+        "documents": "Attachments & Consents"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "prosthetics": "Prosthetics",
+        "physio": "Physiotherapy",
+        "appointments": "Appointments",
+        "documents": "Documents",
+        "consents": "Consents",
+        "timeline": "Timeline",
+        "notes": "Notes"
+      }
+    },
+    "prosthetics": {
+      "title": "Prosthetics",
+      "newCase": "New Case",
+      "myCases": "My Cases",
+      "committeeCases": "Committee Cases",
+      "steps": {
+        "intake": "Intake",
+        "assessment": "Assessment",
+        "committee": "Committee",
+        "components": "Components",
+        "gaitAnalysis": "Gait Analysis",
+        "balance": "Balance",
+        "treatmentPlan": "Treatment Plan",
+        "consumables": "Consumables",
+        "finalEvaluation": "Final Evaluation",
+        "delivery": "Delivery",
+        "followUp": "Follow-Up"
+      },
+      "statuses": {
+        "INTAKE": "Intake",
+        "ASSESSMENT": "Assessment",
+        "COMMITTEE_REVIEW": "Committee Review",
+        "COMMITTEE_APPROVED": "Committee Approved",
+        "FITTING": "Fitting",
+        "GAIT_ANALYSIS": "Gait Analysis",
+        "FINAL_EVALUATION": "Final Evaluation",
+        "DELIVERED": "Delivered",
+        "FOLLOW_UP": "Follow-Up",
+        "CLOSED": "Closed",
+        "CANCELLED": "Cancelled"
+      },
+      "committeeDecisions": {
+        "APPROVED": "Approved",
+        "NEEDS_ADJUSTMENT": "Needs Adjustment",
+        "REJECTED": "Rejected"
+      },
+      "prostheticTypes": {
+        "BIONIC": "Bionic",
+        "MYOBOCK": "Myobock",
+        "MECHANIC": "Mechanical",
+        "COSMETIC": "Cosmetic"
+      }
+    },
+    "physio": {
+      "title": "Physiotherapy",
+      "newCase": "New Case",
+      "statuses": {
+        "COMPLAINT": "Complaint",
+        "PAIN_MAP": "Pain Map",
+        "MEDICAL_HISTORY": "Medical History",
+        "GOALS": "Goals",
+        "POSTURAL_ASSESSMENT": "Postural Assessment",
+        "TREATMENT_PLAN": "Treatment Plan",
+        "ACTIVE_SESSIONS": "Active Sessions",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled"
+      }
+    },
+    "appointments": {
+      "title": "Appointments",
+      "newAppointment": "New Appointment",
+      "types": {
+        "PROSTHETICS_ASSESSMENT": "Prosthetics Assessment",
+        "PROSTHETICS_FITTING": "Prosthetics Fitting",
+        "PROSTHETICS_FOLLOWUP": "Prosthetics Follow-Up",
+        "PHYSIO_SESSION": "Physio Session",
+        "GENERAL": "General",
+        "COMMITTEE": "Committee"
+      },
+      "statuses": {
+        "SCHEDULED": "Scheduled",
+        "CONFIRMED": "Confirmed",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled",
+        "NO_SHOW": "No Show"
+      }
+    },
+    "inventory": {
+      "title": "Medical Inventory",
+      "newItem": "New Item",
+      "totalItems": "Total Items",
+      "lowStockItems": "Low Stock Items",
+      "stockValue": "Stock Value",
+      "itemTypes": { "COMPONENT": "Component", "CONSUMABLE": "Consumable" },
+      "transactionTypes": { "RECEIVE": "Receive", "ISSUE": "Issue", "ADJUST": "Adjust", "RETURN": "Return" },
+      "fields": {
+        "code": "Code", "name": "Name", "type": "Type", "category": "Category",
+        "supplier": "Supplier", "currentStock": "Current Stock", "minStockLevel": "Min Level",
+        "unitPrice": "Unit Price", "unit": "Unit"
+      }
+    },
+    "reports": {
+      "title": "Clinic Reports",
+      "donor": "Donor Report",
+      "exportPdf": "Export PDF",
+      "exportExcel": "Export Excel",
+      "period": "Period",
+      "from": "From",
+      "to": "To",
+      "summary": {
+        "totalCases": "Total Cases",
+        "patientsServed": "Patients Served",
+        "deliveredCases": "Delivered Cases",
+        "successRate": "Success Rate",
+        "followUpsCompleted": "Follow-Ups Completed"
+      }
+    },
+    "common": {
+      "kLevel": {
+        "K0": "K0 - Non-ambulatory",
+        "K1": "K1 - Limited household",
+        "K2": "K2 - Limited community",
+        "K3": "K3 - Community ambulator",
+        "K4": "K4 - High activity"
+      },
+      "amputationType": { "UPPER": "Upper Limb", "LOWER": "Lower Limb" },
+      "amputationSide": { "RIGHT": "Right", "LEFT": "Left", "BILATERAL": "Bilateral" },
+      "gender": { "MALE": "Male", "FEMALE": "Female" },
+      "identityType": { "NATIONAL_ID": "National ID", "PASSPORT": "Passport", "RESIDENCE": "Residence" },
+      "painTypes": { "Numbness": "Numbness", "Dull Ache": "Dull Ache", "Hot Burning": "Hot Burning", "Sharp Stabbing": "Sharp Stabbing", "Pins": "Pins & Needles", "Other": "Other" },
+      "consentOptions": { "FULL": "Full Consent", "ANONYMOUS": "Anonymous", "NONE": "No Consent" },
+      "signature": {
+        "sign": "Sign", "clear": "Clear", "confirm": "Confirm Signature",
+        "legalNotice": "By signing, you confirm your agreement to the above content",
+        "signed": "Signed", "signedBy": "Signed by", "signedAt": "Signed at"
       }
     }
   }
