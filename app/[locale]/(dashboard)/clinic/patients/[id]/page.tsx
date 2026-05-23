@@ -470,10 +470,9 @@ export default function PatientProfilePage() {
         onOpenChange={setDeletePatientOpen}
         title="حذف المريض"
         description="هل أنت متأكد؟ سيتم حذف جميع بيانات المريض وحالاته بشكل نهائي."
-        confirmLabel="حذف"
+        confirmText="حذف"
         variant="destructive"
         onConfirm={handleDeletePatient}
-        isLoading={deletePatient.isPending}
       />
 
       {/* New Prosthetics Case Dialog */}
