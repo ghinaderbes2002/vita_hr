@@ -173,7 +173,7 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
                             {stamp.syncError && (
                               <Badge variant="outline" className="mr-2 text-xs border-amber-300 text-amber-700">
                                 <AlertTriangle className="h-2.5 w-2.5 ml-0.5" />
-                                مشكوكة
+                                مشتبه بها
                               </Badge>
                             )}
                           </div>

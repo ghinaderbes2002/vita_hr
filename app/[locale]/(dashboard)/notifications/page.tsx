@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow, format } from "date-fns";
@@ -21,8 +21,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ComposeMailModal } from "@/components/features/mail/compose-mail-modal";
-import { useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
-import type { NotificationType } from "@/lib/api/notifications";
+import { useNotificationsPage, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
+import type { Notification, NotificationType } from "@/lib/api/notifications";
 
 const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
   LEAVE_REQUEST_SUBMITTED:        { icon: Bell,          color: "text-blue-600",   bg: "bg-blue-100",   label: "طلب إجازة جديد" },
@@ -54,37 +54,65 @@ function getConfig(type: string) {
   return TYPE_CONFIG[type] ?? TYPE_CONFIG.GENERAL;
 }
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 20;
 
 export default function NotificationsPage() {
   const locale = useLocale();
   const router = useRouter();
   const [tab, setTab] = useState<"all" | "unread" | "read">("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [page, setPage] = useState(1);
+  const [accumulated, setAccumulated] = useState<Notification[]>([]);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeToIds, setComposeToIds] = useState<string[]>([]);
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
 
-  const { data: notifications = [], isLoading } = useNotifications();
+  const isReadParam = tab === "unread" ? false : tab === "read" ? true : undefined;
+
+  const { data: pageData, isLoading, isFetching } = useNotificationsPage({
+    page,
+    limit: PAGE_SIZE,
+    isRead: isReadParam,
+  });
+
+  // دمج الصفحات الجديدة في المصفوفة المتراكمة
+  const mergedPageRef = useRef(0);
+  useEffect(() => {
+    if (!pageData) return;
+    if (pageData.page === mergedPageRef.current) return;
+    mergedPageRef.current = pageData.page;
+    if (pageData.page === 1) {
+      setAccumulated(pageData.items);
+    } else {
+      setAccumulated((prev) => {
+        const ids = new Set(prev.map((n) => n.id));
+        return [...prev, ...pageData.items.filter((n) => !ids.has(n.id))];
+      });
+    }
+  }, [pageData]);
+
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
 
-  const notifList: any[] = Array.isArray(notifications) ? notifications : [];
+  const handleTabChange = (v: string) => {
+    setTab(v as any);
+    setPage(1);
+    setAccumulated([]);
+    mergedPageRef.current = 0;
+  };
+
+  const notifList: Notification[] = accumulated;
 
   const filtered = notifList.filter((n) => {
-    if (tab === "unread" && n.isRead) return false;
-    if (tab === "read" && !n.isRead) return false;
     if (typeFilter !== "all" && n.type !== typeFilter) return false;
     return true;
   });
 
-  const visible = filtered.slice(0, visibleCount);
-  const hasMore = filtered.length > visibleCount;
+  const hasMore = pageData ? page < pageData.totalPages : false;
   const unreadCount = notifList.filter((n) => !n.isRead).length;
 
-  const usedTypes = [...new Set(notifList.map((n) => n.type as string))];
+  const usedTypes = [...new Set(notifList.map((n) => n.type))];
 
   const handleClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
@@ -131,7 +159,7 @@ export default function NotificationsPage() {
 
       {/* Tabs + Filter */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Tabs value={tab} onValueChange={(v) => { setTab(v as any); setVisibleCount(PAGE_SIZE); }}>
+        <Tabs value={tab} onValueChange={handleTabChange}>
           <TabsList>
             <TabsTrigger value="all">
               الكل
@@ -158,11 +186,11 @@ export default function NotificationsPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
-            <DropdownMenuItem onClick={() => { setTypeFilter("all"); setVisibleCount(PAGE_SIZE); }}>
+            <DropdownMenuItem onClick={() => setTypeFilter("all")}>
               كل الأنواع
             </DropdownMenuItem>
             {usedTypes.map((type) => (
-              <DropdownMenuItem key={type} onClick={() => { setTypeFilter(type); setVisibleCount(PAGE_SIZE); }}>
+              <DropdownMenuItem key={type} onClick={() => setTypeFilter(type)}>
                 {TYPE_LABELS[type] || type}
               </DropdownMenuItem>
             ))}
@@ -172,7 +200,7 @@ export default function NotificationsPage() {
 
       {/* List */}
       <div className="rounded-lg border divide-y overflow-hidden">
-        {isLoading ? (
+        {isLoading && accumulated.length === 0 ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex gap-3 px-4 py-4">
               <Skeleton className="h-9 w-9 rounded-full shrink-0" />
@@ -190,7 +218,7 @@ export default function NotificationsPage() {
           </div>
         ) : (
           <>
-            {visible.map((notif) => {
+            {filtered.map((notif) => {
               const cfg = getConfig(notif.type);
               const Icon = cfg.icon;
               const isBirthday = notif.type === "BIRTHDAY";
@@ -289,9 +317,10 @@ export default function NotificationsPage() {
                   variant="ghost"
                   size="sm"
                   className="text-xs text-muted-foreground"
-                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  disabled={isFetching}
+                  onClick={() => setPage((p) => p + 1)}
                 >
-                  تحميل المزيد ({filtered.length - visibleCount} متبقٍ)
+                  {isFetching ? "جاري التحميل..." : `تحميل المزيد (${(pageData?.total ?? 0) - notifList.length} متبقٍ)`}
                 </Button>
               </div>
             )}

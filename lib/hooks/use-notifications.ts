@@ -10,6 +10,14 @@ export function useNotifications(params?: { isRead?: boolean }) {
   });
 }
 
+export function useNotificationsPage(params?: { isRead?: boolean; page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: ["notifications-page", params],
+    queryFn: () => notificationsApi.getPage(params),
+    refetchInterval: 30000,
+  });
+}
+
 export function useUnreadCount() {
   return useQuery({
     queryKey: ["notifications-unread-count"],

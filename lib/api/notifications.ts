@@ -51,13 +51,31 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface NotificationPage {
+  items: Notification[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const notificationsApi = {
-  getAll: async (params?: { isRead?: boolean; page?: number; limit?: number }): Promise<Notification[]> => {
-    const response = await apiClient.get("/notifications", { params });
+  getPage: async (params?: { isRead?: boolean; page?: number; limit?: number }): Promise<NotificationPage> => {
+    const response = await apiClient.get("/notifications", { params: { limit: 20, ...params } });
     const result = response.data?.data ?? response.data;
-    if (Array.isArray(result)) return result;
-    if (Array.isArray(result?.items)) return result.items;
-    return [];
+    if (Array.isArray(result)) return { items: result, total: result.length, page: 1, limit: result.length, totalPages: 1 };
+    return {
+      items: Array.isArray(result?.items) ? result.items : [],
+      total: result?.total ?? 0,
+      page: result?.page ?? 1,
+      limit: result?.limit ?? 20,
+      totalPages: result?.totalPages ?? 1,
+    };
+  },
+
+  getAll: async (params?: { isRead?: boolean; page?: number; limit?: number }): Promise<Notification[]> => {
+    const result = await notificationsApi.getPage(params);
+    return result.items;
   },
 
   getUnreadCount: async (): Promise<number> => {

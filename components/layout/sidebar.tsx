@@ -106,7 +106,6 @@ const navigation: NavItem[] = [
       {
         title: "nav.attendance",
         icon: ClipboardCheck,
-        hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"],
         children: [
           { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
           { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
