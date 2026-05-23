@@ -55,6 +55,7 @@ export default function ProstheticsListPage() {
     return name.includes(q) || num.includes(q);
   });
   const totalPages = data?.totalPages ?? 0;
+  const total = data?.total ?? 0;
 
   return (
     <div className="space-y-4">
@@ -157,7 +158,7 @@ export default function ProstheticsListPage() {
       </div>
 
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
       )}
     </div>
   );
