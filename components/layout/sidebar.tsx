@@ -263,15 +263,6 @@ export function Sidebar() {
   const userRoles = authUser?.roles ?? [];
   const hasNoAccess = !isAdmin() && userRoles.length === 0;
 
-  // DEBUG مؤقت
-  console.log("[SIDEBAR]", {
-    hasNoAccess,
-    isAdmin: isAdmin(),
-    userRoles,
-    rolesRaw: authUser?.roles,
-    permissions: storePermissions,
-  });
-
   useEffect(() => {
     setMounted(true);
   }, []);

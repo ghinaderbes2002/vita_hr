@@ -12,10 +12,11 @@ const typeConfig: Record<AlertType, { label: string }> = {
   MISSING_CLOCK_OUT: { label: "نسيان تسجيل الانصراف" },
   CONSECUTIVE_ABSENCE: { label: "غياب متتالي" },
   LEAVE_ATTENDANCE_CONFLICT: { label: "تعارض إجازة مع حضور" },
+  ANOMALY_NO_STAMP: { label: "بصمة مفقودة" },
 };
 
 export function AlertTypeBadge({ type }: AlertTypeBadgeProps) {
   const config = typeConfig[type];
 
-  return <Badge variant="outline">{config.label}</Badge>;
+  return <Badge variant="outline">{config?.label ?? type}</Badge>;
 }

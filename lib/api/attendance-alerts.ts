@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 import { ApiResponse } from "@/types";
 
-export type AlertType = "LATE" | "ABSENT" | "EARLY_LEAVE" | "MISSING_CLOCK_OUT" | "CONSECUTIVE_ABSENCE" | "LEAVE_ATTENDANCE_CONFLICT";
+export type AlertType = "LATE" | "ABSENT" | "EARLY_LEAVE" | "MISSING_CLOCK_OUT" | "CONSECUTIVE_ABSENCE" | "LEAVE_ATTENDANCE_CONFLICT" | "ANOMALY_NO_STAMP";
 
 export type AlertSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 

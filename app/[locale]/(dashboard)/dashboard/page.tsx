@@ -57,13 +57,13 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="رصيد الإجازات" value={d.leaveBalance?.[0]?.balance ?? "—"} icon={Calendar}
-          iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/requests/my-requests`)} />
+          iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/my-profile`)} />
         <StatCard title="الطلبات المعلقة" value={d.pendingRequests?.length ?? 0} icon={Hourglass}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/my-requests`)} />
-        <StatCard title="وثائق منتهية الصلاحية" value={d.expiringDocuments?.length ?? 0} icon={AlertCircle}
-          iconBg="bg-red-500" />
-        <StatCard title="الأهداف النشطة" value={d.goals?.length ?? 0} icon={TrendingUp}
-          iconBg="bg-green-500" />
+        <StatCard title="حضوري" value="" icon={AlertCircle}
+          iconBg="bg-red-500" onClick={() => router.push(`/${locale}/attendance/my-attendance`)} />
+        <StatCard title="تنبيهاتي" value="" icon={TrendingUp}
+          iconBg="bg-green-500" onClick={() => router.push(`/${locale}/attendance/my-alerts`)} />
       </div>
 
       {d.todayAttendance && (
