@@ -141,7 +141,7 @@ export default function ClinicReportsPage() {
               <BarChart
                 data={(() => {
                   const counts: Record<string, number> = {};
-                  prostCases.forEach((c) => { counts[c.status] = (counts[c.status] ?? 0) + 1; });
+                  prostCases.forEach((c: ProstheticsCase) => { counts[c.status] = (counts[c.status] ?? 0) + 1; });
                   return Object.entries(counts).map(([k, v]) => ({
                     label: STATUS_LABEL_AR[k] ?? k,
                     value: v,
@@ -160,7 +160,7 @@ export default function ClinicReportsPage() {
               <BarChart
                 data={(() => {
                   const counts: Record<string, number> = {};
-                  prostCases.forEach((c) => {
+                  prostCases.forEach((c: ProstheticsCase) => {
                     const k = c.amputationType ?? "UNKNOWN";
                     counts[k] = (counts[k] ?? 0) + 1;
                   });
