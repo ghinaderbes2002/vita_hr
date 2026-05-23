@@ -69,7 +69,9 @@ export default function InventoryPage() {
     if (!txDialogItem || !txForm.quantity) return;
     await addTx.mutateAsync({
       id: txDialogItem.id,
-      dto: { type: txForm.type, quantity: parseInt(txForm.quantity), notes: txForm.notes || undefined },
+      type: txForm.type,
+      quantity: parseInt(txForm.quantity),
+      notes: txForm.notes || undefined,
     });
     setTxDialogItem(null);
     setTxForm({ type: "RECEIVE", quantity: "1", notes: "" });
