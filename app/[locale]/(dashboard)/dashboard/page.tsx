@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitle } from "@/lib/hooks/use-job-titles";
@@ -330,8 +331,11 @@ function CFODashboard({ d, locale, router }: { d: any; locale: string; router: a
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { hasRole } = usePermissions();
   const locale = useLocale();
   const router = useRouter();
+
+  const isFollowUpOfficial = hasRole("Follow-up official") || hasRole("مسؤول متابعة");
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
   const [conductDoc, setConductDoc] = useState<{ url: string; name: string }>(() => {
     try { const s = localStorage.getItem(CONDUCT_DOC_KEY); return s ? JSON.parse(s) : DEFAULT_CONDUCT_DOC; } catch { return DEFAULT_CONDUCT_DOC; }
@@ -418,11 +422,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Role-based content */}
-      {role === "EMPLOYEE" && <EmployeeDashboard d={d} locale={locale} router={router} />}
-      {role === "MANAGER" && <ManagerDashboard d={d} locale={locale} router={router} employeeId={d?.employee?.id} />}
-      {role === "HR" && <HRDashboard d={d} locale={locale} router={router} />}
-      {role === "CEO" && <CEODashboard d={d} locale={locale} router={router} />}
-      {role === "CFO" && <CFODashboard d={d} locale={locale} router={router} />}
+      {role === "MANAGER" && !isFollowUpOfficial && <ManagerDashboard d={d} locale={locale} router={router} employeeId={d?.employee?.id} />}
+      {role === "HR" && !isFollowUpOfficial && <HRDashboard d={d} locale={locale} router={router} />}
+      {role === "CEO" && !isFollowUpOfficial && <CEODashboard d={d} locale={locale} router={router} />}
+      {role === "CFO" && !isFollowUpOfficial && <CFODashboard d={d} locale={locale} router={router} />}
+      {(isFollowUpOfficial || !role || !["MANAGER", "HR", "CEO", "CFO"].includes(role)) && <EmployeeDashboard d={d} locale={locale} router={router} />}
 
       {/* Job Title Card — for all roles */}
       {employeeInfo?.jobTitle && (

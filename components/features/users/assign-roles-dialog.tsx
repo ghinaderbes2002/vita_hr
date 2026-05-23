@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useRoles } from "@/lib/hooks/use-roles";
 import { useAssignRoles } from "@/lib/hooks/use-users";
 import { User } from "@/types";
@@ -24,32 +24,23 @@ interface AssignRolesDialogProps {
 
 export function AssignRolesDialog({ open, onOpenChange, user }: AssignRolesDialogProps) {
   const t = useTranslations();
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedRole, setSelectedRole] = useState<string>("");
 
   const { data: roles, isLoading: rolesLoading } = useRoles();
   const assignRoles = useAssignRoles();
 
   useEffect(() => {
-    if (user && user.roles) {
-      setSelectedRoles(user.roles.map((r) => r.role.id));
+    if (user?.roles && user.roles.length > 0) {
+      setSelectedRole(user.roles[0].role.id);
     } else {
-      setSelectedRoles([]);
+      setSelectedRole("");
     }
   }, [user]);
 
-  const handleToggleRole = (roleId: string) => {
-    setSelectedRoles((prev) =>
-      prev.includes(roleId)
-        ? prev.filter((id) => id !== roleId)
-        : [...prev, roleId]
-    );
-  };
-
   const handleSubmit = async () => {
     if (!user) return;
-
     try {
-      await assignRoles.mutateAsync({ id: user.id, roleIds: selectedRoles });
+      await assignRoles.mutateAsync({ id: user.id, roleIds: selectedRole ? [selectedRole] : [] });
       onOpenChange(false);
     } catch (error) {
       // Error handled by mutation
@@ -76,33 +67,16 @@ export function AssignRolesDialog({ open, onOpenChange, user }: AssignRolesDialo
                 {t("common.noData")}
               </div>
             ) : (
-              <div className="space-y-3">
+              <RadioGroup value={selectedRole} onValueChange={setSelectedRole} className="space-y-3">
                 {roles.map((role: any) => (
-                  <div
-                    key={role.id}
-                    className="flex items-start space-x-3 space-y-0"
-                  >
-                    <Checkbox
-                      id={role.id}
-                      checked={selectedRoles.includes(role.id)}
-                      onCheckedChange={() => handleToggleRole(role.id)}
-                    />
-                    <div className="grid gap-1 leading-none">
-                      <label
-                        htmlFor={role.id}
-                        className="text-sm font-medium cursor-pointer"
-                      >
-                        {role.displayNameAr}
-                      </label>
-                      {role.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {role.description}
-                        </p>
-                      )}
-                    </div>
+                  <div key={role.id} className="flex items-center gap-3">
+                    <RadioGroupItem value={role.id} id={role.id} />
+                    <label htmlFor={role.id} className="text-sm font-medium cursor-pointer">
+                      {role.displayNameAr}
+                    </label>
                   </div>
                 ))}
-              </div>
+              </RadioGroup>
             )}
           </ScrollArea>
 

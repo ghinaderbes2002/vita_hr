@@ -81,7 +81,7 @@ const navigation: NavItem[] = [
       { title: "nav.myRequests", href: "/requests/my-requests", icon: FileText, permission: "leave_requests:read" },
       { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
       { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read", showForRoles: ["موظف"] },
-      { title: "nav.deductionPoliciesView", href: "/deduction-policies?view=readonly", icon: ShieldCheck },
+      { title: "nav.deductionPoliciesView", href: "/deduction-policies?view=readonly", icon: ShieldCheck, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
     ],
   },
   {
@@ -121,7 +121,7 @@ const navigation: NavItem[] = [
         children: [
           { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
-          { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية", "Follow-up official", "مسؤول متابعة"] },
           { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permissions: ["leave_requests:approve_manager", "leave_requests:approve_hr"] },
         ],
       },
@@ -139,7 +139,7 @@ const navigation: NavItem[] = [
         hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
           { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
-          { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase },
+          { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
         ],
       },
       {
@@ -172,7 +172,7 @@ const navigation: NavItem[] = [
         icon: ShieldCheck,
         hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
-          { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck },
+          { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
         ],
       },
       {
@@ -188,7 +188,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.hrReports",
         icon: FileBarChart,
-        hiddenForRoles: ["DIRECT_MANAGER"],
+        hiddenForRoles: ["DIRECT_MANAGER", "Follow-up official", "مسؤول متابعة"],
         children: [
           { title: "nav.hrReportsSummary", href: "/reports/hr", icon: FileBarChart },
           { title: "nav.leaveReports", href: "/reports/leave", icon: FileBarChart },

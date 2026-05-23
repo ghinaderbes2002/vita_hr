@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEmployeesBasicList, useSubordinates, useMyEmployee } from "@/lib/hooks/use-employees";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { Label } from "@/components/ui/label";
 
 export default function SubordinatesPage() {
@@ -30,19 +31,24 @@ export default function SubordinatesPage() {
   const [selectedManagerId, setSelectedManagerId] = useState<string>("");
   const [search, setSearch] = useState("");
 
+  const { user } = useAuthStore();
   const { data: myProfile } = useMyEmployee();
-  const myEmployeeId = (myProfile as any)?.id || "";
-
   const { data: allEmployeesData } = useEmployeesBasicList();
   const { data: subordinatesData, isLoading } = useSubordinates(selectedManagerId);
 
-  useEffect(() => {
-    if (myEmployeeId && !selectedManagerId) {
-      setSelectedManagerId(myEmployeeId);
-    }
-  }, [myEmployeeId]);
-
   const allEmployees = Array.isArray(allEmployeesData) ? allEmployeesData : [];
+
+  useEffect(() => {
+    if (selectedManagerId) return;
+    // أولاً: جرب من ملف الموظف المرتبط
+    const fromProfile = (myProfile as any)?.id;
+    if (fromProfile) { setSelectedManagerId(fromProfile); return; }
+    // ثانياً: ابحث عن الموظف بالـ email من قائمة الموظفين
+    if (user?.email && allEmployees.length > 0) {
+      const found = allEmployees.find((e: any) => e.email === user.email);
+      if (found) setSelectedManagerId(found.id);
+    }
+  }, [(myProfile as any)?.id, user?.email, allEmployees.length]);
 
   const subordinates = Array.isArray(subordinatesData)
     ? subordinatesData
