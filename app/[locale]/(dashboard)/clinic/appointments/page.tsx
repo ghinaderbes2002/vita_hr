@@ -218,7 +218,7 @@ export default function AppointmentsPage() {
             ) : (
               <div className="space-y-3">
                 {dayAppointments
-                  .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                  .sort((a: Appointment, b: Appointment) => a.startTime.localeCompare(b.startTime))
                   .map((appt: Appointment) => (
                     <div key={appt.id} className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors">
                       <div className="text-center min-w-14 shrink-0">
