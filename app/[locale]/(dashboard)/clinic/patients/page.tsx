@@ -213,10 +213,9 @@ export default function ClinicPatientsPage() {
         onOpenChange={(o) => !o && setDeleteId(null)}
         title={t("delete.title")}
         description={t("delete.description")}
-        confirmLabel={t("delete.confirm")}
+        confirmText={t("delete.confirm")}
         variant="destructive"
         onConfirm={handleDelete}
-        isLoading={deletePatient.isPending}
       />
     </div>
   );
