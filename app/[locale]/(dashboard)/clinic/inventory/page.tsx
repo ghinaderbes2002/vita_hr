@@ -192,7 +192,7 @@ export default function InventoryPage() {
                   ) : items.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8}>
-                        <EmptyState icon={Package} title="لا توجد أصناف" description="أضف أول صنف للمخزون" />
+                        <EmptyState icon={<Package className="h-8 w-8 text-muted-foreground" />} title="لا توجد أصناف" description="أضف أول صنف للمخزون" />
                       </TableCell>
                     </TableRow>
                   ) : (

@@ -107,7 +107,7 @@ export default function PhysioListPage() {
             ) : cases.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5}>
-                  <EmptyState icon={Heart} title={t("empty.title")} description={t("empty.description")} />
+                  <EmptyState icon={<Heart className="h-8 w-8 text-muted-foreground" />} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
             ) : (

@@ -136,7 +136,7 @@ export default function ClinicPatientsPage() {
             ) : patients.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9}>
-                  <EmptyState icon={Users} title={t("empty.title")} description={t("empty.description")} />
+                  <EmptyState icon={<Users className="h-8 w-8 text-muted-foreground" />} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
             ) : (

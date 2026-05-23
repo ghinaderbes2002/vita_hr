@@ -112,7 +112,7 @@ export default function ProstheticsListPage() {
             ) : cases.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8}>
-                  <EmptyState icon={Activity} title={t("empty.title")} description={t("empty.description")} />
+                  <EmptyState icon={<Activity className="h-8 w-8 text-muted-foreground" />} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
             ) : (
