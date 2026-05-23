@@ -256,6 +256,10 @@ export const PERMISSIONS = {
     VIEW_CLINICAL: "clinic.reports.view_clinical",
     VIEW_DONOR:    "clinic.reports.view_donor",
   },
+
+  AUDIT: {
+    READ: "audit:read",
+  },
 } as const;
 
 type ExtractValues<T> = T extends Record<string, infer U>

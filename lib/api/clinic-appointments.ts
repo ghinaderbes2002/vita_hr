@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "RESCHEDULED";
 export type AppointmentType = "ASSESSMENT" | "FITTING" | "SESSION" | "FOLLOW_UP" | "COMMITTEE";
 export type PractitionerRole = "PROSTHETIST" | "PHYSIOTHERAPIST" | "DOCTOR" | "NURSE";
 
@@ -103,7 +103,7 @@ export const clinicAppointmentsApi = {
     return data?.data ?? data;
   },
 
-  updateStatus: async (id: string, status: "confirm" | "complete" | "no-show"): Promise<Appointment> => {
+  updateStatus: async (id: string, status: AppointmentStatus): Promise<Appointment> => {
     const { data } = await apiClient.put(`/appointments/${id}/status`, { status });
     return data?.data ?? data;
   },

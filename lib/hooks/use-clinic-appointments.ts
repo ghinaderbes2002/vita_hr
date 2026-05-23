@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { clinicAppointmentsApi, CreateAppointmentDto, UpdateAppointmentDto, AppointmentListParams } from "@/lib/api/clinic-appointments";
+import { clinicAppointmentsApi, CreateAppointmentDto, UpdateAppointmentDto, AppointmentListParams, AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { toast } from "sonner";
 
 export function useClinicAppointments(params?: AppointmentListParams) {
@@ -83,7 +83,7 @@ export function useRescheduleAppointment() {
 export function useUpdateAppointmentStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: "confirm" | "complete" | "no-show" }) =>
+    mutationFn: ({ id, status }: { id: string; status: AppointmentStatus }) =>
       clinicAppointmentsApi.updateStatus(id, status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });

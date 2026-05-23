@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Search, Eye, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,27 +21,24 @@ import { ProstheticsCase, ProstheticsStatus } from "@/lib/api/clinic-prosthetics
 
 const LIMIT = 15;
 
-const AMPUTATION_TYPE_LABEL: Record<string, string> = { UPPER: "طرف علوي", LOWER: "طرف سفلي" };
-const AMPUTATION_SIDE_LABEL: Record<string, string> = { RIGHT: "أيمن", LEFT: "أيسر", BILATERAL: "ثنائي" };
-
-const STATUS_OPTIONS: { value: ProstheticsStatus; label: string }[] = [
-  { value: "INTAKE", label: "استقبال" },
-  { value: "ASSESSMENT", label: "تقييم" },
-  { value: "COMMITTEE_REVIEW", label: "مراجعة اللجنة" },
-  { value: "COMMITTEE_APPROVED", label: "اعتمدت اللجنة" },
-  { value: "FITTING", label: "تركيب" },
-  { value: "GAIT_ANALYSIS", label: "تحليل مشي" },
-  { value: "FINAL_EVALUATION", label: "تقييم نهائي" },
-  { value: "DELIVERED", label: "تم التسليم" },
-  { value: "FOLLOW_UP", label: "متابعة" },
-  { value: "CLOSED", label: "مغلقة" },
-  { value: "CANCELLED", label: "ملغاة" },
+const STATUS_VALUES: ProstheticsStatus[] = [
+  "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "COMMITTEE_APPROVED",
+  "FITTING", "GAIT_ANALYSIS", "FINAL_EVALUATION", "DELIVERED",
+  "FOLLOW_UP", "CLOSED", "CANCELLED",
 ];
+
+const fmt = (d: string) => {
+  const date = new Date(d);
+  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+};
 
 export default function ProstheticsListPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.prosthetics");
+  const tCommon = useTranslations("clinic.common");
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProstheticsStatus | "all">("all");
 
   const { data, isLoading } = useProstheticsCases({
@@ -50,44 +47,57 @@ export default function ProstheticsListPage() {
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
-  const cases = data?.items ?? [];
+  const cases = (data?.items ?? []).filter((c: ProstheticsCase) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const name = c.patient ? `${c.patient.firstName} ${c.patient.lastName}`.toLowerCase() : "";
+    const num = c.patient?.patientNumber?.toLowerCase() ?? "";
+    return name.includes(q) || num.includes(q);
+  });
   const totalPages = data?.totalPages ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
-        title="الأطراف الصناعية"
-        description="حالات الأطراف الصناعية في العيادة"
+        title={t("title")}
+        description={t("description")}
       />
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-56">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("searchPlaceholder")}
+            className="pr-9"
+          />
+        </div>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as any); setPage(1); }}>
-          <SelectTrigger className="w-52">
-            <SelectValue placeholder="جميع الحالات" />
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder={t("filter.all")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الحالات</SelectItem>
-            {STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            <SelectItem value="all">{t("filter.all")}</SelectItem>
+            {STATUS_VALUES.map((v) => (
+              <SelectItem key={v} value={v}>{t(`statuses.${v}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">المريض</TableHead>
-              <TableHead className="text-right">رقم المريض</TableHead>
-              <TableHead className="text-right">الحالة</TableHead>
-              <TableHead className="text-right">نوع البتر</TableHead>
-              <TableHead className="text-right">الجانب</TableHead>
-              <TableHead className="text-right">مستوى البتر</TableHead>
-              <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-              <TableHead />
+            <TableRow className="bg-muted/40">
+              <TableHead className="text-right font-semibold">{t("table.patientNumber")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.patient")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.status")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.amputationType")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.amputationSide")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.amputationLevel")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.createdAt")}</TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -95,44 +105,47 @@ export default function ProstheticsListPage() {
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
                   {Array.from({ length: 8 }).map((_, j) => (
-                    <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>
+                    <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : cases.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8}>
-                  <EmptyState icon={Activity} title="لا توجد حالات" description="ستظهر هنا حالات الأطراف الصناعية" />
+                  <EmptyState icon={Activity} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
             ) : (
               cases.map((c: ProstheticsCase) => (
                 <TableRow
                   key={c.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-muted/40 transition-colors"
                   onClick={() => router.push(`/${locale}/clinic/prosthetics/${c.id}`)}
                 >
-                  <TableCell className="font-medium">
-                    {c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—"}
-                  </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
                     {c.patient?.patientNumber ?? "—"}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—"}
                   </TableCell>
                   <TableCell><CaseStatusBadge status={c.status} /></TableCell>
                   <TableCell>
                     {c.amputationType
-                      ? <Badge variant="outline" className="text-xs">{AMPUTATION_TYPE_LABEL[c.amputationType]}</Badge>
-                      : "—"}
+                      ? <Badge variant="secondary" className="text-xs">{tCommon(`amputationType.${c.amputationType}`)}</Badge>
+                      : <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell>
-                    {c.amputationSide ? AMPUTATION_SIDE_LABEL[c.amputationSide] : "—"}
+                  <TableCell className="text-sm">
+                    {c.amputationSide ? tCommon(`amputationSide.${c.amputationSide}`) : <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell className="text-sm">{c.amputationLevel ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(c.createdAt).toLocaleDateString("ar")}
+                  <TableCell className="text-sm font-mono">
+                    {c.amputationLevel ?? <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {fmt(c.createdAt)}
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8"
+                      onClick={() => router.push(`/${locale}/clinic/prosthetics/${c.id}`)}>
                       <Eye className="h-4 w-4" />
                     </Button>
                   </TableCell>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,34 +15,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCreateClinicPatient, useCheckDuplicate } from "@/lib/hooks/use-clinic-patients";
-import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
-import { CreatePatientDto } from "@/lib/api/clinic-patients";
+import { useClinicCitiesByGovernorate } from "@/lib/hooks/use-clinic-cities";
+import { CreatePatientDto, IdentityType } from "@/lib/api/clinic-patients";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
 const step1Schema = z.object({
-  firstName: z.string().min(2, "الاسم الأول مطلوب"),
-  lastName: z.string().min(2, "اسم العائلة مطلوب"),
-  identityType: z.enum(["NATIONAL_ID", "PASSPORT", "RESIDENCE"]),
-  idNumber: z.string().min(5, "رقم الهوية مطلوب"),
-  dateOfBirth: z.string().min(1, "تاريخ الميلاد مطلوب"),
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
+  identityType: z.enum(["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"]),
+  idNumber: z.string().min(5),
+  dateOfBirth: z.string().min(1),
   gender: z.enum(["MALE", "FEMALE"]),
 });
 
 const step2Schema = z.object({
-  phone: z.string().min(7, "رقم الهاتف مطلوب"),
+  phone: z.string().min(7),
   whatsapp: z.string().optional(),
-  email: z.string().email("بريد إلكتروني غير صحيح").optional().or(z.literal("")),
+  email: z.string().email().optional().or(z.literal("")),
   cityId: z.string().optional(),
   address: z.string().optional(),
 });
 
 const step3Schema = z.object({
-  height: z.coerce.number().min(50).max(250).optional().or(z.literal("")),
-  weight: z.coerce.number().min(10).max(300).optional().or(z.literal("")),
+  height: z.union([z.coerce.number().min(50).max(250), z.literal("")]).optional(),
+  weight: z.union([z.coerce.number().min(10).max(300), z.literal("")]).optional(),
   educationLevel: z.string().optional(),
   maritalStatus: z.string().optional(),
   livingStatus: z.string().optional(),
@@ -62,79 +61,35 @@ type Step2 = z.infer<typeof step2Schema>;
 type Step3 = z.infer<typeof step3Schema>;
 type Step4 = z.infer<typeof step4Schema>;
 
-// ─── Step labels ──────────────────────────────────────────────────────────────
-
-const STEPS = [
-  { label: "المعلومات الأساسية", desc: "الهوية والجنس" },
-  { label: "التواصل والموقع", desc: "الهاتف والعنوان" },
-  { label: "البيانات الاجتماعية", desc: "المستوى التعليمي والحالة" },
-  { label: "الموافقات والملاحظات", desc: "الإذن بالبيانات" },
-];
-
-// ─── Options ──────────────────────────────────────────────────────────────────
-
-const IDENTITY_TYPES = [
-  { value: "NATIONAL_ID", label: "هوية وطنية" },
-  { value: "PASSPORT", label: "جواز سفر" },
-  { value: "UNHCR", label: "بطاقة UNHCR" },
-  { value: "OTHER", label: "أخرى" },
-];
-
-const EDUCATION = [
-  { value: "NONE", label: "بدون تعليم" },
-  { value: "PRIMARY", label: "ابتدائي" },
-  { value: "SECONDARY", label: "ثانوي" },
-  { value: "UNIVERSITY", label: "جامعي" },
-  { value: "POSTGRADUATE", label: "دراسات عليا" },
-];
-
-const MARITAL = [
-  { value: "SINGLE", label: "أعزب" },
-  { value: "MARRIED", label: "متزوج" },
-  { value: "DIVORCED", label: "مطلق" },
-  { value: "WIDOWED", label: "أرمل" },
-];
-
-const LIVING = [
-  { value: "ALONE", label: "وحده" },
-  { value: "FAMILY", label: "مع العائلة" },
-  { value: "INSTITUTION", label: "مؤسسة" },
-];
-
-const FINANCIAL = [
-  { value: "LOW", label: "منخفض" },
-  { value: "MODERATE", label: "متوسط" },
-  { value: "GOOD", label: "جيد" },
-  { value: "NOT_WORKING", label: "غير عامل" },
-  { value: "RETIRED", label: "متقاعد" },
-];
-
-const CONSENT = [
-  { value: "FULL", label: "موافقة كاملة" },
-  { value: "ANONYMOUS", label: "موافقة مجهولة" },
-  { value: "NONE", label: "رفض" },
-];
+const IDENTITY_TYPE_VALUES = ["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"] as const;
+const EDUCATION_VALUES = ["NONE", "PRIMARY", "SECONDARY", "UNIVERSITY", "POSTGRADUATE"] as const;
+const MARITAL_VALUES = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as const;
+const LIVING_VALUES = ["ALONE", "FAMILY", "INSTITUTION"] as const;
+const FINANCIAL_VALUES = ["LOW", "MODERATE", "GOOD", "NOT_WORKING", "RETIRED"] as const;
+const CONSENT_VALUES = ["FULL", "ANONYMOUS", "NONE"] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function NewPatientPage() {
   const router = useRouter();
   const locale = useLocale();
-  const [step, setStep] = useState(0);
+  const t = useTranslations("clinic.patients.new");
+  const tCommon = useTranslations("clinic.common");
 
+  const [step, setStep] = useState(0);
   const [s1, setS1] = useState<Partial<Step1>>({});
   const [s2, setS2] = useState<Partial<Step2>>({});
   const [s3, setS3] = useState<Partial<Step3>>({});
   const [s4, setS4] = useState<Partial<Step4>>({});
 
-  const createPatient = useCreateClinicPatient();
-  const { data: cities = [] } = useClinicCities();
+  const [selectedGovernorate, setSelectedGovernorate] = useState("");
 
-  // Duplicate check on idNumber
+  const createPatient = useCreateClinicPatient();
+  const { data: governorates = [] } = useClinicCitiesByGovernorate();
+
   const idNumber = s1.idNumber ?? "";
   const { data: dupData } = useCheckDuplicate(idNumber);
 
-  // ── Step 1 Form ──
   const form1 = useForm<Step1>({
     resolver: zodResolver(step1Schema),
     defaultValues: { firstName: "", lastName: "", identityType: "NATIONAL_ID", idNumber: "", dateOfBirth: "", gender: "MALE", ...s1 },
@@ -183,7 +138,7 @@ export default function NewPatientPage() {
     const dto: CreatePatientDto = {
       firstName: s1.firstName!,
       lastName: s1.lastName!,
-      identityType: s1.identityType!,
+      identityType: s1.identityType! as IdentityType,
       idNumber: s1.idNumber!,
       dateOfBirth: s1.dateOfBirth!,
       gender: s1.gender!,
@@ -211,12 +166,16 @@ export default function NewPatientPage() {
 
   const isDuplicate = dupData?.exists && idNumber.length >= 7;
 
+  const STEPS = [0, 1, 2, 3].map((i) => ({
+    label: t(`steps.${i}.label`),
+    desc: t(`steps.${i}.desc`),
+  }));
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Page title */}
       <div>
-        <h1 className="text-2xl font-bold">تسجيل مريض جديد</h1>
-        <p className="text-muted-foreground text-sm mt-1">أدخل بيانات المريض في 4 خطوات</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t("subtitle")}</p>
       </div>
 
       {/* Stepper */}
@@ -256,35 +215,37 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>الاسم الأول <span className="text-destructive">*</span></Label>
-                  <Input {...form1.register("firstName")} placeholder="محمد" />
+                  <Label>{t("fields.firstName")} <span className="text-destructive">*</span></Label>
+                  <Input {...form1.register("firstName")} />
                   {form1.formState.errors.firstName && (
-                    <p className="text-xs text-destructive">{form1.formState.errors.firstName.message}</p>
+                    <p className="text-xs text-destructive">{t("validation.firstNameRequired")}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>اسم العائلة <span className="text-destructive">*</span></Label>
-                  <Input {...form1.register("lastName")} placeholder="أحمد" />
+                  <Label>{t("fields.lastName")} <span className="text-destructive">*</span></Label>
+                  <Input {...form1.register("lastName")} />
                   {form1.formState.errors.lastName && (
-                    <p className="text-xs text-destructive">{form1.formState.errors.lastName.message}</p>
+                    <p className="text-xs text-destructive">{t("validation.lastNameRequired")}</p>
                   )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>نوع الهوية <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.identityType")} <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("identityType")} onValueChange={(v) => form1.setValue("identityType", v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {IDENTITY_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                      {IDENTITY_TYPE_VALUES.map((v) => (
+                        <SelectItem key={v} value={v}>{t(`identityTypes.${v}`)}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>رقم الهوية <span className="text-destructive">*</span></Label>
-                  <Input {...form1.register("idNumber")} placeholder="1234567890" />
+                  <Label>{t("fields.idNumber")} <span className="text-destructive">*</span></Label>
+                  <Input {...form1.register("idNumber")} />
                   {form1.formState.errors.idNumber && (
-                    <p className="text-xs text-destructive">{form1.formState.errors.idNumber.message}</p>
+                    <p className="text-xs text-destructive">{t("validation.idNumberRequired")}</p>
                   )}
                 </div>
               </div>
@@ -292,32 +253,32 @@ export default function NewPatientPage() {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    هذا الرقم مسجل مسبقاً.{" "}
+                    {t("duplicate.message")}{" "}
                     <button
                       type="button"
                       className="underline font-medium"
                       onClick={() => router.push(`/${locale}/clinic/patients/${dupData?.patientId}`)}
                     >
-                      عرض ملف المريض
+                      {t("duplicate.viewFile")}
                     </button>
                   </AlertDescription>
                 </Alert>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>تاريخ الميلاد <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.dateOfBirth")} <span className="text-destructive">*</span></Label>
                   <Input type="date" {...form1.register("dateOfBirth")} />
                   {form1.formState.errors.dateOfBirth && (
-                    <p className="text-xs text-destructive">{form1.formState.errors.dateOfBirth.message}</p>
+                    <p className="text-xs text-destructive">{t("validation.dobRequired")}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الجنس <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.gender")} <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("gender")} onValueChange={(v) => form1.setValue("gender", v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MALE">ذكر</SelectItem>
-                      <SelectItem value="FEMALE">أنثى</SelectItem>
+                      <SelectItem value="MALE">{tCommon("gender.MALE")}</SelectItem>
+                      <SelectItem value="FEMALE">{tCommon("gender.FEMALE")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -330,38 +291,65 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>رقم الهاتف <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.phone")} <span className="text-destructive">*</span></Label>
                   <Input dir="ltr" {...form2.register("phone")} placeholder="+963..." />
                   {form2.formState.errors.phone && (
-                    <p className="text-xs text-destructive">{form2.formState.errors.phone.message}</p>
+                    <p className="text-xs text-destructive">{t("validation.phoneRequired")}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>واتساب</Label>
+                  <Label>{t("fields.whatsapp")}</Label>
                   <Input dir="ltr" {...form2.register("whatsapp")} placeholder="+963..." />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>البريد الإلكتروني</Label>
+                <Label>{t("fields.email")}</Label>
                 <Input dir="ltr" type="email" {...form2.register("email")} placeholder="email@example.com" />
                 {form2.formState.errors.email && (
-                  <p className="text-xs text-destructive">{form2.formState.errors.email.message}</p>
+                  <p className="text-xs text-destructive">{t("validation.invalidEmail")}</p>
                 )}
               </div>
-              <div className="space-y-1.5">
-                <Label>المدينة</Label>
-                <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر المدينة" /></SelectTrigger>
-                  <SelectContent>
-                    {cities.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>{t("fields.governorate")}</Label>
+                  <Select
+                    value={selectedGovernorate}
+                    onValueChange={(v) => {
+                      setSelectedGovernorate(v);
+                      form2.setValue("cityId", "");
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("fields.governoratePlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {governorates.map((g) => (
+                        <SelectItem key={g.name} value={g.name}>{g.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("fields.city")}</Label>
+                  <Select
+                    value={form2.watch("cityId") ?? ""}
+                    onValueChange={(v) => form2.setValue("cityId", v)}
+                    disabled={!selectedGovernorate}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedGovernorate ? t("fields.cityPlaceholder") : "—"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(governorates.find((g) => g.name === selectedGovernorate)?.cities ?? []).map((c) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-1.5">
-                <Label>العنوان التفصيلي</Label>
-                <Textarea rows={2} {...form2.register("address")} placeholder="الحي، الشارع..." />
+                <Label>{t("fields.address")}</Label>
+                <Textarea rows={2} {...form2.register("address")} placeholder={t("fields.addressPlaceholder")} />
               </div>
             </div>
           )}
@@ -371,64 +359,72 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>الطول (سم)</Label>
+                  <Label>{t("fields.height")}</Label>
                   <Input type="number" {...form3.register("height")} placeholder="170" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الوزن (كغ)</Label>
+                  <Label>{t("fields.weight")}</Label>
                   <Input type="number" {...form3.register("weight")} placeholder="70" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>المستوى التعليمي</Label>
+                  <Label>{t("fields.educationLevel")}</Label>
                   <Select value={form3.watch("educationLevel") ?? ""} onValueChange={(v) => form3.setValue("educationLevel", v)}>
-                    <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {EDUCATION.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
+                      {EDUCATION_VALUES.map((v) => (
+                        <SelectItem key={v} value={v}>{t(`education.${v}`)}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الحالة الاجتماعية</Label>
+                  <Label>{t("fields.maritalStatus")}</Label>
                   <Select value={form3.watch("maritalStatus") ?? ""} onValueChange={(v) => form3.setValue("maritalStatus", v)}>
-                    <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {MARITAL.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                      {MARITAL_VALUES.map((v) => (
+                        <SelectItem key={v} value={v}>{t(`marital.${v}`)}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>وضع السكن</Label>
+                  <Label>{t("fields.livingStatus")}</Label>
                   <Select value={form3.watch("livingStatus") ?? ""} onValueChange={(v) => form3.setValue("livingStatus", v)}>
-                    <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {LIVING.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                      {LIVING_VALUES.map((v) => (
+                        <SelectItem key={v} value={v}>{t(`living.${v}`)}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الوضع المادي</Label>
+                  <Label>{t("fields.financialStatus")}</Label>
                   <Select value={form3.watch("financialStatus") ?? ""} onValueChange={(v) => form3.setValue("financialStatus", v)}>
-                    <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {FINANCIAL.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                      {FINANCIAL_VALUES.map((v) => (
+                        <SelectItem key={v} value={v}>{t(`financial.${v}`)}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>طريقة الوصول إلى المركز</Label>
-                <Input {...form3.register("centerAccessMethod")} placeholder="سيارة خاصة، مواصلات عامة..." />
+                <Label>{t("fields.centerAccessMethod")}</Label>
+                <Input {...form3.register("centerAccessMethod")} placeholder={t("fields.centerAccessPlaceholder")} />
               </div>
               <div className="flex items-center gap-3 pt-1">
                 <Switch
                   checked={form3.watch("receivesHumanitarianAid") ?? false}
                   onCheckedChange={(v) => form3.setValue("receivesHumanitarianAid", v)}
                 />
-                <Label>يتلقى مساعدات إنسانية</Label>
+                <Label>{t("fields.receivesHumanitarianAid")}</Label>
               </div>
             </div>
           )}
@@ -437,11 +433,13 @@ export default function NewPatientPage() {
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>الموافقة على توثيق البيانات</Label>
+                <Label>{t("fields.documentConsent")}</Label>
                 <Select value={form4.watch("documentConsent") ?? "FULL"} onValueChange={(v) => form4.setValue("documentConsent", v as any)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CONSENT.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {CONSENT_VALUES.map((v) => (
+                      <SelectItem key={v} value={v}>{t(`consent.${v}`)}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -450,21 +448,21 @@ export default function NewPatientPage() {
                   checked={form4.watch("mediaConsent") ?? true}
                   onCheckedChange={(v) => form4.setValue("mediaConsent", v)}
                 />
-                <Label>الموافقة على استخدام الوسائط (صور/فيديو)</Label>
+                <Label>{t("fields.mediaConsent")}</Label>
               </div>
               <div className="space-y-1.5">
-                <Label>ملاحظات</Label>
-                <Textarea rows={3} {...form4.register("notes")} placeholder="أي ملاحظات إضافية عن المريض..." />
+                <Label>{t("fields.notes")}</Label>
+                <Textarea rows={3} {...form4.register("notes")} placeholder={t("fields.notesPlaceholder")} />
               </div>
 
               {/* Summary */}
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
-                <p className="font-semibold">ملخص البيانات</p>
+                <p className="font-semibold">{t("summary.title")}</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
-                  <span>الاسم:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
-                  <span>رقم الهوية:</span><span className="text-foreground font-mono">{s1.idNumber}</span>
-                  <span>الهاتف:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
-                  {s2.cityId && <><span>المدينة:</span><span className="text-foreground">{s2.cityId}</span></>}
+                  <span>{t("summary.name")}:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
+                  <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{s1.idNumber}</span>
+                  <span>{t("summary.phone")}:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
+                  {s2.cityId && <><span>{t("summary.city")}:</span><span className="text-foreground">{s2.cityId}</span></>}
                 </div>
               </div>
             </div>
@@ -477,16 +475,16 @@ export default function NewPatientPage() {
       <div className="flex justify-between">
         <Button variant="outline" onClick={step === 0 ? () => router.back() : prevStep}>
           <ChevronRight className="h-4 w-4 ml-1" />
-          {step === 0 ? "إلغاء" : "السابق"}
+          {step === 0 ? t("nav.cancel") : t("nav.prev")}
         </Button>
         {step < 3 ? (
           <Button onClick={nextStep} disabled={isDuplicate && step === 0}>
-            التالي
+            {t("nav.next")}
             <ChevronLeft className="h-4 w-4 mr-1" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={createPatient.isPending}>
-            {createPatient.isPending ? "جاري الحفظ..." : "حفظ المريض"}
+            {createPatient.isPending ? t("nav.saving") : t("nav.save")}
             <Check className="h-4 w-4 mr-1" />
           </Button>
         )}

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(dir:*)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(node -e \"const f=require\\('./messages/tr.json'\\); console.log\\(f.clinic.patients.new.title, '|', f.clinic.patients.new.fields.firstName\\);\")"
     ]
   }
 }

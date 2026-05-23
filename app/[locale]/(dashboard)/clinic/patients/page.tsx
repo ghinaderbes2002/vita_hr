@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Plus, Search, Eye, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,14 +27,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const LIMIT = 15;
 
-const GENDER_LABEL: Record<string, string> = {
-  MALE: "ذكر",
-  FEMALE: "أنثى",
-};
-
 export default function ClinicPatientsPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.patients");
+  const tCommon = useTranslations("clinic.common");
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -61,20 +58,18 @@ export default function ClinicPatientsPage() {
     setDeleteId(null);
   };
 
-  const age = (dob: string) => {
-    const diff = Date.now() - new Date(dob).getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
-  };
+  const age = (dob: string) => Math.floor((Date.now() - new Date(dob).getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+  const fmt = (d: string) => { const x = new Date(d); return `${x.getDate()}/${x.getMonth() + 1}/${x.getFullYear()}`; };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="المرضى"
-        description="سجل المرضى في العيادة الطبية"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button onClick={() => router.push(`/${locale}/clinic/patients/new`)} className="gap-2">
             <Plus className="h-4 w-4" />
-            مريض جديد
+            {t("newPatient")}
           </Button>
         }
       />
@@ -86,29 +81,29 @@ export default function ClinicPatientsPage() {
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="ابحث بالاسم أو رقم الهوية..."
+            placeholder={t("searchPlaceholder")}
             className="pr-9"
           />
         </div>
         <Select value={genderFilter} onValueChange={(v) => { setGenderFilter(v as any); setPage(1); }}>
           <SelectTrigger className="w-36">
-            <SelectValue placeholder="الجنس" />
+            <SelectValue placeholder={t("filter.gender")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="MALE">ذكر</SelectItem>
-            <SelectItem value="FEMALE">أنثى</SelectItem>
+            <SelectItem value="all">{t("filter.all")}</SelectItem>
+            <SelectItem value="MALE">{tCommon("gender.MALE")}</SelectItem>
+            <SelectItem value="FEMALE">{tCommon("gender.FEMALE")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={caseTypeFilter} onValueChange={(v) => { setCaseTypeFilter(v as any); setPage(1); }}>
           <SelectTrigger className="w-44">
-            <SelectValue placeholder="نوع الحالة" />
+            <SelectValue placeholder={t("filter.caseType")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="prosthetics">أطراف صناعية</SelectItem>
-            <SelectItem value="physio">علاج فيزيائي</SelectItem>
-            <SelectItem value="both">كلاهما</SelectItem>
+            <SelectItem value="all">{t("filter.all")}</SelectItem>
+            <SelectItem value="prosthetics">{t("filter.prosthetics")}</SelectItem>
+            <SelectItem value="physio">{t("filter.physio")}</SelectItem>
+            <SelectItem value="both">{t("filter.both")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -118,14 +113,14 @@ export default function ClinicPatientsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-right">رقم المريض</TableHead>
-              <TableHead className="text-right">الاسم</TableHead>
-              <TableHead className="text-right">الجنس</TableHead>
-              <TableHead className="text-right">العمر</TableHead>
-              <TableHead className="text-right">الهاتف</TableHead>
-              <TableHead className="text-right">المدينة</TableHead>
-              <TableHead className="text-right">الحالات</TableHead>
-              <TableHead className="text-right">آخر زيارة</TableHead>
+              <TableHead className="text-right">{t("patientNumber")}</TableHead>
+              <TableHead className="text-right">{t("table.name")}</TableHead>
+              <TableHead className="text-right">{t("table.gender")}</TableHead>
+              <TableHead className="text-right">{t("table.age")}</TableHead>
+              <TableHead className="text-right">{t("table.phone")}</TableHead>
+              <TableHead className="text-right">{t("table.city")}</TableHead>
+              <TableHead className="text-right">{t("table.cases")}</TableHead>
+              <TableHead className="text-right">{t("table.lastVisit")}</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -141,7 +136,7 @@ export default function ClinicPatientsPage() {
             ) : patients.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9}>
-                  <EmptyState icon={Users} title="لا يوجد مرضى" description="ابدأ بتسجيل مريض جديد" />
+                  <EmptyState icon={Users} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
             ) : (
@@ -155,19 +150,19 @@ export default function ClinicPatientsPage() {
                   <TableCell className="font-medium">{p.firstName} {p.lastName}</TableCell>
                   <TableCell>
                     <Badge variant={p.gender === "MALE" ? "default" : "secondary"}>
-                      {GENDER_LABEL[p.gender]}
+                      {tCommon(`gender.${p.gender}`)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{age(p.dateOfBirth)} سنة</TableCell>
+                  <TableCell>{age(p.dateOfBirth)} {t("ageSuffix")}</TableCell>
                   <TableCell dir="ltr" className="text-left">{p.phone}</TableCell>
                   <TableCell>{p.city?.name ?? "—"}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {(p.activeProstheticsCount ?? 0) > 0 && (
-                        <Badge variant="outline" className="text-xs">أطراف {p.activeProstheticsCount}</Badge>
+                        <Badge variant="outline" className="text-xs">{t("badges.prosthetics")} {p.activeProstheticsCount}</Badge>
                       )}
                       {(p.activePhysioCount ?? 0) > 0 && (
-                        <Badge variant="outline" className="text-xs">فيزيائي {p.activePhysioCount}</Badge>
+                        <Badge variant="outline" className="text-xs">{t("badges.physio")} {p.activePhysioCount}</Badge>
                       )}
                       {(p.activeProstheticsCount ?? 0) === 0 && (p.activePhysioCount ?? 0) === 0 && (
                         <span className="text-muted-foreground text-xs">—</span>
@@ -175,7 +170,7 @@ export default function ClinicPatientsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {p.lastVisitDate ? new Date(p.lastVisitDate).toLocaleDateString("ar") : "—"}
+                    {p.lastVisitDate ? fmt(p.lastVisitDate) : "—"}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
@@ -187,7 +182,7 @@ export default function ClinicPatientsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => router.push(`/${locale}/clinic/patients/${p.id}`)}>
                           <Eye className="h-4 w-4 ml-2" />
-                          عرض الملف
+                          {t("viewFile")}
                         </DropdownMenuItem>
                         <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.DELETE}>
                           <DropdownMenuItem
@@ -195,7 +190,7 @@ export default function ClinicPatientsPage() {
                             onClick={() => setDeleteId(p.id)}
                           >
                             <Trash2 className="h-4 w-4 ml-2" />
-                            حذف
+                            {t("delete.confirm")}
                           </DropdownMenuItem>
                         </ActionGuard>
                       </DropdownMenuContent>
@@ -215,9 +210,9 @@ export default function ClinicPatientsPage() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={(o) => !o && setDeleteId(null)}
-        title="حذف المريض"
-        description="هل أنت متأكد من حذف هذا المريض؟ سيتم حذف جميع بياناته وحالاته."
-        confirmLabel="حذف"
+        title={t("delete.title")}
+        description={t("delete.description")}
+        confirmLabel={t("delete.confirm")}
         variant="destructive"
         onConfirm={handleDelete}
         isLoading={deletePatient.isPending}

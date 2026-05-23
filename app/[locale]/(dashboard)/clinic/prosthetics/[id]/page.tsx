@@ -33,7 +33,9 @@ import {
   useSubmitAssessmentUpper, useSubmitAssessmentLower,
   useSubmitCommitteeOpinion, useSubmitCommitteeDecision, useSignCommitteeDecision,
   useCaseComponents, useAddCaseComponent, useDeleteCaseComponent,
-  useSubmitGaitAnalysis,
+  useSubmitGaitAnalysis, useSubmitBalanceAssessment,
+  useAddConsumable, useSubmitFinalEvaluation, useSignFinalEvaluation,
+  useSubmitDelivery, useSignDelivery,
   useProstheticsFollowUps, useAddProstheticsFollowUp,
   useProstheticsTimeline, useDownloadProstheticsPdf,
 } from "@/lib/hooks/use-clinic-prosthetics";
@@ -111,6 +113,12 @@ export default function ProstheticsCasePage() {
   const addComponent = useAddCaseComponent();
   const deleteComponent = useDeleteCaseComponent();
   const submitGait = useSubmitGaitAnalysis();
+  const submitBalance = useSubmitBalanceAssessment();
+  const addConsumable = useAddConsumable();
+  const submitFinalEval = useSubmitFinalEvaluation();
+  const signFinalEval = useSignFinalEvaluation();
+  const submitDelivery = useSubmitDelivery();
+  const signDelivery = useSignDelivery();
   const addFollowUp = useAddProstheticsFollowUp();
   const downloadPdf = useDownloadProstheticsPdf();
 
@@ -131,6 +139,13 @@ export default function ProstheticsCasePage() {
   const [signOpen, setSignOpen] = useState(false);
   const [compForm, setCompForm] = useState({ name: "", code: "", supplier: "", quantity: "1", source: "WAREHOUSE" as "WAREHOUSE" | "SUPPLIER" });
   const [gaitForm, setGaitForm] = useState({ clinicalConclusion: "", recommendations: "", treatmentPlan: "" });
+  const [balanceForm, setBalanceForm] = useState({ overallLevel: "", fallRisk: "LOW" as "LOW" | "MODERATE" | "HIGH", notes: "" });
+  const [consumableForm, setConsumableForm] = useState({ name: "", quantity: "1", unit: "", notes: "" });
+  const [consumables, setConsumables] = useState<Array<{ name: string; quantity: string; unit: string; notes: string }>>([]);
+  const [finalEvalForm, setFinalEvalForm] = useState({ functionalOutcome: "", patientSatisfaction: "", notes: "" });
+  const [finalSignOpen, setFinalSignOpen] = useState(false);
+  const [deliveryForm, setDeliveryForm] = useState({ deliveryDate: new Date().toISOString().slice(0, 10), notes: "" });
+  const [deliverySignOpen, setDeliverySignOpen] = useState(false);
   const [followUpForm, setFollowUpForm] = useState({ date: new Date().toISOString().slice(0, 10), notes: "", kLevel: null as KLevel | null, painLevel: "" });
 
   if (isLoading) {
@@ -240,6 +255,41 @@ export default function ProstheticsCasePage() {
     await updateStatus.mutateAsync({ id, status: "DELIVERED" });
   };
 
+  const handleSubmitBalance = async () => {
+    await submitBalance.mutateAsync({ id, dto: { overallBalance: balanceForm.overallLevel, fallRisk: balanceForm.fallRisk, notes: balanceForm.notes || undefined } });
+  };
+
+  const handleAddConsumable = () => {
+    if (!consumableForm.name.trim()) return;
+    setConsumables((prev) => [...prev, { ...consumableForm }]);
+    setConsumableForm({ name: "", quantity: "1", unit: "", notes: "" });
+  };
+
+  const handleSaveConsumables = async () => {
+    for (const c of consumables) {
+      await addConsumable.mutateAsync({ id, dto: { name: c.name, quantity: parseInt(c.quantity) || 1, unit: c.unit || undefined, notes: c.notes || undefined } });
+    }
+    setConsumables([]);
+  };
+
+  const handleSubmitFinalEval = async () => {
+    await submitFinalEval.mutateAsync({ id, dto: { functionalOutcome: finalEvalForm.functionalOutcome || undefined, patientSatisfaction: finalEvalForm.patientSatisfaction || undefined, notes: finalEvalForm.notes || undefined } });
+  };
+
+  const handleSignFinalEval = async (sig: string) => {
+    await signFinalEval.mutateAsync({ id, signature: sig });
+    await updateStatus.mutateAsync({ id, status: "DELIVERED" });
+  };
+
+  const handleSubmitDelivery = async () => {
+    await submitDelivery.mutateAsync({ id, dto: { deliveryDate: deliveryForm.deliveryDate, notes: deliveryForm.notes || undefined } });
+  };
+
+  const handleSignDelivery = async (sig: string) => {
+    await signDelivery.mutateAsync({ id, signature: sig });
+    await updateStatus.mutateAsync({ id, status: "FOLLOW_UP" });
+  };
+
   const handleAddFollowUp = async () => {
     if (!followUpForm.notes.trim()) return;
     await addFollowUp.mutateAsync({
@@ -302,6 +352,8 @@ export default function ProstheticsCasePage() {
           <TabsTrigger value="committee_review">اللجنة</TabsTrigger>
           <TabsTrigger value="fitting">التركيب</TabsTrigger>
           <TabsTrigger value="gait_analysis">تحليل المشي</TabsTrigger>
+          <TabsTrigger value="balance_assessment">التوازن</TabsTrigger>
+          <TabsTrigger value="consumables">المستهلكات</TabsTrigger>
           <TabsTrigger value="final_evaluation">التقييم النهائي</TabsTrigger>
           <TabsTrigger value="delivered">التسليم</TabsTrigger>
           <TabsTrigger value="follow_up">المتابعة</TabsTrigger>
@@ -640,34 +692,205 @@ export default function ProstheticsCasePage() {
           </Section>
         </TabsContent>
 
+        {/* ── BALANCE ASSESSMENT ──────────────────────────────────────────── */}
+        <TabsContent value="balance_assessment" className="mt-4">
+          <Section title="تقييم التوازن">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>المستوى العام للتوازن</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  value={balanceForm.overallLevel}
+                  onChange={(e) => setBalanceForm((f) => ({ ...f, overallLevel: e.target.value }))}
+                >
+                  <option value="">اختر</option>
+                  <option value="INDEPENDENT">مستقل</option>
+                  <option value="NEEDS_ASSISTANCE">يحتاج مساعدة</option>
+                  <option value="DEPENDENT">يعتمد على الغير</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>مستوى خطر السقوط</Label>
+                <div className="flex gap-3">
+                  {(["LOW", "MODERATE", "HIGH"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setBalanceForm((f) => ({ ...f, fallRisk: r }))}
+                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                        balanceForm.fallRisk === r
+                          ? r === "LOW" ? "bg-green-100 border-green-500 text-green-800"
+                            : r === "MODERATE" ? "bg-yellow-100 border-yellow-500 text-yellow-800"
+                            : "bg-red-100 border-red-500 text-red-800"
+                          : "bg-background hover:bg-muted"
+                      }`}
+                    >
+                      {r === "LOW" ? "منخفض" : r === "MODERATE" ? "متوسط" : "عالي"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>ملاحظات</Label>
+                <Textarea rows={3} value={balanceForm.notes} onChange={(e) => setBalanceForm((f) => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <Button onClick={handleSubmitBalance} disabled={!balanceForm.overallLevel || submitBalance.isPending} className="w-full">
+                {submitBalance.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                حفظ تقييم التوازن
+              </Button>
+            </div>
+          </Section>
+        </TabsContent>
+
+        {/* ── CONSUMABLES ─────────────────────────────────────────────────── */}
+        <TabsContent value="consumables" className="mt-4">
+          <Section title="المستهلكات">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>اسم المادة <span className="text-destructive">*</span></Label>
+                  <Input value={consumableForm.name} onChange={(e) => setConsumableForm((f) => ({ ...f, name: e.target.value }))} placeholder="قطن، ضمادة..." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الكمية</Label>
+                  <Input type="number" min={1} value={consumableForm.quantity} onChange={(e) => setConsumableForm((f) => ({ ...f, quantity: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الوحدة</Label>
+                  <Input value={consumableForm.unit} onChange={(e) => setConsumableForm((f) => ({ ...f, unit: e.target.value }))} placeholder="قطعة، رول، مل..." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>ملاحظات</Label>
+                  <Input value={consumableForm.notes} onChange={(e) => setConsumableForm((f) => ({ ...f, notes: e.target.value }))} />
+                </div>
+              </div>
+              <Button variant="outline" onClick={handleAddConsumable} disabled={!consumableForm.name.trim()} className="w-full gap-2">
+                <Plus className="h-4 w-4" /> إضافة للقائمة
+              </Button>
+              {consumables.length > 0 && (
+                <>
+                  <div className="rounded-lg border text-sm">
+                    <table className="w-full">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-right p-2 font-medium">المادة</th>
+                          <th className="text-right p-2 font-medium">الكمية</th>
+                          <th className="text-right p-2 font-medium">الوحدة</th>
+                          <th className="p-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {consumables.map((item, i) => (
+                          <tr key={i} className="border-t">
+                            <td className="p-2 font-medium">{item.name}</td>
+                            <td className="p-2">{item.quantity}</td>
+                            <td className="p-2 text-muted-foreground">{item.unit || "—"}</td>
+                            <td className="p-2">
+                              <button onClick={() => setConsumables((prev) => prev.filter((_, j) => j !== i))} className="text-destructive">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Button onClick={handleSaveConsumables} disabled={addConsumable.isPending} className="w-full">
+                    {addConsumable.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+                    حفظ المستهلكات
+                  </Button>
+                </>
+              )}
+            </div>
+          </Section>
+        </TabsContent>
+
         {/* ── FINAL EVALUATION ────────────────────────────────────────────── */}
         <TabsContent value="final_evaluation" className="mt-4">
           <Section title="التقييم النهائي">
-            <div className="text-center py-8 space-y-4">
-              <CheckCircle2 className="h-12 w-12 text-yellow-500 mx-auto" />
-              <p className="text-muted-foreground">يتم هنا توثيق التقييم النهائي وتوقيع المدير قبل التسليم.</p>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>النتيجة الوظيفية</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  value={finalEvalForm.functionalOutcome}
+                  onChange={(e) => setFinalEvalForm((f) => ({ ...f, functionalOutcome: e.target.value }))}
+                >
+                  <option value="">اختر</option>
+                  <option value="EXCELLENT">ممتاز</option>
+                  <option value="GOOD">جيد</option>
+                  <option value="FAIR">مقبول</option>
+                  <option value="POOR">ضعيف</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>رضا المريض</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  value={finalEvalForm.patientSatisfaction}
+                  onChange={(e) => setFinalEvalForm((f) => ({ ...f, patientSatisfaction: e.target.value }))}
+                >
+                  <option value="">اختر</option>
+                  <option value="VERY_SATISFIED">راضٍ جداً</option>
+                  <option value="SATISFIED">راضٍ</option>
+                  <option value="NEUTRAL">محايد</option>
+                  <option value="DISSATISFIED">غير راضٍ</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>ملاحظات التقييم النهائي</Label>
+                <Textarea rows={3} value={finalEvalForm.notes} onChange={(e) => setFinalEvalForm((f) => ({ ...f, notes: e.target.value }))} />
+              </div>
               {c.status === "FINAL_EVALUATION" && (
-                <Button onClick={handleMarkDelivered} disabled={updateStatus.isPending} className="gap-2">
-                  الانتقال للتسليم
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleSubmitFinalEval} disabled={submitFinalEval.isPending} className="flex-1">
+                    حفظ التقييم
+                  </Button>
+                  <ActionGuard permission={PERMISSIONS.CLINIC_PROSTHETICS.DELIVERY_APPROVE}>
+                    <Button onClick={() => setFinalSignOpen(true)} className="flex-1">
+                      توقيع المدير والانتقال للتسليم
+                    </Button>
+                  </ActionGuard>
+                </div>
               )}
             </div>
           </Section>
         </TabsContent>
 
         {/* ── DELIVERED ───────────────────────────────────────────────────── */}
-        <TabsContent value="delivered" className="mt-4">
-          <Section title="التسليم">
-            <div className="text-center py-8 space-y-4">
-              <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
-              <p className="font-semibold text-green-700">تم تسليم الطرف الصناعي</p>
-              {c.deliveryDate && (
-                <p className="text-sm text-muted-foreground">تاريخ التسليم: {new Date(c.deliveryDate).toLocaleDateString("ar")}</p>
-              )}
+        <TabsContent value="delivered" className="mt-4 space-y-4">
+          <Section title="تفاصيل التسليم">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>تاريخ التسليم</Label>
+                <Input
+                  type="date"
+                  value={deliveryForm.deliveryDate}
+                  onChange={(e) => setDeliveryForm((f) => ({ ...f, deliveryDate: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>ملاحظات التسليم</Label>
+                <Textarea rows={2} value={deliveryForm.notes} onChange={(e) => setDeliveryForm((f) => ({ ...f, notes: e.target.value }))} />
+              </div>
               {c.status === "DELIVERED" && (
-                <Button onClick={() => updateStatus.mutate({ id, status: "FOLLOW_UP" })} variant="outline">
-                  بدء المتابعة
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleSubmitDelivery} disabled={submitDelivery.isPending} className="flex-1">
+                    حفظ بيانات التسليم
+                  </Button>
+                  <Button onClick={() => setDeliverySignOpen(true)} className="flex-1">
+                    توقيع المريض وإنهاء الحالة
+                  </Button>
+                </div>
+              )}
+              {c.deliveryDate && (
+                <div className="rounded-lg border bg-green-50 p-4 flex items-center gap-3">
+                  <CheckCircle2 className="h-8 w-8 text-green-500 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-green-800">تم تسليم الطرف الصناعي</p>
+                    <p className="text-sm text-green-700">{new Date(c.deliveryDate).toLocaleDateString("ar")}</p>
+                  </div>
+                </div>
               )}
             </div>
           </Section>
@@ -755,6 +978,24 @@ export default function ProstheticsCasePage() {
         legalNotice="بتوقيعك هذا تؤكد اعتماد قرار اللجنة الطبية ونقل الحالة لمرحلة التركيب."
         onSign={handleSign}
         isLoading={signDecision.isPending}
+      />
+
+      <SignaturePadDialog
+        open={finalSignOpen}
+        onOpenChange={setFinalSignOpen}
+        title="توقيع المدير على التقييم النهائي"
+        legalNotice="بتوقيعك تؤكد اعتماد التقييم النهائي والموافقة على انتقال الحالة للتسليم."
+        onSign={handleSignFinalEval}
+        isLoading={signFinalEval.isPending}
+      />
+
+      <SignaturePadDialog
+        open={deliverySignOpen}
+        onOpenChange={setDeliverySignOpen}
+        title="توقيع المريض على استلام الطرف الصناعي"
+        legalNotice="بتوقيعك تؤكد استلامك الطرف الصناعي بحالة جيدة."
+        onSign={handleSignDelivery}
+        isLoading={signDelivery.isPending}
       />
     </div>
   );

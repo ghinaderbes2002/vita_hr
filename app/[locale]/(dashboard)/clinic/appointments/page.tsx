@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, Plus, Clock, X, ChevronsUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,42 +24,14 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
-const TYPE_LABEL: Record<AppointmentType, string> = {
-  ASSESSMENT: "تقييم",
-  FITTING: "تركيب",
-  SESSION: "جلسة",
-  FOLLOW_UP: "متابعة",
-  COMMITTEE: "لجنة",
-};
-
-const ROLE_LABEL: Record<PractitionerRole, string> = {
-  PROSTHETIST: "أخصائي أطراف",
-  PHYSIOTHERAPIST: "أخصائي فيزيائي",
-  DOCTOR: "طبيب",
-  NURSE: "ممرض",
-};
-
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
   SCHEDULED: "bg-blue-100 text-blue-800",
   CONFIRMED: "bg-green-100 text-green-800",
   COMPLETED: "bg-gray-100 text-gray-600",
   CANCELLED: "bg-red-100 text-red-700",
   NO_SHOW: "bg-orange-100 text-orange-700",
+  RESCHEDULED: "bg-purple-100 text-purple-800",
 };
-
-const STATUS_LABEL: Record<AppointmentStatus, string> = {
-  SCHEDULED: "مجدول",
-  CONFIRMED: "مؤكد",
-  COMPLETED: "منجز",
-  CANCELLED: "ملغى",
-  NO_SHOW: "لم يحضر",
-};
-
-const DAY_NAMES = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-const MONTH_NAMES = [
-  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -80,6 +52,11 @@ function toISO(d: Date) {
 export default function AppointmentsPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.appointments");
+
+  const DAY_NAMES = Array.from({ length: 7 }, (_, i) =>
+    new Intl.DateTimeFormat(locale, { weekday: "short" }).format(new Date(2023, 0, 1 + i))
+  );
 
   const today = new Date();
   const currentUser = useAuthStore((s) => s.user);
@@ -166,12 +143,12 @@ export default function AppointmentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="المواعيد"
-        description="جدولة ومتابعة مواعيد العيادة"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button onClick={() => setNewApptOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            موعد جديد
+            {t("newAppointment")}
           </Button>
         }
       />
@@ -182,7 +159,9 @@ export default function AppointmentsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronRight className="h-4 w-4" /></Button>
-              <span className="font-semibold text-sm">{MONTH_NAMES[viewMonth]} {viewYear}</span>
+              <span className="font-semibold text-sm">
+            {new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(new Date(viewYear, viewMonth))}
+          </span>
               <Button variant="ghost" size="icon" onClick={nextMonth}><ChevronLeft className="h-4 w-4" /></Button>
             </div>
           </CardHeader>
@@ -225,7 +204,7 @@ export default function AppointmentsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">
-              {new Date(selectedDate + "T00:00:00").toLocaleDateString("ar", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+              {new Date(selectedDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -234,7 +213,7 @@ export default function AppointmentsPage() {
             ) : dayAppointments.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Clock className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                <p>لا توجد مواعيد في هذا اليوم</p>
+                <p>{t("emptyDay")}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -242,9 +221,13 @@ export default function AppointmentsPage() {
                   .sort((a, b) => a.startTime.localeCompare(b.startTime))
                   .map((appt: Appointment) => (
                     <div key={appt.id} className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors">
-                      <div className="text-center min-w-12.5">
-                        <p className="font-mono text-sm font-bold">{appt.startTime}</p>
-                        <p className="font-mono text-xs text-muted-foreground">{appt.endTime}</p>
+                      <div className="text-center min-w-14 shrink-0">
+                        <p className="font-mono text-sm font-bold">
+                          {appt.startTime?.length > 5 ? new Date(appt.startTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : appt.startTime}
+                        </p>
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {appt.endTime?.length > 5 ? new Date(appt.endTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : appt.endTime}
+                        </p>
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -252,23 +235,23 @@ export default function AppointmentsPage() {
                             {appt.patient ? `${appt.patient.firstName} ${appt.patient.lastName}` : "—"}
                           </span>
                           <Badge className={cn("text-xs", STATUS_COLOR[appt.status])} variant="outline">
-                            {STATUS_LABEL[appt.status]}
+                            {t(`statuses.${appt.status}`)}
                           </Badge>
-                          <Badge variant="outline" className="text-xs">{TYPE_LABEL[appt.appointmentType]}</Badge>
+                          <Badge variant="outline" className="text-xs">{t(`types.${appt.appointmentType}`)}</Badge>
                         </div>
                         {appt.notes && <p className="text-xs text-muted-foreground">{appt.notes}</p>}
                       </div>
                       <div className="flex gap-1">
                         {appt.status === "SCHEDULED" && (
                           <Button size="sm" variant="outline" className="h-7 text-xs"
-                            onClick={() => updateStatus.mutate({ id: appt.id, status: "confirm" })}>
-                            تأكيد
+                            onClick={() => updateStatus.mutate({ id: appt.id, status: "CONFIRMED" })}>
+                            {t("actions.confirm")}
                           </Button>
                         )}
                         {appt.status === "CONFIRMED" && (
                           <Button size="sm" variant="outline" className="h-7 text-xs"
-                            onClick={() => updateStatus.mutate({ id: appt.id, status: "complete" })}>
-                            إنجاز
+                            onClick={() => updateStatus.mutate({ id: appt.id, status: "COMPLETED" })}>
+                            {t("actions.complete")}
                           </Button>
                         )}
                         {!["CANCELLED", "COMPLETED"].includes(appt.status) && (
@@ -290,11 +273,11 @@ export default function AppointmentsPage() {
       <Dialog open={newApptOpen} onOpenChange={setNewApptOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>موعد جديد</DialogTitle>
+            <DialogTitle>{t("form.title")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>المريض <span className="text-destructive">*</span></Label>
+              <Label>{t("form.patient")} <span className="text-destructive">*</span></Label>
               <Popover open={patientPopoverOpen} onOpenChange={setPatientPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -302,19 +285,19 @@ export default function AppointmentsPage() {
                     role="combobox"
                     className="w-full justify-between font-normal"
                   >
-                    {selectedPatientLabel || "اختر المريض..."}
+                    {selectedPatientLabel || t("form.patientPlaceholder")}
                     <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0 mr-2" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                   <Command>
                     <CommandInput
-                      placeholder="ابحث بالاسم أو رقم الهوية..."
+                      placeholder={t("form.searchPatient")}
                       value={patientSearch}
                       onValueChange={setPatientSearch}
                     />
                     <CommandList>
-                      <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                      <CommandEmpty>{t("form.noResults")}</CommandEmpty>
                       <CommandGroup>
                         {patientsList.map((p) => (
                           <CommandItem
@@ -341,47 +324,51 @@ export default function AppointmentsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>نوع الموعد</Label>
+                <Label>{t("form.appointmentType")}</Label>
                 <Select value={newForm.appointmentType} onValueChange={(v) => setNewForm((f) => ({ ...f, appointmentType: v as AppointmentType }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(TYPE_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                    {(["ASSESSMENT", "FITTING", "SESSION", "FOLLOW_UP", "COMMITTEE"] as AppointmentType[]).map((k) => (
+                      <SelectItem key={k} value={k}>{t(`types.${k}`)}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>دور المختص</Label>
+                <Label>{t("form.practitionerRole")}</Label>
                 <Select value={newForm.practitionerRole} onValueChange={(v) => setNewForm((f) => ({ ...f, practitionerRole: v as PractitionerRole }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(ROLE_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                    {(["PROSTHETIST", "PHYSIOTHERAPIST", "DOCTOR", "NURSE"] as PractitionerRole[]).map((k) => (
+                      <SelectItem key={k} value={k}>{t(`roles.${k}`)}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>التاريخ</Label>
+              <Label>{t("form.date")}</Label>
               <Input type="date" value={newForm.date} onChange={(e) => setNewForm((f) => ({ ...f, date: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>وقت البداية</Label>
+                <Label>{t("form.startTime")}</Label>
                 <Input type="time" value={newForm.startTime} onChange={(e) => setNewForm((f) => ({ ...f, startTime: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>وقت النهاية</Label>
+                <Label>{t("form.endTime")}</Label>
                 <Input type="time" value={newForm.endTime} onChange={(e) => setNewForm((f) => ({ ...f, endTime: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>ملاحظات</Label>
+              <Label>{t("form.notes")}</Label>
               <Textarea rows={2} value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewApptOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setNewApptOpen(false)}>{t("form.cancel")}</Button>
             <Button onClick={handleCreateAppt} disabled={!newForm.patientId || createAppt.isPending}>
-              {createAppt.isPending ? "جاري الحفظ..." : "إنشاء الموعد"}
+              {createAppt.isPending ? t("form.saving") : t("form.create")}
             </Button>
           </DialogFooter>
         </DialogContent>

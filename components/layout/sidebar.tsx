@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import {
   LayoutDashboard,
   ChevronDown,
@@ -54,6 +55,8 @@ interface NavItem {
   href?: string;
   icon: any;
   permission?: string;
+  /** OR: يظهر إذا كان المستخدم يملك أي صلاحية من القائمة */
+  permissions?: string[];
   separator?: boolean;
   /** إخفاء القسم لأصحاب هذه الأدوار */
   hiddenForRoles?: string[];
@@ -120,14 +123,14 @@ const navigation: NavItem[] = [
           { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
-          { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permission: "leave_requests:approve_manager", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permissions: ["leave_requests:approve_manager", "leave_requests:approve_hr"] },
         ],
       },
       {
         title: "nav.requests",
         icon: ClipboardList,
         children: [
-          { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permission: "requests:manager-approve", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permissions: ["requests:manager-approve", "requests:hr-approve"] },
           { title: "nav.allRequests", href: "/requests/all", icon: ClipboardList, permission: "requests:read", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
         ],
       },
@@ -235,7 +238,7 @@ const navigation: NavItem[] = [
     title: "nav.auditLogs",
     href: "/audit-logs",
     icon: ClipboardSignature,
-    permission: "audit:read",
+    permissions: ["audit:read", "leave_requests:approve_hr", "requests:hr-approve"],
     separator: true,
   },
 ];
@@ -254,6 +257,16 @@ export function Sidebar() {
     return false;
   });
   const { hasPermission, isAdmin, hasRole } = usePermissions();
+  const storePermissions = useAuthStore((s) => s.permissions);
+  const authUser = useAuthStore((s) => s.user);
+
+  // مستخدم بدون صلاحيات — يرى لوحة التحكم فقط
+  const hasNoAccess = !isAdmin() && storePermissions.length === 0;
+
+  // DEBUG — احذف هذا السطر بعد التشخيص
+  if (typeof window !== "undefined") {
+    console.log("[Sidebar]", { isAdmin: isAdmin(), permissions: storePermissions, roles: authUser?.roles, hasNoAccess });
+  }
 
   useEffect(() => {
     setMounted(true);
@@ -335,9 +348,10 @@ export function Sidebar() {
 
   // التحقق من صلاحية عنصر نهائي (بدون أطفال)
   const hasItemPermission = (item: NavItem): boolean => {
-    if (!item.permission) return true;
+    if (!item.permission && !item.permissions) return true;
     if (isAdmin()) return true;
-    return hasPermission(item.permission);
+    if (item.permissions) return item.permissions.some((p) => hasPermission(p));
+    return hasPermission(item.permission!);
   };
 
   // التحقق recursive — يشتغل على أي عمق من التداخل
@@ -410,6 +424,9 @@ export function Sidebar() {
             />
           ))
         ) : navigation.map((item, index) => {
+          // مستخدم بدون صلاحيات — يرى Dashboard فقط
+          if (hasNoAccess && item.href !== "/dashboard") return null;
+
           // إخفاء العنصر إذا ما عنده صلاحية
           if (!hasSectionPermission(item)) {
             return null;

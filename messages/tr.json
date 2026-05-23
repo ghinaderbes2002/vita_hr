@@ -116,7 +116,17 @@
     "custodyReport": "Emanet Raporu",
     "onboarding": "İşe Alım & Ayrılış",
     "onboardingTemplates": "Şablonlar",
-    "onboardingWorkflows": "İş Akışı Paneli"
+    "onboardingWorkflows": "İş Akışı Paneli",
+    "auditLogs": "Denetim Günlükleri",
+    "internalMail": "Dahili Posta",
+    "deductionPoliciesView": "Geç Kalma Politikaları",
+    "clinic": "Tıbbi Klinik",
+    "clinicPatients": "Hastalar",
+    "clinicProsthetics": "Protez",
+    "clinicPhysio": "Fizyoterapi",
+    "clinicAppointments": "Randevular",
+    "clinicInventory": "Tıbbi Stok",
+    "clinicReports": "Klinik Raporları"
   },
   "user": {
     "logout": "Çıkış Yap",
@@ -232,7 +242,13 @@
       "biometric": "Biyometrik Cihazlar",
       "probation": "Deneme Süreci",
       "jobs": "İşler ve İşe Alım",
-      "other": "Diğer"
+      "other": "Diğer",
+      "clinic": "Tıbbi Klinik",
+      "clinic_appointments": "Randevular",
+      "clinic_physio": "Fizyoterapi",
+      "clinic_prosthetics": "Protez",
+      "clinic_reports": "Klinik Raporları",
+      "audit": "Denetim Kaydı"
     }
   },
   "employees": {
@@ -1160,7 +1176,11 @@
   },
   "reports": {
     "hr": {
-      "gender": { "MALE": "Erkek", "FEMALE": "Kadın", "OTHER": "Diğer" },
+      "gender": {
+        "MALE": "Erkek",
+        "FEMALE": "Kadın",
+        "OTHER": "Diğer"
+      },
       "contractType": {
         "FULL_TIME": "Tam Zamanlı",
         "PART_TIME": "Yarı Zamanlı",
@@ -1204,6 +1224,443 @@
         "from": "Başlangıç",
         "to": "Bitiş",
         "days": "Günler"
+      }
+    }
+  },
+  "clinic": {
+    "patients": {
+      "title": "Hastalar",
+      "description": "Tıbbi kliniğin hasta kaydı",
+      "newPatient": "Yeni Hasta",
+      "patientNumber": "Hasta Numarası",
+      "searchPlaceholder": "İsim, hasta numarası veya kimlik ile ara...",
+      "duplicateFound": "Bu hasta zaten mevcut",
+      "openFile": "Hasta Dosyasını Aç",
+      "continueRegistration": "Kayda Devam Et",
+      "viewFile": "Dosyayı Görüntüle",
+      "ageSuffix": "yaş",
+      "fields": {
+        "firstName": "Ad",
+        "lastName": "Soyad",
+        "identityType": "Kimlik Türü",
+        "idNumber": "Kimlik Numarası",
+        "dateOfBirth": "Doğum Tarihi",
+        "gender": "Cinsiyet",
+        "height": "Boy (cm)",
+        "weight": "Kilo (kg)",
+        "bmi": "VKİ",
+        "governorate": "İl",
+        "city": "Şehir",
+        "address": "Adres",
+        "phone": "Telefon",
+        "whatsapp": "WhatsApp",
+        "email": "E-posta",
+        "educationLevel": "Eğitim Seviyesi",
+        "maritalStatus": "Medeni Durum",
+        "livingStatus": "Yaşam Durumu",
+        "financialStatus": "Mali Durum",
+        "receivesHumanitarianAid": "İnsani Yardım Alıyor",
+        "centerAccessMethod": "Merkeze Ulaşım Yöntemi",
+        "photo": "Fotoğraf",
+        "idDocumentFront": "Kimlik Ön Yüzü",
+        "idDocumentBack": "Kimlik Arka Yüzü",
+        "documentConsent": "Belge Onayı",
+        "mediaConsent": "Medya Onayı",
+        "signature": "İmza",
+        "notes": "Notlar",
+        "activeCases": "Aktif Vakalar",
+        "lastVisit": "Son Ziyaret"
+      },
+      "filter": {
+        "gender": "Cinsiyet",
+        "all": "Tümü",
+        "caseType": "Vaka Türü",
+        "prosthetics": "Protez",
+        "physio": "Fizyoterapi",
+        "both": "Her İkisi"
+      },
+      "table": {
+        "name": "Ad Soyad",
+        "gender": "Cinsiyet",
+        "age": "Yaş",
+        "phone": "Telefon",
+        "city": "Şehir",
+        "cases": "Vakalar",
+        "lastVisit": "Son Ziyaret"
+      },
+      "empty": {
+        "title": "Hasta Yok",
+        "description": "Yeni bir hasta kaydederek başlayın"
+      },
+      "badges": {
+        "prosthetics": "Protez",
+        "physio": "Fizyo"
+      },
+      "steps": {
+        "identity": "Temel Kimlik",
+        "contact": "Adres ve İletişim",
+        "socioeconomic": "Sosyoekonomik Bilgi",
+        "documents": "Ekler ve Onaylar"
+      },
+      "tabs": {
+        "overview": "Genel Bakış",
+        "prosthetics": "Protez",
+        "physio": "Fizyoterapi",
+        "appointments": "Randevular",
+        "documents": "Belgeler",
+        "consents": "Onaylar",
+        "timeline": "Zaman Çizelgesi",
+        "notes": "Notlar"
+      },
+      "delete": {
+        "title": "Hastayı Sil",
+        "description": "Bu hastayı silmek istediğinizden emin misiniz? Tüm verileri ve vakaları silinecektir.",
+        "confirm": "Sil"
+      },
+      "new": {
+        "title": "Yeni Hasta Kaydı",
+        "subtitle": "Hasta verilerini 4 adımda girin",
+        "steps": {
+          "0": {
+            "label": "Temel Bilgiler",
+            "desc": "Kimlik ve cinsiyet"
+          },
+          "1": {
+            "label": "İletişim ve Konum",
+            "desc": "Telefon ve adres"
+          },
+          "2": {
+            "label": "Sosyal Veriler",
+            "desc": "Eğitim ve durum"
+          },
+          "3": {
+            "label": "Onaylar ve Notlar",
+            "desc": "Veri izni"
+          }
+        },
+        "identityTypes": {
+          "NATIONAL_ID": "Nüfus Cüzdanı",
+          "PASSPORT": "Pasaport",
+          "UNHCR": "UNHCR Kartı",
+          "OTHER": "Diğer"
+        },
+        "education": {
+          "NONE": "Eğitimsiz",
+          "PRIMARY": "İlkokul",
+          "SECONDARY": "Ortaokul/Lise",
+          "UNIVERSITY": "Üniversite",
+          "POSTGRADUATE": "Lisansüstü"
+        },
+        "marital": {
+          "SINGLE": "Bekar",
+          "MARRIED": "Evli",
+          "DIVORCED": "Boşanmış",
+          "WIDOWED": "Dul"
+        },
+        "living": {
+          "ALONE": "Yalnız",
+          "FAMILY": "Aileyle",
+          "INSTITUTION": "Kurum"
+        },
+        "financial": {
+          "LOW": "Düşük",
+          "MODERATE": "Orta",
+          "GOOD": "İyi",
+          "NOT_WORKING": "Çalışmıyor",
+          "RETIRED": "Emekli"
+        },
+        "consent": {
+          "FULL": "Tam Onay",
+          "ANONYMOUS": "Anonim Onay",
+          "NONE": "Reddedildi"
+        },
+        "fields": {
+          "firstName": "Ad",
+          "lastName": "Soyad",
+          "identityType": "Kimlik Türü",
+          "idNumber": "Kimlik Numarası",
+          "dateOfBirth": "Doğum Tarihi",
+          "gender": "Cinsiyet",
+          "phone": "Telefon",
+          "whatsapp": "WhatsApp",
+          "email": "E-posta",
+          "city": "Şehir",
+          "cityPlaceholder": "Şehir seçin",
+          "address": "Detaylı Adres",
+          "addressPlaceholder": "Mahalle, sokak...",
+          "height": "Boy (cm)",
+          "weight": "Kilo (kg)",
+          "educationLevel": "Eğitim Seviyesi",
+          "maritalStatus": "Medeni Durum",
+          "livingStatus": "Yaşam Durumu",
+          "financialStatus": "Maddi Durum",
+          "centerAccessMethod": "Merkeze Ulaşım",
+          "centerAccessPlaceholder": "Özel araç, toplu taşıma...",
+          "receivesHumanitarianAid": "İnsani yardım alıyor",
+          "documentConsent": "Veri belgeleme onayı",
+          "mediaConsent": "Medya kullanım onayı (fotoğraf/video)",
+          "notes": "Notlar",
+          "notesPlaceholder": "Hasta hakkında ek notlar...",
+          "governorate": "Vali̇lik",
+          "governoratePlaceholder": "Vali̇lik seçin"
+        },
+        "validation": {
+          "firstNameRequired": "Ad zorunludur",
+          "lastNameRequired": "Soyad zorunludur",
+          "idNumberRequired": "Kimlik numarası zorunludur",
+          "dobRequired": "Doğum tarihi zorunludur",
+          "phoneRequired": "Telefon numarası zorunludur",
+          "invalidEmail": "Geçersiz e-posta adresi"
+        },
+        "duplicate": {
+          "message": "Bu kimlik numarası zaten kayıtlı.",
+          "viewFile": "Hasta dosyasını görüntüle"
+        },
+        "summary": {
+          "title": "Veri Özeti",
+          "name": "Ad Soyad",
+          "idNumber": "Kimlik No",
+          "phone": "Telefon",
+          "city": "Şehir"
+        },
+        "nav": {
+          "cancel": "İptal",
+          "prev": "Önceki",
+          "next": "Sonraki",
+          "saving": "Kaydediliyor...",
+          "save": "Hastayı Kaydet"
+        }
+      }
+    },
+    "prosthetics": {
+      "title": "Protez",
+      "description": "Kliniğin protez vakaları",
+      "searchPlaceholder": "Hasta adı veya numarası ile ara...",
+      "newCase": "Yeni Vaka",
+      "myCases": "Vakalarım",
+      "committeeCases": "Komite Vakaları",
+      "steps": {
+        "intake": "Kabul",
+        "assessment": "Değerlendirme",
+        "committee": "Komite",
+        "components": "Bileşenler",
+        "gaitAnalysis": "Yürüyüş Analizi",
+        "balance": "Denge",
+        "treatmentPlan": "Tedavi Planı",
+        "consumables": "Sarf Malzemeleri",
+        "finalEvaluation": "Final Değerlendirme",
+        "delivery": "Teslimat",
+        "followUp": "Takip"
+      },
+      "statuses": {
+        "INTAKE": "Kabul",
+        "ASSESSMENT": "Değerlendirme",
+        "COMMITTEE_REVIEW": "Komite İncelemesi",
+        "COMMITTEE_APPROVED": "Komite Onayladı",
+        "FITTING": "Takma",
+        "GAIT_ANALYSIS": "Yürüyüş Analizi",
+        "FINAL_EVALUATION": "Final Değerlendirme",
+        "DELIVERED": "Teslim Edildi",
+        "FOLLOW_UP": "Takip",
+        "CLOSED": "Kapalı",
+        "CANCELLED": "İptal Edildi"
+      },
+      "committeeDecisions": {
+        "APPROVED": "Onaylandı",
+        "NEEDS_ADJUSTMENT": "Düzenleme Gerekli",
+        "REJECTED": "Reddedildi"
+      },
+      "prostheticTypes": {
+        "BIONIC": "Biyonik",
+        "MYOBOCK": "Myobock",
+        "MECHANIC": "Mekanik",
+        "COSMETIC": "Kozmetik"
+      },
+      "filter": {
+        "all": "Tüm Vakalar"
+      },
+      "table": {
+        "patientNumber": "Hasta No.",
+        "patient": "Hasta",
+        "status": "Durum",
+        "amputationType": "Amputasyon Türü",
+        "amputationSide": "Taraf",
+        "amputationLevel": "Seviye",
+        "createdAt": "Oluşturulma"
+      },
+      "empty": {
+        "title": "Vaka Yok",
+        "description": "Protez vakaları burada görünecek"
+      }
+    },
+    "physio": {
+      "title": "Fizyoterapi",
+      "description": "Kliniğin fizyoterapi vakaları",
+      "searchPlaceholder": "Hasta adı veya numarası ile ara...",
+      "newCase": "Yeni Vaka",
+      "filter": {
+        "all": "Tüm Vakalar"
+      },
+      "table": {
+        "patientNumber": "Hasta No.",
+        "patient": "Hasta",
+        "status": "Durum",
+        "createdAt": "Oluşturulma"
+      },
+      "empty": {
+        "title": "Vaka Yok",
+        "description": "Fizyoterapi vakaları burada görünecek"
+      },
+      "statuses": {
+        "COMPLAINT": "Şikayet",
+        "PAIN_MAP": "Ağrı Haritası",
+        "MEDICAL_HISTORY": "Tıbbi Geçmiş",
+        "GOALS": "Hedefler",
+        "POSTURAL_ASSESSMENT": "Postüral Değerlendirme",
+        "TREATMENT_PLAN": "Tedavi Planı",
+        "ACTIVE_SESSIONS": "Aktif Seanslar",
+        "COMPLETED": "Tamamlandı",
+        "CANCELLED": "İptal Edildi"
+      }
+    },
+    "appointments": {
+      "title": "Randevular",
+      "description": "Klinik randevularını planla ve takip et",
+      "newAppointment": "Yeni Randevu",
+      "emptyDay": "Bu günde randevu yok",
+      "types": {
+        "ASSESSMENT": "Değerlendirme",
+        "FITTING": "Takma",
+        "SESSION": "Seans",
+        "FOLLOW_UP": "Takip",
+        "COMMITTEE": "Komite"
+      },
+      "roles": {
+        "PROSTHETIST": "Protez Uzmanı",
+        "PHYSIOTHERAPIST": "Fizyoterapist",
+        "DOCTOR": "Doktor",
+        "NURSE": "Hemşire"
+      },
+      "statuses": {
+        "SCHEDULED": "Planlandı",
+        "CONFIRMED": "Onaylandı",
+        "COMPLETED": "Tamamlandı",
+        "CANCELLED": "İptal Edildi",
+        "NO_SHOW": "Gelmedi",
+        "RESCHEDULED": "Yeniden Planlandı"
+      },
+      "form": {
+        "title": "Yeni Randevu",
+        "patient": "Hasta",
+        "patientPlaceholder": "Hasta seç...",
+        "searchPatient": "İsim veya kimlik numarasıyla ara...",
+        "noResults": "Sonuç bulunamadı",
+        "appointmentType": "Randevu Türü",
+        "practitionerRole": "Uzman Rolü",
+        "date": "Tarih",
+        "startTime": "Başlangıç Saati",
+        "endTime": "Bitiş Saati",
+        "notes": "Notlar",
+        "cancel": "İptal",
+        "saving": "Kaydediliyor...",
+        "create": "Randevu Oluştur"
+      },
+      "actions": {
+        "confirm": "Onayla",
+        "complete": "Tamamla"
+      }
+    },
+    "inventory": {
+      "title": "Tıbbi Stok",
+      "newItem": "Yeni Ürün",
+      "totalItems": "Toplam Ürün",
+      "lowStockItems": "Düşük Stok",
+      "stockValue": "Stok Değeri",
+      "itemTypes": {
+        "COMPONENT": "Bileşen",
+        "CONSUMABLE": "Sarf Malzemesi"
+      },
+      "transactionTypes": {
+        "RECEIVE": "Al",
+        "ISSUE": "Ver",
+        "ADJUST": "Düzelt",
+        "RETURN": "İade Et"
+      },
+      "fields": {
+        "code": "Kod",
+        "name": "Ad",
+        "type": "Tür",
+        "category": "Kategori",
+        "supplier": "Tedarikçi",
+        "currentStock": "Mevcut Stok",
+        "minStockLevel": "Min Seviye",
+        "unitPrice": "Birim Fiyat",
+        "unit": "Birim"
+      }
+    },
+    "reports": {
+      "title": "Klinik Raporları",
+      "donor": "Bağışçı Raporu",
+      "exportPdf": "PDF Dışa Aktar",
+      "exportExcel": "Excel Dışa Aktar",
+      "period": "Dönem",
+      "from": "Başlangıç",
+      "to": "Bitiş",
+      "summary": {
+        "totalCases": "Toplam Vaka",
+        "patientsServed": "Hizmet Verilen Hasta",
+        "deliveredCases": "Teslim Edilen Vaka",
+        "successRate": "Başarı Oranı",
+        "followUpsCompleted": "Tamamlanan Takipler"
+      }
+    },
+    "common": {
+      "kLevel": {
+        "K0": "K0 - Ambulasyon Yok",
+        "K1": "K1 - Sınırlı Ev İçi",
+        "K2": "K2 - Sınırlı Toplumsal",
+        "K3": "K3 - Toplumsal Yürüyüş",
+        "K4": "K4 - Yüksek Aktivite"
+      },
+      "amputationType": {
+        "UPPER": "Üst Uzuv",
+        "LOWER": "Alt Uzuv"
+      },
+      "amputationSide": {
+        "RIGHT": "Sağ",
+        "LEFT": "Sol",
+        "BILATERAL": "İki Taraflı"
+      },
+      "gender": {
+        "MALE": "Erkek",
+        "FEMALE": "Kadın"
+      },
+      "identityType": {
+        "NATIONAL_ID": "Ulusal Kimlik",
+        "PASSPORT": "Pasaport",
+        "RESIDENCE": "İkamet"
+      },
+      "painTypes": {
+        "Numbness": "Uyuşukluk",
+        "Dull Ache": "Künt Ağrı",
+        "Hot Burning": "Yanma",
+        "Sharp Stabbing": "Keskin Batma",
+        "Pins": "İğne Batması",
+        "Other": "Diğer"
+      },
+      "consentOptions": {
+        "FULL": "Tam Onay",
+        "ANONYMOUS": "Anonim",
+        "NONE": "Onay Yok"
+      },
+      "signature": {
+        "sign": "İmzala",
+        "clear": "Temizle",
+        "confirm": "İmzayı Onayla",
+        "legalNotice": "İmzalayarak yukarıdaki içeriği onayladığınızı teyit edersiniz",
+        "signed": "İmzalandı",
+        "signedBy": "İmzalayan",
+        "signedAt": "İmza Tarihi"
       }
     }
   },

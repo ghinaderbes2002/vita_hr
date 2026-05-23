@@ -227,3 +227,81 @@ export function useDownloadProstheticsPdf() {
     onError: () => toast.error("فشل تنزيل PDF"),
   });
 }
+
+export function useSubmitBalanceAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: Record<string, unknown> }) =>
+      clinicProstheticsApi.submitBalanceAssessment(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ تقييم التوازن");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useAddConsumable() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: Record<string, unknown> }) =>
+      clinicProstheticsApi.addConsumable(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تمت إضافة المستهلك");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الإضافة"),
+  });
+}
+
+export function useSubmitFinalEvaluation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: Record<string, unknown> }) =>
+      clinicProstheticsApi.submitFinalEvaluation(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ التقييم النهائي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useSignFinalEvaluation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, signature }: { id: string; signature: string }) =>
+      clinicProstheticsApi.signFinalEvaluation(id, signature),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم توقيع التقييم النهائي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التوقيع"),
+  });
+}
+
+export function useSubmitDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: Record<string, unknown> }) =>
+      clinicProstheticsApi.submitDelivery(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم تسجيل التسليم");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التسجيل"),
+  });
+}
+
+export function useSignDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, signature }: { id: string; signature: string }) =>
+      clinicProstheticsApi.signDelivery(id, signature),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم توقيع استلام الطرف الصناعي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التوقيع"),
+  });
+}

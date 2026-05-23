@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowRight, Edit, Send, XCircle, AlertTriangle } from "lucide-react";
+import { ArrowRight, Edit, Send, XCircle, AlertTriangle, Paperclip, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -227,6 +227,29 @@ export default function ViewLeaveRequestPage() {
           <p className="text-sm whitespace-pre-wrap">{request.reason}</p>
         </CardContent>
       </Card>
+
+      {request.attachmentUrl && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4" />
+              المرفقات
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <a
+              href={`${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace("/api/v1", "")}${request.attachmentUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+            >
+              <Paperclip className="h-4 w-4" />
+              عرض المرفق
+              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+            </a>
+          </CardContent>
+        </Card>
+      )}
 
       {request.managerNotes && (
         <Card>

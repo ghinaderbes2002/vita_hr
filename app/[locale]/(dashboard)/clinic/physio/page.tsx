@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
-import { Eye, Heart } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { Search, Eye, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -19,22 +20,23 @@ import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
 
 const LIMIT = 15;
 
-const STATUS_OPTIONS: { value: PhysioStatus; label: string }[] = [
-  { value: "COMPLAINT", label: "شكوى" },
-  { value: "PAIN_MAP", label: "خريطة الألم" },
-  { value: "MEDICAL_HISTORY", label: "التاريخ الطبي" },
-  { value: "GOALS", label: "الأهداف" },
-  { value: "POSTURAL_ASSESSMENT", label: "التقييم الوضعي" },
-  { value: "TREATMENT_PLAN", label: "خطة العلاج" },
-  { value: "ACTIVE_SESSIONS", label: "جلسات نشطة" },
-  { value: "COMPLETED", label: "مكتملة" },
-  { value: "CANCELLED", label: "ملغاة" },
+const STATUS_VALUES: PhysioStatus[] = [
+  "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
+  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "ACTIVE_SESSIONS",
+  "COMPLETED", "CANCELLED",
 ];
+
+const fmt = (d: string) => {
+  const date = new Date(d);
+  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+};
 
 export default function PhysioListPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.physio");
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PhysioStatus | "all">("all");
 
   const { data, isLoading } = usePhysioCases({
@@ -43,81 +45,91 @@ export default function PhysioListPage() {
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
-  const cases = data?.items ?? [];
+  const cases = (data?.items ?? []).filter((c: PhysioCase) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const name = c.patient ? `${c.patient.firstName} ${c.patient.lastName}`.toLowerCase() : "";
+    const num = c.patient?.patientNumber?.toLowerCase() ?? "";
+    return name.includes(q) || num.includes(q);
+  });
   const totalPages = data?.totalPages ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
-        title="العلاج الفيزيائي"
-        description="حالات العلاج الفيزيائي في العيادة"
+        title={t("title")}
+        description={t("description")}
       />
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-56">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("searchPlaceholder")}
+            className="pr-9"
+          />
+        </div>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as any); setPage(1); }}>
-          <SelectTrigger className="w-52">
-            <SelectValue placeholder="جميع الحالات" />
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder={t("filter.all")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الحالات</SelectItem>
-            {STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            <SelectItem value="all">{t("filter.all")}</SelectItem>
+            {STATUS_VALUES.map((v) => (
+              <SelectItem key={v} value={v}>{t(`statuses.${v}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">المريض</TableHead>
-              <TableHead className="text-right">رقم المريض</TableHead>
-              <TableHead className="text-right">الحالة</TableHead>
-              <TableHead className="text-right">المعالج</TableHead>
-              <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-              <TableHead />
+            <TableRow className="bg-muted/40">
+              <TableHead className="text-right font-semibold">{t("table.patientNumber")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.patient")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.status")}</TableHead>
+              <TableHead className="text-right font-semibold">{t("table.createdAt")}</TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 6 }).map((_, j) => (
-                    <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : cases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6}>
-                  <EmptyState icon={Heart} title="لا توجد حالات" description="ستظهر هنا حالات العلاج الفيزيائي" />
+                <TableCell colSpan={5}>
+                  <EmptyState icon={Heart} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
             ) : (
               cases.map((c: PhysioCase) => (
                 <TableRow
                   key={c.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-muted/40 transition-colors"
                   onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}
                 >
-                  <TableCell className="font-medium">
-                    {c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—"}
-                  </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
                     {c.patient?.patientNumber ?? "—"}
                   </TableCell>
+                  <TableCell className="font-medium">
+                    {c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—"}
+                  </TableCell>
                   <TableCell><CaseStatusBadge status={c.status} /></TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {c.assignedTherapistId ?? "—"}
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {fmt(c.createdAt)}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(c.createdAt).toLocaleDateString("ar")}
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8"
+                      onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}>
                       <Eye className="h-4 w-4" />
                     </Button>
                   </TableCell>

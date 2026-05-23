@@ -242,7 +242,13 @@
       "probation": "Probation",
       "jobs": "Jobs & Recruitment",
       "mail": "Internal Mail",
-      "other": "Other"
+      "other": "Other",
+      "clinic": "Medical Clinic",
+      "clinic_appointments": "Appointments",
+      "clinic_physio": "Physiotherapy",
+      "clinic_prosthetics": "Prosthetics",
+      "clinic_reports": "Clinic Reports",
+      "audit": "Audit Log"
     }
   },
   "employees": {
@@ -1992,7 +1998,10 @@
     "hr": {
       "title": "HR Reports",
       "description": "HR statistics and analytics",
-      "gender": { "MALE": "Male", "FEMALE": "Female" },
+      "gender": {
+        "MALE": "Male",
+        "FEMALE": "Female"
+      },
       "contractType": {
         "FULL_TIME": "Full Time",
         "PART_TIME": "Part Time",
@@ -2182,6 +2191,7 @@
   "clinic": {
     "patients": {
       "title": "Patients",
+      "description": "Patient registry in the medical clinic",
       "newPatient": "New Patient",
       "patientNumber": "Patient Number",
       "searchPlaceholder": "Search by name, patient number, or ID",
@@ -2235,10 +2245,158 @@
         "consents": "Consents",
         "timeline": "Timeline",
         "notes": "Notes"
+      },
+      "filter": {
+        "gender": "Gender",
+        "all": "All",
+        "caseType": "Case Type",
+        "prosthetics": "Prosthetics",
+        "physio": "Physiotherapy",
+        "both": "Both"
+      },
+      "table": {
+        "name": "Name",
+        "gender": "Gender",
+        "age": "Age",
+        "phone": "Phone",
+        "city": "City",
+        "cases": "Cases",
+        "lastVisit": "Last Visit"
+      },
+      "empty": {
+        "title": "No Patients",
+        "description": "Start by registering a new patient"
+      },
+      "ageSuffix": "years",
+      "badges": {
+        "prosthetics": "Prosthetics",
+        "physio": "Physio"
+      },
+      "viewFile": "View File",
+      "delete": {
+        "title": "Delete Patient",
+        "description": "Are you sure you want to delete this patient? All their data and cases will be deleted.",
+        "confirm": "Delete"
+      },
+      "new": {
+        "title": "Register New Patient",
+        "subtitle": "Enter patient data in 4 steps",
+        "steps": {
+          "0": {
+            "label": "Basic Information",
+            "desc": "Identity and gender"
+          },
+          "1": {
+            "label": "Contact & Location",
+            "desc": "Phone and address"
+          },
+          "2": {
+            "label": "Social Data",
+            "desc": "Education and status"
+          },
+          "3": {
+            "label": "Consents & Notes",
+            "desc": "Data permission"
+          }
+        },
+        "identityTypes": {
+          "NATIONAL_ID": "National ID",
+          "PASSPORT": "Passport",
+          "UNHCR": "UNHCR Card",
+          "OTHER": "Other"
+        },
+        "education": {
+          "NONE": "No education",
+          "PRIMARY": "Primary",
+          "SECONDARY": "Secondary",
+          "UNIVERSITY": "University",
+          "POSTGRADUATE": "Postgraduate"
+        },
+        "marital": {
+          "SINGLE": "Single",
+          "MARRIED": "Married",
+          "DIVORCED": "Divorced",
+          "WIDOWED": "Widowed"
+        },
+        "living": {
+          "ALONE": "Alone",
+          "FAMILY": "With family",
+          "INSTITUTION": "Institution"
+        },
+        "financial": {
+          "LOW": "Low",
+          "MODERATE": "Moderate",
+          "GOOD": "Good",
+          "NOT_WORKING": "Not working",
+          "RETIRED": "Retired"
+        },
+        "consent": {
+          "FULL": "Full consent",
+          "ANONYMOUS": "Anonymous consent",
+          "NONE": "Refused"
+        },
+        "fields": {
+          "firstName": "First Name",
+          "lastName": "Last Name",
+          "identityType": "Identity Type",
+          "idNumber": "ID Number",
+          "dateOfBirth": "Date of Birth",
+          "gender": "Gender",
+          "phone": "Phone",
+          "whatsapp": "WhatsApp",
+          "email": "Email",
+          "city": "City",
+          "cityPlaceholder": "Select city",
+          "address": "Detailed Address",
+          "addressPlaceholder": "Neighborhood, street...",
+          "height": "Height (cm)",
+          "weight": "Weight (kg)",
+          "educationLevel": "Education Level",
+          "maritalStatus": "Marital Status",
+          "livingStatus": "Living Status",
+          "financialStatus": "Financial Status",
+          "centerAccessMethod": "Access to Center",
+          "centerAccessPlaceholder": "Private car, public transport...",
+          "receivesHumanitarianAid": "Receives humanitarian aid",
+          "documentConsent": "Consent to document data",
+          "mediaConsent": "Consent to media use (photos/video)",
+          "notes": "Notes",
+          "notesPlaceholder": "Any additional notes about the patient...",
+          "governorate": "Governorate",
+          "governoratePlaceholder": "Select governorate"
+        },
+        "validation": {
+          "firstNameRequired": "First name is required",
+          "lastNameRequired": "Last name is required",
+          "idNumberRequired": "ID number is required",
+          "dobRequired": "Date of birth is required",
+          "phoneRequired": "Phone number is required",
+          "invalidEmail": "Invalid email address"
+        },
+        "duplicate": {
+          "message": "This ID is already registered.",
+          "viewFile": "View patient file"
+        },
+        "summary": {
+          "title": "Data Summary",
+          "name": "Name",
+          "idNumber": "ID Number",
+          "phone": "Phone",
+          "city": "City"
+        },
+        "nav": {
+          "cancel": "Cancel",
+          "prev": "Previous",
+          "next": "Next",
+          "saving": "Saving...",
+          "save": "Save Patient"
+        }
       }
     },
     "prosthetics": {
       "title": "Prosthetics",
+      "description": "Prosthetics cases in the clinic",
+      "searchPlaceholder": "Search by patient name or number...",
       "newCase": "New Case",
       "myCases": "My Cases",
       "committeeCases": "Committee Cases",
@@ -2278,11 +2436,42 @@
         "MYOBOCK": "Myobock",
         "MECHANIC": "Mechanical",
         "COSMETIC": "Cosmetic"
+      },
+      "filter": {
+        "all": "All Cases"
+      },
+      "table": {
+        "patientNumber": "Patient No.",
+        "patient": "Patient",
+        "status": "Status",
+        "amputationType": "Amputation Type",
+        "amputationSide": "Side",
+        "amputationLevel": "Level",
+        "createdAt": "Created"
+      },
+      "empty": {
+        "title": "No Cases",
+        "description": "Prosthetics cases will appear here"
       }
     },
     "physio": {
       "title": "Physiotherapy",
+      "description": "Physiotherapy cases in the clinic",
+      "searchPlaceholder": "Search by patient name or number...",
       "newCase": "New Case",
+      "filter": {
+        "all": "All Cases"
+      },
+      "table": {
+        "patientNumber": "Patient No.",
+        "patient": "Patient",
+        "status": "Status",
+        "createdAt": "Created"
+      },
+      "empty": {
+        "title": "No Cases",
+        "description": "Physiotherapy cases will appear here"
+      },
       "statuses": {
         "COMPLAINT": "Complaint",
         "PAIN_MAP": "Pain Map",
@@ -2297,21 +2486,49 @@
     },
     "appointments": {
       "title": "Appointments",
+      "description": "Schedule and track clinic appointments",
       "newAppointment": "New Appointment",
+      "emptyDay": "No appointments on this day",
       "types": {
-        "PROSTHETICS_ASSESSMENT": "Prosthetics Assessment",
-        "PROSTHETICS_FITTING": "Prosthetics Fitting",
-        "PROSTHETICS_FOLLOWUP": "Prosthetics Follow-Up",
-        "PHYSIO_SESSION": "Physio Session",
-        "GENERAL": "General",
+        "ASSESSMENT": "Assessment",
+        "FITTING": "Fitting",
+        "SESSION": "Session",
+        "FOLLOW_UP": "Follow-Up",
         "COMMITTEE": "Committee"
+      },
+      "roles": {
+        "PROSTHETIST": "Prosthetist",
+        "PHYSIOTHERAPIST": "Physiotherapist",
+        "DOCTOR": "Doctor",
+        "NURSE": "Nurse"
       },
       "statuses": {
         "SCHEDULED": "Scheduled",
         "CONFIRMED": "Confirmed",
         "COMPLETED": "Completed",
         "CANCELLED": "Cancelled",
-        "NO_SHOW": "No Show"
+        "NO_SHOW": "No Show",
+        "RESCHEDULED": "Rescheduled"
+      },
+      "form": {
+        "title": "New Appointment",
+        "patient": "Patient",
+        "patientPlaceholder": "Select patient...",
+        "searchPatient": "Search by name or ID...",
+        "noResults": "No results",
+        "appointmentType": "Appointment Type",
+        "practitionerRole": "Practitioner Role",
+        "date": "Date",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "notes": "Notes",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "create": "Create Appointment"
+      },
+      "actions": {
+        "confirm": "Confirm",
+        "complete": "Complete"
       }
     },
     "inventory": {
@@ -2320,12 +2537,26 @@
       "totalItems": "Total Items",
       "lowStockItems": "Low Stock Items",
       "stockValue": "Stock Value",
-      "itemTypes": { "COMPONENT": "Component", "CONSUMABLE": "Consumable" },
-      "transactionTypes": { "RECEIVE": "Receive", "ISSUE": "Issue", "ADJUST": "Adjust", "RETURN": "Return" },
+      "itemTypes": {
+        "COMPONENT": "Component",
+        "CONSUMABLE": "Consumable"
+      },
+      "transactionTypes": {
+        "RECEIVE": "Receive",
+        "ISSUE": "Issue",
+        "ADJUST": "Adjust",
+        "RETURN": "Return"
+      },
       "fields": {
-        "code": "Code", "name": "Name", "type": "Type", "category": "Category",
-        "supplier": "Supplier", "currentStock": "Current Stock", "minStockLevel": "Min Level",
-        "unitPrice": "Unit Price", "unit": "Unit"
+        "code": "Code",
+        "name": "Name",
+        "type": "Type",
+        "category": "Category",
+        "supplier": "Supplier",
+        "currentStock": "Current Stock",
+        "minStockLevel": "Min Level",
+        "unitPrice": "Unit Price",
+        "unit": "Unit"
       }
     },
     "reports": {
@@ -2352,16 +2583,45 @@
         "K3": "K3 - Community ambulator",
         "K4": "K4 - High activity"
       },
-      "amputationType": { "UPPER": "Upper Limb", "LOWER": "Lower Limb" },
-      "amputationSide": { "RIGHT": "Right", "LEFT": "Left", "BILATERAL": "Bilateral" },
-      "gender": { "MALE": "Male", "FEMALE": "Female" },
-      "identityType": { "NATIONAL_ID": "National ID", "PASSPORT": "Passport", "RESIDENCE": "Residence" },
-      "painTypes": { "Numbness": "Numbness", "Dull Ache": "Dull Ache", "Hot Burning": "Hot Burning", "Sharp Stabbing": "Sharp Stabbing", "Pins": "Pins & Needles", "Other": "Other" },
-      "consentOptions": { "FULL": "Full Consent", "ANONYMOUS": "Anonymous", "NONE": "No Consent" },
+      "amputationType": {
+        "UPPER": "Upper Limb",
+        "LOWER": "Lower Limb"
+      },
+      "amputationSide": {
+        "RIGHT": "Right",
+        "LEFT": "Left",
+        "BILATERAL": "Bilateral"
+      },
+      "gender": {
+        "MALE": "Male",
+        "FEMALE": "Female"
+      },
+      "identityType": {
+        "NATIONAL_ID": "National ID",
+        "PASSPORT": "Passport",
+        "RESIDENCE": "Residence"
+      },
+      "painTypes": {
+        "Numbness": "Numbness",
+        "Dull Ache": "Dull Ache",
+        "Hot Burning": "Hot Burning",
+        "Sharp Stabbing": "Sharp Stabbing",
+        "Pins": "Pins & Needles",
+        "Other": "Other"
+      },
+      "consentOptions": {
+        "FULL": "Full Consent",
+        "ANONYMOUS": "Anonymous",
+        "NONE": "No Consent"
+      },
       "signature": {
-        "sign": "Sign", "clear": "Clear", "confirm": "Confirm Signature",
+        "sign": "Sign",
+        "clear": "Clear",
+        "confirm": "Confirm Signature",
         "legalNotice": "By signing, you confirm your agreement to the above content",
-        "signed": "Signed", "signedBy": "Signed by", "signedAt": "Signed at"
+        "signed": "Signed",
+        "signedBy": "Signed by",
+        "signedAt": "Signed at"
       }
     }
   }
