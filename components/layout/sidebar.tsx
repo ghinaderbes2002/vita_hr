@@ -256,16 +256,21 @@ export function Sidebar() {
     return false;
   });
   const { hasPermission, isAdmin, hasRole } = usePermissions();
-  const storePermissions = useAuthStore((s) => s.permissions);
   const authUser = useAuthStore((s) => s.user);
 
-  // مستخدم بدون صلاحيات — يرى لوحة التحكم فقط
-  const hasNoAccess = !isAdmin() && storePermissions.length === 0;
+  // مستخدم بدون دور — يرى لوحة التحكم فقط
+  const storePermissions = useAuthStore((s) => s.permissions);
+  const userRoles = authUser?.roles ?? [];
+  const hasNoAccess = !isAdmin() && userRoles.length === 0;
 
-  // DEBUG — احذف هذا السطر بعد التشخيص
-  if (typeof window !== "undefined") {
-    console.log("[Sidebar]", { isAdmin: isAdmin(), permissions: storePermissions, roles: authUser?.roles, hasNoAccess });
-  }
+  // DEBUG مؤقت
+  console.log("[SIDEBAR]", {
+    hasNoAccess,
+    isAdmin: isAdmin(),
+    userRoles,
+    rolesRaw: authUser?.roles,
+    permissions: storePermissions,
+  });
 
   useEffect(() => {
     setMounted(true);

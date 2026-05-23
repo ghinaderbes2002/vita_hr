@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCreateRole, useUpdateRolePermissions, usePermissions, useRole, useUpdateRole } from "@/lib/hooks/use-roles";
 import { Role } from "@/types";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const formSchema = z.object({
@@ -132,12 +132,22 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
   const isLoading = createRole.isPending || updateRolePermissions.isPending || updateRole.isPending;
 
-  // Group permissions by module
-  const groupedPermissions = permissions.reduce((acc: any, permission) => {
+  const [permSearch, setPermSearch] = useState("");
+
+  // Group permissions by module (with search filter)
+  const filteredPermissions = permSearch.trim()
+    ? permissions.filter((p) => {
+        const q = permSearch.toLowerCase();
+        const label = getPermissionLabel(p).toLowerCase();
+        const module = getModuleLabel(p.module || "other").toLowerCase();
+        const name = p.name?.toLowerCase() ?? "";
+        return label.includes(q) || module.includes(q) || name.includes(q);
+      })
+    : permissions;
+
+  const groupedPermissions = filteredPermissions.reduce((acc: any, permission) => {
     const module = permission.module || "other";
-    if (!acc[module]) {
-      acc[module] = [];
-    }
+    if (!acc[module]) acc[module] = [];
     acc[module].push(permission);
     return acc;
   }, {});
@@ -246,7 +256,20 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                         </Button>
                       </div>
                     </div>
+                    <div className="relative mb-2">
+                      <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        placeholder="بحث في الصلاحيات..."
+                        value={permSearch}
+                        onChange={(e) => setPermSearch(e.target.value)}
+                        className="pr-8"
+                        dir="rtl"
+                      />
+                    </div>
                     <ScrollArea className="h-[200px] rounded-md border p-4">
+                      {Object.keys(groupedPermissions).length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">لا توجد صلاحيات مطابقة</p>
+                      )}
                       {Object.entries(groupedPermissions).map(([module, perms]: [string, any]) => (
                         <div key={module} className="mb-4">
                           <h4 className="font-semibold mb-2 text-sm capitalize">{getModuleLabel(module)}</h4>
