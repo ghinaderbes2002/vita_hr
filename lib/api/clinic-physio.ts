@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { TimelineEvent } from "./clinic-prosthetics";
 
 export type PhysioStatus =
   | "COMPLAINT"
@@ -222,7 +223,7 @@ export const clinicPhysioApi = {
     await apiClient.delete(`/physio/cases/${id}/sessions/${sessionId}`);
   },
 
-  getTimeline: async (id: string) => {
+  getTimeline: async (id: string): Promise<TimelineEvent[]> => {
     const { data } = await apiClient.get(`/physio/cases/${id}/timeline`);
     const d = data?.data ?? data;
     return Array.isArray(d) ? d : d?.items ?? [];
