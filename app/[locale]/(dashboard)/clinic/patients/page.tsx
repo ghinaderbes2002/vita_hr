@@ -51,6 +51,7 @@ export default function ClinicPatientsPage() {
 
   const patients = data?.items ?? [];
   const totalPages = data?.totalPages ?? 0;
+  const total = data?.total ?? 0;
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -204,7 +205,7 @@ export default function ClinicPatientsPage() {
       </div>
 
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
       )}
 
       <ConfirmDialog
