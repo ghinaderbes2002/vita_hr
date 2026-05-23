@@ -247,7 +247,7 @@ export default function NotificationsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <p className={`text-sm leading-snug ${!notif.isRead ? "font-semibold" : "text-muted-foreground"}`}>
-                        {notif.titleAr || notif.titleEn || notif.title}
+                        {notif.titleAr || notif.titleEn}
                       </p>
                       <div className="flex items-center gap-2 shrink-0">
                         {!notif.isRead && (
