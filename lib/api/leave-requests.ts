@@ -56,6 +56,7 @@ export interface LeaveRequest {
     monthlyLimit: number;
     reason: string;
   } | null;
+  attachmentUrl?: string | null;
 }
 
 export interface CreateHourlyLeaveData {
