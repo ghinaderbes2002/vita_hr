@@ -259,9 +259,9 @@ export default function NotificationsPage() {
                       </div>
                     </div>
 
-                    {(notif.messageAr || notif.message) && (
+                    {(notif.messageAr || notif.messageEn) && (
                       <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                        {notif.messageAr || notif.message}
+                        {notif.messageAr || notif.messageEn}
                       </p>
                     )}
 
