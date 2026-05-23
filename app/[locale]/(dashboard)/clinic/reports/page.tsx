@@ -10,7 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { useDonorReport, useDownloadDonorPdf } from "@/lib/hooks/use-clinic-reports";
 import { useProstheticsCases } from "@/lib/hooks/use-clinic-prosthetics";
+import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
 import { usePhysioCases } from "@/lib/hooks/use-clinic-physio";
+import { PhysioCase } from "@/lib/api/clinic-physio";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useLowStockAlerts } from "@/lib/hooks/use-clinic-inventory";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
@@ -100,10 +102,10 @@ export default function ClinicReportsPage() {
   const totalPatients = patientsData?.total ?? 0;
 
   // Active cases
-  const activeProst = prostCases.filter((c) => !["CLOSED", "CANCELLED", "DELIVERED"].includes(c.status)).length;
-  const activePhysio = physioCases.filter((c) => !["COMPLETED", "CANCELLED"].includes(c.status)).length;
-  const deliveredProst = prostCases.filter((c) => c.status === "DELIVERED").length;
-  const completedPhysio = physioCases.filter((c) => c.status === "COMPLETED").length;
+  const activeProst = prostCases.filter((c: ProstheticsCase) => !["CLOSED", "CANCELLED", "DELIVERED"].includes(c.status)).length;
+  const activePhysio = physioCases.filter((c: PhysioCase) => !["COMPLETED", "CANCELLED"].includes(c.status)).length;
+  const deliveredProst = prostCases.filter((c: ProstheticsCase) => c.status === "DELIVERED").length;
+  const completedPhysio = physioCases.filter((c: PhysioCase) => c.status === "COMPLETED").length;
 
   return (
     <div className="space-y-8">
