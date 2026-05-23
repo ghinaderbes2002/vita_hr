@@ -82,7 +82,7 @@ export default function InventoryPage() {
       <PageHeader
         title="المخزون الطبي"
         description="إدارة قطع الأطراف الصناعية والمستهلكات"
-        action={
+        actions={
           <ActionGuard permission={PERMISSIONS.CLINIC_INVENTORY.MANAGE}>
             <Button onClick={() => setNewItemOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
