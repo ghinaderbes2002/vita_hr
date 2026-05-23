@@ -92,7 +92,7 @@ export default function EditPatientPage() {
   const updatePatient = useUpdateClinicPatient();
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
   });
 
   useEffect(() => {

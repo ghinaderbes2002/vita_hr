@@ -91,22 +91,22 @@ export default function NewPatientPage() {
   const { data: dupData } = useCheckDuplicate(idNumber);
 
   const form1 = useForm<Step1>({
-    resolver: zodResolver(step1Schema),
+    resolver: zodResolver(step1Schema) as any,
     defaultValues: { firstName: "", lastName: "", identityType: "NATIONAL_ID", idNumber: "", dateOfBirth: "", gender: "MALE", ...s1 },
   });
 
   const form2 = useForm<Step2>({
-    resolver: zodResolver(step2Schema),
+    resolver: zodResolver(step2Schema) as any,
     defaultValues: { phone: "", whatsapp: "", email: "", cityId: "", address: "", ...s2 },
   });
 
   const form3 = useForm<Step3>({
-    resolver: zodResolver(step3Schema),
+    resolver: zodResolver(step3Schema) as any,
     defaultValues: { receivesHumanitarianAid: false, ...s3 },
   });
 
   const form4 = useForm<Step4>({
-    resolver: zodResolver(step4Schema),
+    resolver: zodResolver(step4Schema) as any,
     defaultValues: { documentConsent: "FULL", mediaConsent: true, notes: "", ...s4 },
   });
 
