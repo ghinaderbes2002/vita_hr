@@ -160,6 +160,7 @@ export default function MailPage() {
           <MailDetail
             messageId={openMessageId}
             onBack={() => setOpenMessageId(null)}
+            folder={activeFolder}
           />
         ) : (
           <MailList

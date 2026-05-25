@@ -104,6 +104,7 @@ export default function JobApplicationDetailPage() {
   const transferToEmployee = useTransferToEmployee();
 
   const [evalDialogOpen, setEvalDialogOpen] = useState(false);
+  const [viewEvalOpen, setViewEvalOpen] = useState(false);
   const [evalForm, setEvalForm] = useState<{
     positionId: string;
     decision: InterviewDecision | "";
@@ -599,14 +600,26 @@ export default function JobApplicationDetailPage() {
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="h-4 w-4 text-primary" />
             تقييم المقابلة
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1.5 h-7 text-xs ms-auto"
-              onClick={openEvalDialog}
-            >
-              {evalData ? "تعديل التقييم" : "إنشاء تقييم"}
-            </Button>
+            <div className="flex gap-1.5 ms-auto">
+              {evalData && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => setViewEvalOpen(true)}
+                >
+                  عرض التفاصيل
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={openEvalDialog}
+              >
+                {evalData ? "تعديل التقييم" : "إنشاء تقييم"}
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -720,6 +733,120 @@ export default function JobApplicationDetailPage() {
           </span>
         )}
       </div>
+
+      {/* View Evaluation Dialog (read-only) */}
+      <Dialog open={viewEvalOpen} onOpenChange={setViewEvalOpen}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>تفاصيل تقييم المقابلة</DialogTitle>
+          </DialogHeader>
+          {evalData && (
+            <div className="space-y-4 py-2 text-sm">
+              {/* Scores */}
+              <div className="grid gap-3 sm:grid-cols-4">
+                {[
+                  { label: "شخصي (40)", value: evalData.personalScore },
+                  { label: "تقني (40)", value: evalData.technicalScore },
+                  { label: "حاسوبي (20)", value: evalData.computerScore },
+                  { label: "المجموع", value: evalData.totalScore, highlight: true },
+                ].map((item) => (
+                  <div key={item.label} className={`rounded-lg border p-3 text-center ${item.highlight ? "border-primary/30 bg-primary/5" : ""}`}>
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className={`text-xl font-bold mt-0.5 ${item.highlight ? "text-primary" : ""}`}>
+                      {item.value != null ? item.value.toFixed(1) : "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {/* Position */}
+              {evalData.position && (
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-36 shrink-0">الشاغر الوظيفي:</span>
+                  <span className="font-medium">{evalData.position.jobTitle} — {evalData.position.department}</span>
+                </div>
+              )}
+              {/* Decision */}
+              {evalData.decision && (
+                <div className="flex gap-2 items-center">
+                  <span className="text-muted-foreground w-36 shrink-0">القرار:</span>
+                  <Badge className={`text-xs ${evalData.decision === "ACCEPTED" ? "bg-green-100 text-green-700" : evalData.decision === "REJECTED" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                    {({ ACCEPTED: "مقبول", REFERRED_TO_OTHER: "مرشح لشاغر آخر", DEFERRED: "مؤجل", REJECTED: "مرفوض" } as Record<string, string>)[evalData.decision]}
+                  </Badge>
+                </div>
+              )}
+              {evalData.proposedSalary && (
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-36 shrink-0">الراتب المقترح:</span>
+                  <span className="font-medium">${Number(evalData.proposedSalary).toLocaleString("en-US")}</span>
+                </div>
+              )}
+              {evalData.salaryAfterConfirmation && (
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-36 shrink-0">الراتب بعد التثبيت:</span>
+                  <span className="font-medium">${Number(evalData.salaryAfterConfirmation).toLocaleString("en-US")}</span>
+                </div>
+              )}
+              {evalData.additionalConditions && (
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-36 shrink-0">شروط إضافية:</span>
+                  <span>{evalData.additionalConditions}</span>
+                </div>
+              )}
+              {evalData.generalNotes && (
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">ملاحظات عامة:</p>
+                  <p className="rounded-md bg-muted/50 p-3 leading-relaxed whitespace-pre-wrap">{evalData.generalNotes}</p>
+                </div>
+              )}
+              {/* Personal scores detail */}
+              {evalData.personalScores?.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="font-medium">الصفات الشخصية</p>
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {evalData.personalScores.map((s: any) => (
+                      <div key={s.criterionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
+                        <span className="text-muted-foreground">{s.criterion?.nameAr ?? s.criterionId}</span>
+                        <span className="font-semibold">{s.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Technical scores detail */}
+              {evalData.technicalScores?.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="font-medium">الأسئلة الاختصاصية</p>
+                  <div className="space-y-1.5">
+                    {evalData.technicalScores.map((s: any) => (
+                      <div key={s.questionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
+                        <span className="text-muted-foreground">{s.question?.question ?? s.questionId}</span>
+                        <span className="font-semibold">{s.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Computer scores detail */}
+              {evalData.computerScores?.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="font-medium">المهارات الحاسوبية</p>
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {evalData.computerScores.map((s: any) => (
+                      <div key={s.criterionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
+                        <span className="text-muted-foreground">{s.criterion?.nameAr ?? s.criterionId}</span>
+                        <span className="font-semibold">{s.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewEvalOpen(false)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Evaluation Dialog */}
       <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
@@ -872,35 +999,10 @@ export default function JobApplicationDetailPage() {
               </div>
             )}
 
-            {/* Decision + notes */}
+            {/* Salary */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>القرار</Label>
-                <Select
-                  value={evalForm.decision || "none"}
-                  onValueChange={(v) =>
-                    setEvalForm({
-                      ...evalForm,
-                      decision: v === "none" ? "" : (v as InterviewDecision),
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر القرار" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">—</SelectItem>
-                    <SelectItem value="ACCEPTED">مقبول</SelectItem>
-                    <SelectItem value="REFERRED_TO_OTHER">
-                      مرشح لشاغر آخر
-                    </SelectItem>
-                    <SelectItem value="DEFERRED">مؤجل</SelectItem>
-                    <SelectItem value="REJECTED">مرفوض</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>الراتب المقترح ($)</Label>
+                <Label>الراتب المقترح من قبل الموارد البشرية ($)</Label>
                 <Input
                   type="number"
                   value={evalForm.proposedSalary}
@@ -911,7 +1013,7 @@ export default function JobApplicationDetailPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>الراتب بعد التثبيت ($)</Label>
+              <Label>الراتب المقترح من قبل الموظف ($)</Label>
               <Input
                 type="number"
                 placeholder="اختياري"

@@ -96,7 +96,7 @@ export function MailList({
 
   const getDate = (item: any): string => {
     const d = isDraft ? item.createdAt : item.message?.createdAt ?? item.createdAt;
-    return format(new Date(d), "d MMM", { locale: ar });
+    return format(new Date(d), "d MMM HH:mm", { locale: ar });
   };
 
   const isUnread = (item: any): boolean =>
@@ -295,7 +295,7 @@ export function MailList({
                 )}
 
                 {/* Date */}
-                <span className="text-xs text-muted-foreground shrink-0 w-14 text-left">
+                <span className="text-xs text-muted-foreground shrink-0 w-24 text-left">
                   {getDate(item)}
                 </span>
               </div>

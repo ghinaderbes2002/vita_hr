@@ -23,9 +23,10 @@ import { EmployeeName } from "./employee-name";
 interface Props {
   messageId: string;
   onBack: () => void;
+  folder?: string;
 }
 
-export function MailDetail({ messageId, onBack }: Props) {
+export function MailDetail({ messageId, onBack, folder }: Props) {
   const { data, isLoading } = useMailMessage(messageId);
   const { data: thread = [] } = useMailThread(messageId);
   const { data: archiveFolders = [] } = useArchiveFolders();
@@ -154,18 +155,20 @@ export function MailDetail({ messageId, onBack }: Props) {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 text-red-600 hover:text-red-700"
-          onClick={async () => {
-            await deleteMail.mutateAsync(messageId);
-            onBack();
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-          حذف
-        </Button>
+        {folder !== "TRASH" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-red-600 hover:text-red-700"
+            onClick={async () => {
+              await deleteMail.mutateAsync(messageId);
+              onBack();
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+            حذف
+          </Button>
+        )}
       </div>
 
       {/* Message content */}
@@ -236,45 +239,57 @@ export function MailDetail({ messageId, onBack }: Props) {
         {/* Thread */}
         {thread.length > 1 && (
           <div className="mt-4">
-            <Separator className="mb-3" />
-            <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground font-medium">
+            <Separator className="mb-4" />
+            <div className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground font-medium">
               <MessageSquare className="h-3.5 w-3.5" />
               المحادثة ({thread.length} رسائل)
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {thread
                 .filter((m) => m.id !== messageId)
-                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                 .map((m) => {
                   const expanded = expandedIds.has(m.id);
                   const senderN = m.sender
                     ? `${m.sender.firstNameAr} ${m.sender.lastNameAr}`
                     : null;
                   return (
-                    <div key={m.id} className="border rounded-md overflow-hidden">
+                    <div key={m.id} className="rounded-lg border bg-card shadow-sm overflow-hidden">
                       <button
                         type="button"
                         onClick={() => toggleExpand(m.id)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 transition-colors text-right"
+                        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-right"
                       >
+                        {/* Avatar */}
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <span className="text-xs font-semibold text-primary">
+                            {(senderN ?? "?")[0]}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-0.5">
+                            <span className="text-sm font-semibold truncate">
+                              {senderN ?? <EmployeeName userId={m.senderId} />}
+                            </span>
+                            <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
+                              {format(new Date(m.createdAt), "d MMM · HH:mm", { locale: ar })}
+                            </span>
+                          </div>
+                          {!expanded && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {m.body.slice(0, 100)}{m.body.length > 100 ? "..." : ""}
+                            </p>
+                          )}
+                        </div>
                         {expanded
-                          ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-                        <span className="font-medium w-28 shrink-0 truncate">
-                          {senderN ?? <EmployeeName userId={m.senderId} />}
-                        </span>
-                        <span className="flex-1 truncate text-muted-foreground text-xs">
-                          {m.body.slice(0, 80)}{m.body.length > 80 ? "..." : ""}
-                        </span>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {format(new Date(m.createdAt), "d MMM", { locale: ar })}
-                        </span>
+                          ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground mt-1" />
+                          : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground mt-1" />}
                       </button>
                       {expanded && (
-                        <div className="px-4 py-3 border-t bg-muted/10 text-sm leading-relaxed whitespace-pre-wrap">
+                        <div className="px-5 py-4 border-t bg-muted/5 text-sm leading-relaxed whitespace-pre-wrap">
                           {m.body}
                           {m.attachments && m.attachments.length > 0 && (
-                            <div className="mt-2">
+                            <div className="mt-3">
                               <AttachmentList attachments={m.attachments} />
                             </div>
                           )}

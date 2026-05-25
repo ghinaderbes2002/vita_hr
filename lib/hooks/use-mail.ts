@@ -49,6 +49,7 @@ export function useMailMessage(messageId: string | null) {
     queryKey: ["mail", "message", messageId],
     queryFn: () => mailApi.getById(messageId!),
     enabled: !!messageId,
+    refetchInterval: 10000,
   });
 }
 
@@ -57,6 +58,7 @@ export function useMailThread(messageId: string | null) {
     queryKey: ["mail", "thread", messageId],
     queryFn: () => mailApi.getThread(messageId!),
     enabled: !!messageId,
+    refetchInterval: 10000,
   });
 }
 

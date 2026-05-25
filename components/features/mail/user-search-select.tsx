@@ -111,7 +111,7 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
             onClick={() => onChange([])}
             className="text-xs text-muted-foreground hover:text-destructive transition-colors"
           >
-            مسح الكل ({value.length})
+            حذف الكل ({value.length})
           </button>
         </div>
       )}

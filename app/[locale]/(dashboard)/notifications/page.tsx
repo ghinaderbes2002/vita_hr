@@ -20,6 +20,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ComposeMailModal } from "@/components/features/mail/compose-mail-modal";
 import { useNotificationsPage, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
 import type { Notification, NotificationType } from "@/lib/api/notifications";
@@ -63,6 +69,7 @@ export default function NotificationsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [accumulated, setAccumulated] = useState<Notification[]>([]);
+  const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeToIds, setComposeToIds] = useState<string[]>([]);
   const [composeSubject, setComposeSubject] = useState("");
@@ -116,11 +123,7 @@ export default function NotificationsPage() {
 
   const handleClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
-    const evalLink = EVAL_TYPES.includes(notif.type) && notif.data?.evaluationId
-      ? `/${locale}/probation-evaluations/${notif.data.evaluationId}`
-      : null;
-    const target = evalLink || notif.actionUrl;
-    if (target) router.push(target);
+    setSelectedNotif(notif);
   };
 
   const handleBirthdayGreeting = (notif: any) => {
@@ -327,6 +330,78 @@ export default function NotificationsPage() {
           </>
         )}
       </div>
+
+      {/* Notification detail dialog */}
+      <Dialog open={!!selectedNotif} onOpenChange={(o) => { if (!o) setSelectedNotif(null); }}>
+        <DialogContent className="sm:max-w-md">
+          {selectedNotif && (() => {
+            const cfg = getConfig(selectedNotif.type);
+            const Icon = cfg.icon;
+            const evalLink = EVAL_TYPES.includes(selectedNotif.type) && (selectedNotif as any).data?.evaluationId
+              ? `/${locale}/probation-evaluations/${(selectedNotif as any).data.evaluationId}`
+              : null;
+            const target = evalLink || selectedNotif.actionUrl;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${cfg.bg}`}>
+                      <Icon className={`h-4 w-4 ${cfg.color}`} />
+                    </div>
+                    <span>{selectedNotif.titleAr || selectedNotif.titleEn}</span>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 py-2 text-sm">
+                  {(selectedNotif.messageAr || selectedNotif.messageEn) && (
+                    <p className="text-muted-foreground leading-relaxed">
+                      {selectedNotif.messageAr || selectedNotif.messageEn}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    {format(new Date(selectedNotif.createdAt), "yyyy/MM/dd HH:mm")}
+                    {" · "}
+                    {formatDistanceToNow(new Date(selectedNotif.createdAt), { addSuffix: true, locale: ar })}
+                  </div>
+                  <Badge variant="outline" className={`text-xs ${cfg.color} w-fit`}>{cfg.label}</Badge>
+                  {target && (
+                    <Button
+                      size="sm"
+                      className="w-full gap-2 mt-2"
+                      onClick={() => { setSelectedNotif(null); router.push(target); }}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      الذهاب للصفحة المرتبطة
+                    </Button>
+                  )}
+                  {(selectedNotif as any).data?.employeeId && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => { setSelectedNotif(null); router.push(`/${locale}/employees/${(selectedNotif as any).data.employeeId}`); }}
+                    >
+                      <User className="h-4 w-4" />
+                      عرض الموظف
+                    </Button>
+                  )}
+                  {selectedNotif.type === "BIRTHDAY" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-2 text-pink-600 border-pink-200 hover:bg-pink-50"
+                      onClick={() => { setSelectedNotif(null); handleBirthdayGreeting(selectedNotif); }}
+                    >
+                      <Cake className="h-4 w-4" />
+                      إرسال تهنئة
+                    </Button>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <ComposeMailModal
         open={composeOpen}
