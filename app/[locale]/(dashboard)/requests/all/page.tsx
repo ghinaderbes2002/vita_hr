@@ -49,7 +49,7 @@ export default function AllRequestsPage() {
 
   const handleApproveConfirm = async (notes: string) => {
     if (selected) {
-      await hrApprove.mutateAsync({ id: selected.id, notes: notes || undefined });
+      await hrApprove.mutateAsync({ id: selected.id, body: { notes: notes || undefined } });
       setApproveDialogOpen(false);
       setSelected(null);
     }
