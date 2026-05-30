@@ -5,16 +5,20 @@ export interface CreateHolidayData {
   nameAr: string;
   nameEn: string;
   date: string;
+  endDate?: string;
   type: "PUBLIC" | "NATIONAL" | "RELIGIOUS" | "OTHER";
   isRecurring: boolean;
+  year?: number;
 }
 
 export interface UpdateHolidayData {
   nameAr?: string;
   nameEn?: string;
   date?: string;
+  endDate?: string;
   type?: "PUBLIC" | "NATIONAL" | "RELIGIOUS" | "OTHER";
   isRecurring?: boolean;
+  year?: number;
   isActive?: boolean;
 }
 

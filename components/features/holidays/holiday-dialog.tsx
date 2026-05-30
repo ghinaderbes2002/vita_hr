@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useCreateHoliday, useUpdateHoliday } from "@/lib/hooks/use-holidays";
+import { CreateHolidayData } from "@/lib/api/holidays";
 import { Holiday } from "@/types";
 
 const formSchema = z.object({
@@ -107,7 +108,7 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
 
   const onSubmit = async (data: FormData) => {
     try {
-      const formattedData: Record<string, any> = {
+      const formattedData: CreateHolidayData = {
         nameAr: data.nameAr,
         nameEn: data.nameEn,
         date: format(data.date, "yyyy-MM-dd"),
