@@ -419,3 +419,91 @@ export interface PaginationParams {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }
+
+// ── Rewards & Penalties ───────────────────────────────────────────────────────
+
+export type PenaltyCategory = "MATERIAL" | "MORAL";
+export type PenaltyType = "NOTICE" | "WARNING_1" | "WARNING_2" | "DAYS_DEDUCTION";
+export type RewardCategory = "MATERIAL" | "MORAL";
+
+export interface PenaltyProposalDetails {
+  targetEmployeeId: string;
+  targetJobTitle: string;
+  category: PenaltyCategory;
+  penaltyType: PenaltyType;
+  penaltyDays?: number;
+  violationDescription: string;
+  executiveRecommendation?: string;
+}
+
+export interface RewardEmployee {
+  employeeId: string;
+  category: RewardCategory;
+  rewardType: string;
+  amount?: number;
+  reason?: string;
+}
+
+export interface RewardDetails {
+  employees: RewardEmployee[];
+  executiveRecommendation?: string;
+}
+
+export interface EmployeeRewardPenalty {
+  id: string;
+  employeeId: string;
+  kind: "REWARD" | "PENALTY";
+  category: PenaltyCategory;
+  penaltyDays: number | null;
+  amount: number | null;
+  typeCode: string | null;
+  reason: string | null;
+  recommendation: string | null;
+  requestId: string | null;
+  issuedBy: string | null;
+  status: string;
+  effectiveDate: string;
+  createdAt: string;
+}
+
+export interface ApproveRequestBody {
+  notes?: string;
+  penaltyDays?: number;
+  amount?: number;
+  executiveRecommendation?: string;
+}
+
+// ── Attendance (extended) ─────────────────────────────────────────────────────
+
+export type PunchSequenceStatus = "VALID" | "PARTIAL" | "NEEDS_REVIEW" | "INVALID";
+
+export interface AttendanceBreak {
+  id: string;
+  breakOut: string;
+  breakIn: string | null;
+  durationMinutes: number;
+  isAuthorized: boolean;
+  reason?: string | null;
+}
+
+export interface AttendanceRecordExtended {
+  id: string;
+  employeeId: string;
+  date: string;
+  clockInTime: string | null;
+  clockOutTime: string | null;
+  breaks: AttendanceBreak[];
+  totalBreakMinutes: number;
+  breakOverLimitMinutes: number;
+  leaveStartTime: string | null;
+  leaveEndTime: string | null;
+  halfDayPeriod: "AM" | "PM" | null;
+  overtimeMinutes: number;
+  overtimeWorkdayMinutes: number;
+  overtimeHolidayMinutes: number;
+  overtimeRequestId: string | null;
+  punchSequenceStatus: PunchSequenceStatus;
+  status: string;
+  workMinutes?: number;
+  lateMinutes?: number;
+}

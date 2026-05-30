@@ -2776,5 +2776,69 @@
         "signedAt": "وقت التوقيع"
       }
     }
-  }
+  },
+  "penalty": {
+    "title": "عقوبة",
+    "category": {
+      "MATERIAL": "مادي",
+      "MORAL": "معنوي"
+    },
+    "type": {
+      "NOTICE": "لفت نظر",
+      "WARNING_1": "إنذار أول",
+      "WARNING_2": "إنذار ثانٍ",
+      "DAYS_DEDUCTION": "خصم أيام"
+    },
+    "penaltyDays": "أيام الخصم",
+    "violationDescription": "وصف المخالفة",
+    "financialNote": "سيُخصم {days} يوم من راتب الموظف للشهر الذي يُعتمد فيه",
+    "moralNote": "إجراء معنوي بلا أثر مالي",
+    "selectCategory": "اختر التصنيف",
+    "selectType": "اختر نوع العقوبة"
+  },
+  "reward": {
+    "title": "مكافأة",
+    "category": {
+      "MATERIAL": "مادي",
+      "MORAL": "معنوي"
+    },
+    "amount": "المبلغ",
+    "rewardType": "نوع المكافأة",
+    "selectCategory": "اختر التصنيف",
+    "types": {
+      "CASH": "مكافأة نقدية",
+      "CERTIFICATE": "شهادة تقدير",
+      "PROMOTION": "ترقية",
+      "OTHER": "أخرى"
+    }
+  },
+  "executiveRecommendation": "التوصية التنفيذية",
+  "disciplinaryRecord": {
+    "title": "السجل التأديبي والمكافآت",
+    "kind": {
+      "REWARD": "مكافأة",
+      "PENALTY": "عقوبة"
+    },
+    "noData": "لا توجد سجلات تأديبية أو مكافآت",
+    "columns": {
+      "date": "التاريخ",
+      "kind": "النوع",
+      "category": "التصنيف",
+      "typeCode": "الصنف",
+      "value": "القيمة",
+      "reason": "السبب",
+      "recommendation": "التوصية",
+      "status": "الحالة",
+      "request": "الطلب"
+    }
+  },
+  "punchSequenceStatus": {
+    "VALID": "سليم",
+    "PARTIAL": "جزئي",
+    "NEEDS_REVIEW": "يحتاج مراجعة",
+    "INVALID": "خاطئ"
+  },
+  "approvedOvertime": "إضافي معتمد",
+  "overtimeWorkday": "إضافي يوم عادي",
+  "overtimeHoliday": "إضافي عطلة"
 }

@@ -147,7 +147,17 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 type HiringPosition = { departmentId: string; jobTitle: string; count: string; reason: string };
-type RewardEmployee = { employeeId: string; rewardType: string; amount: string; reason: string };
+type RewardEmployee = { employeeId: string; category: "MATERIAL" | "MORAL"; rewardType: string; amount: string; reason: string };
+
+const PENALTY_TYPES_MORAL = [
+  { value: "NOTICE",    label: "لفت نظر" },
+  { value: "WARNING_1", label: "إنذار أول" },
+  { value: "WARNING_2", label: "إنذار ثانٍ" },
+];
+const PENALTY_TYPES_MATERIAL = [
+  { value: "DAYS_DEDUCTION", label: "خصم أيام" },
+];
+const PENALTY_DAYS_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3];
 
 const defaultWorkAccident = {
   incidentLocation: "", incidentType: "", incidentTypeOther: "",
@@ -192,8 +202,11 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
     { departmentId: "", jobTitle: "", count: "1", reason: "" },
   ]);
   const [rewardEmployees, setRewardEmployees] = useState<RewardEmployee[]>([
-    { employeeId: "", rewardType: "", amount: "", reason: "" },
+    { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" },
   ]);
+  const [penaltyCategory, setPenaltyCategory] = useState<"MATERIAL" | "MORAL">("MORAL");
+  const [penaltyType, setPenaltyType] = useState<string>("");
+  const [penaltyDays, setPenaltyDays] = useState<string>("");
   const [overtimeSubType, setOvertimeSubType] = useState<"OVERTIME_EMPLOYEE" | "OVERTIME_MANAGER">("OVERTIME_EMPLOYEE");
   const [overtimeManagerEmployeeIds, setOvertimeManagerEmployeeIds] = useState<string[]>([]);
   const [workAccident, setWorkAccident] = useState(defaultWorkAccident);
@@ -277,6 +290,9 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
         return {
           targetEmployeeId: data.targetEmployeeId,
           targetJobTitle: data.targetJobTitle,
+          category: penaltyCategory,
+          penaltyType: penaltyType || undefined,
+          penaltyDays: penaltyCategory === "MATERIAL" && penaltyDays ? Number(penaltyDays) : undefined,
           violationDescription: data.violationDescription,
         };
       case "OVERTIME":
@@ -335,8 +351,9 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
         return {
           employees: rewardEmployees.map((e) => ({
             employeeId: e.employeeId,
+            category: e.category,
             rewardType: e.rewardType,
-            amount: Number(e.amount) || 0,
+            amount: e.category === "MATERIAL" ? (Number(e.amount) || 0) : undefined,
             reason: e.reason,
           })),
         };
@@ -399,7 +416,10 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
       onOpenChange(false);
       form.reset({ type: "OTHER", reason: "", notes: "" });
       setHiringPositions([{ departmentId: "", jobTitle: "", count: "1", reason: "" }]);
-      setRewardEmployees([{ employeeId: "", rewardType: "", amount: "", reason: "" }]);
+      setRewardEmployees([{ employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" }]);
+      setPenaltyCategory("MORAL");
+      setPenaltyType("");
+      setPenaltyDays("");
       setOvertimeManagerEmployeeIds([]);
       setWorkAccident(defaultWorkAccident);
       setRemoteWork(defaultRemoteWork);
@@ -540,6 +560,60 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormControl><Input {...field} placeholder="المسمى الوظيفي" /></FormControl>
                   </FormItem>
                 )} />
+
+                {/* التصنيف */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">التصنيف *</label>
+                  <div className="flex gap-2">
+                    {([{ value: "MORAL", label: "معنوي" }, { value: "MATERIAL", label: "مادي" }] as const).map((c) => (
+                      <button key={c.value} type="button"
+                        onClick={() => { setPenaltyCategory(c.value); setPenaltyType(c.value === "MATERIAL" ? "DAYS_DEDUCTION" : ""); setPenaltyDays(""); }}
+                        className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${penaltyCategory === c.value ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                  {penaltyCategory === "MORAL" && (
+                    <p className="text-xs text-muted-foreground">إجراء معنوي بلا أثر مالي</p>
+                  )}
+                </div>
+
+                {/* نوع العقوبة — للمعنوي فقط */}
+                {penaltyCategory === "MORAL" && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">نوع العقوبة *</label>
+                  <div className="flex flex-wrap gap-2">
+                    {PENALTY_TYPES_MORAL.map((pt) => (
+                      <button key={pt.value} type="button"
+                        onClick={() => setPenaltyType(pt.value)}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${penaltyType === pt.value ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+                      >
+                        {pt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                )}
+
+                {/* أيام الخصم — للمادي فقط */}
+                {penaltyCategory === "MATERIAL" && (
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">أيام الخصم *</label>
+                    <div className="flex flex-wrap gap-2">
+                      {PENALTY_DAYS_OPTIONS.map((d) => (
+                        <button key={d} type="button"
+                          onClick={() => setPenaltyDays(String(d))}
+                          className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${penaltyDays === String(d) ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+                        >
+                          {d} يوم
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-amber-600">سيُخصم {penaltyDays || "؟"} يوم من راتب الموظف للشهر الذي يُعتمد فيه</p>
+                  </div>
+                )}
+
                 <FormField control={form.control} name="violationDescription" render={({ field }) => (
                   <FormItem>
                     <FormLabel>وصف المخالفة *</FormLabel>
@@ -800,11 +874,11 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">الموظفون المرشحون للمكافأة *</p>
-                    <p className="text-xs text-muted-foreground mt-1">ملاحظة: المبالغ المعتمدة سيتم إضافتها تلقائياً إلى راتب الموظف في مسير الرواتب.</p>
+                    <p className="text-xs text-muted-foreground mt-1">المبالغ المعتمدة تُضاف تلقائياً للراتب.</p>
                   </div>
                   {rewardEmployees.length < 10 && (
                     <Button type="button" variant="outline" size="sm" className="gap-1"
-                      onClick={() => setRewardEmployees((a) => [...a, { employeeId: "", rewardType: "", amount: "", reason: "" }])}>
+                      onClick={() => setRewardEmployees((a) => [...a, { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" }])}>
                       <Plus className="h-3.5 w-3.5" />إضافة موظف
                     </Button>
                   )}
@@ -824,17 +898,33 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                         <SelectContent>{employees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    {/* التصنيف */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">التصنيف *</label>
+                      <div className="flex gap-2">
+                        {([{ value: "MORAL", label: "معنوي" }, { value: "MATERIAL", label: "مادي" }] as const).map((c) => (
+                          <button key={c.value} type="button"
+                            onClick={() => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, category: c.value, amount: "" } : x))}
+                            className={`px-3 py-1 rounded-full text-xs border transition-colors ${emp.category === c.value ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+                          >
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={`grid gap-2 ${emp.category === "MATERIAL" ? "grid-cols-2" : "grid-cols-1"}`}>
                       <div className="space-y-1">
                         <label className="text-xs font-medium">نوع المكافأة *</label>
                         <Input value={emp.rewardType} placeholder="نوع المكافأة"
                           onChange={(e) => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, rewardType: e.target.value } : x))} />
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">المبلغ *</label>
-                        <Input type="number" min={0} value={emp.amount}
-                          onChange={(e) => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))} />
-                      </div>
+                      {emp.category === "MATERIAL" && (
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">المبلغ *</label>
+                          <Input type="number" min={0} value={emp.amount}
+                            onChange={(e) => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))} />
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-medium">سبب المكافأة *</label>

@@ -50,6 +50,9 @@ import { useSalaryAdvances } from "@/lib/hooks/use-salary-advances";
 import { useSalesCommissions } from "@/lib/hooks/use-sales-commissions";
 import { CreateSalaryAdvanceDialog } from "@/components/features/payroll/create-salary-advance-dialog";
 import { CreateCommissionDialog } from "@/components/features/payroll/create-commission-dialog";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api/client";
+import { EmployeeRewardPenalty } from "@/types";
 
 const MONTHS_AR = [
   "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
@@ -62,6 +65,98 @@ const ADVANCE_STATUS_LABELS: Record<string, string> = {
 const ADVANCE_STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   ACTIVE: "default", COMPLETED: "secondary", CANCELLED: "destructive",
 };
+
+function _DisciplinaryTab({ employeeId }: { employeeId: string }) {
+  const [kindFilter, setKindFilter] = useState<"ALL" | "REWARD" | "PENALTY">("ALL");
+
+  const { data, isLoading } = useQuery<EmployeeRewardPenalty[]>({
+    queryKey: ["employee-rewards-penalties", employeeId],
+    queryFn: async () => {
+      const res = await apiClient.get(`/employees/${employeeId}/rewards-penalties`);
+      return res.data?.data ?? res.data ?? [];
+    },
+    retry: false,
+  });
+
+  const records: EmployeeRewardPenalty[] = Array.isArray(data) ? data : [];
+  const filtered = kindFilter === "ALL" ? records : records.filter((r) => r.kind === kindFilter);
+
+  if (!isLoading && records.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-primary" />
+            السجل التأديبي والمكافآت
+          </CardTitle>
+          <div className="flex gap-1.5">
+            {(["ALL", "REWARD", "PENALTY"] as const).map((f) => (
+              <button key={f} type="button"
+                onClick={() => setKindFilter(f)}
+                className={`px-3 py-1 rounded-full text-xs border transition-colors ${kindFilter === f ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
+              >
+                {f === "ALL" ? "الكل" : f === "REWARD" ? "مكافآت" : "عقوبات"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="p-4 space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+        ) : filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">لا توجد سجلات</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>التاريخ</TableHead>
+                <TableHead>النوع</TableHead>
+                <TableHead>التصنيف</TableHead>
+                <TableHead>الصنف</TableHead>
+                <TableHead>القيمة</TableHead>
+                <TableHead>السبب</TableHead>
+                <TableHead>الطلب</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((rec) => (
+                <TableRow key={rec.id} className={rec.kind === "PENALTY" ? "bg-red-50/30" : ""}>
+                  <TableCell className="text-sm">{new Date(rec.effectiveDate).toLocaleDateString("ar-SA")}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={rec.kind === "PENALTY" ? "border-red-300 text-red-700" : "border-green-300 text-green-700"}>
+                      {rec.kind === "PENALTY" ? "عقوبة" : "مكافأة"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {rec.category === "MATERIAL" ? "مادي" : "معنوي"}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {({ NOTICE: "لفت نظر", WARNING_1: "إنذار أول", WARNING_2: "إنذار ثانٍ", DAYS_DEDUCTION: "خصم أيام" } as any)[rec.typeCode ?? ""] ?? rec.typeCode ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-sm font-medium">
+                    {rec.kind === "PENALTY" && rec.penaltyDays ? `${rec.penaltyDays} يوم` : rec.amount ? `$${rec.amount.toLocaleString()}` : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{rec.reason ?? "—"}</TableCell>
+                  <TableCell>
+                    {rec.requestId ? (
+                      <a href={`requests/${rec.requestId}`} className="text-xs text-primary hover:underline flex items-center gap-1">
+                        <ExternalLink className="h-3 w-3" />
+                        عرض
+                      </a>
+                    ) : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function _EmployeeFinancialTabs({ employeeId }: { employeeId: string }) {
   const [advanceOpen, setAdvanceOpen] = useState(false);
@@ -1275,6 +1370,9 @@ export default function EmployeeDetailsPage() {
       <FieldGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.READ} hideEntirely>
         <_EmployeeFinancialTabs employeeId={employeeId} />
       </FieldGuard>
+
+      {/* ─── السجل التأديبي والمكافآت ──────────────────────── */}
+      <_DisciplinaryTab employeeId={employeeId} />
 
       {/* ─── Start Workflow Dialog ─────────────────────────── */}
       <Dialog open={wfDialogOpen} onOpenChange={setWfDialogOpen}>

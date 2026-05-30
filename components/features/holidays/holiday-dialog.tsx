@@ -45,8 +45,10 @@ const formSchema = z.object({
   nameAr: z.string().min(1, "الاسم بالعربية مطلوب"),
   nameEn: z.string().min(1, "الاسم بالإنجليزية مطلوب"),
   date: z.date(),
+  endDate: z.date().optional(),
   type: z.enum(["PUBLIC", "NATIONAL", "RELIGIOUS", "OTHER"]),
   isRecurring: z.boolean(),
+  year: z.string().optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -69,8 +71,10 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
       nameAr: "",
       nameEn: "",
       date: new Date(),
+      endDate: undefined,
       type: "PUBLIC",
       isRecurring: false,
+      year: String(new Date().getFullYear()),
       isActive: true,
     },
   });
@@ -81,8 +85,10 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
         nameAr: holiday.nameAr,
         nameEn: holiday.nameEn,
         date: new Date(holiday.date),
+        endDate: (holiday as any).endDate ? new Date((holiday as any).endDate) : undefined,
         type: holiday.type,
         isRecurring: holiday.isRecurring,
+        year: String((holiday as any).year || new Date(holiday.date).getFullYear()),
         isActive: holiday.isActive !== false,
       });
     } else {
@@ -90,8 +96,10 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
         nameAr: "",
         nameEn: "",
         date: new Date(),
+        endDate: undefined,
         type: "PUBLIC",
         isRecurring: false,
+        year: String(new Date().getFullYear()),
         isActive: true,
       });
     }
@@ -99,12 +107,14 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
 
   const onSubmit = async (data: FormData) => {
     try {
-      const formattedData = {
+      const formattedData: Record<string, any> = {
         nameAr: data.nameAr,
         nameEn: data.nameEn,
         date: format(data.date, "yyyy-MM-dd"),
         type: data.type,
         isRecurring: data.isRecurring,
+        ...(data.endDate && { endDate: format(data.endDate, "yyyy-MM-dd") }),
+        ...(!data.isRecurring && data.year && { year: Number(data.year) }),
         ...(holiday && { isActive: data.isActive }),
       };
 
@@ -196,6 +206,45 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
               )}
             />
 
+            {/* تاريخ الانتهاء */}
+            <FormField
+              control={form.control}
+              name="endDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>تاريخ الانتهاء <span className="text-muted-foreground text-xs">(اختياري — لإجازة متعددة أيام)</span></FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn("w-full pl-3 text-right font-normal", !field.value && "text-muted-foreground")}
+                        >
+                          {field.value ? format(field.value, "PPP") : <span>اختر تاريخ الانتهاء</span>}
+                          <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        disabled={(d) => d < form.getValues("date")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {field.value && (
+                    <button type="button" className="text-xs text-destructive hover:underline text-right" onClick={() => field.onChange(undefined)}>
+                      إزالة تاريخ الانتهاء
+                    </button>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="type"
@@ -239,6 +288,23 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
                 </FormItem>
               )}
             />
+
+            {/* السنة — للإجازات غير المتكررة */}
+            {!form.watch("isRecurring") && (
+              <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>السنة</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" min={2020} max={2100} placeholder="2026" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {holiday && (
               <FormField

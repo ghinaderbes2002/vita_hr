@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward } from "lucide-react";
+import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +16,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { useMailMessage, useMailThread, useArchiveFolders, useDeleteMail, useMoveMail } from "@/lib/hooks/use-mail";
+import { useMailMessage, useMailThread, useArchiveFolders, useDeleteMail, useMoveMail, useEditMail } from "@/lib/hooks/use-mail";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { AttachmentList } from "./attachment-list";
 import { ComposeMailModal } from "./compose-mail-modal";
 import { EmployeeName } from "./employee-name";
@@ -32,10 +43,16 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const { data: archiveFolders = [] } = useArchiveFolders();
   const deleteMail = useDeleteMail();
   const moveMail   = useMoveMail();
+  const editMail   = useEditMail();
+  const { user }   = useAuthStore();
   const [replyOpen, setReplyOpen]       = useState(false);
   const [replyAll, setReplyAll]         = useState(false);
   const [forwardOpen, setForwardOpen]   = useState(false);
   const [expandedIds, setExpandedIds]   = useState<Set<string>>(new Set());
+  const [editOpen, setEditOpen]         = useState(false);
+  const [editSubject, setEditSubject]   = useState("");
+  const [editBody, setEditBody]         = useState("");
+  const [historyOpen, setHistoryOpen]   = useState(false);
 
   const toggleExpand = (id: string) =>
     setExpandedIds((prev) => {
@@ -68,6 +85,8 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   ) ?? [];
 
   const senderInfo = message.senderInfo ?? message.sender;
+  const isSender = (senderInfo as any)?.employeeId === user?.id || message.senderId === user?.id;
+  const editHistory = (message as any).editHistory ?? [];
   const senderName = senderInfo
     ? `${senderInfo.firstNameAr} ${senderInfo.lastNameAr}`
     : null;
@@ -169,6 +188,21 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             حذف
           </Button>
         )}
+        {folder === "SENT" && isSender && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => {
+              setEditSubject(message.subject);
+              setEditBody(message.body);
+              setEditOpen(true);
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+            تعديل
+          </Button>
+        )}
       </div>
 
       {/* Message content */}
@@ -234,6 +268,30 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
         {/* Attachments */}
         {message.attachments && message.attachments.length > 0 && (
           <AttachmentList attachments={message.attachments} />
+        )}
+
+        {/* Edit history */}
+        {editHistory.length > 0 && (
+          <div className="text-xs text-muted-foreground border-t pt-3 mt-2">
+            {editHistory.length === 1 ? (
+              <p className="flex items-center gap-1.5">
+                <Pencil className="h-3 w-3" />
+                تم التعديل من قبل {editHistory[0].editedByName}{" "}
+                ({format(new Date(editHistory[0].editedAt), "dd/MM/yyyy الساعة HH:mm", { locale: ar })})
+              </p>
+            ) : (
+              <div>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                  onClick={() => setHistoryOpen(true)}
+                >
+                  <History className="h-3 w-3" />
+                  سجل التعديلات ({editHistory.length} تعديلات)
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Thread */}
@@ -302,6 +360,76 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           </div>
         )}
       </div>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-4 w-4" />
+              تعديل الرسالة
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>الموضوع</Label>
+              <Input value={editSubject} onChange={(e) => setEditSubject(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>النص</Label>
+              <Textarea rows={6} value={editBody} onChange={(e) => setEditBody(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>إلغاء</Button>
+            <Button
+              disabled={(!editSubject.trim() && !editBody.trim()) || editMail.isPending}
+              onClick={() => {
+                const dto: any = {};
+                if (editSubject !== message.subject) dto.subject = editSubject;
+                if (editBody !== message.body) dto.body = editBody;
+                if (!Object.keys(dto).length) { setEditOpen(false); return; }
+                editMail.mutate({ id: messageId, dto }, { onSuccess: () => setEditOpen(false) });
+              }}
+            >
+              {editMail.isPending ? "جاري الحفظ..." : "حفظ"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit history dialog */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              سجل التعديلات
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2 max-h-80 overflow-y-auto">
+            {editHistory.map((h: any, i: number) => (
+              <div key={i} className="rounded-lg border p-3 text-sm space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{h.editedByName}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(h.editedAt), "dd/MM/yyyy HH:mm", { locale: ar })}
+                  </span>
+                </div>
+                {h.previousSubject && (
+                  <p className="text-xs text-muted-foreground">الموضوع السابق: {h.previousSubject}</p>
+                )}
+                {h.previousBody && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">النص السابق: {h.previousBody}</p>
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHistoryOpen(false)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reply modal */}
       {replyOpen && (

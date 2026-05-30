@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import { RequestType } from "@/types";
+import { RequestType, ApproveRequestBody } from "@/types";
 
 export interface CreateRequestData {
   type: RequestType;
@@ -56,8 +56,8 @@ export const requestsApi = {
     return response.data.data;
   },
 
-  hrApprove: async (id: string, notes?: string) => {
-    const response = await apiClient.post(`/requests/${id}/hr-approve`, { notes });
+  hrApprove: async (id: string, body?: ApproveRequestBody) => {
+    const response = await apiClient.post(`/requests/${id}/hr-approve`, body ?? {});
     return response.data.data;
   },
 
@@ -82,8 +82,8 @@ export const requestsApi = {
     return response.data?.data ?? response.data;
   },
 
-  approve: async (id: string, notes?: string) => {
-    const response = await apiClient.post(`/requests/${id}/approve`, { notes });
+  approve: async (id: string, body?: ApproveRequestBody) => {
+    const response = await apiClient.post(`/requests/${id}/approve`, body ?? {});
     return response.data.data;
   },
 

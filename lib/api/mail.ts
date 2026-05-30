@@ -52,6 +52,19 @@ export interface MailAttachment {
   createdAt: string;
 }
 
+export interface EditHistory {
+  editedAt: string;
+  editedByUserId: string;
+  editedByName: string;
+  previousSubject: string;
+  previousBody: string;
+}
+
+export interface EditMailDto {
+  subject?: string;
+  body?: string;
+}
+
 export interface MailMessage {
   id: string;
   senderId: string;
@@ -78,6 +91,7 @@ export interface MailMessage {
   deletedAt: string | null;
   recipients: MailRecipient[];
   attachments: MailAttachment[];
+  editHistory?: EditHistory[];
   createdAt: string;
   updatedAt: string;
 }
@@ -216,6 +230,11 @@ export const mailApi = {
       folder,
       ...(archiveFolderId ? { archiveFolderId } : {}),
     });
+    return res.data.data;
+  },
+
+  edit: async (messageId: string, dto: EditMailDto): Promise<MailMessage> => {
+    const res = await apiClient.patch(`/mail/${messageId}/edit`, dto);
     return res.data.data;
   },
 

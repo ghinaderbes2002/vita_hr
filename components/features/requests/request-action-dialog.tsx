@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import React from "react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -21,6 +22,7 @@ interface RequestActionDialogProps {
   action: "approve" | "reject" | "cancel";
   onConfirm: (notes: string) => Promise<void>;
   isLoading?: boolean;
+  extraContent?: React.ReactNode;
 }
 
 export function RequestActionDialog({
@@ -29,6 +31,7 @@ export function RequestActionDialog({
   action,
   onConfirm,
   isLoading,
+  extraContent,
 }: RequestActionDialogProps) {
   const t = useTranslations();
   const [notes, setNotes] = useState("");
@@ -62,6 +65,7 @@ export function RequestActionDialog({
             placeholder={t("requests.fields.notes")}
           />
         </div>
+        {extraContent}
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>

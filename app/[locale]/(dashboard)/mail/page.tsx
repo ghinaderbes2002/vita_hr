@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Inbox, Send, FileText, Archive, Trash2, PenSquare, Users, FolderOpen, FolderPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +29,23 @@ const FOLDERS: { key: MailFolder; label: string; icon: any }[] = [
 ];
 
 export default function MailPage() {
+  const searchParams = useSearchParams();
   const [activeFolder, setActiveFolder] = useState<MailFolder>("INBOX");
-  const [openMessageId, setOpenMessageId] = useState<string | null>(null);
+  const [openMessageId, setOpenMessageId] = useState<string | null>(
+    searchParams.get("messageId")
+  );
+
+  // اعتراض زر رجوع المتصفح لما تكون رسالة مفتوحة
+  useEffect(() => {
+    if (openMessageId) {
+      window.history.pushState({ mailOpen: true }, "");
+    }
+    const handlePop = () => {
+      if (openMessageId) setOpenMessageId(null);
+    };
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, [openMessageId]);
   const [composeOpen, setComposeOpen] = useState(false);
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [search, setSearch] = useState("");

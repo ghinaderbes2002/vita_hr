@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -21,6 +22,12 @@ import { AttendanceStatusBadge } from "@/components/features/attendance/attendan
 import { AttendanceRecord } from "@/lib/api/attendance-records";
 import { format } from "date-fns";
 import { formatTime, formatDate, formatDuration } from "@/lib/utils/date";
+
+const PUNCH_STATUS_CFG: Record<string, { label: string; className: string }> = {
+  NEEDS_REVIEW: { label: "بحاجة مراجعة", className: "bg-amber-50 text-amber-700 border-amber-300" },
+  PARTIAL:      { label: "جزئي",         className: "bg-orange-50 text-orange-700 border-orange-300" },
+  INVALID:      { label: "غير صالح",     className: "bg-red-50 text-red-700 border-red-300" },
+};
 
 export default function MyAttendancePage() {
   const t = useTranslations();
@@ -81,6 +88,7 @@ export default function MyAttendancePage() {
               <TableHead>{t("attendance.fields.workHours")}</TableHead>
               <TableHead>{t("attendance.fields.lateMinutes")}</TableHead>
               <TableHead>{t("attendance.fields.status")}</TableHead>
+              <TableHead>البصمة</TableHead>
               <TableHead>{t("attendance.fields.location")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -94,6 +102,7 @@ export default function MyAttendancePage() {
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                 </TableRow>
               ))
@@ -129,6 +138,14 @@ export default function MyAttendancePage() {
                   </TableCell>
                   <TableCell>
                     <AttendanceStatusBadge status={record.status} />
+                  </TableCell>
+                  <TableCell>
+                    {(record as any).punchSequenceStatus && PUNCH_STATUS_CFG[(record as any).punchSequenceStatus] ? (
+                      <Badge variant="outline" className={`text-xs ${PUNCH_STATUS_CFG[(record as any).punchSequenceStatus].className}`}>
+                        <AlertTriangle className="h-3 w-3 ml-1" />
+                        {PUNCH_STATUS_CFG[(record as any).punchSequenceStatus].label}
+                      </Badge>
+                    ) : null}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {record.clockInLocation || "-"}

@@ -503,15 +503,6 @@ export default function JobApplicationDetailPage() {
                   {t("jobApplications.actions.reject")}
                 </Button>
               )}
-              {app.status !== "HIRED" && (
-                <Button
-                  variant="outline"
-                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
-                  onClick={() => handleAction("HIRED")}
-                >
-                  تم التوظيف
-                </Button>
-              )}
               {/* زر موافقة المدير التنفيذي */}
               {app.status === "ACCEPTED" &&
                 hasPermission("job-applications:ceo-approve") && (

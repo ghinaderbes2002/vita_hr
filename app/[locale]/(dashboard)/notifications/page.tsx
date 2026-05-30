@@ -8,7 +8,7 @@ import { ar } from "date-fns/locale";
 import {
   Bell, CheckCheck, AlertTriangle, CheckCircle2, XCircle, Info, ExternalLink,
   Clock, FileWarning, CalendarX, User, ClipboardList, FileCheck, Briefcase,
-  Cake, UserPlus, FileX, ListTodo, UserX, Filter, ChevronDown,
+  Cake, UserPlus, FileX, ListTodo, UserX, Filter, ChevronDown, Mail, Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,13 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   ADDITIONAL_ASSIGNMENT_DECISION: { icon: CheckCircle2,  color: "text-green-600",  bg: "bg-green-100",  label: "قرار التكليف" },
   ONBOARDING_TASK:                { icon: ListTodo,      color: "text-orange-600", bg: "bg-orange-100", label: "مهمة تأهيل" },
   EMPLOYEES_WITHOUT_SCHEDULE:     { icon: UserX,         color: "text-gray-600",   bg: "bg-gray-100",   label: "بدون جدول" },
+  INFO:                           { icon: Mail,          color: "text-blue-600",   bg: "bg-blue-100",   label: "رسالة داخلية" },
+  PENALTY_DECISION:               { icon: AlertTriangle, color: "text-red-600",    bg: "bg-red-100",    label: "قرار عقوبة" },
+  REWARD_DECISION:                { icon: Trophy,        color: "text-amber-600",  bg: "bg-amber-100",  label: "قرار مكافأة" },
+  BREAK_EXCEEDED:                 { icon: Clock,         color: "text-orange-600", bg: "bg-orange-100", label: "تجاوز الاستراحة" },
+  TARDINESS_BALANCE_USED:         { icon: Clock,         color: "text-amber-600",  bg: "bg-amber-100",  label: "رصيد تأخير" },
+  TARDINESS_BALANCE_DEPLETED:     { icon: AlertTriangle, color: "text-red-600",    bg: "bg-red-100",    label: "نفاد رصيد التأخير" },
+  TARDINESS_DEDUCTION_PENDING:    { icon: AlertTriangle, color: "text-orange-600", bg: "bg-orange-100", label: "خصم تأخير معلق" },
   GENERAL:                        { icon: Info,          color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },
 };
 
@@ -340,7 +347,14 @@ export default function NotificationsPage() {
             const evalLink = EVAL_TYPES.includes(selectedNotif.type) && (selectedNotif as any).data?.evaluationId
               ? `/${locale}/probation-evaluations/${(selectedNotif as any).data.evaluationId}`
               : null;
-            const target = evalLink || selectedNotif.actionUrl;
+            const mailLink = (selectedNotif as any).data?.messageId
+              ? `/${locale}/mail?messageId=${(selectedNotif as any).data.messageId}`
+              : null;
+            const requestLink = (selectedNotif as any).data?.requestId &&
+              ["PENALTY_DECISION", "REWARD_DECISION"].includes(selectedNotif.type)
+              ? `/${locale}/requests/${(selectedNotif as any).data.requestId}`
+              : null;
+            const target = evalLink || requestLink || mailLink || selectedNotif.actionUrl;
             return (
               <>
                 <DialogHeader>
@@ -370,8 +384,8 @@ export default function NotificationsPage() {
                       className="w-full gap-2 mt-2"
                       onClick={() => { setSelectedNotif(null); router.push(target); }}
                     >
-                      <ExternalLink className="h-4 w-4" />
-                      الذهاب للصفحة المرتبطة
+                      {mailLink ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                      {mailLink ? "فتح الرسالة" : "الذهاب للصفحة المرتبطة"}
                     </Button>
                   )}
                   {(selectedNotif as any).data?.employeeId && (

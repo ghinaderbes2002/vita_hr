@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/shared/page-header";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
-import { useRequest, useRequestApprovals, useRequestSteps, useApproveRequest, useRejectRequest, useSubmitExitInterview } from "@/lib/hooks/use-requests";
+import { useRequest, useRequestApprovals, useRequestSteps, useApproveRequest, useRejectRequest, useSubmitExitInterview, useHrApproveRequest, useHrRejectRequest } from "@/lib/hooks/use-requests";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { useRef, useState } from "react";
@@ -178,6 +178,9 @@ export default function RequestDetailPage() {
 
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [hrApproveOpen, setHrApproveOpen] = useState(false);
+  const [hrRejectOpen, setHrRejectOpen] = useState(false);
+  const [approveExtra, setApproveExtra] = useState<{ recommendation: string; penaltyDays: string; amount: string }>({ recommendation: "", penaltyDays: "", amount: "" });
   const { hasPermission } = usePermissions();
   const uploadHiringPdf = useUploadHiringPdf();
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -212,6 +215,8 @@ export default function RequestDetailPage() {
   const { data: approvals, isLoading: approvalsLoading } = useRequestApprovals(id);
   const approveRequest = useApproveRequest();
   const rejectRequest = useRejectRequest();
+  const hrApproveRequest = useHrApproveRequest();
+  const hrRejectRequest = useHrRejectRequest();
   const submitExitInterview = useSubmitExitInterview();
   const { user } = useAuthStore();
 
@@ -229,14 +234,36 @@ export default function RequestDetailPage() {
   const isStepsLoading = stepsLoading && approvalsLoading;
 
   const handleApprove = async (notes: string) => {
-    await approveRequest.mutateAsync({ id, notes: notes || undefined });
+    const body: import("@/types").ApproveRequestBody = { notes: notes || undefined };
+    if (approveExtra.recommendation) body.executiveRecommendation = approveExtra.recommendation;
+    if (approveExtra.penaltyDays) body.penaltyDays = Number(approveExtra.penaltyDays);
+    if (approveExtra.amount) body.amount = Number(approveExtra.amount);
+    await approveRequest.mutateAsync({ id, body });
     setApproveOpen(false);
+    setApproveExtra({ recommendation: "", penaltyDays: "", amount: "" });
+  };
+
+  const handleHrApprove = async (notes: string) => {
+    const body: import("@/types").ApproveRequestBody = { notes: notes || undefined };
+    if (approveExtra.recommendation) body.executiveRecommendation = approveExtra.recommendation;
+    if (approveExtra.penaltyDays) body.penaltyDays = Number(approveExtra.penaltyDays);
+    if (approveExtra.amount) body.amount = Number(approveExtra.amount);
+    await hrApproveRequest.mutateAsync({ id, body });
+    setHrApproveOpen(false);
+    setApproveExtra({ recommendation: "", penaltyDays: "", amount: "" });
   };
 
   const handleReject = async (reason: string) => {
     await rejectRequest.mutateAsync({ id, reason });
     setRejectOpen(false);
   };
+
+  const handleHrReject = async (reason: string) => {
+    await hrRejectRequest.mutateAsync({ id, notes: reason });
+    setHrRejectOpen(false);
+  };
+
+  const isPenaltyOrReward = request?.type === "PENALTY_PROPOSAL" || request?.type === "REWARD";
 
   if (isLoading) {
     return (
@@ -464,6 +491,48 @@ export default function RequestDetailPage() {
         </Card>
       )}
 
+      {/* PENALTY_PROPOSAL — ملخص بصري */}
+      {request.type === "PENALTY_PROPOSAL" && request.details && (
+        <Card className={`border-2 ${(request.details as any).category === "MATERIAL" ? "border-red-200 bg-red-50/30" : "border-amber-200 bg-amber-50/30"}`}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">ملخص الجزاء المقترح</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">التصنيف</span>
+              <Badge variant="outline" className={(request.details as any).category === "MATERIAL" ? "border-red-300 text-red-700" : "border-amber-300 text-amber-700"}>
+                {(request.details as any).category === "MATERIAL" ? "مادي" : "معنوي"}
+              </Badge>
+            </div>
+            {(request.details as any).penaltyType && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">نوع العقوبة</span>
+                <span className="font-medium">
+                  {({ NOTICE: "لفت نظر", WARNING_1: "إنذار أول", WARNING_2: "إنذار ثانٍ", DAYS_DEDUCTION: "خصم أيام" } as any)[(request.details as any).penaltyType] ?? (request.details as any).penaltyType}
+                </span>
+              </div>
+            )}
+            {(request.details as any).category === "MATERIAL" && (request.details as any).penaltyDays && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">أيام الخصم</span>
+                <span className="font-semibold text-red-700">{(request.details as any).penaltyDays} يوم</span>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1 border-t pt-2">
+              {(request.details as any).category === "MATERIAL"
+                ? `سيُخصم ${(request.details as any).penaltyDays ?? "؟"} يوم من راتب الموظف للشهر الذي يُعتمد فيه`
+                : "إجراء معنوي بلا أثر مالي"}
+            </p>
+            {(request.details as any).executiveRecommendation && (
+              <div className="border-t pt-2 mt-1">
+                <p className="text-xs text-muted-foreground mb-1">التوصية التنفيذية</p>
+                <p className="text-sm">{(request.details as any).executiveRecommendation}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Contextual Notes for REWARD / TRANSFER */}
       {request.type === "REWARD" && request.status === "APPROVED" && (
         <Card className="border-green-200 bg-green-50">
@@ -680,6 +749,26 @@ export default function RequestDetailPage() {
         action="approve"
         onConfirm={handleApprove}
         isLoading={approveRequest.isPending}
+        extraContent={isPenaltyOrReward ? (
+          <div className="space-y-3 border-t pt-3 mt-1">
+            <div className="space-y-1.5">
+              <Label className="text-sm">التوصية التنفيذية (اختياري)</Label>
+              <Textarea rows={2} value={approveExtra.recommendation} onChange={(e) => setApproveExtra((p) => ({ ...p, recommendation: e.target.value }))} placeholder="أضف توصيتك..." />
+            </div>
+            {request?.type === "PENALTY_PROPOSAL" && (request as any).details?.category === "MATERIAL" && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">تأكيد أيام الخصم</Label>
+                <Input type="number" min={0.5} step={0.5} value={approveExtra.penaltyDays} onChange={(e) => setApproveExtra((p) => ({ ...p, penaltyDays: e.target.value }))} placeholder={(request as any).details?.penaltyDays?.toString() ?? "أيام الخصم"} />
+              </div>
+            )}
+            {request?.type === "REWARD" && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">تأكيد المبلغ (اختياري)</Label>
+                <Input type="number" min={0} value={approveExtra.amount} onChange={(e) => setApproveExtra((p) => ({ ...p, amount: e.target.value }))} placeholder="المبلغ بالعملة المحلية" />
+              </div>
+            )}
+          </div>
+        ) : undefined}
       />
       <RequestActionDialog
         open={rejectOpen}
@@ -687,6 +776,40 @@ export default function RequestDetailPage() {
         action="reject"
         onConfirm={handleReject}
         isLoading={rejectRequest.isPending}
+      />
+      <RequestActionDialog
+        open={hrApproveOpen}
+        onOpenChange={setHrApproveOpen}
+        action="approve"
+        onConfirm={handleHrApprove}
+        isLoading={hrApproveRequest.isPending}
+        extraContent={isPenaltyOrReward ? (
+          <div className="space-y-3 border-t pt-3 mt-1">
+            <div className="space-y-1.5">
+              <Label className="text-sm">التوصية التنفيذية (اختياري)</Label>
+              <Textarea rows={2} value={approveExtra.recommendation} onChange={(e) => setApproveExtra((p) => ({ ...p, recommendation: e.target.value }))} placeholder="أضف توصيتك..." />
+            </div>
+            {request?.type === "PENALTY_PROPOSAL" && (request as any).details?.category === "MATERIAL" && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">تأكيد أيام الخصم</Label>
+                <Input type="number" min={0.5} step={0.5} value={approveExtra.penaltyDays} onChange={(e) => setApproveExtra((p) => ({ ...p, penaltyDays: e.target.value }))} placeholder={(request as any).details?.penaltyDays?.toString() ?? ""} />
+              </div>
+            )}
+            {request?.type === "REWARD" && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">تأكيد المبلغ (اختياري)</Label>
+                <Input type="number" min={0} value={approveExtra.amount} onChange={(e) => setApproveExtra((p) => ({ ...p, amount: e.target.value }))} placeholder="المبلغ" />
+              </div>
+            )}
+          </div>
+        ) : undefined}
+      />
+      <RequestActionDialog
+        open={hrRejectOpen}
+        onOpenChange={setHrRejectOpen}
+        action="reject"
+        onConfirm={handleHrReject}
+        isLoading={hrRejectRequest.isPending}
       />
     </div>
   );

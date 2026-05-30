@@ -13,6 +13,7 @@ const typeConfig: Record<AlertType, { label: string }> = {
   CONSECUTIVE_ABSENCE: { label: "غياب متتالي" },
   LEAVE_ATTENDANCE_CONFLICT: { label: "تعارض إجازة مع حضور" },
   ANOMALY_NO_STAMP: { label: "بصمة مفقودة" },
+  BREAK_GAP: { label: "تجاوز وقت الاستراحة" },
 };
 
 export function AlertTypeBadge({ type }: AlertTypeBadgeProps) {

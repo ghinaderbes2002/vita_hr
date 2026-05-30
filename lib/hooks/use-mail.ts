@@ -6,6 +6,7 @@ import {
   SendMailDto,
   SaveDraftDto,
   ForwardMailDto,
+  EditMailDto,
   MailFolder,
 } from "@/lib/api/mail";
 
@@ -189,6 +190,19 @@ export function useDeleteMail() {
       toast.success("تم حذف الرسالة");
     },
     onError: () => toast.error("فشل حذف الرسالة"),
+  });
+}
+
+export function useEditMail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: EditMailDto }) => mailApi.edit(id, dto),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["mail", "message", data.id] });
+      qc.invalidateQueries({ queryKey: ["mail", "sent"] });
+      toast.success("تم تعديل الرسالة");
+    },
+    onError: () => toast.error("فشل تعديل الرسالة"),
   });
 }
 

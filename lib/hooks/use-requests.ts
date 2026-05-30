@@ -112,39 +112,6 @@ export function useManagerRejectRequest() {
   });
 }
 
-export function useHrApproveRequest() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
-      requestsApi.hrApprove(id, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["requests"] });
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
-      toast.success("تمت الموافقة على الطلب من HR");
-    },
-    onError: (error: any) => {
-      if (error.response?.status === 403) return toast.error("غير مخوّل للموافقة على هذا الطلب");
-      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
-    },
-  });
-}
-
-export function useHrRejectRequest() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
-      requestsApi.hrReject(id, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["requests"] });
-      toast.success("تم رفض الطلب من HR");
-    },
-    onError: (error: any) => {
-      if (error.response?.status === 403) return toast.error("غير مخوّل لرفض هذا الطلب");
-      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
-    },
-  });
-}
-
 // ─── Dynamic approval system ───────────────────────────────────────
 
 export function usePendingMyApproval(params?: { page?: number; limit?: number }) {
@@ -170,11 +137,27 @@ export function useRequestSteps(id: string) {
   });
 }
 
+export function useHrApproveRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body?: import("@/types").ApproveRequestBody }) =>
+      requestsApi.hrApprove(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      queryClient.invalidateQueries({ queryKey: ["request"] });
+      toast.success("تمت موافقة الموارد البشرية على الطلب");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error?.message || "حدث خطأ");
+    },
+  });
+}
+
 export function useApproveRequest() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
-      requestsApi.approve(id, notes),
+    mutationFn: ({ id, body }: { id: string; body?: import("@/types").ApproveRequestBody }) =>
+      requestsApi.approve(id, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["request"] });
@@ -186,6 +169,22 @@ export function useApproveRequest() {
       const code = error.response?.data?.error?.code || error.response?.data?.code;
       if (code === "AUTH_INSUFFICIENT_PERMISSIONS") return toast.error("غير مخوَّل للموافقة على هذه الخطوة");
       toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
+    },
+  });
+}
+
+export function useHrRejectRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+      requestsApi.hrReject(id, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["requests"] });
+      queryClient.invalidateQueries({ queryKey: ["request"] });
+      toast.success("تم رفض الطلب من قِبل الموارد البشرية");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error?.message || "حدث خطأ");
     },
   });
 }
