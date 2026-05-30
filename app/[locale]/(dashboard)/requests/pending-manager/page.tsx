@@ -41,7 +41,7 @@ export default function PendingManagerPage() {
 
   const handleApproveConfirm = async (notes: string) => {
     if (selected) {
-      await approveRequest.mutateAsync({ id: selected.id, notes: notes || undefined });
+      await approveRequest.mutateAsync({ id: selected.id, body: { notes: notes || undefined } });
       setApproveDialogOpen(false);
       setSelected(null);
     }
