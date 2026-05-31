@@ -138,7 +138,7 @@ const navigation: NavItem[] = [
         icon: Briefcase,
         hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
-          { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
+          { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList },
           { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
         ],
       },
