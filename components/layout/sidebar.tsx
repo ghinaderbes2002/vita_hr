@@ -138,7 +138,7 @@ const navigation: NavItem[] = [
         icon: Briefcase,
         hiddenForRoles: ["DIRECT_MANAGER"],
         children: [
-          { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList },
+          { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
           { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
         ],
       },
@@ -259,7 +259,6 @@ export function Sidebar() {
   const authUser = useAuthStore((s) => s.user);
 
   // مستخدم بدون دور — يرى لوحة التحكم فقط
-  const storePermissions = useAuthStore((s) => s.permissions);
   const userRoles = authUser?.roles ?? [];
   const hasNoAccess = !isAdmin() && userRoles.length === 0;
 

@@ -58,10 +58,14 @@ export default function AuditLogsPage() {
 
   const formatDate = (iso: string) => {
     try {
-      return new Intl.DateTimeFormat(locale, {
+      const d = new Date(iso);
+      const datePart = new Intl.DateTimeFormat("en-GB", {
         year: "numeric", month: "short", day: "numeric",
+      }).format(d);
+      const timePart = new Intl.DateTimeFormat("en-US", {
         hour: "2-digit", minute: "2-digit",
-      }).format(new Date(iso));
+      }).format(d);
+      return `${datePart}، ${timePart}`;
     } catch {
       return iso;
     }
