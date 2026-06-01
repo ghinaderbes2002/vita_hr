@@ -16,11 +16,10 @@ import { ar } from "date-fns/locale";
 
 const STATUS_CLASS: Record<string, string> = {
   PENDING_MANAGER: "bg-yellow-100 text-yellow-800",
-  MANAGER_APPROVED: "bg-blue-100 text-blue-800",
-  PENDING_HR: "bg-orange-100 text-orange-800",
-  HR_APPROVED: "bg-green-100 text-green-800",
-  HR_REJECTED: "bg-red-100 text-red-800",
-  AUTO_REJECTED: "bg-red-100 text-red-800",
+  PENDING_HR:      "bg-orange-100 text-orange-800",
+  HR_APPROVED:     "bg-green-100 text-green-800",
+  HR_REJECTED:     "bg-red-100 text-red-800",
+  AUTO_REJECTED:   "bg-red-100 text-red-800",
 };
 
 export default function MyJustificationsPage() {
@@ -36,12 +35,11 @@ export default function MyJustificationsPage() {
   };
 
   const statusLabels: Record<string, string> = {
-    PENDING_MANAGER: t("attendance.justificationStatuses.pendingManager"),
-    MANAGER_APPROVED: t("attendance.justificationStatuses.managerApproved"),
-    PENDING_HR: t("attendance.justificationStatuses.pendingHr"),
-    HR_APPROVED: t("attendance.justificationStatuses.hrApproved"),
-    HR_REJECTED: t("attendance.justificationStatuses.hrRejected"),
-    AUTO_REJECTED: t("attendance.justificationStatuses.autoRejected"),
+    PENDING_MANAGER: "في انتظار موافقة المدير المباشر",
+    PENDING_HR:      "في انتظار موافقة الموارد البشرية",
+    HR_APPROVED:     "تم إقرار الطلب",
+    HR_REJECTED:     "تم رفض الطلب",
+    AUTO_REJECTED:   "رُفض تلقائياً لانتهاء المهلة",
   };
   const LIMIT = 10;
 
@@ -96,7 +94,7 @@ export default function MyJustificationsPage() {
                   <TableCell className="max-w-48 truncate text-sm">{item.descriptionAr}</TableCell>
                   <TableCell>
                     <Badge className={STATUS_CLASS[item.status] || "bg-gray-100 text-gray-700"}>
-                      {statusLabels[item.status] || item.status}
+                      {(item as any).statusLabelAr || statusLabels[item.status] || item.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-36 truncate text-sm text-muted-foreground">{item.managerNotesAr || "-"}</TableCell>

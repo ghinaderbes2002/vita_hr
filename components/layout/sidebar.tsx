@@ -52,6 +52,7 @@ import { Button } from "@/components/ui/button";
 
 interface NavItem {
   title: string;
+  titleForRoles?: Record<string, string>;
   href?: string;
   icon: any;
   permission?: string;
@@ -100,6 +101,7 @@ const navigation: NavItem[] = [
   },
   {
     title: "nav.hr",
+    titleForRoles: { "DIRECT_MANAGER": "nav.subordinatesAffairs" },
     icon: Briefcase,
     hiddenForRoles: ["employee", "موظف"],
     children: [
@@ -431,6 +433,12 @@ export function Sidebar() {
           const active = item.href ? isActive(item.href) : false;
           const isExpanded = expanded.includes(item.title);
 
+          const effectiveTitle = item.titleForRoles
+            ? (Object.entries(item.titleForRoles).find(([role]) =>
+                userRoles.some((r: any) => (r?.role?.name ?? r) === role)
+              )?.[1] ?? item.title)
+            : item.title;
+
           if (item.children) {
             // فلترة العناصر الفرعية حسب الصلاحيات (recursive)
             const visibleChildren = item.children.filter((child) =>
@@ -456,11 +464,11 @@ export function Sidebar() {
                     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
                     isCollapsed && "justify-center"
                   )}
-                  title={isCollapsed ? t(item.title) : undefined}
+                  title={isCollapsed ? t(effectiveTitle as any) : undefined}
                 >
                   <div className={cn("flex items-center gap-3", isCollapsed && "gap-0")}>
                     <item.icon className="h-5 w-5" />
-                    {!isCollapsed && <span>{t(item.title)}</span>}
+                    {!isCollapsed && <span>{t(effectiveTitle as any)}</span>}
                   </div>
                   {!isCollapsed && (
                     <ChevronDown

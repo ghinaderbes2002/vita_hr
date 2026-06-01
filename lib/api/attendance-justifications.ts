@@ -3,7 +3,6 @@ import { apiClient } from "./client";
 export type JustificationType = "SICK" | "EMERGENCY" | "OFFICIAL_MISSION" | "TRANSPORTATION" | "OTHER";
 export type JustificationStatus =
   | "PENDING_MANAGER"
-  | "MANAGER_APPROVED"
   | "PENDING_HR"
   | "HR_APPROVED"
   | "HR_REJECTED"
@@ -30,6 +29,7 @@ export interface AttendanceJustification {
   descriptionEn?: string;
   attachmentUrl?: string;
   status: JustificationStatus;
+  statusLabelAr?: string;
   managerDecision?: "APPROVE" | "REJECT";
   managerNotesAr?: string;
   managerNotes?: string;

@@ -52,7 +52,12 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { AlertSeverityBadge } from "@/components/features/attendance/alert-severity-badge";
 import { AlertStatusBadge } from "@/components/features/attendance/alert-status-badge";
 import { AlertTypeBadge } from "@/components/features/attendance/alert-type-badge";
-import { AttendanceAlert, AlertStatus, AlertType, AlertSeverity } from "@/lib/api/attendance-alerts";
+import {
+  AttendanceAlert,
+  AlertStatus,
+  AlertType,
+  AlertSeverity,
+} from "@/lib/api/attendance-alerts";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import {
@@ -71,7 +76,9 @@ export default function AttendanceAlertsPage() {
   const t = useTranslations();
   const { user } = useAuthStore();
   const isDirectManager = (user as any)?.roles?.some((r: any) =>
-    ["DIRECT_MANAGER", "مدير مباشر"].includes(typeof r === "string" ? r : r?.name)
+    ["DIRECT_MANAGER", "مدير مباشر"].includes(
+      typeof r === "string" ? r : r?.name,
+    ),
   );
 
   const [search, setSearch] = useState("");
@@ -80,7 +87,9 @@ export default function AttendanceAlertsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [selectedAlert, setSelectedAlert] = useState<AttendanceAlert | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<AttendanceAlert | null>(
+    null,
+  );
   const [resolveNotes, setResolveNotes] = useState("");
 
   // Create alert form state
@@ -95,9 +104,14 @@ export default function AttendanceAlertsPage() {
   });
 
   const LIMIT = 10;
-  const queryParams = activeTab === "all" ? { page, limit: LIMIT } : { status: activeTab, page, limit: LIMIT };
-  const { data: allData, isLoading: allLoading } = useAttendanceAlerts(queryParams);
-  const { data: teamData, isLoading: teamLoading } = useMyTeamAlerts(queryParams);
+  const queryParams =
+    activeTab === "all"
+      ? { page, limit: LIMIT }
+      : { status: activeTab, page, limit: LIMIT };
+  const { data: allData, isLoading: allLoading } =
+    useAttendanceAlerts(queryParams);
+  const { data: teamData, isLoading: teamLoading } =
+    useMyTeamAlerts(queryParams);
   const data = isDirectManager ? teamData : allData;
   const isLoading = isDirectManager ? teamLoading : allLoading;
   const { data: employeesData } = useEmployeesBasicList();
@@ -110,7 +124,10 @@ export default function AttendanceAlertsPage() {
 
   const alerts = (data as any)?.items || (data as any)?.data?.items || [];
   const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
-  const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
+  const totalPages =
+    (data as any)?.totalPages ??
+    (data as any)?.data?.totalPages ??
+    Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
 
   const filteredAlerts = alerts.filter((alert: AttendanceAlert) => {
@@ -118,8 +135,10 @@ export default function AttendanceAlertsPage() {
     if (!search) return true;
 
     const searchLower = search.toLowerCase();
-    const employeeNameAr = `${alert.employee?.firstNameAr || ""} ${alert.employee?.lastNameAr || ""}`.trim();
-    const employeeNameEn = `${alert.employee?.firstNameEn || ""} ${alert.employee?.lastNameEn || ""}`.trim();
+    const employeeNameAr =
+      `${alert.employee?.firstNameAr || ""} ${alert.employee?.lastNameAr || ""}`.trim();
+    const employeeNameEn =
+      `${alert.employee?.firstNameEn || ""} ${alert.employee?.lastNameEn || ""}`.trim();
 
     return (
       employeeNameAr.toLowerCase().includes(searchLower) ||
@@ -214,13 +233,27 @@ export default function AttendanceAlertsPage() {
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-32" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-40" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-16" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-16" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-8" />
+                </TableCell>
               </TableRow>
             ))
           ) : tableAlerts.length === 0 ? (
@@ -250,9 +283,7 @@ export default function AttendanceAlertsPage() {
                 <TableCell>
                   <AlertTypeBadge type={alert.alertType} />
                 </TableCell>
-                <TableCell className="max-w-md">
-                  {alert.messageAr}
-                </TableCell>
+                <TableCell className="max-w-md">{alert.messageAr}</TableCell>
                 <TableCell>
                   <AlertSeverityBadge severity={alert.severity} />
                 </TableCell>
@@ -268,22 +299,32 @@ export default function AttendanceAlertsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {alert.status === "OPEN" && (
-                        <ActionGuard permission={PERMISSIONS.ATTENDANCE_ALERTS.UPDATE}>
-                          <DropdownMenuItem onClick={() => handleAcknowledge(alert)}>
+                        <ActionGuard
+                          permission={PERMISSIONS.ATTENDANCE_ALERTS.UPDATE}
+                        >
+                          <DropdownMenuItem
+                            onClick={() => handleAcknowledge(alert)}
+                          >
                             <Eye className="h-4 w-4 ml-2" />
                             إقرار بالتنبيه
                           </DropdownMenuItem>
                         </ActionGuard>
                       )}
                       {alert.status !== "RESOLVED" && (
-                        <ActionGuard permission={PERMISSIONS.ATTENDANCE_ALERTS.RESOLVE}>
-                          <DropdownMenuItem onClick={() => handleResolve(alert)}>
+                        <ActionGuard
+                          permission={PERMISSIONS.ATTENDANCE_ALERTS.RESOLVE}
+                        >
+                          <DropdownMenuItem
+                            onClick={() => handleResolve(alert)}
+                          >
                             <CheckCircle2 className="h-4 w-4 ml-2" />
-                            حل التنبيه
+                            تبرير
                           </DropdownMenuItem>
                         </ActionGuard>
                       )}
-                      <ActionGuard permission={PERMISSIONS.ATTENDANCE_ALERTS.DELETE}>
+                      <ActionGuard
+                        permission={PERMISSIONS.ATTENDANCE_ALERTS.DELETE}
+                      >
                         <DropdownMenuItem
                           onClick={() => handleDelete(alert)}
                           className="text-destructive"
@@ -330,12 +371,18 @@ export default function AttendanceAlertsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          setActiveTab(v as any);
+          setPage(1);
+        }}
+      >
         <TabsList>
           <TabsTrigger value="all">الكل</TabsTrigger>
           <TabsTrigger value="OPEN">مفتوحة</TabsTrigger>
           <TabsTrigger value="ACKNOWLEDGED">تم الإقرار</TabsTrigger>
-          <TabsTrigger value="RESOLVED">محلولة</TabsTrigger>
+          <TabsTrigger value="RESOLVED">قيد المعالجة</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
@@ -343,15 +390,25 @@ export default function AttendanceAlertsPage() {
         </TabsContent>
 
         <TabsContent value="OPEN" className="space-y-4">
-          {renderTable(filteredAlerts.filter((a: AttendanceAlert) => a.status === "OPEN"))}
+          {renderTable(
+            filteredAlerts.filter((a: AttendanceAlert) => a.status === "OPEN"),
+          )}
         </TabsContent>
 
         <TabsContent value="ACKNOWLEDGED" className="space-y-4">
-          {renderTable(filteredAlerts.filter((a: AttendanceAlert) => a.status === "ACKNOWLEDGED"))}
+          {renderTable(
+            filteredAlerts.filter(
+              (a: AttendanceAlert) => a.status === "ACKNOWLEDGED",
+            ),
+          )}
         </TabsContent>
 
         <TabsContent value="RESOLVED" className="space-y-4">
-          {renderTable(filteredAlerts.filter((a: AttendanceAlert) => a.status === "RESOLVED"))}
+          {renderTable(
+            filteredAlerts.filter(
+              (a: AttendanceAlert) => a.status === "RESOLVED",
+            ),
+          )}
         </TabsContent>
       </Tabs>
 
@@ -369,7 +426,7 @@ export default function AttendanceAlertsPage() {
       <Dialog open={resolveDialogOpen} onOpenChange={setResolveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>حل التنبيه</DialogTitle>
+            <DialogTitle> تبرير</DialogTitle>
             <DialogDescription>
               أدخل ملاحظات حول كيفية حل هذا التنبيه
             </DialogDescription>
@@ -387,11 +444,14 @@ export default function AttendanceAlertsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResolveDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setResolveDialogOpen(false)}
+            >
               {t("common.cancel")}
             </Button>
             <Button onClick={confirmResolve} disabled={!resolveNotes.trim()}>
-              حل التنبيه
+              تبرير{" "}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -412,16 +472,16 @@ export default function AttendanceAlertsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>إضافة تنبيه جديد</DialogTitle>
-            <DialogDescription>
-              إنشاء تنبيه حضور جديد لموظف
-            </DialogDescription>
+            <DialogDescription>إنشاء تنبيه حضور جديد لموظف</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>الموظف</Label>
               <Select
                 value={createForm.employeeId}
-                onValueChange={(v) => setCreateForm({ ...createForm, employeeId: v })}
+                onValueChange={(v) =>
+                  setCreateForm({ ...createForm, employeeId: v })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="اختر الموظف" />
@@ -441,7 +501,9 @@ export default function AttendanceAlertsPage() {
               <Input
                 type="date"
                 value={createForm.date}
-                onChange={(e) => setCreateForm({ ...createForm, date: e.target.value })}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, date: e.target.value })
+                }
               />
             </div>
 
@@ -450,7 +512,9 @@ export default function AttendanceAlertsPage() {
                 <Label>نوع التنبيه</Label>
                 <Select
                   value={createForm.alertType}
-                  onValueChange={(v) => setCreateForm({ ...createForm, alertType: v as AlertType })}
+                  onValueChange={(v) =>
+                    setCreateForm({ ...createForm, alertType: v as AlertType })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -459,8 +523,12 @@ export default function AttendanceAlertsPage() {
                     <SelectItem value="LATE">تأخير</SelectItem>
                     <SelectItem value="ABSENT">غياب</SelectItem>
                     <SelectItem value="EARLY_LEAVE">انصراف مبكر</SelectItem>
-                    <SelectItem value="MISSING_CLOCK_OUT">نسيان تسجيل الانصراف</SelectItem>
-                    <SelectItem value="CONSECUTIVE_ABSENCE">غياب متتالي</SelectItem>
+                    <SelectItem value="MISSING_CLOCK_OUT">
+                      نسيان تسجيل الانصراف
+                    </SelectItem>
+                    <SelectItem value="CONSECUTIVE_ABSENCE">
+                      غياب متتالي
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -469,7 +537,12 @@ export default function AttendanceAlertsPage() {
                 <Label>الشدة</Label>
                 <Select
                   value={createForm.severity}
-                  onValueChange={(v) => setCreateForm({ ...createForm, severity: v as AlertSeverity })}
+                  onValueChange={(v) =>
+                    setCreateForm({
+                      ...createForm,
+                      severity: v as AlertSeverity,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -487,7 +560,9 @@ export default function AttendanceAlertsPage() {
               <Label>الرسالة (بالإنجليزية)</Label>
               <Input
                 value={createForm.message}
-                onChange={(e) => setCreateForm({ ...createForm, message: e.target.value })}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, message: e.target.value })
+                }
                 placeholder="Employee was 30 minutes late"
               />
             </div>
@@ -496,18 +571,27 @@ export default function AttendanceAlertsPage() {
               <Label>الرسالة (بالعربية)</Label>
               <Input
                 value={createForm.messageAr}
-                onChange={(e) => setCreateForm({ ...createForm, messageAr: e.target.value })}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, messageAr: e.target.value })
+                }
                 placeholder="تأخير 30 دقيقة عن موعد الحضور"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setCreateDialogOpen(false)}
+            >
               {t("common.cancel")}
             </Button>
             <Button
               onClick={handleCreateAlert}
-              disabled={!createForm.employeeId || !createForm.messageAr || createAlert.isPending}
+              disabled={
+                !createForm.employeeId ||
+                !createForm.messageAr ||
+                createAlert.isPending
+              }
             >
               {createAlert.isPending ? "جاري الإضافة..." : "إضافة"}
             </Button>

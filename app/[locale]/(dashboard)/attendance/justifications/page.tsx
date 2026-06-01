@@ -38,17 +38,17 @@ const typeLabels: Record<string, string> = {
 };
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  PENDING_MANAGER: { label: "بانتظار المدير", className: "bg-yellow-100 text-yellow-800" },
-  MANAGER_APPROVED: { label: "موافقة المدير", className: "bg-blue-100 text-blue-800" },
-  PENDING_HR: { label: "بانتظار HR", className: "bg-orange-100 text-orange-800" },
-  HR_APPROVED: { label: "موافقة HR", className: "bg-green-100 text-green-800" },
-  HR_REJECTED: { label: "مرفوض من HR", className: "bg-red-100 text-red-800" },
-  AUTO_REJECTED: { label: "مرفوض تلقائياً", className: "bg-red-100 text-red-800" },
+  PENDING_MANAGER: { label: "في انتظار موافقة المدير المباشر", className: "bg-yellow-100 text-yellow-800" },
+  PENDING_HR:      { label: "في انتظار موافقة الموارد البشرية", className: "bg-orange-100 text-orange-800" },
+  HR_APPROVED:     { label: "تم إقرار الطلب",                  className: "bg-green-100 text-green-800" },
+  HR_REJECTED:     { label: "تم رفض الطلب",                    className: "bg-red-100 text-red-800" },
+  AUTO_REJECTED:   { label: "رُفض تلقائياً لانتهاء المهلة",    className: "bg-red-100 text-red-800" },
 };
 
-function StatusBadge({ status }: { status: JustificationStatus }) {
-  const cfg = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-700" };
-  return <Badge className={cfg.className}>{cfg.label}</Badge>;
+function StatusBadge({ item }: { item: AttendanceJustification }) {
+  const label = item.statusLabelAr || statusConfig[item.status]?.label || item.status;
+  const className = statusConfig[item.status]?.className || "bg-gray-100 text-gray-700";
+  return <Badge className={className}>{label}</Badge>;
 }
 
 export default function JustificationsPage() {
@@ -118,9 +118,10 @@ export default function JustificationsPage() {
         <TabsList>
           <TabsTrigger value="all">الكل</TabsTrigger>
           <TabsTrigger value="PENDING_MANAGER">بانتظار المدير</TabsTrigger>
-          <TabsTrigger value="PENDING_HR">بانتظار HR</TabsTrigger>
-          <TabsTrigger value="HR_APPROVED">موافق</TabsTrigger>
+          <TabsTrigger value="PENDING_HR">بانتظار الموارد البشرية</TabsTrigger>
+          <TabsTrigger value="HR_APPROVED">تم الإقرار</TabsTrigger>
           <TabsTrigger value="HR_REJECTED">مرفوض</TabsTrigger>
+          <TabsTrigger value="AUTO_REJECTED">رُفض تلقائياً</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab}>
@@ -161,7 +162,7 @@ export default function JustificationsPage() {
                       <TableCell>{item.alert?.date ? formatDate(item.alert.date) : "-"}</TableCell>
                       <TableCell>{typeLabels[item.justificationType] || item.justificationType}</TableCell>
                       <TableCell className="max-w-48 truncate text-sm">{item.descriptionAr}</TableCell>
-                      <TableCell><StatusBadge status={item.status} /></TableCell>
+                      <TableCell><StatusBadge item={item} /></TableCell>
                       {(canManagerReview || canHrReview) && (
                         <TableCell>
                           <div className="flex gap-1">

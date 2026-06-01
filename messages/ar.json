@@ -42,6 +42,7 @@
     "employeePortal": "شؤون الموظف",
     "management": "الإدارة",
     "hr": "إدارة الموارد البشرية",
+    "subordinatesAffairs": "شؤون المرؤوسين",
     "users": "إدارة المستخدمين",
     "roles": "إدارة الصلاحيات",
     "employees": "الموظفون",
@@ -732,7 +733,7 @@
       "open": "مفتوحة",
       "pending": "معلقة",
       "in_progress": "جارية",
-      "resolved": "محلولة",
+      "resolved": "قيد المراجعة",
       "closed": "مغلقة"
     }
   },

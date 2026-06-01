@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
+import { usePendingMyApproval } from "@/lib/hooks/use-requests";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
@@ -107,7 +108,7 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/employees/subordinates`)} />
         <StatCard title="تقييمات التجربة" value="" icon={ClipboardCheck}
           iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
-        <StatCard title="طلبات بانتظار موافقتي" value="" icon={FileText}
+        <StatCard title="طلبات إدارية بانتظار موافقتي" value="" icon={FileText}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
         <StatCard title="إجازات بانتظار موافقتي" value={typeof d.pendingLeaveApprovals === "number" ? d.pendingLeaveApprovals : Array.isArray(d.pendingLeaveApprovals) ? d.pendingLeaveApprovals.length : (d.pendingLeaveApprovals?.total ?? d.pendingLeaveApprovals?.count ?? 0)} icon={Hourglass}
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
@@ -165,6 +166,8 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
 
 // ── HR Dashboard ──────────────────────────────────────────────────────────────
 function HRDashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
+  const { data: pendingData } = usePendingMyApproval({ limit: 1 });
+  const pendingCount = (pendingData as any)?.total ?? (pendingData as any)?.data?.total ?? 0;
 
   return (
     <div className="space-y-6">
@@ -173,8 +176,8 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
           iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/employees`)} />
         <StatCard title="وثائق منتهية الصلاحية" value={d.expiringDocumentsCount ?? 0} icon={FileWarning}
           iconBg="bg-red-500" onClick={() => router.push(`/${locale}/reports/hr`)} />
-        <StatCard title="عقود منتهية" value={d.expiringContractsCount ?? 0} icon={AlertCircle}
-          iconBg="bg-orange-500" />
+        <StatCard title="تبريرات الموظفين" value="" icon={AlertCircle}
+          iconBg="bg-orange-500" onClick={() => router.push(`/${locale}/attendance/justifications`)} />
         <StatCard title="إجازات بانتظار HR" value={d.pendingLeaveHRCount ?? 0} icon={Hourglass}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
       </div>
@@ -185,8 +188,8 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
         <StatCard title="تقييمات أداء بانتظار HR" value={d.evaluationsPendingHR ?? 0} icon={BarChart3}
           iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/evaluations`)} />
-        <StatCard title="مناصب شاغرة" value={d.activePositions ?? 0} icon={Briefcase}
-          iconBg="bg-green-500" onClick={() => router.push(`/${locale}/job-applications`)} />
+        <StatCard title="طلبات إدارية بانتظار موافقتي" value={pendingCount} icon={Briefcase}
+          iconBg="bg-green-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
       </div>
 
       {d.payrollStatus && (
