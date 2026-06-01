@@ -95,9 +95,14 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     : null;
 
   const defaultSubject = `رد: ${message.subject}`;
+  const getRecipientEmpId = (r: any) =>
+    r.employeeInfo?.employeeId ?? r.recipient?.id ?? r.recipientId;
+
   const defaultToIds = replyAll
-    ? toRecipients.map((r) => (r as any).employeeInfo?.employeeId ?? r.recipientId)
-    : [(senderInfo as any)?.employeeId ?? message.senderId];
+    ? toRecipients.map(getRecipientEmpId).filter(Boolean)
+    : isSender
+      ? toRecipients.map(getRecipientEmpId).filter(Boolean)
+      : [(senderInfo as any)?.employeeId].filter(Boolean);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
