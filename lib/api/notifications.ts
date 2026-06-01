@@ -34,7 +34,10 @@ export type NotificationType =
   | "CLINIC_CASE_STATUS_CHANGED"
   | "CLINIC_LOW_STOCK"
   | "CLINIC_COMMITTEE_PENDING"
-  | "CLINIC_DELIVERY_READY";
+  | "CLINIC_DELIVERY_READY"
+  | "INFO"
+  | "PENALTY_DECISION"
+  | "REWARD_DECISION";
 
 export interface Notification {
   id: string;

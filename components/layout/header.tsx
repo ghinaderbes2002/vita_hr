@@ -5,7 +5,7 @@ import { useTheme } from "next-themes";
 import {
   Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle, Settings,
   Clock, AlertCircle, RotateCcw, FileText, AlertOctagon, Coffee, DollarSign,
-  Stethoscope, CalendarClock, Package, Users,
+  Stethoscope, CalendarClock, Package, Users, Mail, Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,6 +76,9 @@ export function Header() {
     CLINIC_LOW_STOCK:                { icon: Package,       iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/clinic/inventory" },
     CLINIC_COMMITTEE_PENDING:        { icon: Users,         iconClass: "text-purple-500", bgClass: "bg-purple-50/60 dark:bg-purple-950/20", dotClass: "bg-purple-500", route: "/clinic/prosthetics" },
     CLINIC_DELIVERY_READY:           { icon: Stethoscope,   iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500",  route: "/clinic/prosthetics" },
+    INFO:                            { icon: Mail,          iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
+    PENALTY_DECISION:                { icon: AlertTriangle, iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    REWARD_DECISION:                 { icon: Trophy,        iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
   };
 
   const DEFAULT_NOTIF_CFG: NotifCfg = {
@@ -91,8 +94,14 @@ export function Header() {
   const handleNotifClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
     const evalLink = EVAL_NOTIF_TYPES.includes(notif.type) ? getEvalLink(notif) : null;
+    const mailLink = notif.type === "INFO" && notif.data?.messageId
+      ? `/${locale}/mail?messageId=${notif.data.messageId}`
+      : null;
+    const requestLink = ["PENALTY_DECISION", "REWARD_DECISION"].includes(notif.type) && notif.data?.requestId
+      ? `/${locale}/requests/${notif.data.requestId}`
+      : null;
     const configRoute = NOTIF_CONFIG[notif.type]?.route;
-    const target = evalLink || notif.actionUrl || configRoute;
+    const target = evalLink || mailLink || requestLink || notif.actionUrl || (configRoute ? `/${locale}${configRoute}` : null);
     if (target) router.push(target);
   };
 
