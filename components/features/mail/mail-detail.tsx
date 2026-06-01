@@ -52,6 +52,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const [editOpen, setEditOpen]         = useState(false);
   const [editSubject, setEditSubject]   = useState("");
   const [editBody, setEditBody]         = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen]   = useState(false);
 
   const toggleExpand = (id: string) =>
@@ -85,7 +86,9 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   ) ?? [];
 
   const senderInfo = message.senderInfo ?? message.sender;
-  const isSender = (senderInfo as any)?.employeeId === user?.id || message.senderId === user?.id;
+  const isSender = message.senderId === user?.id
+    || (senderInfo as any)?.employeeId === user?.employeeId
+    || message.senderId === user?.employeeId;
   const editHistory = (message as any).editHistory ?? [];
   const senderName = senderInfo
     ? `${senderInfo.firstNameAr} ${senderInfo.lastNameAr}`
@@ -188,12 +191,13 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             حذف
           </Button>
         )}
-        {folder === "SENT" && isSender && (
+        {isSender && (
           <Button
             variant="ghost"
             size="sm"
             className="gap-1.5"
             onClick={() => {
+              setEditingMessageId(messageId);
               setEditSubject(message.subject);
               setEditBody(message.body);
               setEditOpen(true);
@@ -311,6 +315,8 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                   const senderN = m.sender
                     ? `${m.sender.firstNameAr} ${m.sender.lastNameAr}`
                     : null;
+                  const isThreadSender = m.senderId === user?.id
+                    || m.senderId === user?.employeeId;
                   return (
                     <div key={m.id} className="rounded-lg border bg-card shadow-sm overflow-hidden">
                       <button
@@ -351,6 +357,25 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                               <AttachmentList attachments={m.attachments} />
                             </div>
                           )}
+                          {isThreadSender && (
+                            <div className="mt-3 pt-2 border-t">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="gap-1.5 h-7 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingMessageId(m.id);
+                                  setEditSubject(m.subject ?? "");
+                                  setEditBody(m.body);
+                                  setEditOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                تعديل ردّي
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -389,7 +414,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                 if (editSubject !== message.subject) dto.subject = editSubject;
                 if (editBody !== message.body) dto.body = editBody;
                 if (!Object.keys(dto).length) { setEditOpen(false); return; }
-                editMail.mutate({ id: messageId, dto }, { onSuccess: () => setEditOpen(false) });
+                editMail.mutate({ id: editingMessageId ?? messageId, dto }, { onSuccess: () => setEditOpen(false) });
               }}
             >
               {editMail.isPending ? "جاري الحفظ..." : "حفظ"}
