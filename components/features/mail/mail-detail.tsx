@@ -54,6 +54,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const [editBody, setEditBody]         = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen]   = useState(false);
+  const [activeHistory, setActiveHistory] = useState<any[]>([]);
 
   const toggleExpand = (id: string) =>
     setExpandedIds((prev) => {
@@ -297,7 +298,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                 <button
                   type="button"
                   className="flex items-center gap-1.5 hover:text-foreground transition-colors"
-                  onClick={() => setHistoryOpen(true)}
+                  onClick={() => { setActiveHistory(editHistory); setHistoryOpen(true); }}
                 >
                   <History className="h-3 w-3" />
                   سجل التعديلات ({editHistory.length} تعديلات)
@@ -364,6 +365,30 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                           {m.attachments && m.attachments.length > 0 && (
                             <div className="mt-3">
                               <AttachmentList attachments={m.attachments} />
+                            </div>
+                          )}
+                          {((m as any).editHistory ?? []).length > 0 && (
+                            <div className="text-xs text-muted-foreground border-t pt-3 mt-2">
+                              {(m as any).editHistory.length === 1 ? (
+                                <p className="flex items-center gap-1.5">
+                                  <Pencil className="h-3 w-3" />
+                                  تم التعديل من قبل {(m as any).editHistory[0].editedByName}{" "}
+                                  ({format(new Date((m as any).editHistory[0].editedAt), "dd/MM/yyyy الساعة HH:mm", { locale: ar })})
+                                </p>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveHistory((m as any).editHistory);
+                                    setHistoryOpen(true);
+                                  }}
+                                >
+                                  <History className="h-3 w-3" />
+                                  سجل التعديلات ({(m as any).editHistory.length} تعديلات)
+                                </button>
+                              )}
                             </div>
                           )}
                           {isThreadSender && (
@@ -442,7 +467,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2 max-h-80 overflow-y-auto">
-            {editHistory.map((h: any, i: number) => (
+            {activeHistory.map((h: any, i: number) => (
               <div key={i} className="rounded-lg border p-3 text-sm space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{h.editedByName}</span>
