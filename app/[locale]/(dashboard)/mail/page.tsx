@@ -35,6 +35,12 @@ export default function MailPage() {
     searchParams.get("messageId")
   );
 
+  // مزامنة messageId من URL مع الحالة
+  useEffect(() => {
+    const msgId = searchParams.get("messageId");
+    if (msgId) setOpenMessageId(msgId);
+  }, [searchParams]);
+
   // اعتراض زر رجوع المتصفح لما تكون رسالة مفتوحة
   useEffect(() => {
     if (openMessageId) {
