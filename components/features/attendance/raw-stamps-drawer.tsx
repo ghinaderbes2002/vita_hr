@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useBiometricDevices } from "@/lib/hooks/use-biometric-devices";
+import { BiometricDevice } from "@/lib/api/biometric-devices";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import {
@@ -56,6 +58,12 @@ interface Props {
 export function RawStampsDrawer({ recordId, open, onClose }: Props) {
   const { data: record, isLoading: recordLoading } = useAttendanceRecord(recordId);
   const { data: stamps = [], isLoading: stampsLoading } = useRawStamps(recordId);
+
+  const { data: devicesData } = useBiometricDevices();
+  const deviceBySN = useMemo(() => {
+    const list = (devicesData as BiometricDevice[]) || [];
+    return new Map(list.map((d) => [d.serialNumber, d]));
+  }, [devicesData]);
 
   const updateInterp  = useUpdateStampInterpretation(recordId);
   const deleteStamp   = useDeleteStamp(recordId);
@@ -200,7 +208,13 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
                           <Badge variant="outline" className="text-xs">
                             {stamp.interpretedAs ? INTERPRETATION_LABELS[stamp.interpretedAs] : "غير محدد"}
                           </Badge>
-                          <span>الجهاز: {stamp.deviceSN}</span>
+                          {(() => {
+                            const dev = deviceBySN.get(stamp.deviceSN);
+                            const label = dev
+                              ? dev.nameAr + (dev.location ? ` — ${dev.location}` : "")
+                              : "جهاز غير معروف";
+                            return <span title={stamp.deviceSN}>الجهاز: {label}</span>;
+                          })()}
                           <span>rawType: {stamp.rawType}</span>
                         </div>
                       </div>
