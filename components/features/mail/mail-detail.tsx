@@ -104,6 +104,10 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
       ? toRecipients.map(getRecipientEmpId).filter(Boolean)
       : [(senderInfo as any)?.employeeId].filter(Boolean);
 
+  const defaultCcIds = replyAll
+    ? ccRecipients.map(getRecipientEmpId).filter(Boolean)
+    : [];
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Toolbar */}
@@ -469,6 +473,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           replyToMessageId={messageId}
           defaultSubject={defaultSubject}
           defaultToIds={defaultToIds}
+          defaultCcIds={defaultCcIds}
         />
       )}
 
