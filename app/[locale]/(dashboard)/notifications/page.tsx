@@ -318,7 +318,7 @@ export default function NotificationsPage() {
                     </div>
                   </div>
 
-                  {notif.actionUrl && !evalLink && (
+                  {hasNotificationLink(notif) && (
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
                   )}
                 </div>

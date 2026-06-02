@@ -119,7 +119,7 @@ export default function ViewLeaveRequestPage() {
             {canCancel && (
               <Button variant="destructive" onClick={() => setCancelDialogOpen(true)}>
                 <XCircle className="h-4 w-4 ml-2" />
-                إلغاء الطلب
+                التراجع عن الطلب
               </Button>
             )}
             <Button variant="outline" onClick={() => router.back()}>
@@ -319,17 +319,17 @@ export default function ViewLeaveRequestPage() {
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>إلغاء طلب الإجازة</DialogTitle>
-            <DialogDescription>الرجاء كتابة سبب الإلغاء</DialogDescription>
+            <DialogTitle>التراجع عن طلب الإجازة</DialogTitle>
+            <DialogDescription>الرجاء كتابة سبب التراجع</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="cancel-reason">سبب الإلغاء</Label>
+            <Label htmlFor="cancel-reason">سبب التراجع</Label>
             <Textarea
               id="cancel-reason"
               rows={3}
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="اكتب سبب الإلغاء..."
+              placeholder="اكتب سبب التراجع..."
             />
           </div>
           <DialogFooter>

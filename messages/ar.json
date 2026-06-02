@@ -933,10 +933,10 @@
       "submit": "تقديم",
       "approve": "موافقة",
       "reject": "رفض",
-      "cancel": "إلغاء",
+      "cancel": "التراجع عن الطلب",
       "approveDescription": "سيتم إرسال الطلب للمرحلة التالية",
       "rejectDescription": "يرجى ذكر سبب الرفض",
-      "cancelDescription": "يرجى ذكر سبب الإلغاء"
+      "cancelDescription": "يرجى ذكر سبب التراجع عن الطلب"
     },
     "fields": {
       "requestNumber": "رقم الطلب",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Send, X, Eye, Edit, Trash2, XCircle } from "lucide-react";
+import { Plus, Send, Eye, Edit, Trash2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -229,7 +229,7 @@ export default function MyRequestsPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
-                      <Eye className="h-4 w-4" />
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -404,12 +404,12 @@ export default function MyRequestsPage() {
                                 {t("requests.actions.submit")}
                               </DropdownMenuItem>
                             )}
-                            {(req.status === "DRAFT" || req.status === "PENDING_MANAGER") && (
+                            {["DRAFT", "PENDING_MANAGER", "PENDING_HR", "IN_APPROVAL"].includes(req.status) && (
                               <DropdownMenuItem
                                 onClick={() => { setSelectedAdmin(req); setCancelAdminDialogOpen(true); }}
                                 className="text-destructive"
                               >
-                                <X className="h-4 w-4 ml-2" />
+                                <XCircle className="h-4 w-4 ml-2" />
                                 {t("requests.actions.cancel")}
                               </DropdownMenuItem>
                             )}
@@ -495,17 +495,17 @@ export default function MyRequestsPage() {
       <Dialog open={cancelLeaveDialogOpen} onOpenChange={setCancelLeaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>إلغاء طلب الإجازة</DialogTitle>
-            <DialogDescription>الرجاء كتابة سبب الإلغاء</DialogDescription>
+            <DialogTitle>التراجع عن طلب الإجازة</DialogTitle>
+            <DialogDescription>الرجاء كتابة سبب التراجع</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="cancel-leave-reason">سبب الإلغاء</Label>
+            <Label htmlFor="cancel-leave-reason">سبب التراجع</Label>
             <Textarea
               id="cancel-leave-reason"
               rows={3}
               value={cancelLeaveReason}
               onChange={(e) => setCancelLeaveReason(e.target.value)}
-              placeholder="اكتب سبب الإلغاء..."
+              placeholder="اكتب سبب التراجع..."
             />
           </div>
           <DialogFooter>
