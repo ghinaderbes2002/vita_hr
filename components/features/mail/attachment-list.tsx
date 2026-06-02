@@ -46,12 +46,6 @@ function fileUrl(attachmentId: string): string {
   return token ? `${base}?t=${encodeURIComponent(token)}` : base;
 }
 
-function canOpenInBrowser(mimeType: string, fileName: string): boolean {
-  const openable = ["application/pdf", "image/", "text/plain"];
-  return openable.some((t) => mimeType?.startsWith(t)) ||
-    /\.(pdf|png|jpg|jpeg|gif|webp|svg|txt)$/i.test(fileName);
-}
-
 async function downloadFile(url: string, fileName: string) {
   try {
     const res = await fetch(url);
@@ -87,26 +81,27 @@ export function AttachmentList({ attachments }: ListProps) {
             <span className="text-sm truncate">{decodeFileName(a.fileName)}</span>
             <span className="text-xs text-muted-foreground shrink-0">{formatSize(a.fileSize)}</span>
           </div>
-          {canOpenInBrowser(a.mimeType, a.fileName) ? (
-            <a
-              href={fileUrl(a.id)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors shrink-0"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              فتح
-            </a>
-          ) : (
+          <div className="flex items-center gap-1 shrink-0">
+            {!/\.(xlsx?|csv|docx?)$/i.test(a.fileName) && (
+              <a
+                href={fileUrl(a.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                فتح
+              </a>
+            )}
             <button
               type="button"
-              className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors shrink-0"
+              className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors"
               onClick={() => downloadFile(fileUrl(a.id), decodeFileName(a.fileName))}
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <Download className="h-3.5 w-3.5" />
               تحميل
             </button>
-          )}
+          </div>
         </div>
       ))}
     </div>
