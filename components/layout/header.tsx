@@ -98,7 +98,7 @@ export function Header() {
   const handleNotifClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
     const link = resolveNotificationLink(notif);
-    if (link) router.push(`/${locale}${link}`);
+    if (link) router.push(link as any);
   };
 
   return (

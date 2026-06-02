@@ -94,7 +94,17 @@ function FilePicker({ value, onChange, labels }: {
       const json = await res.json();
       if (json.fileUrl) {
         onChange(json.fileUrl);
-        setFileName(json.fileName || file.name);
+        const rawName = json.fileName || file.name;
+        // فك تشفير اسم الملف إذا كان محرفاً
+        let decoded = rawName;
+        if (/[À-ÿ]/.test(rawName) && !/[؀-ۿ]/.test(rawName)) {
+          try {
+            const bytes = new Uint8Array(rawName.length);
+            for (let i = 0; i < rawName.length; i++) bytes[i] = rawName.charCodeAt(i) & 0xFF;
+            decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+          } catch { /* keep original */ }
+        }
+        setFileName(decoded);
       } else {
         throw new Error("no fileUrl");
       }
