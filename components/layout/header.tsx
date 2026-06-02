@@ -3,9 +3,10 @@
 import { useTranslations, useLocale } from "next-intl";
 import { useTheme } from "next-themes";
 import {
-  Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle, Settings,
+  Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle,
   Clock, AlertCircle, RotateCcw, FileText, AlertOctagon, Coffee, DollarSign,
-  Stethoscope, CalendarClock, Package, Users, Mail, Trophy,
+  Mail, Trophy, CheckCircle2, XCircle, ClipboardList, FileWarning,
+  Cake, UserPlus, FileCheck, UserX, ListTodo, Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useUnreadCount, useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
+import { resolveNotificationLink } from "@/lib/notifications/notification-links";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -47,62 +49,56 @@ export function Header() {
     router.push("/login");
   };
 
-  const EVAL_NOTIF_TYPES = ["PROBATION_END_REMINDER", "EVALUATION_ASSIGNED"];
-
   type NotifCfg = {
     icon: React.ComponentType<{ className?: string }> | null;
     iconClass: string;
     bgClass: string;
     dotClass: string;
-    route?: string;
   };
 
   const NOTIF_CONFIG: Record<string, NotifCfg> = {
-    LEAVE_REQUEST_PENDING_APPROVAL:  { icon: AlertTriangle, iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",  dotClass: "bg-amber-500" },
-    TARDINESS_BALANCE_USED:          { icon: Clock,         iconClass: "text-yellow-500", bgClass: "bg-yellow-50/60 dark:bg-yellow-950/20", dotClass: "bg-yellow-500", route: "/leaves/my-hourly-balance" },
-    TARDINESS_BALANCE_LOW:           { icon: AlertCircle,   iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/leaves/my-hourly-balance" },
-    TARDINESS_BALANCE_DEPLETED:      { icon: AlertTriangle, iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500",    route: "/leaves/my-hourly-balance" },
+    LEAVE_REQUEST_SUBMITTED:         { icon: Bell,          iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
+    LEAVE_REQUEST_APPROVED:          { icon: CheckCircle2,  iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
+    LEAVE_REQUEST_REJECTED:          { icon: XCircle,       iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    LEAVE_REQUEST_CANCELLED:         { icon: XCircle,       iconClass: "text-gray-500",   bgClass: "bg-gray-50/60 dark:bg-gray-950/20",     dotClass: "bg-gray-500" },
+    LEAVE_REQUEST_PENDING_APPROVAL:  { icon: AlertTriangle, iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
+    EVALUATION_ASSIGNED:             { icon: ClipboardList, iconClass: "text-purple-500", bgClass: "bg-purple-50/60 dark:bg-purple-950/20", dotClass: "bg-purple-500" },
+    EVALUATION_SUBMITTED:            { icon: ClipboardList, iconClass: "text-purple-500", bgClass: "bg-purple-50/60 dark:bg-purple-950/20", dotClass: "bg-purple-500" },
+    PROBATION_REMINDER:              { icon: Clock,         iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
+    PROBATION_END_REMINDER:          { icon: Clock,         iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
+    DOCUMENT_EXPIRY:                 { icon: FileWarning,   iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    CONTRACT_EXPIRY:                 { icon: FileWarning,   iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    BIRTHDAY:                        { icon: Cake,          iconClass: "text-pink-500",   bgClass: "bg-pink-50/60 dark:bg-pink-950/20",     dotClass: "bg-pink-500" },
+    WELCOME:                         { icon: UserPlus,      iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
+    ATTENDANCE_ALERT:                { icon: AlertTriangle, iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    ATTENDANCE_JUSTIFICATION:        { icon: FileCheck,     iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
+    ATTENDANCE_NEEDS_REVIEW:         { icon: AlertOctagon,  iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
+    BREAK_EXCEEDED:                  { icon: Coffee,        iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
+    TARDINESS_BALANCE_USED:          { icon: Clock,         iconClass: "text-yellow-500", bgClass: "bg-yellow-50/60 dark:bg-yellow-950/20", dotClass: "bg-yellow-500" },
+    TARDINESS_BALANCE_LOW:           { icon: AlertCircle,   iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
+    TARDINESS_BALANCE_DEPLETED:      { icon: AlertTriangle, iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
     TARDINESS_COMPENSATION_DUE:      { icon: Bell,          iconClass: "text-yellow-500", bgClass: "bg-yellow-50/60 dark:bg-yellow-950/20", dotClass: "bg-yellow-500" },
-    TARDINESS_DEDUCTION_PENDING:     { icon: DollarSign,    iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500",    route: "/payroll" },
-    TARDINESS_OFFSET_RESTORED:       { icon: RotateCcw,     iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500",  route: "/leaves/my-hourly-balance" },
-    MONTHLY_PAYROLL_READY:           { icon: FileText,      iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500",   route: "/payroll" },
-    ATTENDANCE_NEEDS_REVIEW:         { icon: AlertOctagon,  iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/attendance/needs-review" },
-    BREAK_EXCEEDED:                  { icon: Coffee,        iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/attendance/records" },
-    ANOMALY_OVERTIME:                { icon: AlertCircle,   iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/attendance/needs-review" },
-    ANOMALY_MANY_STAMPS:             { icon: AlertCircle,   iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/attendance/needs-review" },
-    ANOMALY_NO_STAMP:                { icon: AlertCircle,   iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500",    route: "/attendance/needs-review" },
-    CLINIC_APPOINTMENT_REMINDER:     { icon: CalendarClock, iconClass: "text-teal-500",   bgClass: "bg-teal-50/60 dark:bg-teal-950/20",     dotClass: "bg-teal-500",   route: "/clinic/appointments" },
-    CLINIC_CASE_STATUS_CHANGED:      { icon: Stethoscope,   iconClass: "text-indigo-500", bgClass: "bg-indigo-50/60 dark:bg-indigo-950/20", dotClass: "bg-indigo-500", route: "/clinic/prosthetics" },
-    CLINIC_LOW_STOCK:                { icon: Package,       iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500", route: "/clinic/inventory" },
-    CLINIC_COMMITTEE_PENDING:        { icon: Users,         iconClass: "text-purple-500", bgClass: "bg-purple-50/60 dark:bg-purple-950/20", dotClass: "bg-purple-500", route: "/clinic/prosthetics" },
-    CLINIC_DELIVERY_READY:           { icon: Stethoscope,   iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500",  route: "/clinic/prosthetics" },
-    INFO:                            { icon: Mail,          iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
+    TARDINESS_DEDUCTION_PENDING:     { icon: DollarSign,    iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    TARDINESS_OFFSET_RESTORED:       { icon: RotateCcw,     iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
+    MONTHLY_PAYROLL_READY:           { icon: FileText,      iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
+    EMPLOYEES_WITHOUT_SCHEDULE:      { icon: UserX,         iconClass: "text-gray-500",   bgClass: "bg-gray-50/60 dark:bg-gray-950/20",     dotClass: "bg-gray-500" },
+    ONBOARDING_TASK:                 { icon: ListTodo,      iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
+    OFFBOARDING_TASK:                { icon: ListTodo,      iconClass: "text-gray-500",   bgClass: "bg-gray-50/60 dark:bg-gray-950/20",     dotClass: "bg-gray-500" },
     PENALTY_DECISION:                { icon: AlertTriangle, iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
     REWARD_DECISION:                 { icon: Trophy,        iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
+    ADDITIONAL_ASSIGNMENT_REQUEST:   { icon: Briefcase,     iconClass: "text-indigo-500", bgClass: "bg-indigo-50/60 dark:bg-indigo-950/20", dotClass: "bg-indigo-500" },
+    ADDITIONAL_ASSIGNMENT_DECISION:  { icon: CheckCircle2,  iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
+    GENERAL:                         { icon: Mail,          iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
   };
 
   const DEFAULT_NOTIF_CFG: NotifCfg = {
     icon: null, iconClass: "text-blue-500", bgClass: "bg-blue-50/50 dark:bg-blue-950/20", dotClass: "bg-blue-500",
   };
 
-  const getEvalLink = (notif: any): string | null => {
-    const evalId = notif.data?.evaluationId;
-    if (!evalId) return null;
-    return `/${locale}/probation-evaluations/${evalId}`;
-  };
-
   const handleNotifClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
-    const evalLink = EVAL_NOTIF_TYPES.includes(notif.type) ? getEvalLink(notif) : null;
-    const mailLink = notif.type === "INFO" && notif.data?.messageId
-      ? `/${locale}/mail?messageId=${notif.data.messageId}`
-      : null;
-    const requestLink = ["PENALTY_DECISION", "REWARD_DECISION"].includes(notif.type) && notif.data?.requestId
-      ? `/${locale}/requests/${notif.data.requestId}`
-      : null;
-    const configRoute = NOTIF_CONFIG[notif.type]?.route;
-    const target = evalLink || mailLink || requestLink || notif.actionUrl || (configRoute ? `/${locale}${configRoute}` : null);
-    if (target) router.push(target);
+    const link = resolveNotificationLink(notif);
+    if (link) router.push(`/${locale}${link}`);
   };
 
   return (
@@ -194,23 +190,14 @@ export function Header() {
                             <span className={`h-2 w-2 rounded-full shrink-0 mt-1.5 ${cfg.dotClass}`} />
                           )}
                         </div>
-                        {(notif.messageAr || notif.message) && (
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.messageAr || notif.message}</p>
+                        {(notif.messageAr || notif.messageEn) && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.messageAr || notif.messageEn}</p>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
                           {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
                         </p>
-                        {EVAL_NOTIF_TYPES.includes(notif.type) && getEvalLink(notif) && (
-                          <button
-                            type="button"
-                            className="mt-1.5 text-xs text-primary font-medium hover:underline"
-                            onClick={(e) => { e.stopPropagation(); router.push(getEvalLink(notif)!); }}
-                          >
-                            اذهب للتقييم ←
-                          </button>
-                        )}
                       </div>
-                      {notif.actionUrl && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
+                      {resolveNotificationLink(notif) && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
                     </div>
                   );
                 })

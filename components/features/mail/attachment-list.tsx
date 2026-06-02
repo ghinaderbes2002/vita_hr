@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { Paperclip, Upload, Loader2, ExternalLink } from "lucide-react";
+import { Paperclip, Upload, Loader2, ExternalLink, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadAttachment } from "@/lib/hooks/use-mail";
 import type { MailAttachment } from "@/lib/api/mail";
@@ -46,6 +46,27 @@ function fileUrl(attachmentId: string): string {
   return token ? `${base}?t=${encodeURIComponent(token)}` : base;
 }
 
+function canOpenInBrowser(mimeType: string, fileName: string): boolean {
+  const openable = ["application/pdf", "image/", "text/plain"];
+  return openable.some((t) => mimeType?.startsWith(t)) ||
+    /\.(pdf|png|jpg|jpeg|gif|webp|svg|txt)$/i.test(fileName);
+}
+
+async function downloadFile(url: string, fileName: string) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = fileName;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+  } catch {
+    window.open(url, "_blank");
+  }
+}
+
 interface ListProps {
   attachments: MailAttachment[];
 }
@@ -66,15 +87,26 @@ export function AttachmentList({ attachments }: ListProps) {
             <span className="text-sm truncate">{decodeFileName(a.fileName)}</span>
             <span className="text-xs text-muted-foreground shrink-0">{formatSize(a.fileSize)}</span>
           </div>
-          <a
-            href={fileUrl(a.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors shrink-0"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            فتح
-          </a>
+          {canOpenInBrowser(a.mimeType, a.fileName) ? (
+            <a
+              href={fileUrl(a.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors shrink-0"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              فتح
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors shrink-0"
+              onClick={() => downloadFile(fileUrl(a.id), decodeFileName(a.fileName))}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              تحميل
+            </button>
+          )}
         </div>
       ))}
     </div>

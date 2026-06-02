@@ -29,6 +29,7 @@ import {
 import { ComposeMailModal } from "@/components/features/mail/compose-mail-modal";
 import { useNotificationsPage, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
 import type { Notification, NotificationType } from "@/lib/api/notifications";
+import { resolveNotificationLink, hasNotificationLink } from "@/lib/notifications/notification-links";
 
 const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
   LEAVE_REQUEST_SUBMITTED:        { icon: Bell,          color: "text-blue-600",   bg: "bg-blue-100",   label: "طلب إجازة جديد" },
@@ -128,9 +129,12 @@ export default function NotificationsPage() {
 
   const usedTypes = [...new Set(notifList.map((n) => n.type))];
 
-  const handleClick = (notif: any) => {
+  const handleClick = (notif: Notification) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
-    setSelectedNotif(notif);
+    if (notif.type === "BIRTHDAY") { setSelectedNotif(notif); return; }
+    const link = resolveNotificationLink(notif);
+    if (link) router.push(`/${locale}${link}`);
+    else setSelectedNotif(notif);
   };
 
   const handleBirthdayGreeting = (notif: any) => {
@@ -344,17 +348,9 @@ export default function NotificationsPage() {
           {selectedNotif && (() => {
             const cfg = getConfig(selectedNotif.type);
             const Icon = cfg.icon;
-            const evalLink = EVAL_TYPES.includes(selectedNotif.type) && (selectedNotif as any).data?.evaluationId
-              ? `/${locale}/probation-evaluations/${(selectedNotif as any).data.evaluationId}`
-              : null;
-            const mailLink = (selectedNotif as any).data?.messageId
-              ? `/${locale}/mail?messageId=${(selectedNotif as any).data.messageId}`
-              : null;
-            const requestLink = (selectedNotif as any).data?.requestId &&
-              ["PENALTY_DECISION", "REWARD_DECISION"].includes(selectedNotif.type)
-              ? `/${locale}/requests/${(selectedNotif as any).data.requestId}`
-              : null;
-            const target = evalLink || requestLink || mailLink || selectedNotif.actionUrl;
+            const link = resolveNotificationLink(selectedNotif);
+            const target = link ? `/${locale}${link}` : null;
+            const isMailNotif = selectedNotif.type === "GENERAL";
             return (
               <>
                 <DialogHeader>
@@ -384,19 +380,8 @@ export default function NotificationsPage() {
                       className="w-full gap-2 mt-2"
                       onClick={() => { setSelectedNotif(null); router.push(target); }}
                     >
-                      {mailLink ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
-                      {mailLink ? "فتح الرسالة" : "الذهاب للصفحة المرتبطة"}
-                    </Button>
-                  )}
-                  {(selectedNotif as any).data?.employeeId && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full gap-2"
-                      onClick={() => { setSelectedNotif(null); router.push(`/${locale}/employees/${(selectedNotif as any).data.employeeId}`); }}
-                    >
-                      <User className="h-4 w-4" />
-                      عرض الموظف
+                      {isMailNotif ? <Mail className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                      {isMailNotif ? "فتح الرسالة" : "الذهاب للصفحة المرتبطة"}
                     </Button>
                   )}
                   {selectedNotif.type === "BIRTHDAY" && (
