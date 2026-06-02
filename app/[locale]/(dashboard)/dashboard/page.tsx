@@ -13,8 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useQuery } from "@tanstack/react-query";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { usePendingMyApproval } from "@/lib/hooks/use-requests";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
@@ -169,13 +173,26 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
   const { data: pendingData } = usePendingMyApproval({ limit: 1 });
   const pendingCount = (pendingData as any)?.total ?? (pendingData as any)?.data?.total ?? 0;
 
+  const { data: probationEndingData } = useQuery({
+    queryKey: ["probation-ending", 7],
+    queryFn: async () => {
+      const { apiClient } = await import("@/lib/api/client");
+      const res = await apiClient.get("/employees/reports/probation-ending", { params: { days: 7 } });
+      return res.data?.data ?? res.data ?? [];
+    },
+    staleTime: 60_000,
+  });
+  const probationEndingList = Array.isArray(probationEndingData) ? probationEndingData : [];
+  const probationEndingCount = probationEndingList.length;
+  const [probationDialogOpen, setProbationDialogOpen] = useState(false);
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="إجمالي الموظفين" value={d.totalEmployees ?? "—"} icon={Users}
           iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/employees`)} />
-        <StatCard title="وثائق منتهية الصلاحية" value={d.expiringDocumentsCount ?? 0} icon={FileWarning}
-          iconBg="bg-red-500" onClick={() => router.push(`/${locale}/reports/hr`)} />
+        <StatCard title="شارفت فترة التجربة على الانتهاء" value={probationEndingCount} icon={FileWarning}
+          iconBg="bg-red-500" onClick={() => setProbationDialogOpen(true)} />
         <StatCard title="تبريرات الموظفين" value="" icon={AlertCircle}
           iconBg="bg-orange-500" onClick={() => router.push(`/${locale}/attendance/justifications`)} />
         <StatCard title="إجازات بانتظار HR" value={d.pendingLeaveHRCount ?? 0} icon={Hourglass}
@@ -234,6 +251,43 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
           </CardContent>
         </Card>
       )}
+
+      {/* Dialog فترات التجربة المنتهية */}
+      <Dialog open={probationDialogOpen} onOpenChange={setProbationDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileWarning className="h-4 w-4 text-red-500" />
+              موظفون تنتهي فترتهم التجريبية خلال 7 أيام
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-80 overflow-y-auto py-2">
+            {probationEndingList.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">لا يوجد موظفون في هذه الفترة</p>
+            ) : (
+              probationEndingList.map((emp: any) => (
+                <div key={emp.id} className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm">
+                  <div>
+                    <p className="font-medium">{emp.firstNameAr} {emp.lastNameAr}</p>
+                    <p className="text-xs text-muted-foreground">{emp.employeeNumber}</p>
+                  </div>
+                  <div className="text-left">
+                    <Badge variant="outline" className={`text-xs ${emp.daysRemaining <= 3 ? "border-red-300 text-red-700" : "border-amber-300 text-amber-700"}`}>
+                      {emp.daysRemaining} يوم متبقي
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-0.5">{emp.probationEndDate}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          {probationEndingList.length > 0 && (
+            <Button variant="outline" className="w-full" onClick={() => { setProbationDialogOpen(false); router.push(`/${locale}/probation-evaluations`); }}>
+              عرض تقييمات التجربة
+            </Button>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
