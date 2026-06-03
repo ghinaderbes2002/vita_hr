@@ -193,8 +193,11 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
 
   const durationMinutes = (() => {
     if (!watchedStartTime || !watchedEndTime) return 0;
-    const [sh, sm] = watchedStartTime.split(":").map(Number);
-    const [eh, em] = watchedEndTime.split(":").map(Number);
+    const sParts = watchedStartTime?.split?.(":");
+    const eParts = watchedEndTime?.split?.(":");
+    if (!sParts || !eParts || sParts.length < 2 || eParts.length < 2) return 0;
+    const [sh, sm] = sParts.map(Number);
+    const [eh, em] = eParts.map(Number);
     return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
   })();
 
