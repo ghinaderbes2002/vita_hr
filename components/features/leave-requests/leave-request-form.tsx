@@ -191,6 +191,19 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
   const watchedStartDate = form.watch("startDate");
   const watchedEndDate = form.watch("endDate");
 
+  // تلميح نافذة التقديم
+  const submissionWindowHint = (() => {
+    if (!selectedLeaveType) return null;
+    const code = selectedLeaveType.code?.toUpperCase();
+    const minNotice = selectedLeaveType.minDaysNotice;
+    if (code === "HAJJ") return "يجب التقديم قبل 60 يوم على الأقل";
+    if (code === "UMRAH") return "يجب التقديم قبل 10 أيام على الأقل";
+    if (code === "MARRIAGE") return "يجب التقديم قبل 7 أيام على الأقل";
+    if (code === "SICK") return "يمكن التقديم من يوم قبل البداية حتى أسبوع بعدها";
+    if (minNotice > 0) return `يجب التقديم قبل ${minNotice} يوم على الأقل`;
+    return null;
+  })();
+
   const durationMinutes = (() => {
     if (!watchedStartTime || !watchedEndTime) return 0;
     const sParts = watchedStartTime?.split?.(":");
@@ -290,6 +303,13 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
             </FormItem>
           )}
         />
+
+        {submissionWindowHint && (
+          <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            <span>ℹ️</span>
+            <span>{submissionWindowHint}</span>
+          </div>
+        )}
 
         {isBereavement && (
           <FormField

@@ -90,7 +90,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const isSender = message.senderId === user?.id
     || (senderInfo as any)?.employeeId === user?.employeeId
     || message.senderId === user?.employeeId;
-  const editHistory = (message as any).editHistory ?? [];
+  const editHistory = (data as any).editHistory ?? (message as any).editHistory ?? [];
   const senderName = senderInfo
     ? `${senderInfo.firstNameAr} ${senderInfo.lastNameAr}`
     : null;
