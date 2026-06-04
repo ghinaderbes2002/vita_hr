@@ -191,6 +191,13 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
   const watchedStartDate = form.watch("startDate");
   const watchedEndDate = form.watch("endDate");
 
+  const totalDaysPreview = (() => {
+    if (isHourlyType || isHalfDayType) return null;
+    if (!watchedStartDate || !watchedEndDate) return null;
+    const diff = Math.round((watchedEndDate.getTime() - watchedStartDate.getTime()) / 86400000) + 1;
+    return diff > 0 ? diff : null;
+  })();
+
   // تلميح نافذة التقديم
   const submissionWindowHint = (() => {
     if (!selectedLeaveType) return null;
@@ -232,13 +239,6 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
     if (!isHourlyType || !hourlyStats || requestedHours <= 0) return 0;
     const total = hourlyStats.usedHours + hourlyStats.pendingHours + requestedHours;
     return Math.max(0, total - hourlyStats.monthlyLimit);
-  })();
-
-  const totalDaysPreview = (() => {
-    if (isHourlyType || isHalfDayType) return null;
-    if (!watchedStartDate || !watchedEndDate) return null;
-    const diff = Math.round((watchedEndDate.getTime() - watchedStartDate.getTime()) / 86400000) + 1;
-    return diff > 0 ? diff : null;
   })();
 
   const handleSubmit = async (data: FormData) => {
