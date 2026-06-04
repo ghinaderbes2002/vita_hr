@@ -251,10 +251,15 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   const watchedOvertimeStart  = form.watch("overtimeStartDate");
   const watchedOvertimeEnd    = form.watch("overtimeEndDate");
 
-  const calcHours = (s: string | undefined, e: string | undefined): number | null => {
+  const calcHours = (s: string | null | undefined, e: string | null | undefined): number | null => {
     if (!s || !e) return null;
-    const [sh, sm] = s.split(":").map(Number);
-    const [eh, em] = e.split(":").map(Number);
+    const sParts = s.split(":");
+    const eParts = e.split(":");
+    if (sParts.length < 2 || eParts.length < 2) return null;
+    const sh = Number(sParts[0]) || 0;
+    const sm = Number(sParts[1]) || 0;
+    const eh = Number(eParts[0]) || 0;
+    const em = Number(eParts[1]) || 0;
     const diff = (eh * 60 + em) - (sh * 60 + sm);
     return diff > 0 ? Math.round(diff / 60 * 100) / 100 : null;
   };
