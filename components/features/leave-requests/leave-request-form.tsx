@@ -363,7 +363,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
+                        disabled={(date) => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - 7); return date < d; }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -452,7 +452,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                           field.onChange(d);
                           if (isHalfDayType && d) form.setValue("endDate", d);
                         }}
-                        disabled={(date) => { const t = new Date(); t.setHours(0,0,0,0); return date < t; }}
+                        disabled={(date) => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - 7); return date < d; }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -490,12 +490,12 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                           selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) => {
-                            if (isAnnualLeave && watchedStartDate) {
+                            if (watchedStartDate) {
                               const minDate = new Date(watchedStartDate);
                               minDate.setHours(0, 0, 0, 0);
                               return date < minDate;
                             }
-                            const t = new Date(); t.setHours(0,0,0,0); return date < t;
+                            const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - 7); return date < d;
                           }}
                           defaultMonth={isAnnualLeave && watchedStartDate ? watchedStartDate : undefined}
                           initialFocus
