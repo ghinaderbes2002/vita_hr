@@ -21,8 +21,11 @@ interface HourlyLeaveFormProps {
   onCancel?: () => void;
 }
 
-function parseMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
+function parseMinutes(time: string | null | undefined): number {
+  if (!time) return 0;
+  const parts = time.split(":");
+  const h = Number(parts[0]) || 0;
+  const m = Number(parts[1]) || 0;
   return h * 60 + m;
 }
 

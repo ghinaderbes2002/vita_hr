@@ -231,8 +231,8 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
   const handleSubmit = async (data: FormData) => {
     if (isHourlyType) {
       if (!data.date || !data.startTime || !data.endTime) return;
-      const [sh, sm] = data.startTime.split(":").map(Number);
-      const [eh, em] = data.endTime.split(":").map(Number);
+      const [sh = 0, sm = 0] = (data.startTime ?? "").split(":").map(Number);
+      const [eh = 0, em = 0] = (data.endTime ?? "").split(":").map(Number);
       if (eh * 60 + em <= sh * 60 + sm) {
         form.setError("endTime", { message: "وقت الانتهاء يجب أن يكون بعد وقت البداية" });
         return;
