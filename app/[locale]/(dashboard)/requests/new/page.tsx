@@ -42,7 +42,7 @@ export default function NewRequestChoicePage() {
 
   const handleLeaveSubmit = async (data: CreateLeaveRequestData) => {
     const created = await createLeaveRequest.mutateAsync(data);
-    if (created?.id) {
+    if (created?.id && created?.status === "DRAFT") {
       await submitLeaveRequest.mutateAsync(created.id);
     }
     setLeaveDialogOpen(false);
@@ -51,7 +51,7 @@ export default function NewRequestChoicePage() {
 
   const handleHourlyLeaveSubmit = async (data: CreateHourlyLeaveData) => {
     const created = await createHourlyLeave.mutateAsync(data);
-    if (created?.id) {
+    if (created?.id && created?.status === "DRAFT") {
       await submitLeaveRequest.mutateAsync(created.id);
     }
     setLeaveDialogOpen(false);
