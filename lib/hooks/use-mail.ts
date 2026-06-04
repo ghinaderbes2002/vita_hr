@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import {
   mailApi,
@@ -226,56 +226,82 @@ export function useUploadAttachment() {
   });
 }
 
+let _audioCtx: AudioContext | null = null;
+
+function getAudioCtx(): AudioContext {
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  return _audioCtx;
+}
+
+if (typeof window !== "undefined") {
+  ["click", "keydown", "touchstart"].forEach((ev) =>
+    window.addEventListener(ev, () => getAudioCtx().resume(), { passive: true }),
+  );
+}
+
+function playTones(ctx: AudioContext) {
+  [
+    { freq: 880,  start: 0,    dur: 0.12 },
+    { freq: 1100, start: 0.13, dur: 0.12 },
+    { freq: 1320, start: 0.26, dur: 0.18 },
+  ].forEach(({ freq, start, dur }) => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+    osc.start(ctx.currentTime + start);
+    osc.stop(ctx.currentTime + start + dur);
+  });
+}
+
 function playMailSound() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const times = [
-      { freq: 880, start: 0,    dur: 0.12 },
-      { freq: 1100, start: 0.13, dur: 0.12 },
-      { freq: 1320, start: 0.26, dur: 0.18 },
-    ];
-    times.forEach(({ freq, start, dur }) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-      gain.gain.setValueAtTime(0.25, ctx.currentTime + start);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + dur);
-    });
+    const ctx = getAudioCtx();
+    if (ctx.state === "suspended") {
+      ctx.resume().then(() => playTones(ctx));
+    } else {
+      playTones(ctx);
+    }
   } catch {
     // browser blocked audio
   }
 }
 
-export function useMailNotification() {
-  const knownIds = useRef<Set<string> | null>(null);
-  const { data } = useQuery({
-    queryKey: ["mail", "inbox", { page: 1, limit: 20 }],
-    queryFn: () => mailApi.getInbox({ page: 1, limit: 20 }),
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
-  });
+let _knownMailIds: Set<string> | null = null;
 
-  useEffect(() => {
-    if (!data?.items) return;
-    const currentIds = new Set(data.items.map((i: any) => i.messageId ?? i.id));
-    if (knownIds.current === null) {
-      knownIds.current = currentIds;
+async function checkNewMail() {
+  try {
+    const data = await mailApi.getInbox({ page: 1, limit: 20 });
+    const currentIds = new Set<string>(data.items.map((i: any) => i.messageId ?? i.id));
+    if (_knownMailIds === null) {
+      _knownMailIds = currentIds;
       return;
     }
-    const newOnes = [...currentIds].filter((id) => !knownIds.current!.has(id));
+    const newOnes = [...currentIds].filter((id) => !_knownMailIds!.has(id));
     if (newOnes.length > 0) {
+      _knownMailIds = currentIds;
       playMailSound();
-      toast.info(`لديك ${newOnes.length === 1 ? "رسالة جديدة" : `${newOnes.length} رسائل جديدة`}`, {
+      toast.info(newOnes.length === 1 ? "لديك رسالة جديدة" : `لديك ${newOnes.length} رسائل جديدة`, {
         description: "البريد الداخلي",
       });
     }
-    knownIds.current = currentIds;
-  }, [data]);
+  } catch {
+    // silently ignore network errors
+  }
+}
+
+export function useMailNotification() {
+  useEffect(() => {
+    checkNewMail();
+    const id = setInterval(checkNewMail, 30_000);
+    return () => clearInterval(id);
+  }, []);
 }
 
 // Archive Folders
