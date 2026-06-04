@@ -243,7 +243,11 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
 
   const handleSubmit = async (data: FormData) => {
     if (isHourlyType) {
-      if (!data.date || !data.startTime || !data.endTime) return;
+      if (!data.date) {
+        form.setError("date", { message: "التاريخ مطلوب" });
+        return;
+      }
+      if (!data.startTime || !data.endTime) return;
       const [sh = 0, sm = 0] = (data.startTime ?? "").split(":").map(Number);
       const [eh = 0, em = 0] = (data.endTime ?? "").split(":").map(Number);
       if (eh * 60 + em <= sh * 60 + sm) {
@@ -261,7 +265,14 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
       return;
     }
 
-    if (!data.startDate || !data.endDate) return;
+    if (!data.startDate) {
+      form.setError("startDate", { message: "تاريخ البداية مطلوب" });
+      return;
+    }
+    if (!data.endDate) {
+      form.setError("endDate", { message: "تاريخ الانتهاء مطلوب" });
+      return;
+    }
     const submitData: CreateLeaveRequestData = {
       leaveTypeId: data.leaveTypeId,
       startDate: format(data.startDate, "yyyy-MM-dd"),
