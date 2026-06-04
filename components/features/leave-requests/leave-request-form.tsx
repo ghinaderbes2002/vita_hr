@@ -196,10 +196,23 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
     if (!selectedLeaveType) return null;
     const code = selectedLeaveType.code?.toUpperCase();
     const minNotice = selectedLeaveType.minDaysNotice;
-    if (code === "HAJJ") return "يجب التقديم قبل 60 يوم على الأقل";
-    if (code === "UMRAH") return "يجب التقديم قبل 10 أيام على الأقل";
-    if (code === "MARRIAGE") return "يجب التقديم قبل 7 أيام على الأقل";
-    if (code === "SICK") return "يمكن التقديم من يوم قبل البداية حتى أسبوع بعدها";
+
+    if (code === "HAJJ")     return "يجب التقديم قبل 60 يوم على الأقل — لا يجوز استرجاعياً";
+    if (code === "UMRAH")    return "يجب التقديم قبل 10 أيام على الأقل — لا يجوز استرجاعياً";
+    if (code === "MARRIAGE") return "يجب التقديم قبل 7 أيام على الأقل — لا يجوز استرجاعياً";
+    if (code === "SICK")     return "يمكن التقديم يوماً مسبقاً أو استرجاعياً حتى 7 أيام";
+
+    // سنوية / ساعية / نصف يوم / غير مدفوعة → نافذة 7 أيام بالاتجاهين
+    if (isHourlyType || isAnnualLeave || isHalfDayType) {
+      if (totalDaysPreview && totalDaysPreview > 4) {
+        return "الإجازة تتجاوز 4 أيام — يجب التقديم قبل 7 أيام على الأقل ولا يجوز استرجاعياً";
+      }
+      if (isHourlyType || isHalfDayType) {
+        return "يمكن التقديم مسبقاً أو استرجاعياً حتى 7 أيام";
+      }
+      return "يمكن التقديم مسبقاً أو استرجاعياً حتى 7 أيام · إذا تجاوزت 4 أيام → 7 أيام إشعار مسبق إلزامي";
+    }
+
     if (minNotice > 0) return `يجب التقديم قبل ${minNotice} يوم على الأقل`;
     return null;
   })();
