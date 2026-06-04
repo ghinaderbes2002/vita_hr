@@ -88,6 +88,7 @@ export interface MailMessage {
   threadRootId: string | null;
   parentMessageId: string | null;
   isDraft: boolean;
+  importance?: "NORMAL" | "HIGH";
   deletedAt: string | null;
   recipients: MailRecipient[];
   attachments: MailAttachment[];
@@ -131,6 +132,7 @@ export interface SendMailDto {
   recipients: { employeeId: string; type: RecipientType }[];
   departmentIds?: string[];
   parentMessageId?: string;
+  importance?: "NORMAL" | "HIGH";
 }
 
 export interface SaveDraftDto {

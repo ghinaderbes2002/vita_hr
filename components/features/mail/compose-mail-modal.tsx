@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Send, FileText, X, Paperclip, Loader2, Building2 } from "lucide-react";
+import { Send, FileText, X, Paperclip, Loader2, Building2, Bold, Underline, Italic, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,7 +56,25 @@ export function ComposeMailModal({
   const [showDept, setShowDept] = useState(false);
   const [departmentIds, setDepartmentIds] = useState<string[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [isHighImportance, setIsHighImportance] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+
+  const applyFormat = (tag: "b" | "u" | "i") => {
+    const ta = bodyRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = body.slice(start, end);
+    if (!selected) return;
+    const wrapped = `<${tag}>${selected}</${tag}>`;
+    const newBody = body.slice(0, start) + wrapped + body.slice(end);
+    setBody(newBody);
+    setTimeout(() => {
+      ta.focus();
+      ta.setSelectionRange(start + tag.length + 2, start + tag.length + 2 + selected.length);
+    }, 0);
+  };
 
   const sendMail = useSendMail();
   const saveDraft = useSaveDraft();
@@ -120,6 +138,7 @@ export function ComposeMailModal({
         recipients: buildRecipients(),
         ...(departmentIds.length > 0 ? { departmentIds } : {}),
         parentMessageId: replyToMessageId,
+        ...(isHighImportance ? { importance: "HIGH" } : {}),
       });
     }
 
@@ -262,8 +281,48 @@ export function ComposeMailModal({
 
           {/* Body */}
           <div className="space-y-1.5">
-            <Label className="text-sm">نص الرسالة *</Label>
-            <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="اكتب رسالتك هنا..." rows={7} className="resize-none" />
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">نص الرسالة *</Label>
+              {/* High Importance */}
+              <button
+                type="button"
+                onClick={() => setIsHighImportance((v) => !v)}
+                className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-colors ${
+                  isHighImportance
+                    ? "bg-red-50 border-red-300 text-red-700 font-semibold"
+                    : "border-muted-foreground/20 text-muted-foreground hover:border-red-300 hover:text-red-600"
+                }`}
+              >
+                <AlertCircle className="h-3.5 w-3.5" />
+                مهم جداً
+              </button>
+            </div>
+            {/* Formatting toolbar */}
+            <div className="flex items-center gap-0.5 border rounded-t-md px-2 py-1 bg-muted/30 border-b-0">
+              {([
+                { tag: "b" as const, icon: Bold, title: "غامق" },
+                { tag: "u" as const, icon: Underline, title: "تحته خط" },
+                { tag: "i" as const, icon: Italic, title: "مائل" },
+              ]).map(({ tag, icon: Icon, title }) => (
+                <button
+                  key={tag}
+                  type="button"
+                  title={title}
+                  onClick={() => applyFormat(tag)}
+                  className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </button>
+              ))}
+            </div>
+            <Textarea
+              ref={bodyRef}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="اكتب رسالتك هنا..."
+              rows={7}
+              className="resize-none rounded-t-none border-t-0"
+            />
           </div>
 
           {/* Attachments */}

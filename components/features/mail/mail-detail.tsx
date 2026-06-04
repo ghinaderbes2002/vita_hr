@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History } from "lucide-react";
+import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -94,6 +94,17 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const senderName = senderInfo
     ? `${senderInfo.firstNameAr} ${senderInfo.lastNameAr}`
     : null;
+
+  const renderBody = (body: string) => {
+    const escaped = body
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const withTags = escaped.replace(/&lt;(\/?(b|u|i))&gt;/g, "<$1>");
+    return { __html: withTags.replace(/\n/g, "<br>") };
+  };
+
+  const stripTags = (text: string) => text.replace(/<[^>]*>/g, "");
 
   const defaultSubject = `رد: ${message.subject}`;
   const getRecipientEmpId = (r: any) =>
@@ -222,7 +233,15 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
       {/* Message content */}
       <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
         {/* Subject */}
-        <h2 className="text-lg font-semibold">{message.subject}</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-lg font-semibold">{message.subject}</h2>
+          {message.importance === "HIGH" && (
+            <Badge className="bg-red-100 text-red-700 border-red-300 text-xs gap-1">
+              <AlertCircle className="h-3 w-3" />
+              مهم جداً
+            </Badge>
+          )}
+        </div>
 
         {/* Meta */}
         <div className="space-y-1 text-sm">
@@ -277,7 +296,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
         <Separator />
 
         {/* Body */}
-        <div className="text-sm leading-relaxed whitespace-pre-wrap">{message.body}</div>
+        <div className="text-sm leading-relaxed wrap-break-word" dangerouslySetInnerHTML={renderBody(message.body)} />
 
         {/* Attachments */}
         {message.attachments && message.attachments.length > 0 && (
@@ -351,7 +370,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                           </div>
                           {!expanded && (
                             <p className="text-xs text-muted-foreground truncate">
-                              {m.body.slice(0, 100)}{m.body.length > 100 ? "..." : ""}
+                              {stripTags(m.body).slice(0, 100)}{m.body.length > 100 ? "..." : ""}
                             </p>
                           )}
                         </div>
@@ -360,8 +379,8 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                           : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground mt-1" />}
                       </button>
                       {expanded && (
-                        <div className="px-5 py-4 border-t bg-muted/5 text-sm leading-relaxed whitespace-pre-wrap">
-                          {m.body}
+                        <div className="px-5 py-4 border-t bg-muted/5 text-sm leading-relaxed">
+                          <div className="wrap-break-word" dangerouslySetInnerHTML={renderBody(m.body)} />
                           {m.attachments && m.attachments.length > 0 && (
                             <div className="mt-3">
                               <AttachmentList attachments={m.attachments} />
