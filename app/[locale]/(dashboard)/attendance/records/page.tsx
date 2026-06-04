@@ -73,7 +73,8 @@ export default function AttendanceRecordsPage() {
   const [breaksDrawerOpen, setBreaksDrawerOpen] = useState(false);
   const [stampsRecordId, setStampsRecordId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Manual entry form state
@@ -101,6 +102,7 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
     page,
     limit: LIMIT,
     ...(statusFilter !== "ALL" && { status: statusFilter as AttendanceStatus }),
+    ...(selectedEmployeeId && { employeeId: selectedEmployeeId }),
   });
   const createRecord = useCreateAttendanceRecord();
   const { data: employeesData } = useEmployeesBasicList();
@@ -112,19 +114,17 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
 
-  const filteredRecords = records.filter((record: AttendanceRecord) => {
-    if (!search) return true;
+  const filteredRecords = records;
 
-    const searchLower = search.toLowerCase();
-    const employeeNameAr = `${record.employee?.firstNameAr || ""} ${record.employee?.lastNameAr || ""}`.trim();
-    const employeeNameEn = `${record.employee?.firstNameEn || ""} ${record.employee?.lastNameEn || ""}`.trim();
-
-    return (
-      employeeNameAr.toLowerCase().includes(searchLower) ||
-      employeeNameEn.toLowerCase().includes(searchLower) ||
-      record.employee?.employeeNumber?.toLowerCase().includes(searchLower)
-    );
-  });
+  const searchedEmployees = search.trim()
+    ? employees.filter((e: any) => {
+        const nameAr = `${e.firstNameAr || ""} ${e.lastNameAr || ""}`.toLowerCase();
+        const nameEn = `${e.firstNameEn || ""} ${e.lastNameEn || ""}`.toLowerCase();
+        const num = (e.employeeNumber || "").toLowerCase();
+        const q = search.toLowerCase();
+        return nameAr.includes(q) || nameEn.includes(q) || num.includes(q);
+      }).slice(0, 8)
+    : [];
 
   const handleCreateManual = async () => {
     if (!manualForm.employeeId || !manualForm.date || !manualForm.manualEntryReason) return;
@@ -179,11 +179,33 @@ const [statusFilter, setStatusFilter] = useState<string>("ALL");
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={t("attendance.searchPlaceholder")}
+            placeholder="ابحث باسم الموظف أو الكود..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              if (!e.target.value) { setSelectedEmployeeId(""); setPage(1); }
+            }}
             className="pr-10"
           />
+          {searchedEmployees.length > 0 && (
+            <div className="absolute z-50 top-full mt-1 w-full bg-popover border rounded-md shadow-md overflow-hidden">
+              {searchedEmployees.map((e: any) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  className="w-full text-right px-3 py-2 text-sm hover:bg-muted transition-colors flex items-center justify-between"
+                  onClick={() => {
+                    setSelectedEmployeeId(e.id);
+                    setSearch(`${e.firstNameAr} ${e.lastNameAr}`);
+                    setPage(1);
+                  }}
+                >
+                  <span className="text-muted-foreground text-xs">{e.employeeNumber}</span>
+                  <span>{e.firstNameAr} {e.lastNameAr}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
