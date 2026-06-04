@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X } from "lucide-react";
+import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -287,9 +287,9 @@ export function MailList({
                   <span className={cn("text-sm truncate", unread && "font-medium")}>
                     {getSubject(item)}
                   </span>
-                  {(isDraft ? item : item.message)?.importance === "HIGH" && (
+                  {(item?.importance === "HIGH" || item?.message?.importance === "HIGH") && (
                     <span className="shrink-0 text-red-500" title="مهم جداً">
-                      <Mail className="h-3.5 w-3.5 fill-red-500" />
+                      <AlertCircle className="h-3.5 w-3.5" />
                     </span>
                   )}
                 </div>
