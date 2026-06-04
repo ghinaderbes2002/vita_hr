@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   mailApi,
@@ -223,6 +224,58 @@ export function useUploadAttachment() {
       }
     },
   });
+}
+
+function playMailSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const times = [
+      { freq: 880, start: 0,    dur: 0.12 },
+      { freq: 1100, start: 0.13, dur: 0.12 },
+      { freq: 1320, start: 0.26, dur: 0.18 },
+    ];
+    times.forEach(({ freq, start, dur }) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur);
+    });
+  } catch {
+    // browser blocked audio
+  }
+}
+
+export function useMailNotification() {
+  const knownIds = useRef<Set<string> | null>(null);
+  const { data } = useQuery({
+    queryKey: ["mail", "inbox", { page: 1, limit: 20 }],
+    queryFn: () => mailApi.getInbox({ page: 1, limit: 20 }),
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+  });
+
+  useEffect(() => {
+    if (!data?.items) return;
+    const currentIds = new Set(data.items.map((i: any) => i.messageId ?? i.id));
+    if (knownIds.current === null) {
+      knownIds.current = currentIds;
+      return;
+    }
+    const newOnes = [...currentIds].filter((id) => !knownIds.current!.has(id));
+    if (newOnes.length > 0) {
+      playMailSound();
+      toast.info(`لديك ${newOnes.length === 1 ? "رسالة جديدة" : `${newOnes.length} رسائل جديدة`}`, {
+        description: "البريد الداخلي",
+      });
+    }
+    knownIds.current = currentIds;
+  }, [data]);
 }
 
 // Archive Folders

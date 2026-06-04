@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/header";
 import { AuthRefreshProvider } from "@/components/providers/auth-refresh-provider";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useLocale } from "next-intl";
+import { useMailNotification } from "@/lib/hooks/use-mail";
 
 export default function DashboardLayout({
   children,
@@ -18,6 +19,7 @@ export default function DashboardLayout({
   const isRTL = locale === "ar";
   const { isAuthenticated } = useAuthStore();
   const [hydrated, setHydrated] = useState(false);
+  useMailNotification();
 
   useEffect(() => {
     setHydrated(true);
