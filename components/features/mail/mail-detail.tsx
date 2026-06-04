@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History, AlertCircle } from "lucide-react";
+import { useState, useRef } from "react";
+import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History, AlertCircle, Bold, Underline, Italic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -55,6 +55,23 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen]   = useState(false);
   const [activeHistory, setActiveHistory] = useState<any[]>([]);
+  const editBodyRef = useRef<HTMLTextAreaElement>(null);
+
+  const applyEditFormat = (tag: "b" | "u" | "i") => {
+    const ta = editBodyRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = editBody.slice(start, end);
+    if (!selected) return;
+    const wrapped = `<${tag}>${selected}</${tag}>`;
+    const newBody = editBody.slice(0, start) + wrapped + editBody.slice(end);
+    setEditBody(newBody);
+    setTimeout(() => {
+      ta.focus();
+      ta.setSelectionRange(start + tag.length + 2, start + tag.length + 2 + selected.length);
+    }, 0);
+  };
 
   const toggleExpand = (id: string) =>
     setExpandedIds((prev) => {
@@ -455,7 +472,30 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>النص</Label>
-              <Textarea rows={6} value={editBody} onChange={(e) => setEditBody(e.target.value)} />
+              <div className="flex items-center gap-0.5 border rounded-t-md px-2 py-1 bg-muted/30 border-b-0">
+                {([
+                  { tag: "b" as const, icon: Bold, title: "غامق" },
+                  { tag: "u" as const, icon: Underline, title: "تحته خط" },
+                  { tag: "i" as const, icon: Italic, title: "مائل" },
+                ]).map(({ tag, icon: Icon, title }) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    title={title}
+                    onClick={() => applyEditFormat(tag)}
+                    className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </button>
+                ))}
+              </div>
+              <Textarea
+                ref={editBodyRef}
+                rows={6}
+                value={editBody}
+                onChange={(e) => setEditBody(e.target.value)}
+                className="rounded-t-none border-t-0 resize-none"
+              />
             </div>
           </div>
           <DialogFooter>

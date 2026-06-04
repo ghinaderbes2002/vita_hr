@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Search, Archive, Trash2, MailOpen, CalendarDays, X } from "lucide-react";
+import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -283,15 +283,31 @@ export function MailList({
                 </span>
 
                 {/* Subject + preview */}
-                <div className="flex-1 min-w-0">
-                  <span className={cn("text-sm truncate block", unread && "font-medium")}>
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                  <span className={cn("text-sm truncate", unread && "font-medium")}>
                     {getSubject(item)}
                   </span>
+                  {(isDraft ? item : item.message)?.importance === "HIGH" && (
+                    <span className="shrink-0 text-red-500" title="مهم جداً">
+                      <Mail className="h-3.5 w-3.5 fill-red-500" />
+                    </span>
+                  )}
                 </div>
 
-                {/* Unread dot */}
-                {unread && (
-                  <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                {/* Read/Unread toggle */}
+                {!isDraft && folder !== "SENT" && (
+                  <button
+                    title={unread ? "تحديد كمقروء" : "تحديد كغير مقروء"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateRead.mutate({ messageIds: [msgId], isRead: unread });
+                    }}
+                    className="shrink-0 transition-colors"
+                  >
+                    {unread
+                      ? <Mail className="h-4 w-4 text-blue-500 fill-blue-100" />
+                      : <MailOpen className="h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground" />}
+                  </button>
                 )}
 
                 {/* Date */}
