@@ -248,8 +248,8 @@ export default function PatientProfilePage() {
                 <InfoRow label="رقم الهوية" value={patient.idNumber} />
                 <InfoRow label="تاريخ الميلاد" value={new Date(patient.dateOfBirth).toLocaleDateString("ar")} />
                 <InfoRow label="الجنس" value={GENDER_LABEL[patient.gender]} />
-                <InfoRow label="الطول" value={patient.height ? `${patient.height} سم` : null} />
-                <InfoRow label="الوزن" value={patient.weight ? `${patient.weight} كغ` : null} />
+                <InfoRow label="الطول" value={patient.heightCm ? `${patient.heightCm} سم` : null} />
+                <InfoRow label="الوزن" value={patient.weightKg ? `${patient.weightKg} كغ` : null} />
                 <InfoRow label="مؤشر كتلة الجسم" value={patient.bmi ? patient.bmi.toFixed(1) : null} />
               </CardContent>
             </Card>
@@ -267,7 +267,7 @@ export default function PatientProfilePage() {
                 <InfoRow label="البريد" value={patient.email} />
                 <InfoRow label="المحافظة" value={patient.city?.governorate} />
                 <InfoRow label="المدينة" value={patient.city?.name} />
-                <InfoRow label="العنوان" value={patient.address} />
+                <InfoRow label="العنوان" value={patient.addressDetails} />
               </CardContent>
             </Card>
 
@@ -282,8 +282,9 @@ export default function PatientProfilePage() {
                 <InfoRow label="المستوى التعليمي" value={patient.educationLevel ? EDUCATION_LABEL[patient.educationLevel] : null} />
                 <InfoRow label="الحالة الاجتماعية" value={patient.maritalStatus ? MARITAL_LABEL[patient.maritalStatus] : null} />
                 <InfoRow label="الوضع المادي" value={patient.financialStatus ? FINANCIAL_LABEL[patient.financialStatus] : null} />
-                <InfoRow label="مساعدات إنسانية" value={patient.receivesHumanitarianAid ? "نعم" : "لا"} />
-                <InfoRow label="طريقة الوصول" value={patient.centerAccessMethod} />
+                <InfoRow label="مساعدات إنسانية" value={patient.receivesAid ? "نعم" : "لا"} />
+                <InfoRow label="مصدر الإحالة" value={patient.referralSource} />
+                <InfoRow label="تفاصيل الإحالة" value={patient.referralDetails} />
               </CardContent>
             </Card>
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { PainPoint } from "@/lib/api/clinic-physio";
+import { PainRegion as PainPoint } from "@/lib/api/clinic-physio";
 import { PainScale } from "./pain-scale";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -68,7 +68,7 @@ export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapP
     e.stopPropagation();
     setEditingPoint(point);
     setClickedSide(point.side);
-    setForm({ intensity: point.intensity, painType: point.painType, notes: point.notes ?? "" });
+    setForm({ intensity: point.intensity, painType: point.painType ?? "", notes: point.notes ?? "" });
     setDialogOpen(true);
   };
 

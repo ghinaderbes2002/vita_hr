@@ -18,15 +18,18 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
 
 const STATUS_VALUES: PhysioStatus[] = [
-  "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
-  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "ACTIVE_SESSIONS",
-  "COMPLETED", "CANCELLED",
+  "INTAKE", "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
+  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "SUPERVISOR_REVIEW",
+  "DOCTOR_SIGN", "ACTIVE_TREATMENT", "COMPLETED", "DISCHARGED", "CANCELLED",
 ];
 
 const STATUS_LABEL: Record<PhysioStatus, string> = {
-  COMPLAINT: "شكوى", PAIN_MAP: "خريطة الألم", MEDICAL_HISTORY: "التاريخ الطبي",
-  GOALS: "الأهداف", POSTURAL_ASSESSMENT: "تقييم وضعي", TREATMENT_PLAN: "خطة العلاج",
-  ACTIVE_SESSIONS: "جلسات نشطة", COMPLETED: "مكتملة", CANCELLED: "ملغاة",
+  INTAKE: "استقبال", COMPLAINT: "شكوى", PAIN_MAP: "خريطة الألم",
+  MEDICAL_HISTORY: "التاريخ الطبي", GOALS: "الأهداف",
+  POSTURAL_ASSESSMENT: "تقييم وضعي", TREATMENT_PLAN: "خطة العلاج",
+  SUPERVISOR_REVIEW: "رئيس القسم", DOCTOR_SIGN: "توقيع الطبيب",
+  ACTIVE_TREATMENT: "جلسات نشطة", COMPLETED: "مكتملة",
+  DISCHARGED: "مُخرَّج", CANCELLED: "ملغاة",
 };
 
 const fmt = (d: string) => new Date(d).toLocaleDateString("ar");
@@ -45,7 +48,7 @@ export default function MyPhysioCasesPage() {
 
   const all = (data?.items ?? []) as PhysioCase[];
 
-  const mine = all.filter((c) => c.assignedTherapistId === user?.id);
+  const mine = all.filter((c) => c.physiotherapistId === user?.id || c.physiotherapistId === user?.employeeId);
 
   const filtered = mine.filter((c) => {
     const matchStatus = statusFilter === "all" || c.status === statusFilter;

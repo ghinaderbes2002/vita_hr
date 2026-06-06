@@ -21,9 +21,9 @@ import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
 const LIMIT = 15;
 
 const STATUS_VALUES: PhysioStatus[] = [
-  "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
-  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "ACTIVE_SESSIONS",
-  "COMPLETED", "CANCELLED",
+  "INTAKE", "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
+  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "SUPERVISOR_REVIEW",
+  "DOCTOR_SIGN", "ACTIVE_TREATMENT", "COMPLETED", "DISCHARGED", "CANCELLED",
 ];
 
 const fmt = (d: string) => {

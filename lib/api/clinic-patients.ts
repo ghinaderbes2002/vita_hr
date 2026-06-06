@@ -1,13 +1,16 @@
 import { apiClient } from "./client";
 
-export type DocumentType = "ID_FRONT" | "ID_BACK" | "PHOTO" | "OTHER";
-export type Gender = "MALE" | "FEMALE";
-export type IdentityType = "NATIONAL_ID" | "PASSPORT" | "UNHCR" | "OTHER";
-export type EducationLevel = "NONE" | "PRIMARY" | "SECONDARY" | "UNIVERSITY" | "POSTGRADUATE";
-export type MaritalStatus = "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED";
-export type LivingStatus = "ALONE" | "FAMILY" | "INSTITUTION";
+export type DocumentType =
+  | "ID_COPY" | "PERSONAL_PHOTO" | "AMPUTATION_PHOTO"
+  | "RESIDUAL_LIMB_PHOTO" | "MEDICAL_REPORT" | "OTHER";
+
+export type Gender         = "MALE" | "FEMALE";
+export type IdentityType   = "NATIONAL_ID" | "PASSPORT" | "UNHCR" | "OTHER";
+export type EducationLevel = "ILLITERATE" | "PRIMARY" | "SECONDARY" | "HIGH_SCHOOL" | "UNIVERSITY" | "POSTGRADUATE";
+export type MaritalStatus  = "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED";
+export type LivingCondition = "WITH_FAMILY" | "INDEPENDENT" | "SHELTER_CAMP" | "OTHER";
 export type FinancialStatus = "LOW" | "MODERATE" | "GOOD" | "NOT_WORKING" | "RETIRED";
-export type ConsentOption = "FULL" | "ANONYMOUS" | "NONE";
+export type ConsentOption   = "FULL" | "ANONYMOUS" | "NONE";
 
 export interface Patient {
   id: string;
@@ -18,21 +21,23 @@ export interface Patient {
   idNumber: string;
   dateOfBirth: string;
   gender: Gender;
-  height?: number | null;
-  weight?: number | null;
+  occupation?: string | null;
+  heightCm?: number | null;
+  weightKg?: number | null;
   bmi?: number | null;
   cityId?: number | string | null;
   city?: { id: number | string; name: string; governorate: string } | null;
-  address?: string | null;
+  addressDetails?: string | null;
   phone: string;
   whatsapp?: string | null;
   email?: string | null;
   educationLevel?: EducationLevel | null;
   maritalStatus?: MaritalStatus | null;
-  livingStatus?: LivingStatus | null;
+  livingCondition?: LivingCondition | null;
   financialStatus?: FinancialStatus | null;
-  receivesHumanitarianAid?: boolean;
-  centerAccessMethod?: string | null;
+  receivesAid?: boolean;
+  referralSource?: string | null;
+  referralDetails?: string | null;
   photoUrl?: string | null;
   documentConsent?: ConsentOption | null;
   mediaConsent?: boolean;
@@ -78,19 +83,21 @@ export interface CreatePatientDto {
   idNumber: string;
   dateOfBirth: string;
   gender: Gender;
-  height?: number;
-  weight?: number;
+  occupation?: string;
+  heightCm?: number;
+  weightKg?: number;
   cityId?: number | string;
-  address?: string;
+  addressDetails?: string;
   phone: string;
   whatsapp?: string;
   email?: string;
   educationLevel?: EducationLevel;
   maritalStatus?: MaritalStatus;
-  livingStatus?: LivingStatus;
+  livingCondition?: LivingCondition;
   financialStatus?: FinancialStatus;
-  receivesHumanitarianAid?: boolean;
-  centerAccessMethod?: string;
+  receivesAid?: boolean;
+  referralSource?: string;
+  referralDetails?: string;
   photoUrl?: string;
   documentConsent?: ConsentOption;
   mediaConsent?: boolean;
@@ -168,6 +175,13 @@ export const clinicPatientsApi = {
     return data?.data ?? data;
   },
 
+  downloadDocument: async (patientId: string, docId: string): Promise<Blob> => {
+    const response = await apiClient.get(`/patients/${patientId}/documents/${docId}/download`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+
   getDocuments: async (patientId: string): Promise<PatientDocument[]> => {
     const { data } = await apiClient.get(`/patients/${patientId}/documents`);
     const d = data?.data ?? data;
@@ -178,7 +192,10 @@ export const clinicPatientsApi = {
     await apiClient.delete(`/patients/${patientId}/documents/${docId}`);
   },
 
-  createConsent: async (patientId: string, dto: { documentConsent: ConsentOption; mediaConsent: boolean; signatureBase64?: string }): Promise<PatientConsent> => {
+  createConsent: async (
+    patientId: string,
+    dto: { documentConsent: ConsentOption; mediaConsent: boolean; signatureBase64?: string },
+  ): Promise<PatientConsent> => {
     const { data } = await apiClient.post(`/patients/${patientId}/consents`, dto);
     return data?.data ?? data;
   },

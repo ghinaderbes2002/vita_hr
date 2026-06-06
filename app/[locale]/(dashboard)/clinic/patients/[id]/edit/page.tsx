@@ -15,66 +15,64 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { useClinicPatient, useUpdateClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
 import { UpdatePatientDto } from "@/lib/api/clinic-patients";
 
 const schema = z.object({
-  firstName: z.string().min(2, "الاسم الأول مطلوب"),
-  lastName: z.string().min(2, "اسم العائلة مطلوب"),
-  identityType: z.enum(["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"]),
-  idNumber: z.string().min(5, "رقم الهوية مطلوب"),
-  dateOfBirth: z.string().min(1, "تاريخ الميلاد مطلوب"),
-  gender: z.enum(["MALE", "FEMALE"]),
-  phone: z.string().min(7, "رقم الهاتف مطلوب"),
-  whatsapp: z.string().optional(),
-  email: z.string().email("بريد غير صحيح").optional().or(z.literal("")),
-  cityId: z.string().optional(),
-  address: z.string().optional(),
-  height: z.coerce.number().min(50).max(250).optional().or(z.literal("")),
-  weight: z.coerce.number().min(10).max(300).optional().or(z.literal("")),
-  educationLevel: z.string().optional(),
-  maritalStatus: z.string().optional(),
-  livingStatus: z.string().optional(),
+  firstName:       z.string().min(2, "مطلوب"),
+  lastName:        z.string().min(2, "مطلوب"),
+  identityType:    z.enum(["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"]),
+  idNumber:        z.string().min(5, "مطلوب"),
+  dateOfBirth:     z.string().min(1, "مطلوب"),
+  gender:          z.enum(["MALE", "FEMALE"]),
+  phone:           z.string().min(7, "مطلوب"),
+  whatsapp:        z.string().optional(),
+  email:           z.string().email("غير صحيح").optional().or(z.literal("")),
+  cityId:          z.string().optional(),
+  addressDetails:  z.string().optional(),
+  heightCm:        z.coerce.number().min(50).max(250).optional().or(z.literal("")),
+  weightKg:        z.coerce.number().min(10).max(300).optional().or(z.literal("")),
+  occupation:      z.string().optional(),
+  educationLevel:  z.string().optional(),
+  maritalStatus:   z.string().optional(),
+  livingCondition: z.string().optional(),
   financialStatus: z.string().optional(),
-  receivesHumanitarianAid: z.boolean().optional(),
-  centerAccessMethod: z.string().optional(),
+  receivesAid:     z.boolean().optional(),
+  referralSource:  z.string().optional(),
+  referralDetails: z.string().optional(),
   documentConsent: z.enum(["FULL", "ANONYMOUS", "NONE"]).optional(),
-  mediaConsent: z.boolean().optional(),
-  notes: z.string().optional(),
+  mediaConsent:    z.boolean().optional(),
+  notes:           z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 const IDENTITY_TYPES = [
-  { value: "NATIONAL_ID", label: "هوية وطنية" },
-  { value: "PASSPORT", label: "جواز سفر" },
-  { value: "UNHCR", label: "بطاقة UNHCR" },
-  { value: "OTHER", label: "أخرى" },
+  { value: "NATIONAL_ID", label: "هوية وطنية" }, { value: "PASSPORT", label: "جواز سفر" },
+  { value: "UNHCR", label: "UNHCR" }, { value: "OTHER", label: "أخرى" },
 ];
 const EDUCATION = [
-  { value: "NONE", label: "بدون تعليم" }, { value: "PRIMARY", label: "ابتدائي" },
-  { value: "SECONDARY", label: "ثانوي" }, { value: "UNIVERSITY", label: "جامعي" },
-  { value: "POSTGRADUATE", label: "دراسات عليا" },
+  { value: "ILLITERATE", label: "أمي" }, { value: "PRIMARY", label: "ابتدائي" },
+  { value: "SECONDARY", label: "إعدادي" }, { value: "HIGH_SCHOOL", label: "ثانوي" },
+  { value: "UNIVERSITY", label: "جامعي" }, { value: "POSTGRADUATE", label: "دراسات عليا" },
 ];
 const MARITAL = [
   { value: "SINGLE", label: "أعزب" }, { value: "MARRIED", label: "متزوج" },
   { value: "DIVORCED", label: "مطلق" }, { value: "WIDOWED", label: "أرمل" },
 ];
 const LIVING = [
-  { value: "ALONE", label: "وحده" }, { value: "FAMILY", label: "مع العائلة" },
-  { value: "INSTITUTION", label: "مؤسسة" },
+  { value: "WITH_FAMILY", label: "مع العائلة" }, { value: "INDEPENDENT", label: "مستقل" },
+  { value: "SHELTER_CAMP", label: "مخيم" }, { value: "OTHER", label: "أخرى" },
 ];
 const FINANCIAL = [
-  { value: "LOW", label: "منخفض" },
-  { value: "MODERATE", label: "متوسط" },
-  { value: "GOOD", label: "جيد" },
-  { value: "NOT_WORKING", label: "غير عامل" },
+  { value: "LOW", label: "منخفض" }, { value: "MODERATE", label: "متوسط" },
+  { value: "GOOD", label: "جيد" }, { value: "NOT_WORKING", label: "لا يعمل" },
   { value: "RETIRED", label: "متقاعد" },
 ];
 const CONSENT = [
-  { value: "FULL", label: "موافقة كاملة" }, { value: "ANONYMOUS", label: "مجهولة" }, { value: "NONE", label: "رفض" },
+  { value: "FULL", label: "موافقة كاملة" }, { value: "ANONYMOUS", label: "مجهول" },
+  { value: "NONE", label: "رفض" },
 ];
 
 function FieldError({ msg }: { msg?: string }) {
@@ -84,11 +82,11 @@ function FieldError({ msg }: { msg?: string }) {
 
 export default function EditPatientPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const locale = useLocale();
+  const router  = useRouter();
+  const locale  = useLocale();
 
   const { data: patient, isLoading } = useClinicPatient(id);
-  const { data: cities = [] } = useClinicCities();
+  const { data: cities = [] }        = useClinicCities();
   const updatePatient = useUpdateClinicPatient();
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
@@ -98,55 +96,59 @@ export default function EditPatientPage() {
   useEffect(() => {
     if (!patient) return;
     reset({
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      identityType: patient.identityType,
-      idNumber: patient.idNumber,
-      dateOfBirth: patient.dateOfBirth.slice(0, 10),
-      gender: patient.gender,
-      phone: patient.phone,
-      whatsapp: patient.whatsapp ?? "",
-      email: patient.email ?? "",
-      cityId: patient.cityId?.toString() ?? "",
-      address: patient.address ?? "",
-      height: patient.height ?? "",
-      weight: patient.weight ?? "",
-      educationLevel: patient.educationLevel ?? "",
-      maritalStatus: patient.maritalStatus ?? "",
-      livingStatus: patient.livingStatus ?? "",
+      firstName:       patient.firstName,
+      lastName:        patient.lastName,
+      identityType:    patient.identityType,
+      idNumber:        patient.idNumber,
+      dateOfBirth:     patient.dateOfBirth.slice(0, 10),
+      gender:          patient.gender,
+      phone:           patient.phone,
+      whatsapp:        patient.whatsapp ?? "",
+      email:           patient.email ?? "",
+      cityId:          patient.cityId?.toString() ?? "",
+      addressDetails:  patient.addressDetails ?? "",
+      heightCm:        patient.heightCm ?? "",
+      weightKg:        patient.weightKg ?? "",
+      occupation:      patient.occupation ?? "",
+      educationLevel:  patient.educationLevel ?? "",
+      maritalStatus:   patient.maritalStatus ?? "",
+      livingCondition: patient.livingCondition ?? "",
       financialStatus: patient.financialStatus ?? "",
-      receivesHumanitarianAid: patient.receivesHumanitarianAid ?? false,
-      centerAccessMethod: patient.centerAccessMethod ?? "",
+      receivesAid:     patient.receivesAid ?? false,
+      referralSource:  patient.referralSource ?? "",
+      referralDetails: patient.referralDetails ?? "",
       documentConsent: patient.documentConsent ?? "FULL",
-      mediaConsent: patient.mediaConsent ?? true,
-      notes: patient.notes ?? "",
+      mediaConsent:    patient.mediaConsent ?? true,
+      notes:           patient.notes ?? "",
     });
   }, [patient, reset]);
 
   const onSubmit = async (values: FormValues) => {
     const dto: UpdatePatientDto = {
-      firstName: values.firstName,
-      lastName: values.lastName,
-      identityType: values.identityType,
-      idNumber: values.idNumber,
-      dateOfBirth: values.dateOfBirth,
-      gender: values.gender,
-      phone: values.phone,
-      whatsapp: values.whatsapp || undefined,
-      email: values.email || undefined,
-      cityId: values.cityId ? parseInt(values.cityId) : undefined,
-      address: values.address || undefined,
-      height: values.height ? Number(values.height) : undefined,
-      weight: values.weight ? Number(values.weight) : undefined,
-      educationLevel: (values.educationLevel as any) || undefined,
-      maritalStatus: (values.maritalStatus as any) || undefined,
-      livingStatus: (values.livingStatus as any) || undefined,
+      firstName:       values.firstName,
+      lastName:        values.lastName,
+      identityType:    values.identityType,
+      idNumber:        values.idNumber,
+      dateOfBirth:     values.dateOfBirth,
+      gender:          values.gender,
+      phone:           values.phone,
+      whatsapp:        values.whatsapp || undefined,
+      email:           values.email || undefined,
+      cityId:          values.cityId ? parseInt(values.cityId) : undefined,
+      addressDetails:  values.addressDetails || undefined,
+      heightCm:        values.heightCm ? Number(values.heightCm) : undefined,
+      weightKg:        values.weightKg ? Number(values.weightKg) : undefined,
+      occupation:      values.occupation || undefined,
+      educationLevel:  (values.educationLevel as any) || undefined,
+      maritalStatus:   (values.maritalStatus as any) || undefined,
+      livingCondition: (values.livingCondition as any) || undefined,
       financialStatus: (values.financialStatus as any) || undefined,
-      receivesHumanitarianAid: values.receivesHumanitarianAid,
-      centerAccessMethod: values.centerAccessMethod || undefined,
+      receivesAid:     values.receivesAid,
+      referralSource:  values.referralSource || undefined,
+      referralDetails: values.referralDetails || undefined,
       documentConsent: values.documentConsent || undefined,
-      mediaConsent: values.mediaConsent,
-      notes: values.notes || undefined,
+      mediaConsent:    values.mediaConsent,
+      notes:           values.notes || undefined,
     };
     await updatePatient.mutateAsync({ id, dto });
     router.push(`/${locale}/clinic/patients/${id}`);
@@ -160,14 +162,10 @@ export default function EditPatientPage() {
       </div>
     );
   }
-
-  if (!patient) {
-    return <div className="text-center py-20 text-muted-foreground">المريض غير موجود</div>;
-  }
+  if (!patient) return <div className="text-center py-20 text-muted-foreground">المريض غير موجود</div>;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => router.push(`/${locale}/clinic/patients/${id}`)}>
           <ArrowRight className="h-4 w-4" />
@@ -179,7 +177,7 @@ export default function EditPatientPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Section 1: Basic */}
+        {/* Basic */}
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">المعلومات الأساسية</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -228,10 +226,14 @@ export default function EditPatientPage() {
                 </Select>
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label>المهنة / Occupation</Label>
+              <Input {...register("occupation")} placeholder="مهندس، معلم، ربة منزل..." />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Section 2: Contact */}
+        {/* Contact */}
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">التواصل والموقع</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -254,42 +256,39 @@ export default function EditPatientPage() {
             <div className="space-y-1.5">
               <Label>المدينة</Label>
               <Select value={watch("cityId") ?? ""} onValueChange={(v) => setValue("cityId", v)}>
-                <SelectTrigger><SelectValue placeholder="اختر المدينة" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
                 <SelectContent>
-                  {cities.map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                  ))}
+                  {cities.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>العنوان التفصيلي</Label>
-              <Textarea rows={2} {...register("address")} />
+              <Label>تفاصيل العنوان</Label>
+              <Textarea rows={2} {...register("addressDetails")} />
             </div>
           </CardContent>
         </Card>
 
-        {/* Section 3: Social */}
+        {/* Social */}
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">البيانات الاجتماعية</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>الطول (سم)</Label>
-                <Input type="number" {...register("height")} />
+                <Input type="number" {...register("heightCm")} />
               </div>
               <div className="space-y-1.5">
                 <Label>الوزن (كغ)</Label>
-                <Input type="number" {...register("weight")} />
+                <Input type="number" {...register("weightKg")} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>المستوى التعليمي</Label>
                 <Select value={watch("educationLevel") ?? ""} onValueChange={(v) => setValue("educationLevel", v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">غير محدد</SelectItem>
                     {EDUCATION.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -297,9 +296,8 @@ export default function EditPatientPage() {
               <div className="space-y-1.5">
                 <Label>الحالة الاجتماعية</Label>
                 <Select value={watch("maritalStatus") ?? ""} onValueChange={(v) => setValue("maritalStatus", v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">غير محدد</SelectItem>
                     {MARITAL.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -308,45 +306,47 @@ export default function EditPatientPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>وضع السكن</Label>
-                <Select value={watch("livingStatus") ?? ""} onValueChange={(v) => setValue("livingStatus", v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                <Select value={watch("livingCondition") ?? ""} onValueChange={(v) => setValue("livingCondition", v)}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">غير محدد</SelectItem>
                     {LIVING.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>الوضع المادي</Label>
+                <Label>الوضع المالي</Label>
                 <Select value={watch("financialStatus") ?? ""} onValueChange={(v) => setValue("financialStatus", v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">غير محدد</SelectItem>
                     {FINANCIAL.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>طريقة الوصول للمركز</Label>
-              <Input {...register("centerAccessMethod")} />
+              <Label>مصدر الإحالة</Label>
+              <Input {...register("referralSource")} placeholder="طبيب، مستشفى..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label>تفاصيل الإحالة</Label>
+              <Input {...register("referralDetails")} />
             </div>
             <div className="flex items-center gap-3">
               <Switch
-                checked={watch("receivesHumanitarianAid") ?? false}
-                onCheckedChange={(v) => setValue("receivesHumanitarianAid", v)}
+                checked={watch("receivesAid") ?? false}
+                onCheckedChange={(v) => setValue("receivesAid", v)}
               />
               <Label>يتلقى مساعدات إنسانية</Label>
             </div>
           </CardContent>
         </Card>
 
-        {/* Section 4: Consent & notes */}
+        {/* Consent */}
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">الموافقات والملاحظات</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label>الموافقة على توثيق البيانات</Label>
+              <Label>موافقة الوثائق</Label>
               <Select value={watch("documentConsent") ?? "FULL"} onValueChange={(v) => setValue("documentConsent", v as any)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -355,11 +355,8 @@ export default function EditPatientPage() {
               </Select>
             </div>
             <div className="flex items-center gap-3">
-              <Switch
-                checked={watch("mediaConsent") ?? true}
-                onCheckedChange={(v) => setValue("mediaConsent", v)}
-              />
-              <Label>الموافقة على استخدام الوسائط</Label>
+              <Switch checked={watch("mediaConsent") ?? true} onCheckedChange={(v) => setValue("mediaConsent", v)} />
+              <Label>موافقة على الوسائط</Label>
             </div>
             <div className="space-y-1.5">
               <Label>ملاحظات</Label>
@@ -368,7 +365,6 @@ export default function EditPatientPage() {
           </CardContent>
         </Card>
 
-        {/* Actions */}
         <div className="flex justify-between pb-6">
           <Button type="button" variant="outline" onClick={() => router.push(`/${locale}/clinic/patients/${id}`)}>
             إلغاء

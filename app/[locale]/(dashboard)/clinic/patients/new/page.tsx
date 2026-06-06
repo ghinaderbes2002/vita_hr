@@ -18,42 +18,45 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useCreateClinicPatient, useCheckDuplicate } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCitiesByGovernorate } from "@/lib/hooks/use-clinic-cities";
-import { CreatePatientDto, IdentityType } from "@/lib/api/clinic-patients";
+import { clinicPatientsApi } from "@/lib/api/clinic-patients";
+import { CreatePatientDto, IdentityType, ConsentOption } from "@/lib/api/clinic-patients";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
 const step1Schema = z.object({
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
+  firstName:    z.string().min(2),
+  lastName:     z.string().min(2),
   identityType: z.enum(["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"]),
-  idNumber: z.string().min(5),
-  dateOfBirth: z.string().min(1),
-  gender: z.enum(["MALE", "FEMALE"]),
+  idNumber:     z.string().min(5),
+  dateOfBirth:  z.string().min(1),
+  gender:       z.enum(["MALE", "FEMALE"]),
+  occupation:   z.string().optional(),
 });
 
 const step2Schema = z.object({
-  phone: z.string().min(7),
+  phone:    z.string().min(7),
   whatsapp: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
-  cityId: z.string().optional(),
-  address: z.string().optional(),
+  email:    z.string().email().optional().or(z.literal("")),
+  cityId:   z.string().optional(),
+  addressDetails: z.string().optional(),
 });
 
 const step3Schema = z.object({
-  height: z.union([z.coerce.number().min(50).max(250), z.literal("")]).optional(),
-  weight: z.union([z.coerce.number().min(10).max(300), z.literal("")]).optional(),
-  educationLevel: z.string().optional(),
-  maritalStatus: z.string().optional(),
-  livingStatus: z.string().optional(),
+  heightCm:        z.union([z.coerce.number().min(50).max(250), z.literal("")]).optional(),
+  weightKg:        z.union([z.coerce.number().min(10).max(300), z.literal("")]).optional(),
+  educationLevel:  z.string().optional(),
+  maritalStatus:   z.string().optional(),
+  livingCondition: z.string().optional(),
   financialStatus: z.string().optional(),
-  receivesHumanitarianAid: z.boolean().optional(),
-  centerAccessMethod: z.string().optional(),
+  receivesAid:     z.boolean().optional(),
+  referralSource:  z.enum(["SELF","RELATIVES","SOCIAL_MEDIA","MEDICAL_REFERRAL","OTHER",""]).optional(),
+  referralDetails: z.string().optional(),
 });
 
 const step4Schema = z.object({
   documentConsent: z.enum(["FULL", "ANONYMOUS", "NONE"]).optional(),
-  mediaConsent: z.boolean().optional(),
-  notes: z.string().optional(),
+  mediaConsent:    z.boolean().optional(),
+  notes:           z.string().optional(),
 });
 
 type Step1 = z.infer<typeof step1Schema>;
@@ -61,19 +64,58 @@ type Step2 = z.infer<typeof step2Schema>;
 type Step3 = z.infer<typeof step3Schema>;
 type Step4 = z.infer<typeof step4Schema>;
 
-const IDENTITY_TYPE_VALUES = ["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"] as const;
-const EDUCATION_VALUES = ["NONE", "PRIMARY", "SECONDARY", "UNIVERSITY", "POSTGRADUATE"] as const;
-const MARITAL_VALUES = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as const;
-const LIVING_VALUES = ["ALONE", "FAMILY", "INSTITUTION"] as const;
-const FINANCIAL_VALUES = ["LOW", "MODERATE", "GOOD", "NOT_WORKING", "RETIRED"] as const;
-const CONSENT_VALUES = ["FULL", "ANONYMOUS", "NONE"] as const;
+const IDENTITY_TYPE_VALUES  = ["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"] as const;
+const EDUCATION_VALUES      = ["ILLITERATE", "PRIMARY", "SECONDARY", "HIGH_SCHOOL", "UNIVERSITY", "POSTGRADUATE"] as const;
+const MARITAL_VALUES        = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as const;
+const LIVING_VALUES         = ["WITH_FAMILY", "INDEPENDENT", "SHELTER_CAMP", "OTHER"] as const;
+const FINANCIAL_VALUES      = ["LOW", "MODERATE", "GOOD", "NOT_WORKING", "RETIRED"] as const;
+const CONSENT_VALUES        = ["FULL", "ANONYMOUS", "NONE"] as const;
+
+const EDUCATION_LABELS: Record<string, string> = {
+  ILLITERATE:   "أمي",
+  PRIMARY:      "ابتدائي",
+  SECONDARY:    "إعدادي",
+  HIGH_SCHOOL:  "ثانوي",
+  UNIVERSITY:   "جامعي",
+  POSTGRADUATE: "دراسات عليا",
+};
+const LIVING_LABELS: Record<string, string> = {
+  WITH_FAMILY:  "مع العائلة",
+  INDEPENDENT:  "مستقل",
+  SHELTER_CAMP: "مخيم",
+  OTHER:        "أخرى",
+};
+const FINANCIAL_LABELS: Record<string, string> = {
+  LOW:         "منخفض",
+  MODERATE:    "متوسط",
+  GOOD:        "جيد",
+  NOT_WORKING: "لا يعمل",
+  RETIRED:     "متقاعد",
+};
+const MARITAL_LABELS: Record<string, string> = {
+  SINGLE:   "أعزب",
+  MARRIED:  "متزوج",
+  DIVORCED: "مطلق",
+  WIDOWED:  "أرمل",
+};
+const IDENTITY_LABELS: Record<string, string> = {
+  NATIONAL_ID: "هوية وطنية",
+  PASSPORT:    "جواز سفر",
+  UNHCR:       "بطاقة UNHCR",
+  OTHER:       "أخرى",
+};
+const CONSENT_LABELS: Record<string, string> = {
+  FULL:      "موافقة كاملة",
+  ANONYMOUS: "مجهول الهوية",
+  NONE:      "رفض",
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function NewPatientPage() {
-  const router = useRouter();
-  const locale = useLocale();
-  const t = useTranslations("clinic.patients.new");
+  const router  = useRouter();
+  const locale  = useLocale();
+  const t       = useTranslations("clinic.patients.new");
   const tCommon = useTranslations("clinic.common");
 
   const [step, setStep] = useState(0);
@@ -81,7 +123,6 @@ export default function NewPatientPage() {
   const [s2, setS2] = useState<Partial<Step2>>({});
   const [s3, setS3] = useState<Partial<Step3>>({});
   const [s4, setS4] = useState<Partial<Step4>>({});
-
   const [selectedGovernorate, setSelectedGovernorate] = useState("");
 
   const createPatient = useCreateClinicPatient();
@@ -92,17 +133,17 @@ export default function NewPatientPage() {
 
   const form1 = useForm<Step1>({
     resolver: zodResolver(step1Schema) as any,
-    defaultValues: { firstName: "", lastName: "", identityType: "NATIONAL_ID", idNumber: "", dateOfBirth: "", gender: "MALE", ...s1 },
+    defaultValues: { firstName: "", lastName: "", identityType: "NATIONAL_ID", idNumber: "", dateOfBirth: "", gender: "MALE", occupation: "", ...s1 },
   });
 
   const form2 = useForm<Step2>({
     resolver: zodResolver(step2Schema) as any,
-    defaultValues: { phone: "", whatsapp: "", email: "", cityId: "", address: "", ...s2 },
+    defaultValues: { phone: "", whatsapp: "", email: "", cityId: "", addressDetails: "", ...s2 },
   });
 
   const form3 = useForm<Step3>({
     resolver: zodResolver(step3Schema) as any,
-    defaultValues: { receivesHumanitarianAid: false, ...s3 },
+    defaultValues: { receivesAid: false, referralSource: "", referralDetails: "", ...s3 },
   });
 
   const form4 = useForm<Step4>({
@@ -136,46 +177,68 @@ export default function NewPatientPage() {
     setS4(v4);
 
     const dto: CreatePatientDto = {
-      firstName: s1.firstName!,
-      lastName: s1.lastName!,
-      identityType: s1.identityType! as IdentityType,
-      idNumber: s1.idNumber!,
-      dateOfBirth: s1.dateOfBirth!,
-      gender: s1.gender!,
-      phone: s2.phone!,
-      whatsapp: s2.whatsapp || undefined,
-      email: s2.email || undefined,
-      cityId: s2.cityId ? parseInt(s2.cityId) : undefined,
-      address: s2.address || undefined,
-      height: s3.height ? Number(s3.height) : undefined,
-      weight: s3.weight ? Number(s3.weight) : undefined,
-      educationLevel: (s3.educationLevel as any) || undefined,
-      maritalStatus: (s3.maritalStatus as any) || undefined,
-      livingStatus: (s3.livingStatus as any) || undefined,
+      firstName:       s1.firstName!,
+      lastName:        s1.lastName!,
+      identityType:    s1.identityType! as IdentityType,
+      idNumber:        s1.idNumber!,
+      dateOfBirth:     s1.dateOfBirth!,
+      gender:          s1.gender!,
+      occupation:      s1.occupation || undefined,
+      phone:           s2.phone!,
+      whatsapp:        s2.whatsapp || undefined,
+      email:           s2.email || undefined,
+      cityId:          s2.cityId ? parseInt(s2.cityId) : undefined,
+      addressDetails:  s2.addressDetails || undefined,
+      heightCm:        s3.heightCm ? Number(s3.heightCm) : undefined,
+      weightKg:        s3.weightKg ? Number(s3.weightKg) : undefined,
+      educationLevel:  (s3.educationLevel as any) || undefined,
+      maritalStatus:   (s3.maritalStatus as any) || undefined,
+      livingCondition: (s3.livingCondition as any) || undefined,
       financialStatus: (s3.financialStatus as any) || undefined,
-      receivesHumanitarianAid: s3.receivesHumanitarianAid,
-      centerAccessMethod: s3.centerAccessMethod || undefined,
-      documentConsent: (v4.documentConsent as any) || undefined,
-      mediaConsent: v4.mediaConsent,
-      notes: v4.notes || undefined,
+      receivesAid:     s3.receivesAid,
+      referralSource:  s3.referralSource || undefined,
+      referralDetails: s3.referralDetails || undefined,
     };
 
     const patient = await createPatient.mutateAsync(dto);
+
+    // Consent created separately via POST /patients/:id/consents
+    if (v4.documentConsent || v4.mediaConsent != null) {
+      try {
+        await clinicPatientsApi.createConsent(patient.id, {
+          documentConsent: (v4.documentConsent as ConsentOption) ?? "FULL",
+          mediaConsent:    v4.mediaConsent ?? true,
+        });
+      } catch {
+        // consent failure is non-blocking
+      }
+    }
+    // Notes via POST /patients/:id/notes
+    if (v4.notes?.trim()) {
+      try {
+        await clinicPatientsApi.createNote(patient.id, v4.notes.trim());
+      } catch {
+        // note failure is non-blocking
+      }
+    }
+
     router.push(`/${locale}/clinic/patients/${patient.id}`);
   };
 
   const isDuplicate = dupData?.exists && idNumber.length >= 7;
 
-  const STEPS = [0, 1, 2, 3].map((i) => ({
-    label: t(`steps.${i}.label`),
-    desc: t(`steps.${i}.desc`),
-  }));
+  const STEPS = [
+    { label: "المعلومات الأساسية", desc: "الاسم والهوية وتاريخ الميلاد" },
+    { label: "التواصل والعنوان",   desc: "الهاتف والبريد والموقع" },
+    { label: "البيانات الاجتماعية", desc: "المستوى التعليمي والوضع المعيشي" },
+    { label: "الموافقة والملاحظات", desc: "الموافقات والملاحظات الإضافية" },
+  ];
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm mt-1">{t("subtitle")}</p>
+        <h1 className="text-2xl font-bold">تسجيل مريض جديد</h1>
+        <p className="text-muted-foreground text-sm mt-1">أدخل بيانات المريض عبر الخطوات التالية</p>
       </div>
 
       {/* Stepper */}
@@ -185,9 +248,9 @@ export default function NewPatientPage() {
             <div className="flex flex-col items-center gap-1 flex-1">
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors",
-                i < step ? "bg-primary border-primary text-primary-foreground"
-                  : i === step ? "border-primary text-primary"
-                    : "border-muted-foreground/30 text-muted-foreground",
+                i < step  ? "bg-primary border-primary text-primary-foreground"
+                : i === step ? "border-primary text-primary"
+                : "border-muted-foreground/30 text-muted-foreground",
               )}>
                 {i < step ? <Check className="h-4 w-4" /> : i + 1}
               </div>
@@ -215,130 +278,102 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.firstName")} <span className="text-destructive">*</span></Label>
+                  <Label>الاسم الأول <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("firstName")} />
-                  {form1.formState.errors.firstName && (
-                    <p className="text-xs text-destructive">{t("validation.firstNameRequired")}</p>
-                  )}
+                  {form1.formState.errors.firstName && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.lastName")} <span className="text-destructive">*</span></Label>
+                  <Label>الاسم الأخير <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("lastName")} />
-                  {form1.formState.errors.lastName && (
-                    <p className="text-xs text-destructive">{t("validation.lastNameRequired")}</p>
-                  )}
+                  {form1.formState.errors.lastName && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.identityType")} <span className="text-destructive">*</span></Label>
+                  <Label>نوع الهوية <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("identityType")} onValueChange={(v) => form1.setValue("identityType", v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {IDENTITY_TYPE_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{t(`identityTypes.${v}`)}</SelectItem>
+                        <SelectItem key={v} value={v}>{IDENTITY_LABELS[v]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.idNumber")} <span className="text-destructive">*</span></Label>
+                  <Label>رقم الهوية <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("idNumber")} />
-                  {form1.formState.errors.idNumber && (
-                    <p className="text-xs text-destructive">{t("validation.idNumberRequired")}</p>
-                  )}
+                  {form1.formState.errors.idNumber && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
               </div>
               {isDuplicate && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    {t("duplicate.message")}{" "}
-                    <button
-                      type="button"
-                      className="underline font-medium"
-                      onClick={() => router.push(`/${locale}/clinic/patients/${dupData?.patientId}`)}
-                    >
-                      {t("duplicate.viewFile")}
+                    يوجد مريض بهذا الرقم.{" "}
+                    <button type="button" className="underline font-medium" onClick={() => router.push(`/${locale}/clinic/patients/${dupData?.patientId}`)}>
+                      عرض الملف
                     </button>
                   </AlertDescription>
                 </Alert>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.dateOfBirth")} <span className="text-destructive">*</span></Label>
+                  <Label>تاريخ الميلاد <span className="text-destructive">*</span></Label>
                   <Input type="date" {...form1.register("dateOfBirth")} />
-                  {form1.formState.errors.dateOfBirth && (
-                    <p className="text-xs text-destructive">{t("validation.dobRequired")}</p>
-                  )}
+                  {form1.formState.errors.dateOfBirth && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.gender")} <span className="text-destructive">*</span></Label>
+                  <Label>الجنس <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("gender")} onValueChange={(v) => form1.setValue("gender", v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MALE">{tCommon("gender.MALE")}</SelectItem>
-                      <SelectItem value="FEMALE">{tCommon("gender.FEMALE")}</SelectItem>
+                      <SelectItem value="MALE">ذكر</SelectItem>
+                      <SelectItem value="FEMALE">أنثى</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>المهنة / Occupation</Label>
+                <Input {...form1.register("occupation")} placeholder="مثال: مهندس، معلم، ربة منزل..." />
               </div>
             </div>
           )}
 
-          {/* Step 2: Contact & location */}
+          {/* Step 2: Contact */}
           {step === 1 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.phone")} <span className="text-destructive">*</span></Label>
+                  <Label>رقم الهاتف <span className="text-destructive">*</span></Label>
                   <Input dir="ltr" {...form2.register("phone")} placeholder="+963..." />
-                  {form2.formState.errors.phone && (
-                    <p className="text-xs text-destructive">{t("validation.phoneRequired")}</p>
-                  )}
+                  {form2.formState.errors.phone && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.whatsapp")}</Label>
+                  <Label>واتساب</Label>
                   <Input dir="ltr" {...form2.register("whatsapp")} placeholder="+963..." />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("fields.email")}</Label>
+                <Label>البريد الإلكتروني</Label>
                 <Input dir="ltr" type="email" {...form2.register("email")} placeholder="email@example.com" />
-                {form2.formState.errors.email && (
-                  <p className="text-xs text-destructive">{t("validation.invalidEmail")}</p>
-                )}
+                {form2.formState.errors.email && <p className="text-xs text-destructive">بريد غير صالح</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.governorate")}</Label>
-                  <Select
-                    value={selectedGovernorate}
-                    onValueChange={(v) => {
-                      setSelectedGovernorate(v);
-                      form2.setValue("cityId", "");
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("fields.governoratePlaceholder")} />
-                    </SelectTrigger>
+                  <Label>المحافظة</Label>
+                  <Select value={selectedGovernorate} onValueChange={(v) => { setSelectedGovernorate(v); form2.setValue("cityId", ""); }}>
+                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
                     <SelectContent>
-                      {governorates.map((g) => (
-                        <SelectItem key={g.name} value={g.name}>{g.name}</SelectItem>
-                      ))}
+                      {governorates.map((g) => <SelectItem key={g.name} value={g.name}>{g.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.city")}</Label>
-                  <Select
-                    value={form2.watch("cityId") ?? ""}
-                    onValueChange={(v) => form2.setValue("cityId", v)}
-                    disabled={!selectedGovernorate}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={selectedGovernorate ? t("fields.cityPlaceholder") : "—"} />
-                    </SelectTrigger>
+                  <Label>المدينة</Label>
+                  <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)} disabled={!selectedGovernorate}>
+                    <SelectTrigger><SelectValue placeholder={selectedGovernorate ? "اختر..." : "—"} /></SelectTrigger>
                     <SelectContent>
                       {(governorates.find((g) => g.name === selectedGovernorate)?.cities ?? []).map((c) => (
                         <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
@@ -348,8 +383,8 @@ export default function NewPatientPage() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("fields.address")}</Label>
-                <Textarea rows={2} {...form2.register("address")} placeholder={t("fields.addressPlaceholder")} />
+                <Label>تفاصيل العنوان</Label>
+                <Textarea rows={2} {...form2.register("addressDetails")} placeholder="الحي، الشارع، رقم المنزل..." />
               </div>
             </div>
           )}
@@ -359,72 +394,68 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.height")}</Label>
-                  <Input type="number" {...form3.register("height")} placeholder="170" />
+                  <Label>الطول (سم)</Label>
+                  <Input type="number" {...form3.register("heightCm")} placeholder="170" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.weight")}</Label>
-                  <Input type="number" {...form3.register("weight")} placeholder="70" />
+                  <Label>الوزن (كغ)</Label>
+                  <Input type="number" {...form3.register("weightKg")} placeholder="70" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.educationLevel")}</Label>
+                  <Label>المستوى التعليمي</Label>
                   <Select value={form3.watch("educationLevel") ?? ""} onValueChange={(v) => form3.setValue("educationLevel", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {EDUCATION_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{t(`education.${v}`)}</SelectItem>
-                      ))}
+                      {EDUCATION_VALUES.map((v) => <SelectItem key={v} value={v}>{EDUCATION_LABELS[v]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.maritalStatus")}</Label>
+                  <Label>الحالة الاجتماعية</Label>
                   <Select value={form3.watch("maritalStatus") ?? ""} onValueChange={(v) => form3.setValue("maritalStatus", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {MARITAL_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{t(`marital.${v}`)}</SelectItem>
-                      ))}
+                      {MARITAL_VALUES.map((v) => <SelectItem key={v} value={v}>{MARITAL_LABELS[v]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.livingStatus")}</Label>
-                  <Select value={form3.watch("livingStatus") ?? ""} onValueChange={(v) => form3.setValue("livingStatus", v)}>
+                  <Label>وضع السكن</Label>
+                  <Select value={form3.watch("livingCondition") ?? ""} onValueChange={(v) => form3.setValue("livingCondition", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {LIVING_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{t(`living.${v}`)}</SelectItem>
-                      ))}
+                      {LIVING_VALUES.map((v) => <SelectItem key={v} value={v}>{LIVING_LABELS[v]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.financialStatus")}</Label>
+                  <Label>الوضع المالي</Label>
                   <Select value={form3.watch("financialStatus") ?? ""} onValueChange={(v) => form3.setValue("financialStatus", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {FINANCIAL_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{t(`financial.${v}`)}</SelectItem>
-                      ))}
+                      {FINANCIAL_VALUES.map((v) => <SelectItem key={v} value={v}>{FINANCIAL_LABELS[v]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("fields.centerAccessMethod")}</Label>
-                <Input {...form3.register("centerAccessMethod")} placeholder={t("fields.centerAccessPlaceholder")} />
+                <Label>مصدر الإحالة</Label>
+                <Input {...form3.register("referralSource")} placeholder="مثال: طبيب، مستشفى، وكالة إغاثة..." />
+              </div>
+              <div className="space-y-1.5">
+                <Label>تفاصيل الإحالة</Label>
+                <Input {...form3.register("referralDetails")} placeholder="تفاصيل إضافية..." />
               </div>
               <div className="flex items-center gap-3 pt-1">
                 <Switch
-                  checked={form3.watch("receivesHumanitarianAid") ?? false}
-                  onCheckedChange={(v) => form3.setValue("receivesHumanitarianAid", v)}
+                  checked={form3.watch("receivesAid") ?? false}
+                  onCheckedChange={(v) => form3.setValue("receivesAid", v)}
                 />
-                <Label>{t("fields.receivesHumanitarianAid")}</Label>
+                <Label>يتلقى مساعدة إنسانية</Label>
               </div>
             </div>
           )}
@@ -433,13 +464,11 @@ export default function NewPatientPage() {
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>{t("fields.documentConsent")}</Label>
+                <Label>موافقة الوثائق</Label>
                 <Select value={form4.watch("documentConsent") ?? "FULL"} onValueChange={(v) => form4.setValue("documentConsent", v as any)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CONSENT_VALUES.map((v) => (
-                      <SelectItem key={v} value={v}>{t(`consent.${v}`)}</SelectItem>
-                    ))}
+                    {CONSENT_VALUES.map((v) => <SelectItem key={v} value={v}>{CONSENT_LABELS[v]}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -448,21 +477,21 @@ export default function NewPatientPage() {
                   checked={form4.watch("mediaConsent") ?? true}
                   onCheckedChange={(v) => form4.setValue("mediaConsent", v)}
                 />
-                <Label>{t("fields.mediaConsent")}</Label>
+                <Label>موافقة على استخدام الصور/الوسائط</Label>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("fields.notes")}</Label>
-                <Textarea rows={3} {...form4.register("notes")} placeholder={t("fields.notesPlaceholder")} />
+                <Label>ملاحظات</Label>
+                <Textarea rows={3} {...form4.register("notes")} placeholder="ملاحظات إضافية..." />
               </div>
 
               {/* Summary */}
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
-                <p className="font-semibold">{t("summary.title")}</p>
+                <p className="font-semibold">ملخص البيانات</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
-                  <span>{t("summary.name")}:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
-                  <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{s1.idNumber}</span>
-                  <span>{t("summary.phone")}:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
-                  {s2.cityId && <><span>{t("summary.city")}:</span><span className="text-foreground">{s2.cityId}</span></>}
+                  <span>الاسم:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
+                  <span>رقم الهوية:</span><span className="text-foreground font-mono">{s1.idNumber}</span>
+                  <span>الهاتف:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
+                  {s1.occupation && <><span>المهنة:</span><span className="text-foreground">{s1.occupation}</span></>}
                 </div>
               </div>
             </div>
@@ -475,16 +504,16 @@ export default function NewPatientPage() {
       <div className="flex justify-between">
         <Button variant="outline" onClick={step === 0 ? () => router.back() : prevStep}>
           <ChevronRight className="h-4 w-4 ml-1" />
-          {step === 0 ? t("nav.cancel") : t("nav.prev")}
+          {step === 0 ? "إلغاء" : "السابق"}
         </Button>
         {step < 3 ? (
           <Button onClick={nextStep} disabled={isDuplicate && step === 0}>
-            {t("nav.next")}
+            التالي
             <ChevronLeft className="h-4 w-4 mr-1" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={createPatient.isPending}>
-            {createPatient.isPending ? t("nav.saving") : t("nav.save")}
+            {createPatient.isPending ? "جاري الحفظ..." : "حفظ المريض"}
             <Check className="h-4 w-4 mr-1" />
           </Button>
         )}

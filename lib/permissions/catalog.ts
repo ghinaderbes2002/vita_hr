@@ -239,6 +239,7 @@ export const PERMISSIONS = {
     CASE_VIEW:         "clinic.physio.case.view",
     CASE_CREATE:       "clinic.physio.case.create",
     ASSESSMENT_CREATE: "clinic.physio.assessment.create",
+    SUPERVISOR_REVIEW: "clinic.physio.supervisor_review",
     PLAN_SIGN:         "clinic.physio.plan.sign",
     SESSIONS_CREATE:   "clinic.physio.sessions.create",
   },

@@ -2,12 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   clinicPhysioApi,
   CreatePhysioCaseDto,
+  UpdatePhysioCaseDto,
   PhysioStatus,
   PainMapDto,
   MedicalHistoryDto,
+  SurgeryDto,
   GoalsDto,
   PosturalAssessmentDto,
   TreatmentPlanDto,
+  SupervisorReviewDto,
   CreatePhysioSessionDto,
   PhysioCaseListParams,
 } from "@/lib/api/clinic-physio";
@@ -49,6 +52,22 @@ export function useCreatePhysioCase() {
   });
 }
 
+export function useUpdatePhysioCase() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: UpdatePhysioCaseDto }) =>
+      clinicPhysioApi.update(id, dto),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", data.id] });
+      toast.success("تم الحفظ");
+    },
+    onError: (e: any) => {
+      const msg = e?.response?.data?.message;
+      toast.error(msg || "فشل الحفظ");
+    },
+  });
+}
+
 export function useUpdatePhysioStatus() {
   const qc = useQueryClient();
   return useMutation({
@@ -58,7 +77,16 @@ export function useUpdatePhysioStatus() {
       qc.invalidateQueries({ queryKey: ["clinic-physio-case", data.id] });
       qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تغيير الحالة"),
+    onError: (e: any) => {
+      const errCode = e?.response?.data?.errorCode;
+      const msg     = e?.response?.data?.message;
+      if (errCode === "INVALID_TRANSITION") {
+        const { from, to, allowed } = e?.response?.data?.meta ?? {};
+        toast.error(`لا يمكن الانتقال من ${from ?? "?"} إلى ${to ?? "?"}${allowed ? ` (المسموح: ${allowed.join(", ")})` : ""}`);
+      } else {
+        toast.error(msg || "فشل تغيير الحالة");
+      }
+    },
   });
 }
 
@@ -75,19 +103,6 @@ export function useSubmitPainMap() {
   });
 }
 
-export function useUpdatePainMap() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, dto }: { id: string; dto: PainMapDto }) =>
-      clinicPhysioApi.updatePainMap(id, dto),
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
-      toast.success("تم تحديث خريطة الألم");
-    },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحديث"),
-  });
-}
-
 export function useSubmitMedicalHistory() {
   const qc = useQueryClient();
   return useMutation({
@@ -98,6 +113,18 @@ export function useSubmitMedicalHistory() {
       toast.success("تم حفظ التاريخ الطبي");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useAddPhysioSurgery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: SurgeryDto }) =>
+      clinicPhysioApi.addSurgery(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حفظ الجراحة"),
   });
 }
 
@@ -140,16 +167,35 @@ export function useSubmitTreatmentPlan() {
   });
 }
 
+export function useSupervisorReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: SupervisorReviewDto }) =>
+      clinicPhysioApi.supervisorReview(id, dto),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", data.id] });
+      toast.success("تم اعتماد نظرة رئيس القسم");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الاعتماد"),
+  });
+}
+
 export function useSignPhysioTreatmentPlan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, signatureBase64 }: { id: string; signatureBase64: string }) =>
       clinicPhysioApi.signTreatmentPlan(id, signatureBase64),
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", (data as any).id ?? ""] });
+      qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
       toast.success("تم توقيع خطة العلاج");
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التوقيع"),
+    onError: (e: any) => {
+      const errCode = e?.response?.data?.errorCode;
+      if (errCode === "ALREADY_SIGNED")       toast.error("الخطة موقّعة مسبقاً ولا يمكن استبدالها");
+      else if (errCode === "NOT_ASSIGNED_SIGNER") toast.error("التوقيع متاح فقط للطبيب المشرف المعيّن");
+      else toast.error(e?.response?.data?.message || "فشل التوقيع");
+    },
   });
 }
 
@@ -170,7 +216,11 @@ export function useAddPhysioSession() {
       qc.invalidateQueries({ queryKey: ["clinic-physio-sessions", id] });
       toast.success("تمت إضافة الجلسة");
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة الجلسة"),
+    onError: (e: any) => {
+      const errCode = e?.response?.data?.errorCode;
+      if (errCode === "DOCTOR_SIGNATURE_REQUIRED") toast.error("يجب توقيع الطبيب قبل بدء الجلسات");
+      else toast.error(e?.response?.data?.message || "فشل إضافة الجلسة");
+    },
   });
 }
 
