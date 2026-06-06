@@ -25,10 +25,11 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import {
   useClinicPatient, useDeleteClinicPatient,
-  usePatientDocuments, useDeletePatientDocument,
+  usePatientDocuments, useUploadPatientDocument, useDeletePatientDocument,
   usePatientNotes, useCreatePatientNote,
   usePatientConsents,
 } from "@/lib/hooks/use-clinic-patients";
+import { DocumentType } from "@/lib/api/clinic-patients";
 import { useProstheticsCasesByPatient, useCreateProstheticsCase } from "@/lib/hooks/use-clinic-prosthetics";
 import { usePhysioCasesByPatient, useCreatePhysioCase } from "@/lib/hooks/use-clinic-physio";
 import { ProstheticsCase, AmputationType, AmputationSide } from "@/lib/api/clinic-prosthetics";
@@ -40,7 +41,14 @@ const EDUCATION_LABEL: Record<string, string> = { NONE: "بدون تعليم", P
 const MARITAL_LABEL: Record<string, string> = { SINGLE: "أعزب", MARRIED: "متزوج", DIVORCED: "مطلق", WIDOWED: "أرمل" };
 const FINANCIAL_LABEL: Record<string, string> = { LOW: "منخفض", MODERATE: "متوسط", GOOD: "جيد", NOT_WORKING: "غير عامل", RETIRED: "متقاعد" };
 const CONSENT_LABEL: Record<string, string> = { FULL: "موافقة كاملة", ANONYMOUS: "مجهولة", NONE: "رفض" };
-const DOC_TYPE_LABEL: Record<string, string> = { ID_FRONT: "هوية (أمام)", ID_BACK: "هوية (خلف)", PHOTO: "صورة شخصية", OTHER: "أخرى" };
+const DOC_TYPE_LABEL: Record<string, string> = {
+  ID_COPY:             "نسخة هوية",
+  PERSONAL_PHOTO:      "صورة شخصية",
+  AMPUTATION_PHOTO:    "صورة البتر",
+  RESIDUAL_LIMB_PHOTO: "صورة الطرف المتبقي",
+  MEDICAL_REPORT:      "تقرير طبي",
+  OTHER:               "أخرى",
+};
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
@@ -58,6 +66,9 @@ export default function PatientProfilePage() {
   const locale = useLocale();
   const [deletePatientOpen, setDeletePatientOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadType, setUploadType] = useState<DocumentType>("OTHER");
   const [prostDialogOpen, setProstDialogOpen] = useState(false);
   const [prostForm, setProstForm] = useState({
     amputationType: "" as AmputationType | "",
@@ -76,6 +87,7 @@ export default function PatientProfilePage() {
   const { data: notes = [] } = usePatientNotes(id);
 
   const deletePatient = useDeleteClinicPatient();
+  const uploadDoc = useUploadPatientDocument();
   const deleteDoc = useDeletePatientDocument();
   const createNote = useCreatePatientNote();
   const createProst = useCreateProstheticsCase();
@@ -116,6 +128,14 @@ export default function PatientProfilePage() {
     setNoteText("");
   };
 
+  const handleUploadDocument = async () => {
+    if (!uploadFile) return;
+    await uploadDoc.mutateAsync({ patientId: id, file: uploadFile, type: uploadType });
+    setUploadDialogOpen(false);
+    setUploadFile(null);
+    setUploadType("OTHER");
+  };
+
   const handleNewProstheticsCase = () => {
     setProstForm({ amputationType: "", amputationSide: "", amputationLevel: "", amputationDate: "", amputationCause: "", amputationCount: "1" });
     setProstDialogOpen(true);
@@ -137,7 +157,7 @@ export default function PatientProfilePage() {
   };
 
   const handleNewPhysioCase = async () => {
-    const c = await createPhysio.mutateAsync({ patientId: id });
+    const c = await createPhysio.mutateAsync({ patientId: id, majorComplaint: "", symptoms: "" });
     router.push(`/${locale}/clinic/physio/${c.id}`);
   };
 
@@ -388,12 +408,9 @@ export default function PatientProfilePage() {
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">المستندات</h3>
             <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.UPLOAD_DOCUMENTS}>
-              <Button size="sm" variant="outline" className="gap-2" asChild>
-                <label className="cursor-pointer">
-                  <Upload className="h-4 w-4" />
-                  رفع مستند
-                  <input type="file" className="sr-only" accept="image/*,.pdf" />
-                </label>
+              <Button size="sm" variant="outline" className="gap-2" onClick={() => setUploadDialogOpen(true)}>
+                <Upload className="h-4 w-4" />
+                رفع مستند
               </Button>
             </ActionGuard>
           </div>
@@ -405,7 +422,7 @@ export default function PatientProfilePage() {
                 <Card key={doc.id}>
                   <CardContent className="pt-4">
                     <div className="aspect-video rounded border bg-muted flex items-center justify-center overflow-hidden">
-                      {doc.url.match(/\.(jpg|jpeg|png|webp)$/i) ? (
+                      {doc.url?.match(/\.(jpg|jpeg|png|webp)$/i) ? (
                         <img src={doc.url} alt={DOC_TYPE_LABEL[doc.type]} className="w-full h-full object-cover" />
                       ) : (
                         <FileText className="h-8 w-8 text-muted-foreground" />
@@ -465,6 +482,46 @@ export default function PatientProfilePage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Upload Document Dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={(o) => { if (!uploadDoc.isPending) { setUploadDialogOpen(o); if (!o) { setUploadFile(null); setUploadType("OTHER"); } } }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>رفع مستند</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>نوع المستند</Label>
+              <Select value={uploadType} onValueChange={(v) => setUploadType(v as DocumentType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(DOC_TYPE_LABEL) as DocumentType[]).map((t) => (
+                    <SelectItem key={t} value={t}>{DOC_TYPE_LABEL[t]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>اختر الملف</Label>
+              <Input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+              />
+              {uploadFile && (
+                <p className="text-xs text-muted-foreground">{uploadFile.name}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)} disabled={uploadDoc.isPending}>إلغاء</Button>
+            <Button onClick={handleUploadDocument} disabled={!uploadFile || uploadDoc.isPending}>
+              {uploadDoc.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Upload className="h-4 w-4 ml-2" />}
+              رفع
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={deletePatientOpen}

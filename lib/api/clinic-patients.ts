@@ -53,8 +53,13 @@ export interface PatientDocument {
   id: string;
   patientId: string;
   type: DocumentType;
-  url: string;
+  url?: string;
+  fileName?: string;
+  filePath?: string;
+  mimeType?: string;
+  fileSize?: number;
   createdAt: string;
+  uploadedAt?: string;
 }
 
 export interface PatientConsent {
@@ -172,7 +177,13 @@ export const clinicPatientsApi = {
     const { data } = await apiClient.post(`/patients/${patientId}/documents`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return data?.data ?? data;
+    const doc = data?.data ?? data;
+    const serverBase = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1").replace(/\/api\/v1\/?$/, "");
+    return {
+      ...doc,
+      createdAt: doc.createdAt ?? doc.uploadedAt ?? "",
+      url: doc.url ?? (doc.filePath ? serverBase + doc.filePath.replace(/^\/app/, "") : undefined),
+    };
   },
 
   downloadDocument: async (patientId: string, docId: string): Promise<Blob> => {
@@ -185,7 +196,13 @@ export const clinicPatientsApi = {
   getDocuments: async (patientId: string): Promise<PatientDocument[]> => {
     const { data } = await apiClient.get(`/patients/${patientId}/documents`);
     const d = data?.data ?? data;
-    return Array.isArray(d) ? d : d?.items ?? [];
+    const items: any[] = Array.isArray(d) ? d : d?.items ?? [];
+    const serverBase = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1").replace(/\/api\/v1\/?$/, "");
+    return items.map((doc) => ({
+      ...doc,
+      createdAt: doc.createdAt ?? doc.uploadedAt ?? "",
+      url: doc.url ?? (doc.filePath ? serverBase + doc.filePath.replace(/^\/app/, "") : undefined),
+    }));
   },
 
   deleteDocument: async (patientId: string, docId: string): Promise<void> => {

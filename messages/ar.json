@@ -2604,14 +2604,18 @@
         "description": "ستظهر هنا حالات العلاج الفيزيائي"
       },
       "statuses": {
+        "INTAKE": "الاستقبال",
         "COMPLAINT": "الشكوى",
         "PAIN_MAP": "خريطة الألم",
         "MEDICAL_HISTORY": "التاريخ الطبي",
         "GOALS": "الأهداف",
         "POSTURAL_ASSESSMENT": "التقييم الوضعي",
         "TREATMENT_PLAN": "خطة العلاج",
-        "ACTIVE_SESSIONS": "جلسات نشطة",
+        "SUPERVISOR_REVIEW": "مراجعة المشرف",
+        "DOCTOR_SIGN": "توقيع الطبيب",
+        "ACTIVE_TREATMENT": "علاج نشط",
         "COMPLETED": "منتهية",
+        "DISCHARGED": "تم التخريج",
         "CANCELLED": "ملغاة"
       },
       "modalities": {

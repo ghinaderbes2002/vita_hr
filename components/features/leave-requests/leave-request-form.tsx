@@ -224,14 +224,18 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
     return null;
   })();
 
+  const parseTimeMinutes = (t: string | null | undefined): number => {
+    if (!t || typeof t !== "string") return 0;
+    const parts = t.split(":");
+    if (parts.length < 2) return 0;
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    return h * 60 + m;
+  };
+
   const durationMinutes = (() => {
     if (!watchedStartTime || !watchedEndTime) return 0;
-    const sParts = watchedStartTime?.split?.(":");
-    const eParts = watchedEndTime?.split?.(":");
-    if (!sParts || !eParts || sParts.length < 2 || eParts.length < 2) return 0;
-    const [sh, sm] = sParts.map(Number);
-    const [eh, em] = eParts.map(Number);
-    return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+    return Math.max(0, parseTimeMinutes(watchedEndTime) - parseTimeMinutes(watchedStartTime));
   })();
 
   const requestedHours = durationMinutes / 60;
@@ -248,9 +252,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
         return;
       }
       if (!data.startTime || !data.endTime) return;
-      const [sh = 0, sm = 0] = (data.startTime ?? "").split(":").map(Number);
-      const [eh = 0, em = 0] = (data.endTime ?? "").split(":").map(Number);
-      if (eh * 60 + em <= sh * 60 + sm) {
+      if (parseTimeMinutes(data.endTime) <= parseTimeMinutes(data.startTime)) {
         form.setError("endTime", { message: "وقت الانتهاء يجب أن يكون بعد وقت البداية" });
         return;
       }

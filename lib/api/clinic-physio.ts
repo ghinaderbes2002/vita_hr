@@ -16,13 +16,13 @@ export type PhysioGoal =
   | "BACK_TO_SPORTS" | "BACK_TO_WORK" | "SIMPLE_WORKS" | "PAIN_RELIEF" | "OTHER";
 
 export type ChronicCondition =
-  | "DIABETES" | "HYPERTENSION" | "HEART_DISEASE" | "ASTHMA" | "COPD"
-  | "OBESITY" | "OSTEOPOROSIS" | "OSTEOARTHRITIS" | "RHEUMATOID_ARTHRITIS"
-  | "FIBROMYALGIA" | "MULTIPLE_SCLEROSIS" | "PARKINSON" | "STROKE"
-  | "SCOLIOSIS" | "HERNIATED_DISC" | "SPINAL_STENOSIS" | "FRACTURE"
-  | "SPORTS_INJURY" | "POST_SURGICAL" | "CANCER" | "KIDNEY_DISEASE"
-  | "THYROID" | "EPILEPSY" | "DEPRESSION" | "ANXIETY"
-  | "CEREBRAL_PALSY" | "DOWN_SYNDROME" | "AUTISM" | "PERIPHERAL_NEUROPATHY" | "OTHER";
+  | "AIDS_HIV" | "MULTIPLE_SCLEROSIS" | "LIVER_PROBLEMS" | "ARTHRITIS" | "STDS"
+  | "PNEUMONIA" | "CANCER" | "ANGINA" | "URINARY_INFECTION" | "DIABETES"
+  | "BLOOD_CLOTS" | "HEMOPHILIA" | "CIRCULATION_PROBLEMS" | "LUNG_ISSUES"
+  | "EYE_INFECTION" | "STROKE" | "JOINT_BONE_INFECTION" | "KIDNEY_PROBLEMS"
+  | "MUSCULOSKELETAL" | "ANEMIA" | "TUBERCULOSIS" | "ASTHMA" | "ARTERIOSCLEROSIS"
+  | "CHEMICAL_DEPENDENCY" | "BONE_INFECTION" | "EPILEPSY" | "DEPRESSION"
+  | "HEART_PROBLEMS" | "HYPERTENSION" | "OTHER";
 
 export type TestType =
   | "MRI" | "XRAY" | "CT" | "MYELOGRAM" | "BONE_DENSITY" | "OTHER";
@@ -59,35 +59,35 @@ export const THERAPY_MODALITY_LABELS: Record<TherapyModality, string> = {
 };
 
 export const CHRONIC_CONDITION_LABELS: Record<ChronicCondition, string> = {
-  DIABETES:               "السكري",
-  HYPERTENSION:           "ضغط الدم",
-  HEART_DISEASE:          "أمراض القلب",
-  ASTHMA:                 "الربو",
-  COPD:                   "الانسداد الرئوي المزمن",
-  OBESITY:                "السمنة",
-  OSTEOPOROSIS:           "هشاشة العظام",
-  OSTEOARTHRITIS:         "التهاب المفاصل التنكسي",
-  RHEUMATOID_ARTHRITIS:   "التهاب المفاصل الروماتويدي",
-  FIBROMYALGIA:           "الفيبروميالجيا",
+  AIDS_HIV:               "الإيدز / HIV",
   MULTIPLE_SCLEROSIS:     "التصلب المتعدد",
-  PARKINSON:              "باركنسون",
-  STROKE:                 "السكتة الدماغية",
-  SCOLIOSIS:              "الجنف",
-  HERNIATED_DISC:         "انزلاق غضروفي",
-  SPINAL_STENOSIS:        "تضيق العمود الفقري",
-  FRACTURE:               "كسر",
-  SPORTS_INJURY:          "إصابة رياضية",
-  POST_SURGICAL:          "ما بعد الجراحة",
+  LIVER_PROBLEMS:         "أمراض الكبد",
+  ARTHRITIS:              "التهاب المفاصل",
+  STDS:                   "أمراض منقولة جنسياً",
+  PNEUMONIA:              "التهاب رئوي",
   CANCER:                 "السرطان",
-  KIDNEY_DISEASE:         "أمراض الكلى",
-  THYROID:                "أمراض الغدة الدرقية",
+  ANGINA:                 "ذبحة صدرية",
+  URINARY_INFECTION:      "التهاب مسالك بولية",
+  DIABETES:               "السكري",
+  BLOOD_CLOTS:            "جلطات الدم",
+  HEMOPHILIA:             "الهيموفيليا (ناعور)",
+  CIRCULATION_PROBLEMS:   "مشاكل الدورة الدموية",
+  LUNG_ISSUES:            "أمراض الرئة",
+  EYE_INFECTION:          "التهاب العين",
+  STROKE:                 "السكتة الدماغية",
+  JOINT_BONE_INFECTION:   "التهاب المفاصل والعظام",
+  KIDNEY_PROBLEMS:        "أمراض الكلى",
+  MUSCULOSKELETAL:        "أمراض العضلات والهيكل العظمي",
+  ANEMIA:                 "فقر الدم",
+  TUBERCULOSIS:           "السل",
+  ASTHMA:                 "الربو",
+  ARTERIOSCLEROSIS:       "تصلب الشرايين",
+  CHEMICAL_DEPENDENCY:    "إدمان / اعتماد كيميائي",
+  BONE_INFECTION:         "التهاب العظام",
   EPILEPSY:               "الصرع",
   DEPRESSION:             "الاكتئاب",
-  ANXIETY:                "القلق",
-  CEREBRAL_PALSY:         "الشلل الدماغي",
-  DOWN_SYNDROME:          "متلازمة داون",
-  AUTISM:                 "التوحد",
-  PERIPHERAL_NEUROPATHY:  "الاعتلال العصبي المحيطي",
+  HEART_PROBLEMS:         "أمراض القلب",
+  HYPERTENSION:           "ضغط الدم",
   OTHER:                  "أخرى",
 };
 
@@ -146,6 +146,8 @@ export interface PhysioCase {
 
 export interface CreatePhysioCaseDto {
   patientId: string;
+  majorComplaint?: string;
+  symptoms?: string;
   notes?: string;
 }
 
@@ -285,7 +287,8 @@ export interface PhysioSession {
 }
 
 export interface CreatePhysioSessionDto {
-  date: string;
+  sessionDate: string;
+  physiotherapistId: string;
   time?: string;
   modalitiesApplied: string[];
   notes?: string;

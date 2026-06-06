@@ -185,16 +185,22 @@ export function useSignPhysioTreatmentPlan() {
   return useMutation({
     mutationFn: ({ id, signatureBase64 }: { id: string; signatureBase64: string }) =>
       clinicPhysioApi.signTreatmentPlan(id, signatureBase64),
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ["clinic-physio-case", (data as any).id ?? ""] });
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
       qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
       toast.success("تم توقيع خطة العلاج");
     },
-    onError: (e: any) => {
+    onError: (e: any, { id }) => {
       const errCode = e?.response?.data?.errorCode;
-      if (errCode === "ALREADY_SIGNED")       toast.error("الخطة موقّعة مسبقاً ولا يمكن استبدالها");
-      else if (errCode === "NOT_ASSIGNED_SIGNER") toast.error("التوقيع متاح فقط للطبيب المشرف المعيّن");
-      else toast.error(e?.response?.data?.message || "فشل التوقيع");
+      if (errCode === "ALREADY_SIGNED") {
+        toast.error("الخطة موقّعة مسبقاً — جاري تحديث الحالة");
+        qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
+        qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
+      } else if (errCode === "NOT_ASSIGNED_SIGNER") {
+        toast.error("التوقيع متاح فقط للطبيب المشرف المعيّن");
+      } else {
+        toast.error(e?.response?.data?.message || "فشل التوقيع");
+      }
     },
   });
 }

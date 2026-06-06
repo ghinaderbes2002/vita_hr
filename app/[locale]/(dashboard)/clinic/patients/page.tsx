@@ -110,18 +110,18 @@ export default function ClinicPatientsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-right">{t("patientNumber")}</TableHead>
-              <TableHead className="text-right">{t("table.name")}</TableHead>
-              <TableHead className="text-right">{t("table.gender")}</TableHead>
-              <TableHead className="text-right">{t("table.age")}</TableHead>
-              <TableHead className="text-right">{t("table.phone")}</TableHead>
-              <TableHead className="text-right">{t("table.city")}</TableHead>
-              <TableHead className="text-right">{t("table.cases")}</TableHead>
-              <TableHead className="text-right">{t("table.lastVisit")}</TableHead>
+              <TableHead>{t("patientNumber")}</TableHead>
+              <TableHead>{t("table.name")}</TableHead>
+              <TableHead>{t("table.gender")}</TableHead>
+              <TableHead>{t("table.age")}</TableHead>
+              <TableHead>{t("table.phone")}</TableHead>
+              <TableHead>{t("table.city")}</TableHead>
+              <TableHead>{t("table.cases")}</TableHead>
+              <TableHead>{t("table.lastVisit")}</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>

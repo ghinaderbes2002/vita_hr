@@ -85,14 +85,14 @@ export default function PhysioListPage() {
         </Select>
       </div>
 
-      <div className="rounded-lg border overflow-hidden">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/40">
-              <TableHead className="text-right font-semibold">{t("table.patientNumber")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.patient")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.status")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.createdAt")}</TableHead>
+            <TableRow>
+              <TableHead>{t("table.patientNumber")}</TableHead>
+              <TableHead>{t("table.patient")}</TableHead>
+              <TableHead>{t("table.status")}</TableHead>
+              <TableHead>{t("table.createdAt")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>

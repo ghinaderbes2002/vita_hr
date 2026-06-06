@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
@@ -211,6 +212,145 @@ export default function PhysioCasePage() {
     modalities: [] as TherapyModality[],
   });
 
+  // ── Initialize form states from backend data ─────────────────────────────────
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (!caseData || initialized.current) return;
+    initialized.current = true;
+
+    // Complaint
+    setComplaint({
+      majorComplaint:     caseData.majorComplaint     ?? "",
+      symptoms:           caseData.symptoms           ?? "",
+      currentJob:         caseData.currentJob         ?? "",
+      lifeType:           caseData.lifeType           ?? "",
+      complaintStartDate: caseData.complaintStartDate ? caseData.complaintStartDate.slice(0, 10) : "",
+      possibleCause:      caseData.possibleCause      ?? "",
+      previousDoctorSeen: caseData.previousDoctorSeen ?? "",
+      previousTreatment:  caseData.previousTreatment  ?? "",
+      painLevel:          caseData.painLevel          ?? "",
+      painDuration:       caseData.painDuration       ?? "",
+      painProgression:    caseData.painProgression    ?? "",
+      hadPreviousInjury:  caseData.hadPreviousInjury  ?? false,
+      bestTimeOfDay:      caseData.bestTimeOfDay      ?? "",
+      worstTimeOfDay:     caseData.worstTimeOfDay     ?? "",
+    });
+
+    // Pain map
+    if (caseData.painMap?.regions?.length) {
+      setPainRegions(caseData.painMap.regions);
+    }
+    if (caseData.painTypes?.length)          setPainTypes(caseData.painTypes);
+    if (caseData.aggravatingFactors?.length) setAggravatingFactors(caseData.aggravatingFactors);
+    if (caseData.alleviatingFactors?.length) setAlleviatingFactors(caseData.alleviatingFactors);
+    if (caseData.aggravatingOther)           setAggravatingOther(caseData.aggravatingOther);
+    if (caseData.alleviatingOther)           setAlleviatingOther(caseData.alleviatingOther);
+
+    // Medical history
+    const mh = caseData.medicalHistory;
+    if (mh) {
+      setHistory({
+        smokes:                 mh.smokes               ?? false,
+        hasSmokedBefore:        mh.hasSmokedBefore      ?? false,
+        smokingFrequency:       mh.smokingFrequency     ?? "",
+        hasPacemaker:           mh.hasPacemaker         ?? false,
+        allergies:              mh.allergies            ?? "",
+        adhesiveAllergy:        mh.adhesiveAllergy      ?? false,
+        currentMedications:     mh.currentMedications   ?? "",
+        prescriptionDrugs:      mh.prescriptionDrugs    ?? false,
+        herbalSupplements:      mh.herbalSupplements    ?? false,
+        supplementsList:        mh.supplementsList      ?? "",
+        isPregnant:             mh.isPregnant           ?? false,
+        previousDiagnoses:      mh.previousDiagnoses    ?? "",
+        otherConditions:        mh.otherConditions      ?? "",
+        doctorRestrictions:     mh.doctorRestrictions   ?? "",
+        testsOther:             mh.testsOther           ?? "",
+        testResults:            mh.testResults          ?? "",
+        newAnalysis:            mh.newAnalysis          ?? "",
+        newAnalysisDate:        mh.newAnalysisDate      ? mh.newAnalysisDate.slice(0, 10) : "",
+        oldAnalysis:            mh.oldAnalysis          ?? "",
+        oldAnalysisDate:        mh.oldAnalysisDate      ? mh.oldAnalysisDate.slice(0, 10) : "",
+        hospitalizedLastYear:   mh.hospitalizedLastYear ?? false,
+        receivingOtherTreatment: mh.receivingOtherTreatment ?? false,
+      });
+      if (mh.chronicConditions?.length) setChronicConditions(mh.chronicConditions);
+      if (mh.testsHad?.length)          setTestsHad(mh.testsHad);
+
+      // Surgeries — load existing rows from backend
+      const backendSurgeries: any[] = mh.surgeries ?? [];
+      if (backendSurgeries.length > 0) {
+        const rows = Array.from({ length: 5 }, (_, i) => ({
+          name: backendSurgeries[i]?.name  ?? "",
+          type: backendSurgeries[i]?.type  ?? "",
+          date: backendSurgeries[i]?.date  ? (backendSurgeries[i].date as string).slice(0, 10) : "",
+        }));
+        setSurgeries(rows);
+      }
+    }
+
+    // Goals
+    const g = caseData.goals;
+    if (g) {
+      if (g.goals?.length) setGoals(g.goals);
+      setGoalsExtra({
+        customGoal:          g.customGoal         ?? "",
+        decreasePain:        g.decreasePain       ?? false,
+        improveStrength:     g.improveStrength    ?? false,
+        lessDifficultyWork:  g.lessDifficultyWork ?? false,
+        improveMovement:     g.improveMovement    ?? false,
+        standLongerMinutes:  g.standLongerMinutes != null ? String(g.standLongerMinutes) : "",
+        sleepLongerMinutes:  g.sleepLongerMinutes != null ? String(g.sleepLongerMinutes) : "",
+        sitLongerMinutes:    g.sitLongerMinutes   != null ? String(g.sitLongerMinutes)   : "",
+        otherGoals:          g.otherGoals         ?? "",
+      });
+    }
+
+    // Postural assessment
+    const pa = caseData.posturalAssessment;
+    if (pa) {
+      setPostural({
+        headPosition:       pa.head?.position         ?? "",
+        shoulderRight:      pa.shoulders?.right       ?? "",
+        shoulderLeft:       pa.shoulders?.left        ?? "",
+        elbowRight:         pa.elbows?.right          ?? "",
+        elbowLeft:          pa.elbows?.left           ?? "",
+        thoraxPosition:     pa.thorax?.position       ?? "",
+        spineLumbar:        pa.spine?.lumbar          ?? "",
+        spineScoliosis:     pa.spine?.scoliosis       ?? false,
+        scoliosisApex:      pa.spine?.scoliosisApex   ?? "",
+        scoliosisDirection: pa.spine?.scoliosisDirection ?? "",
+        pelvisTilt:         pa.pelvis?.tilt           ?? "",
+        pelvisLateral:      pa.pelvis?.lateralTilt    ?? "",
+        hipRight:           pa.hips?.right            ?? "",
+        hipLeft:            pa.hips?.left             ?? "",
+        kneeRight:          pa.knees?.right           ?? "",
+        kneeLeft:           pa.knees?.left            ?? "",
+        footRight:          pa.feet?.right            ?? "",
+        footLeft:           pa.feet?.left             ?? "",
+        spasticityNotes:    pa.spasticityNotes        ?? "",
+        generalNotes:       pa.generalNotes           ?? "",
+        diagnosis:          pa.diagnosis              ?? "",
+        seatedPosition:     pa.seatedPosition         ?? "",
+        trunkControl:       pa.trunkControl           ?? "",
+      });
+    }
+
+    // Treatment plan
+    const tp = caseData.treatmentPlan;
+    if (tp) {
+      if (tp.modalities?.length) setPlanModalities(tp.modalities);
+      if (tp.remarks)     setPlanRemarks(tp.remarks);
+      if (tp.observation) setPlanObservation(tp.observation);
+    }
+    setPlanHeader({
+      treatmentFrom:     caseData.treatmentFrom     ? caseData.treatmentFrom.slice(0, 10) : "",
+      treatmentTo:       caseData.treatmentTo       ? caseData.treatmentTo.slice(0, 10)   : "",
+      anticipatedVisits: caseData.anticipatedVisits != null ? String(caseData.anticipatedVisits) : "",
+      physiotherapistId: caseData.physiotherapistId ?? "",
+      caseManagerId:     caseData.caseManagerId     ?? "",
+    });
+  }, [caseData]);
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -268,8 +408,12 @@ export default function PhysioCasePage() {
   };
 
   const handleSaveHistory = async () => {
+    // Only POST surgeries that don't already exist in the backend (prevent duplicates)
+    const existingSurgeryNames = new Set(
+      ((c.medicalHistory as any)?.surgeries ?? []).map((s: any) => s.name?.trim().toLowerCase())
+    );
     const surgeriesFiltered = surgeries
-      .filter((s) => s.name.trim())
+      .filter((s) => s.name.trim() && !existingSurgeryNames.has(s.name.trim().toLowerCase()))
       .map((s, i) => ({ name: s.name, type: s.type || undefined, date: s.date || undefined, order: i + 1 }));
 
     await submitHistory.mutateAsync({
@@ -403,10 +547,12 @@ export default function PhysioCasePage() {
 
   const handleAddSession = async () => {
     if (!sessionForm.date) return;
+    if (!c.physiotherapistId) { toast.error("لم يتم تعيين معالج فيزيائي للحالة"); return; }
     await addSession.mutateAsync({
       id,
       dto: {
-        date:              sessionForm.date,
+        sessionDate:       sessionForm.date,
+        physiotherapistId: c.physiotherapistId,
         time:              sessionForm.time || undefined,
         modalitiesApplied: sessionForm.modalities,
         notes:             sessionForm.notes || undefined,
@@ -1185,7 +1331,7 @@ export default function PhysioCasePage() {
                   placeholder="رأي رئيس القسم وملاحظاته على خطة العلاج..."
                 />
               </div>
-              {c.status === "TREATMENT_PLAN" && (
+              {c.status === "TREATMENT_PLAN" ? (
                 <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
                   <Button
                     onClick={handleSupervisorReview}
@@ -1196,9 +1342,18 @@ export default function PhysioCasePage() {
                     اعتماد واتجاه لتوقيع الطبيب
                   </Button>
                 </ActionGuard>
-              )}
-              {c.status === "SUPERVISOR_REVIEW" && (
-                <p className="text-sm text-amber-600 font-medium">بانتظار توقيع الطبيب...</p>
+              ) : !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status) && (
+                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
+                  <Button
+                    variant="outline"
+                    onClick={handleSupervisorReview}
+                    disabled={supervisorRev.isPending}
+                    className="w-full gap-2"
+                  >
+                    {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    حفظ الملاحظات
+                  </Button>
+                </ActionGuard>
               )}
             </div>
           </Section>
@@ -1209,7 +1364,7 @@ export default function PhysioCasePage() {
           <Section title="توقيع الطبيب">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                يتطلب التوقيع أن تكون الحالة في مرحلة <strong>SUPERVISOR_REVIEW</strong> وأن تكون الطبيب المشرف المعيّن.
+                التوقيع متاح بعد اعتماد رئيس القسم. يجب أن تكون الطبيب المشرف المعيّن.
               </p>
               {c.status === "SUPERVISOR_REVIEW" && (
                 <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
@@ -1218,8 +1373,8 @@ export default function PhysioCasePage() {
                   </Button>
                 </ActionGuard>
               )}
-              {c.status === "DOCTOR_SIGN" && (
-                <p className="text-sm text-green-600 font-medium">تمت العملية — الحالة جاهزة للجلسات</p>
+              {["DOCTOR_SIGN", "ACTIVE_TREATMENT", "COMPLETED", "DISCHARGED"].includes(c.status) && (
+                <p className="text-sm text-green-600 font-medium">تمت عملية التوقيع — الحالة جاهزة للجلسات</p>
               )}
             </div>
           </Section>

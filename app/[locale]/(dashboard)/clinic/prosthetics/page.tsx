@@ -87,17 +87,17 @@ export default function ProstheticsListPage() {
         </Select>
       </div>
 
-      <div className="rounded-lg border overflow-hidden">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/40">
-              <TableHead className="text-right font-semibold">{t("table.patientNumber")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.patient")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.status")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.amputationType")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.amputationSide")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.amputationLevel")}</TableHead>
-              <TableHead className="text-right font-semibold">{t("table.createdAt")}</TableHead>
+            <TableRow>
+              <TableHead>{t("table.patientNumber")}</TableHead>
+              <TableHead>{t("table.patient")}</TableHead>
+              <TableHead>{t("table.status")}</TableHead>
+              <TableHead>{t("table.amputationType")}</TableHead>
+              <TableHead>{t("table.amputationSide")}</TableHead>
+              <TableHead>{t("table.amputationLevel")}</TableHead>
+              <TableHead>{t("table.createdAt")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>

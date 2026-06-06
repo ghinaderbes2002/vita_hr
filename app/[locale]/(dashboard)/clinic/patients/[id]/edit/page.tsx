@@ -39,7 +39,7 @@ const schema = z.object({
   livingCondition: z.string().optional(),
   financialStatus: z.string().optional(),
   receivesAid:     z.boolean().optional(),
-  referralSource:  z.string().optional(),
+  referralSource:  z.enum(["SELF","RELATIVES","SOCIAL_MEDIA","MEDICAL_REFERRAL","OTHER",""]).optional(),
   referralDetails: z.string().optional(),
   documentConsent: z.enum(["FULL", "ANONYMOUS", "NONE"]).optional(),
   mediaConsent:    z.boolean().optional(),
@@ -73,6 +73,13 @@ const FINANCIAL = [
 const CONSENT = [
   { value: "FULL", label: "موافقة كاملة" }, { value: "ANONYMOUS", label: "مجهول" },
   { value: "NONE", label: "رفض" },
+];
+const REFERRAL_SOURCE = [
+  { value: "SELF",             label: "نفسه" },
+  { value: "RELATIVES",        label: "أقارب" },
+  { value: "SOCIAL_MEDIA",     label: "وسائل التواصل الاجتماعي" },
+  { value: "MEDICAL_REFERRAL", label: "إحالة طبية" },
+  { value: "OTHER",            label: "أخرى" },
 ];
 
 function FieldError({ msg }: { msg?: string }) {
@@ -115,7 +122,7 @@ export default function EditPatientPage() {
       livingCondition: patient.livingCondition ?? "",
       financialStatus: patient.financialStatus ?? "",
       receivesAid:     patient.receivesAid ?? false,
-      referralSource:  patient.referralSource ?? "",
+      referralSource:  (patient.referralSource as any) ?? "",
       referralDetails: patient.referralDetails ?? "",
       documentConsent: patient.documentConsent ?? "FULL",
       mediaConsent:    patient.mediaConsent ?? true,
@@ -134,7 +141,7 @@ export default function EditPatientPage() {
       phone:           values.phone,
       whatsapp:        values.whatsapp || undefined,
       email:           values.email || undefined,
-      cityId:          values.cityId ? parseInt(values.cityId) : undefined,
+      cityId:          values.cityId && !isNaN(parseInt(values.cityId)) ? parseInt(values.cityId) : undefined,
       addressDetails:  values.addressDetails || undefined,
       heightCm:        values.heightCm ? Number(values.heightCm) : undefined,
       weightKg:        values.weightKg ? Number(values.weightKg) : undefined,
@@ -325,7 +332,14 @@ export default function EditPatientPage() {
             </div>
             <div className="space-y-1.5">
               <Label>مصدر الإحالة</Label>
-              <Input {...register("referralSource")} placeholder="طبيب، مستشفى..." />
+              <Select value={watch("referralSource") ?? ""} onValueChange={(v) => setValue("referralSource", v as any)}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {REFERRAL_SOURCE.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>تفاصيل الإحالة</Label>

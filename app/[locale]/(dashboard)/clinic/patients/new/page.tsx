@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useCreateClinicPatient, useCheckDuplicate } from "@/lib/hooks/use-clinic-patients";
-import { useClinicCitiesByGovernorate } from "@/lib/hooks/use-clinic-cities";
+import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { CreatePatientDto, IdentityType, ConsentOption } from "@/lib/api/clinic-patients";
 
@@ -109,6 +109,14 @@ const CONSENT_LABELS: Record<string, string> = {
   ANONYMOUS: "مجهول الهوية",
   NONE:      "رفض",
 };
+const REFERRAL_VALUES = ["SELF", "RELATIVES", "SOCIAL_MEDIA", "MEDICAL_REFERRAL", "OTHER"] as const;
+const REFERRAL_LABELS: Record<string, string> = {
+  SELF:             "نفسه",
+  RELATIVES:        "أقارب",
+  SOCIAL_MEDIA:     "وسائل التواصل الاجتماعي",
+  MEDICAL_REFERRAL: "إحالة طبية",
+  OTHER:            "أخرى",
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -123,10 +131,9 @@ export default function NewPatientPage() {
   const [s2, setS2] = useState<Partial<Step2>>({});
   const [s3, setS3] = useState<Partial<Step3>>({});
   const [s4, setS4] = useState<Partial<Step4>>({});
-  const [selectedGovernorate, setSelectedGovernorate] = useState("");
 
   const createPatient = useCreateClinicPatient();
-  const { data: governorates = [] } = useClinicCitiesByGovernorate();
+  const { data: cities = [] } = useClinicCities();
 
   const idNumber = s1.idNumber ?? "";
   const { data: dupData } = useCheckDuplicate(idNumber);
@@ -187,7 +194,7 @@ export default function NewPatientPage() {
       phone:           s2.phone!,
       whatsapp:        s2.whatsapp || undefined,
       email:           s2.email || undefined,
-      cityId:          s2.cityId ? parseInt(s2.cityId) : undefined,
+      cityId:          s2.cityId && !isNaN(parseInt(s2.cityId)) ? parseInt(s2.cityId) : undefined,
       addressDetails:  s2.addressDetails || undefined,
       heightCm:        s3.heightCm ? Number(s3.heightCm) : undefined,
       weightKg:        s3.weightKg ? Number(s3.weightKg) : undefined,
@@ -360,27 +367,18 @@ export default function NewPatientPage() {
                 <Input dir="ltr" type="email" {...form2.register("email")} placeholder="email@example.com" />
                 {form2.formState.errors.email && <p className="text-xs text-destructive">بريد غير صالح</p>}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>المحافظة</Label>
-                  <Select value={selectedGovernorate} onValueChange={(v) => { setSelectedGovernorate(v); form2.setValue("cityId", ""); }}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
-                    <SelectContent>
-                      {governorates.map((g) => <SelectItem key={g.name} value={g.name}>{g.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>المدينة</Label>
-                  <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)} disabled={!selectedGovernorate}>
-                    <SelectTrigger><SelectValue placeholder={selectedGovernorate ? "اختر..." : "—"} /></SelectTrigger>
-                    <SelectContent>
-                      {(governorates.find((g) => g.name === selectedGovernorate)?.cities ?? []).map((c) => (
-                        <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-1.5">
+                <Label>المدينة / المحافظة</Label>
+                <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)}>
+                  <SelectTrigger><SelectValue placeholder="اختر المدينة..." /></SelectTrigger>
+                  <SelectContent>
+                    {cities.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        {c.name}{c.governorate ? ` — ${c.governorate}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>تفاصيل العنوان</Label>
@@ -444,7 +442,17 @@ export default function NewPatientPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>مصدر الإحالة</Label>
-                <Input {...form3.register("referralSource")} placeholder="مثال: طبيب، مستشفى، وكالة إغاثة..." />
+                <Select
+                  value={form3.watch("referralSource") ?? ""}
+                  onValueChange={(v) => form3.setValue("referralSource", v as any)}
+                >
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    {REFERRAL_VALUES.map((v) => (
+                      <SelectItem key={v} value={v}>{REFERRAL_LABELS[v]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>تفاصيل الإحالة</Label>

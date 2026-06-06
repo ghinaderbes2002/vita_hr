@@ -168,17 +168,17 @@ export default function InventoryPage() {
               </Select>
             </div>
 
-            <div className="rounded-lg border">
+            <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">الكود</TableHead>
-                    <TableHead className="text-right">الصنف</TableHead>
-                    <TableHead className="text-right">النوع</TableHead>
-                    <TableHead className="text-right">التصنيف</TableHead>
-                    <TableHead className="text-right">المخزون</TableHead>
-                    <TableHead className="text-right">الحد الأدنى</TableHead>
-                    <TableHead className="text-right">السعر</TableHead>
+                    <TableHead>الكود</TableHead>
+                    <TableHead>الصنف</TableHead>
+                    <TableHead>النوع</TableHead>
+                    <TableHead>التصنيف</TableHead>
+                    <TableHead>المخزون</TableHead>
+                    <TableHead>الحد الأدنى</TableHead>
+                    <TableHead>السعر</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -239,16 +239,16 @@ export default function InventoryPage() {
 
         {/* Transactions tab */}
         <TabsContent value="transactions" className="mt-4">
-          <div className="rounded-lg border">
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">الصنف</TableHead>
-                  <TableHead className="text-right">النوع</TableHead>
-                  <TableHead className="text-right">الكمية</TableHead>
-                  <TableHead className="text-right">ملاحظات</TableHead>
-                  <TableHead className="text-right">بواسطة</TableHead>
-                  <TableHead className="text-right">التاريخ</TableHead>
+                  <TableHead>الصنف</TableHead>
+                  <TableHead>النوع</TableHead>
+                  <TableHead>الكمية</TableHead>
+                  <TableHead>ملاحظات</TableHead>
+                  <TableHead>بواسطة</TableHead>
+                  <TableHead>التاريخ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
