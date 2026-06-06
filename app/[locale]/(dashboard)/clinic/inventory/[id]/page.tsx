@@ -80,7 +80,7 @@ export default function InventoryItemPage() {
         <Card>
           <CardContent className="pt-4 pb-3">
             <p className="text-sm text-muted-foreground mb-1">سعر الوحدة</p>
-            <p className="text-xl font-bold">{item.unitPrice ? `${item.unitPrice.toLocaleString("ar")} ل.س` : "—"}</p>
+            <p className="text-xl font-bold">{item.unitPrice ? `${item.unitPrice.toLocaleString("en-US")} ل.س` : "—"}</p>
           </CardContent>
         </Card>
         <Card>

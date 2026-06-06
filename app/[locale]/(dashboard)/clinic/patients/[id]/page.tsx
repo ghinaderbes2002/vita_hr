@@ -473,7 +473,7 @@ export default function PatientProfilePage() {
                     <p className="text-sm whitespace-pre-wrap">{n.note}</p>
                     <div className="mt-2 flex gap-3 text-xs text-muted-foreground">
                       {n.authorName && <span>{n.authorName}</span>}
-                      <span>{new Date(n.createdAt).toLocaleString("ar")}</span>
+                      <span>{new Date(n.createdAt).toLocaleString("en-US")}</span>
                     </div>
                   </CardContent>
                 </Card>

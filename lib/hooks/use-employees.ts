@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { employeesApi } from "@/lib/api/employees";
+import { employeesApi, TransferDto, SalaryChangeDto } from "@/lib/api/employees";
 import { PaginationParams } from "@/types";
 import { toast } from "sonner";
 
@@ -179,5 +179,46 @@ export function useContractReport(days: number) {
   return useQuery({
     queryKey: ["hr-report", "contract", days],
     queryFn: () => employeesApi.getContractReport(days),
+  });
+}
+
+export function useTransferEmployee() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: TransferDto }) =>
+      employeesApi.transfer(id, dto),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["employee", id] });
+      queryClient.invalidateQueries({ queryKey: ["employee-dossier", id] });
+      toast.success("تم تنفيذ النقل بنجاح");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || error.response?.data?.error?.message || "فشل تنفيذ النقل");
+    },
+  });
+}
+
+export function useSalaryChange() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: SalaryChangeDto }) =>
+      employeesApi.salaryChange(id, dto),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["employee", id] });
+      queryClient.invalidateQueries({ queryKey: ["employee-dossier", id] });
+      toast.success("تم تحديث الراتب بنجاح");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || error.response?.data?.error?.message || "فشل تحديث الراتب");
+    },
+  });
+}
+
+export function useEmployeeDossier(id: string) {
+  return useQuery({
+    queryKey: ["employee-dossier", id],
+    queryFn: () => employeesApi.getDossier(id),
+    enabled: !!id,
+    retry: false,
   });
 }

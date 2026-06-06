@@ -347,7 +347,7 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
 
 // ── CFO Dashboard ─────────────────────────────────────────────────────────────
 function CFODashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
-  const fmt = (v: number) => v?.toLocaleString("ar-SA") ?? "—";
+  const fmt = (v: number) => v?.toLocaleString("en-US") ?? "—";
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

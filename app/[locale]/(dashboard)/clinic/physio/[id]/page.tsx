@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
@@ -212,11 +212,28 @@ export default function PhysioCasePage() {
     modalities: [] as TherapyModality[],
   });
 
+  // ── Auto-save pain regions ───────────────────────────────────────────────────
+  const autoSaveReady  = useRef(false);
+  const autoSaveTimer  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (!autoSaveReady.current) return;
+    clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      submitPainMap.mutate({ id, dto: { regions: painRegions } });
+    }, 1200);
+    return () => clearTimeout(autoSaveTimer.current);
+  }, [painRegions]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Initialize form states from backend data ─────────────────────────────────
   const initialized = useRef(false);
   useEffect(() => {
     if (!caseData || initialized.current) return;
     initialized.current = true;
+
+    // Enable auto-save slightly after initialization so the initial setState
+    // calls don't trigger unnecessary saves
+    setTimeout(() => { autoSaveReady.current = true; }, 500);
 
     // Complaint
     setComplaint({

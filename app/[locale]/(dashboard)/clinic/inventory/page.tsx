@@ -213,7 +213,7 @@ export default function InventoryPage() {
                           {item.isLowStock && <AlertTriangle className="h-3.5 w-3.5 text-orange-500 inline mr-1" />}
                         </TableCell>
                         <TableCell className="text-sm">{item.minStockLevel}</TableCell>
-                        <TableCell className="text-sm">{item.unitPrice ? `${item.unitPrice.toLocaleString("ar")} ل.س` : "—"}</TableCell>
+                        <TableCell className="text-sm">{item.unitPrice ? `${item.unitPrice.toLocaleString("en-US")} ل.س` : "—"}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7"

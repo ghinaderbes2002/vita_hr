@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { X, MapPin } from "lucide-react";
 import { PainRegion as PainPoint } from "@/lib/api/clinic-physio";
 import { PainScale } from "./pain-scale";
-import { BodyMap, BONES } from "./body-map";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -12,59 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 
-// ─── Approximate bone centers (% of 200×490 viewBox) for backend storage ──────
-const BONE_CENTERS: Record<string, { x: number; y: number }> = {
-  skull:          { x: 50, y:  4 },
-  mandible:       { x: 50, y: 10 },
-  cervical:       { x: 50, y: 17 },
-  clavicle_r:     { x: 61, y: 15 },
-  clavicle_l:     { x: 39, y: 15 },
-  scapula_r:      { x: 61, y: 18 },
-  scapula_l:      { x: 40, y: 18 },
-  sternum:        { x: 50, y: 19 },
-  ribs:           { x: 50, y: 26 },
-  thoracic:       { x: 50, y: 25 },
-  lumbar:         { x: 50, y: 40 },
-  sacrum:         { x: 50, y: 48 },
-  coccyx:         { x: 50, y: 54 },
-  ilium_r:        { x: 58, y: 50 },
-  ilium_l:        { x: 42, y: 50 },
-  pubis:          { x: 50, y: 55 },
-  humerus_r:      { x: 68, y: 25 },
-  humerus_l:      { x: 32, y: 25 },
-  radius_r:       { x: 72, y: 40 },
-  ulna_r:         { x: 66, y: 40 },
-  radius_l:       { x: 28, y: 40 },
-  ulna_l:         { x: 34, y: 40 },
-  carpals_r:      { x: 69, y: 46 },
-  carpals_l:      { x: 31, y: 46 },
-  metacarpals_r:  { x: 68, y: 49 },
-  metacarpals_l:  { x: 30, y: 49 },
-  phalanges_r:    { x: 68, y: 53 },
-  phalanges_l:    { x: 29, y: 53 },
-  femur_r:        { x: 57, y: 70 },
-  femur_l:        { x: 44, y: 70 },
-  patella_r:      { x: 56, y: 80 },
-  patella_l:      { x: 44, y: 80 },
-  tibia_r:        { x: 55, y: 88 },
-  tibia_l:        { x: 46, y: 88 },
-  fibula_r:       { x: 60, y: 89 },
-  fibula_l:       { x: 41, y: 89 },
-  talus_r:        { x: 56, y: 97 },
-  talus_l:        { x: 45, y: 97 },
-  calcaneus_r:    { x: 52, y: 98 },
-  calcaneus_l:    { x: 48, y: 98 },
-  metatarsals_r:  { x: 58, y: 96 },
-  metatarsals_l:  { x: 45, y: 96 },
-  toephalanges_r: { x: 59, y: 93 },
-  toephalanges_l: { x: 41, y: 93 },
-};
-
-const PAIN_TYPES = [
-  "Numbness", "Dull Ache", "Hot Burning", "Sharp Stabbing", "Pins", "Other",
+// ─── Pain intensity → color ───────────────────────────────────────────────────
+const PAIN_COLORS = [
+  "#22c55e","#4ade80","#a3e635","#facc15",
+  "#fb923c","#f97316","#ef4444","#dc2626","#b91c1c","#7f1d1d","#450a0a",
 ];
+function painColor(intensity: number) {
+  return PAIN_COLORS[Math.min(10, Math.max(0, Math.round(intensity)))];
+}
+
+const PAIN_TYPES = ["Numbness","Dull Ache","Hot Burning","Sharp Stabbing","Pins","Other"];
 const PAIN_TYPE_AR: Record<string, string> = {
   Numbness:       "خدر",
   "Dull Ache":    "ألم خفيف",
@@ -82,6 +39,84 @@ function painBadgeColor(intensity: number) {
   return                      "bg-red-200     text-red-900     border-red-300";
 }
 
+// ─── Human body image with pain-point overlay ─────────────────────────────────
+interface HumanBodyMapProps {
+  points: PainPoint[];
+  onAreaClick?: (x: number, y: number) => void;
+  onPointClick?: (index: number) => void;
+  readonly?: boolean;
+}
+
+function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false }: HumanBodyMapProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleContainerClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (readonly || !onAreaClick || !containerRef.current) return;
+    // Ignore if clicked on a pain point marker
+    if ((e.target as HTMLElement).closest("[data-pain-marker]")) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    onAreaClick(x, y);
+  }, [readonly, onAreaClick]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative select-none mx-auto ${readonly ? "" : "cursor-crosshair"}`}
+      style={{ width: "320px" }}
+      onClick={handleContainerClick}
+    >
+      {/* The actual SVG image */}
+      <img
+        src="/human.svg"
+        alt="خريطة جسم الإنسان"
+        className="w-full h-auto block"
+        draggable={false}
+      />
+
+      {/* Pain point markers */}
+      {points.map((pt, i) => (
+        <div
+          key={i}
+          data-pain-marker="1"
+          title={`شدة: ${pt.intensity}/10${pt.painType ? ` · ${PAIN_TYPE_AR[pt.painType] ?? pt.painType}` : ""}${pt.notes ? `\n${pt.notes}` : ""}`}
+          onClick={(e) => { e.stopPropagation(); if (!readonly) onPointClick?.(i); }}
+          style={{
+            position: "absolute",
+            left: `${pt.x}%`,
+            top: `${pt.y}%`,
+            transform: "translate(-50%, -50%)",
+            width: "22px",
+            height: "22px",
+            borderRadius: "50%",
+            backgroundColor: painColor(pt.intensity),
+            border: "2.5px solid white",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+            cursor: readonly ? "default" : "pointer",
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "9px",
+            fontWeight: "bold",
+            color: "white",
+          }}
+        >
+          {pt.intensity}
+        </div>
+      ))}
+
+      {!readonly && (
+        <p className="text-[10px] text-muted-foreground text-center mt-1 select-none pointer-events-none">
+          انقر على الجسم لتحديد موقع الألم
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 interface BodyPainMapProps {
   points: PainPoint[];
   onChange?: (points: PainPoint[]) => void;
@@ -89,83 +124,71 @@ interface BodyPainMapProps {
 }
 
 export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapProps) {
-  const [dialogOpen, setDialogOpen]     = useState(false);
-  const [pendingBoneId, setPendingBoneId] = useState<string | null>(null);
-  const [editingPoint, setEditingPoint] = useState<PainPoint | null>(null);
+  const [dialogOpen, setDialogOpen]       = useState(false);
+  const [pendingPos, setPendingPos]       = useState<{ x: number; y: number } | null>(null);
+  const [editingIndex, setEditingIndex]   = useState<number | null>(null);
   const [form, setForm] = useState({ intensity: 5, painType: "Dull Ache", notes: "" });
 
-  // boneId → max intensity (for coloring)
-  const markedBones: Record<string, number> = {};
-  points.forEach((p) => {
-    if (p.label) markedBones[p.label] = Math.max(markedBones[p.label] ?? 0, p.intensity);
-  });
-
-  const handleBoneClick = (id: string) => {
-    const existing = points.find((p) => p.label === id);
-    setPendingBoneId(id);
-    if (existing) {
-      setEditingPoint(existing);
-      setForm({ intensity: existing.intensity, painType: existing.painType ?? "Dull Ache", notes: existing.notes ?? "" });
-    } else {
-      setEditingPoint(null);
-      setForm({ intensity: 5, painType: "Dull Ache", notes: "" });
-    }
+  function openAdd(x: number, y: number) {
+    setPendingPos({ x, y });
+    setEditingIndex(null);
+    setForm({ intensity: 5, painType: "Dull Ache", notes: "" });
     setDialogOpen(true);
-  };
+  }
 
-  const handleSave = () => {
-    if (!pendingBoneId) return;
-    const center = BONE_CENTERS[pendingBoneId] ?? { x: 50, y: 50 };
-    if (editingPoint) {
-      onChange?.(points.map((p) => p === editingPoint
-        ? { ...p, ...form, label: pendingBoneId }
-        : p
-      ));
+  function openEdit(index: number) {
+    const pt = points[index];
+    setPendingPos({ x: pt.x, y: pt.y });
+    setEditingIndex(index);
+    setForm({ intensity: pt.intensity, painType: pt.painType ?? "Dull Ache", notes: pt.notes ?? "" });
+    setDialogOpen(true);
+  }
+
+  function handleSave() {
+    if (!pendingPos) return;
+    if (editingIndex !== null) {
+      onChange?.(points.map((p, i) => i === editingIndex ? { ...p, ...form } : p));
     } else {
       const newPoint: PainPoint = {
         side: "front",
-        x: center.x,
-        y: center.y,
-        label: pendingBoneId,
+        x: pendingPos.x,
+        y: pendingPos.y,
         ...form,
       };
       onChange?.([...points, newPoint]);
     }
     setDialogOpen(false);
-  };
+  }
 
-  const handleDelete = () => {
-    if (editingPoint) onChange?.(points.filter((p) => p !== editingPoint));
+  function handleDelete() {
+    if (editingIndex !== null) onChange?.(points.filter((_, i) => i !== editingIndex));
     setDialogOpen(false);
-  };
+  }
 
-  const boneName = pendingBoneId ? (BONES[pendingBoneId]?.ar ?? pendingBoneId) : "";
+  const isEditing = editingIndex !== null;
 
   return (
     <div className="space-y-4">
-      <BodyMap
-        markedBones={markedBones}
-        onBoneClick={readonly ? undefined : handleBoneClick}
+      <HumanBodyMap
+        points={points}
+        onAreaClick={readonly ? undefined : openAdd}
+        onPointClick={readonly ? undefined : openEdit}
         readonly={readonly}
       />
 
-      {!readonly && (
-        <p className="text-xs text-center text-muted-foreground">
-          انقر على أي عظمة لتسجيل ألم — العظام الملوّنة تحتوي على ألم مسجّل
-        </p>
-      )}
-
-      {/* List of marked bones */}
+      {/* Pain point list */}
       {points.length > 0 && (
         <div className="flex flex-wrap gap-2 justify-center">
           {points.map((p, i) => (
             <button
               key={i}
-              onClick={() => !readonly && handleBoneClick(p.label ?? "")}
+              type="button"
+              onClick={() => !readonly && openEdit(i)}
               disabled={readonly}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border ${painBadgeColor(p.intensity)} ${!readonly ? "hover:opacity-80 cursor-pointer" : "cursor-default"}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border ${painBadgeColor(p.intensity)} ${!readonly ? "hover:opacity-80 cursor-pointer" : "cursor-default"}`}
             >
-              {BONES[p.label ?? ""]?.ar ?? p.label}
+              <MapPin className="h-3 w-3 opacity-70" />
+              <span>نقطة {i + 1}</span>
               <span className="opacity-70">· {p.intensity}/10</span>
               {p.painType && <span className="opacity-60">· {PAIN_TYPE_AR[p.painType] ?? p.painType}</span>}
             </button>
@@ -173,11 +196,12 @@ export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapP
         </div>
       )}
 
+      {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
             <DialogTitle>
-              {editingPoint ? `تعديل ألم: ${boneName}` : `إضافة ألم: ${boneName}`}
+              {isEditing ? "تعديل نقطة ألم" : "إضافة نقطة ألم"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -208,7 +232,7 @@ export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapP
             </div>
           </div>
           <DialogFooter>
-            {editingPoint && (
+            {isEditing && (
               <Button variant="destructive" size="sm" onClick={handleDelete}>
                 <X className="h-4 w-4 ml-1" />حذف
               </Button>

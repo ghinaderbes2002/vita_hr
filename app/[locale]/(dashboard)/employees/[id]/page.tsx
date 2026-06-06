@@ -9,6 +9,7 @@ import {
   BadgeCheck, Cigarette, Award, ExternalLink,
   Fingerprint, Plus, Trash2, Settings, Save, ClipboardList, Pencil, X,
   Clock, CalendarDays, AlertTriangle, CheckCircle2,
+  ArrowLeftRight, DollarSign, FolderOpen,
 } from "lucide-react";
 import { PROBATION_RECOMMENDATION_OPTIONS } from "@/lib/api/probation-evaluations";
 import { useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
@@ -28,6 +29,9 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TrainingCertificate, EmployeeAllowance } from "@/types";
 import { useEmployee, useUpdateEmployee, useManagerNotes, useUpdateManagerNotes } from "@/lib/hooks/use-employees";
+import { EmployeeDossier } from "@/components/features/employees/employee-dossier";
+import { TransferDialog } from "@/components/features/employees/transfer-dialog";
+import { SalaryChangeDialog } from "@/components/features/employees/salary-change-dialog";
 import { assetUrl, formatUSD } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ActionGuard } from "@/components/permissions/action-guard";
@@ -425,6 +429,10 @@ export default function EmployeeDetailsPage() {
   const fpList: EmployeeFingerprint[] = (fingerprints as any) || [];
   const deviceList: BiometricDevice[] = (devicesData as any) || [];
 
+  // Transfer & Salary-change dialogs
+  const [transferOpen, setTransferOpen]           = useState(false);
+  const [salaryChangeOpen, setSalaryChangeOpen]   = useState(false);
+
   // Contract end date inline edit
   const [contractEditOpen, setContractEditOpen] = useState(false);
   const [contractEditValue, setContractEditValue] = useState("");
@@ -603,17 +611,31 @@ export default function EmployeeDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Button variant="ghost" onClick={() => router.back()} className="gap-2">
           <ArrowRight className="h-4 w-4" />
           {t("common.back")}
         </Button>
-        {canExport && (
-          <Button variant="outline" className="gap-2" onClick={() => { setExportError(null); setExportDialogOpen(true); }}>
-            <FileDown className="h-4 w-4" />
-            تصدير ملف كامل
-          </Button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setTransferOpen(true)}>
+              <ArrowLeftRight className="h-4 w-4" />
+              نقل / تحويل
+            </Button>
+          </ActionGuard>
+          <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setSalaryChangeOpen(true)}>
+              <DollarSign className="h-4 w-4" />
+              تغيير راتب
+            </Button>
+          </ActionGuard>
+          {canExport && (
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => { setExportError(null); setExportDialogOpen(true); }}>
+              <FileDown className="h-4 w-4" />
+              تصدير ملف كامل
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ─── Hero Card ─────────────────────────────────────────── */}
@@ -1373,6 +1395,33 @@ export default function EmployeeDetailsPage() {
 
       {/* ─── السجل التأديبي والمكافآت ──────────────────────── */}
       <_DisciplinaryTab employeeId={employeeId} />
+
+      {/* ─── الإضبارة الوظيفية ──────────────────────────────── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FolderOpen className="h-4 w-4 text-primary" />
+            الإضبارة الوظيفية
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EmployeeDossier employeeId={employeeId} />
+        </CardContent>
+      </Card>
+
+      {/* ─── Transfer & Salary-change Dialogs ──────────────── */}
+      <TransferDialog
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        employeeId={employeeId}
+      />
+      <SalaryChangeDialog
+        open={salaryChangeOpen}
+        onOpenChange={setSalaryChangeOpen}
+        employeeId={employeeId}
+        currentSalary={emp?.basicSalary}
+        currentCurrency={emp?.salaryCurrency ?? "SYP"}
+      />
 
       {/* ─── Start Workflow Dialog ─────────────────────────── */}
       <Dialog open={wfDialogOpen} onOpenChange={setWfDialogOpen}>

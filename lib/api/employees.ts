@@ -1,6 +1,46 @@
 import { apiClient } from "./client";
 import { Employee, ApiResponse, PaginationParams } from "@/types";
 
+export interface TransferDto {
+  departmentId?: string;
+  jobTitleId?: string;
+  jobGradeId?: string;
+  managerId?: string;
+  basicSalary?: number;
+  salaryCurrency?: string;
+  effectiveDate: string;
+  note?: string;
+}
+
+export interface SalaryChangeDto {
+  basicSalary: number;
+  salaryCurrency: string;
+  eventType?: "SALARY_CHANGE" | "PROMOTION";
+  effectiveDate: string;
+  note?: string;
+}
+
+export interface DossierEvent {
+  id?: string;
+  category: "HISTORY" | "PENALTY" | "REWARD" | "SALARY_ADVANCE";
+  type: string;
+  date: string;
+  fromValue?: Record<string, any>;
+  toValue?: Record<string, any>;
+  amount?: number;
+  penaltyDays?: number;
+  reason?: string;
+  status?: string;
+  note?: string;
+  performedBy?: string;
+  remainingBalance?: number;
+}
+
+export interface DossierResponse {
+  employee: Record<string, any>;
+  timeline: DossierEvent[];
+}
+
 export const employeesApi = {
   getAll: async (
     params?: PaginationParams
@@ -87,5 +127,18 @@ export const employeesApi = {
   getContractReport: async (days: number): Promise<any[]> => {
     const response = await apiClient.get("/employees/reports/contract-ending", { params: { days } });
     return response.data?.data ?? response.data ?? [];
+  },
+
+  transfer: async (id: string, dto: TransferDto): Promise<void> => {
+    await apiClient.post(`/employees/${id}/transfer`, dto);
+  },
+
+  salaryChange: async (id: string, dto: SalaryChangeDto): Promise<void> => {
+    await apiClient.post(`/employees/${id}/salary-change`, dto);
+  },
+
+  getDossier: async (id: string): Promise<DossierResponse> => {
+    const response = await apiClient.get(`/employees/${id}/dossier`);
+    return response.data?.data ?? response.data;
   },
 };
