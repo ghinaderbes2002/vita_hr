@@ -1057,6 +1057,20 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   )}
                 />
 
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ملاحظات HR ({t("common.optional")})</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} rows={3} placeholder="ملاحظات حرة عن الموظف..." />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Allowances */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">

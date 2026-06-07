@@ -15,6 +15,8 @@ export function useEmployee(id: string) {
     queryKey: ["employee", id],
     queryFn: () => employeesApi.getById(id),
     enabled: !!id,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -84,8 +86,9 @@ export function useUpdateEmployee() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       employeesApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employee", id] });
       toast.success("تم تحديث الموظف بنجاح");
     },
     onError: (error: any) => {

@@ -360,6 +360,22 @@ export default function EmployeeDetailsPage() {
   const canExport = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.EXPORT);
   const canEditNotes = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.UPDATE);
 
+  // HR notes
+  const [notesEditing, setNotesEditing] = useState(false);
+  const [notesValue, setNotesValue] = useState("");
+
+  function openNotesEdit() {
+    setNotesValue(emp?.notes || "");
+    setNotesEditing(true);
+  }
+
+  function saveNotes() {
+    updateEmployee.mutate(
+      { id: employeeId, data: { notes: notesValue || null } },
+      { onSuccess: () => setNotesEditing(false) }
+    );
+  }
+
   // Evaluation edit state
   const [evalEditField, setEvalEditField] = useState<"interviewEvaluation" | "exitInterviewEvaluation" | null>(null);
   const [evalEditValue, setEvalEditValue] = useState("");
@@ -374,22 +390,6 @@ export default function EmployeeDetailsPage() {
     updateEmployee.mutate(
       { id: employeeId, data: { [evalEditField]: evalEditValue || null } },
       { onSuccess: () => setEvalEditField(null) }
-    );
-  }
-
-  // HR notes (stored on employee.notes)
-  const [notesEditing, setNotesEditing] = useState(false);
-  const [notesValue, setNotesValue] = useState("");
-
-  function openNotesEdit() {
-    setNotesValue(emp?.notes || "");
-    setNotesEditing(true);
-  }
-
-  function saveNotes() {
-    updateEmployee.mutate(
-      { id: employeeId, data: { notes: notesValue || null } },
-      { onSuccess: () => setNotesEditing(false) }
     );
   }
 
