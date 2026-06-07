@@ -22,7 +22,7 @@ export interface SalaryChangeDto {
 
 export interface DossierEvent {
   id?: string;
-  category: "HISTORY" | "PENALTY" | "REWARD" | "SALARY_ADVANCE";
+  category: "HISTORY" | "PENALTY" | "REWARD" | "SALARY_ADVANCE" | "LEAVE_REQUEST" | "REQUEST";
   type: string;
   date: string;
   fromValue?: Record<string, any>;
@@ -34,6 +34,13 @@ export interface DossierEvent {
   note?: string;
   performedBy?: string;
   remainingBalance?: number;
+  // LEAVE_REQUEST fields
+  leaveTypeName?: string;
+  startDate?: string;
+  endDate?: string;
+  totalDays?: number;
+  // REQUEST fields
+  requestNumber?: string;
 }
 
 export interface DossierResponse {

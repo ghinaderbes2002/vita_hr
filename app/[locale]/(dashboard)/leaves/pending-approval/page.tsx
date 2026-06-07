@@ -29,17 +29,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/features/leave-requests/status-badge";
 import {
   useLeaveRequests,
+  usePendingManagerLeaveRequests,
   useApproveManager,
   useRejectManager,
   useApproveHr,
   useRejectHr,
 } from "@/lib/hooks/use-leave-requests";
-import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { LeaveRequest } from "@/lib/api/leave-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useAuthStore } from "@/lib/stores/auth-store";
 import { Pagination } from "@/components/shared/pagination";
 
 export default function PendingApprovalPage() {
@@ -53,8 +52,6 @@ export default function PendingApprovalPage() {
   const [actionType, setActionType] = useState<"manager" | "hr">("manager");
 
   const { hasPermission, isAdmin } = usePermissions();
-  const { user } = useAuthStore();
-  const { data: myEmployee } = useMyEmployee();
   const canApproveHr      = isAdmin() || hasPermission("leave_requests:approve_hr");
   const showManagerTab    = isAdmin() || !canApproveHr;
   const showHrTab         = canApproveHr;
@@ -65,21 +62,17 @@ export default function PendingApprovalPage() {
   const [page, setPage] = useState(1);
   const LIMIT = 10;
 
-  // Use employee profile ID for manager filtering; fall back to auth store if already available
-  const managerEmployeeId = (myEmployee as any)?.id ?? user?.employeeId;
-  const needsManagerFilter = activeTab === "manager" && !isAdmin();
-
-  const activeStatus = activeTab === "manager" ? "PENDING_MANAGER" : "PENDING_HR";
-  const { data, isLoading } = useLeaveRequests(
-    {
-      status: activeStatus as any,
-      page,
-      limit: LIMIT,
-      managerId: needsManagerFilter ? managerEmployeeId : undefined,
-    },
-    // Block the query for the manager tab until we have the employeeId — prevents showing all requests
-    { enabled: !needsManagerFilter || !!managerEmployeeId },
+  const { data: managerData, isLoading: managerLoading } = usePendingManagerLeaveRequests(
+    { status: "PENDING_MANAGER", page, limit: LIMIT },
+    { enabled: activeTab === "manager" },
   );
+  const { data: hrData, isLoading: hrLoading } = useLeaveRequests(
+    { status: "PENDING_HR" as any, page, limit: LIMIT },
+    { enabled: activeTab === "hr" },
+  );
+
+  const data = activeTab === "manager" ? managerData : hrData;
+  const isLoading = activeTab === "manager" ? managerLoading : hrLoading;
   const approveManager = useApproveManager();
   const rejectManager = useRejectManager();
   const approveHr = useApproveHr();

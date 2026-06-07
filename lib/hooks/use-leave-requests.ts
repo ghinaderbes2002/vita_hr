@@ -40,6 +40,18 @@ export function useLeaveRequests(
   });
 }
 
+// Get leave requests pending the logged-in manager (uses /pending-manager endpoint, no managerId needed)
+export function usePendingManagerLeaveRequests(
+  params?: { status?: string; page?: number; limit?: number },
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ["leave-requests-pending-manager", params],
+    queryFn: () => leaveRequestsApi.getPendingManager(params),
+    enabled: options?.enabled ?? true,
+  });
+}
+
 // Get single leave request
 export function useLeaveRequest(id: string) {
   return useQuery({

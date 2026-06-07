@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTransferEmployee } from "@/lib/hooks/use-employees";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { AllowancesEditor, AllowanceRow } from "./allowances-editor";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { useJobGrades } from "@/lib/hooks/use-job-grades";
@@ -57,6 +58,8 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
     effectiveDate: today,
     note:          "",
   });
+  const [editAllowances, setEditAllowances] = useState(false);
+  const [allowanceRows, setAllowanceRows] = useState<AllowanceRow[]>([]);
 
   function set(k: keyof typeof form, v: string) {
     setForm(f => ({ ...f, [k]: v }));
@@ -67,6 +70,8 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
       departmentId: "", jobTitleId: "", jobGradeId: "", managerId: "",
       basicSalary: "", salaryCurrency: "USD", effectiveDate: today, note: "",
     });
+    setEditAllowances(false);
+    setAllowanceRows([]);
   }
 
   async function handleSubmit() {
@@ -77,6 +82,11 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
     if (form.managerId)      dto.managerId     = form.managerId;
     if (form.basicSalary)    { dto.basicSalary = parseFloat(form.basicSalary); dto.salaryCurrency = form.salaryCurrency; }
     if (form.note.trim())    dto.note = form.note.trim();
+    if (editAllowances) {
+      dto.allowances = allowanceRows
+        .filter(r => r.type && r.amount)
+        .map(r => ({ type: r.type, amount: parseFloat(r.amount) }));
+    }
 
     await transfer.mutateAsync({ id: employeeId, dto: dto as any });
     reset();
@@ -85,7 +95,7 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
 
   const canSubmit = !!form.effectiveDate && (
     !!form.departmentId || !!form.jobTitleId || !!form.jobGradeId ||
-    !!form.managerId    || !!form.basicSalary
+    !!form.managerId    || !!form.basicSalary || editAllowances
   );
 
   return (
@@ -176,6 +186,14 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
               </Select>
             </div>
           </div>
+
+          {/* Allowances */}
+          <AllowancesEditor
+            enabled={editAllowances}
+            onEnabledChange={setEditAllowances}
+            rows={allowanceRows}
+            onRowsChange={setAllowanceRows}
+          />
 
           {/* Effective Date */}
           <div className="space-y-1.5">

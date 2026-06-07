@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { ArrowRight, CheckCircle2, XCircle, Clock, SkipForward, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,12 +15,11 @@ import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { useRef, useState } from "react";
 import { ApprovalStep, ApprovalStatus } from "@/types";
-import { useAuthStore } from "@/lib/stores/auth-store";
 import { assetUrl } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, FileText, Upload, Download } from "lucide-react";
+import { Loader2, FileText, Upload, Download, CheckCircle } from "lucide-react";
 import { useUploadHiringPdf } from "@/lib/hooks/use-requests";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { apiClient } from "@/lib/api/client";
@@ -174,6 +173,7 @@ export default function RequestDetailPage() {
   const params = useParams();
   const router = useRouter();
   const t = useTranslations();
+  const locale = useLocale();
   const id = params.id as string;
 
   const [approveOpen, setApproveOpen] = useState(false);
@@ -181,7 +181,9 @@ export default function RequestDetailPage() {
   const [hrApproveOpen, setHrApproveOpen] = useState(false);
   const [hrRejectOpen, setHrRejectOpen] = useState(false);
   const [approveExtra, setApproveExtra] = useState<{ recommendation: string; penaltyDays: string; amount: string }>({ recommendation: "", penaltyDays: "", amount: "" });
-  const { hasPermission } = usePermissions();
+  const { hasPermission, isAdmin } = usePermissions();
+  const canHrApprove = isAdmin() || hasPermission("requests:hr-approve");
+  const canHrReject  = isAdmin() || hasPermission("requests:hr-reject");
   const uploadHiringPdf = useUploadHiringPdf();
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
@@ -218,7 +220,6 @@ export default function RequestDetailPage() {
   const hrApproveRequest = useHrApproveRequest();
   const hrRejectRequest = useHrRejectRequest();
   const submitExitInterview = useSubmitExitInterview();
-  const { user } = useAuthStore();
 
   const [exitForm, setExitForm] = useState({
     resignationReason: "",
@@ -251,6 +252,11 @@ export default function RequestDetailPage() {
     await hrApproveRequest.mutateAsync({ id, body });
     setHrApproveOpen(false);
     setApproveExtra({ recommendation: "", penaltyDays: "", amount: "" });
+    if (request?.type === "TRANSFER" && request?.employeeId) {
+      router.push(`/${locale}/employees/${request.employeeId}`);
+    } else if (request?.type === "HIRING_REQUEST") {
+      router.push(`/${locale}/interview-positions`);
+    }
   };
 
   const handleReject = async (reason: string) => {
@@ -298,11 +304,36 @@ export default function RequestDetailPage() {
         title={`طلب رقم ${request.requestNumber}`}
         description={t(`requests.types.${request.type}`)}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" onClick={() => router.back()}>
               <ArrowRight className="h-4 w-4 ml-2" />
               {t("common.back")}
             </Button>
+            {(request.status === "PENDING_HR" || request.status === "IN_APPROVAL") && (
+              <>
+                {canHrApprove && (
+                  <Button
+                    className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => setHrApproveOpen(true)}
+                    disabled={hrApproveRequest.isPending}
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    موافقة
+                  </Button>
+                )}
+                {canHrReject && (
+                  <Button
+                    variant="destructive"
+                    className="gap-1.5"
+                    onClick={() => setHrRejectOpen(true)}
+                    disabled={hrRejectRequest.isPending}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    رفض
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         }
       />

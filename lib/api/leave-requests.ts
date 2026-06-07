@@ -198,6 +198,16 @@ export const leaveRequestsApi = {
     await apiClient.delete(`/leave-requests/${id}`);
   },
 
+  // Get leave requests pending the logged-in manager's approval (backend reads manager from token)
+  getPendingManager: async (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<LeaveRequest[]>> => {
+    const response = await apiClient.get("/leave-requests/pending-manager", { params });
+    return response.data;
+  },
+
   // Get requests pending substitute approval (for the logged-in substitute)
   getPendingSubstitute: async (): Promise<LeaveRequest[]> => {
     const response = await apiClient.get("/leave-requests/pending-substitute");

@@ -235,6 +235,7 @@ export interface Employee {
   attachments?: EmployeeAttachment[];
   trainingCertificates?: TrainingCertificate[];
   allowances?: EmployeeAllowance[];
+  notes?: string | null;
   probationResult?: "CONFIRM_POSITION" | "EXTEND_PROBATION" | "TRANSFER_POSITION" | "SALARY_RAISE" | "TERMINATE";
   probationCompletedAt?: string;
   createdAt?: string;

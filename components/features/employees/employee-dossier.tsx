@@ -6,13 +6,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeftRight, TrendingUp, DollarSign, AlertTriangle,
-  Gift, CreditCard, FileText, ChevronDown, ChevronUp
+  Gift, CreditCard, FileText, ChevronDown, ChevronUp,
+  CalendarDays, ClipboardList
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { ALLOWANCE_AR } from "./allowances-editor";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function fmtDate(d: string) {
-  try { return new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" }); }
+  try { return new Date(d).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" }); }
   catch { return d; }
 }
 
@@ -55,6 +57,14 @@ function eventMeta(ev: DossierEvent): {
     icon: <CreditCard className="h-4 w-4" />, label: "سلفة",
     color: "bg-orange-50 border-orange-200", textColor: "text-orange-700",
   };
+  if (ev.category === "LEAVE_REQUEST") return {
+    icon: <CalendarDays className="h-4 w-4" />, label: "طلب إجازة",
+    color: "bg-sky-50 border-sky-200", textColor: "text-sky-700",
+  };
+  if (ev.category === "REQUEST") return {
+    icon: <ClipboardList className="h-4 w-4" />, label: "طلب",
+    color: "bg-violet-50 border-violet-200", textColor: "text-violet-700",
+  };
   return {
     icon: <FileText className="h-4 w-4" />, label: ev.type ?? ev.category,
     color: "bg-muted border-border", textColor: "text-foreground",
@@ -66,7 +76,7 @@ function ChangeRow({ label, from, to }: { label: string; from?: string; to?: str
   if (!from && !to) return null;
   return (
     <div className="flex items-center gap-2 text-sm flex-wrap">
-      <span className="text-muted-foreground min-w-[5rem]">{label}</span>
+      <span className="text-muted-foreground min-w-20">{label}</span>
       {from && <span className="line-through text-muted-foreground/70">{from}</span>}
       {from && to && <ArrowLeftRight className="h-3 w-3 text-muted-foreground shrink-0" />}
       {to && <span className="font-medium">{to}</span>}
@@ -86,18 +96,18 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
     console.log("[Dossier event]", JSON.stringify(ev, null, 2));
   }
 
-  // salary field might come as "salary", "basicSalary", or nested object
+  // salary: new structure is v.salary.basicSalary; fall back to flat v.basicSalary for old events
   function getSalary(v: Record<string, any>): number | undefined {
-    const raw = v.basicSalary ?? v.salary;
+    const raw = v.salary?.basicSalary ?? v.basicSalary;
     if (raw === undefined || raw === null) return undefined;
     if (typeof raw === "number") return raw;
     if (typeof raw === "object") return raw.amount ?? raw.basicSalary;
     return undefined;
   }
-  // currency: check toValue/fromValue AND the event itself
+  // currency: new structure is v.salary.currency; fall back to flat fields for old events
   function getCurrency(v: Record<string, any>): string {
-    return v.salaryCurrency ?? v.newSalaryCurrency ?? v.currency ??
-           v.salary?.currency ?? (ev as any).salaryCurrency ?? "SYP";
+    return v.salary?.currency ?? v.salaryCurrency ?? v.newSalaryCurrency ?? v.currency ??
+           (ev as any).salaryCurrency ?? "SYP";
   }
 
   const hasChanges = ev.category === "HISTORY" && (
@@ -105,6 +115,7 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
     from.jobTitle   || to.jobTitle   ||
     from.jobGrade   || to.jobGrade   ||
     from.manager    || to.manager    ||
+    Array.isArray(from.allowances) || Array.isArray(to.allowances) ||
     getSalary(from) !== undefined || getSalary(to) !== undefined
   );
 
@@ -149,9 +160,34 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
           />
           <ChangeRow
             label="المدير"
-            from={from.manager ? `${from.manager.firstNameAr ?? ""} ${from.manager.lastNameAr ?? ""}`.trim() : undefined}
-            to={to.manager ? `${to.manager.firstNameAr ?? ""} ${to.manager.lastNameAr ?? ""}`.trim() : undefined}
+            from={from.manager
+              ? (from.manager.name ?? `${from.manager.firstNameAr ?? ""} ${from.manager.lastNameAr ?? ""}`.trim()) || undefined
+              : undefined}
+            to={to.manager
+              ? (to.manager.name ?? `${to.manager.firstNameAr ?? ""} ${to.manager.lastNameAr ?? ""}`.trim()) || undefined
+              : undefined}
           />
+          {/* Allowances */}
+          {(Array.isArray(from.allowances) || Array.isArray(to.allowances)) && (
+            <div className="flex items-start gap-2 text-sm">
+              <span className="text-muted-foreground min-w-20">البدلات</span>
+              <div className="space-y-0.5">
+                {Array.isArray(from.allowances) && from.allowances.length > 0 && (
+                  <p className="line-through text-muted-foreground/70">
+                    {from.allowances.map((a: any) => `${ALLOWANCE_AR[a.type] ?? a.type}: ${a.amount}`).join("، ")}
+                  </p>
+                )}
+                {Array.isArray(to.allowances) && to.allowances.length > 0 && (
+                  <p className="font-medium">
+                    {to.allowances.map((a: any) => `${ALLOWANCE_AR[a.type] ?? a.type}: ${a.amount}`).join("، ")}
+                  </p>
+                )}
+                {Array.isArray(to.allowances) && to.allowances.length === 0 && (
+                  <p className="text-xs text-red-600">تم حذف جميع البدلات</p>
+                )}
+              </div>
+            </div>
+          )}
           {(getSalary(from) !== undefined || getSalary(to) !== undefined) && (
             <ChangeRow
               label="الراتب"
@@ -199,6 +235,39 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
         </div>
       )}
 
+      {/* LEAVE_REQUEST */}
+      {ev.category === "LEAVE_REQUEST" && (
+        <div className="text-sm space-y-1">
+          {ev.leaveTypeName && <p>النوع: <span className="font-medium">{ev.leaveTypeName}</span></p>}
+          {ev.startDate && ev.endDate && (
+            <p>{fmtDate(ev.startDate)} — {fmtDate(ev.endDate)}
+              {ev.totalDays != null && <span className="text-muted-foreground mr-1">({ev.totalDays} يوم)</span>}
+            </p>
+          )}
+          {ev.reason && <p className="text-muted-foreground">{ev.reason}</p>}
+          {ev.status && (
+            <Badge variant="outline" className="text-xs">
+              {{ PENDING_MANAGER: "بانتظار المدير", PENDING_HR: "بانتظار HR", APPROVED: "موافق عليها",
+                 REJECTED: "مرفوضة", CANCELLED: "ملغاة", IN_PROGRESS: "جارية", COMPLETED: "منتهية" }[ev.status] ?? ev.status}
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* REQUEST */}
+      {ev.category === "REQUEST" && (
+        <div className="text-sm space-y-1">
+          {ev.requestNumber && <p className="font-mono text-xs text-muted-foreground">{ev.requestNumber}</p>}
+          {ev.reason && <p className="text-muted-foreground">{ev.reason}</p>}
+          {ev.status && (
+            <Badge variant="outline" className="text-xs">
+              {{ PENDING_MANAGER: "بانتظار المدير", PENDING_HR: "بانتظار HR", IN_APPROVAL: "قيد الموافقة",
+                 APPROVED: "موافق عليه", REJECTED: "مرفوض", CANCELLED: "ملغى" }[ev.status] ?? ev.status}
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* global note */}
       {ev.note && (
         <p className="text-xs text-muted-foreground border-t border-current/10 pt-2 mt-2">{ev.note}</p>
@@ -211,7 +280,7 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
 export function EmployeeDossier({ employeeId }: { employeeId: string }) {
   const { data, isLoading, isError }   = useEmployeeDossier(employeeId);
   const { data: empData }              = useEmployees({ limit: 500 });
-  const timeline: DossierEvent[] = data?.timeline ?? [];
+  const timeline: DossierEvent[] = (data?.timeline ?? []).filter(ev => ev.status !== "DRAFT");
 
   const userMap = useMemo(() => {
     const m: Record<string, string> = {};

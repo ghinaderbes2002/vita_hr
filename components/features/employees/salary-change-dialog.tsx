@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSalaryChange } from "@/lib/hooks/use-employees";
+import { AllowancesEditor, AllowanceRow } from "./allowances-editor";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -32,6 +33,8 @@ export function SalaryChangeDialog({ open, onOpenChange, employeeId, currentSala
     effectiveDate:  today,
     note:           "",
   });
+  const [editAllowances, setEditAllowances] = useState(false);
+  const [allowanceRows, setAllowanceRows] = useState<AllowanceRow[]>([]);
 
   function set<K extends keyof typeof form>(k: K, v: typeof form[K]) {
     setForm(f => ({ ...f, [k]: v }));
@@ -42,6 +45,8 @@ export function SalaryChangeDialog({ open, onOpenChange, employeeId, currentSala
       basicSalary: "", salaryCurrency: currentCurrency ?? "USD",
       eventType: "SALARY_CHANGE", effectiveDate: today, note: "",
     });
+    setEditAllowances(false);
+    setAllowanceRows([]);
   }
 
   async function handleSubmit() {
@@ -53,6 +58,11 @@ export function SalaryChangeDialog({ open, onOpenChange, employeeId, currentSala
         eventType: form.eventType,
         effectiveDate: form.effectiveDate,
         note: form.note.trim() || undefined,
+        ...(editAllowances && {
+          allowances: allowanceRows
+            .filter(r => r.type && r.amount)
+            .map(r => ({ type: r.type, amount: parseFloat(r.amount) })),
+        }),
       },
     });
     reset();
@@ -110,6 +120,14 @@ export function SalaryChangeDialog({ open, onOpenChange, employeeId, currentSala
               </Select>
             </div>
           </div>
+
+          {/* Allowances */}
+          <AllowancesEditor
+            enabled={editAllowances}
+            onEnabledChange={setEditAllowances}
+            rows={allowanceRows}
+            onRowsChange={setAllowanceRows}
+          />
 
           {/* Effective Date */}
           <div className="space-y-1.5">

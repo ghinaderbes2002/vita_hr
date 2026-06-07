@@ -8,6 +8,8 @@ export function useDashboard() {
       const res = await dashboardApi.get();
       return res.data?.data ?? res.data;
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
   });
 }

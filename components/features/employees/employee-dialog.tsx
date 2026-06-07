@@ -65,6 +65,7 @@ type FormData = {
   universityYear?: number; religion?: string; yearsOfExperience?: number;
   certificate1?: string; specialization1?: string; university1?: string; certificateAttachment1?: string;
   certificate2?: string; specialization2?: string; university2?: string; certificateAttachment2?: string;
+  notes?: string;
 };
 
 type Attachment = { fileUrl: string; fileName: string };
@@ -257,6 +258,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     specialization2: z.string().optional(),
     university2: z.string().optional(),
     certificateAttachment2: z.string().optional(),
+    notes: z.string().optional(),
   });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attUploading, setAttUploading] = useState(false);
@@ -326,6 +328,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       specialization2: "",
       university2: "",
       certificateAttachment2: "",
+      notes: "",
     },
   });
 
@@ -380,6 +383,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         specialization2: (employee as any).specialization2 || "",
         university2: (employee as any).university2 || "",
         certificateAttachment2: (employee as any).certificateAttachment2 || "",
+        notes: (employee as any).notes || "",
       });
       setAttachments((employee as any).attachments || []);
       setTrainingCertificates((employee as any).trainingCertificates || []);
@@ -429,6 +433,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         university2: "",
         certificateAttachment2: "",
         interviewEvaluation: defaultInterviewEvaluation,
+        notes: "",
       });
       setAttachments([]);
       setTrainingCertificates([]);
@@ -483,6 +488,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           educationLevel: data.educationLevel || undefined,
           universityYear: data.universityYear ?? undefined,
           religion: data.religion || undefined,
+          notes: data.notes || null,
           ...qualificationFields,
           ...(attachments.length > 0 && { attachments }),
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
@@ -520,6 +526,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           certificate2: rest.certificate2 || undefined,
           specialization2: rest.specialization2 || undefined,
           certificateAttachment2: rest.certificateAttachment2 || undefined,
+          notes: rest.notes || undefined,
           ...(attachments.length > 0 && { attachments }),
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
           ...(allowances.length > 0 && { allowances }),

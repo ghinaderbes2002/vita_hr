@@ -27,8 +27,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { TrainingCertificate, EmployeeAllowance } from "@/types";
-import { useEmployee, useUpdateEmployee, useManagerNotes, useUpdateManagerNotes } from "@/lib/hooks/use-employees";
+import { TrainingCertificate, EmployeeAllowance, EmployeeRewardPenalty } from "@/types";
+import { useEmployee, useUpdateEmployee } from "@/lib/hooks/use-employees";
 import { EmployeeDossier } from "@/components/features/employees/employee-dossier";
 import { TransferDialog } from "@/components/features/employees/transfer-dialog";
 import { SalaryChangeDialog } from "@/components/features/employees/salary-change-dialog";
@@ -56,7 +56,6 @@ import { CreateSalaryAdvanceDialog } from "@/components/features/payroll/create-
 import { CreateCommissionDialog } from "@/components/features/payroll/create-commission-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
-import { EmployeeRewardPenalty } from "@/types";
 
 const MONTHS_AR = [
   "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
@@ -295,6 +294,7 @@ function _EmployeeFinancialTabs({ employeeId }: { employeeId: string }) {
   );
 }
 
+
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800 border-green-200",
   INACTIVE: "bg-gray-100 text-gray-700 border-gray-200",
@@ -357,9 +357,8 @@ export default function EmployeeDetailsPage() {
     }
   }
   const { hasPermission, isAdmin } = usePermissions();
-  const canReadNotes = hasPermission("employees:manager-notes:read");
   const canExport = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.EXPORT);
-  const canWriteNotes = hasPermission("employees:manager-notes:write");
+  const canEditNotes = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.UPDATE);
 
   // Evaluation edit state
   const [evalEditField, setEvalEditField] = useState<"interviewEvaluation" | "exitInterviewEvaluation" | null>(null);
@@ -378,20 +377,18 @@ export default function EmployeeDetailsPage() {
     );
   }
 
-  // Manager notes
-  const { data: managerNotesData } = useManagerNotes(employeeId, canReadNotes);
-  const updateManagerNotes = useUpdateManagerNotes();
+  // HR notes (stored on employee.notes)
   const [notesEditing, setNotesEditing] = useState(false);
   const [notesValue, setNotesValue] = useState("");
 
   function openNotesEdit() {
-    setNotesValue((managerNotesData as any)?.managerNotes || "");
+    setNotesValue(emp?.notes || "");
     setNotesEditing(true);
   }
 
   function saveNotes() {
-    updateManagerNotes.mutate(
-      { employeeId, notes: notesValue },
+    updateEmployee.mutate(
+      { id: employeeId, data: { notes: notesValue || null } },
       { onSuccess: () => setNotesEditing(false) }
     );
   }
@@ -1098,57 +1095,48 @@ export default function EmployeeDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* ─── Manager Notes ─────────────────────────────────── */}
-        {canReadNotes && (
-          <Card className="md:col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-primary" />
-                {t("employees.managerNotes")}
-                {canWriteNotes && !notesEditing && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7 ms-auto" onClick={openNotesEdit}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-                {notesEditing && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7 ms-auto text-destructive" onClick={() => setNotesEditing(false)}>
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {notesEditing ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={notesValue}
-                    rows={4}
-                    onChange={(e) => setNotesValue(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                    placeholder="اكتب الملاحظات هنا..."
-                  />
-                  <Button size="sm" className="gap-1.5 w-full" onClick={saveNotes} disabled={updateManagerNotes.isPending}>
-                    <Save className="h-3.5 w-3.5" />
-                    حفظ الملاحظات
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm whitespace-pre-wrap">
-                    {(managerNotesData as any)?.managerNotes
-                      ? (managerNotesData as any).managerNotes
-                      : <span className="text-muted-foreground italic">لا توجد ملاحظات</span>}
-                  </p>
-                  {(managerNotesData as any)?.managerNotesUpdatedAt && (
-                    <p className="text-xs text-muted-foreground">
-                      آخر تعديل: {new Date((managerNotesData as any).managerNotesUpdatedAt).toLocaleDateString("en-GB")}
-                    </p>
-                  )}
-                </div>
+        {/* ─── HR Notes ──────────────────────────────────────── */}
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              ملاحظات HR
+              {canEditNotes && !notesEditing && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 ms-auto" onClick={openNotesEdit}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
               )}
-            </CardContent>
-          </Card>
-        )}
+              {notesEditing && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 ms-auto text-destructive" onClick={() => setNotesEditing(false)}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {notesEditing ? (
+              <div className="space-y-2">
+                <textarea
+                  value={notesValue}
+                  rows={4}
+                  onChange={(e) => setNotesValue(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                  placeholder="اكتب ملاحظات HR هنا..."
+                />
+                <Button size="sm" className="gap-1.5 w-full" onClick={saveNotes} disabled={updateEmployee.isPending}>
+                  <Save className="h-3.5 w-3.5" />
+                  حفظ الملاحظات
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm whitespace-pre-wrap">
+                {emp?.notes
+                  ? emp.notes
+                  : <span className="text-muted-foreground italic">لا توجد ملاحظات</span>}
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* ─── System Info ───────────────────────────────────── */}
         <Card>
@@ -1396,12 +1384,12 @@ export default function EmployeeDetailsPage() {
       {/* ─── السجل التأديبي والمكافآت ──────────────────────── */}
       <_DisciplinaryTab employeeId={employeeId} />
 
-      {/* ─── الإضبارة الوظيفية ──────────────────────────────── */}
+      {/* ─── السجل الوظيفي ──────────────────────────────────── */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <FolderOpen className="h-4 w-4 text-primary" />
-            الإضبارة الوظيفية
+            السجل الوظيفي
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -881,6 +881,8 @@
       "clinic_physio": "العلاج الفيزيائي",
       "clinic_prosthetics": "الأطراف الصناعية",
       "clinic_reports": "تقارير العيادة",
+      "clinic_inventory": "مخزون العيادة",
+      "clinic_patients": "مرضى العيادة",
       "audit": "سجل التدقيق"
     }
   },

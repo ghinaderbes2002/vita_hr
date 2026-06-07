@@ -63,6 +63,10 @@ interface NavItem {
   hiddenForRoles?: string[];
   /** إظهار القسم دائماً لأصحاب هذه الأدوار بغض النظر عن الصلاحية */
   showForRoles?: string[];
+  /** إخفاء العنصر إذا اسم قسم المستخدم يحتوي على أي كلمة من القائمة */
+  hiddenForDepartments?: string[];
+  /** إظهار العنصر دائماً إذا اسم قسم المستخدم يحتوي على أي كلمة من القائمة */
+  showForDepartments?: string[];
   children?: NavItem[];
 }
 
@@ -81,7 +85,7 @@ const navigation: NavItem[] = [
       { title: "nav.myJustifications", href: "/attendance/my-justifications", icon: FileText, permission: "attendance.justifications.read-own" },
       { title: "nav.myRequests", href: "/requests/my-requests", icon: FileText, permission: "leave_requests:read" },
       { title: "nav.myEvaluations", href: "/evaluations/my-evaluations", icon: ClipboardPen, permission: "evaluation:forms:view-own" },
-      { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read", showForRoles: ["موظف"] },
+      { title: "nav.myCustodies", href: "/custodies/my-custodies", icon: Package, permission: "custodies:read_own" },
       { title: "nav.deductionPoliciesView", href: "/deduction-policies?view=readonly", icon: ShieldCheck, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
     ],
   },
@@ -92,11 +96,11 @@ const navigation: NavItem[] = [
     hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية", "dep_manager", "مدير قسم", "DIRECT_MANAGER"],
     children: [
       { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
-      { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read" },
-      { title: "nav.departments", href: "/departments", icon: Building2, permission: "departments:read" },
-      { title: "nav.jobTitles", href: "/job-titles", icon: FileText, permission: "job-titles:read" },
-      { title: "nav.jobGrades", href: "/job-grades", icon: GraduationCap, permission: "job-grades:read" },
-      { title: "nav.employees", href: "/employees", icon: Users, permission: "employees:read" },
+      { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
+      { title: "nav.departments", href: "/departments", icon: Building2, permission: "departments:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
+      { title: "nav.jobTitles", href: "/job-titles", icon: FileText, permission: "job-titles:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
+      { title: "nav.jobGrades", href: "/job-grades", icon: GraduationCap, permission: "job-grades:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
+      { title: "nav.employees", href: "/employees", icon: Users, permission: "employees:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
     ],
   },
   {
@@ -108,6 +112,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.attendance",
         icon: ClipboardCheck,
+        hiddenForRoles: ["IT", "تقنية المعلومات"],
         children: [
           { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
           { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
@@ -120,6 +125,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.leaves",
         icon: CalendarDays,
+        hiddenForRoles: ["IT", "تقنية المعلومات"],
         children: [
           { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
@@ -130,6 +136,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.requests",
         icon: ClipboardList,
+        hiddenForRoles: ["IT", "تقنية المعلومات"],
         children: [
           { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permissions: ["requests:manager-approve", "requests:hr-approve"] },
           { title: "nav.allRequests", href: "/requests/all", icon: ClipboardList, permission: "requests:read", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
@@ -138,7 +145,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.jobApplications",
         icon: Briefcase,
-        hiddenForRoles: ["DIRECT_MANAGER"],
+        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات"],
         children: [
           { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
           { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
@@ -147,7 +154,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.onboarding",
         icon: LayoutList,
-        hiddenForRoles: ["DIRECT_MANAGER"],
+        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات"],
         children: [
           { title: "nav.onboardingTemplates", href: "/onboarding/templates", icon: ClipboardList },
           { title: "nav.onboardingWorkflows", href: "/onboarding/workflows", icon: LayoutList },
@@ -156,7 +163,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.custodies",
         icon: Package,
-        hiddenForRoles: ["DIRECT_MANAGER"],
+        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات"],
         children: [
           { title: "nav.allCustodies", href: "/custodies", icon: Package, permission: "custodies:read" },
         ],
@@ -172,7 +179,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.deductionPolicies",
         icon: ShieldCheck,
-        hiddenForRoles: ["DIRECT_MANAGER"],
+        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات"],
         children: [
           { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
         ],
@@ -180,7 +187,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.payrollManagement",
         icon: Wallet,
-        hiddenForRoles: ["DIRECT_MANAGER", "CFO", "General Manager", "Follow-up official", "موظف", "HR_Specialist"],
+        hiddenForRoles: ["DIRECT_MANAGER", "CFO", "General Manager", "Follow-up official", "موظف", "HR_Specialist", "IT", "تقنية المعلومات"],
         children: [
           { title: "nav.payrollList", href: "/payroll", icon: Wallet },
           { title: "nav.salaryAdvances", href: "/salary-advances", icon: Banknote },
@@ -190,7 +197,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.hrReports",
         icon: FileBarChart,
-        hiddenForRoles: ["DIRECT_MANAGER", "Follow-up official", "مسؤول متابعة"],
+        hiddenForRoles: ["DIRECT_MANAGER", "Follow-up official", "مسؤول متابعة", "IT", "تقنية المعلومات"],
         children: [
           { title: "nav.hrReportsSummary", href: "/reports/hr", icon: FileBarChart },
           { title: "nav.leaveReports", href: "/reports/leave", icon: FileBarChart },
@@ -211,6 +218,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.evaluations",
         icon: Star,
+        hiddenForRoles: ["IT", "تقنية المعلومات"],
         children: [
           { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
