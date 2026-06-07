@@ -13,7 +13,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function decodeFileName(name: string): string {
+export function decodeFileName(name: string): string {
   // Try URL-encoding fix first
   if (name.includes("%")) {
     try {

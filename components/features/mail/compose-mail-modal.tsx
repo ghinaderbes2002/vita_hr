@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserSearchSelect } from "./user-search-select";
+import { decodeFileName } from "./attachment-list";
 import { useSendMail, useSaveDraft, useUploadAttachment, useForwardMail } from "@/lib/hooks/use-mail";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { toast } from "sonner";
@@ -344,7 +345,7 @@ export function ComposeMailModal({
                 {forwardAttachments.map((att) => (
                   <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground">
                     <Paperclip className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{att.fileName}</span>
+                    <span className="truncate">{decodeFileName(att.fileName)}</span>
                     <span className="text-xs shrink-0">
                       {att.fileSize < 1024 * 1024
                         ? `${(att.fileSize / 1024).toFixed(1)} KB`
