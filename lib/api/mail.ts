@@ -145,6 +145,7 @@ export interface ForwardMailDto {
   recipients: { employeeId: string; type: RecipientType }[];
   subject?: string;
   body?: string;
+  attachmentIds?: string[];
 }
 
 export interface ArchiveFolder {

@@ -39,9 +39,6 @@ export default function LeaveTypesPage() {
   const { data, isLoading } = useLeaveTypes({ search });
   const deleteLeaveType = useDeleteLeaveType();
 
-  // Debug: log API response
-  console.log("Leave Types API response:", data);
-
   const leaveTypes: LeaveType[] = Array.isArray(data)
     ? data
     : Array.isArray((data as any)?.data)
@@ -104,7 +101,7 @@ export default function LeaveTypesPage() {
               <TableHead>{t("leaveTypes.fields.isPaid")}</TableHead>
               <TableHead>{t("leaveTypes.fields.requiresApproval")}</TableHead>
               <TableHead>{t("common.status")}</TableHead>
-              <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
+              <TableHead className="w-17.5">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,10 +130,7 @@ export default function LeaveTypesPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {leaveType.color && (
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: leaveType.color }}
-                        />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: leaveType.color }} />
                       )}
                       <span className="font-medium">{leaveType.code}</span>
                     </div>
@@ -174,10 +168,7 @@ export default function LeaveTypesPage() {
                           </DropdownMenuItem>
                         </ActionGuard>
                         <ActionGuard permission={PERMISSIONS.LEAVE_TYPES.DELETE}>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(leaveType)}
-                            className="text-destructive"
-                          >
+                          <DropdownMenuItem onClick={() => handleDelete(leaveType)} className="text-destructive">
                             <Trash2 className="h-4 w-4 ml-2" />
                             {t("common.delete")}
                           </DropdownMenuItem>

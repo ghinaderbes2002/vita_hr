@@ -25,6 +25,12 @@ import { useSendMail, useSaveDraft, useUploadAttachment, useForwardMail } from "
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { toast } from "sonner";
 
+interface ForwardAttachment {
+  id: string;
+  fileName: string;
+  fileSize: number;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -34,6 +40,7 @@ interface Props {
   defaultToIds?: string[];
   defaultCcIds?: string[];
   defaultBody?: string;
+  forwardAttachments?: ForwardAttachment[];
 }
 
 export function ComposeMailModal({
@@ -45,6 +52,7 @@ export function ComposeMailModal({
   defaultToIds = [],
   defaultCcIds = [],
   defaultBody = "",
+  forwardAttachments = [],
 }: Props) {
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
@@ -129,6 +137,9 @@ export function ComposeMailModal({
           recipients: buildRecipients(),
           subject: subject || undefined,
           body: body || undefined,
+          ...(forwardAttachments.length > 0
+            ? { attachmentIds: forwardAttachments.map((a) => a.id) }
+            : {}),
         },
       });
     } else {
@@ -324,6 +335,26 @@ export function ComposeMailModal({
               className="resize-none rounded-t-none border-t-0"
             />
           </div>
+
+          {/* Forwarded attachments (read-only) */}
+          {forwardAttachments.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">مرفقات الرسالة الأصلية:</p>
+              <div className="border rounded-md divide-y">
+                {forwardAttachments.map((att) => (
+                  <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground">
+                    <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{att.fileName}</span>
+                    <span className="text-xs shrink-0">
+                      {att.fileSize < 1024 * 1024
+                        ? `${(att.fileSize / 1024).toFixed(1)} KB`
+                        : `${(att.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Attachments */}
           <div className="space-y-2">

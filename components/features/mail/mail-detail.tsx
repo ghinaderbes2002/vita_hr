@@ -137,6 +137,25 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     ? ccRecipients.map(getRecipientEmpId).filter(Boolean)
     : [];
 
+  const forwardSenderLine = senderName
+    ? `من: ${senderName}`
+    : "";
+  const forwardDateLine = message.createdAt
+    ? `التاريخ: ${format(new Date(message.createdAt), "PPP", { locale: ar })}`
+    : "";
+  const forwardDefaultBody = [
+    "",
+    "",
+    "---------- رسالة محوّلة ----------",
+    forwardSenderLine,
+    `الموضوع: ${message.subject}`,
+    forwardDateLine,
+    "",
+    stripTags(message.body ?? ""),
+  ]
+    .filter((l, i) => i < 3 || l !== "")
+    .join("\n");
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Toolbar */}
@@ -568,6 +587,8 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           onClose={() => setForwardOpen(false)}
           forwardMessageId={messageId}
           defaultSubject={`Fwd: ${message.subject}`}
+          defaultBody={forwardDefaultBody}
+          forwardAttachments={message.attachments ?? []}
         />
       )}
 
