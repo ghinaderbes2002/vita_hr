@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { Paperclip, Upload, Loader2, ExternalLink, Download } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useUploadAttachment } from "@/lib/hooks/use-mail";
 import type { MailAttachment } from "@/lib/api/mail";
@@ -66,13 +67,14 @@ interface ListProps {
 }
 
 export function AttachmentList({ attachments }: ListProps) {
+  const t = useTranslations("mail");
   if (attachments.length === 0) return null;
 
   return (
     <div className="border rounded-md divide-y mt-4">
       <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-muted/30">
         <Paperclip className="h-4 w-4" />
-        المرفقات ({attachments.length})
+        {t("attachments", { count: attachments.length })}
       </div>
       {attachments.map((a) => (
         <div key={a.id} className="flex items-center justify-between px-3 py-2">
@@ -90,7 +92,7 @@ export function AttachmentList({ attachments }: ListProps) {
                 className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
-                فتح
+                {t("open")}
               </a>
             )}
             <button
@@ -99,7 +101,7 @@ export function AttachmentList({ attachments }: ListProps) {
               onClick={() => downloadFile(fileUrl(a.id), decodeFileName(a.fileName))}
             >
               <Download className="h-3.5 w-3.5" />
-              تحميل
+              {t("download")}
             </button>
           </div>
         </div>
@@ -113,6 +115,7 @@ interface UploadProps {
 }
 
 export function AttachmentUpload({ messageId }: UploadProps) {
+  const t = useTranslations("mail");
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useUploadAttachment();
 
@@ -143,7 +146,7 @@ export function AttachmentUpload({ messageId }: UploadProps) {
         {upload.isPending
           ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
           : <Upload className="h-3.5 w-3.5" />}
-        {upload.isPending ? "جاري الرفع..." : "إرفاق ملف"}
+        {upload.isPending ? t("uploading") : t("attachFile")}
       </Button>
     </div>
   );

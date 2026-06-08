@@ -43,8 +43,8 @@ import { CreateHolidayData } from "@/lib/api/holidays";
 import { Holiday } from "@/types";
 
 const formSchema = z.object({
-  nameAr: z.string().min(1, "الاسم بالعربية مطلوب"),
-  nameEn: z.string().min(1, "الاسم بالإنجليزية مطلوب"),
+  nameAr: z.string().min(1, "Arabic name is required"),
+  nameEn: z.string().min(1, "English name is required"),
   date: z.date(),
   endDate: z.date().optional(),
   type: z.enum(["PUBLIC", "NATIONAL", "RELIGIOUS", "OTHER"]),

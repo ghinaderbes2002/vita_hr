@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search, User, Phone, Building2, Briefcase } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,7 @@ function EmployeeDetail({ employeeId }: { employeeId: string }) {
 }
 
 export function EmployeeDirectorySheet({ open, onOpenChange }: Props) {
+  const t = useTranslations("mail");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -92,14 +94,14 @@ export function EmployeeDirectorySheet({ open, onOpenChange }: Props) {
         <SheetHeader className="px-4 pt-4 pb-3 border-b">
           <SheetTitle className="flex items-center gap-2 text-base">
             <User className="h-4 w-4 text-primary" />
-            دليل الموظفين
+            {t("employeeDirectory")}
           </SheetTitle>
           <div className="relative mt-2">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setExpandedId(null); }}
-              placeholder="ابحث بالاسم..."
+              placeholder={t("searchByName")}
               className="pr-9 h-9 text-sm"
             />
           </div>
@@ -114,7 +116,7 @@ export function EmployeeDirectorySheet({ open, onOpenChange }: Props) {
               </div>
             ))
           ) : employees.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">لا توجد نتائج</p>
+            <p className="text-center text-sm text-muted-foreground py-8">{t("noResults")}</p>
           ) : (
             employees.map((emp: any) => {
               const isExpanded = expandedId === emp.id;
@@ -145,7 +147,7 @@ export function EmployeeDirectorySheet({ open, onOpenChange }: Props) {
                             emp.employmentStatus === "ACTIVE" ? "text-green-600" : "text-muted-foreground",
                           )}
                         >
-                          {emp.employmentStatus === "ACTIVE" ? "نشط" : emp.employmentStatus === "ON_LEAVE" ? "في إجازة" : "غير نشط"}
+                          {emp.employmentStatus === "ACTIVE" ? t("statusActive") : emp.employmentStatus === "ON_LEAVE" ? t("statusOnLeave") : t("statusInactive")}
                         </span>
                       </div>
                     </div>

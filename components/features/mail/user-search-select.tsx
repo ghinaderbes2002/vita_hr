@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Search, X, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +21,9 @@ interface Props {
   exclude?: string[];
 }
 
-export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن موظف...", exclude = [] }: Props) {
+export function UserSearchSelect({ value, onChange, placeholder, exclude = [] }: Props) {
+  const t = useTranslations("mail");
+  const resolvedPlaceholder = placeholder ?? t("searchEmployee");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -111,7 +114,7 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
             onClick={() => onChange([])}
             className="text-xs text-muted-foreground hover:text-destructive transition-colors"
           >
-            حذف الكل ({value.length})
+            {t("clearAll", { count: value.length })}
           </button>
         </div>
       )}
@@ -123,7 +126,7 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           className="pr-9 h-9 text-sm"
         />
       </div>
@@ -138,7 +141,7 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
               ))}
             </div>
           ) : options.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-center text-muted-foreground">لا توجد نتائج</p>
+            <p className="px-3 py-4 text-sm text-center text-muted-foreground">{t("noResults")}</p>
           ) : (
             <>
               {/* Select All row */}
@@ -150,7 +153,7 @@ export function UserSearchSelect({ value, onChange, placeholder = "ابحث عن
                   allVisibleSelected && "bg-primary/5",
                 )}
               >
-                <span>{allVisibleSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}</span>
+                <span>{allVisibleSelected ? t("deselectAll") : t("selectAll")}</span>
                 {allVisibleSelected && <Check className="h-4 w-4 text-primary" />}
               </button>
 

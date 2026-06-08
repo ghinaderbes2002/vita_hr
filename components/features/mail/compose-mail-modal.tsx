@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Send, FileText, X, Paperclip, Loader2, Building2, Bold, Underline, Italic, AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -174,6 +175,7 @@ export function ComposeMailModal({
     onClose();
   };
 
+  const t = useTranslations("mail");
   const isPending = sendMail.isPending || saveDraft.isPending || uploadAttachment.isPending || forwardMail.isPending;
 
   return (
@@ -182,7 +184,7 @@ export function ComposeMailModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-4 w-4" />
-            {forwardMessageId ? "تحويل رسالة" : replyToMessageId ? "رد على رسالة" : "رسالة جديدة"}
+            {forwardMessageId ? t("forwardMessageTitle") : replyToMessageId ? t("replyMessageTitle") : t("newMessageTitle")}
           </DialogTitle>
         </DialogHeader>
 
@@ -190,21 +192,21 @@ export function ComposeMailModal({
           {/* To */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-sm">إلى *</Label>
+              <Label className="text-sm">{t("toLabel")}</Label>
               <div className="flex gap-2">
                 {!showCc && (
                   <button type="button" onClick={() => setShowCc(true)} className="text-xs text-primary hover:underline">
-                    + نسخة (CC)
+                    {t("addCc")}
                   </button>
                 )}
                 {!showBcc && (
                   <button type="button" onClick={() => setShowBcc(true)} className="text-xs text-primary hover:underline">
-                    + نسخة مخفية (BCC)
+                    {t("addBcc")}
                   </button>
                 )}
                 {!showDept && (
                   <button type="button" onClick={() => setShowDept(true)} className="text-xs text-primary hover:underline">
-                    + إرسال لقسم
+                    {t("sendToDept")}
                   </button>
                 )}
               </div>
@@ -212,7 +214,7 @@ export function ComposeMailModal({
             <UserSearchSelect
               value={toIds}
               onChange={setToIds}
-              placeholder="ابحث عن موظف وأضفه..."
+              placeholder={t("searchEmployee")}
             />
           </div>
 
@@ -220,12 +222,12 @@ export function ComposeMailModal({
           {showCc && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-sm">نسخة (CC)</Label>
+                <Label className="text-sm">{t("ccLabel")}</Label>
                 <button type="button" onClick={() => { setShowCc(false); setCcIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <UserSearchSelect value={ccIds} onChange={setCcIds} placeholder="أضف مستلمين للنسخة..." exclude={toIds} />
+              <UserSearchSelect value={ccIds} onChange={setCcIds} placeholder={t("searchEmployee")} exclude={toIds} />
             </div>
           )}
 
@@ -233,12 +235,12 @@ export function ComposeMailModal({
           {showBcc && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-sm">نسخة مخفية (BCC)</Label>
+                <Label className="text-sm">{t("bccLabel")}</Label>
                 <button type="button" onClick={() => { setShowBcc(false); setBccIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <UserSearchSelect value={bccIds} onChange={setBccIds} placeholder="أضف مستلمين مخفيين..." exclude={[...toIds, ...ccIds]} />
+              <UserSearchSelect value={bccIds} onChange={setBccIds} placeholder={t("searchEmployee")} exclude={[...toIds, ...ccIds]} />
             </div>
           )}
 
@@ -248,7 +250,7 @@ export function ComposeMailModal({
               <div className="flex items-center justify-between">
                 <Label className="text-sm flex items-center gap-1">
                   <Building2 className="h-3.5 w-3.5" />
-                  إرسال لقسم
+                  {t("sendToDeptLabel")}
                 </Label>
                 <button type="button" onClick={() => { setShowDept(false); setDepartmentIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
                   <X className="h-3.5 w-3.5" />
@@ -256,7 +258,7 @@ export function ComposeMailModal({
               </div>
               <Select onValueChange={toggleDepartment}>
                 <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="اختر قسماً..." />
+                  <SelectValue placeholder={t("chooseDept")} />
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((d: any) => (
@@ -287,14 +289,14 @@ export function ComposeMailModal({
 
           {/* Subject */}
           <div className="space-y-1.5">
-            <Label className="text-sm">الموضوع *</Label>
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="موضوع الرسالة..." />
+            <Label className="text-sm">{t("subjectLabel")}</Label>
+            <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
 
           {/* Body */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-sm">نص الرسالة *</Label>
+              <Label className="text-sm">{t("bodyLabel")}</Label>
               {/* High Importance */}
               <button
                 type="button"
@@ -306,15 +308,15 @@ export function ComposeMailModal({
                 }`}
               >
                 <AlertCircle className="h-3.5 w-3.5" />
-                مهم جداً
+                {t("highImportance")}
               </button>
             </div>
             {/* Formatting toolbar */}
             <div className="flex items-center gap-0.5 border rounded-t-md px-2 py-1 bg-muted/30 border-b-0">
               {([
-                { tag: "b" as const, icon: Bold, title: "غامق" },
-                { tag: "u" as const, icon: Underline, title: "تحته خط" },
-                { tag: "i" as const, icon: Italic, title: "مائل" },
+                { tag: "b" as const, icon: Bold, title: t("bold") },
+                { tag: "u" as const, icon: Underline, title: t("underline") },
+                { tag: "i" as const, icon: Italic, title: t("italic") },
               ]).map(({ tag, icon: Icon, title }) => (
                 <button
                   key={tag}
@@ -331,7 +333,6 @@ export function ComposeMailModal({
               ref={bodyRef}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              placeholder="اكتب رسالتك هنا..."
               rows={7}
               className="resize-none rounded-t-none border-t-0"
             />
@@ -340,7 +341,7 @@ export function ComposeMailModal({
           {/* Forwarded attachments (read-only) */}
           {forwardAttachments.length > 0 && (
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">مرفقات الرسالة الأصلية:</p>
+              <p className="text-xs text-muted-foreground">{t("originalAttachments")}</p>
               <div className="border rounded-md divide-y">
                 {forwardAttachments.map((att) => (
                   <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground">
@@ -392,22 +393,22 @@ export function ComposeMailModal({
           {/* Actions */}
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={onClose} disabled={isPending}>إلغاء</Button>
+              <Button variant="outline" onClick={onClose} disabled={isPending}>{t("cancel")}</Button>
               <Button type="button" variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
                 <Paperclip className="h-4 w-4" />
-                إرفاق
+                {t("attach")}
               </Button>
             </div>
             <div className="flex gap-2">
               <Button variant="secondary" onClick={handleDraft} disabled={isPending}>
                 <FileText className="h-4 w-4 ml-1.5" />
-                حفظ مسودة
+                {t("saveDraft")}
               </Button>
               <Button onClick={handleSend} disabled={isPending}>
                 {uploadAttachment.isPending
                   ? <Loader2 className="h-4 w-4 ml-1.5 animate-spin" />
                   : <Send className="h-4 w-4 ml-1.5" />}
-                {uploadAttachment.isPending ? "جاري رفع المرفقات..." : "إرسال"}
+                {uploadAttachment.isPending ? t("uploadingAttachments") : t("send")}
               </Button>
             </div>
           </div>

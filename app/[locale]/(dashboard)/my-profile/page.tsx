@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { User, Mail, Briefcase, MapPin, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,24 +30,13 @@ const STATUS_COLORS: Record<string, string> = {
   TERMINATED: "bg-red-100 text-red-800 border-red-200",
 };
 
-const CONTRACT_TYPE_LABELS: Record<string, string> = {
-  FIXED_TERM: "عقد محدد المدة",
-  INDEFINITE: "عقد غير محدد المدة",
-  TEMPORARY: "مؤقت",
-  TRAINEE: "متدرب",
-  CONSULTANT: "استشاري",
-  SERVICE_PROVIDER: "مزود خدمة",
-};
-
-const MARITAL_STATUS_LABELS: Record<string, string> = {
-  SINGLE: "أعزب",
-  MARRIED: "متزوج",
-  DIVORCED: "مطلق",
-  WIDOWED: "أرمل",
-};
+const LOCALE_MAP: Record<string, string> = { ar: "ar-SA", en: "en-US", tr: "tr-TR" };
 
 export default function MyProfilePage() {
   const t = useTranslations();
+  const locale = useLocale();
+  const displayLocale = LOCALE_MAP[locale] ?? "en-US";
+
   const { data: employee, isLoading } = useMyEmployee();
   const emp = employee as any;
   const { data: basicData } = useEmployeeBasic(emp?.id);
@@ -93,11 +82,16 @@ export default function MyProfilePage() {
     TERMINATED: t("employees.statuses.terminated"),
   }[employee.employmentStatus] || employee.employmentStatus;
 
+  const monthLabel = new Date(currentYear, currentMonth - 1).toLocaleDateString(displayLocale, {
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="شؤون الموظف"
-        description="بياناتك الشخصية والوظيفية"
+        title={t("myProfile.title")}
+        description={t("myProfile.description")}
         actions={
           <span className={`text-xs font-medium px-3 py-1 rounded-full border ${STATUS_COLORS[employee.employmentStatus] || ""}`}>
             {statusLabel}
@@ -107,7 +101,7 @@ export default function MyProfilePage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 
-        {/* البيانات الشخصية */}
+        {/* Personal */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -132,12 +126,15 @@ export default function MyProfilePage() {
             />
             {emp.nationality && <InfoRow label={t("employees.fields.nationality")} value={emp.nationality} />}
             {emp.maritalStatus && (
-              <InfoRow label={t("employees.fields.maritalStatus")} value={MARITAL_STATUS_LABELS[emp.maritalStatus] || emp.maritalStatus} />
+              <InfoRow
+                label={t("employees.fields.maritalStatus")}
+                value={t(`myProfile.maritalStatuses.${emp.maritalStatus}` as any, { defaultValue: emp.maritalStatus })}
+              />
             )}
           </CardContent>
         </Card>
 
-        {/* بيانات التواصل */}
+        {/* Contact */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -161,7 +158,7 @@ export default function MyProfilePage() {
           </CardContent>
         </Card>
 
-        {/* البيانات الوظيفية */}
+        {/* Employment */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -182,7 +179,7 @@ export default function MyProfilePage() {
             />
             <InfoRow
               label={t("employees.fields.contractType")}
-              value={CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType}
+              value={t(`myProfile.contractTypes.${employee.contractType}` as any, { defaultValue: employee.contractType })}
             />
             {employee.manager && (
               <InfoRow
@@ -201,12 +198,12 @@ export default function MyProfilePage() {
 
       </div>
 
-      {/* أرصدة الإجازات */}
+      {/* Leave Balances */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-primary" />
-            أرصدة الإجازات ({currentYear})
+            {t("myProfile.leaveBalancesTitle", { year: currentYear })}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -232,38 +229,40 @@ export default function MyProfilePage() {
                     {isHourly ? (
                       <div className="text-xs space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">✅ مدفوع</span>
-                          <span className="font-medium text-green-600">{monthlyLimit} ساعة/شهر</span>
+                          <span className="text-muted-foreground">✅ {t("myProfile.hourly.paid")}</span>
+                          <span className="font-medium text-green-600">{monthlyLimit} {t("myProfile.hourly.hourPerMonth")}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">📊 مستخدم</span>
-                          <span className="font-medium">{stats ? stats.usedHours.toFixed(1) : (b.usedHours ?? 0)}س</span>
+                          <span className="text-muted-foreground">📊 {t("myProfile.hourly.used")}</span>
+                          <span className="font-medium">{stats ? stats.usedHours.toFixed(1) : (b.usedHours ?? 0)}</span>
                         </div>
                         {(stats ? stats.pendingHours : (b.pendingHours ?? 0)) > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">⏳ معلق</span>
-                            <span className="font-medium text-amber-600">{stats ? stats.pendingHours.toFixed(1) : b.pendingHours}س</span>
+                            <span className="text-muted-foreground">⏳ {t("myProfile.hourly.pending")}</span>
+                            <span className="font-medium text-amber-600">{stats ? stats.pendingHours.toFixed(1) : b.pendingHours}</span>
                           </div>
                         )}
                         {(stats?.deductedHours ?? 0) > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">⚠️ مخصوم</span>
-                            <span className="font-medium text-red-600">{stats!.deductedHours.toFixed(1)}س (من الراتب)</span>
+                            <span className="text-muted-foreground">⚠️ {t("myProfile.hourly.deducted")}</span>
+                            <span className="font-medium text-red-600">{stats!.deductedHours.toFixed(1)} {t("myProfile.hourly.fromSalary")}</span>
                           </div>
                         )}
                       </div>
                     ) : b.leaveType?.isUnlimited ? (
-                      <div className="text-xs text-blue-600 font-medium">غير محدود</div>
+                      <div className="text-xs text-blue-600 font-medium">{t("myProfile.hourly.unlimited")}</div>
                     ) : (
                       <>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>متبقي</span>
+                          <span>{t("myProfile.hourly.remaining")}</span>
                           <span className={`font-semibold text-sm ${b.remainingDays > 0 ? "text-green-600" : "text-red-500"}`}>
                             {b.remainingDays} / {b.totalDays}
                           </span>
                         </div>
                         {b.pendingDays > 0 && (
-                          <div className="text-xs text-amber-600">معلق: {b.pendingDays} يوم</div>
+                          <div className="text-xs text-amber-600">
+                            {t("myProfile.hourly.pendingDays", { days: b.pendingDays })}
+                          </div>
                         )}
                       </>
                     )}
@@ -275,13 +274,13 @@ export default function MyProfilePage() {
         </CardContent>
       </Card>
 
-      {/* رصيد الإجازة الساعية الشهري */}
+      {/* Hourly Leave Monthly Balance */}
       {hourlyMonthly && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
-              رصيد الإجازة الساعية — {new Date(currentYear, currentMonth - 1).toLocaleDateString("ar-SA", { month: "long", year: "numeric" })}
+              {t("myProfile.hourlyLeaveTitle", { month: monthLabel })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -290,43 +289,43 @@ export default function MyProfilePage() {
               const usedMin = hourlyMonthly.usedByRequestsMinutes + hourlyMonthly.usedByTardinessMinutes;
               const remMin = hourlyMonthly.remainingMinutes;
               const pct = maxMin > 0 ? Math.round((usedMin / maxMin) * 100) : 0;
-              const fmt = (m: number) => { const h = Math.floor(m / 60); const mm = m % 60; return h ? `${h}:${String(mm).padStart(2,"0")} س` : `${mm} د`; };
+              const fmt = (m: number) => { const h = Math.floor(m / 60); const mm = m % 60; return h ? `${h}:${String(mm).padStart(2, "0")}` : `${mm}m`; };
               const isDepleted = remMin === 0 && maxMin > 0;
               const isLow = !isDepleted && remMin > 0 && remMin < 30;
               return (
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div className="rounded-lg border bg-muted/30 p-3">
-                      <p className="text-xs text-muted-foreground mb-1">الحد الأقصى</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t("myProfile.hourly.max")}</p>
                       <p className="text-sm font-semibold">{fmt(maxMin)}</p>
                     </div>
                     <div className="rounded-lg border bg-muted/30 p-3">
-                      <p className="text-xs text-muted-foreground mb-1">المستخدم</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t("myProfile.hourly.used")}</p>
                       <p className="text-sm font-semibold">{fmt(usedMin)}</p>
                     </div>
                     <div className={`rounded-lg border p-3 ${isDepleted ? "bg-red-50 border-red-200" : isLow ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200"}`}>
-                      <p className="text-xs text-muted-foreground mb-1">المتبقي</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t("myProfile.hourly.remaining")}</p>
                       <p className={`text-sm font-semibold ${isDepleted ? "text-red-600" : isLow ? "text-amber-600" : "text-green-600"}`}>{fmt(remMin)}</p>
                     </div>
                   </div>
                   <div className="space-y-1">
                     <Progress value={pct} className="h-2" />
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>إجازات: {fmt(hourlyMonthly.usedByRequestsMinutes)}</span>
-                      <span>تأخيرات: {fmt(hourlyMonthly.usedByTardinessMinutes)}</span>
-                      <span>{pct}% مستخدم</span>
+                      <span>{t("myProfile.hourly.leavesLabel", { value: fmt(hourlyMonthly.usedByRequestsMinutes) })}</span>
+                      <span>{t("myProfile.hourly.tardinessLabel", { value: fmt(hourlyMonthly.usedByTardinessMinutes) })}</span>
+                      <span>{t("myProfile.hourly.percentUsed", { pct })}</span>
                     </div>
                   </div>
                   {isDepleted && (
                     <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                      استنفدت رصيدك الشهري — أي تأخير قادم سيُحسم من راتبك
+                      {t("myProfile.hourly.depletedWarning")}
                     </div>
                   )}
                   {isLow && (
                     <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                      رصيدك قارب على النفاد ({fmt(remMin)} متبقي)
+                      {t("myProfile.hourly.lowWarning", { value: fmt(remMin) })}
                     </div>
                   )}
                 </div>

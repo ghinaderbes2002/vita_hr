@@ -114,9 +114,9 @@ export default function NewRequestChoicePage() {
               <ShieldAlert className="h-6 w-6" />
             </div>
             <div>
-              <CardTitle className="text-base">تقديم حادث عمل</CardTitle>
+              <CardTitle className="text-base">{t("requests.workAccidentTitle")}</CardTitle>
               <CardDescription className="text-xs mt-1">
-                تسجيل وإبلاغ عن حادث عمل طارئ
+                {t("requests.workAccidentDescription")}
               </CardDescription>
             </div>
           </CardHeader>
@@ -150,7 +150,7 @@ export default function NewRequestChoicePage() {
         open={accidentDialogOpen}
         onOpenChange={setAccidentDialogOpen}
         defaultType="WORK_ACCIDENT"
-        title="تقرير حادث عمل"
+        title={t("requests.workAccidentTitle")}
       />
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Inbox, Send, FileText, Archive, Trash2, PenSquare, Users, FolderOpen, FolderPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,28 +21,27 @@ import { EmployeeDirectorySheet } from "@/components/features/mail/employee-dire
 import { useArchiveFolders, useCreateArchiveFolder, useDeleteArchiveFolder } from "@/lib/hooks/use-mail";
 import type { MailFolder } from "@/lib/api/mail";
 
-const FOLDERS: { key: MailFolder; label: string; icon: any }[] = [
-  { key: "INBOX",   label: "صندوق الوارد", icon: Inbox    },
-  { key: "SENT",    label: "المرسل",        icon: Send     },
-  { key: "DRAFTS",  label: "المسودات",      icon: FileText },
-  { key: "ARCHIVE", label: "الأرشيف",       icon: Archive  },
-  { key: "TRASH",   label: "المحذوفات",     icon: Trash2   },
+const FOLDER_KEYS: { key: MailFolder; tKey: string; icon: any }[] = [
+  { key: "INBOX",   tKey: "inbox",   icon: Inbox    },
+  { key: "SENT",    tKey: "sent",    icon: Send     },
+  { key: "DRAFTS",  tKey: "drafts",  icon: FileText },
+  { key: "ARCHIVE", tKey: "archive", icon: Archive  },
+  { key: "TRASH",   tKey: "trash",   icon: Trash2   },
 ];
 
 export default function MailPage() {
+  const t = useTranslations("mail");
   const searchParams = useSearchParams();
   const [activeFolder, setActiveFolder] = useState<MailFolder>("INBOX");
   const [openMessageId, setOpenMessageId] = useState<string | null>(
     searchParams.get("messageId")
   );
 
-  // مزامنة messageId من URL مع الحالة
   useEffect(() => {
     const msgId = searchParams.get("messageId");
     if (msgId) setOpenMessageId(msgId);
   }, [searchParams]);
 
-  // اعتراض زر رجوع المتصفح لما تكون رسالة مفتوحة
   useEffect(() => {
     if (openMessageId) {
       window.history.pushState({ mailOpen: true }, "");
@@ -52,6 +52,7 @@ export default function MailPage() {
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
   }, [openMessageId]);
+
   const [composeOpen, setComposeOpen] = useState(false);
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -93,7 +94,7 @@ export default function MailPage() {
       {/* Folder app bar */}
       <div className="flex items-center gap-1 px-3 py-2 border-b bg-muted/20">
         <nav className="flex-1 flex items-center gap-1 overflow-x-auto">
-          {FOLDERS.map(({ key, label, icon: Icon }) => (
+          {FOLDER_KEYS.map(({ key, tKey, icon: Icon }) => (
             <button
               key={key}
               onClick={() => handleFolderChange(key)}
@@ -105,27 +106,18 @@ export default function MailPage() {
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {label}
+              {t(tKey as any)}
             </button>
           ))}
         </nav>
 
-        <Button
-          variant="outline"
-          className="gap-2 shrink-0"
-          size="sm"
-          onClick={() => setDirectoryOpen(true)}
-        >
+        <Button variant="outline" className="gap-2 shrink-0" size="sm" onClick={() => setDirectoryOpen(true)}>
           <Users className="h-4 w-4" />
-          دليل الموظفين
+          {t("employeeDirectory")}
         </Button>
-        <Button
-          className="gap-2 shrink-0"
-          size="sm"
-          onClick={() => setComposeOpen(true)}
-        >
+        <Button className="gap-2 shrink-0" size="sm" onClick={() => setComposeOpen(true)}>
           <PenSquare className="h-4 w-4" />
-          رسالة جديدة
+          {t("newMessage")}
         </Button>
       </div>
 
@@ -141,7 +133,7 @@ export default function MailPage() {
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            الكل
+            {t("allFolders")}
           </button>
           {archiveFolders.map((af) => (
             <div
@@ -171,7 +163,7 @@ export default function MailPage() {
             className="flex items-center gap-1.5 px-2.5 h-7 rounded text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap border border-dashed"
           >
             <FolderPlus className="h-3.5 w-3.5 shrink-0" />
-            مجلد جديد
+            {t("newFolder")}
           </button>
         </div>
       )}
@@ -201,15 +193,8 @@ export default function MailPage() {
         )}
       </main>
 
-      <ComposeMailModal
-        open={composeOpen}
-        onClose={() => setComposeOpen(false)}
-      />
-
-      <EmployeeDirectorySheet
-        open={directoryOpen}
-        onOpenChange={setDirectoryOpen}
-      />
+      <ComposeMailModal open={composeOpen} onClose={() => setComposeOpen(false)} />
+      <EmployeeDirectorySheet open={directoryOpen} onOpenChange={setDirectoryOpen} />
 
       {/* Create archive folder dialog */}
       <Dialog open={newFolderOpen} onOpenChange={(v) => { if (!v) { setNewFolderOpen(false); setNewFolderName(""); } }}>
@@ -217,22 +202,22 @@ export default function MailPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderPlus className="h-4 w-4" />
-              مجلد أرشيف جديد
+              {t("newArchiveFolder")}
             </DialogTitle>
           </DialogHeader>
           <Input
             autoFocus
-            placeholder="اسم المجلد..."
+            placeholder={t("folderNamePlaceholder")}
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleCreateFolder(); }}
           />
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => { setNewFolderOpen(false); setNewFolderName(""); }}>
-              إلغاء
+              {t("cancel")}
             </Button>
             <Button onClick={handleCreateFolder} disabled={!newFolderName.trim() || createFolder.isPending}>
-              إنشاء
+              {t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>

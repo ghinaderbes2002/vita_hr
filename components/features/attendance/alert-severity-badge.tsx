@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { AlertSeverity } from "@/lib/api/attendance-alerts";
 
@@ -5,18 +8,18 @@ interface AlertSeverityBadgeProps {
   severity: AlertSeverity;
 }
 
-const severityConfig: Record<
-  AlertSeverity,
-  { label: string; variant: "default" | "secondary" | "destructive" }
-> = {
-  LOW: { label: "منخفضة", variant: "secondary" },
-  MEDIUM: { label: "متوسطة", variant: "default" },
-  HIGH: { label: "عالية", variant: "destructive" },
-  CRITICAL: { label: "حرجة", variant: "destructive" },
+const severityVariant: Record<AlertSeverity, "default" | "secondary" | "destructive"> = {
+  LOW: "secondary",
+  MEDIUM: "default",
+  HIGH: "destructive",
+  CRITICAL: "destructive",
 };
 
 export function AlertSeverityBadge({ severity }: AlertSeverityBadgeProps) {
-  const config = severityConfig[severity];
-
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  const t = useTranslations();
+  return (
+    <Badge variant={severityVariant[severity]}>
+      {t(`attendance.alertSeverities.${severity}` as any)}
+    </Badge>
+  );
 }

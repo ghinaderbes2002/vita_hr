@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Plus, Send, Eye, Edit, Trash2, XCircle } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS, tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -47,6 +47,7 @@ export default function MyRequestsPage() {
   const t = useTranslations();
   const router = useRouter();
   const locale = useLocale();
+  const dateLocale = locale === "ar" ? ar : locale === "tr" ? tr : enUS;
 
   // --- Admin requests state ---
   const [newDialogOpen, setNewDialogOpen] = useState(false);
@@ -64,14 +65,14 @@ export default function MyRequestsPage() {
   const handleAdminSubmit = async (req: Request) => {
     try {
       await submitAdminRequest.mutateAsync(req.id);
-      toast.success("تم تقديم الطلب بنجاح");
+      toast.success(t("requests.submitSuccess"));
     } catch (error: any) {
       const errData = error?.response?.data;
       const msg =
         errData?.error?.message ||
         errData?.message ||
         (Array.isArray(errData?.error?.message) ? errData.error.message.join(", ") : null) ||
-        "حدث خطأ أثناء تقديم الطلب";
+        t("requests.submitError");
       toast.error(Array.isArray(msg) ? msg.join(", ") : msg);
     }
   };
@@ -168,8 +169,8 @@ export default function MyRequestsPage() {
           <TableHead>{t("leaves.fields.leaveType")}</TableHead>
           <TableHead>{t("leaves.fields.startDate")}</TableHead>
           <TableHead>{t("leaves.fields.endDate")}</TableHead>
-          <TableHead>المدة</TableHead>
-          <TableHead>الوقت</TableHead>
+          <TableHead>{t("leaves.fields.duration")}</TableHead>
+          <TableHead>{t("leaves.fields.time")}</TableHead>
           <TableHead>{t("leaves.fields.status")}</TableHead>
           <TableHead className="w-17.5">{t("common.actions")}</TableHead>
         </TableRow>
@@ -197,21 +198,21 @@ export default function MyRequestsPage() {
                   </Badge>
                   {request.isHourlyLeave && (
                     <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
-                      ساعية
+                      {t("leaves.hourlyBadge")}
                     </span>
                   )}
                   {(request.deductionInfo as any)?.overLimitHours > 0 && (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 font-medium">
-                      ⚠️ خصم راتب ({(request.deductionInfo as any).overLimitHours}س)
+                      {t("leaves.deductionBadge", { hours: (request.deductionInfo as any).overLimitHours })}
                     </span>
                   )}
                 </div>
               </TableCell>
-              <TableCell>{format(new Date(request.startDate), "PPP", { locale: ar })}</TableCell>
-              <TableCell>{format(new Date(request.endDate), "PPP", { locale: ar })}</TableCell>
+              <TableCell>{format(new Date(request.startDate), "PPP", { locale: dateLocale })}</TableCell>
+              <TableCell>{format(new Date(request.endDate), "PPP", { locale: dateLocale })}</TableCell>
               <TableCell>
                 {request.isHourlyLeave && request.equivalentDays != null
-                  ? `${request.equivalentDays.toFixed(2)} يوم`
+                  ? `${request.equivalentDays.toFixed(2)} ${t("common.day")}`
                   : (() => {
                       const days = request.totalDays > 0
                         ? request.totalDays
@@ -288,7 +289,7 @@ export default function MyRequestsPage() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
           <div className="flex items-center gap-2 text-amber-800 font-semibold">
             <UserCheck className="h-5 w-5" />
-            <span>طلبات تنتظر موافقتي كبديل ({pendingSubstituteList.length})</span>
+            <span>{t("leaves.substituteTitle", { count: pendingSubstituteList.length })}</span>
           </div>
           {loadingSubstitute ? (
             <div className="space-y-2">
@@ -296,28 +297,33 @@ export default function MyRequestsPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {pendingSubstituteList.map((req) => (
-                <div key={req.id} className="flex items-center justify-between bg-white rounded-md border p-3">
-                  <div className="space-y-0.5">
-                    <p className="font-medium text-sm">
-                      {req.employee?.firstNameAr} {req.employee?.lastNameAr}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {req.leaveType?.nameAr} — {format(new Date(req.startDate), "PPP", { locale: ar })} إلى {format(new Date(req.endDate), "PPP", { locale: ar })} ({req.totalDays > 0 ? req.totalDays : Math.max(1, Math.round((new Date(req.endDate).getTime() - new Date(req.startDate).getTime()) / 86400000) + 1)} أيام)
-                    </p>
+              {pendingSubstituteList.map((req) => {
+                const calcDays = req.totalDays > 0
+                  ? req.totalDays
+                  : Math.max(1, Math.round((new Date(req.endDate).getTime() - new Date(req.startDate).getTime()) / 86400000) + 1);
+                return (
+                  <div key={req.id} className="flex items-center justify-between bg-white rounded-md border p-3">
+                    <div className="space-y-0.5">
+                      <p className="font-medium text-sm">
+                        {req.employee?.firstNameAr} {req.employee?.lastNameAr}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {req.leaveType?.nameAr} — {format(new Date(req.startDate), "PPP", { locale: dateLocale })} {t("common.to")} {format(new Date(req.endDate), "PPP", { locale: dateLocale })} ({calcDays} {t("common.days")})
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => openSubstituteDialog(req, "approve")}>
+                        <CheckCircle2 className="h-4 w-4 ml-1" />
+                        {t("requests.actions.approve")}
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50" onClick={() => openSubstituteDialog(req, "reject")}>
+                        <XCircle className="h-4 w-4 ml-1" />
+                        {t("requests.actions.reject")}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => openSubstituteDialog(req, "approve")}>
-                      <CheckCircle2 className="h-4 w-4 ml-1" />
-                      موافقة
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50" onClick={() => openSubstituteDialog(req, "reject")}>
-                      <XCircle className="h-4 w-4 ml-1" />
-                      رفض
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -331,7 +337,7 @@ export default function MyRequestsPage() {
           </TabsList>
         </div>
 
-        {/* ===== Leave Requests Tab ===== */}
+        {/* Leave Requests Tab */}
         <TabsContent value="leaves" className="space-y-4">
           <Tabs defaultValue="all">
             <TabsList>
@@ -349,7 +355,7 @@ export default function MyRequestsPage() {
           </Tabs>
         </TabsContent>
 
-        {/* ===== Admin Requests Tab ===== */}
+        {/* Admin Requests Tab */}
         <TabsContent value="admin">
           <div className="rounded-md border">
             <Table>
@@ -429,19 +435,23 @@ export default function MyRequestsPage() {
       <Dialog open={substituteDialogOpen} onOpenChange={setSubstituteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{substituteAction === "approve" ? "تأكيد الموافقة كبديل" : "تأكيد الرفض كبديل"}</DialogTitle>
+            <DialogTitle>
+              {substituteAction === "approve"
+                ? t("leaves.substituteApproveTitle")
+                : t("leaves.substituteRejectTitle")}
+            </DialogTitle>
             <DialogDescription>
               {substituteRequest && `${substituteRequest.employee?.firstNameAr} ${substituteRequest.employee?.lastNameAr} — ${substituteRequest.leaveType?.nameAr}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="sub-notes-req">ملاحظات (اختياري)</Label>
+            <Label htmlFor="sub-notes-req">{t("requests.fields.notes")} ({t("common.optional")})</Label>
             <Textarea
               id="sub-notes-req"
               rows={3}
               value={substituteNotes}
               onChange={(e) => setSubstituteNotes(e.target.value)}
-              placeholder="أضف ملاحظة إن أردت..."
+              placeholder={t("leaves.substituteNotesPlaceholder")}
             />
           </div>
           <DialogFooter>
@@ -453,12 +463,11 @@ export default function MyRequestsPage() {
               onClick={confirmSubstituteResponse}
               disabled={substituteResponse.isPending}
             >
-              {substituteAction === "approve" ? "موافق" : "رفض"}
+              {substituteAction === "approve" ? t("requests.actions.approve") : t("requests.actions.reject")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
 
       {/* New admin request dialog */}
       <NewRequestDialog open={newDialogOpen} onOpenChange={setNewDialogOpen} />
@@ -486,8 +495,8 @@ export default function MyRequestsPage() {
       <ConfirmDialog
         open={submitLeaveDialogOpen}
         onOpenChange={setSubmitLeaveDialogOpen}
-        title="إرسال الطلب للموافقة"
-        description="هل أنت متأكد من إرسال هذا الطلب للموافقة؟ لن تتمكن من تعديله بعد الإرسال."
+        title={t("leaves.submitTitle")}
+        description={t("leaves.submitDescription")}
         onConfirm={confirmLeaveSubmit}
       />
 
@@ -495,17 +504,17 @@ export default function MyRequestsPage() {
       <Dialog open={cancelLeaveDialogOpen} onOpenChange={setCancelLeaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>التراجع عن طلب الإجازة</DialogTitle>
-            <DialogDescription>الرجاء كتابة سبب التراجع</DialogDescription>
+            <DialogTitle>{t("leaves.cancelTitle")}</DialogTitle>
+            <DialogDescription>{t("leaves.cancelDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="cancel-leave-reason">سبب التراجع</Label>
+            <Label htmlFor="cancel-leave-reason">{t("leaves.cancelReasonLabel")}</Label>
             <Textarea
               id="cancel-leave-reason"
               rows={3}
               value={cancelLeaveReason}
               onChange={(e) => setCancelLeaveReason(e.target.value)}
-              placeholder="اكتب سبب التراجع..."
+              placeholder={t("leaves.cancelReasonPlaceholder")}
             />
           </div>
           <DialogFooter>

@@ -32,14 +32,14 @@ import { WorkSchedule } from "@/lib/api/work-schedules";
 
 const formSchema = z.object({
   code: z.string().optional(),
-  nameAr: z.string().min(1, "الاسم بالعربي مطلوب"),
-  nameEn: z.string().min(1, "الاسم بالإنجليزي مطلوب"),
+  nameAr: z.string().min(1, "Arabic name is required"),
+  nameEn: z.string().min(1, "English name is required"),
   shiftType: z.enum(["DAY", "NIGHT", "FLEXIBLE"]),
   workStartTime: z.string().optional(),
   workEndTime: z.string().optional(),
-  minimumWorkHours: z.number().min(1, "يجب أن يكون ساعة على الأقل").optional(),
+  minimumWorkHours: z.number().min(1, "Must be at least 1 hour").optional(),
   requiresContinuousWork: z.boolean().optional(),
-  workDays: z.array(z.number()).min(1, "يجب اختيار يوم واحد على الأقل"),
+  workDays: z.array(z.number()).min(1, "At least one day is required"),
   lateToleranceMin: z.number().min(0).optional(),
   earlyLeaveToleranceMin: z.number().min(0).optional(),
   isActive: z.boolean(),
@@ -49,7 +49,7 @@ const formSchema = z.object({
     return !!data.workStartTime && !!data.workEndTime;
   }
   return true;
-}, { message: "وقت البداية والنهاية مطلوبان", path: ["workStartTime"] });
+}, { message: "Start and end time are required", path: ["workStartTime"] });
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -59,15 +59,7 @@ interface WorkScheduleDialogProps {
   schedule?: WorkSchedule | null;
 }
 
-const weekDays = [
-  { value: 0, label: "الأحد" },
-  { value: 1, label: "الإثنين" },
-  { value: 2, label: "الثلاثاء" },
-  { value: 3, label: "الأربعاء" },
-  { value: 4, label: "الخميس" },
-  { value: 5, label: "الجمعة" },
-  { value: 6, label: "السبت" },
-];
+const WEEK_DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 
 function parseWorkDays(workDays: any): number[] {
   if (Array.isArray(workDays)) return workDays;
@@ -149,19 +141,18 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
       <DialogContent className="sm:max-w-175 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {schedule ? "تعديل جدول عمل" : "إضافة جدول عمل"}
+            {schedule ? t("workSchedules.dialog.editTitle") : t("workSchedules.dialog.addTitle")}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-            {/* نوع الوردية */}
             <FormField
               control={form.control}
               name="shiftType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>نوع الوردية</FormLabel>
+                  <FormLabel>{t("workSchedules.dialog.shiftTypeLabel")}</FormLabel>
                   <FormControl>
                     <RadioGroup
                       value={field.value}
@@ -170,15 +161,15 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                     >
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="DAY" id="shift-day" />
-                        <Label htmlFor="shift-day">نهاري</Label>
+                        <Label htmlFor="shift-day">{t("workSchedules.dialog.shiftDay")}</Label>
                       </div>
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="NIGHT" id="shift-night" />
-                        <Label htmlFor="shift-night">ليلي</Label>
+                        <Label htmlFor="shift-night">{t("workSchedules.dialog.shiftNight")}</Label>
                       </div>
                       <div className="flex items-center gap-2">
                         <RadioGroupItem value="FLEXIBLE" id="shift-flex" />
-                        <Label htmlFor="shift-flex">مرن</Label>
+                        <Label htmlFor="shift-flex">{t("workSchedules.dialog.shiftFlexible")}</Label>
                       </div>
                     </RadioGroup>
                   </FormControl>
@@ -187,7 +178,6 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
               )}
             />
 
-            {/* حقل نشط */}
             <FormField
               control={form.control}
               name="isActive"
@@ -197,7 +187,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel>نشط</FormLabel>
+                    <FormLabel>{t("workSchedules.dialog.active")}</FormLabel>
                   </div>
                 </FormItem>
               )}
@@ -209,9 +199,9 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                 name="nameAr"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الاسم بالعربي</FormLabel>
+                    <FormLabel>{t("workSchedules.dialog.nameAr")}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="دوام كامل" />
+                      <Input {...field} placeholder={t("workSchedules.dialog.nameArPlaceholder")} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -222,7 +212,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                 name="nameEn"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الاسم بالإنجليزي</FormLabel>
+                    <FormLabel>{t("workSchedules.dialog.nameEn")}</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Full Time" />
                     </FormControl>
@@ -232,7 +222,6 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
               />
             </div>
 
-            {/* حقول الوقت — نهاري / ليلي فقط */}
             {!isFlexible && (
               <>
                 <div className="grid grid-cols-2 gap-4">
@@ -241,7 +230,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                     name="workStartTime"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>وقت بداية العمل</FormLabel>
+                        <FormLabel>{t("workSchedules.dialog.workStartTime")}</FormLabel>
                         <FormControl>
                           <Input {...field} type="time" />
                         </FormControl>
@@ -254,7 +243,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                     name="workEndTime"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>وقت نهاية العمل</FormLabel>
+                        <FormLabel>{t("workSchedules.dialog.workEndTime")}</FormLabel>
                         <FormControl>
                           <Input {...field} type="time" />
                         </FormControl>
@@ -270,7 +259,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                     name="lateToleranceMin"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>تسامح التأخير (دقيقة)</FormLabel>
+                        <FormLabel>{t("workSchedules.dialog.lateTolerance")}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -287,7 +276,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                     name="earlyLeaveToleranceMin"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>تسامح الخروج المبكر (دقيقة)</FormLabel>
+                        <FormLabel>{t("workSchedules.dialog.earlyLeaveTolerance")}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -303,17 +292,16 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
               </>
             )}
 
-            {/* إعدادات الوردية المرنة */}
             {isFlexible && (
               <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900 p-4 space-y-4">
-                <p className="text-sm font-medium text-green-700 dark:text-green-400">إعدادات الوردية المرنة</p>
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">{t("workSchedules.dialog.flexSettings")}</p>
 
                 <FormField
                   control={form.control}
                   name="minimumWorkHours"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>الحد الأدنى للساعات اليومية</FormLabel>
+                      <FormLabel>{t("workSchedules.dialog.minDailyHours")}</FormLabel>
                       <FormControl>
                         <div className="flex items-center gap-2">
                           <Input
@@ -324,7 +312,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                             value={field.value ?? 8}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 8)}
                           />
-                          <span className="text-sm text-muted-foreground">ساعة / يوم</span>
+                          <span className="text-sm text-muted-foreground">{t("workSchedules.dialog.hourPerDay")}</span>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -337,7 +325,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                   name="requiresContinuousWork"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between">
-                      <FormLabel className="text-sm">يجب أن تكون ساعات العمل متواصلة</FormLabel>
+                      <FormLabel className="text-sm">{t("workSchedules.dialog.continuousWork")}</FormLabel>
                       <FormControl>
                         <Switch
                           checked={field.value ?? false}
@@ -350,28 +338,27 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
               </div>
             )}
 
-            {/* أيام العمل */}
             <FormField
               control={form.control}
               name="workDays"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>أيام العمل</FormLabel>
+                  <FormLabel>{t("workSchedules.dialog.workDaysLabel")}</FormLabel>
                   <div className="grid grid-cols-7 gap-2">
-                    {weekDays.map((day) => (
-                      <div key={day.value} className="flex items-center space-x-2">
+                    {WEEK_DAY_KEYS.map((key, value) => (
+                      <div key={value} className="flex items-center space-x-2">
                         <Checkbox
-                          checked={field.value?.includes(day.value)}
+                          checked={field.value?.includes(value)}
                           onCheckedChange={(checked) => {
                             const current = field.value || [];
                             field.onChange(
                               checked
-                                ? [...current, day.value].sort()
-                                : current.filter((v) => v !== day.value)
+                                ? [...current, value].sort()
+                                : current.filter((v) => v !== value)
                             );
                           }}
                         />
-                        <label className="text-sm">{day.label}</label>
+                        <label className="text-sm">{t(`workSchedules.weekDays.${key}` as any)}</label>
                       </div>
                     ))}
                   </div>
@@ -385,9 +372,9 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>الوصف (اختياري)</FormLabel>
+                  <FormLabel>{t("workSchedules.dialog.description")}</FormLabel>
                   <FormControl>
-                    <Textarea {...field} rows={3} placeholder="وصف جدول العمل..." />
+                    <Textarea {...field} rows={3} placeholder={t("workSchedules.dialog.descriptionPlaceholder")} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

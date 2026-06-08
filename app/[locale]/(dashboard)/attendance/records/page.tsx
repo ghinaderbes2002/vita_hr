@@ -32,7 +32,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Pagination } from "@/components/shared/pagination";
 import { useAttendanceRecords, useCreateAttendanceRecord } from "@/lib/hooks/use-attendance-records";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
@@ -45,23 +44,16 @@ import { Badge } from "@/components/ui/badge";
 import { BreaksDrawer } from "@/components/features/attendance/breaks-drawer";
 import { RawStampsDrawer } from "@/components/features/attendance/raw-stamps-drawer";
 
-const PUNCH_STATUS_CFG: Record<string, { label: string; className: string }> = {
-  NEEDS_REVIEW: { label: "بحاجة مراجعة", className: "bg-amber-50 text-amber-700 border-amber-300" },
-  PARTIAL:      { label: "جزئي",         className: "bg-orange-50 text-orange-700 border-orange-300" },
-  INVALID:      { label: "غير صالح",     className: "bg-red-50 text-red-700 border-red-300" },
-  VALID:        { label: "صالح",         className: "bg-green-50 text-green-700 border-green-300" },
+const PUNCH_STATUS_CLASSES: Record<string, string> = {
+  NEEDS_REVIEW: "bg-amber-50 text-amber-700 border-amber-300",
+  PARTIAL:      "bg-orange-50 text-orange-700 border-orange-300",
+  INVALID:      "bg-red-50 text-red-700 border-red-300",
+  VALID:        "bg-green-50 text-green-700 border-green-300",
 };
 
-const ALL_STATUSES: { value: AttendanceStatus; label: string }[] = [
-  { value: "PRESENT", label: "حاضر" },
-  { value: "ABSENT", label: "غائب" },
-  { value: "LATE", label: "متأخر" },
-  { value: "EARLY_LEAVE", label: "خروج مبكر" },
-  { value: "HALF_DAY", label: "نصف يوم" },
-  { value: "ON_LEAVE", label: "في إجازة" },
-  { value: "PARTIAL_LEAVE", label: "إجازة ساعية" },
-  { value: "HOLIDAY", label: "عطلة رسمية" },
-  { value: "WEEKEND", label: "إجازة أسبوعية" },
+const ALL_STATUS_VALUES: AttendanceStatus[] = [
+  "PRESENT", "ABSENT", "LATE", "EARLY_LEAVE", "HALF_DAY",
+  "ON_LEAVE", "PARTIAL_LEAVE", "HOLIDAY", "WEEKEND",
 ];
 
 export default function AttendanceRecordsPage() {
@@ -77,7 +69,6 @@ export default function AttendanceRecordsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  // Manual entry form state
   const [manualForm, setManualForm] = useState({
     employeeId: "",
     date: format(new Date(), "yyyy-MM-dd"),
@@ -147,7 +138,6 @@ export default function AttendanceRecordsPage() {
     });
   };
 
-
   const formatMinutes = (minutes?: number | null) => {
     if (!minutes || minutes <= 0) return "—";
     const h = Math.floor(minutes / 60);
@@ -157,7 +147,7 @@ export default function AttendanceRecordsPage() {
 
   const formatMins = (minutes?: number | null) => {
     if (!minutes || minutes <= 0) return "—";
-    return `${minutes} د`;
+    return `${minutes}${t("attendance.minuteShort")}`;
   };
 
   return (
@@ -169,7 +159,7 @@ export default function AttendanceRecordsPage() {
           canCreate && (
             <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
-              إدخال يدوي
+              {t("attendance.manualEntry")}
             </Button>
           )
         }
@@ -179,7 +169,7 @@ export default function AttendanceRecordsPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="ابحث باسم الموظف أو الكود..."
+            placeholder={t("attendance.searchPlaceholder")}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -226,14 +216,14 @@ export default function AttendanceRecordsPage() {
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="جميع الحالات" />
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder={t("attendance.allStatuses")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">جميع الحالات</SelectItem>
-              {ALL_STATUSES.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
+              <SelectItem value="ALL">{t("attendance.allStatuses")}</SelectItem>
+              {ALL_STATUS_VALUES.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {t(`attendance.statuses.${value.toLowerCase()}` as any)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -247,14 +237,14 @@ export default function AttendanceRecordsPage() {
             <TableRow>
               <TableHead>{t("attendance.fields.employee")}</TableHead>
               <TableHead>{t("attendance.fields.date")}</TableHead>
-              <TableHead>دخول</TableHead>
-              <TableHead>خروج</TableHead>
-              <TableHead>ساعات العمل</TableHead>
+              <TableHead>{t("attendance.fields.checkIn")}</TableHead>
+              <TableHead>{t("attendance.fields.checkOut")}</TableHead>
+              <TableHead>{t("attendance.fields.workHours")}</TableHead>
               <TableHead>{t("attendance.fields.status")}</TableHead>
-              <TableHead>تأخر</TableHead>
-              <TableHead>مغادرة مبكرة</TableHead>
-              <TableHead>المصدر</TableHead>
-              <TableHead>حالة البصمة</TableHead>
+              <TableHead>{t("attendance.fields.late")}</TableHead>
+              <TableHead>{t("attendance.fields.earlyLeave")}</TableHead>
+              <TableHead>{t("attendance.fields.source")}</TableHead>
+              <TableHead>{t("attendance.fields.punchStatus")}</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -262,23 +252,14 @@ export default function AttendanceRecordsPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                  {Array.from({ length: 11 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>
+                  ))}
                 </TableRow>
               ))
             ) : filteredRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
+                <TableCell colSpan={11} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
@@ -286,126 +267,115 @@ export default function AttendanceRecordsPage() {
               filteredRecords.map((record: AttendanceRecord) => {
                 const isExempt = (record as any).employee?.attendanceConfig?.salaryLinked === false;
                 return (
-                <TableRow
-                  key={record.id}
-                  className={`cursor-pointer hover:bg-muted/40 ${isExempt ? "opacity-60 bg-muted/30" : ""}`}
-                  onClick={() => { setSelectedRecord(record); setBreaksDrawerOpen(true); }}
-                >
-                  {/* الموظف */}
-                  <TableCell>
-                    <div className="font-medium leading-tight flex items-center gap-1.5 flex-wrap">
-                      {record.employee
-                        ? `${record.employee.firstNameAr} ${record.employee.lastNameAr}`
-                        : "—"}
-                      {isExempt && (
-                        <span className="text-[10px] text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-1.5 py-0.5">
-                          معفى
+                  <TableRow
+                    key={record.id}
+                    className={`cursor-pointer hover:bg-muted/40 ${isExempt ? "opacity-60 bg-muted/30" : ""}`}
+                    onClick={() => { setSelectedRecord(record); setBreaksDrawerOpen(true); }}
+                  >
+                    <TableCell>
+                      <div className="font-medium leading-tight flex items-center gap-1.5 flex-wrap">
+                        {record.employee
+                          ? `${record.employee.firstNameAr} ${record.employee.lastNameAr}`
+                          : "—"}
+                        {isExempt && (
+                          <span className="text-[10px] text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-1.5 py-0.5">
+                            {t("attendance.exempt")}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {record.employee?.employeeNumber || "—"}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="font-medium text-sm">
+                      {formatDate(record.date)}
+                    </TableCell>
+
+                    <TableCell className="text-sm">
+                      {record.clockInTime
+                        ? formatTime(record.clockInTime)
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+
+                    <TableCell className="text-sm">
+                      {record.clockOutTime
+                        ? formatTime(record.clockOutTime)
+                        : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+
+                    <TableCell className="text-sm font-medium">
+                      {formatMinutes(record.netWorkedMinutes ?? record.workedMinutes)}
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <AttendanceStatusBadge status={record.status} />
+                        {record.syncError && (
+                          <span title={record.syncError}>
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      {(record.lateMinutes ?? 0) > 0 ? (
+                        <span className="text-destructive text-sm font-medium">
+                          {formatMins(record.lateMinutes)}
                         </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
                       )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {record.employee?.employeeNumber || "—"}
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  {/* التاريخ */}
-                  <TableCell className="font-medium text-sm">
-                    {formatDate(record.date)}
-                  </TableCell>
-
-                  {/* دخول */}
-                  <TableCell className="text-sm">
-                    {record.clockInTime
-                      ? formatTime(record.clockInTime)
-                      : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-
-                  {/* خروج */}
-                  <TableCell className="text-sm">
-                    {record.clockOutTime
-                      ? formatTime(record.clockOutTime)
-                      : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-
-                  {/* ساعات العمل الفعلية */}
-                  <TableCell className="text-sm font-medium">
-                    {formatMinutes(record.netWorkedMinutes ?? record.workedMinutes)}
-                  </TableCell>
-
-                  {/* الحالة */}
-                  <TableCell>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <AttendanceStatusBadge status={record.status} />
-                      {record.syncError && (
-                        <span title={record.syncError}>
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                    <TableCell>
+                      {(record.earlyLeaveMinutes ?? 0) > 0 ? (
+                        <span className="text-orange-600 text-sm font-medium">
+                          {formatMins(record.earlyLeaveMinutes)}
                         </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
                       )}
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  {/* تأخر */}
-                  <TableCell>
-                    {(record.lateMinutes ?? 0) > 0 ? (
-                      <span className="text-destructive text-sm font-medium">
-                        {formatMins(record.lateMinutes)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
+                    <TableCell>
+                      {record.isManualEntry ? (
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                          {t("attendance.sourceManual")}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          {t("attendance.sourceBiometric")}
+                        </Badge>
+                      )}
+                    </TableCell>
 
-                  {/* مغادرة مبكرة */}
-                  <TableCell>
-                    {(record.earlyLeaveMinutes ?? 0) > 0 ? (
-                      <span className="text-orange-600 text-sm font-medium">
-                        {formatMins(record.earlyLeaveMinutes)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {record.punchSequenceStatus && PUNCH_STATUS_CLASSES[record.punchSequenceStatus] ? (
+                        <Badge variant="outline" className={`text-xs ${PUNCH_STATUS_CLASSES[record.punchSequenceStatus]}`}>
+                          {record.punchSequenceStatus !== "VALID" && <AlertTriangle className="h-3 w-3 ml-1" />}
+                          {t(`attendance.punchStatuses.${record.punchSequenceStatus}` as any)}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
 
-                  {/* المصدر */}
-                  <TableCell>
-                    {record.isManualEntry ? (
-                      <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
-                        يدوي
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        بصمة
-                      </Badge>
-                    )}
-                  </TableCell>
-
-                  {/* حالة البصمة */}
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {record.punchSequenceStatus && PUNCH_STATUS_CFG[record.punchSequenceStatus] ? (
-                      <Badge variant="outline" className={`text-xs ${PUNCH_STATUS_CFG[record.punchSequenceStatus].className}`}>
-                        {record.punchSequenceStatus !== "VALID" && <AlertTriangle className="h-3 w-3 ml-1" />}
-                        {PUNCH_STATUS_CFG[record.punchSequenceStatus].label}
-                      </Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* مراجعة البصمات */}
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      title="مراجعة البصمات"
-                      onClick={() => setStampsRecordId(record.id)}
-                    >
-                      <Fingerprint className="h-3.5 w-3.5" />
-                    </Button>
-                  </TableCell>
-
-                </TableRow>
-              );})
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        title={t("attendance.reviewStamps")}
+                        onClick={() => setStampsRecordId(record.id)}
+                      >
+                        <Fingerprint className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -421,8 +391,6 @@ export default function AttendanceRecordsPage() {
         />
       )}
 
-
-      {/* Breaks Drawer */}
       <BreaksDrawer
         record={selectedRecord}
         open={breaksDrawerOpen}
@@ -430,7 +398,6 @@ export default function AttendanceRecordsPage() {
         canManage={canManageBreaks}
       />
 
-      {/* Raw Stamps Drawer */}
       {stampsRecordId && (
         <RawStampsDrawer
           recordId={stampsRecordId}
@@ -443,14 +410,14 @@ export default function AttendanceRecordsPage() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>إدخال سجل حضور يدوي</DialogTitle>
+            <DialogTitle>{t("attendance.manualEntryTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>الموظف *</Label>
+              <Label>{t("attendance.fields.employee")} *</Label>
               <Select value={manualForm.employeeId} onValueChange={(v) => setManualForm({ ...manualForm, employeeId: v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر الموظف" />
+                  <SelectValue placeholder={t("requests.dialog.chooseEmployee")} />
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((e: any) => (
@@ -463,18 +430,20 @@ export default function AttendanceRecordsPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>التاريخ *</Label>
+                <Label>{t("attendance.fields.date")} *</Label>
                 <Input type="date" value={manualForm.date} onChange={(e) => setManualForm({ ...manualForm, date: e.target.value })} />
               </div>
               <div className="space-y-1.5">
-                <Label>الحالة *</Label>
+                <Label>{t("attendance.fields.status")} *</Label>
                 <Select value={manualForm.status} onValueChange={(v) => setManualForm({ ...manualForm, status: v as AttendanceStatus })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ALL_STATUSES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    {ALL_STATUS_VALUES.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {t(`attendance.statuses.${value.toLowerCase()}` as any)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -482,31 +451,31 @@ export default function AttendanceRecordsPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>وقت الدخول</Label>
+                <Label>{t("attendance.fields.checkInTime")}</Label>
                 <Input type="time" value={manualForm.checkInTime} onChange={(e) => setManualForm({ ...manualForm, checkInTime: e.target.value })} />
               </div>
               <div className="space-y-1.5">
-                <Label>وقت الخروج</Label>
+                <Label>{t("attendance.fields.checkOutTime")}</Label>
                 <Input type="time" value={manualForm.checkOutTime} onChange={(e) => setManualForm({ ...manualForm, checkOutTime: e.target.value })} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>سبب الإدخال اليدوي *</Label>
+              <Label>{t("attendance.manualReasonLabel")}</Label>
               <Textarea
                 value={manualForm.manualEntryReason}
                 onChange={(e) => setManualForm({ ...manualForm, manualEntryReason: e.target.value })}
-                placeholder="مثال: نسيان تسجيل البصمة"
+                placeholder={t("attendance.manualReasonPlaceholder")}
                 rows={2}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>{t("common.cancel")}</Button>
             <Button
               onClick={handleCreateManual}
               disabled={!manualForm.employeeId || !manualForm.date || !manualForm.manualEntryReason || createRecord.isPending}
             >
-              {createRecord.isPending ? "جاري الحفظ..." : "حفظ السجل"}
+              {createRecord.isPending ? t("attendance.saving") : t("attendance.saveRecord")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X, AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +38,7 @@ export function MailList({
   folder, onOpenMessage, search, onSearchChange, page, onPageChange,
   archiveFolderId, dateFrom, dateTo, onDateFromChange, onDateToChange,
 }: Props) {
+  const t = useTranslations("mail");
   const [selected, setSelected] = useState<string[]>([]);
   const [showDateFilter, setShowDateFilter] = useState(false);
 
@@ -77,10 +79,10 @@ export function MailList({
     isDraft ? item.id : (item.messageId ?? item.message?.id);
 
   const getSubject = (item: any): string =>
-    isDraft ? item.subject : item.message?.subject ?? "(بدون موضوع)";
+    isDraft ? item.subject : item.message?.subject ?? t("noSubject");
 
   const getSender = (item: any): { name: string | null; id: string | null } => {
-    if (isDraft) return { name: "مسودة", id: null };
+    if (isDraft) return { name: t("draft"), id: null };
     if (folder === "SENT") {
       // Show first TO recipient name
       const toR = item.message?.recipients?.find((r: any) => r.type === "TO");
@@ -145,7 +147,7 @@ export function MailList({
           <div className="relative flex-1">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="بحث في الرسائل..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => { onSearchChange(e.target.value); onPageChange(1); }}
               className="pr-9 h-8 text-sm"
@@ -158,7 +160,7 @@ export function MailList({
             onClick={() => setShowDateFilter((v) => !v)}
           >
             <CalendarDays className="h-3.5 w-3.5" />
-            تصفية بالتاريخ
+            {t("filterByDate")}
             {(dateFrom || dateTo) && (
               <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
             )}
@@ -172,7 +174,7 @@ export function MailList({
                 onClick={() => updateRead.mutate({ messageIds: selected, isRead: true })}
               >
                 <MailOpen className="h-3.5 w-3.5 ml-1" />
-                مقروء
+                {t("markAsRead")}
               </Button>
               {folder !== "ARCHIVE" && (
                 <Button
@@ -182,7 +184,7 @@ export function MailList({
                   onClick={() => { moveMail.mutate({ messageIds: selected, folder: "ARCHIVE" }); clearSelect(); }}
                 >
                   <Archive className="h-3.5 w-3.5 ml-1" />
-                  أرشفة
+                  {t("archiveAction")}
                 </Button>
               )}
               <Button
@@ -192,9 +194,9 @@ export function MailList({
                 onClick={() => { moveMail.mutate({ messageIds: selected, folder: "TRASH" }); clearSelect(); }}
               >
                 <Trash2 className="h-3.5 w-3.5 ml-1" />
-                حذف
+                {t("delete")}
               </Button>
-              <span className="text-xs text-muted-foreground">{selected.length} محدد</span>
+              <span className="text-xs text-muted-foreground">{t("selectedCount", { count: selected.length })}</span>
             </div>
           )}
         </div>
@@ -203,7 +205,7 @@ export function MailList({
         {showDateFilter && (
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">من:</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">{t("dateFrom")}</span>
               <Input
                 type="date"
                 value={dateFrom ?? ""}
@@ -212,7 +214,7 @@ export function MailList({
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">إلى:</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">{t("dateTo")}</span>
               <Input
                 type="date"
                 value={dateTo ?? ""}
@@ -227,7 +229,7 @@ export function MailList({
                 className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1"
               >
                 <X className="h-3.5 w-3.5" />
-                مسح
+                {t("clearFilter")}
               </button>
             )}
           </div>
@@ -239,7 +241,7 @@ export function MailList({
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-muted-foreground text-sm gap-2">
             <MailOpen className="h-10 w-10 opacity-30" />
-            لا توجد رسائل
+            {t("noMessages")}
           </div>
         ) : (
           items.map((item: any) => {
@@ -297,7 +299,7 @@ export function MailList({
                 {/* Read/Unread toggle */}
                 {!isDraft && folder !== "SENT" && (
                   <button
-                    title={unread ? "تحديد كمقروء" : "تحديد كغير مقروء"}
+                    title={unread ? t("markAsReadTitle") : t("markAsUnreadTitle")}
                     onClick={(e) => {
                       e.stopPropagation();
                       updateRead.mutate({ messageIds: [msgId], isRead: unread });
@@ -329,7 +331,7 @@ export function MailList({
             disabled={page === 1}
             onClick={() => onPageChange(page - 1)}
           >
-            السابق
+            {t("previous")}
           </Button>
           <span className="text-muted-foreground">{page} / {totalPages}</span>
           <Button
@@ -338,7 +340,7 @@ export function MailList({
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
           >
-            التالي
+            {t("next")}
           </Button>
         </div>
       )}

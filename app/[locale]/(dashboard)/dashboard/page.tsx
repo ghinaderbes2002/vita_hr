@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   Users, Calendar, Clock, AlertCircle, PlusCircle,
@@ -58,16 +58,17 @@ function StatCard({
 
 // ── EMPLOYEE Dashboard ────────────────────────────────────────────────────────
 function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
+  const t = useTranslations("dashboard");
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="رصيد الإجازات" value={d.leaveBalance?.[0]?.balance ?? "—"} icon={Calendar}
+        <StatCard title={t("employee.leaveBalance")} value={d.leaveBalance?.[0]?.balance ?? "—"} icon={Calendar}
           iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/my-profile`)} />
-        <StatCard title="الطلبات المعلقة" value={d.pendingRequests?.length ?? 0} icon={Hourglass}
+        <StatCard title={t("employee.pendingRequests")} value={d.pendingRequests?.length ?? 0} icon={Hourglass}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/my-requests`)} />
-        <StatCard title="حضوري" value="" icon={AlertCircle}
+        <StatCard title={t("employee.myAttendance")} value="" icon={AlertCircle}
           iconBg="bg-red-500" onClick={() => router.push(`/${locale}/attendance/my-attendance`)} />
-        <StatCard title="تنبيهاتي" value="" icon={TrendingUp}
+        <StatCard title={t("employee.myAlerts")} value="" icon={TrendingUp}
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/attendance/my-alerts`)} />
       </div>
 
@@ -76,30 +77,30 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
-              حضور اليوم
+              {t("employee.todayAttendance")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-6 text-sm">
               <div>
-                <span className="text-muted-foreground">تسجيل الحضور:</span>
+                <span className="text-muted-foreground">{t("employee.checkIn")}:</span>
                 <span className="font-semibold mr-2">{d.todayAttendance.checkIn ?? "—"}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">الانصراف المتوقع:</span>
+                <span className="text-muted-foreground">{t("employee.expectedCheckOut")}:</span>
                 <span className="font-semibold mr-2">{d.todayAttendance.expectedCheckOut ?? "—"}</span>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
-
     </div>
   );
 }
 
 // ── MANAGER Dashboard ─────────────────────────────────────────────────────────
 function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: string; router: any; employeeId?: string }) {
+  const t = useTranslations("dashboard");
   const { data: subordinatesData } = useSubordinates(employeeId || "");
   const subordinatesCount = Array.isArray(subordinatesData)
     ? subordinatesData.length
@@ -108,14 +109,19 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="المرؤوسين" value={subordinatesCount} icon={Users}
+        <StatCard title={t("manager.subordinates")} value={subordinatesCount} icon={Users}
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/employees/subordinates`)} />
-        <StatCard title="تقييمات التجربة" value="" icon={ClipboardCheck}
+        <StatCard title={t("manager.probationEvaluations")} value="" icon={ClipboardCheck}
           iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
-        <StatCard title="طلبات إدارية بانتظار موافقتي" value="" icon={FileText}
+        <StatCard title={t("manager.adminRequestsPending")} value="" icon={FileText}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
-        <StatCard title="إجازات بانتظار موافقتي" value={typeof d.pendingLeaveApprovals === "number" ? d.pendingLeaveApprovals : Array.isArray(d.pendingLeaveApprovals) ? d.pendingLeaveApprovals.length : (d.pendingLeaveApprovals?.total ?? d.pendingLeaveApprovals?.count ?? 0)} icon={Hourglass}
-          iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
+        <StatCard
+          title={t("manager.leavesPending")}
+          value={typeof d.pendingLeaveApprovals === "number" ? d.pendingLeaveApprovals : Array.isArray(d.pendingLeaveApprovals) ? d.pendingLeaveApprovals.length : (d.pendingLeaveApprovals?.total ?? d.pendingLeaveApprovals?.count ?? 0)}
+          icon={Hourglass}
+          iconBg="bg-purple-500"
+          onClick={() => router.push(`/${locale}/leaves/pending-approval`)}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -124,7 +130,7 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-primary" />
-                في إجازة هذا الأسبوع
+                {t("manager.onLeaveThisWeek")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -145,7 +151,7 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                تنبيهات الفريق
+                {t("manager.teamAlerts")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -170,6 +176,7 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
 
 // ── HR Dashboard ──────────────────────────────────────────────────────────────
 function HRDashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
+  const t = useTranslations("dashboard");
   const { data: pendingData } = usePendingMyApproval({ limit: 1 });
   const pendingCount = (pendingData as any)?.total ?? (pendingData as any)?.data?.total ?? 0;
 
@@ -189,23 +196,22 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="إجمالي الموظفين" value={d.totalEmployees ?? "—"} icon={Users}
+        <StatCard title={t("hr.totalEmployees")} value={d.totalEmployees ?? "—"} icon={Users}
           iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/employees`)} />
-        <StatCard title="شارفت فترة التجربة على الانتهاء" value={probationEndingCount} icon={FileWarning}
+        <StatCard title={t("hr.probationEndingSoon")} value={probationEndingCount} icon={FileWarning}
           iconBg="bg-red-500" onClick={() => setProbationDialogOpen(true)} />
-        <StatCard title="تبريرات الموظفين" value="" icon={AlertCircle}
+        <StatCard title={t("hr.employeeJustifications")} value="" icon={AlertCircle}
           iconBg="bg-orange-500" onClick={() => router.push(`/${locale}/attendance/justifications`)} />
-        <StatCard title="إجازات بانتظار HR" value={d.pendingLeaveHRCount ?? 0} icon={Hourglass}
+        <StatCard title={t("hr.leavesAwaitingHR")} value={d.pendingLeaveHRCount ?? 0} icon={Hourglass}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
       </div>
 
-
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="تقييمات تجربة بانتظار HR" value={d.probationsPendingHR ?? 0} icon={ShieldCheck}
+        <StatCard title={t("hr.probationEvaluationsHR")} value={d.probationsPendingHR ?? 0} icon={ShieldCheck}
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
-        <StatCard title="تقييمات أداء بانتظار HR" value={d.evaluationsPendingHR ?? 0} icon={BarChart3}
+        <StatCard title={t("hr.performanceEvaluationsHR")} value={d.evaluationsPendingHR ?? 0} icon={BarChart3}
           iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/evaluations`)} />
-        <StatCard title="طلبات إدارية بانتظار موافقتي" value={pendingCount} icon={Briefcase}
+        <StatCard title={t("hr.adminRequestsPending")} value={pendingCount} icon={Briefcase}
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
       </div>
 
@@ -214,17 +220,17 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-primary" />
-              حالة الرواتب
+              {t("hr.payrollStatus")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
               <Badge variant={d.payrollStatus.status === "PENDING" ? "outline" : "default"}>
-                {d.payrollStatus.status === "PENDING" ? "معلق" : "مكتمل"}
+                {d.payrollStatus.status === "PENDING" ? t("hr.payrollPending") : t("hr.payrollCompleted")}
               </Badge>
               <span className="text-sm text-muted-foreground">{d.payrollStatus.month}</span>
               <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/payroll`)}>
-                عرض الرواتب
+                {t("hr.viewPayroll")}
               </Button>
             </div>
           </CardContent>
@@ -236,7 +242,7 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Briefcase className="h-4 w-4 text-primary" />
-              المرشحون حسب المرحلة
+              {t("hr.candidatesByStage")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -252,18 +258,17 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
         </Card>
       )}
 
-      {/* Dialog فترات التجربة المنتهية */}
       <Dialog open={probationDialogOpen} onOpenChange={setProbationDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileWarning className="h-4 w-4 text-red-500" />
-              موظفون تنتهي فترتهم التجريبية خلال 7 أيام
+              {t("hr.probationDialogTitle")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2 max-h-80 overflow-y-auto py-2">
             {probationEndingList.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">لا يوجد موظفون في هذه الفترة</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t("hr.noProbationEmployees")}</p>
             ) : (
               probationEndingList.map((emp: any) => (
                 <div key={emp.id} className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm">
@@ -273,7 +278,7 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
                   </div>
                   <div className="text-left">
                     <Badge variant="outline" className={`text-xs ${emp.daysRemaining <= 3 ? "border-red-300 text-red-700" : "border-amber-300 text-amber-700"}`}>
-                      {emp.daysRemaining} يوم متبقي
+                      {t("hr.daysRemaining", { days: emp.daysRemaining })}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-0.5">{emp.probationEndDate}</p>
                   </div>
@@ -283,7 +288,7 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
           </div>
           {probationEndingList.length > 0 && (
             <Button variant="outline" className="w-full" onClick={() => { setProbationDialogOpen(false); router.push(`/${locale}/probation-evaluations`); }}>
-              عرض تقييمات التجربة
+              {t("hr.viewProbationEvaluations")}
             </Button>
           )}
         </DialogContent>
@@ -294,20 +299,25 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
 
 // ── CEO Dashboard ─────────────────────────────────────────────────────────────
 function CEODashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
+  const t = useTranslations("dashboard");
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="غيابات هذا الشهر"
+        <StatCard
+          title={t("ceo.absencesThisMonth")}
           value={Array.isArray(d.monthlyAbsences) ? d.monthlyAbsences.length : (d.monthlyAbsences ?? "—")}
           icon={UserX} iconBg="bg-red-500" />
-        <StatCard title="إجازات معتمدة هذا الشهر"
+        <StatCard
+          title={t("ceo.approvedLeavesThisMonth")}
           value={Array.isArray(d.approvedLeavesThisMonth) ? d.approvedLeavesThisMonth.length : (d.approvedLeavesThisMonth ?? "—")}
           icon={CheckCircle2} iconBg="bg-green-500" />
-        <StatCard title="طلبات بانتظار موافقة CEO"
+        <StatCard
+          title={t("ceo.requestsPendingCEO")}
           value={Array.isArray(d.pendingCeoRequestApprovals) ? d.pendingCeoRequestApprovals.length : (d.pendingCeoRequestApprovals ?? 0)}
           icon={Bell} iconBg="bg-amber-500"
           onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
-        <StatCard title="تقييمات تجربة بانتظار CEO"
+        <StatCard
+          title={t("ceo.probationPendingCEO")}
           value={Array.isArray(d.probationsPendingCEO) ? d.probationsPendingCEO.length : (d.probationsPendingCEO ?? 0)}
           icon={ShieldCheck}
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
@@ -318,10 +328,10 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-primary" />
-              مرشحون في مرحلة موافقة CEO
+              {t("ceo.candidatesCEOStage")}
             </CardTitle>
             <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => router.push(`/${locale}/job-applications`)}>
-              عرض الكل <ChevronRight className="h-3.5 w-3.5" />
+              {t("ceo.viewAll")} <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </CardHeader>
           <CardContent>
@@ -347,17 +357,18 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
 
 // ── CFO Dashboard ─────────────────────────────────────────────────────────────
 function CFODashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
+  const t = useTranslations("dashboard");
   const fmt = (v: number) => v?.toLocaleString("en-US") ?? "—";
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="إجمالي الرواتب الأساسية" value={d.payrollTotals ? fmt(d.payrollTotals.totalBasic) : "—"} icon={DollarSign}
+        <StatCard title={t("cfo.totalBasicSalaries")} value={d.payrollTotals ? fmt(d.payrollTotals.totalBasic) : "—"} icon={DollarSign}
           iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/payroll`)} />
-        <StatCard title="صافي الرواتب" value={d.payrollTotals ? fmt(d.payrollTotals.totalNet) : "—"} icon={TrendingUp}
+        <StatCard title={t("cfo.netSalaries")} value={d.payrollTotals ? fmt(d.payrollTotals.totalNet) : "—"} icon={TrendingUp}
           iconBg="bg-green-500" />
-        <StatCard title="عدد العمل الإضافي المعتمد" value={d.approvedOvertimeCount ?? 0} icon={Clock}
+        <StatCard title={t("cfo.approvedOvertimeCount")} value={d.approvedOvertimeCount ?? 0} icon={Clock}
           iconBg="bg-amber-500" />
-        <StatCard title="إجازات غير مدفوعة معتمدة" value={d.unpaidApprovedLeaves ?? 0} icon={Calendar}
+        <StatCard title={t("cfo.unpaidApprovedLeaves")} value={d.unpaidApprovedLeaves ?? 0} icon={Calendar}
           iconBg="bg-red-500" />
       </div>
 
@@ -366,7 +377,7 @@ function CFODashboard({ d, locale, router }: { d: any; locale: string; router: a
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-primary" />
-              البدلات
+              {t("cfo.allowances")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -391,6 +402,7 @@ export default function DashboardPage() {
   const { hasRole } = usePermissions();
   const locale = useLocale();
   const router = useRouter();
+  const t = useTranslations("dashboard");
 
   const isFollowUpOfficial = hasRole("Follow-up official") || hasRole("مسؤول متابعة");
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
@@ -444,14 +456,12 @@ export default function DashboardPage() {
           padding: "2rem 2.5rem 1.75rem",
         }}
       >
-        {/* Subtle warm glow on start/right side */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background: "radial-gradient(ellipse 55% 100% at 90% 50%, oklch(0.702 0.191 47.604 / 0.14) 0%, transparent 70%)"
           }}
         />
-        {/* Subtle cool glow on end/left side */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -461,9 +471,9 @@ export default function DashboardPage() {
 
         <div className="relative z-10 flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold text-white tracking-tight">لوحة التحكم</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">{t("title")}</h1>
             <p className="mt-1 text-white/70 text-base">
-              مرحباً {displayName}
+              {t("welcomeMessage", { name: displayName })}
             </p>
           </div>
           <div className="hidden sm:flex items-center gap-2 shrink-0">
@@ -472,7 +482,7 @@ export default function DashboardPage() {
               onClick={() => router.push(`/${locale}/requests/my-requests`)}
             >
               <PlusCircle className="h-4 w-4" />
-              طلب جديد
+              {t("newRequest")}
             </button>
           </div>
         </div>
@@ -485,13 +495,13 @@ export default function DashboardPage() {
       {role === "CFO" && !isFollowUpOfficial && <CFODashboard d={d} locale={locale} router={router} />}
       {(isFollowUpOfficial || !role || !["MANAGER", "HR", "CEO", "CFO"].includes(role)) && <EmployeeDashboard d={d} locale={locale} router={router} />}
 
-      {/* Job Title Card — for all roles */}
+      {/* Job Title Card */}
       {employeeInfo?.jobTitle && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Briefcase className="h-4 w-4 text-primary" />
-              المسمى الوظيفي
+              {t("jobTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -519,36 +529,36 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Code of Conduct — for all roles */}
+      {/* Code of Conduct */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" />
-            مدونة السلوك
+            {t("codeOfConduct")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30">
             <FileText className="h-8 w-8 text-primary shrink-0" />
-            <p className="text-sm font-medium flex-1">مدونة السلوك</p>
-            <a href={conductDoc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">فتح</a>
+            <p className="text-sm font-medium flex-1">{t("codeOfConduct")}</p>
+            <a href={conductDoc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">{t("open")}</a>
           </div>
         </CardContent>
       </Card>
 
-      {/* Org Chart — for all roles */}
+      {/* Org Chart */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
-            الهيكل التنظيمي
+            {t("orgChart")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30">
             <ExternalLink className="h-5 w-5 text-primary shrink-0" />
-            <p className="text-sm font-medium flex-1">الهيكل التنظيمي</p>
-            <a href="/assets/images/هيكل.jpg" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">فتح</a>
+            <p className="text-sm font-medium flex-1">{t("orgChart")}</p>
+            <a href="/assets/images/هيكل.jpg" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">{t("open")}</a>
           </div>
         </CardContent>
       </Card>
@@ -556,42 +566,42 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">إجراءات سريعة</CardTitle>
+          <CardTitle className="text-base">{t("quickActions")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {(role === "HR" || role === "CEO" || role === "CFO") && (
               <>
                 <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/employees`)}>
-                  <Users className="h-5 w-5" /><span className="text-xs">الموظفون</span>
+                  <Users className="h-5 w-5" /><span className="text-xs">{t("actions.employees")}</span>
                 </Button>
                 <Button variant="outline" className="h-auto flex-col gap-2 py-4 border-primary/40 text-primary hover:bg-primary/5" onClick={() => setAddEmployeeOpen(true)}>
-                  <UserPlus className="h-5 w-5" /><span className="text-xs">إضافة موظف</span>
+                  <UserPlus className="h-5 w-5" /><span className="text-xs">{t("actions.addEmployee")}</span>
                 </Button>
               </>
             )}
             <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/requests/my-requests`)}>
-              <PlusCircle className="h-5 w-5" /><span className="text-xs">طلب جديد</span>
+              <PlusCircle className="h-5 w-5" /><span className="text-xs">{t("actions.newRequest")}</span>
             </Button>
             <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/requests/my-requests`)}>
-              <Calendar className="h-5 w-5" /><span className="text-xs">إجازاتي</span>
+              <Calendar className="h-5 w-5" /><span className="text-xs">{t("myLeaves")}</span>
             </Button>
             {(role === "HR" || role === "CEO") && (
               <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/job-applications`)}>
-                <Briefcase className="h-5 w-5" /><span className="text-xs">التوظيف</span>
+                <Briefcase className="h-5 w-5" /><span className="text-xs">{t("actions.recruitment")}</span>
               </Button>
             )}
             {(role === "HR" || role === "CFO") && (
               <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/payroll`)}>
-                <DollarSign className="h-5 w-5" /><span className="text-xs">الرواتب</span>
+                <DollarSign className="h-5 w-5" /><span className="text-xs">{t("actions.payroll")}</span>
               </Button>
             )}
             <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/custodies`)}>
-              <Package className="h-5 w-5" /><span className="text-xs">العهدات</span>
+              <Package className="h-5 w-5" /><span className="text-xs">{t("actions.custodies")}</span>
             </Button>
             {(role === "HR" || role === "CEO" || role === "CFO") && (
               <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => router.push(`/${locale}/reports/hr`)}>
-                <TrendingUp className="h-5 w-5" /><span className="text-xs">التقارير</span>
+                <TrendingUp className="h-5 w-5" /><span className="text-xs">{t("actions.reports")}</span>
               </Button>
             )}
           </div>
@@ -602,8 +612,8 @@ export default function DashboardPage() {
       <ConfirmDialog
         open={deleteConductOpen}
         onOpenChange={setDeleteConductOpen}
-        title="حذف مدونة السلوك"
-        description="هل أنت متأكد من حذف وثيقة مدونة السلوك؟"
+        title={t("deleteConductTitle")}
+        description={t("deleteConductDesc")}
         onConfirm={removeConductDoc}
         variant="destructive"
       />

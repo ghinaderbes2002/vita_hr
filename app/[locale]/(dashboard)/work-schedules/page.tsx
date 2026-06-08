@@ -84,10 +84,10 @@ export default function WorkSchedulesPage() {
     }
   };
 
-  const SHIFT_TYPE_CONFIG: Record<ShiftType, { label: string; className: string }> = {
-    DAY:      { label: "🌤 نهاري",  className: "bg-blue-100 text-blue-800 border-blue-200" },
-    NIGHT:    { label: "🌙 ليلي",   className: "bg-purple-100 text-purple-800 border-purple-200" },
-    FLEXIBLE: { label: "🕐 مرن",    className: "bg-green-100 text-green-800 border-green-200" },
+  const SHIFT_TYPE_CLASSES: Record<string, string> = {
+    DAY:      "bg-blue-100 text-blue-800 border-blue-200",
+    NIGHT:    "bg-purple-100 text-purple-800 border-purple-200",
+    FLEXIBLE: "bg-green-100 text-green-800 border-green-200",
   };
 
   const getWorkDaysText = (workDaysJson: string) => {
@@ -102,7 +102,8 @@ export default function WorkSchedulesPage() {
         t("workSchedules.weekDays.friday"),
         t("workSchedules.weekDays.saturday")
       ];
-      return days.map((d) => dayNames[d]).join("، ");
+      const separator = locale === "ar" ? "، " : ", ";
+      return days.map((d) => dayNames[d]).join(separator);
     } catch {
       return "-";
     }
@@ -141,7 +142,7 @@ export default function WorkSchedulesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>{t("workSchedules.fields.code")}</TableHead>
-              <TableHead>نوع الوردية</TableHead>
+              <TableHead>{t("workSchedules.fields.shiftType")}</TableHead>
               <TableHead>{t("workSchedules.fields.name")}</TableHead>
               <TableHead>{t("workSchedules.fields.workTimes")}</TableHead>
               <TableHead>{t("workSchedules.fields.workDays")}</TableHead>
@@ -179,10 +180,10 @@ export default function WorkSchedulesPage() {
                   <TableCell className="font-medium">{schedule.code}</TableCell>
                   <TableCell>
                     {(() => {
-                      const cfg = SHIFT_TYPE_CONFIG[schedule.shiftType as ShiftType];
-                      return cfg ? (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cfg.className}`}>
-                          {cfg.label}
+                      const cls = SHIFT_TYPE_CLASSES[schedule.shiftType as ShiftType];
+                      return cls ? (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cls}`}>
+                          {t(`workSchedules.shiftTypes.${schedule.shiftType}` as any)}
                         </span>
                       ) : null;
                     })()}
@@ -195,8 +196,8 @@ export default function WorkSchedulesPage() {
                     {schedule.shiftType === "FLEXIBLE" ? (
                       <span className="text-sm" dir="ltr">
                         {schedule.minimumWorkMinutes
-                          ? `${Math.round(schedule.minimumWorkMinutes / 60)} ساعات / يوم`
-                          : "مرن"}
+                          ? `${Math.round(schedule.minimumWorkMinutes / 60)} ${t("workSchedules.hoursPerDay")}`
+                          : t("workSchedules.flexible")}
                       </span>
                     ) : (
                       <div className="space-y-0.5">
@@ -206,7 +207,7 @@ export default function WorkSchedulesPage() {
                             const [sh, sm] = schedule.workStartTime.split(":").map(Number);
                             const [eh, em] = schedule.workEndTime.split(":").map(Number);
                             const hrs = Math.round((eh * 60 + em - sh * 60 - sm) / 60);
-                            return `${hrs} ساعات / يوم`;
+                            return `${hrs} ${t("workSchedules.hoursPerDay")}`;
                           })()}
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1" dir="ltr">

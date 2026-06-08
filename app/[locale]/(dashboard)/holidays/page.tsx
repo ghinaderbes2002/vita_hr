@@ -140,7 +140,7 @@ export default function HolidaysPage() {
             onClick={() => setView("list")}
           >
             <List className="h-4 w-4 ml-1" />
-            قائمة
+            {t("holidays.listView")}
           </Button>
           <Button
             variant={view === "calendar" ? "default" : "ghost"}
@@ -149,7 +149,7 @@ export default function HolidaysPage() {
             onClick={() => setView("calendar")}
           >
             <CalendarDays className="h-4 w-4 ml-1" />
-            تقويم
+            {t("holidays.calendarView")}
           </Button>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function HolidaysPage() {
                 <TableHead>{t("holidays.fields.date")}</TableHead>
                 <TableHead>{t("holidays.fields.type")}</TableHead>
                 <TableHead>{t("holidays.fields.isRecurring")}</TableHead>
-                <TableHead className="w-[70px]">{t("common.actions")}</TableHead>
+                <TableHead className="w-17.5">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

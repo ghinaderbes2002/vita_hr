@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History, AlertCircle, Bold, Underline, Italic } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -56,6 +57,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const [historyOpen, setHistoryOpen]   = useState(false);
   const [activeHistory, setActiveHistory] = useState<any[]>([]);
   const editBodyRef = useRef<HTMLTextAreaElement>(null);
+  const t = useTranslations("mail");
 
   const applyEditFormat = (tag: "b" | "u" | "i") => {
     const ta = editBodyRef.current;
@@ -123,7 +125,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
 
   const stripTags = (text: string) => text.replace(/<[^>]*>/g, "");
 
-  const defaultSubject = `رد: ${message.subject}`;
+  const defaultSubject = `${t("rePrefix")}${message.subject}`;
   const getRecipientEmpId = (r: any) =>
     r.employeeInfo?.employeeId ?? r.recipient?.id ?? r.recipientId;
 
@@ -138,17 +140,17 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     : [];
 
   const forwardSenderLine = senderName
-    ? `من: ${senderName}`
+    ? `${t("forwardFrom")}: ${senderName}`
     : "";
   const forwardDateLine = message.createdAt
-    ? `التاريخ: ${format(new Date(message.createdAt), "PPP", { locale: ar })}`
+    ? `${t("forwardDate")}: ${format(new Date(message.createdAt), "PPP", { locale: ar })}`
     : "";
   const forwardDefaultBody = [
     "",
     "",
-    "---------- رسالة محوّلة ----------",
+    t("forwardedHeader"),
     forwardSenderLine,
-    `الموضوع: ${message.subject}`,
+    `${t("forwardSubject")}: ${message.subject}`,
     forwardDateLine,
     "",
     stripTags(message.body ?? ""),
@@ -162,7 +164,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
       <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/20">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
           <ArrowRight className="h-4 w-4" />
-          رجوع
+          {t("back")}
         </Button>
         <Separator orientation="vertical" className="h-5" />
         <Button
@@ -172,7 +174,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           onClick={() => { setReplyAll(false); setReplyOpen(true); }}
         >
           <Reply className="h-4 w-4" />
-          رد
+          {t("reply")}
         </Button>
         <Button
           variant="ghost"
@@ -181,7 +183,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           onClick={() => { setReplyAll(true); setReplyOpen(true); }}
         >
           <ReplyAll className="h-4 w-4" />
-          رد على الكل
+          {t("replyAll")}
         </Button>
         <Button
           variant="ghost"
@@ -190,14 +192,14 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           onClick={() => setForwardOpen(true)}
         >
           <Forward className="h-4 w-4" />
-          تحويل
+          {t("forward")}
         </Button>
         <Separator orientation="vertical" className="h-5" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-1.5" disabled={moveMail.isPending}>
               <Archive className="h-4 w-4" />
-              أرشفة
+              {t("archiveAction")}
               <ChevronDown className="h-3.5 w-3.5 opacity-60" />
             </Button>
           </DropdownMenuTrigger>
@@ -209,7 +211,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
               }}
             >
               <Archive className="h-4 w-4 ml-2" />
-              الأرشيف العام
+              {t("generalArchive")}
             </DropdownMenuItem>
             {archiveFolders.length > 0 && (
               <>
@@ -245,7 +247,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             }}
           >
             <Trash2 className="h-4 w-4" />
-            حذف
+            {t("delete")}
           </Button>
         )}
         {isSender && (
@@ -261,7 +263,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             }}
           >
             <Pencil className="h-4 w-4" />
-            تعديل
+            {t("edit")}
           </Button>
         )}
       </div>
@@ -274,7 +276,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           {message.importance === "HIGH" && (
             <Badge className="bg-red-100 text-red-700 border-red-300 text-xs gap-1">
               <AlertCircle className="h-3 w-3" />
-              مهم جداً
+              {t("highImportance")}
             </Badge>
           )}
         </div>
@@ -282,13 +284,13 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
         {/* Meta */}
         <div className="space-y-1 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-muted-foreground w-10 shrink-0">من:</span>
+            <span className="text-muted-foreground w-10 shrink-0">{t("from")}</span>
             <span className="font-medium">
               {senderName ?? <EmployeeName userId={message.senderId} />}
             </span>
           </div>
           <div className="flex items-start gap-2">
-            <span className="text-muted-foreground w-10 shrink-0 pt-0.5">إلى:</span>
+            <span className="text-muted-foreground w-10 shrink-0 pt-0.5">{t("to")}</span>
             <div className="flex flex-wrap gap-1">
               {toRecipients.length > 0
                 ? toRecipients.map((r) => {
@@ -306,7 +308,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           </div>
           {ccRecipients.length > 0 && (
             <div className="flex items-start gap-2">
-              <span className="text-muted-foreground w-10 shrink-0 pt-0.5">نسخة:</span>
+              <span className="text-muted-foreground w-10 shrink-0 pt-0.5">{t("cc")}</span>
               <div className="flex flex-wrap gap-1">
                 {ccRecipients.map((r) => {
                   const info = r.employeeInfo ?? r.recipient;
@@ -322,7 +324,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             </div>
           )}
           <div className="flex items-center gap-2">
-            <span className="text-muted-foreground w-10 shrink-0">وقت:</span>
+            <span className="text-muted-foreground w-10 shrink-0">{t("time")}</span>
             <span className="text-muted-foreground">
               {format(new Date(message.createdAt), "PPPp", { locale: ar })}
             </span>
@@ -345,8 +347,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             {editHistory.length === 1 ? (
               <p className="flex items-center gap-1.5">
                 <Pencil className="h-3 w-3" />
-                تم التعديل من قبل {editHistory[0].editedByName}{" "}
-                ({format(new Date(editHistory[0].editedAt), "dd/MM/yyyy الساعة HH:mm", { locale: ar })})
+                {t("editedBy", { name: editHistory[0].editedByName, date: format(new Date(editHistory[0].editedAt), "dd/MM/yyyy HH:mm", { locale: ar }) })}
               </p>
             ) : (
               <div>
@@ -356,7 +357,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                   onClick={() => { setActiveHistory(editHistory); setHistoryOpen(true); }}
                 >
                   <History className="h-3 w-3" />
-                  سجل التعديلات ({editHistory.length} تعديلات)
+                  {t("editHistory", { count: editHistory.length })}
                 </button>
               </div>
             )}
@@ -369,7 +370,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             <Separator className="mb-4" />
             <div className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground font-medium">
               <MessageSquare className="h-3.5 w-3.5" />
-              المحادثة ({thread.length} رسائل)
+              {t("thread", { count: thread.length })}
             </div>
             <div className="space-y-3">
               {thread
@@ -427,8 +428,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                               {(m as any).editHistory.length === 1 ? (
                                 <p className="flex items-center gap-1.5">
                                   <Pencil className="h-3 w-3" />
-                                  تم التعديل من قبل {(m as any).editHistory[0].editedByName}{" "}
-                                  ({format(new Date((m as any).editHistory[0].editedAt), "dd/MM/yyyy الساعة HH:mm", { locale: ar })})
+                                  {t("editedBy", { name: (m as any).editHistory[0].editedByName, date: format(new Date((m as any).editHistory[0].editedAt), "dd/MM/yyyy HH:mm", { locale: ar }) })}
                                 </p>
                               ) : (
                                 <button
@@ -441,7 +441,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                                   }}
                                 >
                                   <History className="h-3 w-3" />
-                                  سجل التعديلات ({(m as any).editHistory.length} تعديلات)
+                                  {t("editHistory", { count: (m as any).editHistory.length })}
                                 </button>
                               )}
                             </div>
@@ -461,7 +461,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                                 }}
                               >
                                 <Pencil className="h-3 w-3" />
-                                تعديل ردّي
+                                {t("editMyReply")}
                               </Button>
                             </div>
                           )}
@@ -481,21 +481,21 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-4 w-4" />
-              تعديل الرسالة
+              {t("editMessageTitle")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>الموضوع</Label>
+              <Label>{t("subject")}</Label>
               <Input value={editSubject} onChange={(e) => setEditSubject(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>النص</Label>
+              <Label>{t("body")}</Label>
               <div className="flex items-center gap-0.5 border rounded-t-md px-2 py-1 bg-muted/30 border-b-0">
                 {([
-                  { tag: "b" as const, icon: Bold, title: "غامق" },
-                  { tag: "u" as const, icon: Underline, title: "تحته خط" },
-                  { tag: "i" as const, icon: Italic, title: "مائل" },
+                  { tag: "b" as const, icon: Bold, title: t("bold") },
+                  { tag: "u" as const, icon: Underline, title: t("underline") },
+                  { tag: "i" as const, icon: Italic, title: t("italic") },
                 ]).map(({ tag, icon: Icon, title }) => (
                   <button
                     key={tag}
@@ -518,7 +518,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>{t("cancel")}</Button>
             <Button
               disabled={(!editSubject.trim() && !editBody.trim()) || editMail.isPending}
               onClick={() => {
@@ -529,7 +529,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                 editMail.mutate({ id: editingMessageId ?? messageId, dto }, { onSuccess: () => setEditOpen(false) });
               }}
             >
-              {editMail.isPending ? "جاري الحفظ..." : "حفظ"}
+              {editMail.isPending ? t("saving") : t("save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -541,7 +541,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-4 w-4" />
-              سجل التعديلات
+              {t("editHistory", { count: activeHistory.length })}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2 max-h-80 overflow-y-auto">
@@ -554,16 +554,16 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                   </span>
                 </div>
                 {h.previousSubject && (
-                  <p className="text-xs text-muted-foreground">الموضوع السابق: {h.previousSubject}</p>
+                  <p className="text-xs text-muted-foreground">{t("previousSubject")} {h.previousSubject}</p>
                 )}
                 {h.previousBody && (
-                  <p className="text-xs text-muted-foreground line-clamp-2">النص السابق: {h.previousBody}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{t("previousBody")} {h.previousBody}</p>
                 )}
               </div>
             ))}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setHistoryOpen(false)}>إغلاق</Button>
+            <Button variant="outline" onClick={() => setHistoryOpen(false)}>{t("close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -586,7 +586,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           open={forwardOpen}
           onClose={() => setForwardOpen(false)}
           forwardMessageId={messageId}
-          defaultSubject={`Fwd: ${message.subject}`}
+          defaultSubject={t("fwdPrefix") + message.subject}
           defaultBody={forwardDefaultBody}
           forwardAttachments={message.attachments ?? []}
         />

@@ -29,8 +29,8 @@ import { SalaryDeductionRule } from "@/lib/api/leave-types";
 
 const formSchema = z.object({
   code: z.string().optional(),
-  nameAr: z.string().min(1, "الاسم بالعربي مطلوب"),
-  nameEn: z.string().min(1, "الاسم بالإنجليزي مطلوب"),
+  nameAr: z.string().min(1, "Arabic name is required"),
+  nameEn: z.string().min(1, "English name is required"),
   defaultDays: z.number().min(0),
   isPaid: z.boolean(),
   requiresApproval: z.boolean(),
@@ -212,16 +212,15 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
               ))}
             </div>
 
-            {/* شروط الأهلية */}
             <div className="rounded-lg border p-3 space-y-3">
-              <p className="text-sm font-medium">شروط الأهلية</p>
+              <p className="text-sm font-medium">{t("leaveTypes.eligibilityConditions")}</p>
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="minServiceMonths" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs">الحد الأدنى لأشهر الخدمة</FormLabel>
+                    <FormLabel className="text-xs">{t("leaveTypes.fields.minServiceMonths")}</FormLabel>
                     <FormControl>
                       <Input
-                        type="number" min={0} placeholder="مثال: 6"
+                        type="number" min={0} placeholder={t("leaveTypes.exampleMonths")}
                         value={field.value ?? ""}
                         onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
                       />
@@ -231,10 +230,10 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
                 )} />
                 <FormField control={form.control} name="maxLifetimeUsage" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs">الحد الأقصى مدى الحياة</FormLabel>
+                    <FormLabel className="text-xs">{t("leaveTypes.fields.maxLifetimeUsage")}</FormLabel>
                     <FormControl>
                       <Input
-                        type="number" min={1} placeholder="مثال: 1 للحج"
+                        type="number" min={1} placeholder={t("leaveTypes.exampleLifetime")}
                         value={field.value ?? ""}
                         onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
                       />
@@ -245,10 +244,10 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
               </div>
               <FormField control={form.control} name="maxHoursPerMonth" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">الحد الأقصى للساعات الشهرية (للإجازة الساعية)</FormLabel>
+                  <FormLabel className="text-xs">{t("leaveTypes.fields.maxHoursPerMonth")}</FormLabel>
                   <FormControl>
                     <Input
-                      type="number" min={0} step={0.5} placeholder="مثال: 2"
+                      type="number" min={0} step={0.5} placeholder={t("leaveTypes.exampleHours")}
                       value={field.value ?? ""}
                       onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
                     />
@@ -258,32 +257,31 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
               )} />
             </div>
 
-            {/* قواعد خصم الراتب */}
             <div className="rounded-lg border p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">قواعد خصم الراتب</p>
+                <p className="text-sm font-medium">{t("leaveTypes.deductionRules")}</p>
                 <Button type="button" variant="outline" size="sm" onClick={addRule} className="gap-1">
                   <Plus className="h-3.5 w-3.5" />
-                  إضافة قاعدة
+                  {t("leaveTypes.addRule")}
                 </Button>
               </div>
               {deductionRules.length === 0 && (
-                <p className="text-xs text-muted-foreground">لا توجد قواعد خصم — الإجازة مدفوعة بالكامل</p>
+                <p className="text-xs text-muted-foreground">{t("leaveTypes.noDeductionRules")}</p>
               )}
               {deductionRules.map((rule, i) => (
                 <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">من اليوم</p>
+                    <p className="text-xs text-muted-foreground">{t("leaveTypes.fromDay")}</p>
                     <Input type="number" min={1} value={rule.fromDay}
                       onChange={(e) => updateRule(i, "fromDay", Number(e.target.value))} />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">إلى اليوم</p>
+                    <p className="text-xs text-muted-foreground">{t("leaveTypes.toDay")}</p>
                     <Input type="number" min={1} value={rule.toDay}
                       onChange={(e) => updateRule(i, "toDay", Number(e.target.value))} />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">نسبة الخصم %</p>
+                    <p className="text-xs text-muted-foreground">{t("leaveTypes.deductionPercent")}</p>
                     <Input type="number" min={0} max={100} value={rule.deductionPercent}
                       onChange={(e) => updateRule(i, "deductionPercent", Number(e.target.value))} />
                   </div>
