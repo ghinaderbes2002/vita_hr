@@ -10,6 +10,8 @@ export interface AuditLog {
   method: string;
   path: string;
   ip: string;
+  description?: string;
+  metadata?: Record<string, any>;
   createdAt: string;
 }
 

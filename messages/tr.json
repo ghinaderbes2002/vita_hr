@@ -187,7 +187,11 @@
     "clinicAppointments": "Randevular",
     "clinicInventory": "Tıbbi Stok",
     "clinicReports": "Klinik Raporları",
-    "myProfile": "Profilim"
+    "myProfile": "Profilim",
+    "maintenanceRequests": "Bakım Talepleri",
+    "myMaintenanceRequests": "Bakım Taleplerim",
+    "maintenancePending": "Bekleyen Bakım",
+    "myMaintenanceTasks": "Bakım Görevlerim"
   },
   "user": {
     "logout": "Çıkış Yap",
@@ -207,7 +211,8 @@
       "email": "E-posta",
       "password": "Şifre",
       "role": "Rol",
-      "isActive": "Aktif"
+      "isActive": "Aktif",
+      "anydesk": "AnyDesk Kimliği"
     },
     "statuses": {
       "active": "Aktif",
@@ -985,6 +990,7 @@
       "COMPLAINT": "Şikayet Talebi",
       "WORK_ACCIDENT": "Yaralanma/İş Kazası Talebi",
       "REMOTE_WORK": "Uzaktan Çalışma Talebi",
+      "MAINTENANCE": "Bakım Talebi",
       "OTHER": "Diğer"
     },
     "statuses": {
@@ -1077,8 +1083,14 @@
         "deductionNote": "Onaylandığı ay çalışanın maaşından {days} gün kesilecektir",
         "violationLabel": "İhlal Açıklaması *",
         "violationPlaceholder": "İhlali açıklayın...",
-        "moralTypes": { "NOTICE": "Uyarı", "WARNING_1": "Birinci İhtar", "WARNING_2": "İkinci İhtar" },
-        "materialTypes": { "DAYS_DEDUCTION": "Gün Kesintisi" }
+        "moralTypes": {
+          "NOTICE": "Uyarı",
+          "WARNING_1": "Birinci İhtar",
+          "WARNING_2": "İkinci İhtar"
+        },
+        "materialTypes": {
+          "DAYS_DEDUCTION": "Gün Kesintisi"
+        }
       },
       "overtime": {
         "overtimeSub": "Tür:",
@@ -1095,7 +1107,10 @@
         "assignedEmployees": "İlgili Çalışanlar *",
         "selectedCount": "({count} seçili)",
         "noSubordinates": "Hesabınıza bağlı ast bulunmamaktadır",
-        "types": { "OVERTIME_EMPLOYEE": "Çalışan Görevlendirmesi", "OVERTIME_MANAGER": "Yönetici Görevlendirmesi" }
+        "types": {
+          "OVERTIME_EMPLOYEE": "Çalışan Görevlendirmesi",
+          "OVERTIME_MANAGER": "Yönetici Görevlendirmesi"
+        }
       },
       "mission": {
         "typeLabel": "Görev Türü *",
@@ -1177,15 +1192,21 @@
         "preventionLabel": "Önleme Önerileri",
         "preventionPlaceholder": "Kazanın tekrarını önlemek için öneriler...",
         "incidentTypes": {
-          "EMPLOYEE_INJURY": "Çalışan Yaralanması", "PATIENT_ACCIDENT": "Hasta Kazası",
-          "VISITOR_ACCIDENT": "Ziyaretçi Kazası", "PROPERTY_DAMAGE": "Mülk Hasarı",
-          "BIOLOGICAL_CHEMICAL": "Biyolojik/Kimyasal Maruziyet", "MEDICATION_ERROR": "İlaç Hatası",
+          "EMPLOYEE_INJURY": "Çalışan Yaralanması",
+          "PATIENT_ACCIDENT": "Hasta Kazası",
+          "VISITOR_ACCIDENT": "Ziyaretçi Kazası",
+          "PROPERTY_DAMAGE": "Mülk Hasarı",
+          "BIOLOGICAL_CHEMICAL": "Biyolojik/Kimyasal Maruziyet",
+          "MEDICATION_ERROR": "İlaç Hatası",
           "OTHER": "Diğer"
         },
         "factorTypes": {
-          "SAFETY_PROCEDURES": "Güvenlik Prosedürleri", "MEDICAL_DEVICE": "Tıbbi Cihaz",
-          "CHEMICAL_SPILL": "Kimyasal Dökülme", "CROWDING": "Kalabalık",
-          "HUMAN_ERROR": "İnsan Hatası", "OTHER": "Diğer"
+          "SAFETY_PROCEDURES": "Güvenlik Prosedürleri",
+          "MEDICAL_DEVICE": "Tıbbi Cihaz",
+          "CHEMICAL_SPILL": "Kimyasal Dökülme",
+          "CROWDING": "Kalabalık",
+          "HUMAN_ERROR": "İnsan Hatası",
+          "OTHER": "Diğer"
         }
       },
       "remoteWork": {
@@ -1207,14 +1228,24 @@
         "taskPlaceholder": "{number}. Görev",
         "toolsLabel": "Gerekli Araçlar",
         "specificSoftwarePlaceholder": "Belirli yazılımın adı",
-        "workTypes": { "TEMPORARY": "Geçici", "REGULAR": "Düzenli", "EMERGENCY": "Acil" },
+        "workTypes": {
+          "TEMPORARY": "Geçici",
+          "REGULAR": "Düzenli",
+          "EMERGENCY": "Acil"
+        },
         "justificationOptions": {
-          "HEALTH": "Sağlık Nedenleri", "FAMILY_CARE": "Aile Bakımı",
-          "PRODUCTIVITY": "Verimliliği Artırma", "TRAVEL": "Seyahat", "OTHER": "Diğer"
+          "HEALTH": "Sağlık Nedenleri",
+          "FAMILY_CARE": "Aile Bakımı",
+          "PRODUCTIVITY": "Verimliliği Artırma",
+          "TRAVEL": "Seyahat",
+          "OTHER": "Diğer"
         },
         "requiredTools": {
-          "LAPTOP": "Dizüstü Bilgisayar", "PHONE": "Telefon", "VPN": "VPN",
-          "SPECIFIC_SOFTWARE": "Belirli Yazılım", "PERSONAL_DEVICE": "Kişisel Cihaz"
+          "LAPTOP": "Dizüstü Bilgisayar",
+          "PHONE": "Telefon",
+          "VPN": "VPN",
+          "SPECIFIC_SOFTWARE": "Belirli Yazılım",
+          "PERSONAL_DEVICE": "Kişisel Cihaz"
         }
       }
     }
@@ -2220,6 +2251,76 @@
     "status": {
       "active": "Aktif",
       "inactive": "Pasif"
+    }
+  },
+  "maintenance": {
+    "title": "Bakım Talepleri",
+    "myRequests": "Bakım Taleplerim",
+    "myRequestsDescription": "Gönderilen bakım taleplerinizi takip edin",
+    "newRequest": "Yeni Bakım Talebi",
+    "createTitle": "Yeni Bakım Talebi",
+    "createDescription": "Arızalı bir varlık için bakım talebi gönderin",
+    "pendingTitle": "Bekleyen Bakım Talepleri",
+    "pendingDescription": "Bekleyen bakım taleplerini inceleyin",
+    "myTasksTitle": "Atanan Görevlerim",
+    "myTasksDescription": "Size atanan yürütme görevleri",
+    "fields": {
+      "workLocation": "Çalışma Konumu",
+      "assetType": "Varlık Türü",
+      "assetTypePlaceholder": "ör. Yazıcı, Klima, Bilgisayar",
+      "assetNumber": "Varlık Numarası",
+      "assetNumberPlaceholder": "Varlık etiketi (isteğe bağlı)",
+      "brandModel": "Marka / Model",
+      "brandModelPlaceholder": "ör. HP LaserJet 1020 (isteğe bağlı)",
+      "faultDescription": "Arıza Açıklaması",
+      "faultDescriptionPlaceholder": "Arıza veya sorunu ayrıntılı açıklayın...",
+      "priority": "Öncelik",
+      "situationDescription": "Durum Açıklaması",
+      "situationDescriptionPlaceholder": "Mevcut durumu açıklayın (isteğe bağlı)",
+      "repairOption": "Onarım Seçeneği",
+      "assignedEmployee": "Atanan Çalışan",
+      "notes": "Notlar",
+      "notesPlaceholder": "Isteğe bağlı not ekleyin..."
+    },
+    "workLocations": {
+      "SHAHBA": "Shahba",
+      "CENTER": "Merkez",
+      "NEW_ALEPPO": "Yeni Halep"
+    },
+    "priorities": {
+      "URGENT": "Acil",
+      "MEDIUM": "Orta",
+      "NORMAL": "Normal"
+    },
+    "repairOptions": {
+      "INTERNAL": "Dahili",
+      "INTERNAL_PARTS": "Dahili (Parça Gerekli)",
+      "EXTERNAL_WORKSHOP": "Harici Atölye"
+    },
+    "statuses": {
+      "PENDING_MANAGER": "Yönetici Onayı Bekleniyor",
+      "PENDING_LOGISTICS": "Lojistik İşlemi Bekleniyor",
+      "PENDING_EXECUTIVE": "Direktör Onayı Bekleniyor",
+      "ASSIGNED": "Atandı",
+      "DONE": "Tamamlandı",
+      "REJECTED": "Reddedildi"
+    },
+    "tabs": {
+      "manager": "Onayım Bekleniyor",
+      "logistics": "İşlem Bekleniyor",
+      "executive": "Direktör Onayı Bekleniyor"
+    },
+    "actions": {
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "process": "Talebi İşle",
+      "complete": "Tamamlandı Olarak İşaretle",
+      "approveTitle": "Bakım Talebini Onayla",
+      "rejectTitle": "Bakım Talebini Reddet",
+      "processTitle": "Bakım Talebini İşle",
+      "processDescription": "Onarım seçeneğini seçin ve çalışan atayın",
+      "notesLabel": "Notlar (İsteğe Bağlı)",
+      "notesRequired": "Notlar *"
     }
   }
 }

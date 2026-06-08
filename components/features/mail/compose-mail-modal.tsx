@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Send, FileText, X, Paperclip, Loader2, Building2, Bold, Underline, Italic, AlertCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -57,7 +56,6 @@ export function ComposeMailModal({
   forwardAttachments = [],
 }: Props) {
   const [subject, setSubject] = useState(defaultSubject);
-  const [body, setBody] = useState(defaultBody);
   const [toIds, setToIds] = useState<string[]>(defaultToIds);
   const [ccIds, setCcIds] = useState<string[]>(defaultCcIds);
   const [bccIds, setBccIds] = useState<string[]>([]);
@@ -68,22 +66,19 @@ export function ComposeMailModal({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isHighImportance, setIsHighImportance] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
-  const applyFormat = (tag: "b" | "u" | "i") => {
-    const ta = bodyRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const selected = body.slice(start, end);
-    if (!selected) return;
-    const wrapped = `<${tag}>${selected}</${tag}>`;
-    const newBody = body.slice(0, start) + wrapped + body.slice(end);
-    setBody(newBody);
-    setTimeout(() => {
-      ta.focus();
-      ta.setSelectionRange(start + tag.length + 2, start + tag.length + 2 + selected.length);
-    }, 0);
+  useEffect(() => {
+    if (open && bodyRef.current) {
+      bodyRef.current.innerHTML = defaultBody;
+    } else if (!open && bodyRef.current) {
+      bodyRef.current.innerHTML = "";
+    }
+  }, [open]);
+
+  const applyFormat = (command: "bold" | "underline" | "italic") => {
+    bodyRef.current?.focus();
+    document.execCommand(command, false);
   };
 
   const sendMail = useSendMail();
@@ -138,7 +133,7 @@ export function ComposeMailModal({
         dto: {
           recipients: buildRecipients(),
           subject: subject || undefined,
-          body: body || undefined,
+          body: bodyRef.current?.innerHTML || undefined,
           ...(forwardAttachments.length > 0
             ? { attachmentIds: forwardAttachments.map((a) => a.id) }
             : {}),
@@ -147,7 +142,7 @@ export function ComposeMailModal({
     } else {
       message = await sendMail.mutateAsync({
         subject,
-        body: body || undefined,
+        body: bodyRef.current?.innerHTML || undefined,
         recipients: buildRecipients(),
         ...(departmentIds.length > 0 ? { departmentIds } : {}),
         parentMessageId: replyToMessageId,
@@ -169,7 +164,7 @@ export function ComposeMailModal({
   const handleDraft = async () => {
     await saveDraft.mutateAsync({
       subject,
-      body,
+      body: bodyRef.current?.innerHTML || "",
       recipients: buildRecipients(),
     });
     onClose();
@@ -314,27 +309,27 @@ export function ComposeMailModal({
             {/* Formatting toolbar */}
             <div className="flex items-center gap-0.5 border rounded-t-md px-2 py-1 bg-muted/30 border-b-0">
               {([
-                { tag: "b" as const, icon: Bold, title: t("bold") },
-                { tag: "u" as const, icon: Underline, title: t("underline") },
-                { tag: "i" as const, icon: Italic, title: t("italic") },
-              ]).map(({ tag, icon: Icon, title }) => (
+                { command: "bold" as const, icon: Bold, title: t("bold") },
+                { command: "underline" as const, icon: Underline, title: t("underline") },
+                { command: "italic" as const, icon: Italic, title: t("italic") },
+              ]).map(({ command, icon: Icon, title }) => (
                 <button
-                  key={tag}
+                  key={command}
                   type="button"
                   title={title}
-                  onClick={() => applyFormat(tag)}
+                  onClick={() => applyFormat(command)}
                   className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                 >
                   <Icon className="h-3.5 w-3.5" />
                 </button>
               ))}
             </div>
-            <Textarea
+            <div
               ref={bodyRef}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={7}
-              className="resize-none rounded-t-none border-t-0"
+              contentEditable
+              suppressContentEditableWarning
+              className="min-h-[168px] rounded-t-none border border-t-0 px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto"
+              dir="auto"
             />
           </div>
 

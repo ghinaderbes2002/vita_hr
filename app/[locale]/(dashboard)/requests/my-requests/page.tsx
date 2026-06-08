@@ -42,12 +42,21 @@ import { LeaveRequest } from "@/lib/api/leave-requests";
 import { CheckCircle2, UserCheck } from "lucide-react";
 import { Request } from "@/types";
 import { toast } from "sonner";
+import { useMyMaintenanceTasks, useCompleteMaintenanceTask } from "@/lib/hooks/use-maintenance-requests";
+import { MaintenanceRequest } from "@/lib/api/maintenance-requests";
+import { MaintenanceStatusBadge } from "@/components/features/maintenance-requests/maintenance-status-badge";
 
 export default function MyRequestsPage() {
   const t = useTranslations();
   const router = useRouter();
   const locale = useLocale();
   const dateLocale = locale === "ar" ? ar : locale === "tr" ? tr : enUS;
+
+  // --- Maintenance tasks state ---
+  const [confirmCompleteId, setConfirmCompleteId] = useState<string | null>(null);
+  const { data: tasksData, isLoading: tasksLoading } = useMyMaintenanceTasks();
+  const completeTask = useCompleteMaintenanceTask();
+  const maintenanceTasks: MaintenanceRequest[] = (tasksData as any)?.data?.items || (tasksData as any)?.data || (tasksData as any)?.items || [];
 
   // --- Admin requests state ---
   const [newDialogOpen, setNewDialogOpen] = useState(false);
@@ -334,6 +343,14 @@ export default function MyRequestsPage() {
           <TabsList>
             <TabsTrigger value="leaves">{t("requests.tabs.leaveRequests")}</TabsTrigger>
             <TabsTrigger value="admin">{t("requests.tabs.adminRequests")}</TabsTrigger>
+            {maintenanceTasks.length > 0 && (
+              <TabsTrigger value="maintenance-tasks">
+                {t("maintenance.myTasksTitle")}
+                <span className="mr-1.5 rounded-full bg-primary text-primary-foreground text-xs px-1.5 py-0.5">
+                  {maintenanceTasks.length}
+                </span>
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -353,6 +370,77 @@ export default function MyRequestsPage() {
             <TabsContent value="approved" className="rounded-md border mt-2">{renderLeaveTable(approvedLeaves)}</TabsContent>
             <TabsContent value="rejected" className="rounded-md border mt-2">{renderLeaveTable(rejectedLeaves)}</TabsContent>
           </Tabs>
+        </TabsContent>
+
+        {/* Maintenance Tasks Tab */}
+        <TabsContent value="maintenance-tasks">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("maintenance.fields.assetType")}</TableHead>
+                  <TableHead>{t("maintenance.fields.workLocation")}</TableHead>
+                  <TableHead>{t("maintenance.fields.repairOption")}</TableHead>
+                  <TableHead>{t("maintenance.fields.priority")}</TableHead>
+                  <TableHead>{t("requests.fields.status")}</TableHead>
+                  <TableHead className="w-32">{t("common.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tasksLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : maintenanceTasks.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">{t("common.noData")}</TableCell>
+                  </TableRow>
+                ) : (
+                  maintenanceTasks.map((task) => (
+                    <TableRow key={task.id}>
+                      <TableCell>{task.details?.assetType || "—"}</TableCell>
+                      <TableCell>
+                        {task.details?.workLocation
+                          ? t(`maintenance.workLocations.${task.details.workLocation}` as any)
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {task.details?.repairOption
+                          ? t(`maintenance.repairOptions.${task.details.repairOption}` as any)
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {task.details?.priority && (
+                          <Badge variant="outline" className={
+                            task.details.priority === "URGENT" ? "bg-red-100 text-red-800 border-red-300" :
+                            task.details.priority === "MEDIUM" ? "bg-orange-100 text-orange-800 border-orange-300" :
+                            "bg-gray-100 text-gray-700 border-gray-300"
+                          }>
+                            {t(`maintenance.priorities.${task.details.priority}` as any)}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <MaintenanceStatusBadge status={task.status} />
+                      </TableCell>
+                      <TableCell>
+                        {task.status === "ASSIGNED" && (
+                          <Button size="sm" onClick={() => setConfirmCompleteId(task.id)}>
+                            <CheckCircle2 className="h-4 w-4 ml-1" />
+                            {t("maintenance.actions.complete")}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
         {/* Admin Requests Tab */}
@@ -464,6 +552,32 @@ export default function MyRequestsPage() {
               disabled={substituteResponse.isPending}
             >
               {substituteAction === "approve" ? t("requests.actions.approve") : t("requests.actions.reject")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Maintenance complete confirm */}
+      <Dialog open={!!confirmCompleteId} onOpenChange={(v) => !v && setConfirmCompleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("maintenance.actions.complete")}</DialogTitle>
+            <DialogDescription>{t("messages.actionCantUndo")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmCompleteId(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={async () => {
+                if (confirmCompleteId) {
+                  await completeTask.mutateAsync(confirmCompleteId);
+                  setConfirmCompleteId(null);
+                }
+              }}
+              disabled={completeTask.isPending}
+            >
+              {t("common.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -30,6 +30,7 @@ const formSchema = z.object({
   email: z.string().email("البريد الإلكتروني غير صحيح"),
   password: z.string().optional(),
   fullName: z.string().min(2, "يجب أن يكون حرفين على الأقل"),
+  anydesk: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
 });
 
@@ -56,6 +57,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
       email: "",
       password: "",
       fullName: "",
+      anydesk: "",
       status: "ACTIVE",
     },
   });
@@ -71,25 +73,26 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           email: user.email || "",
           password: "",
           fullName: user.fullName || "",
+          anydesk: user.anydesk || "",
           status: user.status || "ACTIVE",
         });
       } else {
-        // For new user, ensure all fields are empty
         form.reset({
           username: "",
           email: "",
           password: "",
           fullName: "",
+          anydesk: "",
           status: "ACTIVE",
         });
       }
     } else {
-      // When dialog is closed, reset form
       form.reset({
         username: "",
         email: "",
         password: "",
         fullName: "",
+        anydesk: "",
         status: "ACTIVE",
       });
     }
@@ -102,6 +105,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           email: data.email,
           fullName: data.fullName,
           status: data.status,
+          anydesk: data.anydesk || null,
           ...(data.password && data.password.length >= 6 && { password: data.password }),
         };
         await updateUser.mutateAsync({ id: user.id, data: updateData });
@@ -110,12 +114,12 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           form.setError("password", { message: "كلمة المرور مطلوبة (6 أحرف على الأقل)" });
           return;
         }
-        // Only send the fields backend expects for create
-        const createData = {
+        const createData: any = {
           username: data.username,
           email: data.email,
           password: data.password,
           fullName: data.fullName,
+          anydesk: data.anydesk || null,
         };
         await createUser.mutateAsync(createData);
       }
@@ -132,6 +136,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         email: "",
         password: "",
         fullName: "",
+        anydesk: "",
         status: "ACTIVE",
       });
     }
@@ -142,7 +147,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose} key={user?.id || 'new-user'}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("users.editUser") : t("users.addUser")}
@@ -195,6 +200,20 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                   <FormLabel>{t("users.fields.email")}</FormLabel>
                   <FormControl>
                     <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="anydesk"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("users.fields.anydesk")}</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="123 456 789" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

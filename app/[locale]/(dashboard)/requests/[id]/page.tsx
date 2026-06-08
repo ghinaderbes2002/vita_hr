@@ -149,7 +149,81 @@ const APPROVER_ROLE_LABELS: Record<string, string> = {
   HR: "الموارد البشرية",
   CEO: "المدير التنفيذي",
   CFO: "المدير المالي",
+  LOGISTICS: "مسؤول اللوجستي",
+  ASSIGNED_EMPLOYEE: "الموظف المكلَّف",
 };
+
+const MAINTENANCE_STATUS_ORDER = [
+  "PENDING_MANAGER", "PENDING_LOGISTICS", "PENDING_EXECUTIVE", "ASSIGNED", "DONE",
+];
+
+function buildMaintenancePath(req: any): ApprovalStep[] {
+  const status: string = req.status ?? "";
+  const rank = MAINTENANCE_STATUS_ORDER.indexOf(status);
+  const isRejected = status === "REJECTED";
+
+  // Infer rejected stage from direct backend fields
+  const rejectedAtManager =
+    isRejected && req.managerStatus === "REJECTED";
+  const rejectedAtLogistics =
+    isRejected && req.logisticsStatus === "REJECTED";
+  const rejectedAtExecutive =
+    isRejected && req.executiveStatus === "REJECTED";
+
+  // Was the executive step ever used?
+  const hadExecutive =
+    status === "PENDING_EXECUTIVE" ||
+    req.executiveStatus != null ||
+    rank >= 3 && req.executiveReviewedAt != null;
+
+  const mkStep = (
+    id: string,
+    order: number,
+    role: string,
+    st: ApprovalStatus,
+    reviewedAt?: string | null,
+    notes?: string | null,
+  ): ApprovalStep => ({
+    id,
+    stepOrder: order,
+    approverRole: role,
+    status: st,
+    reviewedAt: reviewedAt ?? undefined,
+    notes: notes ?? undefined,
+  } as any);
+
+  // ── Step 1: Manager ──
+  const mgSt: ApprovalStatus =
+    rejectedAtManager ? "REJECTED" : rank >= 1 || req.managerStatus === "APPROVED" ? "APPROVED" : "PENDING";
+
+  // ── Step 2: Logistics ──
+  const lgSt: ApprovalStatus =
+    rejectedAtLogistics ? "REJECTED"
+    : rank >= 2 || req.logisticsStatus === "APPROVED" ? "APPROVED"
+    : rank === 1 ? "PENDING"
+    : "PENDING";
+
+  // ── Step 3: Executive ──
+  const execSt: ApprovalStatus =
+    !hadExecutive ? "SKIPPED"
+    : rejectedAtExecutive ? "REJECTED"
+    : rank >= 3 || req.executiveStatus === "APPROVED" ? "APPROVED"
+    : rank === 2 ? "PENDING"
+    : "PENDING";
+
+  // ── Step 4: Assigned employee ──
+  const assignedSt: ApprovalStatus =
+    status === "DONE" ? "APPROVED"
+    : status === "ASSIGNED" ? "PENDING"
+    : "PENDING";
+
+  return [
+    mkStep("m1", 1, "DIRECT_MANAGER", mgSt, req.managerReviewedAt, req.managerNotes),
+    mkStep("m2", 2, "LOGISTICS", lgSt, req.logisticsReviewedAt ?? req.logisticsProcessedAt, req.logisticsNotes),
+    mkStep("m3", 3, "CEO", execSt, req.executiveReviewedAt, req.executiveNotes),
+    mkStep("m4", 4, "ASSIGNED_EMPLOYEE", assignedSt, req.completedAt ?? undefined),
+  ];
+}
 
 function ApprovalStatusIcon({ status }: { status: ApprovalStatus }) {
   if (status === "APPROVED") return <CheckCircle2 className="h-5 w-5 text-green-600" />;
@@ -231,7 +305,11 @@ export default function RequestDetailPage() {
 
   // prefer /steps endpoint, fall back to /approvals
   const rawSteps = Array.isArray(stepsData) && stepsData.length > 0 ? stepsData : (Array.isArray(approvals) ? approvals : []);
-  const steps: ApprovalStep[] = rawSteps;
+  const isMaintenance = (request as any)?.type === "MAINTENANCE";
+  const steps: ApprovalStep[] =
+    isMaintenance && rawSteps.length === 0
+      ? buildMaintenancePath(request)
+      : rawSteps;
   const isStepsLoading = stepsLoading && approvalsLoading;
 
   const handleApprove = async (notes: string) => {

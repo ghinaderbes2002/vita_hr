@@ -132,7 +132,7 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <DialogHeader>
           <DialogTitle>
             {holiday ? t("holidays.editHoliday") : t("holidays.addHoliday")}
@@ -207,13 +207,15 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
               )}
             />
 
-            {/* تاريخ الانتهاء */}
             <FormField
               control={form.control}
               name="endDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>تاريخ الانتهاء <span className="text-muted-foreground text-xs">(اختياري — لإجازة متعددة أيام)</span></FormLabel>
+                  <FormLabel>
+                    {t("holidays.fields.endDate")}{" "}
+                    <span className="text-muted-foreground text-xs">{t("holidays.fields.endDateOptionalHint")}</span>
+                  </FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -221,7 +223,7 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
                           variant="outline"
                           className={cn("w-full pl-3 text-right font-normal", !field.value && "text-muted-foreground")}
                         >
-                          {field.value ? format(field.value, "PPP") : <span>اختر تاريخ الانتهاء</span>}
+                          {field.value ? format(field.value, "PPP") : <span>{t("holidays.fields.selectEndDate")}</span>}
                           <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
@@ -238,7 +240,7 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
                   </Popover>
                   {field.value && (
                     <button type="button" className="text-xs text-destructive hover:underline text-right" onClick={() => field.onChange(undefined)}>
-                      إزالة تاريخ الانتهاء
+                      {t("holidays.removeEndDate")}
                     </button>
                   )}
                   <FormMessage />
@@ -290,14 +292,13 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
               )}
             />
 
-            {/* السنة — للإجازات غير المتكررة */}
             {!form.watch("isRecurring") && (
               <FormField
                 control={form.control}
                 name="year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>السنة</FormLabel>
+                    <FormLabel>{t("holidays.fields.year")}</FormLabel>
                     <FormControl>
                       <Input {...field} type="number" min={2020} max={2100} placeholder="2026" />
                     </FormControl>

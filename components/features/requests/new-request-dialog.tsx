@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateRequest, useSubmitRequest } from "@/lib/hooks/use-requests";
+import { useCreateMaintenanceRequest } from "@/lib/hooks/use-maintenance-requests";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useEmployeesBasicList, useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
@@ -28,12 +29,24 @@ import { Loader2, Plus, Trash2, AlertTriangle, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
-const ALL_REQUEST_TYPES: (RequestType | "OVERTIME")[] = [
+const ALL_REQUEST_TYPES: (RequestType | "OVERTIME" | "MAINTENANCE")[] = [
   "TRANSFER", "RESIGNATION", "REWARD",
   "PENALTY_PROPOSAL", "OVERTIME",
   "BUSINESS_MISSION", "DELEGATION", "HIRING_REQUEST", "COMPLAINT",
-  "REMOTE_WORK", "OTHER",
+  "REMOTE_WORK", "MAINTENANCE", "OTHER",
 ];
+
+const MAINTENANCE_WORK_LOCATIONS = ["SHAHBA", "CENTER", "NEW_ALEPPO"] as const;
+const MAINTENANCE_PRIORITIES = ["URGENT", "MEDIUM", "NORMAL"] as const;
+
+const defaultMaintenance = {
+  workLocation: "CENTER",
+  assetType: "",
+  assetNumber: "",
+  brandModel: "",
+  faultDescription: "",
+  priority: "NORMAL",
+};
 
 const MANAGER_ONLY_TYPES = [
   "HIRING_REQUEST",
@@ -163,6 +176,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   const [overtimeManagerEmployeeIds, setOvertimeManagerEmployeeIds] = useState<string[]>([]);
   const [workAccident, setWorkAccident] = useState(defaultWorkAccident);
   const [remoteWork, setRemoteWork] = useState(defaultRemoteWork);
+  const [maintenanceData, setMaintenanceData] = useState(defaultMaintenance);
 
   const { data: myEmployee } = useMyEmployee();
   const managerEmployeeId = (myEmployee as any)?.id || user?.employeeId || "";
@@ -170,6 +184,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
 
   const createRequest = useCreateRequest();
   const submitRequest = useSubmitRequest();
+  const createMaintenanceRequest = useCreateMaintenanceRequest();
   const { data: deptData } = useDepartments({ limit: 100 });
   const { data: empData } = useEmployeesBasicList();
   const { data: subordinatesData } = useSubordinates(managerEmployeeId);
@@ -352,6 +367,29 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
 
   const onSubmit = async (data: FormData) => {
     try {
+      if (data.type === "MAINTENANCE") {
+        if (!maintenanceData.assetType.trim()) {
+          toast.error(t("maintenance.fields.assetType"));
+          return;
+        }
+        if (maintenanceData.faultDescription.trim().length < 5) {
+          toast.error(t("maintenance.fields.faultDescription"));
+          return;
+        }
+        await createMaintenanceRequest.mutateAsync({
+          workLocation: maintenanceData.workLocation as any,
+          assetType: maintenanceData.assetType,
+          assetNumber: maintenanceData.assetNumber || undefined,
+          brandModel: maintenanceData.brandModel || undefined,
+          faultDescription: maintenanceData.faultDescription,
+          priority: maintenanceData.priority as any,
+        });
+        onOpenChange(false);
+        form.reset({ type: "OTHER", reason: "", notes: "" });
+        setMaintenanceData(defaultMaintenance);
+        return;
+      }
+
       const actualType = data.type === "OVERTIME" ? overtimeSubType : data.type as RequestType;
 
       if (actualType === "OVERTIME_MANAGER") {
@@ -379,12 +417,13 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
       setOvertimeManagerEmployeeIds([]);
       setWorkAccident(defaultWorkAccident);
       setRemoteWork(defaultRemoteWork);
+      setMaintenanceData(defaultMaintenance);
     } catch {
       // Error handled by mutation
     }
   };
 
-  const isLoading = createRequest.isPending || submitRequest.isPending;
+  const isLoading = createRequest.isPending || submitRequest.isPending || createMaintenanceRequest.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1194,24 +1233,96 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
               </div>
             )}
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("requests.fields.notes")} ({t("common.optional")})</FormLabel>
-                  <FormControl><Textarea {...field} rows={2} /></FormControl>
-                </FormItem>
-              )}
-            />
+            {/* ── MAINTENANCE ── */}
+            {selectedType === "MAINTENANCE" && (
+              <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("maintenance.fields.workLocation")}</label>
+                    <select
+                      value={maintenanceData.workLocation}
+                      onChange={(e) => setMaintenanceData((p) => ({ ...p, workLocation: e.target.value }))}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      {MAINTENANCE_WORK_LOCATIONS.map((loc) => (
+                        <option key={loc} value={loc}>{t(`maintenance.workLocations.${loc}` as any)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("maintenance.fields.priority")}</label>
+                    <select
+                      value={maintenanceData.priority}
+                      onChange={(e) => setMaintenanceData((p) => ({ ...p, priority: e.target.value }))}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      {MAINTENANCE_PRIORITIES.map((p) => (
+                        <option key={p} value={p}>{t(`maintenance.priorities.${p}` as any)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">{t("maintenance.fields.assetType")}</label>
+                  <Input
+                    value={maintenanceData.assetType}
+                    placeholder={t("maintenance.fields.assetTypePlaceholder")}
+                    onChange={(e) => setMaintenanceData((p) => ({ ...p, assetType: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("maintenance.fields.assetNumber")}</label>
+                    <Input
+                      value={maintenanceData.assetNumber}
+                      placeholder={t("maintenance.fields.assetNumberPlaceholder")}
+                      onChange={(e) => setMaintenanceData((p) => ({ ...p, assetNumber: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t("maintenance.fields.brandModel")}</label>
+                    <Input
+                      value={maintenanceData.brandModel}
+                      placeholder={t("maintenance.fields.brandModelPlaceholder")}
+                      onChange={(e) => setMaintenanceData((p) => ({ ...p, brandModel: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">{t("maintenance.fields.faultDescription")}</label>
+                  <textarea
+                    value={maintenanceData.faultDescription}
+                    rows={3}
+                    placeholder={t("maintenance.fields.faultDescriptionPlaceholder")}
+                    onChange={(e) => setMaintenanceData((p) => ({ ...p, faultDescription: e.target.value }))}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedType !== "MAINTENANCE" && (
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("requests.fields.notes")} ({t("common.optional")})</FormLabel>
+                    <FormControl><Textarea {...field} rows={2} /></FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 {t("common.cancel")}
               </Button>
-              <Button type="submit" variant="outline" disabled={isLoading} onClick={() => setSubmitMode("draft")}>
-                {t("requests.saveAsDraft")}
-              </Button>
+              {selectedType !== "MAINTENANCE" && (
+                <Button type="submit" variant="outline" disabled={isLoading} onClick={() => setSubmitMode("draft")}>
+                  {t("requests.saveAsDraft")}
+                </Button>
+              )}
               <Button type="submit" disabled={isLoading} onClick={() => setSubmitMode("submit")}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                 {t("requests.submitRequest")}

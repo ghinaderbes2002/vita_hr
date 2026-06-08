@@ -139,7 +139,11 @@
     "clinicPhysio": "العلاج الفيزيائي",
     "clinicAppointments": "المواعيد",
     "clinicInventory": "المخزون الطبي",
-    "clinicReports": "تقارير العيادة"
+    "clinicReports": "تقارير العيادة",
+    "maintenanceRequests": "طلبات الصيانة",
+    "myMaintenanceRequests": "طلبات صيانتي",
+    "maintenancePending": "الصيانة المعلقة",
+    "myMaintenanceTasks": "مهام الصيانة الخاصة بي"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -1011,7 +1015,8 @@
       "email": "البريد الإلكتروني",
       "password": "كلمة المرور",
       "role": "الدور",
-      "isActive": "نشط"
+      "isActive": "نشط",
+      "anydesk": "معرّف AnyDesk"
     },
     "statuses": {
       "active": "نشط",
@@ -1216,6 +1221,7 @@
       "COMPLAINT": "طلب شكوى",
       "WORK_ACCIDENT": "طلب إصابة/حادث عمل",
       "REMOTE_WORK": "طلب عمل عن بعد",
+      "MAINTENANCE": "طلب صيانة",
       "OTHER": "أخرى"
     },
     "statuses": {
@@ -1309,8 +1315,14 @@
         "deductionNote": "سيُخصم {days} يوم من راتب الموظف للشهر الذي يُعتمد فيه",
         "violationLabel": "وصف المخالفة *",
         "violationPlaceholder": "اشرح المخالفة...",
-        "moralTypes": { "NOTICE": "لفت نظر", "WARNING_1": "إنذار أول", "WARNING_2": "إنذار ثانٍ" },
-        "materialTypes": { "DAYS_DEDUCTION": "خصم أيام" }
+        "moralTypes": {
+          "NOTICE": "لفت نظر",
+          "WARNING_1": "إنذار أول",
+          "WARNING_2": "إنذار ثانٍ"
+        },
+        "materialTypes": {
+          "DAYS_DEDUCTION": "خصم أيام"
+        }
       },
       "overtime": {
         "overtimeSub": "النوع:",
@@ -1327,7 +1339,10 @@
         "assignedEmployees": "الموظفون المعنيون *",
         "selectedCount": "({count} محدد)",
         "noSubordinates": "لا يوجد مرؤوسون مرتبطون بحسابك",
-        "types": { "OVERTIME_EMPLOYEE": "تكليف موظف", "OVERTIME_MANAGER": "تكليف مدير" }
+        "types": {
+          "OVERTIME_EMPLOYEE": "تكليف موظف",
+          "OVERTIME_MANAGER": "تكليف مدير"
+        }
       },
       "mission": {
         "typeLabel": "نوع المهمة *",
@@ -1409,15 +1424,21 @@
         "preventionLabel": "توصيات الوقاية",
         "preventionPlaceholder": "اقتراحات لمنع تكرار الحادث...",
         "incidentTypes": {
-          "EMPLOYEE_INJURY": "إصابة موظف", "PATIENT_ACCIDENT": "حادث مريض",
-          "VISITOR_ACCIDENT": "حادث زائر", "PROPERTY_DAMAGE": "تلف ممتلكات",
-          "BIOLOGICAL_CHEMICAL": "تعرض بيولوجي/كيميائي", "MEDICATION_ERROR": "خطأ دوائي",
+          "EMPLOYEE_INJURY": "إصابة موظف",
+          "PATIENT_ACCIDENT": "حادث مريض",
+          "VISITOR_ACCIDENT": "حادث زائر",
+          "PROPERTY_DAMAGE": "تلف ممتلكات",
+          "BIOLOGICAL_CHEMICAL": "تعرض بيولوجي/كيميائي",
+          "MEDICATION_ERROR": "خطأ دوائي",
           "OTHER": "أخرى"
         },
         "factorTypes": {
-          "SAFETY_PROCEDURES": "إجراءات السلامة", "MEDICAL_DEVICE": "جهاز طبي",
-          "CHEMICAL_SPILL": "انسكاب كيميائي", "CROWDING": "الازدحام",
-          "HUMAN_ERROR": "خطأ بشري", "OTHER": "أخرى"
+          "SAFETY_PROCEDURES": "إجراءات السلامة",
+          "MEDICAL_DEVICE": "جهاز طبي",
+          "CHEMICAL_SPILL": "انسكاب كيميائي",
+          "CROWDING": "الازدحام",
+          "HUMAN_ERROR": "خطأ بشري",
+          "OTHER": "أخرى"
         }
       },
       "remoteWork": {
@@ -1439,14 +1460,24 @@
         "taskPlaceholder": "مهمة {number}",
         "toolsLabel": "الأدوات المطلوبة",
         "specificSoftwarePlaceholder": "اسم البرنامج المحدد",
-        "workTypes": { "TEMPORARY": "مؤقت", "REGULAR": "منتظم", "EMERGENCY": "طارئ" },
+        "workTypes": {
+          "TEMPORARY": "مؤقت",
+          "REGULAR": "منتظم",
+          "EMERGENCY": "طارئ"
+        },
         "justificationOptions": {
-          "HEALTH": "أسباب صحية", "FAMILY_CARE": "رعاية الأسرة",
-          "PRODUCTIVITY": "تحسين الإنتاجية", "TRAVEL": "سفر", "OTHER": "أخرى"
+          "HEALTH": "أسباب صحية",
+          "FAMILY_CARE": "رعاية الأسرة",
+          "PRODUCTIVITY": "تحسين الإنتاجية",
+          "TRAVEL": "سفر",
+          "OTHER": "أخرى"
         },
         "requiredTools": {
-          "LAPTOP": "لابتوب", "PHONE": "هاتف", "VPN": "VPN",
-          "SPECIFIC_SOFTWARE": "برنامج محدد", "PERSONAL_DEVICE": "جهاز شخصي"
+          "LAPTOP": "لابتوب",
+          "PHONE": "هاتف",
+          "VPN": "VPN",
+          "SPECIFIC_SOFTWARE": "برنامج محدد",
+          "PERSONAL_DEVICE": "جهاز شخصي"
         }
       }
     }
@@ -3353,5 +3384,75 @@
   },
   "approvedOvertime": "إضافي معتمد",
   "overtimeWorkday": "إضافي يوم عادي",
-  "overtimeHoliday": "إضافي عطلة"
+  "overtimeHoliday": "إضافي عطلة",
+  "maintenance": {
+    "title": "طلبات الصيانة",
+    "myRequests": "طلبات الصيانة الخاصة بي",
+    "myRequestsDescription": "تتبع وإدارة طلبات الصيانة المقدمة منك",
+    "newRequest": "طلب صيانة جديد",
+    "createTitle": "طلب صيانة جديد",
+    "createDescription": "قدّم طلب صيانة لأصل معطوب",
+    "pendingTitle": "طلبات الصيانة المعلقة",
+    "pendingDescription": "مراجعة ومعالجة طلبات الصيانة المعلقة",
+    "myTasksTitle": "مهامي المكلَّف بها",
+    "myTasksDescription": "المهام المكلَّف بها لتنفيذها",
+    "fields": {
+      "workLocation": "موقع العمل",
+      "assetType": "نوع الأصل",
+      "assetTypePlaceholder": "مثال: طابعة، مكيف، حاسوب",
+      "assetNumber": "رقم الأصل",
+      "assetNumberPlaceholder": "رقم تعريف أو سيريال (اختياري)",
+      "brandModel": "الماركة / الموديل",
+      "brandModelPlaceholder": "مثال: HP LaserJet 1020 (اختياري)",
+      "faultDescription": "وصف العطل",
+      "faultDescriptionPlaceholder": "صف العطل أو المشكلة بالتفصيل...",
+      "priority": "الأولوية",
+      "situationDescription": "وصف الحالة",
+      "situationDescriptionPlaceholder": "صف الحالة الراهنة (اختياري)",
+      "repairOption": "خيار الإصلاح",
+      "assignedEmployee": "الموظف المكلَّف",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "أضف ملاحظات اختيارية..."
+    },
+    "workLocations": {
+      "SHAHBA": "شركة(الشهباء)",
+      "CENTER": "المركز",
+      "NEW_ALEPPO": "شركة(حلب الجديدة)"
+    },
+    "priorities": {
+      "URGENT": "عاجل",
+      "MEDIUM": "متوسط",
+      "NORMAL": "عادي"
+    },
+    "repairOptions": {
+      "INTERNAL": "داخلي",
+      "INTERNAL_PARTS": "داخلي (بحاجة لقطع)",
+      "EXTERNAL_WORKSHOP": "ورشة خارجية"
+    },
+    "statuses": {
+      "PENDING_MANAGER": "بانتظار المدير",
+      "PENDING_LOGISTICS": "بانتظار اللوجستي",
+      "PENDING_EXECUTIVE": "بانتظار التنفيذي",
+      "ASSIGNED": "مكلَّف",
+      "DONE": "منجز",
+      "REJECTED": "مرفوض"
+    },
+    "tabs": {
+      "manager": "بانتظار موافقتك",
+      "logistics": "بانتظار المعالجة",
+      "executive": "بانتظار موافقة التنفيذي"
+    },
+    "actions": {
+      "approve": "موافقة",
+      "reject": "رفض",
+      "process": "معالجة الطلب",
+      "complete": "تم التنفيذ",
+      "approveTitle": "الموافقة على طلب الصيانة",
+      "rejectTitle": "رفض طلب الصيانة",
+      "processTitle": "معالجة طلب الصيانة",
+      "processDescription": "اختر خيار الإصلاح وعيّن الموظف المنفذ",
+      "notesLabel": "ملاحظات (اختياري)",
+      "notesRequired": "ملاحظات *"
+    }
+  }
 }

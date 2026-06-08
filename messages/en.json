@@ -186,7 +186,11 @@
     "clinicAppointments": "Appointments",
     "clinicInventory": "Medical Inventory",
     "clinicReports": "Clinic Reports",
-    "myProfile": "My Profile"
+    "myProfile": "My Profile",
+    "maintenanceRequests": "Maintenance Requests",
+    "myMaintenanceRequests": "My Maintenance Requests",
+    "maintenancePending": "Pending Maintenance",
+    "myMaintenanceTasks": "My Maintenance Tasks"
   },
   "user": {
     "logout": "Logout",
@@ -206,7 +210,8 @@
       "email": "Email",
       "password": "Password",
       "role": "Role",
-      "isActive": "Active"
+      "isActive": "Active",
+      "anydesk": "AnyDesk ID"
     },
     "statuses": {
       "active": "Active",
@@ -985,6 +990,7 @@
       "COMPLAINT": "Complaint Request",
       "WORK_ACCIDENT": "Injury/Work Accident Request",
       "REMOTE_WORK": "Remote Work Request",
+      "MAINTENANCE": "Maintenance Request",
       "OTHER": "Other"
     },
     "statuses": {
@@ -1077,8 +1083,14 @@
         "deductionNote": "Will deduct {days} day(s) from the employee's salary for the month it is approved",
         "violationLabel": "Violation Description *",
         "violationPlaceholder": "Explain the violation...",
-        "moralTypes": { "NOTICE": "Notice", "WARNING_1": "First Warning", "WARNING_2": "Second Warning" },
-        "materialTypes": { "DAYS_DEDUCTION": "Days Deduction" }
+        "moralTypes": {
+          "NOTICE": "Notice",
+          "WARNING_1": "First Warning",
+          "WARNING_2": "Second Warning"
+        },
+        "materialTypes": {
+          "DAYS_DEDUCTION": "Days Deduction"
+        }
       },
       "overtime": {
         "overtimeSub": "Type:",
@@ -1095,7 +1107,10 @@
         "assignedEmployees": "Assigned Employees *",
         "selectedCount": "({count} selected)",
         "noSubordinates": "No subordinates linked to your account",
-        "types": { "OVERTIME_EMPLOYEE": "Employee Assignment", "OVERTIME_MANAGER": "Manager Assignment" }
+        "types": {
+          "OVERTIME_EMPLOYEE": "Employee Assignment",
+          "OVERTIME_MANAGER": "Manager Assignment"
+        }
       },
       "mission": {
         "typeLabel": "Mission Type *",
@@ -1177,15 +1192,21 @@
         "preventionLabel": "Prevention Recommendations",
         "preventionPlaceholder": "Suggestions to prevent recurrence...",
         "incidentTypes": {
-          "EMPLOYEE_INJURY": "Employee Injury", "PATIENT_ACCIDENT": "Patient Accident",
-          "VISITOR_ACCIDENT": "Visitor Accident", "PROPERTY_DAMAGE": "Property Damage",
-          "BIOLOGICAL_CHEMICAL": "Biological/Chemical Exposure", "MEDICATION_ERROR": "Medication Error",
+          "EMPLOYEE_INJURY": "Employee Injury",
+          "PATIENT_ACCIDENT": "Patient Accident",
+          "VISITOR_ACCIDENT": "Visitor Accident",
+          "PROPERTY_DAMAGE": "Property Damage",
+          "BIOLOGICAL_CHEMICAL": "Biological/Chemical Exposure",
+          "MEDICATION_ERROR": "Medication Error",
           "OTHER": "Other"
         },
         "factorTypes": {
-          "SAFETY_PROCEDURES": "Safety Procedures", "MEDICAL_DEVICE": "Medical Device",
-          "CHEMICAL_SPILL": "Chemical Spill", "CROWDING": "Crowding",
-          "HUMAN_ERROR": "Human Error", "OTHER": "Other"
+          "SAFETY_PROCEDURES": "Safety Procedures",
+          "MEDICAL_DEVICE": "Medical Device",
+          "CHEMICAL_SPILL": "Chemical Spill",
+          "CROWDING": "Crowding",
+          "HUMAN_ERROR": "Human Error",
+          "OTHER": "Other"
         }
       },
       "remoteWork": {
@@ -1207,14 +1228,24 @@
         "taskPlaceholder": "Task {number}",
         "toolsLabel": "Required Tools",
         "specificSoftwarePlaceholder": "Name of the specific software",
-        "workTypes": { "TEMPORARY": "Temporary", "REGULAR": "Regular", "EMERGENCY": "Emergency" },
+        "workTypes": {
+          "TEMPORARY": "Temporary",
+          "REGULAR": "Regular",
+          "EMERGENCY": "Emergency"
+        },
         "justificationOptions": {
-          "HEALTH": "Health Reasons", "FAMILY_CARE": "Family Care",
-          "PRODUCTIVITY": "Improve Productivity", "TRAVEL": "Travel", "OTHER": "Other"
+          "HEALTH": "Health Reasons",
+          "FAMILY_CARE": "Family Care",
+          "PRODUCTIVITY": "Improve Productivity",
+          "TRAVEL": "Travel",
+          "OTHER": "Other"
         },
         "requiredTools": {
-          "LAPTOP": "Laptop", "PHONE": "Phone", "VPN": "VPN",
-          "SPECIFIC_SOFTWARE": "Specific Software", "PERSONAL_DEVICE": "Personal Device"
+          "LAPTOP": "Laptop",
+          "PHONE": "Phone",
+          "VPN": "VPN",
+          "SPECIFIC_SOFTWARE": "Specific Software",
+          "PERSONAL_DEVICE": "Personal Device"
         }
       }
     }
@@ -3131,6 +3162,76 @@
         "signedBy": "Signed by",
         "signedAt": "Signed at"
       }
+    }
+  },
+  "maintenance": {
+    "title": "Maintenance Requests",
+    "myRequests": "My Maintenance Requests",
+    "myRequestsDescription": "Track and manage your submitted maintenance requests",
+    "newRequest": "New Maintenance Request",
+    "createTitle": "New Maintenance Request",
+    "createDescription": "Submit a maintenance request for a faulty asset",
+    "pendingTitle": "Pending Maintenance Requests",
+    "pendingDescription": "Review and process pending maintenance requests",
+    "myTasksTitle": "My Assigned Tasks",
+    "myTasksDescription": "Tasks assigned to you for execution",
+    "fields": {
+      "workLocation": "Work Location",
+      "assetType": "Asset Type",
+      "assetTypePlaceholder": "e.g. Printer, Air Conditioner, Computer",
+      "assetNumber": "Asset Number",
+      "assetNumberPlaceholder": "Asset tag or serial number (optional)",
+      "brandModel": "Brand / Model",
+      "brandModelPlaceholder": "e.g. HP LaserJet 1020 (optional)",
+      "faultDescription": "Fault Description",
+      "faultDescriptionPlaceholder": "Describe the fault or issue in detail...",
+      "priority": "Priority",
+      "situationDescription": "Situation Description",
+      "situationDescriptionPlaceholder": "Describe the current situation (optional)",
+      "repairOption": "Repair Option",
+      "assignedEmployee": "Assigned Employee",
+      "notes": "Notes",
+      "notesPlaceholder": "Add optional notes..."
+    },
+    "workLocations": {
+      "SHAHBA": "Shahba",
+      "CENTER": "Center",
+      "NEW_ALEPPO": "New Aleppo"
+    },
+    "priorities": {
+      "URGENT": "Urgent",
+      "MEDIUM": "Medium",
+      "NORMAL": "Normal"
+    },
+    "repairOptions": {
+      "INTERNAL": "Internal",
+      "INTERNAL_PARTS": "Internal (Parts Needed)",
+      "EXTERNAL_WORKSHOP": "External Workshop"
+    },
+    "statuses": {
+      "PENDING_MANAGER": "Pending Manager",
+      "PENDING_LOGISTICS": "Pending Logistics",
+      "PENDING_EXECUTIVE": "Pending Executive",
+      "ASSIGNED": "Assigned",
+      "DONE": "Done",
+      "REJECTED": "Rejected"
+    },
+    "tabs": {
+      "manager": "Pending My Approval",
+      "logistics": "Pending Processing",
+      "executive": "Pending Executive Approval"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "process": "Process Request",
+      "complete": "Mark as Done",
+      "approveTitle": "Approve Maintenance Request",
+      "rejectTitle": "Reject Maintenance Request",
+      "processTitle": "Process Maintenance Request",
+      "processDescription": "Select the repair option and assign an employee",
+      "notesLabel": "Notes (Optional)",
+      "notesRequired": "Notes *"
     }
   }
 }
