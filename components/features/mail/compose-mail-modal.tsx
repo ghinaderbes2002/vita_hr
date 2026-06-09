@@ -67,6 +67,7 @@ export function ComposeMailModal({
   const [isHighImportance, setIsHighImportance] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const [activeFormats, setActiveFormats] = useState({ bold: false, underline: false, italic: false });
 
   useEffect(() => {
     if (open && bodyRef.current) {
@@ -76,8 +77,22 @@ export function ComposeMailModal({
     }
   }, [open]);
 
+  useEffect(() => {
+    const updateFormats = () => {
+      if (!bodyRef.current?.contains(document.activeElement)) return;
+      setActiveFormats({
+        bold: document.queryCommandState("bold"),
+        underline: document.queryCommandState("underline"),
+        italic: document.queryCommandState("italic"),
+      });
+    };
+    document.addEventListener("selectionchange", updateFormats);
+    return () => document.removeEventListener("selectionchange", updateFormats);
+  }, []);
+
   const applyFormat = (command: "bold" | "underline" | "italic") => {
     document.execCommand(command, false);
+    setActiveFormats((prev) => ({ ...prev, [command]: !prev[command] }));
   };
 
   const sendMail = useSendMail();
@@ -317,7 +332,7 @@ export function ComposeMailModal({
                   type="button"
                   title={title}
                   onMouseDown={(e) => { e.preventDefault(); applyFormat(command); }}
-                  className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                  className={`p-1.5 rounded transition-colors ${activeFormats[command] ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                 </button>

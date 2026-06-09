@@ -212,12 +212,7 @@ export default function PendingApprovalPage() {
               <TableCell>
                 {request.isHourlyLeave && request.equivalentDays != null
                   ? `${request.equivalentDays.toFixed(2)} يوم`
-                  : (() => {
-                      const days = request.totalDays > 0
-                        ? request.totalDays
-                        : Math.max(1, Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1);
-                      return `${days} ${t("common.days")}`;
-                    })()}
+                  : `${Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1} ${t("common.days")}`}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {request.isHourlyLeave && request.startTime
@@ -304,12 +299,7 @@ export default function PendingApprovalPage() {
               <TableCell>
                 {request.isHourlyLeave && request.equivalentDays != null
                   ? `${request.equivalentDays.toFixed(2)} يوم`
-                  : (() => {
-                      const days = request.totalDays > 0
-                        ? request.totalDays
-                        : Math.max(1, Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1);
-                      return `${days} ${t("common.days")}`;
-                    })()}
+                  : `${Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1} ${t("common.days")}`}
               </TableCell>
               <TableCell><StatusBadge status={request.status} /></TableCell>
               <TableCell className="text-sm text-muted-foreground">
@@ -530,10 +520,9 @@ export default function PendingApprovalPage() {
                     <div>
                       <label className="text-sm text-muted-foreground">عدد الأيام</label>
                       <p className="font-medium">
-                        {selectedRequest.totalDays > 0
-                          ? selectedRequest.totalDays
-                          : Math.max(1, Math.round((new Date(selectedRequest.endDate).getTime() - new Date(selectedRequest.startDate).getTime()) / 86400000) + 1)
-                        } يوم
+                        {selectedRequest.isHourlyLeave && selectedRequest.equivalentDays != null
+                          ? `${selectedRequest.equivalentDays.toFixed(2)} يوم`
+                          : `${Math.round((new Date(selectedRequest.endDate).getTime() - new Date(selectedRequest.startDate).getTime()) / 86400000) + 1} يوم`}
                       </p>
                     </div>
                     <div>
