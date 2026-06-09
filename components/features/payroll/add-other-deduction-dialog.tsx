@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -16,12 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useUpdateOtherDeduction } from "@/lib/hooks/use-payroll";
 
-const schema = z.object({
-  amount: z.coerce.number().min(0, "يجب أن يكون المبلغ 0 أو أكبر"),
-  notes: z.string().optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = { amount: number; notes?: string };
 
 interface Props {
   open: boolean;
@@ -38,14 +34,21 @@ export function AddOtherDeductionDialog({
   currentAmount = 0,
   currentNotes = "",
 }: Props) {
+  const t = useTranslations("payroll.slip.deductionDialog");
+  const tCommon = useTranslations("common");
   const update = useUpdateOtherDeduction();
+
+  const schema = useMemo(
+    () => z.object({
+      amount: z.coerce.number().min(0, t("amountError")),
+      notes: z.string().optional(),
+    }),
+    [t],
+  );
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema) as any,
-    defaultValues: {
-      amount: currentAmount,
-      notes: currentNotes,
-    },
+    defaultValues: { amount: currentAmount, notes: currentNotes },
   });
 
   useEffect(() => {
@@ -71,14 +74,14 @@ export function AddOtherDeductionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>خصم إضافي</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
             <FormField control={form.control} name="amount" render={({ field }) => (
               <FormItem>
-                <FormLabel>المبلغ ($)</FormLabel>
+                <FormLabel>{t("amount")}</FormLabel>
                 <FormControl><Input type="number" min={0} step={0.01} {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
@@ -86,19 +89,19 @@ export function AddOtherDeductionDialog({
 
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>
-                <FormLabel>الملاحظات (اختياري)</FormLabel>
-                <FormControl><Textarea rows={2} placeholder="سبب الخصم..." {...field} /></FormControl>
+                <FormLabel>{t("notes")}</FormLabel>
+                <FormControl><Textarea rows={2} placeholder={t("notesPlaceholder")} {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                إلغاء
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={update.isPending}>
                 {update.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-                حفظ
+                {tCommon("save")}
               </Button>
             </div>
           </form>
