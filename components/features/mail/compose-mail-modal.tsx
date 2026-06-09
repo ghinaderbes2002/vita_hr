@@ -24,7 +24,49 @@ import { UserSearchSelect } from "./user-search-select";
 import { decodeFileName } from "./attachment-list";
 import { useSendMail, useSaveDraft, useUploadAttachment, useForwardMail, useReplyAllMail } from "@/lib/hooks/use-mail";
 import { useDepartments } from "@/lib/hooks/use-departments";
+import { useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
+
+function DeptChip({ id, name, onRemove }: { id: string; name: string; onRemove: () => void }) {
+  const [open, setOpen] = useState(false);
+  const { data: employees = [], isLoading } = useEmployeesByDepartment(open ? id : "");
+
+  return (
+    <Popover open={open}>
+      <div onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+        <PopoverTrigger asChild>
+          <Badge variant="secondary" className="gap-1 text-xs cursor-default select-none">
+            <Building2 className="h-3 w-3" />
+            {name}
+            <button
+              type="button"
+              onClick={onRemove}
+              className="hover:text-destructive"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        </PopoverTrigger>
+        <PopoverContent className="w-52 p-2" side="top" onOpenAutoFocus={(e) => e.preventDefault()}>
+          {isLoading ? (
+            <p className="text-xs text-muted-foreground text-center py-1">جارٍ التحميل...</p>
+          ) : employees.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-1">لا يوجد موظفون</p>
+          ) : (
+            <ul className="space-y-0.5 max-h-48 overflow-y-auto">
+              {(employees as any[]).map((emp) => (
+                <li key={emp.id} className="text-xs py-0.5">
+                  {emp.firstNameAr} {emp.lastNameAr}
+                </li>
+              ))}
+            </ul>
+          )}
+        </PopoverContent>
+      </div>
+    </Popover>
+  );
+}
 
 interface ForwardAttachment {
   id: string;
@@ -304,13 +346,12 @@ export function ComposeMailModal({
                       {departmentIds.map((id) => {
                         const dept = departments.find((d: any) => d.id === id);
                         return (
-                          <Badge key={id} variant="secondary" className="gap-1 text-xs">
-                            <Building2 className="h-3 w-3" />
-                            {dept?.nameAr ?? id}
-                            <button type="button" onClick={() => toggleDepartment(id)} className="hover:text-destructive">
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
+                          <DeptChip
+                            key={id}
+                            id={id}
+                            name={dept?.nameAr ?? id}
+                            onRemove={() => toggleDepartment(id)}
+                          />
                         );
                       })}
                     </div>
