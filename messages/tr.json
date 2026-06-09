@@ -648,6 +648,7 @@
     "attachFile": "Dosya Ekle",
     "forwardMessageTitle": "Mesajı İlet",
     "replyMessageTitle": "Mesajı Yanıtla",
+    "replyAllMessageTitle": "Tümünü Yanıtla",
     "newMessageTitle": "Yeni Mesaj",
     "toLabel": "Kime *",
     "addCc": "+ Kopya (CC)",

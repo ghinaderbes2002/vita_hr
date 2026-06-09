@@ -648,6 +648,7 @@
     "attachFile": "Attach File",
     "forwardMessageTitle": "Forward Message",
     "replyMessageTitle": "Reply to Message",
+    "replyAllMessageTitle": "Reply All",
     "newMessageTitle": "New Message",
     "toLabel": "To *",
     "addCc": "+ CC",

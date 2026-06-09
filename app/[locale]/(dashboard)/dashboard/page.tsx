@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   Users, Calendar, Clock, AlertCircle, PlusCircle,
-  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight,
+  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight, ChevronDown,
   UserPlus, Bell, FileText, ExternalLink, Hourglass, ClipboardCheck,
   CheckCircle2, UserCheck, BarChart3, DollarSign, ShieldCheck,
 } from "lucide-react";
@@ -310,7 +310,8 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
         <StatCard
           title={t("ceo.approvedLeavesThisMonth")}
           value={Array.isArray(d.approvedLeavesThisMonth) ? d.approvedLeavesThisMonth.length : (d.approvedLeavesThisMonth ?? "—")}
-          icon={CheckCircle2} iconBg="bg-green-500" />
+          icon={CheckCircle2} iconBg="bg-green-500"
+          onClick={() => router.push(`/${locale}/leaves/pending-approval?tab=all`)} />
         <StatCard
           title={t("ceo.requestsPendingCEO")}
           value={Array.isArray(d.pendingCeoRequestApprovals) ? d.pendingCeoRequestApprovals.length : (d.pendingCeoRequestApprovals ?? 0)}
@@ -410,6 +411,7 @@ export default function DashboardPage() {
     try { const s = localStorage.getItem(CONDUCT_DOC_KEY); return s ? JSON.parse(s) : DEFAULT_CONDUCT_DOC; } catch { return DEFAULT_CONDUCT_DOC; }
   });
   const [deleteConductOpen, setDeleteConductOpen] = useState(false);
+  const [jobTitleOpen, setJobTitleOpen] = useState(false);
 
   const { data, isLoading } = useDashboard();
   const { data: myProfile } = useMyEmployee();
@@ -498,34 +500,45 @@ export default function DashboardPage() {
       {/* Job Title Card */}
       {employeeInfo?.jobTitle && (
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-primary" />
-              {t("jobTitle")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="font-semibold text-foreground mb-2">
-              {locale === "ar"
-                ? employeeInfo.jobTitle.nameAr
-                : (employeeInfo.jobTitle.nameEn || employeeInfo.jobTitle.nameAr)}
-            </p>
-            {jobTitleDescription && (
-              <div className="text-sm text-muted-foreground leading-relaxed space-y-1">
-                {jobTitleDescription
-                  .replace(/\r\n/g, '\n')
-                  .replace(/\r/g, '\n')
-                  .replace(/([^\n])\s+(\d+)\.\s/g, '$1\n$2. ')
-                  .replace(/([^\n])\s*[•·]\s*/g, '$1\n• ')
-                  .split('\n')
-                  .map((l: string) => l.trim())
-                  .filter(Boolean)
-                  .map((line: string, i: number) => (
-                    <p key={i}>{line}</p>
-                  ))}
-              </div>
-            )}
-          </CardContent>
+          <button
+            type="button"
+            onClick={() => setJobTitleOpen(v => !v)}
+            className="w-full text-right"
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  {t("jobTitle")}
+                </div>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${jobTitleOpen ? "rotate-180" : ""}`} />
+              </CardTitle>
+            </CardHeader>
+          </button>
+          {jobTitleOpen && (
+            <CardContent className="pt-0">
+              <p className="font-semibold text-foreground mb-2">
+                {locale === "ar"
+                  ? employeeInfo.jobTitle.nameAr
+                  : (employeeInfo.jobTitle.nameEn || employeeInfo.jobTitle.nameAr)}
+              </p>
+              {jobTitleDescription && (
+                <div className="text-sm text-muted-foreground leading-relaxed space-y-1">
+                  {jobTitleDescription
+                    .replace(/\r\n/g, '\n')
+                    .replace(/\r/g, '\n')
+                    .replace(/([^\n])\s+(\d+)\.\s/g, '$1\n$2. ')
+                    .replace(/([^\n])\s*[•·]\s*/g, '$1\n• ')
+                    .split('\n')
+                    .map((l: string) => l.trim())
+                    .filter(Boolean)
+                    .map((line: string, i: number) => (
+                      <p key={i}>{line}</p>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          )}
         </Card>
       )}
 

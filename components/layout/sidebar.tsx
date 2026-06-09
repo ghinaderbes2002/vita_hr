@@ -112,7 +112,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.attendance",
         icon: ClipboardCheck,
-        hiddenForRoles: ["IT", "تقنية المعلومات"],
+        hiddenForRoles: ["IT", "تقنية المعلومات", "CEO", "المدير التنفيذي", "General Manager", "المدير العام"],
         children: [
           { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
           { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
@@ -125,7 +125,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.leaves",
         icon: CalendarDays,
-        hiddenForRoles: ["IT", "تقنية المعلومات"],
+        hiddenForRoles: ["IT", "تقنية المعلومات", "CEO", "المدير التنفيذي", "General Manager", "المدير العام"],
         children: [
           { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
@@ -154,7 +154,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.onboarding",
         icon: LayoutList,
-        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات"],
+        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات", "CEO", "المدير التنفيذي", "General Manager", "المدير العام"],
         children: [
           { title: "nav.onboardingTemplates", href: "/onboarding/templates", icon: ClipboardList },
           { title: "nav.onboardingWorkflows", href: "/onboarding/workflows", icon: LayoutList },

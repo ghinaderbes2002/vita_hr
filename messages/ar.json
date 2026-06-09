@@ -513,6 +513,7 @@
     "attachFile": "إرفاق ملف",
     "forwardMessageTitle": "تحويل رسالة",
     "replyMessageTitle": "رد على رسالة",
+    "replyAllMessageTitle": "رد على الكل",
     "newMessageTitle": "رسالة جديدة",
     "toLabel": "إلى *",
     "addCc": "+ نسخة (CC)",

@@ -137,6 +137,31 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     ? ccRecipients.map(getRecipientEmpId).filter(Boolean)
     : [];
 
+  const getDisplayName = (r: any) => {
+    const info = r.employeeInfo ?? r.recipient ?? r.recipientInfo;
+    if (!info) return null;
+    return `${info.firstNameAr ?? ""} ${info.lastNameAr ?? ""}`.trim() || null;
+  };
+  const replyAllDisplayNames: string[] = isSender
+    ? [
+        ...toRecipients.map(getDisplayName),
+        ...ccRecipients.map(getDisplayName),
+      ].filter((n): n is string => !!n)
+    : [
+        senderName,
+        ...ccRecipients.map(getDisplayName),
+      ].filter((n): n is string => !!n);
+
+  const replyAllRecipients: { employeeId: string; type: "TO" | "CC" }[] = isSender
+    ? [
+        ...toRecipients.map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "TO" as const })),
+        ...ccRecipients.map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "CC" as const })),
+      ].filter((r) => !!r.employeeId)
+    : [
+        ...((senderInfo as any)?.employeeId ? [{ employeeId: (senderInfo as any).employeeId, type: "TO" as const }] : []),
+        ...ccRecipients.map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "CC" as const })).filter((r) => !!r.employeeId),
+      ];
+
   const forwardSenderLine = senderName
     ? `${t("forwardFrom")}: ${senderName}`
     : "";
@@ -571,10 +596,12 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
         <ComposeMailModal
           open={replyOpen}
           onClose={() => setReplyOpen(false)}
-          replyToMessageId={messageId}
+          {...(replyAll
+            ? { replyAllMessageId: messageId, replyAllDisplayNames, replyAllRecipients }
+            : { replyToMessageId: messageId, defaultToIds, defaultCcIds }
+          )}
           defaultSubject={defaultSubject}
-          defaultToIds={defaultToIds}
-          defaultCcIds={defaultCcIds}
+          quotedBody={message.body ?? ""}
         />
       )}
 

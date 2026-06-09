@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { UserSearchSelect } from "./user-search-select";
 import { decodeFileName } from "./attachment-list";
-import { useSendMail, useSaveDraft, useUploadAttachment, useForwardMail } from "@/lib/hooks/use-mail";
+import { useSendMail, useSaveDraft, useUploadAttachment, useForwardMail, useReplyAllMail } from "@/lib/hooks/use-mail";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { toast } from "sonner";
 
@@ -36,7 +36,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   replyToMessageId?: string;
+  replyAllMessageId?: string;
+  replyAllDisplayNames?: string[];
+  replyAllRecipients?: { employeeId: string; type: "TO" | "CC" }[];
   forwardMessageId?: string;
+  quotedBody?: string;
   defaultSubject?: string;
   defaultToIds?: string[];
   defaultCcIds?: string[];
@@ -48,7 +52,11 @@ export function ComposeMailModal({
   open,
   onClose,
   replyToMessageId,
+  replyAllMessageId,
+  replyAllDisplayNames = [],
+  replyAllRecipients = [],
   forwardMessageId,
+  quotedBody = "",
   defaultSubject = "",
   defaultToIds = [],
   defaultCcIds = [],
@@ -99,6 +107,7 @@ export function ComposeMailModal({
   const saveDraft = useSaveDraft();
   const uploadAttachment = useUploadAttachment();
   const forwardMail = useForwardMail();
+  const replyAllMail = useReplyAllMail();
 
   const { data: deptData } = useDepartments({ limit: 200 });
   const departments: any[] = (deptData as any)?.data?.items || (deptData as any)?.data || [];
@@ -134,14 +143,24 @@ export function ComposeMailModal({
 
   const handleSend = async () => {
     if (!subject.trim()) { toast.error("الموضوع مطلوب"); return; }
-    if (toIds.length === 0 && departmentIds.length === 0) {
+    if (!replyAllMessageId && toIds.length === 0 && departmentIds.length === 0) {
       toast.error("يجب إضافة مستلم أو قسم واحد على الأقل");
       return;
     }
 
     let message: any;
 
-    if (forwardMessageId) {
+    if (replyAllMessageId) {
+      message = await replyAllMail.mutateAsync({
+        messageId: replyAllMessageId,
+        dto: {
+          subject,
+          body: bodyRef.current?.innerHTML || undefined,
+          recipients: replyAllRecipients,
+          ...(isHighImportance ? { importance: "HIGH" } : {}),
+        },
+      });
+    } else if (forwardMessageId) {
       message = await forwardMail.mutateAsync({
         messageId: forwardMessageId,
         dto: {
@@ -185,7 +204,7 @@ export function ComposeMailModal({
   };
 
   const t = useTranslations("mail");
-  const isPending = sendMail.isPending || saveDraft.isPending || uploadAttachment.isPending || forwardMail.isPending;
+  const isPending = sendMail.isPending || saveDraft.isPending || uploadAttachment.isPending || forwardMail.isPending || replyAllMail.isPending;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -193,159 +212,206 @@ export function ComposeMailModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-4 w-4" />
-            {forwardMessageId ? t("forwardMessageTitle") : replyToMessageId ? t("replyMessageTitle") : t("newMessageTitle")}
+            {forwardMessageId ? t("forwardMessageTitle") : replyAllMessageId ? t("replyAllMessageTitle") : replyToMessageId ? t("replyMessageTitle") : t("newMessageTitle")}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-1">
-          {/* To */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">{t("toLabel")}</Label>
-              <div className="flex gap-2">
-                {!showCc && (
-                  <button type="button" onClick={() => setShowCc(true)} className="text-xs text-primary hover:underline">
-                    {t("addCc")}
-                  </button>
-                )}
-                {!showBcc && (
-                  <button type="button" onClick={() => setShowBcc(true)} className="text-xs text-primary hover:underline">
-                    {t("addBcc")}
-                  </button>
-                )}
-                {!showDept && (
-                  <button type="button" onClick={() => setShowDept(true)} className="text-xs text-primary hover:underline">
-                    {t("sendToDept")}
-                  </button>
-                )}
+          {/* Recipients — hidden for reply-all (backend builds them automatically) */}
+          {!replyAllMessageId && (
+            <>
+              {/* To */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">{t("toLabel")}</Label>
+                  <div className="flex gap-2">
+                    {!showCc && (
+                      <button type="button" onClick={() => setShowCc(true)} className="text-xs text-primary hover:underline">
+                        {t("addCc")}
+                      </button>
+                    )}
+                    {!showBcc && (
+                      <button type="button" onClick={() => setShowBcc(true)} className="text-xs text-primary hover:underline">
+                        {t("addBcc")}
+                      </button>
+                    )}
+                    {!showDept && (
+                      <button type="button" onClick={() => setShowDept(true)} className="text-xs text-primary hover:underline">
+                        {t("sendToDept")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <UserSearchSelect
+                  value={toIds}
+                  onChange={setToIds}
+                  placeholder={t("searchEmployee")}
+                />
               </div>
-            </div>
-            <UserSearchSelect
-              value={toIds}
-              onChange={setToIds}
-              placeholder={t("searchEmployee")}
-            />
-          </div>
 
-          {/* CC */}
-          {showCc && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">{t("ccLabel")}</Label>
-                <button type="button" onClick={() => { setShowCc(false); setCcIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <UserSearchSelect value={ccIds} onChange={setCcIds} placeholder={t("searchEmployee")} exclude={toIds} />
-            </div>
-          )}
-
-          {/* BCC */}
-          {showBcc && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">{t("bccLabel")}</Label>
-                <button type="button" onClick={() => { setShowBcc(false); setBccIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <UserSearchSelect value={bccIds} onChange={setBccIds} placeholder={t("searchEmployee")} exclude={[...toIds, ...ccIds]} />
-            </div>
-          )}
-
-          {/* Department */}
-          {showDept && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm flex items-center gap-1">
-                  <Building2 className="h-3.5 w-3.5" />
-                  {t("sendToDeptLabel")}
-                </Label>
-                <button type="button" onClick={() => { setShowDept(false); setDepartmentIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <Select onValueChange={toggleDepartment}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder={t("chooseDept")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((d: any) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.nameAr}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {departmentIds.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {departmentIds.map((id) => {
-                    const dept = departments.find((d: any) => d.id === id);
-                    return (
-                      <Badge key={id} variant="secondary" className="gap-1 text-xs">
-                        <Building2 className="h-3 w-3" />
-                        {dept?.nameAr ?? id}
-                        <button type="button" onClick={() => toggleDepartment(id)} className="hover:text-destructive">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
+              {/* CC */}
+              {showCc && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">{t("ccLabel")}</Label>
+                    <button type="button" onClick={() => { setShowCc(false); setCcIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <UserSearchSelect value={ccIds} onChange={setCcIds} placeholder={t("searchEmployee")} exclude={toIds} />
                 </div>
               )}
+
+              {/* BCC */}
+              {showBcc && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">{t("bccLabel")}</Label>
+                    <button type="button" onClick={() => { setShowBcc(false); setBccIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <UserSearchSelect value={bccIds} onChange={setBccIds} placeholder={t("searchEmployee")} exclude={[...toIds, ...ccIds]} />
+                </div>
+              )}
+
+              {/* Department */}
+              {showDept && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm flex items-center gap-1">
+                      <Building2 className="h-3.5 w-3.5" />
+                      {t("sendToDeptLabel")}
+                    </Label>
+                    <button type="button" onClick={() => { setShowDept(false); setDepartmentIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <Select onValueChange={toggleDepartment}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder={t("chooseDept")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((d: any) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.nameAr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {departmentIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {departmentIds.map((id) => {
+                        const dept = departments.find((d: any) => d.id === id);
+                        return (
+                          <Badge key={id} variant="secondary" className="gap-1 text-xs">
+                            <Building2 className="h-3 w-3" />
+                            {dept?.nameAr ?? id}
+                            <button type="button" onClick={() => toggleDepartment(id)} className="hover:text-destructive">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Reply-All recipients display */}
+          {replyAllMessageId && replyAllDisplayNames.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">سيُرسَل إلى</Label>
+              <div className="flex flex-wrap gap-1.5 rounded-md border bg-muted/30 px-3 py-2">
+                {replyAllDisplayNames.map((name, i) => (
+                  <span key={i} className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium">
+                    {name}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Subject */}
           <div className="space-y-1.5">
             <Label className="text-sm">{t("subjectLabel")}</Label>
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+            <Input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              readOnly={!!forwardMessageId}
+              className={forwardMessageId ? "bg-muted/40 cursor-default select-none" : ""}
+            />
           </div>
 
           {/* Body */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label className="text-sm">{t("bodyLabel")}</Label>
-              {/* High Importance */}
-              <button
-                type="button"
-                onClick={() => setIsHighImportance((v) => !v)}
-                className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-colors ${
-                  isHighImportance
-                    ? "bg-red-50 border-red-300 text-red-700 font-semibold"
-                    : "border-muted-foreground/20 text-muted-foreground hover:border-red-300 hover:text-red-600"
-                }`}
-              >
-                <AlertCircle className="h-3.5 w-3.5" />
-                {t("highImportance")}
-              </button>
-            </div>
-            {/* Formatting toolbar */}
-            <div className="flex items-center gap-0.5 border rounded-t-md px-2 py-1 bg-muted/30 border-b-0">
-              {([
-                { command: "bold" as const, icon: Bold, title: t("bold") },
-                { command: "underline" as const, icon: Underline, title: t("underline") },
-                { command: "italic" as const, icon: Italic, title: t("italic") },
-              ]).map(({ command, icon: Icon, title }) => (
+              {!forwardMessageId && (
                 <button
-                  key={command}
                   type="button"
-                  title={title}
-                  onMouseDown={(e) => { e.preventDefault(); applyFormat(command); }}
-                  className={`p-1.5 rounded transition-colors ${activeFormats[command] ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                  onClick={() => setIsHighImportance((v) => !v)}
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-colors ${
+                    isHighImportance
+                      ? "bg-red-50 border-red-300 text-red-700 font-semibold"
+                      : "border-muted-foreground/20 text-muted-foreground hover:border-red-300 hover:text-red-600"
+                  }`}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {t("highImportance")}
                 </button>
-              ))}
+              )}
             </div>
-            <div
-              ref={bodyRef}
-              contentEditable
-              suppressContentEditableWarning
-              className="min-h-[168px] rounded-t-none border border-t-0 px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto"
-              dir="auto"
-            />
+            {forwardMessageId ? (
+              <div
+                className="min-h-[168px] max-h-72 overflow-y-auto rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+                dir="auto"
+                dangerouslySetInnerHTML={{ __html: defaultBody.replace(/\n/g, "<br>") }}
+              />
+            ) : (
+              <>
+                {/* Formatting toolbar */}
+                <div className="flex items-center gap-0.5 border rounded-t-md px-2 py-1 bg-muted/30 border-b-0">
+                  {([
+                    { command: "bold" as const, icon: Bold, title: t("bold") },
+                    { command: "underline" as const, icon: Underline, title: t("underline") },
+                    { command: "italic" as const, icon: Italic, title: t("italic") },
+                  ]).map(({ command, icon: Icon, title }) => (
+                    <button
+                      key={command}
+                      type="button"
+                      title={title}
+                      onMouseDown={(e) => { e.preventDefault(); applyFormat(command); }}
+                      className={`p-1.5 rounded transition-colors ${activeFormats[command] ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+                </div>
+                <div
+                  ref={bodyRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="min-h-[168px] rounded-t-none border border-t-0 px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto"
+                  dir="auto"
+                />
+              </>
+            )}
           </div>
+
+          {/* Quoted original message (reply / reply-all only) */}
+          {(replyToMessageId || replyAllMessageId) && quotedBody && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground border-r-2 border-primary pr-2">الرسالة الأصلية</p>
+              <div
+                className="max-h-48 overflow-y-auto rounded-md border-r-2 border-muted bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+                dir="auto"
+                dangerouslySetInnerHTML={{ __html: quotedBody }}
+              />
+            </div>
+          )}
 
           {/* Forwarded attachments (read-only) */}
           {forwardAttachments.length > 0 && (

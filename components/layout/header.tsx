@@ -7,6 +7,7 @@ import {
   Clock, AlertCircle, RotateCcw, FileText, AlertOctagon, Coffee, DollarSign,
   Mail, Trophy, CheckCircle2, XCircle, ClipboardList, FileWarning,
   Cake, UserPlus, FileCheck, UserX, ListTodo, Briefcase,
+  Settings, Users, Building2, GraduationCap, Shield, UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +29,8 @@ import { ar } from "date-fns/locale";
 export function Header() {
   const t = useTranslations();
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAdmin, hasRole } = useAuthStore();
+  const showManagement = isAdmin() || hasRole("CEO") || hasRole("مدير تنفيذي") || hasRole("CFO");
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -133,6 +135,47 @@ export function Header() {
           <Sun className="h-5 w-5 rotate-0 scale-100 dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-5 w-5 rotate-90 scale-0 dark:rotate-0 dark:scale-100" />
         </Button>
+
+        {/* Management Quick Access */}
+        {showManagement && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <div className="px-3 py-2 border-b">
+                <p className="text-xs font-semibold text-muted-foreground">الإدارة</p>
+              </div>
+              <DropdownMenuItem onClick={() => router.push("/employees" as any)} className="gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                الموظفون
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/departments" as any)} className="gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                الأقسام
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/job-titles" as any)} className="gap-2">
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                المسميات الوظيفية
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/job-grades" as any)} className="gap-2">
+                <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                الدرجات الوظيفية
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push("/users" as any)} className="gap-2">
+                <UserCog className="h-4 w-4 text-muted-foreground" />
+                المستخدمون
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/roles" as any)} className="gap-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                الأدوار والصلاحيات
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* Notifications */}
         <DropdownMenu>

@@ -163,7 +163,10 @@ export default function ViewLeaveRequestPage() {
             <div className="space-y-2">
               <Label>عدد الأيام</Label>
               <div className="text-sm">
-                {request.totalDays} {t("common.days")}
+                {(request as any).isHourlyLeave && (request as any).equivalentDays != null
+                  ? `${(request as any).equivalentDays.toFixed(2)}`
+                  : Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1
+                } {t("common.days")}
               </div>
             </div>
 

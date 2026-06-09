@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -70,15 +71,21 @@ export default function PendingApprovalPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [actionType, setActionType] = useState<"manager" | "hr">("manager");
 
+  const searchParams = useSearchParams();
   const { hasPermission, isAdmin } = usePermissions();
   const canApproveHr   = isAdmin() || hasPermission("leave_requests:approve_hr");
   const showManagerTab = isAdmin() || !canApproveHr;
   const showHrTab      = canApproveHr;
   const showAllTab     = canApproveHr;
 
-  const [activeTab, setActiveTab] = useState<"manager" | "hr" | "all">(
-    canApproveHr && !isAdmin() ? "hr" : "manager"
-  );
+  const defaultTab = (): "manager" | "hr" | "all" => {
+    const tab = searchParams.get("tab");
+    if (tab === "all" && showAllTab) return "all";
+    if (tab === "hr" && showHrTab) return "hr";
+    return canApproveHr && !isAdmin() ? "hr" : "manager";
+  };
+
+  const [activeTab, setActiveTab] = useState<"manager" | "hr" | "all">(defaultTab);
   const [page, setPage] = useState(1);
   const [allPage, setAllPage] = useState(1);
   const [allStatus, setAllStatus] = useState("ALL");
