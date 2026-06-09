@@ -77,7 +77,6 @@ export function ComposeMailModal({
   }, [open]);
 
   const applyFormat = (command: "bold" | "underline" | "italic") => {
-    bodyRef.current?.focus();
     document.execCommand(command, false);
   };
 
@@ -317,7 +316,7 @@ export function ComposeMailModal({
                   key={command}
                   type="button"
                   title={title}
-                  onClick={() => applyFormat(command)}
+                  onMouseDown={(e) => { e.preventDefault(); applyFormat(command); }}
                   className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                 >
                   <Icon className="h-3.5 w-3.5" />

@@ -115,12 +115,10 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     : null;
 
   const renderBody = (body: string) => {
-    const escaped = body
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-    const withTags = escaped.replace(/&lt;(\/?(b|u|i))&gt;/g, "<$1>");
-    return { __html: withTags.replace(/\n/g, "<br>") };
+    // Body is stored as HTML from the rich-text editor — render directly.
+    // For plain-text bodies (no tags), convert newlines to <br>.
+    const isHtml = /<[a-z][\s\S]*>/i.test(body);
+    return { __html: isHtml ? body : body.replace(/\n/g, "<br>") };
   };
 
   const stripTags = (text: string) => text.replace(/<[^>]*>/g, "");
