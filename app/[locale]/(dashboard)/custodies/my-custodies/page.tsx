@@ -117,8 +117,8 @@ export default function MyCustodiesPage() {
                 <TableCell colSpan={4} className="p-0">
                   <EmptyState
                     icon={<RotateCcw className="h-10 w-10" />}
-                    title="لا توجد عهد"
-                    description="لم يتم تخصيص أي عهد لك حتى الآن"
+                    title={t("custodies.myEmpty.title")}
+                    description={t("custodies.myEmpty.description")}
                   />
                 </TableCell>
               </TableRow>

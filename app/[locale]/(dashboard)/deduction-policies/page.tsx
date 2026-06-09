@@ -248,7 +248,7 @@ export default function DeductionPoliciesPage() {
                     <p className="text-xs text-muted-foreground mb-1">{t("card.lateTiers")}</p>
                     {parseTiers(policy.lateDeductionTiers).map((tier, i) => (
                       <div key={i} className="text-xs flex gap-1">
-                        <span>{tier.fromMinute}–{tier.toMinute ?? "∞"} د</span>
+                        <span>{tier.fromMinute}–{tier.toMinute ?? "∞"} {t("card.minAbbrev")}</span>
                         <span className="text-muted-foreground">←</span>
                         <span className="font-medium">{tier.deductionDays} {t("form.dayLabel")}</span>
                       </div>
@@ -258,24 +258,24 @@ export default function DeductionPoliciesPage() {
                 {(policy as any)._count?.employees > 0 && (
                   <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                     <Shield className="h-3.5 w-3.5" />
-                    مستخدمة من {(policy as any)._count.employees} موظف — التعديل يؤثر على الرواتب القادمة
+                    {t("card.usedByEmployees", { count: (policy as any)._count.employees })}
                   </div>
                 )}
                 {policy.holidayOvertimeMultiplier != null && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">معامل إضافي عطل</span>
+                    <span className="text-muted-foreground">{t("card.holidayMultiplier")}</span>
                     <span className="font-medium">{policy.holidayOvertimeMultiplier}×</span>
                   </div>
                 )}
                 {policy.internalMissionDailyRate != null && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">أجر مهمة داخلية</span>
+                    <span className="text-muted-foreground">{t("card.internalMission")}</span>
                     <span className="font-medium">{policy.internalMissionDailyRate} $</span>
                   </div>
                 )}
                 {policy.externalMissionDailyRate != null && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">أجر مهمة خارجية</span>
+                    <span className="text-muted-foreground">{t("card.externalMission")}</span>
                     <span className="font-medium">{policy.externalMissionDailyRate} $</span>
                   </div>
                 )}
@@ -414,10 +414,10 @@ export default function DeductionPoliciesPage() {
 
             {/* Mission rates + holiday overtime */}
             <div className="space-y-3 rounded-lg border p-3">
-              <p className="text-sm font-medium">إعدادات المهمات والإضافي</p>
+              <p className="text-sm font-medium">{t("form.missionSettings")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label>معامل الإضافي - أيام عطل</Label>
+                  <Label>{t("form.holidayMultiplier")}</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -428,7 +428,7 @@ export default function DeductionPoliciesPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>أجر يوم المهمة الداخلية (USD)</Label>
+                  <Label>{t("form.internalMissionRate")}</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -440,7 +440,7 @@ export default function DeductionPoliciesPage() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>أجر يوم المهمة الخارجية (USD)</Label>
+                <Label>{t("form.externalMissionRate")}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -455,10 +455,7 @@ export default function DeductionPoliciesPage() {
             {selectedPolicy && (selectedPolicy as any)._count?.employees > 0 && (
               <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 <Shield className="h-4 w-4 shrink-0 mt-0.5" />
-                <p>
-                  هذه السياسة مستخدمة من <strong>{(selectedPolicy as any)._count.employees} موظف</strong>.
-                  التعديل سيؤثر على حسابات الراتب القادمة لهم.
-                </p>
+                <p>{t("form.usedByWarning", { count: (selectedPolicy as any)._count.employees })}</p>
               </div>
             )}
           </div>

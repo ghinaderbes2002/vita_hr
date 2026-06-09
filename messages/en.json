@@ -1881,6 +1881,23 @@
       "status": "New Status",
       "returnedDate": "Return Date",
       "notes": "Notes"
+    },
+    "tryFilters": "Try changing the filters",
+    "custodyUnit": "custody",
+    "notFound": "Custody not found",
+    "backToList": "Back to list",
+    "myEmpty": {
+      "title": "No Custodies",
+      "description": "No custodies have been assigned to you yet"
+    },
+    "details": {
+      "infoTitle": "Custody Information",
+      "employeeSection": "Employee",
+      "employeeName": "Name",
+      "employeeNumber": "Employee Number",
+      "department": "Department",
+      "jobTitle": "Job Title",
+      "attachments": "Attachments"
     }
   },
   "jobApplications": {
@@ -1913,7 +1930,10 @@
       "reviewNotes": "Review Notes",
       "rejectionNote": "Rejection Reason",
       "rejectionNotePlaceholder": "State the reason for rejection...",
-      "application": "application"
+      "application": "application",
+      "currentlyEmployed": "Currently Employed",
+      "availabilityToJoin": "Availability to Join",
+      "hasCompanyRelation": "Company Relation"
     },
     "sections": {
       "personalInfo": "Personal Information",
@@ -1927,6 +1947,76 @@
       "accept": "Accept",
       "reject": "Reject",
       "ceoApprove": "CEO Approval"
+    },
+    "submitApplication": "Submit Application",
+    "listView": "List",
+    "boardView": "Board",
+    "talentList": "Talent List",
+    "noFavorites": "No applications in talent list",
+    "addAsEmployee": "Add as Employee",
+    "processing": "Processing...",
+    "lastUpdated": "Last Updated",
+    "pipeline": {
+      "PENDING": "Application Received",
+      "INTERVIEW_READY": "Interview Ready",
+      "ACCEPTED": "Accepted",
+      "HIRED": "Hired",
+      "REJECTED": "Rejected",
+      "ceoRequired": "Requires CEO approval"
+    },
+    "availability": {
+      "IMMEDIATELY": "Immediately",
+      "WITHIN_ONE_WEEK": "Within One Week",
+      "WITHIN_TWO_WEEKS": "Within Two Weeks",
+      "WITHIN_ONE_MONTH": "Within One Month",
+      "MORE_THAN_ONE_MONTH": "More Than One Month"
+    },
+    "rejection": {
+      "emailWarningTitle": "An email will be sent to the candidate",
+      "emailWarningBody": "Upon saving this rejection, {name} will receive a rejection notification at {email}."
+    },
+    "evaluation": {
+      "title": "Interview Evaluation",
+      "viewDetails": "View Details",
+      "edit": "Edit Evaluation",
+      "create": "Create Evaluation",
+      "editTitle": "Edit Interview Evaluation",
+      "createTitle": "Create Interview Evaluation",
+      "noEval": "No formal interview evaluation has been conducted yet",
+      "scores": {
+        "personal": "Personal (40)",
+        "technical": "Technical (40)",
+        "computer": "Computer (20)",
+        "total": "Total"
+      },
+      "decision": "Decision",
+      "decisions": {
+        "ACCEPTED": "Accepted",
+        "REFERRED_TO_OTHER": "Referred to Another Position",
+        "DEFERRED": "Deferred",
+        "REJECTED": "Rejected"
+      },
+      "proposedSalary": "Proposed Salary",
+      "salaryAfterConfirmation": "Salary After Confirmation",
+      "additionalConditions": "Additional Conditions",
+      "transferToEmployee": "Transfer to Employee Record",
+      "transferred": "Transferred to Employee Record",
+      "detailsTitle": "Interview Evaluation Details",
+      "position": "Job Position",
+      "selectPosition": "Select Position",
+      "generalNotes": "General Notes",
+      "personalTraits": "Personal Traits",
+      "technicalQuestions": "Technical Questions",
+      "computerSkills": "Computer Skills",
+      "personalTraitsLabel": "Personal Traits (max 5 per criterion)",
+      "computerSkillsLabel": "Computer Skills (max 5 per criterion)",
+      "loadingQuestions": "Loading questions...",
+      "noTechnicalQuestions": "No technical questions for this position",
+      "hrProposedSalary": "HR Proposed Salary ($)",
+      "employeeProposedSalary": "Candidate Proposed Salary ($)",
+      "conditionsExample": "Example: 3-month probation period required",
+      "saveEdits": "Save Changes",
+      "saveNew": "Save Evaluation"
     }
   },
   "biometricReports": {
@@ -2091,7 +2181,12 @@
       "dayPerDay": "{days} day/day",
       "minutesUnit": "{count} min",
       "edit": "Edit",
-      "setDefault": "Set as Default"
+      "setDefault": "Set as Default",
+      "minAbbrev": "min",
+      "holidayMultiplier": "Holiday Overtime Multiplier",
+      "internalMission": "Internal Mission Day Rate",
+      "externalMission": "External Mission Day Rate",
+      "usedByEmployees": "Used by {count} employees — edits affect upcoming payroll"
     },
     "form": {
       "createTitle": "Create Deduction Policy",
@@ -2115,7 +2210,12 @@
       "minuteLabel": "min →",
       "dayLabel": "day",
       "create": "Create",
-      "save": "Save Changes"
+      "save": "Save Changes",
+      "missionSettings": "Mission & Overtime Settings",
+      "holidayMultiplier": "Overtime Multiplier – Holiday Days",
+      "internalMissionRate": "Internal Mission Day Rate (USD)",
+      "externalMissionRate": "External Mission Day Rate (USD)",
+      "usedByWarning": "This policy is used by {count} employees. Editing it will affect their upcoming payroll calculations."
     },
     "delete": {
       "title": "Delete Policy",
@@ -3233,6 +3333,192 @@
       "processDescription": "Select the repair option and assign an employee",
       "notesLabel": "Notes (Optional)",
       "notesRequired": "Notes *"
+    }
+  },
+  "payroll": {
+    "months": {
+      "1": "January", "2": "February", "3": "March", "4": "April",
+      "5": "May", "6": "June", "7": "July", "8": "August",
+      "9": "September", "10": "October", "11": "November", "12": "December"
+    },
+    "title": "Payroll",
+    "description": "View and generate employee payroll",
+    "exportExcel": "Export Excel",
+    "exporting": "Downloading...",
+    "reset": "Reset",
+    "generate": "Generate Payroll",
+    "yearLabel": "Year:",
+    "monthLabel": "Month:",
+    "hideResigned": "Hide Resigned ({count})",
+    "showResigned": "Show Resigned ({count})",
+    "employeeCount": "{count} employees",
+    "resigned": "Resigned",
+    "cols": {
+      "employee": "Employee",
+      "department": "Department",
+      "basicSalary": "Basic Salary",
+      "grossSalary": "Gross Salary",
+      "bonuses": "Bonuses",
+      "commissions": "Commissions",
+      "penalties": "Penalties",
+      "advances": "Advances",
+      "otherDeductions": "Other Deductions",
+      "netSalary": "Net Salary"
+    },
+    "emptyHint": "No data — click \"Generate Payroll\" to create payroll for this month",
+    "bonusDetailsLabel": "Bonus Details:",
+    "penaltyDetailsLabel": "Penalty Details:",
+    "deductionNoteLabel": "Deduction Note: {note}",
+    "generateDialog": {
+      "title": "Generate Payroll — {month} {year}",
+      "description": "Payroll will be generated for all active employees for {month} {year}. Previously confirmed payrolls will not be regenerated.",
+      "confirm": "Generate Payroll",
+      "generating": "Generating...",
+      "close": "Close",
+      "generated": "Generated: {count} employees",
+      "skipped": "Skipped: {count} employees (already confirmed)",
+      "errors": "Errors: {count} employees"
+    },
+    "resetDialog": {
+      "title": "Reset Payroll — {month} {year}",
+      "description": "All unconfirmed payrolls for {month} {year} will be deleted. This action cannot be undone.",
+      "confirm": "Reset",
+      "resetting": "Deleting..."
+    },
+    "slip": {
+      "noData": "No payroll data found",
+      "back": "Back",
+      "title": "Payslip — {month} {year}",
+      "print": "Print",
+      "downloadPDF": "Download PDF",
+      "downloading": "Downloading...",
+      "addDeduction": "Add Deduction",
+      "minuteAbbrev": "min",
+      "hourAbbrev": "h",
+      "warnings": {
+        "monthNotOver": "Warning: Month Not Over Yet",
+        "monthNotOverDesc": "This payroll is calculated for a full month; numbers are not final.",
+        "fixedSalary": "This employee has a fixed salary not linked to attendance."
+      },
+      "employeeInfo": {
+        "title": "Employee Info",
+        "name": "Name:",
+        "employeeNumber": "Employee No:",
+        "department": "Department:",
+        "jobTitle": "Job Title:"
+      },
+      "rates": {
+        "title": "Applied Rates",
+        "day": "Day Rate",
+        "hour": "Hour Rate",
+        "minute": "Minute Rate"
+      },
+      "attendance": {
+        "title": "Attendance",
+        "workingDaysInMonth": "Working Days in Month",
+        "actualPresentDays": "Actual Present Days",
+        "absentDays": "Absent Days",
+        "lateDays": "Late Days",
+        "effectiveLateMinutes": "Effective Late Minutes",
+        "compensationMinutes": "Compensation Minutes",
+        "overtimeWorkday": "Overtime (Workdays)",
+        "overtimeHoliday": "Overtime (Holidays)"
+      },
+      "leaves": {
+        "title": "Leaves",
+        "paid": "Paid Leave",
+        "sick": "Sick Leave",
+        "unpaid": "Unpaid Leave",
+        "hourly": "Hourly Leave",
+        "empty": "No leaves this month",
+        "dayUnit": "day"
+      },
+      "missions": {
+        "title": "Missions",
+        "internal": "Internal Missions",
+        "external": "External Missions",
+        "dayUnit": "day"
+      },
+      "overtime": {
+        "title": "Overtime",
+        "workday": "Workday Overtime",
+        "holiday": "Holiday Overtime"
+      },
+      "tardiness": {
+        "title": "Tardiness — Detail",
+        "totalMinutes": "Total Late Minutes",
+        "compensatedByOvertime": "Compensated by Same-Day Overtime",
+        "justifiedByApproval": "Justified by Approval",
+        "offsetByHourlyLeave": "Covered by Hourly Leave Balance",
+        "deducted": "Deducted from Salary",
+        "amount": "Deduction Amount",
+        "noPenalty": "No late deduction this month"
+      },
+      "hourlyBalance": {
+        "title": "Hourly Leave Balance — Month",
+        "maxMonthly": "Monthly Maximum",
+        "usedByRequests": "Used as Leave",
+        "usedByTardiness": "Used for Tardiness Offset",
+        "totalUsed": "Total Used",
+        "remaining": "Remaining"
+      },
+      "breakLimit": {
+        "title": "Breaks — Over Limit",
+        "totalBreak": "Total Break Time",
+        "allowed": "Allowed Limit",
+        "overLimit": "Over Limit",
+        "deductibleMinutes": "Deductible Minutes",
+        "deductionAmount": "Deduction Amount"
+      },
+      "salaryBreakdown": {
+        "title": "Salary Breakdown",
+        "basicSalary": "Basic Salary",
+        "allowances": "Allowances",
+        "overtimePay": "Overtime Pay",
+        "missionAllowance": "Mission Allowance",
+        "grossSalary": "Gross Salary",
+        "bonuses": "Bonuses",
+        "salesCommission": "Sales Commission",
+        "attendanceDeductions": "Attendance Deductions",
+        "late": "Late",
+        "absent": "Absent",
+        "unpaidLeave": "Unpaid Leave",
+        "hourlyLeave": "Hourly Leave",
+        "penalties": "Penalties",
+        "advanceDeduction": "Advance Deduction",
+        "otherDeduction": "Additional Deduction",
+        "netSalary": "Net Salary",
+        "exactAmount": "Exact amount: {amount} — rounded"
+      },
+      "calcDetails": {
+        "title": "Calculation Details",
+        "proRation": "Pro-ration Factor",
+        "fullMonth": "Full Month (100%)",
+        "deductibleBase": "Effective Deductible Base",
+        "excluded": "Excluded from Base (food allowance)"
+      },
+      "deductionBreakdown": {
+        "title": "Attendance Deduction Breakdown",
+        "lateDeduction": "Late Deduction",
+        "absenceDeduction": "Absence Deduction",
+        "breakOverLimit": "Break Over Limit Deduction",
+        "total": "Total Deductions"
+      },
+      "notes": {
+        "title": "Notes",
+        "edit": "Edit",
+        "placeholder": "Add a note...",
+        "cancel": "Cancel",
+        "save": "Save",
+        "empty": "No notes"
+      },
+      "deductionDialog": {
+        "title": "Additional Deduction",
+        "amount": "Amount ($)",
+        "notes": "Notes (Optional)",
+        "notesPlaceholder": "Reason for deduction...",
+        "amountError": "Amount must be 0 or greater"
+      }
     }
   }
 }

@@ -66,10 +66,10 @@ export default function CustodyDetailPage() {
   if (!custody) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-muted-foreground">العهدة غير موجودة</p>
+        <p className="text-muted-foreground">{t("custodies.notFound")}</p>
         <Button variant="outline" onClick={() => router.replace(`/${locale}/custodies`)}>
           <ArrowRight className="h-4 w-4 ml-2" />
-          العودة للقائمة
+          {t("custodies.backToList")}
         </Button>
       </div>
     );
@@ -121,7 +121,7 @@ export default function CustodyDetailPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">معلومات العهدة</CardTitle>
+            <CardTitle className="text-base">{t("custodies.details.infoTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <Row label={t("custodies.fields.name")} value={custody.name} />
@@ -135,7 +135,7 @@ export default function CustodyDetailPage() {
             />
             {(custody as any).returnedDate && (
               <Row
-                label="تاريخ الإرجاع"
+                label={t("custodies.fields.returnedDate")}
                 value={format(new Date((custody as any).returnedDate), "yyyy/MM/dd")}
               />
             )}
@@ -150,24 +150,24 @@ export default function CustodyDetailPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">الموظف</CardTitle>
+            <CardTitle className="text-base">{t("custodies.details.employeeSection")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {custody.employee ? (
               <>
-                <Row label="الاسم" value={`${custody.employee.firstNameAr} ${custody.employee.lastNameAr}`} />
+                <Row label={t("custodies.details.employeeName")} value={`${custody.employee.firstNameAr} ${custody.employee.lastNameAr}`} />
                 {custody.employee.employeeNumber && (
-                  <Row label="رقم الموظف" value={custody.employee.employeeNumber} />
+                  <Row label={t("custodies.details.employeeNumber")} value={custody.employee.employeeNumber} />
                 )}
                 {custody.employee.department && (
-                  <Row label="القسم" value={custody.employee.department.nameAr} />
+                  <Row label={t("custodies.details.department")} value={custody.employee.department.nameAr} />
                 )}
                 {(custody.employee as any).jobTitle && (
-                  <Row label="المسمى الوظيفي" value={(custody.employee as any).jobTitle.nameAr} />
+                  <Row label={t("custodies.details.jobTitle")} value={(custody.employee as any).jobTitle.nameAr} />
                 )}
               </>
             ) : (
-              <p className="text-muted-foreground">لا توجد بيانات</p>
+              <p className="text-muted-foreground">{t("common.noData")}</p>
             )}
           </CardContent>
         </Card>
@@ -177,7 +177,7 @@ export default function CustodyDetailPage() {
       {attachments.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">المرفقات ({attachments.length})</CardTitle>
+            <CardTitle className="text-base">{t("custodies.details.attachments")} ({attachments.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">

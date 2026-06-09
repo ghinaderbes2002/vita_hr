@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   DollarSign, Play, Eye, ChevronDown, ChevronUp,
@@ -34,15 +34,6 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { isResigned } from "@/lib/utils/employee-labels";
 import { formatUSDRounded } from "@/lib/utils";
 
-const MONTHS = [
-  { value: 1, label: "يناير" }, { value: 2, label: "فبراير" },
-  { value: 3, label: "مارس" }, { value: 4, label: "أبريل" },
-  { value: 5, label: "مايو" }, { value: 6, label: "يونيو" },
-  { value: 7, label: "يوليو" }, { value: 8, label: "أغسطس" },
-  { value: 9, label: "سبتمبر" }, { value: 10, label: "أكتوبر" },
-  { value: 11, label: "نوفمبر" }, { value: 12, label: "ديسمبر" },
-];
-
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
 
@@ -63,6 +54,7 @@ function parsePenaltyDetails(val: string | PenaltyDetail[] | undefined): Penalty
 }
 
 export default function PayrollPage() {
+  const t = useTranslations("payroll");
   const locale = useLocale();
   const router = useRouter();
   const today = new Date();
@@ -86,6 +78,11 @@ export default function PayrollPage() {
   const allItems: PayrollItem[] = data?.items || [];
   const items = showResigned ? allItems : allItems.filter((item) => !isResigned(item));
   const resignedCount = allItems.filter((item) => isResigned(item)).length;
+
+  const MONTHS = Array.from({ length: 12 }, (_, i) => ({
+    value: i + 1,
+    label: t(`months.${i + 1}` as any),
+  }));
 
   const toggleExpand = (id: string) => {
     setExpandedRows((prev) => {
@@ -113,13 +110,13 @@ export default function PayrollPage() {
     exportXlsx.mutate({ year, month });
   };
 
-  const monthLabel = MONTHS.find((m) => m.value === month)?.label || "";
+  const monthLabel = t(`months.${month}` as any);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="كشوف الرواتب"
-        description="عرض وتوليد رواتب الموظفين"
+        title={t("title")}
+        description={t("description")}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -130,18 +127,18 @@ export default function PayrollPage() {
               disabled={exportXlsx.isPending || allItems.length === 0}
             >
               <FileSpreadsheet className="h-4 w-4" />
-              {exportXlsx.isPending ? "جاري التنزيل..." : "تصدير Excel"}
+              {exportXlsx.isPending ? t("exporting") : t("exportExcel")}
             </Button>
             <ActionGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.GENERATE}>
               <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={() => setResetOpen(true)}>
                 <RotateCcw className="h-4 w-4" />
-                إعادة تعيين
+                {t("reset")}
               </Button>
             </ActionGuard>
             <ActionGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.GENERATE}>
               <Button onClick={() => setGenerateOpen(true)} className="gap-2">
                 <Play className="h-4 w-4" />
-                توليد الرواتب
+                {t("generate")}
               </Button>
             </ActionGuard>
           </div>
@@ -153,7 +150,7 @@ export default function PayrollPage() {
         <CardContent className="pt-5 pb-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">السنة:</span>
+              <span className="text-sm text-muted-foreground">{t("yearLabel")}</span>
               <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
                 <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -162,7 +159,7 @@ export default function PayrollPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">الشهر:</span>
+              <span className="text-sm text-muted-foreground">{t("monthLabel")}</span>
               <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
                 <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -179,12 +176,14 @@ export default function PayrollPage() {
                 onClick={() => setShowResigned((v) => !v)}
               >
                 {showResigned ? <Users className="h-3.5 w-3.5" /> : <UserX className="h-3.5 w-3.5" />}
-                {showResigned ? `إخفاء المستقيلين (${resignedCount})` : `إظهار المستقيلين (${resignedCount})`}
+                {showResigned
+                  ? t("hideResigned", { count: resignedCount })
+                  : t("showResigned", { count: resignedCount })}
               </Button>
             )}
 
             {items.length > 0 && (
-              <span className="text-sm text-muted-foreground">{items.length} موظف</span>
+              <span className="text-sm text-muted-foreground">{t("employeeCount", { count: items.length })}</span>
             )}
           </div>
         </CardContent>
@@ -196,16 +195,16 @@ export default function PayrollPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-8" />
-              <TableHead>الموظف</TableHead>
-              <TableHead>القسم</TableHead>
-              <TableHead>الراتب الأساسي</TableHead>
-              <TableHead>الراتب الإجمالي</TableHead>
-              <TableHead className="text-green-700">المكافآت</TableHead>
-              <TableHead className="text-green-700">العمولات</TableHead>
-              <TableHead className="text-red-600">الجزاءات</TableHead>
-              <TableHead className="text-red-600">السلف</TableHead>
-              <TableHead className="text-red-600">خصومات أخرى</TableHead>
-              <TableHead className="font-semibold">صافي الراتب</TableHead>
+              <TableHead>{t("cols.employee")}</TableHead>
+              <TableHead>{t("cols.department")}</TableHead>
+              <TableHead>{t("cols.basicSalary")}</TableHead>
+              <TableHead>{t("cols.grossSalary")}</TableHead>
+              <TableHead className="text-green-700">{t("cols.bonuses")}</TableHead>
+              <TableHead className="text-green-700">{t("cols.commissions")}</TableHead>
+              <TableHead className="text-red-600">{t("cols.penalties")}</TableHead>
+              <TableHead className="text-red-600">{t("cols.advances")}</TableHead>
+              <TableHead className="text-red-600">{t("cols.otherDeductions")}</TableHead>
+              <TableHead className="font-semibold">{t("cols.netSalary")}</TableHead>
               <TableHead className="w-[70px]" />
             </TableRow>
           </TableHeader>
@@ -221,7 +220,7 @@ export default function PayrollPage() {
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={12} className="h-24 text-center text-muted-foreground">
-                  لا توجد بيانات — اضغط "توليد الرواتب" لإنشاء كشوف هذا الشهر
+                  {t("emptyHint")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -263,7 +262,7 @@ export default function PayrollPage() {
                               ? `${item.employee.firstNameAr} ${item.employee.lastNameAr}`
                               : "—"}
                             {resigned && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0 text-red-600 border-red-300">مستقيل</Badge>
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 text-red-600 border-red-300">{t("resigned")}</Badge>
                             )}
                           </p>
                           <p className="text-xs text-muted-foreground">{emp?.employeeNumber || item.employee?.employeeNumber}</p>
@@ -330,7 +329,7 @@ export default function PayrollPage() {
                           <div className="space-y-3 text-sm">
                             {bonusDetails.length > 0 && (
                               <div>
-                                <p className="font-medium text-green-700 mb-1">تفاصيل المكافآت:</p>
+                                <p className="font-medium text-green-700 mb-1">{t("bonusDetailsLabel")}</p>
                                 <div className="space-y-1">
                                   {bonusDetails.map((b, i) => (
                                     <div key={i} className="flex items-center gap-2 text-green-800">
@@ -343,7 +342,7 @@ export default function PayrollPage() {
                             )}
                             {penaltyDetails.length > 0 && (
                               <div>
-                                <p className="font-medium text-red-600 mb-1">تفاصيل الجزاءات:</p>
+                                <p className="font-medium text-red-600 mb-1">{t("penaltyDetailsLabel")}</p>
                                 <div className="space-y-1">
                                   {penaltyDetails.map((p, i) => (
                                     <div key={i} className="flex items-center gap-2 text-red-700">
@@ -355,7 +354,7 @@ export default function PayrollPage() {
                               </div>
                             )}
                             {item.otherDeductionNotes && (
-                              <p className="text-xs text-muted-foreground">ملاحظة الخصم: {item.otherDeductionNotes}</p>
+                              <p className="text-xs text-muted-foreground">{t("deductionNoteLabel", { note: item.otherDeductionNotes })}</p>
                             )}
                           </div>
                         </TableCell>
@@ -376,44 +375,42 @@ export default function PayrollPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>توليد رواتب {monthLabel} {year}</DialogTitle>
+            <DialogTitle>{t("generateDialog.title", { month: monthLabel, year })}</DialogTitle>
           </DialogHeader>
 
           {generateResult ? (
             <div className="space-y-2 py-2">
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-green-600 text-base">✅</span>
-                <span>تم توليد: <span className="font-semibold">{generateResult.generated}</span> موظف</span>
+                <span>{t("generateDialog.generated", { count: generateResult.generated })}</span>
               </div>
               {generateResult.skipped > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-amber-500 text-base">⏭️</span>
-                  <span>تم تخطي: <span className="font-semibold">{generateResult.skipped}</span> موظف (كشوفهم معتمدة مسبقاً)</span>
+                  <span>{t("generateDialog.skipped", { count: generateResult.skipped })}</span>
                 </div>
               )}
               {generateResult.errors > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-destructive text-base">❌</span>
-                  <span>أخطاء: <span className="font-semibold">{generateResult.errors}</span> موظف</span>
+                  <span>{t("generateDialog.errors", { count: generateResult.errors })}</span>
                 </div>
               )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              سيتم توليد كشوف رواتب جميع الموظفين النشطين لشهر{" "}
-              <span className="font-medium">{monthLabel} {year}</span>.
-              إذا كانت الرواتب معتمدة مسبقاً فلن يُعاد توليدها.
+              {t("generateDialog.description", { month: monthLabel, year })}
             </p>
           )}
 
           <DialogFooter>
             {generateResult ? (
-              <Button onClick={() => { setGenerateOpen(false); setGenerateResult(null); }}>إغلاق</Button>
+              <Button onClick={() => { setGenerateOpen(false); setGenerateResult(null); }}>{t("generateDialog.close")}</Button>
             ) : (
               <>
-                <Button variant="outline" onClick={() => setGenerateOpen(false)}>إلغاء</Button>
+                <Button variant="outline" onClick={() => setGenerateOpen(false)}>{t("generateDialog.close")}</Button>
                 <Button onClick={handleGenerate} disabled={generatePayroll.isPending}>
-                  {generatePayroll.isPending ? "جاري التوليد..." : "توليد الرواتب"}
+                  {generatePayroll.isPending ? t("generateDialog.generating") : t("generateDialog.confirm")}
                 </Button>
               </>
             )}
@@ -425,17 +422,15 @@ export default function PayrollPage() {
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>إعادة تعيين رواتب {monthLabel} {year}</DialogTitle>
+            <DialogTitle>{t("resetDialog.title", { month: monthLabel, year })}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            سيتم حذف جميع كشوف رواتب شهر{" "}
-            <span className="font-medium">{monthLabel} {year}</span>{" "}
-            غير المعتمدة. هذا الإجراء لا يمكن التراجع عنه.
+            {t("resetDialog.description", { month: monthLabel, year })}
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResetOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setResetOpen(false)}>{t("generateDialog.close")}</Button>
             <Button variant="destructive" onClick={handleReset} disabled={resetMonth.isPending}>
-              {resetMonth.isPending ? "جاري الحذف..." : "إعادة التعيين"}
+              {resetMonth.isPending ? t("resetDialog.resetting") : t("resetDialog.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

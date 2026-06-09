@@ -1666,6 +1666,90 @@
       "status": "Yeni Durum",
       "returnedDate": "İade Tarihi",
       "notes": "Notlar"
+    },
+    "tryFilters": "Filtreleri değiştirmeyi deneyin",
+    "custodyUnit": "emanet",
+    "notFound": "Emanet bulunamadı",
+    "backToList": "Listeye dön",
+    "myEmpty": {
+      "title": "Emanet Yok",
+      "description": "Henüz size atanmış bir emanet bulunmuyor"
+    },
+    "details": {
+      "infoTitle": "Emanet Bilgileri",
+      "employeeSection": "Çalışan",
+      "employeeName": "Ad",
+      "employeeNumber": "Çalışan Numarası",
+      "department": "Departman",
+      "jobTitle": "Ünvan",
+      "attachments": "Ekler"
+    }
+  },
+  "deductionPolicies": {
+    "title": "Kesinti Politikaları",
+    "description": "Maaşlardan gecikme, devamsızlık ve mola kesintisi kurallarını tanımlayın",
+    "createPolicy": "Politika Oluştur",
+    "default": "Varsayılan",
+    "disabled": "Devre Dışı",
+    "empty": {
+      "title": "Kesinti Politikası Yok",
+      "description": "Maaş kesinti kuralları uygulamak için bir politika oluşturun"
+    },
+    "deductionType": {
+      "MINUTE_BY_MINUTE": "Dakika Dakika",
+      "TIERED": "Kademeli",
+      "IGNORE": "Yoksay",
+      "DOUBLE": "Çift Süre"
+    },
+    "card": {
+      "lateTolerance": "Gecikme Toleransı",
+      "lateDeduction": "Gecikme Kesintisi",
+      "absenceDeduction": "Devamsızlık Kesintisi",
+      "repeatPenalty": "Tekrar Cezası",
+      "repeatPenaltyValue": "{threshold} defadan sonra → +{days} gün",
+      "lateTiers": "Gecikme Kademeleri:",
+      "dayPerDay": "{days} gün/gün",
+      "minutesUnit": "{count} dk",
+      "edit": "Düzenle",
+      "setDefault": "Varsayılan Yap",
+      "minAbbrev": "dk",
+      "holidayMultiplier": "Tatil Fazla Mesai Çarpanı",
+      "internalMission": "Dahili Görev Gün Ücreti",
+      "externalMission": "Harici Görev Gün Ücreti",
+      "usedByEmployees": "{count} çalışan tarafından kullanılıyor — düzenleme yaklaşan maaşları etkiler"
+    },
+    "form": {
+      "createTitle": "Kesinti Politikası Oluştur",
+      "editTitle": "Politikayı Düzenle",
+      "nameAr": "Arapça Ad",
+      "nameEn": "İngilizce Ad",
+      "activate": "Aktif",
+      "default": "Varsayılan",
+      "lateSettings": "Gecikme Ayarları",
+      "tolerance": "Tolerans (dakika)",
+      "deductionType": "Kesinti Türü",
+      "lateTiers": "Gecikme Kademeleri (dakikadan – dakikaya → kesinti günleri)",
+      "earlyLeave": "Erken Çıkış Ayarları",
+      "earlyLeaveTiers": "Erken Çıkış Kademeleri",
+      "absenceDeduction": "Devamsızlık Kesintisi (gün/gün)",
+      "breakDeduction": "Mola Aşımı Kesintisi",
+      "repeatThreshold": "Tekrar Cezası (kaç defadan sonra)",
+      "repeatThresholdPlaceholder": "Boş = ceza yok",
+      "repeatPenaltyDays": "Ekstra Ceza Günleri",
+      "addTier": "Kademe Ekle",
+      "minuteLabel": "dk →",
+      "dayLabel": "gün",
+      "create": "Oluştur",
+      "save": "Değişiklikleri Kaydet",
+      "missionSettings": "Görev & Fazla Mesai Ayarları",
+      "holidayMultiplier": "Fazla Mesai Çarpanı – Tatil Günleri",
+      "internalMissionRate": "Dahili Görev Gün Ücreti (USD)",
+      "externalMissionRate": "Harici Görev Gün Ücreti (USD)",
+      "usedByWarning": "Bu politika {count} çalışan tarafından kullanılmaktadır. Düzenleme, yaklaşan maaş hesaplamalarını etkileyecektir."
+    },
+    "delete": {
+      "title": "Politikayı Sil",
+      "description": "\"{name}\" politikasını silmek istediğinizden emin misiniz?"
     }
   },
   "jobApplications": {
@@ -1698,7 +1782,10 @@
       "reviewNotes": "İnceleme Notları",
       "rejectionNote": "Red Sebebi",
       "rejectionNotePlaceholder": "Ret gerekçesini belirtin...",
-      "application": "başvuru"
+      "application": "başvuru",
+      "currentlyEmployed": "Halihazırda Çalışıyor",
+      "availabilityToJoin": "Katılım Uygunluğu",
+      "hasCompanyRelation": "Şirketle İlişki"
     },
     "sections": {
       "personalInfo": "Kişisel Bilgiler",
@@ -1712,6 +1799,76 @@
       "accept": "Kabul Et",
       "reject": "Reddet",
       "ceoApprove": "CEO Onayı"
+    },
+    "submitApplication": "Başvuru Gönder",
+    "listView": "Liste",
+    "boardView": "Kanban",
+    "talentList": "Yetenek Listesi",
+    "noFavorites": "Yetenek listesinde başvuru yok",
+    "addAsEmployee": "Çalışan Olarak Ekle",
+    "processing": "İşleniyor...",
+    "lastUpdated": "Son Güncelleme",
+    "pipeline": {
+      "PENDING": "Başvuru Alındı",
+      "INTERVIEW_READY": "Mülakata Hazır",
+      "ACCEPTED": "Kabul Edildi",
+      "HIRED": "İşe Alındı",
+      "REJECTED": "Reddedildi",
+      "ceoRequired": "CEO onayı gerektirir"
+    },
+    "availability": {
+      "IMMEDIATELY": "Hemen",
+      "WITHIN_ONE_WEEK": "Bir Hafta İçinde",
+      "WITHIN_TWO_WEEKS": "İki Hafta İçinde",
+      "WITHIN_ONE_MONTH": "Bir Ay İçinde",
+      "MORE_THAN_ONE_MONTH": "Bir Aydan Fazla"
+    },
+    "rejection": {
+      "emailWarningTitle": "Adaya e-posta gönderilecek",
+      "emailWarningBody": "Bu ret kaydedildiğinde, {name} adresine {email} üzerinden ret bildirimi gönderilecek."
+    },
+    "evaluation": {
+      "title": "Mülakat Değerlendirmesi",
+      "viewDetails": "Detayları Görüntüle",
+      "edit": "Değerlendirmeyi Düzenle",
+      "create": "Değerlendirme Oluştur",
+      "editTitle": "Mülakat Değerlendirmesini Düzenle",
+      "createTitle": "Mülakat Değerlendirmesi Oluştur",
+      "noEval": "Henüz resmi bir mülakat değerlendirmesi yapılmadı",
+      "scores": {
+        "personal": "Kişisel (40)",
+        "technical": "Teknik (40)",
+        "computer": "Bilgisayar (20)",
+        "total": "Toplam"
+      },
+      "decision": "Karar",
+      "decisions": {
+        "ACCEPTED": "Kabul Edildi",
+        "REFERRED_TO_OTHER": "Başka Pozisyona Yönlendirildi",
+        "DEFERRED": "Ertelendi",
+        "REJECTED": "Reddedildi"
+      },
+      "proposedSalary": "Önerilen Maaş",
+      "salaryAfterConfirmation": "Onay Sonrası Maaş",
+      "additionalConditions": "Ek Koşullar",
+      "transferToEmployee": "Çalışan Kaydına Aktar",
+      "transferred": "Çalışan Kaydına Aktarıldı",
+      "detailsTitle": "Mülakat Değerlendirmesi Detayları",
+      "position": "İş Pozisyonu",
+      "selectPosition": "Pozisyon Seç",
+      "generalNotes": "Genel Notlar",
+      "personalTraits": "Kişisel Özellikler",
+      "technicalQuestions": "Teknik Sorular",
+      "computerSkills": "Bilgisayar Becerileri",
+      "personalTraitsLabel": "Kişisel Özellikler (her kriter için maks. 5)",
+      "computerSkillsLabel": "Bilgisayar Becerileri (her kriter için maks. 5)",
+      "loadingQuestions": "Sorular yükleniyor...",
+      "noTechnicalQuestions": "Bu pozisyon için teknik soru yok",
+      "hrProposedSalary": "İK Önerilen Maaş ($)",
+      "employeeProposedSalary": "Aday Önerilen Maaş ($)",
+      "conditionsExample": "Örnek: 3 aylık deneme süresi zorunlu",
+      "saveEdits": "Değişiklikleri Kaydet",
+      "saveNew": "Değerlendirmeyi Kaydet"
     }
   },
   "reports": {
@@ -2322,6 +2479,192 @@
       "processDescription": "Onarım seçeneğini seçin ve çalışan atayın",
       "notesLabel": "Notlar (İsteğe Bağlı)",
       "notesRequired": "Notlar *"
+    }
+  },
+  "payroll": {
+    "months": {
+      "1": "Ocak", "2": "Şubat", "3": "Mart", "4": "Nisan",
+      "5": "Mayıs", "6": "Haziran", "7": "Temmuz", "8": "Ağustos",
+      "9": "Eylül", "10": "Ekim", "11": "Kasım", "12": "Aralık"
+    },
+    "title": "Bordro",
+    "description": "Çalışan maaşlarını görüntüleyin ve oluşturun",
+    "exportExcel": "Excel'e Aktar",
+    "exporting": "İndiriliyor...",
+    "reset": "Sıfırla",
+    "generate": "Bordro Oluştur",
+    "yearLabel": "Yıl:",
+    "monthLabel": "Ay:",
+    "hideResigned": "İstifa Edenleri Gizle ({count})",
+    "showResigned": "İstifa Edenleri Göster ({count})",
+    "employeeCount": "{count} çalışan",
+    "resigned": "İstifa Etti",
+    "cols": {
+      "employee": "Çalışan",
+      "department": "Departman",
+      "basicSalary": "Temel Maaş",
+      "grossSalary": "Brüt Maaş",
+      "bonuses": "Primler",
+      "commissions": "Komisyonlar",
+      "penalties": "Cezalar",
+      "advances": "Avanslar",
+      "otherDeductions": "Diğer Kesintiler",
+      "netSalary": "Net Maaş"
+    },
+    "emptyHint": "Veri yok — bu ay için bordro oluşturmak üzere \"Bordro Oluştur\"a tıklayın",
+    "bonusDetailsLabel": "Prim Detayları:",
+    "penaltyDetailsLabel": "Ceza Detayları:",
+    "deductionNoteLabel": "Kesinti Notu: {note}",
+    "generateDialog": {
+      "title": "Bordro Oluştur — {month} {year}",
+      "description": "{month} {year} için tüm aktif çalışanların bordrosu oluşturulacak. Daha önce onaylanmış bordrolar yeniden oluşturulmayacak.",
+      "confirm": "Bordro Oluştur",
+      "generating": "Oluşturuluyor...",
+      "close": "Kapat",
+      "generated": "Oluşturuldu: {count} çalışan",
+      "skipped": "Atlandı: {count} çalışan (zaten onaylanmış)",
+      "errors": "Hatalar: {count} çalışan"
+    },
+    "resetDialog": {
+      "title": "Bordroyu Sıfırla — {month} {year}",
+      "description": "{month} {year} için onaylanmamış tüm bordrolar silinecek. Bu işlem geri alınamaz.",
+      "confirm": "Sıfırla",
+      "resetting": "Siliniyor..."
+    },
+    "slip": {
+      "noData": "Bordro verisi bulunamadı",
+      "back": "Geri",
+      "title": "Bordro — {month} {year}",
+      "print": "Yazdır",
+      "downloadPDF": "PDF İndir",
+      "downloading": "İndiriliyor...",
+      "addDeduction": "Kesinti Ekle",
+      "minuteAbbrev": "dk",
+      "hourAbbrev": "sa",
+      "warnings": {
+        "monthNotOver": "Uyarı: Ay Henüz Bitmedi",
+        "monthNotOverDesc": "Bu bordro tam ay üzerinden hesaplanmıştır; rakamlar kesin değildir.",
+        "fixedSalary": "Bu çalışanın devama bağlı olmayan sabit maaşı vardır."
+      },
+      "employeeInfo": {
+        "title": "Çalışan Bilgileri",
+        "name": "Ad:",
+        "employeeNumber": "Sicil No:",
+        "department": "Departman:",
+        "jobTitle": "Ünvan:"
+      },
+      "rates": {
+        "title": "Uygulanan Oranlar",
+        "day": "Günlük Oran",
+        "hour": "Saatlik Oran",
+        "minute": "Dakikalık Oran"
+      },
+      "attendance": {
+        "title": "Devam Durumu",
+        "workingDaysInMonth": "Aydaki Çalışma Günleri",
+        "actualPresentDays": "Fiili Çalışma Günleri",
+        "absentDays": "Devamsızlık Günleri",
+        "lateDays": "Geç Kalma Günleri",
+        "effectiveLateMinutes": "Fiili Geç Kalma Dakikaları",
+        "compensationMinutes": "Telafi Dakikaları",
+        "overtimeWorkday": "Mesai (İş Günleri)",
+        "overtimeHoliday": "Mesai (Tatil Günleri)"
+      },
+      "leaves": {
+        "title": "İzinler",
+        "paid": "Ücretli İzin",
+        "sick": "Hastalık İzni",
+        "unpaid": "Ücretsiz İzin",
+        "hourly": "Saatlik İzin",
+        "empty": "Bu ay izin yok",
+        "dayUnit": "gün"
+      },
+      "missions": {
+        "title": "Görevler",
+        "internal": "Dahili Görevler",
+        "external": "Harici Görevler",
+        "dayUnit": "gün"
+      },
+      "overtime": {
+        "title": "Fazla Mesai",
+        "workday": "İş Günü Fazla Mesaisi",
+        "holiday": "Tatil Günü Fazla Mesaisi"
+      },
+      "tardiness": {
+        "title": "Geç Kalma — Detay",
+        "totalMinutes": "Toplam Geç Kalma Dakikaları",
+        "compensatedByOvertime": "Aynı Gün Fazla Mesaiyle Telafi Edildi",
+        "justifiedByApproval": "Onaylamayla Gerekçelendirildi",
+        "offsetByHourlyLeave": "Saatlik İzin Bakiyesiyle Karşılandı",
+        "deducted": "Maaştan Kesildi",
+        "amount": "Kesinti Tutarı",
+        "noPenalty": "Bu ay geç kalma kesintisi yok"
+      },
+      "hourlyBalance": {
+        "title": "Saatlik İzin Bakiyesi — Ay",
+        "maxMonthly": "Aylık Maksimum",
+        "usedByRequests": "İzin Olarak Kullanıldı",
+        "usedByTardiness": "Geç Kalma Telafisi İçin Kullanıldı",
+        "totalUsed": "Toplam Kullanılan",
+        "remaining": "Kalan"
+      },
+      "breakLimit": {
+        "title": "Molalar — Limit Aşımı",
+        "totalBreak": "Toplam Mola Süresi",
+        "allowed": "İzin Verilen Limit",
+        "overLimit": "Limit Aşımı",
+        "deductibleMinutes": "Kesilebilir Dakikalar",
+        "deductionAmount": "Kesinti Tutarı"
+      },
+      "salaryBreakdown": {
+        "title": "Maaş Dökümü",
+        "basicSalary": "Temel Maaş",
+        "allowances": "Yardımlar",
+        "overtimePay": "Fazla Mesai Ücreti",
+        "missionAllowance": "Görev Ödeneği",
+        "grossSalary": "Brüt Maaş",
+        "bonuses": "Primler",
+        "salesCommission": "Satış Komisyonu",
+        "attendanceDeductions": "Devam Kesintileri",
+        "late": "Geç Kalma",
+        "absent": "Devamsızlık",
+        "unpaidLeave": "Ücretsiz İzin",
+        "hourlyLeave": "Saatlik İzin",
+        "penalties": "Cezalar",
+        "advanceDeduction": "Avans Kesintisi",
+        "otherDeduction": "Ek Kesinti",
+        "netSalary": "Net Maaş",
+        "exactAmount": "Kesin tutar: {amount} — yuvarlandı"
+      },
+      "calcDetails": {
+        "title": "Hesaplama Detayları",
+        "proRation": "Orantılı Hesaplama Faktörü",
+        "fullMonth": "Tam Ay (100%)",
+        "deductibleBase": "Fiili Kesinti Matrahı",
+        "excluded": "Matrahtan Hariç Tutulan (yemek yardımı)"
+      },
+      "deductionBreakdown": {
+        "title": "Devam Kesintisi Dökümü",
+        "lateDeduction": "Geç Kalma Kesintisi",
+        "absenceDeduction": "Devamsızlık Kesintisi",
+        "breakOverLimit": "Limit Aşımı Mola Kesintisi",
+        "total": "Toplam Kesintiler"
+      },
+      "notes": {
+        "title": "Notlar",
+        "edit": "Düzenle",
+        "placeholder": "Not ekle...",
+        "cancel": "İptal",
+        "save": "Kaydet",
+        "empty": "Not yok"
+      },
+      "deductionDialog": {
+        "title": "Ek Kesinti",
+        "amount": "Tutar ($)",
+        "notes": "Notlar (İsteğe Bağlı)",
+        "notesPlaceholder": "Kesinti sebebi...",
+        "amountError": "Tutar 0 veya daha büyük olmalıdır"
+      }
     }
   }
 }

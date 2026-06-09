@@ -33,7 +33,6 @@ import { useLocale } from "next-intl";
 
 interface PipelineColumn {
   id: JobApplicationStatus;
-  label: string;
   color: string;
   headerBg: string;
   cardBorder: string;
@@ -42,55 +41,19 @@ interface PipelineColumn {
 }
 
 const PIPELINE_COLUMNS: PipelineColumn[] = [
-  {
-    id: "PENDING",
-    label: "استلام الطلب",
-    color: "#F59E0B",
-    headerBg: "bg-amber-50 border-amber-200",
-    cardBorder: "border-l-amber-400",
-    badge: "bg-amber-100 text-amber-800",
-  },
-  {
-    id: "INTERVIEW_READY",
-    label: "مؤهل للمقابلة",
-    color: "#3B82F6",
-    headerBg: "bg-blue-50 border-blue-200",
-    cardBorder: "border-l-blue-400",
-    badge: "bg-blue-100 text-blue-800",
-  },
-  {
-    id: "ACCEPTED",
-    label: "مقبول",
-    color: "#10B981",
-    headerBg: "bg-green-50 border-green-200",
-    cardBorder: "border-l-green-400",
-    badge: "bg-green-100 text-green-800",
-  },
-  {
-    id: "HIRED",
-    label: "تم التوظيف",
-    color: "#8B5CF6",
-    headerBg: "bg-purple-50 border-purple-200",
-    cardBorder: "border-l-purple-400",
-    badge: "bg-purple-100 text-purple-800",
-    locked: true,
-  },
-  {
-    id: "REJECTED",
-    label: "مرفوض",
-    color: "#EF4444",
-    headerBg: "bg-red-50 border-red-200",
-    cardBorder: "border-l-red-400",
-    badge: "bg-red-100 text-red-800",
-  },
+  { id: "PENDING",         color: "#F59E0B", headerBg: "bg-amber-50 border-amber-200",   cardBorder: "border-l-amber-400",   badge: "bg-amber-100 text-amber-800" },
+  { id: "INTERVIEW_READY", color: "#3B82F6", headerBg: "bg-blue-50 border-blue-200",     cardBorder: "border-l-blue-400",    badge: "bg-blue-100 text-blue-800" },
+  { id: "ACCEPTED",        color: "#10B981", headerBg: "bg-green-50 border-green-200",   cardBorder: "border-l-green-400",   badge: "bg-green-100 text-green-800" },
+  { id: "HIRED",           color: "#8B5CF6", headerBg: "bg-purple-50 border-purple-200", cardBorder: "border-l-purple-400",  badge: "bg-purple-100 text-purple-800", locked: true },
+  { id: "REJECTED",        color: "#EF4444", headerBg: "bg-red-50 border-red-200",       cardBorder: "border-l-red-400",     badge: "bg-red-100 text-red-800" },
 ];
 
-const STATUS_CONFIG: Record<JobApplicationStatus, { bg: string; label: string }> = {
-  PENDING:          { bg: "bg-amber-100 text-amber-800",   label: "معلق" },
-  INTERVIEW_READY:  { bg: "bg-blue-100 text-blue-800",     label: "مؤهل للمقابلة" },
-  ACCEPTED:         { bg: "bg-green-100 text-green-800",   label: "مقبول" },
-  REJECTED:         { bg: "bg-red-100 text-red-800",       label: "مرفوض" },
-  HIRED:            { bg: "bg-purple-100 text-purple-800", label: "تم التوظيف" },
+const STATUS_BG: Record<JobApplicationStatus, string> = {
+  PENDING:         "bg-amber-100 text-amber-800",
+  INTERVIEW_READY: "bg-blue-100 text-blue-800",
+  ACCEPTED:        "bg-green-100 text-green-800",
+  REJECTED:        "bg-red-100 text-red-800",
+  HIRED:           "bg-purple-100 text-purple-800",
 };
 
 const STATUSES: JobApplicationStatus[] = ["PENDING", "INTERVIEW_READY", "ACCEPTED", "REJECTED", "HIRED"];
@@ -102,11 +65,13 @@ function CandidateCard({
   col,
   index,
   onView,
+  t,
 }: {
   app: JobApplication;
   col: PipelineColumn;
   index: number;
   onView: (id: string) => void;
+  t: (key: string) => string;
 }) {
   return (
     <Draggable draggableId={app.id} index={index}>
@@ -135,7 +100,7 @@ function CandidateCard({
 
           <div className="flex flex-wrap gap-1 text-xs">
             <span className="rounded bg-muted px-1.5 py-0.5">{app.specialization}</span>
-            <span className="rounded bg-muted px-1.5 py-0.5">{app.yearsOfExperience} سنوات</span>
+            <span className="rounded bg-muted px-1.5 py-0.5">{app.yearsOfExperience} {t("common.years")}</span>
           </div>
 
           {app.rating != null && (
@@ -174,10 +139,12 @@ function PipelineBoard({
   applications,
   onView,
   onDragEnd,
+  t,
 }: {
   applications: JobApplication[];
   onView: (id: string) => void;
   onDragEnd: (result: DropResult) => void;
+  t: (key: string) => string;
 }) {
   const grouped = Object.fromEntries(
     PIPELINE_COLUMNS.map((col) => [
@@ -200,7 +167,7 @@ function PipelineBoard({
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: col.color }}
                   />
-                  <span className="text-sm font-semibold">{col.label}</span>
+                  <span className="text-sm font-semibold">{t(`jobApplications.pipeline.${col.id}`)}</span>
                 </div>
                 <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${col.badge}`}>
                   {cards.length}
@@ -227,7 +194,7 @@ function PipelineBoard({
                   >
                     {col.locked && snapshot.isDraggingOver && (
                       <p className="text-xs text-center text-muted-foreground pt-2">
-                        يتطلب موافقة المدير التنفيذي
+                        {t("jobApplications.pipeline.ceoRequired")}
                       </p>
                     )}
                     {cards.map((app, index) => (
@@ -237,6 +204,7 @@ function PipelineBoard({
                         col={col}
                         index={index}
                         onView={onView}
+                        t={t}
                       />
                     ))}
                     {provided.placeholder}
@@ -337,7 +305,7 @@ export default function JobApplicationsPage() {
           <a href="https://vitaxirpro.com/join-us" target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="sm">
               <ExternalLink className="h-4 w-4 ml-2" />
-              تقديم طلب مقابلة
+              {t("jobApplications.submitApplication")}
             </Button>
           </a>
           <div className="flex items-center gap-1 rounded-lg border bg-muted p-1">
@@ -348,7 +316,7 @@ export default function JobApplicationsPage() {
               onClick={() => setView("list")}
             >
               <LayoutList className="h-4 w-4 ml-1" />
-              قائمة
+              {t("jobApplications.listView")}
             </Button>
             <Button
               variant={view === "pipeline" ? "default" : "ghost"}
@@ -357,7 +325,7 @@ export default function JobApplicationsPage() {
               onClick={() => setView("pipeline")}
             >
               <Kanban className="h-4 w-4 ml-1" />
-              بورد
+              {t("jobApplications.boardView")}
             </Button>
           </div>
           </div>
@@ -396,6 +364,7 @@ export default function JobApplicationsPage() {
               applications={applications}
               onView={handleView}
               onDragEnd={handleDragEnd}
+              t={t}
             />
           )}
         </>
@@ -423,7 +392,7 @@ export default function JobApplicationsPage() {
               className="gap-2"
             >
               <Star className={`h-4 w-4 ${showFavorites ? "fill-white" : "fill-none"}`} />
-              قائمة المواهب
+              {t("jobApplications.talentList")}
               {favorites.size > 0 && (
                 <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${showFavorites ? "bg-white/20" : "bg-red-100 text-red-600"}`}>
                   {favorites.size}
@@ -458,12 +427,12 @@ export default function JobApplicationsPage() {
                 ) : applications.filter((a) => !showFavorites || favorites.has(a.id)).length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
-                      {showFavorites ? "لا يوجد طلبات في قائمة المواهب" : t("common.noData")}
+                      {showFavorites ? t("jobApplications.noFavorites") : t("common.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (
                   applications.filter((a) => !showFavorites || favorites.has(a.id)).map((app) => {
-                    const statusCfg = STATUS_CONFIG[app.status];
+                    const statusBg = STATUS_BG[app.status];
                     const isFav = favorites.has(app.id);
                     return (
                       <TableRow key={app.id}>
@@ -487,7 +456,7 @@ export default function JobApplicationsPage() {
                           <span className="block truncate" title={app.education}>{app.education}</span>
                         </TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusCfg.bg}`}>
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBg}`}>
                             {t(`jobApplications.statuses.${app.status}`)}
                           </span>
                         </TableCell>

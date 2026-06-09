@@ -178,7 +178,7 @@ export default function CustodiesPage() {
                 <TableCell colSpan={7} className="p-0">
                   <EmptyState
                     title={t("common.noData")}
-                    description={search || statusFilter !== "all" || categoryFilter !== "all" ? "جرب تغيير الفلاتر" : undefined}
+                    description={search || statusFilter !== "all" || categoryFilter !== "all" ? t("custodies.tryFilters") : undefined}
                   />
                 </TableCell>
               </TableRow>
@@ -206,7 +206,7 @@ export default function CustodiesPage() {
                       </div>
                     </TableCell>
                     <TableCell colSpan={4}>
-                      <Badge variant="outline" className="text-xs">{group.items.length} عهدة</Badge>
+                      <Badge variant="outline" className="text-xs">{group.items.length} {t("custodies.custodyUnit")}</Badge>
                     </TableCell>
                   </TableRow>,
                   // Custody rows (shown when expanded)

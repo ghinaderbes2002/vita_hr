@@ -2010,6 +2010,23 @@
       "status": "الحالة الجديدة",
       "returnedDate": "تاريخ الإرجاع",
       "notes": "ملاحظات"
+    },
+    "tryFilters": "جرب تغيير الفلاتر",
+    "custodyUnit": "عهدة",
+    "notFound": "العهدة غير موجودة",
+    "backToList": "العودة للقائمة",
+    "myEmpty": {
+      "title": "لا توجد عهد",
+      "description": "لم يتم تخصيص أي عهد لك حتى الآن"
+    },
+    "details": {
+      "infoTitle": "معلومات العهدة",
+      "employeeSection": "الموظف",
+      "employeeName": "الاسم",
+      "employeeNumber": "رقم الموظف",
+      "department": "القسم",
+      "jobTitle": "المسمى الوظيفي",
+      "attachments": "المرفقات"
     }
   },
   "jobApplications": {
@@ -2042,7 +2059,10 @@
       "reviewNotes": "ملاحظات المراجع",
       "rejectionNote": "سبب الرفض",
       "rejectionNotePlaceholder": "اذكر سبب رفض الطلب...",
-      "application": "طلب"
+      "application": "طلب",
+      "currentlyEmployed": "يعمل حالياً",
+      "availabilityToJoin": "موعد الانضمام",
+      "hasCompanyRelation": "علاقة بالشركة"
     },
     "sections": {
       "personalInfo": "المعلومات الشخصية",
@@ -2056,6 +2076,76 @@
       "accept": "مؤهل نهائي",
       "reject": "رفض",
       "ceoApprove": "موافقة المدير التنفيذي"
+    },
+    "submitApplication": "تقديم طلب مقابلة",
+    "listView": "قائمة",
+    "boardView": "بورد",
+    "talentList": "قائمة المواهب",
+    "noFavorites": "لا يوجد طلبات في قائمة المواهب",
+    "addAsEmployee": "إضافة كموظف",
+    "processing": "جاري المعالجة...",
+    "lastUpdated": "آخر تحديث",
+    "pipeline": {
+      "PENDING": "استلام الطلب",
+      "INTERVIEW_READY": "مؤهل للمقابلة",
+      "ACCEPTED": "مقبول",
+      "HIRED": "تم التوظيف",
+      "REJECTED": "مرفوض",
+      "ceoRequired": "يتطلب موافقة المدير التنفيذي"
+    },
+    "availability": {
+      "IMMEDIATELY": "فوراً",
+      "WITHIN_ONE_WEEK": "خلال أسبوع",
+      "WITHIN_TWO_WEEKS": "خلال أسبوعين",
+      "WITHIN_ONE_MONTH": "خلال شهر",
+      "MORE_THAN_ONE_MONTH": "أكثر من شهر"
+    },
+    "rejection": {
+      "emailWarningTitle": "سيتم إرسال بريد إلكتروني للمرشح",
+      "emailWarningBody": "عند حفظ هذا الرفض، سيتلقى {name} إشعاراً بالرفض على البريد {email}."
+    },
+    "evaluation": {
+      "title": "تقييم المقابلة",
+      "viewDetails": "عرض التفاصيل",
+      "edit": "تعديل التقييم",
+      "create": "إنشاء تقييم",
+      "editTitle": "تعديل تقييم المقابلة",
+      "createTitle": "إنشاء تقييم المقابلة",
+      "noEval": "لم يتم إجراء تقييم رسمي للمقابلة بعد",
+      "scores": {
+        "personal": "شخصي (40)",
+        "technical": "تقني (40)",
+        "computer": "حاسوبي (20)",
+        "total": "المجموع"
+      },
+      "decision": "القرار",
+      "decisions": {
+        "ACCEPTED": "مقبول",
+        "REFERRED_TO_OTHER": "مرشح لشاغر آخر",
+        "DEFERRED": "مؤجل",
+        "REJECTED": "مرفوض"
+      },
+      "proposedSalary": "الراتب المقترح",
+      "salaryAfterConfirmation": "الراتب بعد التثبيت",
+      "additionalConditions": "شروط إضافية",
+      "transferToEmployee": "نقل النتيجة لسجل الموظف",
+      "transferred": "تم النقل لسجل الموظف",
+      "detailsTitle": "تفاصيل تقييم المقابلة",
+      "position": "الشاغر الوظيفي",
+      "selectPosition": "اختر الشاغر",
+      "generalNotes": "ملاحظات عامة",
+      "personalTraits": "الصفات الشخصية",
+      "technicalQuestions": "الأسئلة الاختصاصية",
+      "computerSkills": "المهارات الحاسوبية",
+      "personalTraitsLabel": "الصفات الشخصية (من 5 لكل معيار)",
+      "computerSkillsLabel": "المهارات الحاسوبية (من 5 لكل معيار)",
+      "loadingQuestions": "جاري تحميل الأسئلة...",
+      "noTechnicalQuestions": "لا توجد أسئلة تقنية لهذا الشاغر",
+      "hrProposedSalary": "الراتب المقترح من قبل الموارد البشرية ($)",
+      "employeeProposedSalary": "الراتب المقترح من قبل الموظف ($)",
+      "conditionsExample": "مثال: يُلزم بفترة اختبار 3 أشهر",
+      "saveEdits": "حفظ التعديلات",
+      "saveNew": "حفظ التقييم"
     }
   },
   "biometricReports": {
@@ -2220,7 +2310,12 @@
       "dayPerDay": "{days} يوم/يوم",
       "minutesUnit": "{count} د",
       "edit": "تعديل",
-      "setDefault": "تعيين افتراضي"
+      "setDefault": "تعيين افتراضي",
+      "minAbbrev": "د",
+      "holidayMultiplier": "معامل إضافي عطل",
+      "internalMission": "أجر مهمة داخلية",
+      "externalMission": "أجر مهمة خارجية",
+      "usedByEmployees": "مستخدمة من {count} موظف — التعديل يؤثر على الرواتب القادمة"
     },
     "form": {
       "createTitle": "إنشاء سياسة حسم",
@@ -2244,7 +2339,12 @@
       "minuteLabel": "دقيقة ←",
       "dayLabel": "يوم",
       "create": "إنشاء",
-      "save": "حفظ التعديلات"
+      "save": "حفظ التعديلات",
+      "missionSettings": "إعدادات المهمات والإضافي",
+      "holidayMultiplier": "معامل الإضافي - أيام عطل",
+      "internalMissionRate": "أجر يوم المهمة الداخلية (USD)",
+      "externalMissionRate": "أجر يوم المهمة الخارجية (USD)",
+      "usedByWarning": "هذه السياسة مستخدمة من {count} موظف. التعديل سيؤثر على حسابات الراتب القادمة لهم."
     },
     "delete": {
       "title": "حذف السياسة",
@@ -3454,6 +3554,192 @@
       "processDescription": "اختر خيار الإصلاح وعيّن الموظف المنفذ",
       "notesLabel": "ملاحظات (اختياري)",
       "notesRequired": "ملاحظات *"
+    }
+  },
+  "payroll": {
+    "months": {
+      "1": "يناير", "2": "فبراير", "3": "مارس", "4": "أبريل",
+      "5": "مايو", "6": "يونيو", "7": "يوليو", "8": "أغسطس",
+      "9": "سبتمبر", "10": "أكتوبر", "11": "نوفمبر", "12": "ديسمبر"
+    },
+    "title": "كشوف الرواتب",
+    "description": "عرض وتوليد رواتب الموظفين",
+    "exportExcel": "تصدير Excel",
+    "exporting": "جاري التنزيل...",
+    "reset": "إعادة تعيين",
+    "generate": "توليد الرواتب",
+    "yearLabel": "السنة:",
+    "monthLabel": "الشهر:",
+    "hideResigned": "إخفاء المستقيلين ({count})",
+    "showResigned": "إظهار المستقيلين ({count})",
+    "employeeCount": "{count} موظف",
+    "resigned": "مستقيل",
+    "cols": {
+      "employee": "الموظف",
+      "department": "القسم",
+      "basicSalary": "الراتب الأساسي",
+      "grossSalary": "الراتب الإجمالي",
+      "bonuses": "المكافآت",
+      "commissions": "العمولات",
+      "penalties": "الجزاءات",
+      "advances": "السلف",
+      "otherDeductions": "خصومات أخرى",
+      "netSalary": "صافي الراتب"
+    },
+    "emptyHint": "لا توجد بيانات — اضغط \"توليد الرواتب\" لإنشاء كشوف هذا الشهر",
+    "bonusDetailsLabel": "تفاصيل المكافآت:",
+    "penaltyDetailsLabel": "تفاصيل الجزاءات:",
+    "deductionNoteLabel": "ملاحظة الخصم: {note}",
+    "generateDialog": {
+      "title": "توليد رواتب {month} {year}",
+      "description": "سيتم توليد كشوف رواتب جميع الموظفين النشطين لشهر {month} {year}. إذا كانت الرواتب معتمدة مسبقاً فلن يُعاد توليدها.",
+      "confirm": "توليد الرواتب",
+      "generating": "جاري التوليد...",
+      "close": "إغلاق",
+      "generated": "تم توليد: {count} موظف",
+      "skipped": "تم تخطي: {count} موظف (كشوفهم معتمدة مسبقاً)",
+      "errors": "أخطاء: {count} موظف"
+    },
+    "resetDialog": {
+      "title": "إعادة تعيين رواتب {month} {year}",
+      "description": "سيتم حذف جميع كشوف رواتب شهر {month} {year} غير المعتمدة. هذا الإجراء لا يمكن التراجع عنه.",
+      "confirm": "إعادة التعيين",
+      "resetting": "جاري الحذف..."
+    },
+    "slip": {
+      "noData": "لا توجد بيانات للراتب",
+      "back": "العودة",
+      "title": "كشف راتب — {month} {year}",
+      "print": "طباعة",
+      "downloadPDF": "تنزيل PDF",
+      "downloading": "جاري التنزيل...",
+      "addDeduction": "خصم إضافي",
+      "minuteAbbrev": "د",
+      "hourAbbrev": "س",
+      "warnings": {
+        "monthNotOver": "تحذير: الشهر لم ينته بعد",
+        "monthNotOverDesc": "هذا الراتب محسوب على أساس الشهر كاملاً، الأرقام غير نهائية.",
+        "fixedSalary": "هذا الموظف له راتب ثابت غير مرتبط بالحضور."
+      },
+      "employeeInfo": {
+        "title": "بيانات الموظف",
+        "name": "الاسم:",
+        "employeeNumber": "رقم الموظف:",
+        "department": "القسم:",
+        "jobTitle": "المسمى:"
+      },
+      "rates": {
+        "title": "المعدلات المُطبَّقة",
+        "day": "تكلفة اليوم",
+        "hour": "تكلفة الساعة",
+        "minute": "تكلفة الدقيقة"
+      },
+      "attendance": {
+        "title": "الحضور والغياب",
+        "workingDaysInMonth": "أيام العمل في الشهر",
+        "actualPresentDays": "أيام الحضور الفعلية",
+        "absentDays": "أيام الغياب",
+        "lateDays": "أيام التأخر",
+        "effectiveLateMinutes": "دقائق التأخر الفعلية",
+        "compensationMinutes": "دقائق التعويض",
+        "overtimeWorkday": "أوفرتايم أيام عمل",
+        "overtimeHoliday": "أوفرتايم أيام إجازة"
+      },
+      "leaves": {
+        "title": "الإجازات",
+        "paid": "إجازة مدفوعة",
+        "sick": "إجازة مرضية",
+        "unpaid": "إجازة غير مدفوعة",
+        "hourly": "إجازات ساعية",
+        "empty": "لا إجازات هذا الشهر",
+        "dayUnit": "يوم"
+      },
+      "missions": {
+        "title": "المهمات",
+        "internal": "مهمات داخلية",
+        "external": "مهمات خارجية",
+        "dayUnit": "يوم"
+      },
+      "overtime": {
+        "title": "العمل الإضافي",
+        "workday": "إضافي أيام العمل",
+        "holiday": "إضافي أيام الإجازة"
+      },
+      "tardiness": {
+        "title": "التأخير — تفصيل",
+        "totalMinutes": "إجمالي دقائق التأخير",
+        "compensatedByOvertime": "معوَّض بنفس اليوم (عمل إضافي)",
+        "justifiedByApproval": "مبرَّر باعتماد",
+        "offsetByHourlyLeave": "مغطى من رصيد الإجازة الساعية",
+        "deducted": "يُحسم من الراتب",
+        "amount": "مبلغ الحسم",
+        "noPenalty": "لا حسم تأخير هذا الشهر"
+      },
+      "hourlyBalance": {
+        "title": "رصيد الإجازة الساعية — الشهر",
+        "maxMonthly": "الحد الأقصى الشهري",
+        "usedByRequests": "استخدمت كإجازة",
+        "usedByTardiness": "استخدمت كتعويض تأخير",
+        "totalUsed": "إجمالي المستخدم",
+        "remaining": "المتبقي"
+      },
+      "breakLimit": {
+        "title": "البريكات — تجاوز الحد",
+        "totalBreak": "إجمالي وقت البريك",
+        "allowed": "الحد المسموح",
+        "overLimit": "الوقت الزائد",
+        "deductibleMinutes": "الدقائق المحسومة",
+        "deductionAmount": "مبلغ الحسم"
+      },
+      "salaryBreakdown": {
+        "title": "تفاصيل الراتب",
+        "basicSalary": "الراتب الأساسي",
+        "allowances": "البدلات",
+        "overtimePay": "أجر العمل الإضافي",
+        "missionAllowance": "بدل المهمات",
+        "grossSalary": "الراتب الإجمالي",
+        "bonuses": "المكافآت",
+        "salesCommission": "عمولة المبيعات",
+        "attendanceDeductions": "خصومات الحضور",
+        "late": "تأخر",
+        "absent": "غياب",
+        "unpaidLeave": "إجازة غير مدفوعة",
+        "hourlyLeave": "إجازة ساعية",
+        "penalties": "الجزاءات",
+        "advanceDeduction": "خصم السلفة",
+        "otherDeduction": "خصم إضافي",
+        "netSalary": "صافي الراتب",
+        "exactAmount": "المبلغ الدقيق: {amount} — تم التقريب"
+      },
+      "calcDetails": {
+        "title": "تفاصيل الاحتساب",
+        "proRation": "نسبة الاحتساب",
+        "fullMonth": "شهر كامل (100%)",
+        "deductibleBase": "وعاء الخصم الفعلي",
+        "excluded": "مستثنى من الوعاء (بدل طعام)"
+      },
+      "deductionBreakdown": {
+        "title": "تفصيل خصومات الحضور",
+        "lateDeduction": "خصم التأخر",
+        "absenceDeduction": "خصم الغياب",
+        "breakOverLimit": "خصم الاستراحة الزائدة",
+        "total": "إجمالي الخصومات"
+      },
+      "notes": {
+        "title": "ملاحظات",
+        "edit": "تعديل",
+        "placeholder": "أضف ملاحظة...",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "empty": "لا توجد ملاحظات"
+      },
+      "deductionDialog": {
+        "title": "خصم إضافي",
+        "amount": "المبلغ ($)",
+        "notes": "الملاحظات (اختياري)",
+        "notesPlaceholder": "سبب الخصم...",
+        "amountError": "يجب أن يكون المبلغ 0 أو أكبر"
+      }
     }
   }
 }

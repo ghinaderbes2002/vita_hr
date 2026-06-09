@@ -288,7 +288,7 @@ export default function JobApplicationDetailPage() {
         )}
         {app.status === "ACCEPTED" && (
           <Button size="sm" onClick={() => setAddEmployeeOpen(true)}>
-            إضافة كموظف
+            {t("jobApplications.addAsEmployee")}
           </Button>
         )}
       </div>
@@ -327,7 +327,7 @@ export default function JobApplicationDetailPage() {
               <div className="flex items-center gap-2">
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  يعمل حالياً: <strong>{app.currentlyEmployed ? "نعم" : "لا"}</strong>
+                  {t("jobApplications.fields.currentlyEmployed")}: <strong>{app.currentlyEmployed ? t("common.yes") : t("common.no")}</strong>
                 </span>
               </div>
             )}
@@ -335,16 +335,8 @@ export default function JobApplicationDetailPage() {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  موعد الانضمام:{" "}
-                  <strong>
-                    {({
-                      IMMEDIATELY: "فوراً",
-                      WITHIN_ONE_WEEK: "خلال أسبوع",
-                      WITHIN_TWO_WEEKS: "خلال أسبوعين",
-                      WITHIN_ONE_MONTH: "خلال شهر",
-                      MORE_THAN_ONE_MONTH: "أكثر من شهر",
-                    } as Record<string, string>)[app.availabilityToJoin] ?? app.availabilityToJoin}
-                  </strong>
+                  {t("jobApplications.fields.availabilityToJoin")}:{" "}
+                  <strong>{t(`jobApplications.availability.${app.availabilityToJoin}`)}</strong>
                 </span>
               </div>
             )}
@@ -352,7 +344,7 @@ export default function JobApplicationDetailPage() {
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  علاقة بالشركة: <strong>{app.hasCompanyRelation ? "نعم" : "لا"}</strong>
+                  {t("jobApplications.fields.hasCompanyRelation")}: <strong>{app.hasCompanyRelation ? t("common.yes") : t("common.no")}</strong>
                 </span>
               </div>
             )}
@@ -513,7 +505,7 @@ export default function JobApplicationDetailPage() {
                     disabled={approveCEO.isPending}
                   >
                     {approveCEO.isPending
-                      ? "جاري المعالجة..."
+                      ? t("jobApplications.processing")
                       : t("jobApplications.actions.ceoApprove")}
                   </Button>
                 )}
@@ -533,10 +525,11 @@ export default function JobApplicationDetailPage() {
                   <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3">
                     <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                     <div className="text-xs text-amber-800 space-y-0.5">
-                      <p className="font-semibold">سيتم إرسال بريد إلكتروني للمرشح</p>
+                      <p className="font-semibold">{t("jobApplications.rejection.emailWarningTitle")}</p>
                       <p>
-                        عند حفظ هذا الرفض، سيتلقى <strong>{app.fullName}</strong> إشعاراً بالرفض
-                        على البريد <span className="font-mono">{app.email}</span>.
+                        {t("jobApplications.rejection.emailWarningBody")
+                          .replace("{name}", app.fullName)
+                          .replace("{email}", app.email)}
                       </p>
                     </div>
                   </div>
@@ -590,7 +583,7 @@ export default function JobApplicationDetailPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="h-4 w-4 text-primary" />
-            تقييم المقابلة
+            {t("jobApplications.evaluation.title")}
             <div className="flex gap-1.5 ms-auto">
               {evalData && (
                 <Button
@@ -599,7 +592,7 @@ export default function JobApplicationDetailPage() {
                   className="h-7 text-xs"
                   onClick={() => setViewEvalOpen(true)}
                 >
-                  عرض التفاصيل
+                  {t("jobApplications.evaluation.viewDetails")}
                 </Button>
               )}
               <Button
@@ -608,7 +601,7 @@ export default function JobApplicationDetailPage() {
                 className="h-7 text-xs"
                 onClick={openEvalDialog}
               >
-                {evalData ? "تعديل التقييم" : "إنشاء تقييم"}
+                {evalData ? t("jobApplications.evaluation.edit") : t("jobApplications.evaluation.create")}
               </Button>
             </div>
           </CardTitle>
@@ -616,21 +609,17 @@ export default function JobApplicationDetailPage() {
         <CardContent>
           {!evalData ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              لم يتم إجراء تقييم رسمي للمقابلة بعد
+              {t("jobApplications.evaluation.noEval")}
             </p>
           ) : (
             <div className="space-y-3">
               {/* Scores */}
               <div className="grid gap-3 sm:grid-cols-4">
                 {[
-                  { label: "شخصي (40)", value: evalData.personalScore },
-                  { label: "تقني (40)", value: evalData.technicalScore },
-                  { label: "حاسوبي (20)", value: evalData.computerScore },
-                  {
-                    label: "المجموع",
-                    value: evalData.totalScore,
-                    highlight: true,
-                  },
+                  { label: t("jobApplications.evaluation.scores.personal"),  value: evalData.personalScore },
+                  { label: t("jobApplications.evaluation.scores.technical"), value: evalData.technicalScore },
+                  { label: t("jobApplications.evaluation.scores.computer"),  value: evalData.computerScore },
+                  { label: t("jobApplications.evaluation.scores.total"),     value: evalData.totalScore, highlight: true },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -650,7 +639,7 @@ export default function JobApplicationDetailPage() {
               {/* Decision */}
               {evalData.decision && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">القرار:</span>
+                  <span className="text-sm text-muted-foreground">{t("jobApplications.evaluation.decision")}:</span>
                   <Badge
                     className={`text-xs ${
                       evalData.decision === "ACCEPTED"
@@ -660,32 +649,25 @@ export default function JobApplicationDetailPage() {
                           : "bg-amber-100 text-amber-700"
                     }`}
                   >
-                    {
-                      {
-                        ACCEPTED: "مقبول",
-                        REFERRED_TO_OTHER: "مرشح لشاغر آخر",
-                        DEFERRED: "مؤجل",
-                        REJECTED: "مرفوض",
-                      }[evalData.decision as string]
-                    }
+                    {t(`jobApplications.evaluation.decisions.${evalData.decision as string}`)}
                   </Badge>
                 </div>
               )}
               {evalData.proposedSalary && (
                 <p className="text-sm text-muted-foreground">
-                  الراتب المقترح:{" "}
+                  {t("jobApplications.evaluation.proposedSalary")}:{" "}
                   <strong>${Number(evalData.proposedSalary).toLocaleString("en-US")}</strong>
                 </p>
               )}
               {evalData.salaryAfterConfirmation && (
                 <p className="text-sm text-muted-foreground">
-                  الراتب بعد التثبيت:{" "}
+                  {t("jobApplications.evaluation.salaryAfterConfirmation")}:{" "}
                   <strong>${Number(evalData.salaryAfterConfirmation).toLocaleString("en-US")}</strong>
                 </p>
               )}
               {evalData.additionalConditions && (
                 <p className="text-sm text-muted-foreground">
-                  شروط إضافية: <strong>{evalData.additionalConditions}</strong>
+                  {t("jobApplications.evaluation.additionalConditions")}: <strong>{evalData.additionalConditions}</strong>
                 </p>
               )}
               {/* Transfer button */}
@@ -698,13 +680,13 @@ export default function JobApplicationDetailPage() {
                   disabled={transferToEmployee.isPending}
                 >
                   <Send className="h-3.5 w-3.5" />
-                  نقل النتيجة لسجل الموظف
+                  {t("jobApplications.evaluation.transferToEmployee")}
                 </Button>
               )}
               {evalData.isTransferred && (
                 <Badge variant="default" className="bg-green-600 gap-1 text-xs">
                   <Trophy className="h-3 w-3" />
-                  تم النقل لسجل الموظف
+                  {t("jobApplications.evaluation.transferred")}
                 </Badge>
               )}
             </div>
@@ -720,7 +702,7 @@ export default function JobApplicationDetailPage() {
         {app.updatedAt && app.updatedAt !== app.createdAt && (
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
-            آخر تحديث: {format(new Date(app.updatedAt), "yyyy/MM/dd HH:mm")}
+            {t("jobApplications.lastUpdated")}: {format(new Date(app.updatedAt), "yyyy/MM/dd HH:mm")}
           </span>
         )}
       </div>
@@ -729,17 +711,17 @@ export default function JobApplicationDetailPage() {
       <Dialog open={viewEvalOpen} onOpenChange={setViewEvalOpen}>
         <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تفاصيل تقييم المقابلة</DialogTitle>
+            <DialogTitle>{t("jobApplications.evaluation.detailsTitle")}</DialogTitle>
           </DialogHeader>
           {evalData && (
             <div className="space-y-4 py-2 text-sm">
               {/* Scores */}
               <div className="grid gap-3 sm:grid-cols-4">
                 {[
-                  { label: "شخصي (40)", value: evalData.personalScore },
-                  { label: "تقني (40)", value: evalData.technicalScore },
-                  { label: "حاسوبي (20)", value: evalData.computerScore },
-                  { label: "المجموع", value: evalData.totalScore, highlight: true },
+                  { label: t("jobApplications.evaluation.scores.personal"),  value: evalData.personalScore },
+                  { label: t("jobApplications.evaluation.scores.technical"), value: evalData.technicalScore },
+                  { label: t("jobApplications.evaluation.scores.computer"),  value: evalData.computerScore },
+                  { label: t("jobApplications.evaluation.scores.total"),     value: evalData.totalScore, highlight: true },
                 ].map((item) => (
                   <div key={item.label} className={`rounded-lg border p-3 text-center ${item.highlight ? "border-primary/30 bg-primary/5" : ""}`}>
                     <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -752,47 +734,47 @@ export default function JobApplicationDetailPage() {
               {/* Position */}
               {evalData.position && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-36 shrink-0">الشاغر الوظيفي:</span>
+                  <span className="text-muted-foreground w-36 shrink-0">{t("jobApplications.evaluation.position")}:</span>
                   <span className="font-medium">{evalData.position.jobTitle} — {evalData.position.department}</span>
                 </div>
               )}
               {/* Decision */}
               {evalData.decision && (
                 <div className="flex gap-2 items-center">
-                  <span className="text-muted-foreground w-36 shrink-0">القرار:</span>
+                  <span className="text-muted-foreground w-36 shrink-0">{t("jobApplications.evaluation.decision")}:</span>
                   <Badge className={`text-xs ${evalData.decision === "ACCEPTED" ? "bg-green-100 text-green-700" : evalData.decision === "REJECTED" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
-                    {({ ACCEPTED: "مقبول", REFERRED_TO_OTHER: "مرشح لشاغر آخر", DEFERRED: "مؤجل", REJECTED: "مرفوض" } as Record<string, string>)[evalData.decision]}
+                    {t(`jobApplications.evaluation.decisions.${evalData.decision as string}`)}
                   </Badge>
                 </div>
               )}
               {evalData.proposedSalary && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-36 shrink-0">الراتب المقترح:</span>
+                  <span className="text-muted-foreground w-36 shrink-0">{t("jobApplications.evaluation.proposedSalary")}:</span>
                   <span className="font-medium">${Number(evalData.proposedSalary).toLocaleString("en-US")}</span>
                 </div>
               )}
               {evalData.salaryAfterConfirmation && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-36 shrink-0">الراتب بعد التثبيت:</span>
+                  <span className="text-muted-foreground w-36 shrink-0">{t("jobApplications.evaluation.salaryAfterConfirmation")}:</span>
                   <span className="font-medium">${Number(evalData.salaryAfterConfirmation).toLocaleString("en-US")}</span>
                 </div>
               )}
               {evalData.additionalConditions && (
                 <div className="flex gap-2">
-                  <span className="text-muted-foreground w-36 shrink-0">شروط إضافية:</span>
+                  <span className="text-muted-foreground w-36 shrink-0">{t("jobApplications.evaluation.additionalConditions")}:</span>
                   <span>{evalData.additionalConditions}</span>
                 </div>
               )}
               {evalData.generalNotes && (
                 <div className="space-y-1">
-                  <p className="text-muted-foreground">ملاحظات عامة:</p>
+                  <p className="text-muted-foreground">{t("jobApplications.evaluation.generalNotes")}:</p>
                   <p className="rounded-md bg-muted/50 p-3 leading-relaxed whitespace-pre-wrap">{evalData.generalNotes}</p>
                 </div>
               )}
               {/* Personal scores detail */}
               {evalData.personalScores?.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="font-medium">الصفات الشخصية</p>
+                  <p className="font-medium">{t("jobApplications.evaluation.personalTraits")}</p>
                   <div className="grid gap-1.5 sm:grid-cols-2">
                     {evalData.personalScores.map((s: any) => (
                       <div key={s.criterionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
@@ -806,7 +788,7 @@ export default function JobApplicationDetailPage() {
               {/* Technical scores detail */}
               {evalData.technicalScores?.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="font-medium">الأسئلة الاختصاصية</p>
+                  <p className="font-medium">{t("jobApplications.evaluation.technicalQuestions")}</p>
                   <div className="space-y-1.5">
                     {evalData.technicalScores.map((s: any) => (
                       <div key={s.questionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
@@ -820,7 +802,7 @@ export default function JobApplicationDetailPage() {
               {/* Computer scores detail */}
               {evalData.computerScores?.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="font-medium">المهارات الحاسوبية</p>
+                  <p className="font-medium">{t("jobApplications.evaluation.computerSkills")}</p>
                   <div className="grid gap-1.5 sm:grid-cols-2">
                     {evalData.computerScores.map((s: any) => (
                       <div key={s.criterionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
@@ -834,7 +816,7 @@ export default function JobApplicationDetailPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewEvalOpen(false)}>إغلاق</Button>
+            <Button variant="outline" onClick={() => setViewEvalOpen(false)}>{t("common.cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -844,13 +826,13 @@ export default function JobApplicationDetailPage() {
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {evalData ? "تعديل تقييم المقابلة" : "إنشاء تقييم المقابلة"}
+              {evalData ? t("jobApplications.evaluation.editTitle") : t("jobApplications.evaluation.createTitle")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-2">
             {/* Position */}
             <div className="space-y-1.5">
-              <Label>الشاغر الوظيفي *</Label>
+              <Label>{t("jobApplications.evaluation.position")} *</Label>
               <Select
                 value={evalForm.positionId}
                 onValueChange={(v) =>
@@ -862,7 +844,7 @@ export default function JobApplicationDetailPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر الشاغر" />
+                  <SelectValue placeholder={t("jobApplications.evaluation.selectPosition")} />
                 </SelectTrigger>
                 <SelectContent>
                   {positions.map((p: any) => (
@@ -878,7 +860,7 @@ export default function JobApplicationDetailPage() {
             {pCriteria.length > 0 && (
               <div className="space-y-2 rounded-lg border p-3">
                 <p className="text-sm font-medium">
-                  الصفات الشخصية (من 5 لكل معيار)
+                  {t("jobApplications.evaluation.personalTraitsLabel")}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {pCriteria.map((c: any) => (
@@ -912,14 +894,14 @@ export default function JobApplicationDetailPage() {
             {/* Technical Questions */}
             {evalForm.positionId && (
               <div className="space-y-2 rounded-lg border p-3">
-                <p className="text-sm font-medium">الأسئلة الاختصاصية</p>
+                <p className="text-sm font-medium">{t("jobApplications.evaluation.technicalQuestions")}</p>
                 {techQuestionsLoading ? (
                   <p className="text-xs text-muted-foreground py-2">
-                    جاري تحميل الأسئلة...
+                    {t("jobApplications.evaluation.loadingQuestions")}
                   </p>
                 ) : techQuestions.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-2">
-                    لا توجد أسئلة تقنية لهذا الشاغر
+                    {t("jobApplications.evaluation.noTechnicalQuestions")}
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -959,7 +941,7 @@ export default function JobApplicationDetailPage() {
             {cCriteria.length > 0 && (
               <div className="space-y-2 rounded-lg border p-3">
                 <p className="text-sm font-medium">
-                  المهارات الحاسوبية (من 5 لكل معيار)
+                  {t("jobApplications.evaluation.computerSkillsLabel")}
                 </p>
                 <div className="space-y-2">
                   {cCriteria.map((c: any) => (
@@ -993,7 +975,7 @@ export default function JobApplicationDetailPage() {
             {/* Salary */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>الراتب المقترح من قبل الموارد البشرية ($)</Label>
+                <Label>{t("jobApplications.evaluation.hrProposedSalary")}</Label>
                 <Input
                   type="number"
                   value={evalForm.proposedSalary}
@@ -1004,16 +986,16 @@ export default function JobApplicationDetailPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>الراتب المقترح من قبل الموظف ($)</Label>
+              <Label>{t("jobApplications.evaluation.employeeProposedSalary")}</Label>
               <Input
                 type="number"
-                placeholder="اختياري"
+                placeholder={t("common.optional")}
                 value={evalForm.salaryAfterConfirmation}
                 onChange={(e) => setEvalForm({ ...evalForm, salaryAfterConfirmation: e.target.value })}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>ملاحظات عامة</Label>
+              <Label>{t("jobApplications.evaluation.generalNotes")}</Label>
               <Textarea
                 rows={3}
                 value={evalForm.generalNotes}
@@ -1023,10 +1005,10 @@ export default function JobApplicationDetailPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>شروط إضافية</Label>
+              <Label>{t("jobApplications.evaluation.additionalConditions")}</Label>
               <Textarea
                 rows={2}
-                placeholder="مثال: يُلزم بفترة اختبار 3 أشهر"
+                placeholder={t("jobApplications.evaluation.conditionsExample")}
                 value={evalForm.additionalConditions}
                 onChange={(e) => setEvalForm({ ...evalForm, additionalConditions: e.target.value })}
               />
@@ -1034,7 +1016,7 @@ export default function JobApplicationDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEvalDialogOpen(false)}>
-              إلغاء
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleSaveEval}
@@ -1044,7 +1026,7 @@ export default function JobApplicationDetailPage() {
                 updateEval.isPending
               }
             >
-              {evalData ? "حفظ التعديلات" : "حفظ التقييم"}
+              {evalData ? t("jobApplications.evaluation.saveEdits") : t("jobApplications.evaluation.saveNew")}
             </Button>
           </DialogFooter>
         </DialogContent>
