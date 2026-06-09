@@ -2481,6 +2481,83 @@
       "notesRequired": "Notlar *"
     }
   },
+  "salaryAdvances": {
+    "title": "Maaş Avansları",
+    "description": "Çalışan avanslarını ve aylık kesintilerini yönetin",
+    "add": "Avans Ekle",
+    "statusLabel": "Durum:",
+    "count": "{count} avans",
+    "statuses": {
+      "ACTIVE": "Aktif",
+      "COMPLETED": "Tamamlandı",
+      "CANCELLED": "İptal Edildi"
+    },
+    "cols": {
+      "employee": "Çalışan",
+      "totalAmount": "Toplam Tutar",
+      "installmentAmount": "Taksit Tutarı",
+      "installments": "Taksitler",
+      "remaining": "Kalan Bakiye",
+      "startDate": "Kesinti Başlangıcı",
+      "status": "Durum"
+    },
+    "empty": "Avans bulunamadı",
+    "viewDetails": "Detayları Görüntüle",
+    "deleteTitle": "Avansı Sil",
+    "deleteDescription": "Bu avansı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "detail": {
+      "notFound": "Veri bulunamadı",
+      "back": "Geri",
+      "title": "Avans — {name}",
+      "startDate": "{month} {year} başlangıç",
+      "cancelBtn": "Avansı İptal Et",
+      "summary": {
+        "title": "Avans Özeti",
+        "totalAmount": "Toplam Tutar",
+        "remaining": "Kalan Bakiye",
+        "installmentMonthly": "Aylık Taksit",
+        "installments": "Taksitler",
+        "installmentsValue": "{paid} ödendi / {total} toplam",
+        "reason": "Sebep",
+        "cancelReason": "İptal Sebebi"
+      },
+      "installmentsCard": {
+        "title": "Kesilen Taksitler Kaydı",
+        "num": "#",
+        "period": "Ay / Yıl",
+        "amount": "Kesilen Tutar",
+        "date": "Kesinti Tarihi"
+      }
+    },
+    "createDialog": {
+      "title": "Maaş Avansı Ekle",
+      "employee": "Çalışan",
+      "employeePlaceholder": "Çalışan seçin",
+      "totalAmount": "Toplam Tutar ($)",
+      "totalInstallments": "Taksit Sayısı",
+      "installmentAmount": "Taksit Tutarı ($)",
+      "suggested": "(önerilen: {amount})",
+      "startYear": "Başlangıç Yılı",
+      "startMonth": "Başlangıç Ayı",
+      "reason": "Sebep (İsteğe Bağlı)",
+      "errors": {
+        "employeeRequired": "Çalışan zorunludur",
+        "amountPositive": "Tutar 0'dan büyük olmalıdır",
+        "installmentsPositive": "Taksit sayısı 0'dan büyük olmalıdır",
+        "installmentPositive": "Taksit 0'dan büyük olmalıdır",
+        "installmentExceedsTotal": "Taksit tutarı toplam tutarı aşamaz"
+      }
+    },
+    "cancelDialog": {
+      "title": "Avansı İptal Et",
+      "description": "Bu avans yaklaşan maaşlardan kesilmeyi durduracak.",
+      "reasonLabel": "İptal Sebebi",
+      "reasonPlaceholder": "İptal sebebini girin...",
+      "reasonError": "İptal sebebi zorunludur",
+      "back": "Geri Dön",
+      "confirm": "Avansı İptal Et"
+    }
+  },
   "payroll": {
     "months": {
       "1": "Ocak", "2": "Şubat", "3": "Mart", "4": "Nisan",

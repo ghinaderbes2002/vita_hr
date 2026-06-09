@@ -3556,6 +3556,83 @@
       "notesRequired": "ملاحظات *"
     }
   },
+  "salaryAdvances": {
+    "title": "سلف الرواتب",
+    "description": "إدارة سلف الموظفين وخصوماتها الشهرية",
+    "add": "إضافة سلفة",
+    "statusLabel": "الحالة:",
+    "count": "{count} سلفة",
+    "statuses": {
+      "ACTIVE": "نشطة",
+      "COMPLETED": "مكتملة",
+      "CANCELLED": "ملغاة"
+    },
+    "cols": {
+      "employee": "الموظف",
+      "totalAmount": "المبلغ الإجمالي",
+      "installmentAmount": "قيمة القسط",
+      "installments": "الأقساط",
+      "remaining": "الرصيد المتبقي",
+      "startDate": "بداية الخصم",
+      "status": "الحالة"
+    },
+    "empty": "لا توجد سلف",
+    "viewDetails": "عرض التفاصيل",
+    "deleteTitle": "حذف السلفة",
+    "deleteDescription": "هل أنت متأكد من حذف هذه السلفة؟ لا يمكن التراجع عن هذا الإجراء.",
+    "detail": {
+      "notFound": "لا توجد بيانات",
+      "back": "العودة",
+      "title": "سلفة — {name}",
+      "startDate": "بداية {month} {year}",
+      "cancelBtn": "إلغاء السلفة",
+      "summary": {
+        "title": "ملخص السلفة",
+        "totalAmount": "المبلغ الإجمالي",
+        "remaining": "الرصيد المتبقي",
+        "installmentMonthly": "قيمة القسط الشهري",
+        "installments": "الأقساط",
+        "installmentsValue": "{paid} مدفوع / {total} إجمالي",
+        "reason": "السبب",
+        "cancelReason": "سبب الإلغاء"
+      },
+      "installmentsCard": {
+        "title": "سجل الأقساط المخصومة",
+        "num": "#",
+        "period": "الشهر / السنة",
+        "amount": "المبلغ المخصوم",
+        "date": "تاريخ الخصم"
+      }
+    },
+    "createDialog": {
+      "title": "إضافة سلفة راتب",
+      "employee": "الموظف",
+      "employeePlaceholder": "اختر موظفاً",
+      "totalAmount": "المبلغ الإجمالي ($)",
+      "totalInstallments": "عدد الأقساط",
+      "installmentAmount": "قيمة القسط ($)",
+      "suggested": "(مقترح: {amount})",
+      "startYear": "سنة البداية",
+      "startMonth": "شهر البداية",
+      "reason": "السبب (اختياري)",
+      "errors": {
+        "employeeRequired": "الموظف مطلوب",
+        "amountPositive": "يجب أن يكون المبلغ أكبر من 0",
+        "installmentsPositive": "يجب أن يكون عدد الأقساط أكبر من 0",
+        "installmentPositive": "يجب أن يكون القسط أكبر من 0",
+        "installmentExceedsTotal": "قيمة القسط لا يمكن أن تتجاوز المبلغ الإجمالي"
+      }
+    },
+    "cancelDialog": {
+      "title": "إلغاء السلفة",
+      "description": "سيتم إيقاف خصم هذه السلفة من الرواتب القادمة.",
+      "reasonLabel": "سبب الإلغاء",
+      "reasonPlaceholder": "اذكر سبب الإلغاء...",
+      "reasonError": "يجب ذكر سبب الإلغاء",
+      "back": "تراجع",
+      "confirm": "إلغاء السلفة"
+    }
+  },
   "payroll": {
     "months": {
       "1": "يناير", "2": "فبراير", "3": "مارس", "4": "أبريل",

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Plus, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,24 +27,16 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { formatUSD } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "نشطة",
-  COMPLETED: "مكتملة",
-  CANCELLED: "ملغاة",
-};
-
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   ACTIVE: "default",
   COMPLETED: "secondary",
   CANCELLED: "destructive",
 };
 
-const MONTHS = [
-  "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
-];
-
 export default function SalaryAdvancesPage() {
+  const t = useTranslations("salaryAdvances");
+  const tPayroll = useTranslations("payroll");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
 
@@ -71,13 +63,13 @@ export default function SalaryAdvancesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="سلف الرواتب"
-        description="إدارة سلف الموظفين وخصوماتها الشهرية"
+        title={t("title")}
+        description={t("description")}
         actions={
           <ActionGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.GENERATE}>
             <Button onClick={() => setCreateOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
-              إضافة سلفة
+              {t("add")}
             </Button>
           </ActionGuard>
         }
@@ -88,19 +80,19 @@ export default function SalaryAdvancesPage() {
         <CardContent className="pt-5 pb-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">الحالة:</span>
+              <span className="text-sm text-muted-foreground">{t("statusLabel")}</span>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-35"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="ACTIVE">نشطة</SelectItem>
-                  <SelectItem value="COMPLETED">مكتملة</SelectItem>
-                  <SelectItem value="CANCELLED">ملغاة</SelectItem>
+                  <SelectItem value="all">{tCommon("all")}</SelectItem>
+                  <SelectItem value="ACTIVE">{t("statuses.ACTIVE")}</SelectItem>
+                  <SelectItem value="COMPLETED">{t("statuses.COMPLETED")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("statuses.CANCELLED")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {items.length > 0 && (
-              <span className="text-sm text-muted-foreground">{items.length} سلفة</span>
+              <span className="text-sm text-muted-foreground">{t("count", { count: items.length })}</span>
             )}
           </div>
         </CardContent>
@@ -111,13 +103,13 @@ export default function SalaryAdvancesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>الموظف</TableHead>
-              <TableHead>المبلغ الإجمالي</TableHead>
-              <TableHead>قيمة القسط</TableHead>
-              <TableHead>الأقساط</TableHead>
-              <TableHead>الرصيد المتبقي</TableHead>
-              <TableHead>بداية الخصم</TableHead>
-              <TableHead>الحالة</TableHead>
+              <TableHead>{t("cols.employee")}</TableHead>
+              <TableHead>{t("cols.totalAmount")}</TableHead>
+              <TableHead>{t("cols.installmentAmount")}</TableHead>
+              <TableHead>{t("cols.installments")}</TableHead>
+              <TableHead>{t("cols.remaining")}</TableHead>
+              <TableHead>{t("cols.startDate")}</TableHead>
+              <TableHead>{t("cols.status")}</TableHead>
               <TableHead className="w-12.5" />
             </TableRow>
           </TableHeader>
@@ -133,7 +125,7 @@ export default function SalaryAdvancesPage() {
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  لا توجد سلف
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -156,11 +148,11 @@ export default function SalaryAdvancesPage() {
                     {formatUSD(item.remainingBalance)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {MONTHS[item.startMonth]} {item.startYear}
+                    {tPayroll(`months.${item.startMonth}` as any)} {item.startYear}
                   </TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANTS[item.status] || "outline"}>
-                      {STATUS_LABELS[item.status] || item.status}
+                      {t(`statuses.${item.status}` as any) || item.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -173,14 +165,14 @@ export default function SalaryAdvancesPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => router.push(`/${locale}/salary-advances/${item.id}`)}>
                           <Eye className="h-4 w-4 ml-2" />
-                          عرض التفاصيل
+                          {t("viewDetails")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={() => { setSelected(item); setDeleteOpen(true); }}
                         >
                           <Trash2 className="h-4 w-4 ml-2" />
-                          حذف
+                          {tCommon("delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -197,8 +189,8 @@ export default function SalaryAdvancesPage() {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="حذف السلفة"
-        description="هل أنت متأكد من حذف هذه السلفة؟ لا يمكن التراجع عن هذا الإجراء."
+        title={t("deleteTitle")}
+        description={t("deleteDescription")}
         onConfirm={handleDelete}
         variant="destructive"
       />

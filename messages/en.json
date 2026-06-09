@@ -1791,7 +1791,8 @@
     "day": "day",
     "to": "to",
     "remove": "Remove",
-    "years": "years"
+    "years": "years",
+    "all": "All"
   },
   "messages": {
     "confirmDelete": "Are you sure you want to delete?",
@@ -3333,6 +3334,83 @@
       "processDescription": "Select the repair option and assign an employee",
       "notesLabel": "Notes (Optional)",
       "notesRequired": "Notes *"
+    }
+  },
+  "salaryAdvances": {
+    "title": "Salary Advances",
+    "description": "Manage employee salary advances and monthly deductions",
+    "add": "Add Advance",
+    "statusLabel": "Status:",
+    "count": "{count} advance(s)",
+    "statuses": {
+      "ACTIVE": "Active",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "cols": {
+      "employee": "Employee",
+      "totalAmount": "Total Amount",
+      "installmentAmount": "Installment",
+      "installments": "Installments",
+      "remaining": "Remaining Balance",
+      "startDate": "Deduction Start",
+      "status": "Status"
+    },
+    "empty": "No advances found",
+    "viewDetails": "View Details",
+    "deleteTitle": "Delete Advance",
+    "deleteDescription": "Are you sure you want to delete this advance? This action cannot be undone.",
+    "detail": {
+      "notFound": "No data found",
+      "back": "Back",
+      "title": "Advance — {name}",
+      "startDate": "Starting {month} {year}",
+      "cancelBtn": "Cancel Advance",
+      "summary": {
+        "title": "Advance Summary",
+        "totalAmount": "Total Amount",
+        "remaining": "Remaining Balance",
+        "installmentMonthly": "Monthly Installment",
+        "installments": "Installments",
+        "installmentsValue": "{paid} paid / {total} total",
+        "reason": "Reason",
+        "cancelReason": "Cancellation Reason"
+      },
+      "installmentsCard": {
+        "title": "Deducted Installments Log",
+        "num": "#",
+        "period": "Month / Year",
+        "amount": "Amount Deducted",
+        "date": "Deduction Date"
+      }
+    },
+    "createDialog": {
+      "title": "Add Salary Advance",
+      "employee": "Employee",
+      "employeePlaceholder": "Select an employee",
+      "totalAmount": "Total Amount ($)",
+      "totalInstallments": "Number of Installments",
+      "installmentAmount": "Installment Amount ($)",
+      "suggested": "(suggested: {amount})",
+      "startYear": "Start Year",
+      "startMonth": "Start Month",
+      "reason": "Reason (Optional)",
+      "errors": {
+        "employeeRequired": "Employee is required",
+        "amountPositive": "Amount must be greater than 0",
+        "installmentsPositive": "Number of installments must be greater than 0",
+        "installmentPositive": "Installment must be greater than 0",
+        "installmentExceedsTotal": "Installment amount cannot exceed the total amount"
+      }
+    },
+    "cancelDialog": {
+      "title": "Cancel Advance",
+      "description": "This advance will stop being deducted from upcoming payrolls.",
+      "reasonLabel": "Cancellation Reason",
+      "reasonPlaceholder": "Enter the reason for cancellation...",
+      "reasonError": "A cancellation reason is required",
+      "back": "Go Back",
+      "confirm": "Cancel Advance"
     }
   },
   "payroll": {
