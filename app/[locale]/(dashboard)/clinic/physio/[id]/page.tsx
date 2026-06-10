@@ -26,6 +26,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import {
   usePhysioCase, useUpdatePhysioCase, useUpdatePhysioStatus,
+  useSubmitComplaint,
   useSubmitPainMap, useSubmitMedicalHistory, useAddPhysioSurgery,
   useSubmitPhysioGoals, useSubmitPosturalAssessment,
   useSubmitTreatmentPlan, useSupervisorReview, useSignPhysioTreatmentPlan,
@@ -44,8 +45,8 @@ import {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+    <Card dir="rtl">
+      <CardHeader className="pb-2"><CardTitle className="text-base text-right">{title}</CardTitle></CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
   );
@@ -119,8 +120,9 @@ export default function PhysioCasePage() {
   const { data: sessions = [] }       = usePhysioSessions(id);
   const { data: timeline = [] }       = usePhysioTimeline(id);
 
-  const updateCase    = useUpdatePhysioCase();
-  const updateStatus  = useUpdatePhysioStatus();
+  const updateCase      = useUpdatePhysioCase();
+  const updateStatus    = useUpdatePhysioStatus();
+  const submitComplaint = useSubmitComplaint();
   const submitPainMap = useSubmitPainMap();
   const submitHistory = useSubmitMedicalHistory();
   const addSurgery    = useAddPhysioSurgery();
@@ -138,11 +140,18 @@ export default function PhysioCasePage() {
     complaintStartDate: "", possibleCause: "", previousDoctorSeen: "",
     previousTreatment: "", painLevel: "", painDuration: "", painProgression: "",
     hadPreviousInjury: false, bestTimeOfDay: "", worstTimeOfDay: "",
+    // New fields
+    complaintType: "", painLocation: "", complaintDuration: "", complaintNotes: "",
+    hasChronicDiseases: false, chronicDiseasesDetail: "",
+    visitedSpecialist: false, specialistReason: "",
+    hadPreviousPT: false, previousPTDetail: "",
+    hadSurgery: false, surgeryDetail: "",
   });
 
   // ── Pain map state ───────────────────────────────────────────────────────────
   const [painRegions, setPainRegions]             = useState<PainRegion[]>([]);
   const [painTypes, setPainTypes]                 = useState<string[]>([]);
+  const [painTypeOther, setPainTypeOther]         = useState("");
   const [aggravatingFactors, setAggravatingFactors] = useState<string[]>([]);
   const [alleviatingFactors, setAlleviatingFactors] = useState<string[]>([]);
   const [aggravatingOther, setAggravatingOther]   = useState("");
@@ -150,14 +159,23 @@ export default function PhysioCasePage() {
 
   // ── Medical history state ────────────────────────────────────────────────────
   const [history, setHistory] = useState({
+    lifeType: "",
     smokes: false, hasSmokedBefore: false, smokingFrequency: "",
-    hasPacemaker: false, allergies: "", adhesiveAllergy: false,
+    hasPacemaker: false, pacemakerDetail: "",
+    allergies: "", adhesiveAllergy: false,
+    isPregnant: false,
     currentMedications: "", prescriptionDrugs: false,
     herbalSupplements: false, supplementsList: "",
-    isPregnant: false, previousDiagnoses: "", otherConditions: "",
-    doctorRestrictions: "", testsOther: "", testResults: "",
-    newAnalysis: "", newAnalysisDate: "", oldAnalysis: "", oldAnalysisDate: "",
-    hospitalizedLastYear: false, receivingOtherTreatment: false,
+    previousDiagnoses: "", previousComplaintsSurgeries: "",
+    hasOtherHealthProblems: false, otherConditions: "",
+    doctorRestrictions: "",
+    hadPTSameProblem: false, ptSameProblemDetail: "",
+    receivingOtherTreatment: false, otherTreatmentDetail: "",
+    testsOther: "", testResults: "",
+    newAnalysis: "", newAnalysisDate: "", newAnalysisAttachment: "",
+    oldAnalysis: "", oldAnalysisDate: "", oldAnalysisAttachment: "",
+    boneDensityTest: false, boneDensityDetail: "",
+    hospitalizedLastYear: false, hospitalizedDetail: "",
   });
   const [chronicConditions, setChronicConditions] = useState<ChronicCondition[]>([]);
   const [testsHad, setTestsHad]                   = useState<TestType[]>([]);
@@ -237,20 +255,32 @@ export default function PhysioCasePage() {
 
     // Complaint
     setComplaint({
-      majorComplaint:     caseData.majorComplaint     ?? "",
-      symptoms:           caseData.symptoms           ?? "",
-      currentJob:         caseData.currentJob         ?? "",
-      lifeType:           caseData.lifeType           ?? "",
-      complaintStartDate: caseData.complaintStartDate ? caseData.complaintStartDate.slice(0, 10) : "",
-      possibleCause:      caseData.possibleCause      ?? "",
-      previousDoctorSeen: caseData.previousDoctorSeen ?? "",
-      previousTreatment:  caseData.previousTreatment  ?? "",
-      painLevel:          caseData.painLevel          ?? "",
-      painDuration:       caseData.painDuration       ?? "",
-      painProgression:    caseData.painProgression    ?? "",
-      hadPreviousInjury:  caseData.hadPreviousInjury  ?? false,
-      bestTimeOfDay:      caseData.bestTimeOfDay      ?? "",
-      worstTimeOfDay:     caseData.worstTimeOfDay     ?? "",
+      majorComplaint:        caseData.majorComplaint        ?? "",
+      symptoms:              caseData.symptoms              ?? "",
+      currentJob:            caseData.currentJob            ?? "",
+      lifeType:              caseData.lifeType              ?? "",
+      complaintStartDate:    caseData.complaintStartDate ? caseData.complaintStartDate.slice(0, 10) : "",
+      possibleCause:         caseData.possibleCause         ?? "",
+      previousDoctorSeen:    caseData.previousDoctorSeen    ?? "",
+      previousTreatment:     caseData.previousTreatment     ?? "",
+      painLevel:             caseData.painLevel             ?? "",
+      painDuration:          caseData.painDuration          ?? "",
+      painProgression:       caseData.painProgression       ?? "",
+      hadPreviousInjury:     caseData.hadPreviousInjury     ?? false,
+      bestTimeOfDay:         caseData.bestTimeOfDay         ?? "",
+      worstTimeOfDay:        caseData.worstTimeOfDay        ?? "",
+      complaintType:         caseData.complaintType         ?? "",
+      painLocation:          caseData.painLocation          ?? "",
+      complaintDuration:     caseData.complaintDuration     ?? "",
+      complaintNotes:        caseData.complaintNotes        ?? "",
+      hasChronicDiseases:    caseData.hasChronicDiseases    ?? false,
+      chronicDiseasesDetail: caseData.chronicDiseasesDetail ?? "",
+      visitedSpecialist:     caseData.visitedSpecialist     ?? false,
+      specialistReason:      caseData.specialistReason      ?? "",
+      hadPreviousPT:         caseData.hadPreviousPT         ?? false,
+      previousPTDetail:      caseData.previousPTDetail      ?? "",
+      hadSurgery:            caseData.hadSurgery            ?? false,
+      surgeryDetail:         caseData.surgeryDetail         ?? "",
     });
 
     // Pain map
@@ -258,6 +288,7 @@ export default function PhysioCasePage() {
       setPainRegions(caseData.painMap.regions);
     }
     if (caseData.painTypes?.length)          setPainTypes(caseData.painTypes);
+    if (caseData.painTypeOther)              setPainTypeOther(caseData.painTypeOther);
     if (caseData.aggravatingFactors?.length) setAggravatingFactors(caseData.aggravatingFactors);
     if (caseData.alleviatingFactors?.length) setAlleviatingFactors(caseData.alleviatingFactors);
     if (caseData.aggravatingOther)           setAggravatingOther(caseData.aggravatingOther);
@@ -267,28 +298,40 @@ export default function PhysioCasePage() {
     const mh = caseData.medicalHistory;
     if (mh) {
       setHistory({
-        smokes:                 mh.smokes               ?? false,
-        hasSmokedBefore:        mh.hasSmokedBefore      ?? false,
-        smokingFrequency:       mh.smokingFrequency     ?? "",
-        hasPacemaker:           mh.hasPacemaker         ?? false,
-        allergies:              mh.allergies            ?? "",
-        adhesiveAllergy:        mh.adhesiveAllergy      ?? false,
-        currentMedications:     mh.currentMedications   ?? "",
-        prescriptionDrugs:      mh.prescriptionDrugs    ?? false,
-        herbalSupplements:      mh.herbalSupplements    ?? false,
-        supplementsList:        mh.supplementsList      ?? "",
-        isPregnant:             mh.isPregnant           ?? false,
-        previousDiagnoses:      mh.previousDiagnoses    ?? "",
-        otherConditions:        mh.otherConditions      ?? "",
-        doctorRestrictions:     mh.doctorRestrictions   ?? "",
-        testsOther:             mh.testsOther           ?? "",
-        testResults:            mh.testResults          ?? "",
-        newAnalysis:            mh.newAnalysis          ?? "",
-        newAnalysisDate:        mh.newAnalysisDate      ? mh.newAnalysisDate.slice(0, 10) : "",
-        oldAnalysis:            mh.oldAnalysis          ?? "",
-        oldAnalysisDate:        mh.oldAnalysisDate      ? mh.oldAnalysisDate.slice(0, 10) : "",
-        hospitalizedLastYear:   mh.hospitalizedLastYear ?? false,
-        receivingOtherTreatment: mh.receivingOtherTreatment ?? false,
+        lifeType:                   caseData.lifeType              ?? mh.lifeType ?? "",
+        smokes:                     mh.smokes                      ?? false,
+        hasSmokedBefore:            mh.hasSmokedBefore             ?? false,
+        smokingFrequency:           mh.smokingFrequency            ?? "",
+        hasPacemaker:               mh.hasPacemaker                ?? false,
+        pacemakerDetail:            mh.pacemakerDetail             ?? "",
+        allergies:                  mh.allergies                   ?? "",
+        adhesiveAllergy:            mh.adhesiveAllergy             ?? false,
+        isPregnant:                 mh.isPregnant                  ?? false,
+        currentMedications:         mh.currentMedications          ?? "",
+        prescriptionDrugs:          mh.prescriptionDrugs           ?? false,
+        herbalSupplements:          mh.herbalSupplements           ?? false,
+        supplementsList:            mh.supplementsList             ?? "",
+        previousDiagnoses:          mh.previousDiagnoses           ?? "",
+        previousComplaintsSurgeries: mh.previousComplaintsSurgeries ?? "",
+        hasOtherHealthProblems:     mh.hasOtherHealthProblems      ?? false,
+        otherConditions:            mh.otherConditions             ?? "",
+        doctorRestrictions:         mh.doctorRestrictions          ?? "",
+        hadPTSameProblem:           mh.hadPTSameProblem            ?? false,
+        ptSameProblemDetail:        mh.ptSameProblemDetail         ?? "",
+        receivingOtherTreatment:    mh.receivingOtherTreatment     ?? false,
+        otherTreatmentDetail:       mh.otherTreatmentDetail        ?? "",
+        testsOther:                 mh.testsOther                  ?? "",
+        testResults:                mh.testResults                 ?? "",
+        newAnalysis:                mh.newAnalysis                 ?? "",
+        newAnalysisDate:            mh.newAnalysisDate             ? mh.newAnalysisDate.slice(0, 10) : "",
+        newAnalysisAttachment:      mh.newAnalysisAttachment       ?? "",
+        oldAnalysis:                mh.oldAnalysis                 ?? "",
+        oldAnalysisDate:            mh.oldAnalysisDate             ? mh.oldAnalysisDate.slice(0, 10) : "",
+        oldAnalysisAttachment:      mh.oldAnalysisAttachment       ?? "",
+        boneDensityTest:            mh.boneDensityTest             ?? false,
+        boneDensityDetail:          mh.boneDensityDetail           ?? "",
+        hospitalizedLastYear:       mh.hospitalizedLastYear        ?? false,
+        hospitalizedDetail:         mh.hospitalizedDetail          ?? "",
       });
       if (mh.chronicConditions?.length) setChronicConditions(mh.chronicConditions);
       if (mh.testsHad?.length)          setTestsHad(mh.testsHad);
@@ -396,10 +439,22 @@ export default function PhysioCasePage() {
         previousTreatment:   complaint.previousTreatment || undefined,
         painLevel:           (complaint.painLevel as any) || undefined,
         painDuration:        (complaint.painDuration as any) || undefined,
-        painProgression:     complaint.painProgression || undefined,
-        hadPreviousInjury:   complaint.hadPreviousInjury,
-        bestTimeOfDay:       complaint.bestTimeOfDay || undefined,
-        worstTimeOfDay:      complaint.worstTimeOfDay || undefined,
+        painProgression:       complaint.painProgression || undefined,
+        hadPreviousInjury:     complaint.hadPreviousInjury,
+        bestTimeOfDay:         complaint.bestTimeOfDay || undefined,
+        worstTimeOfDay:        complaint.worstTimeOfDay || undefined,
+        complaintType:         complaint.complaintType || undefined,
+        painLocation:          complaint.painLocation || undefined,
+        complaintDuration:     complaint.complaintDuration || undefined,
+        complaintNotes:        complaint.complaintNotes || undefined,
+        hasChronicDiseases:    complaint.hasChronicDiseases,
+        chronicDiseasesDetail: complaint.hasChronicDiseases ? (complaint.chronicDiseasesDetail || undefined) : undefined,
+        visitedSpecialist:     complaint.visitedSpecialist,
+        specialistReason:      complaint.visitedSpecialist ? (complaint.specialistReason || undefined) : undefined,
+        hadPreviousPT:         complaint.hadPreviousPT,
+        previousPTDetail:      complaint.hadPreviousPT ? (complaint.previousPTDetail || undefined) : undefined,
+        hadSurgery:            complaint.hadSurgery,
+        surgeryDetail:         complaint.hadSurgery ? (complaint.surgeryDetail || undefined) : undefined,
       },
     });
     if (c.status === "INTAKE") {
@@ -407,16 +462,37 @@ export default function PhysioCasePage() {
     }
   };
 
-  const handleSavePainMap = async () => {
-    await submitPainMap.mutateAsync({ id, dto: { regions: painRegions } });
-    await updateCase.mutateAsync({
+  const handleSaveIntake = async () => {
+    await submitComplaint.mutateAsync({
       id,
       dto: {
+        complaintType:         complaint.complaintType || undefined,
+        painLocation:          complaint.painLocation || undefined,
+        complaintDuration:     complaint.complaintDuration || undefined,
+        complaintNotes:        complaint.complaintNotes || undefined,
+        hasChronicDiseases:    complaint.hasChronicDiseases,
+        chronicDiseasesDetail: complaint.hasChronicDiseases ? (complaint.chronicDiseasesDetail || undefined) : undefined,
+        visitedSpecialist:     complaint.visitedSpecialist,
+        specialistReason:      complaint.visitedSpecialist ? (complaint.specialistReason || undefined) : undefined,
+        hadPreviousPT:         complaint.hadPreviousPT,
+        previousPTDetail:      complaint.hadPreviousPT ? (complaint.previousPTDetail || undefined) : undefined,
+        hadSurgery:            complaint.hadSurgery,
+        surgeryDetail:         complaint.hadSurgery ? (complaint.surgeryDetail || undefined) : undefined,
+      },
+    });
+  };
+
+  const handleSavePainMap = async () => {
+    await submitPainMap.mutateAsync({
+      id,
+      dto: {
+        regions:             painRegions,
         painTypes:           painTypes.length ? painTypes : undefined,
+        painTypeOther:       painTypes.includes("OTHER") ? (painTypeOther || undefined) : undefined,
         aggravatingFactors:  aggravatingFactors.length ? aggravatingFactors : undefined,
+        aggravatingOther:    aggravatingFactors.includes("OTHER") ? (aggravatingOther || undefined) : undefined,
         alleviatingFactors:  alleviatingFactors.length ? alleviatingFactors : undefined,
-        aggravatingOther:    aggravatingOther || undefined,
-        alleviatingOther:    alleviatingOther || undefined,
+        alleviatingOther:    alleviatingFactors.includes("OTHER") ? (alleviatingOther || undefined) : undefined,
       },
     });
     if (["COMPLAINT", "INTAKE"].includes(c.status)) {
@@ -436,30 +512,42 @@ export default function PhysioCasePage() {
     await submitHistory.mutateAsync({
       id,
       dto: {
-        smokes:                history.smokes,
-        hasSmokedBefore:       history.hasSmokedBefore,
-        smokingFrequency:      history.smokingFrequency || undefined,
-        hasPacemaker:          history.hasPacemaker,
-        allergies:             history.allergies || undefined,
-        adhesiveAllergy:       history.adhesiveAllergy,
-        currentMedications:    history.currentMedications || undefined,
-        prescriptionDrugs:     history.prescriptionDrugs,
-        herbalSupplements:     history.herbalSupplements,
-        supplementsList:       history.supplementsList || undefined,
-        isPregnant:            history.isPregnant,
-        previousDiagnoses:     history.previousDiagnoses || undefined,
-        chronicConditions:     chronicConditions.length ? chronicConditions : undefined,
-        otherConditions:       history.otherConditions || undefined,
-        doctorRestrictions:    history.doctorRestrictions || undefined,
-        testsHad:              testsHad.length ? testsHad : undefined,
-        testsOther:            history.testsOther || undefined,
-        testResults:           history.testResults || undefined,
-        newAnalysis:           history.newAnalysis || undefined,
-        newAnalysisDate:       history.newAnalysisDate || undefined,
-        oldAnalysis:           history.oldAnalysis || undefined,
-        oldAnalysisDate:       history.oldAnalysisDate || undefined,
-        hospitalizedLastYear:  history.hospitalizedLastYear,
-        receivingOtherTreatment: history.receivingOtherTreatment,
+        lifeType:                    history.lifeType || undefined,
+        smokes:                      history.smokes,
+        hasSmokedBefore:             history.hasSmokedBefore,
+        smokingFrequency:            history.smokingFrequency || undefined,
+        hasPacemaker:                history.hasPacemaker,
+        pacemakerDetail:             history.hasPacemaker ? (history.pacemakerDetail || undefined) : undefined,
+        allergies:                   history.allergies || undefined,
+        adhesiveAllergy:             history.adhesiveAllergy,
+        isPregnant:                  history.isPregnant,
+        currentMedications:          history.currentMedications || undefined,
+        prescriptionDrugs:           history.prescriptionDrugs,
+        herbalSupplements:           history.herbalSupplements,
+        supplementsList:             history.herbalSupplements ? (history.supplementsList || undefined) : undefined,
+        previousDiagnoses:           history.previousDiagnoses || undefined,
+        previousComplaintsSurgeries: history.previousComplaintsSurgeries || undefined,
+        hasOtherHealthProblems:      history.hasOtherHealthProblems,
+        otherConditions:             history.hasOtherHealthProblems ? (history.otherConditions || undefined) : undefined,
+        doctorRestrictions:          history.doctorRestrictions || undefined,
+        hadPTSameProblem:            history.hadPTSameProblem,
+        ptSameProblemDetail:         history.hadPTSameProblem ? (history.ptSameProblemDetail || undefined) : undefined,
+        receivingOtherTreatment:     history.receivingOtherTreatment,
+        otherTreatmentDetail:        history.receivingOtherTreatment ? (history.otherTreatmentDetail || undefined) : undefined,
+        chronicConditions:           chronicConditions.length ? chronicConditions : undefined,
+        testsHad:                    testsHad.length ? testsHad : undefined,
+        testsOther:                  history.testsOther || undefined,
+        testResults:                 history.testResults || undefined,
+        newAnalysis:                 history.newAnalysis || undefined,
+        newAnalysisDate:             history.newAnalysisDate || undefined,
+        newAnalysisAttachment:       history.newAnalysisAttachment || undefined,
+        oldAnalysis:                 history.oldAnalysis || undefined,
+        oldAnalysisDate:             history.oldAnalysisDate || undefined,
+        oldAnalysisAttachment:       history.oldAnalysisAttachment || undefined,
+        boneDensityTest:             history.boneDensityTest,
+        boneDensityDetail:           history.boneDensityTest ? (history.boneDensityDetail || undefined) : undefined,
+        hospitalizedLastYear:        history.hospitalizedLastYear,
+        hospitalizedDetail:          history.hospitalizedLastYear ? (history.hospitalizedDetail || undefined) : undefined,
       },
     });
 
@@ -601,21 +689,31 @@ export default function PhysioCasePage() {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div className="space-y-1">
           <button
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => c.patientId ? router.push(`/${locale}/clinic/patients/${c.patientId}`) : router.back()}
+            onClick={() =>
+              c.patientId
+                ? router.push(`/${locale}/clinic/patients/${c.patientId}`)
+                : router.back()
+            }
           >
             <ArrowRight className="h-3.5 w-3.5" />
             {patientName}
-            {c.patient?.patientNumber && <span className="font-mono">— {c.patient.patientNumber}</span>}
+            {c.patient?.patientNumber && (
+              <span className="font-mono">— {c.patient.patientNumber}</span>
+            )}
           </button>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-bold">حالة علاج فيزيائي</h1>
-            {c.caseNumber && <span className="text-sm font-mono text-muted-foreground">{c.caseNumber}</span>}
+            {c.caseNumber && (
+              <span className="text-sm font-mono text-muted-foreground">
+                {c.caseNumber}
+              </span>
+            )}
             <CaseStatusBadge status={c.status} />
           </div>
         </div>
@@ -623,7 +721,8 @@ export default function PhysioCasePage() {
           <PdfExportButton type="physio-case" id={id} size="sm" />
           {canEdit && (
             <Button
-              variant="outline" size="sm"
+              variant="outline"
+              size="sm"
               onClick={() => updateStatus.mutate({ id, status: "CANCELLED" })}
               className="text-destructive"
             >
@@ -645,22 +744,252 @@ export default function PhysioCasePage() {
           <TabsTrigger value="treatment_plan">خطة العلاج</TabsTrigger>
           <TabsTrigger value="supervisor_review">رئيس القسم</TabsTrigger>
           <TabsTrigger value="doctor_sign">توقيع الطبيب</TabsTrigger>
-          <TabsTrigger value="sessions">الجلسات ({sessions.length})</TabsTrigger>
+          <TabsTrigger value="sessions">
+            الجلسات ({sessions.length})
+          </TabsTrigger>
           <TabsTrigger value="timeline">السجل الزمني</TabsTrigger>
         </TabsList>
 
         {/* ── INTAKE ─────────────────────────────────────────────────────── */}
         <TabsContent value="intake" className="mt-4">
           <Section title="استقبال المريض">
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">المريض: <strong>{patientName}</strong></p>
-              {c.status === "INTAKE" && (
-                <Button
-                  onClick={() => updateStatus.mutate({ id, status: "COMPLAINT" })}
-                  disabled={updateStatus.isPending}
-                >
-                  بدء تسجيل الشكوى
-                </Button>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                المريض: <strong>{patientName}</strong>
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>نوع الشكاية المرضية / Type of medical complaint</Label>
+                  <Input
+                    value={complaint.complaintType}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        complaintType: e.target.value,
+                      }))
+                    }
+                    placeholder="نوع الشكاية..."
+                    disabled={!canEdit}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>تحديد مكان الألم / Locating the Pain</Label>
+                  <Input
+                    value={complaint.painLocation}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        painLocation: e.target.value,
+                      }))
+                    }
+                    placeholder="مكان الألم..."
+                    disabled={!canEdit}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>
+                    منذ متى وأنت تعاني من الشكاية؟ /how long have you been
+                    suffering from the complaint؟
+                  </Label>
+                  <Input
+                    value={complaint.complaintDuration}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        complaintDuration: e.target.value,
+                      }))
+                    }
+                    placeholder="مثال: منذ 3 أشهر..."
+                    disabled={!canEdit}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>ملاحظات / Notes</Label>
+                  <Input
+                    value={complaint.complaintNotes}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        complaintNotes: e.target.value,
+                      }))
+                    }
+                    placeholder="ملاحظات إضافية..."
+                    disabled={!canEdit}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={complaint.hasChronicDiseases}
+                      onCheckedChange={(v) =>
+                        setComplaint((f) => ({
+                          ...f,
+                          hasChronicDiseases: v,
+                          chronicDiseasesDetail: v
+                            ? f.chronicDiseasesDetail
+                            : "",
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                    <Label>
+                      هل يوجد أمراض مزمنة؟ / are there Chronic Diseases؟
+                    </Label>
+                  </div>
+                  {complaint.hasChronicDiseases && (
+                    <Input
+                      value={complaint.chronicDiseasesDetail}
+                      onChange={(e) =>
+                        setComplaint((f) => ({
+                          ...f,
+                          chronicDiseasesDetail: e.target.value,
+                        }))
+                      }
+                      placeholder="اذكر الأمراض المزمنة... / Please specify..."
+                      disabled={!canEdit}
+                      className="mr-9"
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={complaint.visitedSpecialist}
+                      onCheckedChange={(v) =>
+                        setComplaint((f) => ({
+                          ...f,
+                          visitedSpecialist: v,
+                          specialistReason: v ? f.specialistReason : "",
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                    <Label>
+                      هل سبق وقمت بزيارة طبيباً مختصاً؟ /have you ever visited a
+                      specialist doctor؟
+                    </Label>
+                  </div>
+                  {complaint.visitedSpecialist && (
+                    <Input
+                      value={complaint.specialistReason}
+                      onChange={(e) =>
+                        setComplaint((f) => ({
+                          ...f,
+                          specialistReason: e.target.value,
+                        }))
+                      }
+                      placeholder="السبب / Reason..."
+                      disabled={!canEdit}
+                      className="mr-9"
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={complaint.hadPreviousPT}
+                      onCheckedChange={(v) =>
+                        setComplaint((f) => ({
+                          ...f,
+                          hadPreviousPT: v,
+                          previousPTDetail: v ? f.previousPTDetail : "",
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                    <Label>
+                      هل خضعت لجلسات علاج فيزيائي سابقاً؟ / have you undergone
+                      any physical therapy sessions before؟
+                    </Label>
+                  </div>
+                  {complaint.hadPreviousPT && (
+                    <Input
+                      value={complaint.previousPTDetail}
+                      onChange={(e) =>
+                        setComplaint((f) => ({
+                          ...f,
+                          previousPTDetail: e.target.value,
+                        }))
+                      }
+                      placeholder="التفاصيل / Details..."
+                      disabled={!canEdit}
+                      className="mr-9"
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={complaint.hadSurgery}
+                      onCheckedChange={(v) =>
+                        setComplaint((f) => ({
+                          ...f,
+                          hadSurgery: v,
+                          surgeryDetail: v ? f.surgeryDetail : "",
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                    <Label>
+                      هل سبق أن خضعت لعمل جراحي ؟ / Have you undergone surgery؟
+                    </Label>
+                  </div>
+                  {complaint.hadSurgery && (
+                    <Input
+                      value={complaint.surgeryDetail}
+                      onChange={(e) =>
+                        setComplaint((f) => ({
+                          ...f,
+                          surgeryDetail: e.target.value,
+                        }))
+                      }
+                      placeholder="التفاصيل / Details..."
+                      disabled={!canEdit}
+                      className="mr-9"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {canEdit && (
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    onClick={handleSaveIntake}
+                    disabled={
+                      submitComplaint.isPending || updateStatus.isPending
+                    }
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    {submitComplaint.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    حفظ
+                  </Button>
+                  {c.status === "INTAKE" && (
+                    <Button
+                      onClick={() =>
+                        updateStatus.mutate({ id, status: "COMPLAINT" })
+                      }
+                      disabled={updateStatus.isPending}
+                      className="gap-2"
+                    >
+                      بدء تسجيل الشكوى
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </Section>
@@ -672,141 +1001,245 @@ export default function PhysioCasePage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1.5">
-                  <Label>الشكوى الرئيسية</Label>
+                  <Label>
+                    ماهي شكواك الرئيسية؟ / What is your major complaint؟
+                  </Label>
                   <Textarea
                     rows={2}
                     value={complaint.majorComplaint}
-                    onChange={(e) => setComplaint((f) => ({ ...f, majorComplaint: e.target.value }))}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        majorComplaint: e.target.value,
+                      }))
+                    }
                     placeholder="وصف الشكوى الرئيسية..."
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الأعراض</Label>
+                  <Label>ماهي الأعراض التي تعاني منها؟ / Symptoms؟</Label>
                   <Textarea
                     rows={2}
                     value={complaint.symptoms}
-                    onChange={(e) => setComplaint((f) => ({ ...f, symptoms: e.target.value }))}
+                    onChange={(e) =>
+                      setComplaint((f) => ({ ...f, symptoms: e.target.value }))
+                    }
                     placeholder="الأعراض المصاحبة..."
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>الوظيفة الحالية</Label>
-                  <Input
-                    value={complaint.currentJob}
-                    onChange={(e) => setComplaint((f) => ({ ...f, currentJob: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>نمط الحياة</Label>
-                  <Select value={complaint.lifeType} onValueChange={(v) => setComplaint((f) => ({ ...f, lifeType: v }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PROFESSIONAL">نشط مهنياً</SelectItem>
-                      <SelectItem value="NORMAL">عادي</SelectItem>
-                      <SelectItem value="SEDENTARY">خامل</SelectItem>
-                      <SelectItem value="ABNORMAL">غير طبيعي</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>تاريخ بدء الشكوى</Label>
+                  <Label>تاريخ البدء / Start Date</Label>
                   <Input
                     type="date"
                     value={complaint.complaintStartDate}
-                    onChange={(e) => setComplaint((f) => ({ ...f, complaintStartDate: e.target.value }))}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        complaintStartDate: e.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>السبب المحتمل</Label>
+                  <Label>السبب المحتمل / Possible Cause</Label>
                   <Input
                     value={complaint.possibleCause}
-                    onChange={(e) => setComplaint((f) => ({ ...f, possibleCause: e.target.value }))}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        possibleCause: e.target.value,
+                      }))
+                    }
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>طبيب سابق</Label>
+                  <Label>
+                    تمت زيارة الطبيب السابق بسبب الشكوى / Previous doctor seen
+                    for complaint
+                  </Label>
                   <Input
                     value={complaint.previousDoctorSeen}
-                    onChange={(e) => setComplaint((f) => ({ ...f, previousDoctorSeen: e.target.value }))}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        previousDoctorSeen: e.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>علاج سابق</Label>
+                  <Label>
+                    العلاج السابق للشكوى / Previous treatment for complaint
+                  </Label>
                   <Input
                     value={complaint.previousTreatment}
-                    onChange={(e) => setComplaint((f) => ({ ...f, previousTreatment: e.target.value }))}
+                    onChange={(e) =>
+                      setComplaint((f) => ({
+                        ...f,
+                        previousTreatment: e.target.value,
+                      }))
+                    }
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>شدة الألم</Label>
-                  <Select value={complaint.painLevel} onValueChange={(v) => setComplaint((f) => ({ ...f, painLevel: v }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <Label>مستوى الألم الحالي / Current level of pain</Label>
+                  <Select
+                    value={complaint.painLevel}
+                    onValueChange={(v) =>
+                      setComplaint((f) => ({ ...f, painLevel: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر..." />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MILD">خفيف</SelectItem>
-                      <SelectItem value="MODERATE">متوسط</SelectItem>
-                      <SelectItem value="SEVERE">شديد</SelectItem>
-                      <SelectItem value="EXCRUCIATING">لا يُحتمل</SelectItem>
+                      <SelectItem value="MILD">خفيف / Mild</SelectItem>
+                      <SelectItem value="MODERATE">متوسط / Moderate</SelectItem>
+                      <SelectItem value="SEVERE">شديد / Severe</SelectItem>
+                      <SelectItem value="EXCRUCIATING">
+                        لا يُحتمل / Excruciating
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>مدة الألم</Label>
-                  <Select value={complaint.painDuration} onValueChange={(v) => setComplaint((f) => ({ ...f, painDuration: v }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <Label>نوع الألم / Type of the pain</Label>
+                  <Select
+                    value={complaint.painDuration}
+                    onValueChange={(v) =>
+                      setComplaint((f) => ({ ...f, painDuration: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر..." />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="INTERMITTENT">متقطع</SelectItem>
-                      <SelectItem value="CONSTANT">مستمر</SelectItem>
-                      <SelectItem value="WITH_CERTAIN_MOTIONS">مع حركات معينة</SelectItem>
+                      <SelectItem value="INTERMITTENT">
+                        متقطع / Intermittent
+                      </SelectItem>
+                      <SelectItem value="CONSTANT">مستمر / Constant</SelectItem>
+                      <SelectItem value="WITH_CERTAIN_MOTIONS">
+                        مع حركات معينة / With certain motions
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>أفضل وقت في اليوم</Label>
-                  <Select value={complaint.bestTimeOfDay} onValueChange={(v) => setComplaint((f) => ({ ...f, bestTimeOfDay: v }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <Label>
+                    {" "}
+                    في أي وقت من اليوم تكون الأعراض أقل إزعاجاً/ In what part of
+                    the day are the symptoms less bothersome
+                  </Label>
+                  <Select
+                    value={complaint.bestTimeOfDay}
+                    onValueChange={(v) =>
+                      setComplaint((f) => ({ ...f, bestTimeOfDay: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر..." />
+                    </SelectTrigger>
                     <SelectContent>
-                      {[["MORNING","صباحاً"],["AFTERNOON","ظهراً"],["EVENING","مساءً"],["NIGHT","ليلاً"],["ALL_DAY","طوال اليوم"]].map(([v,l]) => (
-                        <SelectItem key={v} value={v}>{l}</SelectItem>
+                      {[
+                        ["MORNING", "صباحاً / Morning"],
+                        ["AFTERNOON", "ظهراً / Afternoon"],
+                        ["EVENING", "مساءً / Evening"],
+                        ["NIGHT", "ليلاً / Night"],
+                        ["ALL_DAY", "طوال اليوم / All Day"],
+                      ].map(([v, l]) => (
+                        <SelectItem key={v} value={v}>
+                          {l}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>أسوأ وقت في اليوم</Label>
-                  <Select value={complaint.worstTimeOfDay} onValueChange={(v) => setComplaint((f) => ({ ...f, worstTimeOfDay: v }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <Label>
+                    {" "}
+                    في أي وقت من اليوم تكون الأعراض أكثر إزعاجاً / In what part
+                    of the day are the symptoms more bothersome
+                  </Label>
+                  <Select
+                    value={complaint.worstTimeOfDay}
+                    onValueChange={(v) =>
+                      setComplaint((f) => ({ ...f, worstTimeOfDay: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر..." />
+                    </SelectTrigger>
                     <SelectContent>
-                      {[["MORNING","صباحاً"],["AFTERNOON","ظهراً"],["EVENING","مساءً"],["NIGHT","ليلاً"],["ALL_DAY","طوال اليوم"]].map(([v,l]) => (
-                        <SelectItem key={v} value={v}>{l}</SelectItem>
+                      {[
+                        ["MORNING", "صباحاً / Morning"],
+                        ["AFTERNOON", "ظهراً / Afternoon"],
+                        ["EVENING", "مساءً / Evening"],
+                        ["NIGHT", "ليلاً / Night"],
+                        ["ALL_DAY", "طوال اليوم / All Day"],
+                      ].map(([v, l]) => (
+                        <SelectItem key={v} value={v}>
+                          {l}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={complaint.hadPreviousInjury}
-                  onCheckedChange={(v) => setComplaint((f) => ({ ...f, hadPreviousInjury: v }))}
-                />
-                <Label>لديه إصابة سابقة</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>
+                    هل يتحسن الألم أم يزداد سوءاً؟ / Is your pain getting better
+                    or worse؟
+                  </Label>
+                  <Select
+                    value={complaint.painProgression}
+                    onValueChange={(v) =>
+                      setComplaint((f) => ({ ...f, painProgression: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BETTER">يتحسن / Better</SelectItem>
+                      <SelectItem value="WORSE">يزداد سوءاً / Worse</SelectItem>
+                      <SelectItem value="SAME">ثابت / Same</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-3 pt-6">
+                  <Switch
+                    checked={complaint.hadPreviousInjury}
+                    onCheckedChange={(v) =>
+                      setComplaint((f) => ({ ...f, hadPreviousInjury: v }))
+                    }
+                  />
+                  <Label>
+                    هل سبق التعرض لهذه الإصابة؟ / Have you had this injury
+                    before؟
+                  </Label>
+                </div>
               </div>
+
               {canEdit && (
                 <Button
                   onClick={handleSaveComplaint}
                   disabled={updateCase.isPending || updateStatus.isPending}
                   className="w-full gap-2"
                 >
-                  {(updateCase.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {updateCase.isPending || updateStatus.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                   حفظ الشكوى والانتقال لخريطة الألم
                 </Button>
               )}
@@ -826,57 +1259,115 @@ export default function PhysioCasePage() {
           <Section title="أنواع الألم">
             <div className="flex flex-wrap gap-2">
               {[
-                ["SHARP","حاد"], ["DULL","خفيف"], ["BURNING","حارق"], ["THROBBING","نابض"],
-                ["ACHING","مؤلم"], ["SHOOTING","انتشاري"], ["NUMBNESS","خدر"], ["TINGLING","وخز"], ["STABBING","طعن"],
+                ["NUMBNESS", "خدر / Numbness"],
+                ["DULL_ACHE", "ألم خفيف / Dull Ache"],
+                ["HOT_BURNING", "حارق / Hot Burning"],
+                ["SHARP_STABBING", "حاد / Sharp Stabbing"],
+                ["PINS", "واخز / Pins & Needles"],
+                ["OTHER", "آخر / Other"],
               ].map(([v, l]) => (
-                <ToggleChip key={v} label={l} active={painTypes.includes(v)} onClick={() => toggleArr(painTypes, v, setPainTypes)} />
+                <ToggleChip
+                  key={v}
+                  label={l}
+                  active={painTypes.includes(v)}
+                  onClick={() => toggleArr(painTypes, v, setPainTypes)}
+                />
               ))}
             </div>
+            {painTypes.includes("OTHER") && (
+              <Input
+                className="mt-2"
+                placeholder="حدد نوع الألم الآخر..."
+                value={painTypeOther}
+                onChange={(e) => setPainTypeOther(e.target.value)}
+              />
+            )}
           </Section>
-          <Section title="العوامل المُشددة / المُخففة">
+          <Section title="العوامل المحرضة / المُخففة">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium">العوامل المُشددة</Label>
+                <Label className="text-sm font-medium">
+                  العوامل المحرضة / Aggravating Factors
+                </Label>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    ["STANDING","الوقوف"],["SITTING","الجلوس"],["WALKING","المشي"],["BENDING","الانحناء"],
-                    ["LIFTING","الرفع"],["CLIMBING","الصعود"],["SLEEPING","النوم"],["EXERCISE","التمارين"],
-                    ["COLD","البرد"],["HEAT","الحرارة"],
+                    ["SITTING", "الجلوس / Sitting"],
+                    ["HEAT", "الحرارة / Heat"],
+                    ["COLD", "البرودة / Cold"],
+                    ["COUGHING", "السعال / Coughing"],
+                    ["WALKING", "المشي / Walking"],
+                    ["EXERCISE", "التمرين / Exercise"],
+                    ["LYING_DOWN", "الاستلقاء / Lying Down"],
+                    ["OTHER", "آخر / Other"],
                   ].map(([v, l]) => (
-                    <ToggleChip key={v} label={l} active={aggravatingFactors.includes(v)} onClick={() => toggleArr(aggravatingFactors, v, setAggravatingFactors)} />
+                    <ToggleChip
+                      key={v}
+                      label={l}
+                      active={aggravatingFactors.includes(v)}
+                      onClick={() =>
+                        toggleArr(aggravatingFactors, v, setAggravatingFactors)
+                      }
+                    />
                   ))}
                 </div>
-                <Input
-                  placeholder="أخرى..."
-                  value={aggravatingOther}
-                  onChange={(e) => setAggravatingOther(e.target.value)}
-                />
+                {aggravatingFactors.includes("OTHER") && (
+                  <Input
+                    placeholder="حدد العامل المُشدد الآخر..."
+                    value={aggravatingOther}
+                    onChange={(e) => setAggravatingOther(e.target.value)}
+                  />
+                )}
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">العوامل المُخففة</Label>
+                <Label className="text-sm font-medium">
+                  العوامل المُخففة / Alleviating Factors
+                </Label>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    ["REST","الراحة"],["HEAT_APPLICATION","الحرارة"],["COLD_APPLICATION","البرودة"],
-                    ["MEDICATION","الأدوية"],["EXERCISE","التمارين"],["STRETCHING","التمدد"],["MASSAGE","المساج"],
+                    ["SITTING", "الجلوس / Sitting"],
+                    ["HEAT", "الحرارة / Heat"],
+                    ["COLD", "البرودة / Cold"],
+                    ["COUGHING", "السعال / Coughing"],
+                    ["WALKING", "المشي / Walking"],
+                    ["EXERCISE", "التمرين / Exercise"],
+                    ["LYING_DOWN", "الاستلقاء / Lying Down"],
+                    ["OTHER", "آخر / Other"],
                   ].map(([v, l]) => (
-                    <ToggleChip key={v} label={l} active={alleviatingFactors.includes(v)} onClick={() => toggleArr(alleviatingFactors, v, setAlleviatingFactors)} />
+                    <ToggleChip
+                      key={v}
+                      label={l}
+                      active={alleviatingFactors.includes(v)}
+                      onClick={() =>
+                        toggleArr(alleviatingFactors, v, setAlleviatingFactors)
+                      }
+                    />
                   ))}
                 </div>
-                <Input
-                  placeholder="أخرى..."
-                  value={alleviatingOther}
-                  onChange={(e) => setAlleviatingOther(e.target.value)}
-                />
+                {alleviatingFactors.includes("OTHER") && (
+                  <Input
+                    placeholder="حدد العامل المُخفف الآخر..."
+                    value={alleviatingOther}
+                    onChange={(e) => setAlleviatingOther(e.target.value)}
+                  />
+                )}
               </div>
             </div>
           </Section>
           {canEdit && (
             <Button
               onClick={handleSavePainMap}
-              disabled={submitPainMap.isPending || updateCase.isPending || updateStatus.isPending}
+              disabled={
+                submitPainMap.isPending ||
+                updateCase.isPending ||
+                updateStatus.isPending
+              }
               className="w-full gap-2"
             >
-              {(submitPainMap.isPending || updateCase.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {submitPainMap.isPending || updateCase.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
               حفظ والانتقال للتاريخ الطبي
             </Button>
           )}
@@ -884,128 +1375,302 @@ export default function PhysioCasePage() {
 
         {/* ── MEDICAL HISTORY ─────────────────────────────────────────────── */}
         <TabsContent value="medical_history" className="mt-4 space-y-4">
-          <Section title="العادات والحالة الصحية">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {([
-                ["smokes", "مدخن"],
-                ["hasSmokedBefore", "كان مدخناً"],
-                ["hasPacemaker", "ناظم قلب"],
-                ["adhesiveAllergy", "حساسية لاصق"],
-                ["prescriptionDrugs", "أدوية بوصفة"],
-                ["herbalSupplements", "مكملات عشبية"],
-                ["isPregnant", "حامل"],
-                ["hospitalizedLastYear", "دُخِّل للمستشفى (سنة)"],
-                ["receivingOtherTreatment", "يتلقى علاجاً آخر"],
-              ] as [string, string][]).map(([key, label]) => (
-                <div key={key} className="flex items-center gap-2">
-                  <Switch
-                    checked={(history as any)[key]}
-                    onCheckedChange={(v) => setHistory((h) => ({ ...h, [key]: v }))}
-                  />
-                  <Label className="text-sm">{label}</Label>
+          <Section title="التاريخ الطبي / Medical History">
+            <div className="space-y-4">
+
+              {/* نمط الحياة */}
+              <div className="space-y-1.5">
+                <Label>نمط الحياة / Life Type</Label>
+                <Select value={history.lifeType} onValueChange={(v) => setHistory((h) => ({ ...h, lifeType: v }))}>
+                  <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SEDENTARY">الحياة الخاملة / Sedentary Life</SelectItem>
+                    <SelectItem value="NORMAL">الحياة الطبيعية / Normal Life</SelectItem>
+                    <SelectItem value="ABNORMAL">غير اعتيادي / غير صحي / Abnormal</SelectItem>
+                    <SelectItem value="PROFESSIONAL">رياضي / Professional</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* هل تدخن */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>هل تدخن؟ / Do you smoke؟</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch checked={history.smokes} onCheckedChange={(v) => setHistory((h) => ({ ...h, smokes: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
                 </div>
-              ))}
+                {history.smokes && (
+                  <div className="mr-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">هل سبق أن دخنت؟ / Have you ever smoked?</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">لا</span>
+                        <Switch checked={history.hasSmokedBefore} onCheckedChange={(v) => setHistory((h) => ({ ...h, hasSmokedBefore: v }))} disabled={!canEdit} />
+                        <span className="text-xs text-muted-foreground">نعم</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">عدد المرات / How often?</Label>
+                      <Input value={history.smokingFrequency} onChange={(e) => setHistory((h) => ({ ...h, smokingFrequency: e.target.value }))} placeholder="مثال: 10 سجائر يومياً" disabled={!canEdit} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* جهاز تنظيم ضربات القلب */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>هل لديك جهاز تنظيم ضربات القلب؟ / Do you have a pacemaker?</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch checked={history.hasPacemaker} onCheckedChange={(v) => setHistory((h) => ({ ...h, hasPacemaker: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
+                </div>
+                {history.hasPacemaker && (
+                  <Input className="mr-4" value={history.pacemakerDetail} onChange={(e) => setHistory((h) => ({ ...h, pacemakerDetail: e.target.value }))} placeholder="حدد نوع الجهاز..." disabled={!canEdit} />
+                )}
+              </div>
+
+              {/* الحساسية */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label>الحساسية / Allergies</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">حساسية لاصق</span>
+                    <Switch checked={history.adhesiveAllergy} onCheckedChange={(v) => setHistory((h) => ({ ...h, adhesiveAllergy: v }))} disabled={!canEdit} />
+                  </div>
+                </div>
+                <Input value={history.allergies} onChange={(e) => setHistory((h) => ({ ...h, allergies: e.target.value }))} placeholder="اذكر نوع الحساسية..." disabled={!canEdit} />
+              </div>
+
+              {/* ما هي الأدوية الحالية */}
+              <div className="space-y-1.5">
+                <Label>ما هي الأدوية التي تستخدمها حالياً؟ / What medications are you currently using?</Label>
+                <Input value={history.currentMedications} onChange={(e) => setHistory((h) => ({ ...h, currentMedications: e.target.value }))} placeholder="اذكر الأدوية..." disabled={!canEdit} />
+              </div>
+
+              {/* هل أنت حامل */}
+              <div className="flex items-center justify-between">
+                <Label>هل أنت حامل؟ / Are you pregnant?</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">لا</span>
+                  <Switch checked={history.isPregnant} onCheckedChange={(v) => setHistory((h) => ({ ...h, isPregnant: v }))} disabled={!canEdit} />
+                  <span className="text-xs text-muted-foreground">نعم</span>
+                </div>
+              </div>
+
+              {/* التشخيصات السابقة / الأدوية السابقة */}
+              <div className="space-y-1.5">
+                <Label>التشخيصات السابقة / الأدوية السابقة / Previous diagnoses / medications</Label>
+                <Textarea rows={2} value={history.previousDiagnoses} onChange={(e) => setHistory((h) => ({ ...h, previousDiagnoses: e.target.value }))} disabled={!canEdit} />
+              </div>
+
+              {/* الشكاوى والعمليات السابقة */}
+              <div className="space-y-1.5">
+                <Label>الشكاوى والعمليات السابقة / Previous complaints & surgeries</Label>
+                <Textarea rows={2} value={history.previousComplaintsSurgeries} onChange={(e) => setHistory((h) => ({ ...h, previousComplaintsSurgeries: e.target.value }))} disabled={!canEdit} />
+              </div>
+
+              {/* مشاكل صحية أخرى */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>هل تعاني من مشاكل صحية أخرى؟ / Do you have other health problems?</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch checked={history.hasOtherHealthProblems} onCheckedChange={(v) => setHistory((h) => ({ ...h, hasOtherHealthProblems: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
+                </div>
+                {history.hasOtherHealthProblems && (
+                  <Input className="mr-4" value={history.otherConditions} onChange={(e) => setHistory((h) => ({ ...h, otherConditions: e.target.value }))} placeholder="حدد المشاكل الصحية..." disabled={!canEdit} />
+                )}
+              </div>
+
+              {/* تعليمات طبيب */}
+              <div className="space-y-1.5">
+                <Label>هل هناك أي شيء نصحك طبيبك بعدم القيام به؟ / Is there anything your doctor told you not to do?</Label>
+                <Input value={history.doctorRestrictions} onChange={(e) => setHistory((h) => ({ ...h, doctorRestrictions: e.target.value }))} placeholder="اذكر التعليمات..." disabled={!canEdit} />
+              </div>
+
+              {/* أدوية بوصفة */}
+              <div className="flex items-center justify-between">
+                <Label>هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟ / Are you currently taking any prescription / over-counter drugs?</Label>
+                <div className="flex items-center gap-2 shrink-0 mr-2">
+                  <span className="text-xs text-muted-foreground">لا</span>
+                  <Switch checked={history.prescriptionDrugs} onCheckedChange={(v) => setHistory((h) => ({ ...h, prescriptionDrugs: v }))} disabled={!canEdit} />
+                  <span className="text-xs text-muted-foreground">نعم</span>
+                </div>
+              </div>
+
+              {/* مستحضرات عشبية */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>هل تتناول حالياً أي مستحضرات عشبية أو فيتامينات؟ / Are you currently taking any herbal preparations / vitamins?</Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch checked={history.herbalSupplements} onCheckedChange={(v) => setHistory((h) => ({ ...h, herbalSupplements: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
+                </div>
+                {history.herbalSupplements && (
+                  <Input className="mr-4" value={history.supplementsList} onChange={(e) => setHistory((h) => ({ ...h, supplementsList: e.target.value }))} placeholder="حدد المستحضرات والفيتامينات..." disabled={!canEdit} />
+                )}
+              </div>
+
             </div>
           </Section>
-          <Section title="تفاصيل طبية">
-            <div className="space-y-3">
-              {history.smokes && (
-                <div className="space-y-1.5">
-                  <Label>تكرار التدخين</Label>
-                  <Input
-                    value={history.smokingFrequency}
-                    onChange={(e) => setHistory((h) => ({ ...h, smokingFrequency: e.target.value }))}
-                    placeholder="مثال: 10 سجائر يومياً"
-                  />
+
+          <Section title="العلاج الطبيعي والعلاجات الأخرى / PT & Other Treatments">
+            <div className="space-y-4">
+
+              {/* علاج طبيعي لنفس المشكلة */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>هل خضعت للعلاج الطبيعي لنفس المشكلة؟ / Have you had physical therapy for the same problem?</Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch checked={history.hadPTSameProblem} onCheckedChange={(v) => setHistory((h) => ({ ...h, hadPTSameProblem: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
                 </div>
-              )}
-              <div className="space-y-1.5">
-                <Label>الحساسية</Label>
-                <Input value={history.allergies} onChange={(e) => setHistory((h) => ({ ...h, allergies: e.target.value }))} placeholder="اذكر نوع الحساسية..." />
+                {history.hadPTSameProblem && (
+                  <Input className="mr-4" value={history.ptSameProblemDetail} onChange={(e) => setHistory((h) => ({ ...h, ptSameProblemDetail: e.target.value }))} placeholder="اذكر التفاصيل..." disabled={!canEdit} />
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label>الأدوية الحالية</Label>
-                <Input value={history.currentMedications} onChange={(e) => setHistory((h) => ({ ...h, currentMedications: e.target.value }))} />
-              </div>
-              {history.herbalSupplements && (
-                <div className="space-y-1.5">
-                  <Label>قائمة المكملات</Label>
-                  <Input value={history.supplementsList} onChange={(e) => setHistory((h) => ({ ...h, supplementsList: e.target.value }))} />
+
+              {/* علاجات أخرى حالياً */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>هل تتلقى علاجات أخرى لهذه المشكلة في هذا الوقت؟ / Are you receiving other treatments for this problem at this time?</Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch checked={history.receivingOtherTreatment} onCheckedChange={(v) => setHistory((h) => ({ ...h, receivingOtherTreatment: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
                 </div>
-              )}
-              <div className="space-y-1.5">
-                <Label>تشخيصات سابقة</Label>
-                <Textarea rows={2} value={history.previousDiagnoses} onChange={(e) => setHistory((h) => ({ ...h, previousDiagnoses: e.target.value }))} />
+                {history.receivingOtherTreatment && (
+                  <Input className="mr-4" value={history.otherTreatmentDetail} onChange={(e) => setHistory((h) => ({ ...h, otherTreatmentDetail: e.target.value }))} placeholder="اذكر العلاجات الأخرى..." disabled={!canEdit} />
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label>تعليمات طبيب</Label>
-                <Input value={history.doctorRestrictions} onChange={(e) => setHistory((h) => ({ ...h, doctorRestrictions: e.target.value }))} />
-              </div>
+
             </div>
           </Section>
           <Section title="الأمراض المزمنة (30 مرض)">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
               {CHRONIC_CONDITIONS.map((cond) => (
-                <div key={cond} className="flex items-center gap-1.5">
+                <label
+                  key={cond}
+                  htmlFor={`cc-${cond}`}
+                  className="flex items-start gap-2 cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     id={`cc-${cond}`}
                     checked={chronicConditions.includes(cond)}
-                    onChange={() => toggleArr(chronicConditions, cond, setChronicConditions)}
-                    className="accent-primary"
+                    onChange={() =>
+                      toggleArr(chronicConditions, cond, setChronicConditions)
+                    }
+                    disabled={!canEdit}
+                    className="mt-0.5 h-4 w-4 accent-primary shrink-0"
                   />
-                  <label htmlFor={`cc-${cond}`} className="text-sm cursor-pointer">{CHRONIC_CONDITION_LABELS[cond]}</label>
-                </div>
+                  <span className="text-sm leading-snug">
+                    {CHRONIC_CONDITION_LABELS[cond]}
+                  </span>
+                </label>
               ))}
             </div>
-            <div className="mt-3 space-y-1.5">
-              <Label>أمراض أخرى</Label>
-              <Input value={history.otherConditions} onChange={(e) => setHistory((h) => ({ ...h, otherConditions: e.target.value }))} placeholder="أمراض غير مدرجة..." />
-            </div>
           </Section>
-          <Section title="الفحوصات والتحاليل">
+          <Section title="الفحوصات والتحاليل / Tests & Analysis">
             <div className="space-y-4">
-              <div>
-                <Label className="mb-2 block">الفحوصات المجراة</Label>
+
+              {/* نوع التصوير الشعاعي */}
+              <div className="space-y-2">
+                <Label className="block">ما هو نوع التصوير الشعاعي الذي قمت به لتشخيص حالتك؟ / What type of radiography did you undergo?</Label>
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(TEST_LABELS) as TestType[]).map((t) => (
-                    <ToggleChip
-                      key={t}
-                      label={TEST_LABELS[t]}
-                      active={testsHad.includes(t)}
-                      onClick={() => toggleArr(testsHad, t, setTestsHad)}
-                    />
+                    <ToggleChip key={t} label={TEST_LABELS[t]} active={testsHad.includes(t)} onClick={() => toggleArr(testsHad, t, setTestsHad)} />
                   ))}
                 </div>
+                {testsHad.includes("OTHER") && (
+                  <Input value={history.testsOther} onChange={(e) => setHistory((h) => ({ ...h, testsOther: e.target.value }))} placeholder="حدد نوع الفحص الآخر..." disabled={!canEdit} />
+                )}
               </div>
-              {testsHad.includes("OTHER") && (
-                <div className="space-y-1.5">
-                  <Label>فحص آخر</Label>
-                  <Input value={history.testsOther} onChange={(e) => setHistory((h) => ({ ...h, testsOther: e.target.value }))} />
-                </div>
-              )}
+
+              {/* نتائج */}
               <div className="space-y-1.5">
-                <Label>نتائج الفحوصات</Label>
-                <Textarea rows={2} value={history.testResults} onChange={(e) => setHistory((h) => ({ ...h, testResults: e.target.value }))} />
+                <Label>نتائج / Results</Label>
+                <Textarea rows={2} value={history.testResults} onChange={(e) => setHistory((h) => ({ ...h, testResults: e.target.value }))} disabled={!canEdit} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              {/* ماهي التحاليلات */}
+              <Label className="block font-medium">ماهي التحاليلات التي تم اجراؤها لمشكلتك الحالية؟ / What analysis have been done for your current problem?</Label>
+
+              {/* تحليل جديد */}
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>تحليل جديد</Label>
-                  <Input value={history.newAnalysis} onChange={(e) => setHistory((h) => ({ ...h, newAnalysis: e.target.value }))} />
+                  <Label className="text-sm">تحليل جديد / New analysis</Label>
+                  <Input value={history.newAnalysis} onChange={(e) => setHistory((h) => ({ ...h, newAnalysis: e.target.value }))} disabled={!canEdit} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>تاريخه</Label>
-                  <Input type="date" value={history.newAnalysisDate} onChange={(e) => setHistory((h) => ({ ...h, newAnalysisDate: e.target.value }))} />
+                  <Label className="text-sm">تاريخ التحليل الجديد / New analysis date</Label>
+                  <Input type="date" value={history.newAnalysisDate} onChange={(e) => setHistory((h) => ({ ...h, newAnalysisDate: e.target.value }))} disabled={!canEdit} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>تحليل قديم</Label>
-                  <Input value={history.oldAnalysis} onChange={(e) => setHistory((h) => ({ ...h, oldAnalysis: e.target.value }))} />
+                  <Label className="text-sm">تحليل قديم / Old analysis</Label>
+                  <Input value={history.oldAnalysis} onChange={(e) => setHistory((h) => ({ ...h, oldAnalysis: e.target.value }))} disabled={!canEdit} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>تاريخه</Label>
-                  <Input type="date" value={history.oldAnalysisDate} onChange={(e) => setHistory((h) => ({ ...h, oldAnalysisDate: e.target.value }))} />
+                  <Label className="text-sm">تاريخ التحليل القديم / Old analysis date</Label>
+                  <Input type="date" value={history.oldAnalysisDate} onChange={(e) => setHistory((h) => ({ ...h, oldAnalysisDate: e.target.value }))} disabled={!canEdit} />
                 </div>
               </div>
+
+              {/* مرفقات التحاليل */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">رابط مرفق التحليل الجديد</Label>
+                  <Input value={history.newAnalysisAttachment} onChange={(e) => setHistory((h) => ({ ...h, newAnalysisAttachment: e.target.value }))} placeholder="URL أو معرّف الملف..." disabled={!canEdit} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">رابط مرفق التحليل القديم</Label>
+                  <Input value={history.oldAnalysisAttachment} onChange={(e) => setHistory((h) => ({ ...h, oldAnalysisAttachment: e.target.value }))} placeholder="URL أو معرّف الملف..." disabled={!canEdit} />
+                </div>
+              </div>
+
+              {/* قياس كثافة العظام */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>قياس كثافة العظام / Bone density scan / test</Label>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch checked={history.boneDensityTest} onCheckedChange={(v) => setHistory((h) => ({ ...h, boneDensityTest: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
+                </div>
+                {history.boneDensityTest && (
+                  <Input className="mr-4" value={history.boneDensityDetail} onChange={(e) => setHistory((h) => ({ ...h, boneDensityDetail: e.target.value }))} placeholder="حدد التفاصيل..." disabled={!canEdit} />
+                )}
+              </div>
+
+              {/* هل سبق دخول المستشفى */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>هل سبق لك أن دخلت المستشفى خلال العام الماضي بسبب هذه الحالة؟ / Have you been hospitalized in the past year for this condition?</Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch checked={history.hospitalizedLastYear} onCheckedChange={(v) => setHistory((h) => ({ ...h, hospitalizedLastYear: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
+                </div>
+                {history.hospitalizedLastYear && (
+                  <Input className="mr-4" value={history.hospitalizedDetail} onChange={(e) => setHistory((h) => ({ ...h, hospitalizedDetail: e.target.value }))} placeholder="اذكر التفاصيل..." disabled={!canEdit} />
+                )}
+              </div>
+
             </div>
           </Section>
           <Section title="العمليات الجراحية (حتى 5)">
@@ -1016,7 +1681,13 @@ export default function PhysioCasePage() {
                     <Label className="text-xs">اسم العملية {i + 1}</Label>
                     <Input
                       value={s.name}
-                      onChange={(e) => setSurgeries((arr) => arr.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                      onChange={(e) =>
+                        setSurgeries((arr) =>
+                          arr.map((x, j) =>
+                            j === i ? { ...x, name: e.target.value } : x,
+                          ),
+                        )
+                      }
                       placeholder="العملية..."
                     />
                   </div>
@@ -1024,7 +1695,13 @@ export default function PhysioCasePage() {
                     <Label className="text-xs">النوع</Label>
                     <Input
                       value={s.type}
-                      onChange={(e) => setSurgeries((arr) => arr.map((x, j) => j === i ? { ...x, type: e.target.value } : x))}
+                      onChange={(e) =>
+                        setSurgeries((arr) =>
+                          arr.map((x, j) =>
+                            j === i ? { ...x, type: e.target.value } : x,
+                          ),
+                        )
+                      }
                       placeholder="نوع..."
                     />
                   </div>
@@ -1033,7 +1710,13 @@ export default function PhysioCasePage() {
                     <Input
                       type="date"
                       value={s.date}
-                      onChange={(e) => setSurgeries((arr) => arr.map((x, j) => j === i ? { ...x, date: e.target.value } : x))}
+                      onChange={(e) =>
+                        setSurgeries((arr) =>
+                          arr.map((x, j) =>
+                            j === i ? { ...x, date: e.target.value } : x,
+                          ),
+                        )
+                      }
                     />
                   </div>
                 </div>
@@ -1046,7 +1729,11 @@ export default function PhysioCasePage() {
               disabled={submitHistory.isPending || updateStatus.isPending}
               className="w-full gap-2"
             >
-              {(submitHistory.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {submitHistory.isPending || updateStatus.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
               حفظ والانتقال للأهداف
             </Button>
           )}
@@ -1074,41 +1761,54 @@ export default function PhysioCasePage() {
                   <Label>هدف مخصص</Label>
                   <Input
                     value={goalsExtra.customGoal}
-                    onChange={(e) => setGoalsExtra((f) => ({ ...f, customGoal: e.target.value }))}
+                    onChange={(e) =>
+                      setGoalsExtra((f) => ({
+                        ...f,
+                        customGoal: e.target.value,
+                      }))
+                    }
                     placeholder="اذكر الهدف..."
                   />
                 </div>
               )}
               <Separator />
               <div className="grid grid-cols-2 gap-3">
-                {([
-                  ["decreasePain","تخفيف الألم"],
-                  ["improveStrength","تحسين القوة"],
-                  ["lessDifficultyWork","تسهيل العمل"],
-                  ["improveMovement","تحسين الحركة"],
-                ] as [string, string][]).map(([key, label]) => (
+                {(
+                  [
+                    ["decreasePain", "تخفيف الألم"],
+                    ["improveStrength", "تحسين القوة"],
+                    ["lessDifficultyWork", "تسهيل العمل"],
+                    ["improveMovement", "تحسين الحركة"],
+                  ] as [string, string][]
+                ).map(([key, label]) => (
                   <div key={key} className="flex items-center gap-2">
                     <Switch
                       checked={(goalsExtra as any)[key]}
-                      onCheckedChange={(v) => setGoalsExtra((f) => ({ ...f, [key]: v }))}
+                      onCheckedChange={(v) =>
+                        setGoalsExtra((f) => ({ ...f, [key]: v }))
+                      }
                     />
                     <Label className="text-sm">{label}</Label>
                   </div>
                 ))}
               </div>
               <div className="grid grid-cols-3 gap-3">
-                {([
-                  ["standLongerMinutes","وقوف (دقائق)"],
-                  ["sleepLongerMinutes","نوم (دقائق)"],
-                  ["sitLongerMinutes","جلوس (دقائق)"],
-                ] as [string, string][]).map(([key, label]) => (
+                {(
+                  [
+                    ["standLongerMinutes", "وقوف (دقائق)"],
+                    ["sleepLongerMinutes", "نوم (دقائق)"],
+                    ["sitLongerMinutes", "جلوس (دقائق)"],
+                  ] as [string, string][]
+                ).map(([key, label]) => (
                   <div key={key} className="space-y-1.5">
                     <Label className="text-xs">{label}</Label>
                     <Input
                       type="number"
                       min={0}
                       value={(goalsExtra as any)[key]}
-                      onChange={(e) => setGoalsExtra((f) => ({ ...f, [key]: e.target.value }))}
+                      onChange={(e) =>
+                        setGoalsExtra((f) => ({ ...f, [key]: e.target.value }))
+                      }
                     />
                   </div>
                 ))}
@@ -1118,7 +1818,9 @@ export default function PhysioCasePage() {
                 <Textarea
                   rows={2}
                   value={goalsExtra.otherGoals}
-                  onChange={(e) => setGoalsExtra((f) => ({ ...f, otherGoals: e.target.value }))}
+                  onChange={(e) =>
+                    setGoalsExtra((f) => ({ ...f, otherGoals: e.target.value }))
+                  }
                 />
               </div>
             </div>
@@ -1129,7 +1831,11 @@ export default function PhysioCasePage() {
               disabled={submitGoals.isPending || updateStatus.isPending}
               className="w-full gap-2"
             >
-              {(submitGoals.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {submitGoals.isPending || updateStatus.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
               حفظ والانتقال للتقييم الوضعي
             </Button>
           )}
@@ -1143,7 +1849,13 @@ export default function PhysioCasePage() {
               label="الوضعية"
               value={postural.headPosition}
               onChange={(v) => setPostural((p) => ({ ...p, headPosition: v }))}
-              options={[{value:"NORMAL",label:"طبيعي"},{value:"FORWARD",label:"للأمام"},{value:"BACKWARD",label:"للخلف"},{value:"TILTED_LEFT",label:"مائل يسار"},{value:"TILTED_RIGHT",label:"مائل يمين"}]}
+              options={[
+                { value: "NORMAL", label: "طبيعي" },
+                { value: "FORWARD", label: "للأمام" },
+                { value: "BACKWARD", label: "للخلف" },
+                { value: "TILTED_LEFT", label: "مائل يسار" },
+                { value: "TILTED_RIGHT", label: "مائل يمين" },
+              ]}
             />
           </Section>
           {/* Shoulders */}
@@ -1152,48 +1864,127 @@ export default function PhysioCasePage() {
               <RLToggle
                 label="الكتف الأيمن"
                 value={postural.shoulderRight}
-                onChange={(v) => setPostural((p) => ({ ...p, shoulderRight: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"ELEVATED",label:"مرفوع"},{value:"DEPRESSED",label:"منخفض"},{value:"PROTRACTED",label:"للأمام"},{value:"RETRACTED",label:"للخلف"}]}
+                onChange={(v) =>
+                  setPostural((p) => ({ ...p, shoulderRight: v }))
+                }
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "ELEVATED", label: "مرفوع" },
+                  { value: "DEPRESSED", label: "منخفض" },
+                  { value: "PROTRACTED", label: "للأمام" },
+                  { value: "RETRACTED", label: "للخلف" },
+                ]}
               />
               <RLToggle
                 label="الكتف الأيسر"
                 value={postural.shoulderLeft}
-                onChange={(v) => setPostural((p) => ({ ...p, shoulderLeft: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"ELEVATED",label:"مرفوع"},{value:"DEPRESSED",label:"منخفض"},{value:"PROTRACTED",label:"للأمام"},{value:"RETRACTED",label:"للخلف"}]}
+                onChange={(v) =>
+                  setPostural((p) => ({ ...p, shoulderLeft: v }))
+                }
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "ELEVATED", label: "مرفوع" },
+                  { value: "DEPRESSED", label: "منخفض" },
+                  { value: "PROTRACTED", label: "للأمام" },
+                  { value: "RETRACTED", label: "للخلف" },
+                ]}
               />
             </div>
           </Section>
           {/* Elbows */}
           <Section title="3. المرفق">
             <div className="grid grid-cols-2 gap-4">
-              <RLToggle label="مرفق أيمن" value={postural.elbowRight} onChange={(v) => setPostural((p) => ({ ...p, elbowRight: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"FLEXED",label:"مثني"},{value:"EXTENDED",label:"ممدود"},{value:"VALGUS",label:"Valgus"},{value:"VARUS",label:"Varus"}]} />
-              <RLToggle label="مرفق أيسر" value={postural.elbowLeft} onChange={(v) => setPostural((p) => ({ ...p, elbowLeft: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"FLEXED",label:"مثني"},{value:"EXTENDED",label:"ممدود"},{value:"VALGUS",label:"Valgus"},{value:"VARUS",label:"Varus"}]} />
+              <RLToggle
+                label="مرفق أيمن"
+                value={postural.elbowRight}
+                onChange={(v) => setPostural((p) => ({ ...p, elbowRight: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "FLEXED", label: "مثني" },
+                  { value: "EXTENDED", label: "ممدود" },
+                  { value: "VALGUS", label: "Valgus" },
+                  { value: "VARUS", label: "Varus" },
+                ]}
+              />
+              <RLToggle
+                label="مرفق أيسر"
+                value={postural.elbowLeft}
+                onChange={(v) => setPostural((p) => ({ ...p, elbowLeft: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "FLEXED", label: "مثني" },
+                  { value: "EXTENDED", label: "ممدود" },
+                  { value: "VALGUS", label: "Valgus" },
+                  { value: "VARUS", label: "Varus" },
+                ]}
+              />
             </div>
           </Section>
           {/* Thorax */}
           <Section title="4. القفص الصدري">
-            <RLToggle label="الوضعية" value={postural.thoraxPosition} onChange={(v) => setPostural((p) => ({ ...p, thoraxPosition: v }))}
-              options={[{value:"NORMAL",label:"طبيعي"},{value:"KYPHOTIC",label:"حدابي"},{value:"FLAT",label:"مسطح"},{value:"PIGEON",label:"صدر حمامة"}]} />
+            <RLToggle
+              label="الوضعية"
+              value={postural.thoraxPosition}
+              onChange={(v) =>
+                setPostural((p) => ({ ...p, thoraxPosition: v }))
+              }
+              options={[
+                { value: "NORMAL", label: "طبيعي" },
+                { value: "KYPHOTIC", label: "حدابي" },
+                { value: "FLAT", label: "مسطح" },
+                { value: "PIGEON", label: "صدر حمامة" },
+              ]}
+            />
           </Section>
           {/* Spine */}
           <Section title="5. العمود الفقري">
             <div className="space-y-3">
-              <RLToggle label="القطني" value={postural.spineLumbar} onChange={(v) => setPostural((p) => ({ ...p, spineLumbar: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"LORDOSIS",label:"تقعر"},{value:"KYPHOSIS",label:"تحدب"},{value:"FLAT",label:"مسطح"}]} />
+              <RLToggle
+                label="القطني"
+                value={postural.spineLumbar}
+                onChange={(v) => setPostural((p) => ({ ...p, spineLumbar: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "LORDOSIS", label: "تقعر" },
+                  { value: "KYPHOSIS", label: "تحدب" },
+                  { value: "FLAT", label: "مسطح" },
+                ]}
+              />
               <div className="flex items-center gap-3">
-                <Switch checked={postural.spineScoliosis} onCheckedChange={(v) => setPostural((p) => ({ ...p, spineScoliosis: v }))} />
+                <Switch
+                  checked={postural.spineScoliosis}
+                  onCheckedChange={(v) =>
+                    setPostural((p) => ({ ...p, spineScoliosis: v }))
+                  }
+                />
                 <Label>جنف (Scoliosis)</Label>
               </div>
               {postural.spineScoliosis && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">الذروة</Label>
-                    <Input value={postural.scoliosisApex} onChange={(e) => setPostural((p) => ({ ...p, scoliosisApex: e.target.value }))} placeholder="L1, T6..." />
+                    <Input
+                      value={postural.scoliosisApex}
+                      onChange={(e) =>
+                        setPostural((p) => ({
+                          ...p,
+                          scoliosisApex: e.target.value,
+                        }))
+                      }
+                      placeholder="L1, T6..."
+                    />
                   </div>
-                  <RLToggle label="الاتجاه" value={postural.scoliosisDirection} onChange={(v) => setPostural((p) => ({ ...p, scoliosisDirection: v }))}
-                    options={[{value:"LEFT",label:"يسار"},{value:"RIGHT",label:"يمين"}]} />
+                  <RLToggle
+                    label="الاتجاه"
+                    value={postural.scoliosisDirection}
+                    onChange={(v) =>
+                      setPostural((p) => ({ ...p, scoliosisDirection: v }))
+                    }
+                    options={[
+                      { value: "LEFT", label: "يسار" },
+                      { value: "RIGHT", label: "يمين" },
+                    ]}
+                  />
                 </div>
               )}
             </div>
@@ -1201,37 +1992,115 @@ export default function PhysioCasePage() {
           {/* Pelvis */}
           <Section title="6. الحوض">
             <div className="grid grid-cols-2 gap-4">
-              <RLToggle label="الإمالة الأمامية/الخلفية" value={postural.pelvisTilt} onChange={(v) => setPostural((p) => ({ ...p, pelvisTilt: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"ANTERIOR",label:"للأمام"},{value:"POSTERIOR",label:"للخلف"}]} />
-              <RLToggle label="الإمالة الجانبية" value={postural.pelvisLateral} onChange={(v) => setPostural((p) => ({ ...p, pelvisLateral: v }))}
-                options={[{value:"NONE",label:"لا"},{value:"LEFT",label:"يسار"},{value:"RIGHT",label:"يمين"}]} />
+              <RLToggle
+                label="الإمالة الأمامية/الخلفية"
+                value={postural.pelvisTilt}
+                onChange={(v) => setPostural((p) => ({ ...p, pelvisTilt: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "ANTERIOR", label: "للأمام" },
+                  { value: "POSTERIOR", label: "للخلف" },
+                ]}
+              />
+              <RLToggle
+                label="الإمالة الجانبية"
+                value={postural.pelvisLateral}
+                onChange={(v) =>
+                  setPostural((p) => ({ ...p, pelvisLateral: v }))
+                }
+                options={[
+                  { value: "NONE", label: "لا" },
+                  { value: "LEFT", label: "يسار" },
+                  { value: "RIGHT", label: "يمين" },
+                ]}
+              />
             </div>
           </Section>
           {/* Hips */}
           <Section title="7. الورك">
             <div className="grid grid-cols-2 gap-4">
-              <RLToggle label="ورك أيمن" value={postural.hipRight} onChange={(v) => setPostural((p) => ({ ...p, hipRight: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"FLEXED",label:"مثني"},{value:"EXTENDED",label:"ممدود"},{value:"ABDUCTED",label:"بعيد"},{value:"ADDUCTED",label:"قريب"}]} />
-              <RLToggle label="ورك أيسر" value={postural.hipLeft} onChange={(v) => setPostural((p) => ({ ...p, hipLeft: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"FLEXED",label:"مثني"},{value:"EXTENDED",label:"ممدود"},{value:"ABDUCTED",label:"بعيد"},{value:"ADDUCTED",label:"قريب"}]} />
+              <RLToggle
+                label="ورك أيمن"
+                value={postural.hipRight}
+                onChange={(v) => setPostural((p) => ({ ...p, hipRight: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "FLEXED", label: "مثني" },
+                  { value: "EXTENDED", label: "ممدود" },
+                  { value: "ABDUCTED", label: "بعيد" },
+                  { value: "ADDUCTED", label: "قريب" },
+                ]}
+              />
+              <RLToggle
+                label="ورك أيسر"
+                value={postural.hipLeft}
+                onChange={(v) => setPostural((p) => ({ ...p, hipLeft: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "FLEXED", label: "مثني" },
+                  { value: "EXTENDED", label: "ممدود" },
+                  { value: "ABDUCTED", label: "بعيد" },
+                  { value: "ADDUCTED", label: "قريب" },
+                ]}
+              />
             </div>
           </Section>
           {/* Knees */}
           <Section title="8. الركبتان">
             <div className="grid grid-cols-2 gap-4">
-              <RLToggle label="ركبة يمنى" value={postural.kneeRight} onChange={(v) => setPostural((p) => ({ ...p, kneeRight: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"VALGUS",label:"Valgus"},{value:"VARUS",label:"Varus"},{value:"HYPEREXTENDED",label:"مفرط التمديد"},{value:"FLEXED",label:"مثنية"}]} />
-              <RLToggle label="ركبة يسرى" value={postural.kneeLeft} onChange={(v) => setPostural((p) => ({ ...p, kneeLeft: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"VALGUS",label:"Valgus"},{value:"VARUS",label:"Varus"},{value:"HYPEREXTENDED",label:"مفرط التمديد"},{value:"FLEXED",label:"مثنية"}]} />
+              <RLToggle
+                label="ركبة يمنى"
+                value={postural.kneeRight}
+                onChange={(v) => setPostural((p) => ({ ...p, kneeRight: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "VALGUS", label: "Valgus" },
+                  { value: "VARUS", label: "Varus" },
+                  { value: "HYPEREXTENDED", label: "مفرط التمديد" },
+                  { value: "FLEXED", label: "مثنية" },
+                ]}
+              />
+              <RLToggle
+                label="ركبة يسرى"
+                value={postural.kneeLeft}
+                onChange={(v) => setPostural((p) => ({ ...p, kneeLeft: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "VALGUS", label: "Valgus" },
+                  { value: "VARUS", label: "Varus" },
+                  { value: "HYPEREXTENDED", label: "مفرط التمديد" },
+                  { value: "FLEXED", label: "مثنية" },
+                ]}
+              />
             </div>
           </Section>
           {/* Feet */}
           <Section title="9. القدم">
             <div className="grid grid-cols-2 gap-4">
-              <RLToggle label="قدم يمنى" value={postural.footRight} onChange={(v) => setPostural((p) => ({ ...p, footRight: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"PRONATED",label:"مُكَفَّأة"},{value:"SUPINATED",label:"مُصَعَّدة"},{value:"FLAT",label:"مسطحة"},{value:"HIGH_ARCH",label:"قوس عالي"}]} />
-              <RLToggle label="قدم يسرى" value={postural.footLeft} onChange={(v) => setPostural((p) => ({ ...p, footLeft: v }))}
-                options={[{value:"NORMAL",label:"طبيعي"},{value:"PRONATED",label:"مُكَفَّأة"},{value:"SUPINATED",label:"مُصَعَّدة"},{value:"FLAT",label:"مسطحة"},{value:"HIGH_ARCH",label:"قوس عالي"}]} />
+              <RLToggle
+                label="قدم يمنى"
+                value={postural.footRight}
+                onChange={(v) => setPostural((p) => ({ ...p, footRight: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "PRONATED", label: "مُكَفَّأة" },
+                  { value: "SUPINATED", label: "مُصَعَّدة" },
+                  { value: "FLAT", label: "مسطحة" },
+                  { value: "HIGH_ARCH", label: "قوس عالي" },
+                ]}
+              />
+              <RLToggle
+                label="قدم يسرى"
+                value={postural.footLeft}
+                onChange={(v) => setPostural((p) => ({ ...p, footLeft: v }))}
+                options={[
+                  { value: "NORMAL", label: "طبيعي" },
+                  { value: "PRONATED", label: "مُكَفَّأة" },
+                  { value: "SUPINATED", label: "مُصَعَّدة" },
+                  { value: "FLAT", label: "مسطحة" },
+                  { value: "HIGH_ARCH", label: "قوس عالي" },
+                ]}
+              />
             </div>
           </Section>
           {/* Notes */}
@@ -1239,24 +2108,61 @@ export default function PhysioCasePage() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label>التشخيص</Label>
-                <Input value={postural.diagnosis} onChange={(e) => setPostural((p) => ({ ...p, diagnosis: e.target.value }))} placeholder="التشخيص الفيزيائي..." />
+                <Input
+                  value={postural.diagnosis}
+                  onChange={(e) =>
+                    setPostural((p) => ({ ...p, diagnosis: e.target.value }))
+                  }
+                  placeholder="التشخيص الفيزيائي..."
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>ملاحظات التشنج</Label>
-                <Textarea rows={2} value={postural.spasticityNotes} onChange={(e) => setPostural((p) => ({ ...p, spasticityNotes: e.target.value }))} />
+                <Textarea
+                  rows={2}
+                  value={postural.spasticityNotes}
+                  onChange={(e) =>
+                    setPostural((p) => ({
+                      ...p,
+                      spasticityNotes: e.target.value,
+                    }))
+                  }
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>ملاحظات عامة</Label>
-                <Textarea rows={2} value={postural.generalNotes} onChange={(e) => setPostural((p) => ({ ...p, generalNotes: e.target.value }))} />
+                <Textarea
+                  rows={2}
+                  value={postural.generalNotes}
+                  onChange={(e) =>
+                    setPostural((p) => ({ ...p, generalNotes: e.target.value }))
+                  }
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>الوضعية الجلوسية</Label>
-                  <Input value={postural.seatedPosition} onChange={(e) => setPostural((p) => ({ ...p, seatedPosition: e.target.value }))} />
+                  <Input
+                    value={postural.seatedPosition}
+                    onChange={(e) =>
+                      setPostural((p) => ({
+                        ...p,
+                        seatedPosition: e.target.value,
+                      }))
+                    }
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>التحكم بالجذع</Label>
-                  <Input value={postural.trunkControl} onChange={(e) => setPostural((p) => ({ ...p, trunkControl: e.target.value }))} />
+                  <Input
+                    value={postural.trunkControl}
+                    onChange={(e) =>
+                      setPostural((p) => ({
+                        ...p,
+                        trunkControl: e.target.value,
+                      }))
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -1267,7 +2173,11 @@ export default function PhysioCasePage() {
               disabled={submitPostural.isPending || updateStatus.isPending}
               className="w-full gap-2"
             >
-              {(submitPostural.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {submitPostural.isPending || updateStatus.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
               حفظ والانتقال لخطة العلاج
             </Button>
           )}
@@ -1279,23 +2189,69 @@ export default function PhysioCasePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>من تاريخ</Label>
-                <Input type="date" value={planHeader.treatmentFrom} onChange={(e) => setPlanHeader((h) => ({ ...h, treatmentFrom: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={planHeader.treatmentFrom}
+                  onChange={(e) =>
+                    setPlanHeader((h) => ({
+                      ...h,
+                      treatmentFrom: e.target.value,
+                    }))
+                  }
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>إلى تاريخ</Label>
-                <Input type="date" value={planHeader.treatmentTo} onChange={(e) => setPlanHeader((h) => ({ ...h, treatmentTo: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={planHeader.treatmentTo}
+                  onChange={(e) =>
+                    setPlanHeader((h) => ({
+                      ...h,
+                      treatmentTo: e.target.value,
+                    }))
+                  }
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>عدد الزيارات المتوقع</Label>
-                <Input type="number" min={1} value={planHeader.anticipatedVisits} onChange={(e) => setPlanHeader((h) => ({ ...h, anticipatedVisits: e.target.value }))} />
+                <Input
+                  type="number"
+                  min={1}
+                  value={planHeader.anticipatedVisits}
+                  onChange={(e) =>
+                    setPlanHeader((h) => ({
+                      ...h,
+                      anticipatedVisits: e.target.value,
+                    }))
+                  }
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>معرّف المعالج</Label>
-                <Input value={planHeader.physiotherapistId} onChange={(e) => setPlanHeader((h) => ({ ...h, physiotherapistId: e.target.value }))} placeholder="ID المعالج..." />
+                <Input
+                  value={planHeader.physiotherapistId}
+                  onChange={(e) =>
+                    setPlanHeader((h) => ({
+                      ...h,
+                      physiotherapistId: e.target.value,
+                    }))
+                  }
+                  placeholder="ID المعالج..."
+                />
               </div>
               <div className="space-y-1.5 col-span-2">
                 <Label>معرّف مدير الحالة</Label>
-                <Input value={planHeader.caseManagerId} onChange={(e) => setPlanHeader((h) => ({ ...h, caseManagerId: e.target.value }))} placeholder="ID مدير الحالة..." />
+                <Input
+                  value={planHeader.caseManagerId}
+                  onChange={(e) =>
+                    setPlanHeader((h) => ({
+                      ...h,
+                      caseManagerId: e.target.value,
+                    }))
+                  }
+                  placeholder="ID مدير الحالة..."
+                />
               </div>
             </div>
           </Section>
@@ -1306,7 +2262,9 @@ export default function PhysioCasePage() {
                   key={m}
                   label={THERAPY_MODALITY_LABELS[m]}
                   active={planModalities.includes(m)}
-                  onClick={() => toggleArr(planModalities, m, setPlanModalities)}
+                  onClick={() =>
+                    toggleArr(planModalities, m, setPlanModalities)
+                  }
                 />
               ))}
             </div>
@@ -1315,24 +2273,48 @@ export default function PhysioCasePage() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label>الملاحظة / Observation</Label>
-                <Textarea rows={3} value={planObservation} onChange={(e) => setPlanObservation(e.target.value)} placeholder="ملاحظات الحالة..." />
+                <Textarea
+                  rows={3}
+                  value={planObservation}
+                  onChange={(e) => setPlanObservation(e.target.value)}
+                  placeholder="ملاحظات الحالة..."
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>تعليقات الخطة</Label>
-                <Textarea rows={2} value={planRemarks} onChange={(e) => setPlanRemarks(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  value={planRemarks}
+                  onChange={(e) => setPlanRemarks(e.target.value)}
+                />
               </div>
             </div>
           </Section>
-          {canEdit && ["POSTURAL_ASSESSMENT", "GOALS", "TREATMENT_PLAN", "MEDICAL_HISTORY"].includes(c.status) && (
-            <Button
-              onClick={handleSavePlan}
-              disabled={planModalities.length === 0 || submitPlan.isPending || updateCase.isPending || updateStatus.isPending}
-              className="w-full gap-2"
-            >
-              {(submitPlan.isPending || updateCase.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              حفظ خطة العلاج
-            </Button>
-          )}
+          {canEdit &&
+            [
+              "POSTURAL_ASSESSMENT",
+              "GOALS",
+              "TREATMENT_PLAN",
+              "MEDICAL_HISTORY",
+            ].includes(c.status) && (
+              <Button
+                onClick={handleSavePlan}
+                disabled={
+                  planModalities.length === 0 ||
+                  submitPlan.isPending ||
+                  updateCase.isPending ||
+                  updateStatus.isPending
+                }
+                className="w-full gap-2"
+              >
+                {submitPlan.isPending || updateCase.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                حفظ خطة العلاج
+              </Button>
+            )}
         </TabsContent>
 
         {/* ── SUPERVISOR REVIEW ───────────────────────────────────────────── */}
@@ -1349,28 +2331,42 @@ export default function PhysioCasePage() {
                 />
               </div>
               {c.status === "TREATMENT_PLAN" ? (
-                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
+                <ActionGuard
+                  permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}
+                >
                   <Button
                     onClick={handleSupervisorReview}
                     disabled={supervisorRev.isPending}
                     className="w-full gap-2"
                   >
-                    {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {supervisorRev.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
                     اعتماد واتجاه لتوقيع الطبيب
                   </Button>
                 </ActionGuard>
-              ) : !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status) && (
-                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
-                  <Button
-                    variant="outline"
-                    onClick={handleSupervisorReview}
-                    disabled={supervisorRev.isPending}
-                    className="w-full gap-2"
+              ) : (
+                !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(
+                  c.status,
+                ) && (
+                  <ActionGuard
+                    permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}
                   >
-                    {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    حفظ الملاحظات
-                  </Button>
-                </ActionGuard>
+                    <Button
+                      variant="outline"
+                      onClick={handleSupervisorReview}
+                      disabled={supervisorRev.isPending}
+                      className="w-full gap-2"
+                    >
+                      {supervisorRev.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : null}
+                      حفظ الملاحظات
+                    </Button>
+                  </ActionGuard>
+                )
               )}
             </div>
           </Section>
@@ -1381,7 +2377,8 @@ export default function PhysioCasePage() {
           <Section title="توقيع الطبيب">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                التوقيع متاح بعد اعتماد رئيس القسم. يجب أن تكون الطبيب المشرف المعيّن.
+                التوقيع متاح بعد اعتماد رئيس القسم. يجب أن تكون الطبيب المشرف
+                المعيّن.
               </p>
               {c.status === "SUPERVISOR_REVIEW" && (
                 <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
@@ -1390,8 +2387,15 @@ export default function PhysioCasePage() {
                   </Button>
                 </ActionGuard>
               )}
-              {["DOCTOR_SIGN", "ACTIVE_TREATMENT", "COMPLETED", "DISCHARGED"].includes(c.status) && (
-                <p className="text-sm text-green-600 font-medium">تمت عملية التوقيع — الحالة جاهزة للجلسات</p>
+              {[
+                "DOCTOR_SIGN",
+                "ACTIVE_TREATMENT",
+                "COMPLETED",
+                "DISCHARGED",
+              ].includes(c.status) && (
+                <p className="text-sm text-green-600 font-medium">
+                  تمت عملية التوقيع — الحالة جاهزة للجلسات
+                </p>
               )}
             </div>
           </Section>
@@ -1406,11 +2410,29 @@ export default function PhysioCasePage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>التاريخ</Label>
-                      <Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm((f) => ({ ...f, date: e.target.value }))} />
+                      <Input
+                        type="date"
+                        value={sessionForm.date}
+                        onChange={(e) =>
+                          setSessionForm((f) => ({
+                            ...f,
+                            date: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label>الوقت</Label>
-                      <Input type="time" value={sessionForm.time} onChange={(e) => setSessionForm((f) => ({ ...f, time: e.target.value }))} />
+                      <Input
+                        type="time"
+                        value={sessionForm.time}
+                        onChange={(e) =>
+                          setSessionForm((f) => ({
+                            ...f,
+                            time: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -1421,7 +2443,11 @@ export default function PhysioCasePage() {
                           key={m}
                           label={THERAPY_MODALITY_LABELS[m]}
                           active={sessionForm.modalities.includes(m)}
-                          onClick={() => toggleArr(sessionForm.modalities, m, (v) => setSessionForm((f) => ({ ...f, modalities: v })))}
+                          onClick={() =>
+                            toggleArr(sessionForm.modalities, m, (v) =>
+                              setSessionForm((f) => ({ ...f, modalities: v })),
+                            )
+                          }
                         />
                       ))}
                     </div>
@@ -1429,20 +2455,45 @@ export default function PhysioCasePage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>شدة الألم (0-10)</Label>
-                      <Input type="number" min={0} max={10} value={sessionForm.painLevel} onChange={(e) => setSessionForm((f) => ({ ...f, painLevel: e.target.value }))} />
+                      <Input
+                        type="number"
+                        min={0}
+                        max={10}
+                        value={sessionForm.painLevel}
+                        onChange={(e) =>
+                          setSessionForm((f) => ({
+                            ...f,
+                            painLevel: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label>ملاحظات</Label>
-                      <Input value={sessionForm.notes} onChange={(e) => setSessionForm((f) => ({ ...f, notes: e.target.value }))} />
+                      <Input
+                        value={sessionForm.notes}
+                        onChange={(e) =>
+                          setSessionForm((f) => ({
+                            ...f,
+                            notes: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={handleAddSession} disabled={addSession.isPending} className="flex-1 gap-2">
+                    <Button
+                      onClick={handleAddSession}
+                      disabled={addSession.isPending}
+                      className="flex-1 gap-2"
+                    >
                       <Plus className="h-4 w-4" /> إضافة جلسة
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => updateStatus.mutate({ id, status: "COMPLETED" })}
+                      onClick={() =>
+                        updateStatus.mutate({ id, status: "COMPLETED" })
+                      }
                       disabled={sessions.length === 0}
                     >
                       إنهاء الجلسات
@@ -1460,24 +2511,45 @@ export default function PhysioCasePage() {
                   <div key={s.id} className="rounded-lg border p-3 space-y-2">
                     <div className="flex justify-between items-start">
                       <div className="flex gap-2 items-center flex-wrap">
-                        <span className="font-medium text-sm">{new Date(s.date).toLocaleDateString("ar")}</span>
-                        {s.time && <span className="text-xs text-muted-foreground">{s.time}</span>}
-                        {s.painLevel != null && <Badge variant="outline" className="text-xs">ألم: {s.painLevel}/10</Badge>}
+                        <span className="font-medium text-sm">
+                          {new Date(s.date).toLocaleDateString("ar")}
+                        </span>
+                        {s.time && (
+                          <span className="text-xs text-muted-foreground">
+                            {s.time}
+                          </span>
+                        )}
+                        {s.painLevel != null && (
+                          <Badge variant="outline" className="text-xs">
+                            ألم: {s.painLevel}/10
+                          </Badge>
+                        )}
                       </div>
-                      <button onClick={() => deleteSession.mutate({ id, sessionId: s.id })} className="text-destructive hover:opacity-70">
+                      <button
+                        onClick={() =>
+                          deleteSession.mutate({ id, sessionId: s.id })
+                        }
+                        className="text-destructive hover:opacity-70"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {s.modalitiesApplied.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {s.modalitiesApplied.map((m) => (
-                          <Badge key={m} variant="secondary" className="text-xs">
+                          <Badge
+                            key={m}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {THERAPY_MODALITY_LABELS[m as TherapyModality] ?? m}
                           </Badge>
                         ))}
                       </div>
                     )}
-                    {s.notes && <p className="text-xs text-muted-foreground">{s.notes}</p>}
+                    {s.notes && (
+                      <p className="text-xs text-muted-foreground">{s.notes}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1489,7 +2561,9 @@ export default function PhysioCasePage() {
         <TabsContent value="timeline" className="mt-4">
           <Section title="السجل الزمني">
             {timeline.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">لا توجد أحداث بعد</p>
+              <p className="text-center py-8 text-muted-foreground">
+                لا توجد أحداث بعد
+              </p>
             ) : (
               <div className="relative space-y-4 pr-4">
                 <div className="absolute right-2 top-0 bottom-0 w-0.5 bg-border" />
@@ -1499,10 +2573,20 @@ export default function PhysioCasePage() {
                     <div className="flex-1 rounded-lg border p-3 space-y-1">
                       <div className="flex justify-between items-start">
                         <p className="font-medium text-sm">{ev.title}</p>
-                        <span className="text-xs text-muted-foreground">{new Date(ev.date).toLocaleDateString("ar")}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(ev.date).toLocaleDateString("ar")}
+                        </span>
                       </div>
-                      {ev.description && <p className="text-xs text-muted-foreground">{ev.description}</p>}
-                      {ev.actorName && <p className="text-xs text-muted-foreground">بواسطة: {ev.actorName}</p>}
+                      {ev.description && (
+                        <p className="text-xs text-muted-foreground">
+                          {ev.description}
+                        </p>
+                      )}
+                      {ev.actorName && (
+                        <p className="text-xs text-muted-foreground">
+                          بواسطة: {ev.actorName}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}

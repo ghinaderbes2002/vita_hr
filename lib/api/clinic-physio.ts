@@ -59,36 +59,36 @@ export const THERAPY_MODALITY_LABELS: Record<TherapyModality, string> = {
 };
 
 export const CHRONIC_CONDITION_LABELS: Record<ChronicCondition, string> = {
-  AIDS_HIV:               "الإيدز / HIV",
-  MULTIPLE_SCLEROSIS:     "التصلب المتعدد",
-  LIVER_PROBLEMS:         "أمراض الكبد",
-  ARTHRITIS:              "التهاب المفاصل",
-  STDS:                   "أمراض منقولة جنسياً",
-  PNEUMONIA:              "التهاب رئوي",
-  CANCER:                 "السرطان",
-  ANGINA:                 "ذبحة صدرية",
-  URINARY_INFECTION:      "التهاب مسالك بولية",
-  DIABETES:               "السكري",
-  BLOOD_CLOTS:            "جلطات الدم",
-  HEMOPHILIA:             "الهيموفيليا (ناعور)",
-  CIRCULATION_PROBLEMS:   "مشاكل الدورة الدموية",
-  LUNG_ISSUES:            "أمراض الرئة",
-  EYE_INFECTION:          "التهاب العين",
-  STROKE:                 "السكتة الدماغية",
-  JOINT_BONE_INFECTION:   "التهاب المفاصل والعظام",
-  KIDNEY_PROBLEMS:        "أمراض الكلى",
-  MUSCULOSKELETAL:        "أمراض العضلات والهيكل العظمي",
-  ANEMIA:                 "فقر الدم",
-  TUBERCULOSIS:           "السل",
-  ASTHMA:                 "الربو",
-  ARTERIOSCLEROSIS:       "تصلب الشرايين",
-  CHEMICAL_DEPENDENCY:    "إدمان / اعتماد كيميائي",
-  BONE_INFECTION:         "التهاب العظام",
-  EPILEPSY:               "الصرع",
-  DEPRESSION:             "الاكتئاب",
-  HEART_PROBLEMS:         "أمراض القلب",
-  HYPERTENSION:           "ضغط الدم",
-  OTHER:                  "أخرى",
+  LIVER_PROBLEMS:         "مشاكل الكبد / Liver Problems",
+  PNEUMONIA:              "التهاب رئوي / Pneumonia",
+  URINARY_INFECTION:      "التهاب المسالك البولية / Urinary Infection",
+  DIABETES:               "السكري / Diabetes",
+  HEMOPHILIA:             "الناعور / Hemophilia",
+  LUNG_ISSUES:            "مشاكل الرئة / Lung Issues",
+  STROKE:                 "جلطة / Stroke",
+  KIDNEY_PROBLEMS:        "مشاكل الكلى / Kidney Problems",
+  ANEMIA:                 "فقر الدم / Anemia",
+  ASTHMA:                 "الربو / Asthma",
+  CHEMICAL_DEPENDENCY:    "الإدمان الكيميائي / Chemical Dependency",
+  EPILEPSY:               "الصرع / Epilepsy",
+  HYPERTENSION:           "ارتفاع / انخفاض ضغط الدم / High/Low Blood Pressure",
+  AIDS_HIV:               "الإيدز / AIDS/HIV",
+  ARTHRITIS:              "التهاب المفاصل / Arthritis",
+  CANCER:                 "السرطان / Cancer",
+  MULTIPLE_SCLEROSIS:     "التصلب المتعدد / Multiple Sclerosis",
+  STDS:                   "الأمراض المنقولة جنسياً / STD",
+  ANGINA:                 "ذبحة / Angina",
+  BLOOD_CLOTS:            "جلطات دم / Blood Clots",
+  CIRCULATION_PROBLEMS:   "مشاكل الدورة الدموية / Circulation Problems",
+  EYE_INFECTION:          "التهاب العين / Eye Infection",
+  JOINT_BONE_INFECTION:   "عدوى المفاصل / العظام / Joint/Bone Infection",
+  MUSCULOSKELETAL:        "مشاكل الجهاز العضلي الهيكلي / Musculoskeletal Problems",
+  TUBERCULOSIS:           "مرض السل / Tuberculosis",
+  ARTERIOSCLEROSIS:       "تصلب الشرايين / Arteriosclerosis",
+  BONE_INFECTION:         "التهاب نقي العظم / Bone Infection",
+  DEPRESSION:             "اكتئاب / Depression",
+  HEART_PROBLEMS:         "مشاكل القلب / Heart Problems",
+  OTHER:                  "آخر / Other",
 };
 
 export const PHYSIO_GOAL_LABELS: Record<PhysioGoal, string> = {
@@ -124,7 +124,20 @@ export interface PhysioCase {
   hadPreviousInjury?: boolean | null;
   bestTimeOfDay?: string | null;
   worstTimeOfDay?: string | null;
+  complaintType?: string | null;
+  painLocation?: string | null;
+  complaintDuration?: string | null;
+  complaintNotes?: string | null;
+  hasChronicDiseases?: boolean | null;
+  chronicDiseasesDetail?: string | null;
+  visitedSpecialist?: boolean | null;
+  specialistReason?: string | null;
+  hadPreviousPT?: boolean | null;
+  previousPTDetail?: string | null;
+  hadSurgery?: boolean | null;
+  surgeryDetail?: string | null;
   painTypes?: string[] | null;
+  painTypeOther?: string | null;
   aggravatingFactors?: string[] | null;
   alleviatingFactors?: string[] | null;
   aggravatingOther?: string | null;
@@ -167,7 +180,20 @@ export interface UpdatePhysioCaseDto {
   hadPreviousInjury?: boolean;
   bestTimeOfDay?: string;
   worstTimeOfDay?: string;
+  complaintType?: string;
+  painLocation?: string;
+  complaintDuration?: string;
+  complaintNotes?: string;
+  hasChronicDiseases?: boolean;
+  chronicDiseasesDetail?: string;
+  visitedSpecialist?: boolean;
+  specialistReason?: string;
+  hadPreviousPT?: boolean;
+  previousPTDetail?: string;
+  hadSurgery?: boolean;
+  surgeryDetail?: string;
   painTypes?: string[];
+  painTypeOther?: string;
   aggravatingFactors?: string[];
   alleviatingFactors?: string[];
   aggravatingOther?: string;
@@ -192,33 +218,51 @@ export interface PainRegion {
 
 export interface PainMapDto {
   regions: PainRegion[];
+  painTypes?: string[];
+  painTypeOther?: string;
+  aggravatingFactors?: string[];
+  aggravatingOther?: string;
+  alleviatingFactors?: string[];
+  alleviatingOther?: string;
 }
 
 export interface MedicalHistoryDto {
+  lifeType?: string;
   smokes?: boolean;
   hasSmokedBefore?: boolean;
   smokingFrequency?: string;
   hasPacemaker?: boolean;
+  pacemakerDetail?: string;
   allergies?: string;
   adhesiveAllergy?: boolean;
+  isPregnant?: boolean;
   currentMedications?: string;
   prescriptionDrugs?: boolean;
   herbalSupplements?: boolean;
   supplementsList?: string;
-  isPregnant?: boolean;
   previousDiagnoses?: string;
-  chronicConditions?: ChronicCondition[];
+  previousComplaintsSurgeries?: string;
+  hasOtherHealthProblems?: boolean;
   otherConditions?: string;
   doctorRestrictions?: string;
+  hadPTSameProblem?: boolean;
+  ptSameProblemDetail?: string;
+  receivingOtherTreatment?: boolean;
+  otherTreatmentDetail?: string;
+  chronicConditions?: ChronicCondition[];
   testsHad?: TestType[];
   testsOther?: string;
   testResults?: string;
   newAnalysis?: string;
   newAnalysisDate?: string;
+  newAnalysisAttachment?: string;
   oldAnalysis?: string;
   oldAnalysisDate?: string;
+  oldAnalysisAttachment?: string;
+  boneDensityTest?: boolean;
+  boneDensityDetail?: string;
   hospitalizedLastYear?: boolean;
-  receivingOtherTreatment?: boolean;
+  hospitalizedDetail?: string;
 }
 
 export interface SurgeryDto {
@@ -340,6 +384,11 @@ export const clinicPhysioApi = {
     const { data } = await apiClient.get(`/physio/cases/by-patient/${patientId}`);
     const d = data?.data ?? data;
     return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  submitComplaint: async (id: string, dto: Partial<UpdatePhysioCaseDto>): Promise<PhysioCase> => {
+    const { data } = await apiClient.put(`/physio/cases/${id}/complaint`, dto);
+    return data?.data ?? data;
   },
 
   submitPainMap: async (id: string, dto: PainMapDto) => {

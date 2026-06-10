@@ -90,6 +90,21 @@ export function useUpdatePhysioStatus() {
   });
 }
 
+export function useSubmitComplaint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: Partial<UpdatePhysioCaseDto> }) =>
+      clinicPhysioApi.submitComplaint(id, dto),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", data.id] });
+      toast.success("تم الحفظ");
+    },
+    onError: (e: any) => {
+      toast.error(e?.response?.data?.message || "فشل الحفظ");
+    },
+  });
+}
+
 export function useSubmitPainMap() {
   const qc = useQueryClient();
   return useMutation({
