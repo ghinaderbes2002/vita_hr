@@ -35,8 +35,24 @@ function StatCard({
   title: string; value: any; icon: any;
   iconBg: string; onClick?: () => void;
 }) {
+  const [navigating, setNavigating] = useState(false);
+
+  const handleClick = () => {
+    if (!onClick || navigating) return;
+    setNavigating(true);
+    onClick();
+  };
+
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={onClick}>
+    <Card
+      className="border-0 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden"
+      onClick={handleClick}
+    >
+      {navigating && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[2px]">
+          <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        </div>
+      )}
       <CardContent className="p-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -427,7 +443,7 @@ export default function DashboardPage() {
     localStorage.removeItem(CONDUCT_DOC_KEY);
   };
 
-  if (isLoading) {
+  if (isLoading || !d) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
