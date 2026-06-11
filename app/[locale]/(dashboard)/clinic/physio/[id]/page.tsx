@@ -54,6 +54,7 @@ import {
   useDeletePhysioSession,
   usePhysioTimeline,
 } from "@/lib/hooks/use-clinic-physio";
+import { useUsers } from "@/lib/hooks/use-users";
 import {
   PhysioStatus,
   PainRegion,
@@ -215,6 +216,10 @@ export default function PhysioCasePage() {
   const signPlan = useSignPhysioTreatmentPlan();
   const addSession = useAddPhysioSession();
   const deleteSession = useDeletePhysioSession();
+
+  const { data: usersData } = useUsers({ limit: 200 });
+  const allUsers: { id: string; fullName: string }[] =
+    (usersData as any)?.data?.items ?? (usersData as any)?.items ?? [];
 
   // ── Complaint state ──────────────────────────────────────────────────────────
   const [complaint, setComplaint] = useState({
@@ -3372,21 +3377,37 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">اسم أخصائي العلاج الطبيعي / Physiotherapist</Label>
-                <Input
-                  value={planHeader.physiotherapistId}
-                  onChange={(e) => setPlanHeader((h) => ({ ...h, physiotherapistId: e.target.value }))}
-                  placeholder="ID المعالج..."
+                <Select
+                  value={planHeader.physiotherapistId || ""}
+                  onValueChange={(v) => canEdit && setPlanHeader((h) => ({ ...h, physiotherapistId: v }))}
                   disabled={!canEdit}
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر المعالج..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5 col-span-2">
                 <Label className="text-sm">مدير الحالة / Case Manager</Label>
-                <Input
-                  value={planHeader.caseManagerId}
-                  onChange={(e) => setPlanHeader((h) => ({ ...h, caseManagerId: e.target.value }))}
-                  placeholder="ID مدير الحالة..."
+                <Select
+                  value={planHeader.caseManagerId || ""}
+                  onValueChange={(v) => canEdit && setPlanHeader((h) => ({ ...h, caseManagerId: v }))}
                   disabled={!canEdit}
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر مدير الحالة..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </Section>
