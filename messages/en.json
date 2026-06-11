@@ -88,6 +88,8 @@
       "absencesThisMonth": "Absences This Month",
       "approvedLeavesThisMonth": "Approved Leaves This Month",
       "requestsPendingCEO": "Requests Awaiting CEO Approval",
+      "leavesPendingCEO": "Leave Requests Awaiting Your Approval",
+      "adminRequestsPendingCEO": "Admin Requests Awaiting Your Approval",
       "probationPendingCEO": "Probation Evaluations Awaiting CEO",
       "candidatesCEOStage": "Candidates in CEO Approval Stage",
       "viewAll": "View All"

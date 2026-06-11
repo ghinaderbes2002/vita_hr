@@ -226,6 +226,8 @@
       "absencesThisMonth": "غيابات هذا الشهر",
       "approvedLeavesThisMonth": "إجازات معتمدة هذا الشهر",
       "requestsPendingCEO": "طلبات بانتظار موافقة CEO",
+      "leavesPendingCEO": "إجازات بانتظار موافقتك",
+      "adminRequestsPendingCEO": "طلبات ادارية بانتظار موافقتك",
       "probationPendingCEO": "تقييمات تجربة بانتظار CEO",
       "candidatesCEOStage": "مرشحون في مرحلة موافقة CEO",
       "viewAll": "عرض الكل"

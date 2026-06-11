@@ -21,6 +21,7 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useQuery } from "@tanstack/react-query";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { usePendingMyApproval } from "@/lib/hooks/use-requests";
+import { usePendingManagerLeaveRequests } from "@/lib/hooks/use-leave-requests";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
@@ -316,6 +317,11 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
 // ── CEO Dashboard ─────────────────────────────────────────────────────────────
 function CEODashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
   const t = useTranslations("dashboard");
+  const { data: pendingAdminData } = usePendingMyApproval({ limit: 1 });
+  const pendingAdminCount = (pendingAdminData as any)?.total ?? (pendingAdminData as any)?.data?.total ?? 0;
+  const { data: pendingLeavesData } = usePendingManagerLeaveRequests({ status: "PENDING_MANAGER", limit: 1 });
+  const pendingLeavesCount = (pendingLeavesData as any)?.total ?? (pendingLeavesData as any)?.data?.total ?? 0;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -324,13 +330,13 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
           value={Array.isArray(d.monthlyAbsences) ? d.monthlyAbsences.length : (d.monthlyAbsences ?? "—")}
           icon={UserX} iconBg="bg-red-500" />
         <StatCard
-          title={t("ceo.approvedLeavesThisMonth")}
-          value={Array.isArray(d.approvedLeavesThisMonth) ? d.approvedLeavesThisMonth.length : (d.approvedLeavesThisMonth ?? "—")}
+          title={t("ceo.leavesPendingCEO")}
+          value={pendingLeavesCount}
           icon={CheckCircle2} iconBg="bg-green-500"
-          onClick={() => router.push(`/${locale}/leaves/pending-approval?tab=all`)} />
+          onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
         <StatCard
-          title={t("ceo.requestsPendingCEO")}
-          value={Array.isArray(d.pendingCeoRequestApprovals) ? d.pendingCeoRequestApprovals.length : (d.pendingCeoRequestApprovals ?? 0)}
+          title={t("ceo.adminRequestsPendingCEO")}
+          value={pendingAdminCount}
           icon={Bell} iconBg="bg-amber-500"
           onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
         <StatCard
@@ -430,7 +436,7 @@ export default function DashboardPage() {
   const [jobTitleOpen, setJobTitleOpen] = useState(false);
 
   const { data, isLoading } = useDashboard();
-  const { data: myProfile } = useMyEmployee();
+  useMyEmployee();
   const d = data as any;
   const role = d?.role;
 
