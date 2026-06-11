@@ -28,34 +28,39 @@ export type TestType =
   | "MRI" | "XRAY" | "CT" | "MYELOGRAM" | "BONE_DENSITY" | "OTHER";
 
 export type TherapyModality =
-  | "HOT_PACKS" | "COLD_PACKS" | "US" | "TENS" | "IFT" | "LASER"
-  | "PARAFFIN" | "TRACTION" | "MANUAL_THERAPY" | "EXERCISE_THERAPY"
-  | "ELECTRICAL_STIMULATION" | "HYDROTHERAPY" | "DRY_NEEDLING"
-  | "KINESIO_TAPING" | "BREATHING_EXERCISES" | "BALANCE_TRAINING"
-  | "GAIT_TRAINING" | "MASSAGE" | "ULTRASOUND_GUIDED" | "OTHER";
+  | "MANUAL_THERAPY" | "MASSAGE" | "KINESIO_TAPING" | "COMPRESSION"
+  | "PARAFFIN" | "GRASTON" | "MET" | "HOT_PACKS" | "COLD_PACKS"
+  | "TRACTION" | "EXERCISES" | "ESWT" | "US" | "TENS" | "EMS"
+  | "LASER" | "CPM" | "PNF" | "INFRARED" | "OTHER";
+
+export type EvaluationModality =
+  | "MANUAL_THERAPY" | "MASSAGE" | "KINESIO_TAPING" | "COMPRESSION"
+  | "PARAFFIN" | "GRASTON" | "MET" | "HOT_PACKS" | "COLD_PACKS"
+  | "TRACTION" | "EXERCISES" | "ESWT" | "US" | "TENS" | "EMS"
+  | "LASER" | "CPM" | "PNF" | "INFRARED" | "OTHER";
 
 // ─── Display labels ────────────────────────────────────────────────────────────
 export const THERAPY_MODALITY_LABELS: Record<TherapyModality, string> = {
-  HOT_PACKS:             "حزم ساخنة",
-  COLD_PACKS:            "حزم باردة",
-  US:                    "موجات فوق صوتية",
-  TENS:                  "TENS",
-  IFT:                   "IFT",
-  LASER:                 "ليزر",
-  PARAFFIN:              "حمام البارافين",
-  TRACTION:              "شد (تراكشن)",
-  MANUAL_THERAPY:        "علاج يدوي",
-  EXERCISE_THERAPY:      "تمارين علاجية",
-  ELECTRICAL_STIMULATION:"تحفيز كهربائي",
-  HYDROTHERAPY:          "علاج مائي",
-  DRY_NEEDLING:          "وخز إبر جافة",
-  KINESIO_TAPING:        "تيب كينيزيو",
-  BREATHING_EXERCISES:   "تمارين تنفس",
-  BALANCE_TRAINING:      "تدريب توازن",
-  GAIT_TRAINING:         "تدريب مشي",
-  MASSAGE:               "مساج",
-  ULTRASOUND_GUIDED:     "تحت إرشاد الأولتراساوند",
-  OTHER:                 "أخرى",
+  MANUAL_THERAPY: "العلاج اليدوي / MANUAL THERAPY",
+  MASSAGE:        "التدليك العلاجي / MASSAGE",
+  KINESIO_TAPING: "الشريط اللاصق العلاجي / KINESIO TAPING",
+  COMPRESSION:    "العالج بالضغط / COMPRESSION",
+  PARAFFIN:       "علاج البارافين / PARAFIN",
+  GRASTON:        "غراستون / GRASTON",
+  MET:            "تقنية طاقة العضلات / MET",
+  HOT_PACKS:      "كمادات ساخنة / Hot PACKS",
+  COLD_PACKS:     "كمادات باردة / COLD PACKS",
+  TRACTION:       "الشد العلاجي / TRACTION",
+  EXERCISES:      "تمارين علاجية / EXERCISES",
+  ESWT:           "العلاج بالموجات التصادمية / ESWT",
+  US:             "الموجات فوق الصوتية / US",
+  TENS:           "التحفيز الكهربائي للأعصاب عبر الجلد / TENS",
+  EMS:            "التحفيز الكهربائي للعضلات / EMS",
+  LASER:          "العالج بالليزر / LASER",
+  CPM:            "الحركة السلبية المستمرة / CPM",
+  PNF:            "التسهيل العصبي العضلي الحسي / PNF",
+  INFRARED:       "الأشعة تحت الحمراء / INFRARED",
+  OTHER:          "أخرى / Other",
 };
 
 export const CHRONIC_CONDITION_LABELS: Record<ChronicCondition, string> = {
@@ -91,12 +96,35 @@ export const CHRONIC_CONDITION_LABELS: Record<ChronicCondition, string> = {
   OTHER:                  "آخر / Other",
 };
 
+export const EVALUATION_MODALITY_LABELS: Record<EvaluationModality, string> = {
+  MANUAL_THERAPY: "العلاج اليدوي / MANUAL THERAPY",
+  MASSAGE:        "التدليك العلاجي / MASSAGE",
+  KINESIO_TAPING: "الشريط اللاصق العلاجي / KINESIO TAPING",
+  COMPRESSION:    "العالج بالضغط / COMPRESSION",
+  PARAFFIN:       "علاج البارافين / PARAFIN",
+  GRASTON:        "غراستون / GRASTON",
+  MET:            "تقنية طاقة العضلات / MET",
+  HOT_PACKS:      "كمادات ساخنة / Hot PACKS",
+  COLD_PACKS:     "كمادات باردة / COLD PACKS",
+  TRACTION:       "الشد العلاجي / TRACTION",
+  EXERCISES:      "تمارين علاجية / EXERCISES",
+  ESWT:           "العلاج بالموجات التصادمية / ESWT",
+  US:             "الموجات فوق الصوتية / US",
+  TENS:           "التحفيز الكهربائي للأعصاب عبر الجلد / TENS",
+  EMS:            "التحفيز الكهربائي للعضلات / EMS",
+  LASER:          "العالج بالليزر / LASER",
+  CPM:            "الحركة السلبية المستمرة / CPM",
+  PNF:            "التسهيل العصبي العضلي الحسي / PNF",
+  INFRARED:       "الأشعة تحت الحمراء / INFRARED",
+  OTHER:          "أخرى / Other",
+};
+
 export const PHYSIO_GOAL_LABELS: Record<PhysioGoal, string> = {
-  BACK_TO_SPORTS: "العودة للرياضة",
-  BACK_TO_WORK:   "العودة للعمل",
-  SIMPLE_WORKS:   "القيام بالأعمال البسيطة",
-  PAIN_RELIEF:    "تخفيف الألم",
-  OTHER:          "أخرى",
+  BACK_TO_SPORTS: "العودة للرياضة / Back to sports",
+  BACK_TO_WORK:   "العودة للعمل / Back to work",
+  SIMPLE_WORKS:   "القيام بالأعمال البسيطة / Doing simple works",
+  PAIN_RELIEF:    "تخفيف الألم / Pain relief only",
+  OTHER:          "أي شيء أخرى / Anything else",
 };
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -152,6 +180,7 @@ export interface PhysioCase {
   goals?: any;
   posturalAssessment?: any;
   treatmentPlan?: any;
+  evaluation?: { modalities?: EvaluationModality[]; otherModality?: string | null; notes?: string | null; evaluation?: string | null } | null;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -214,6 +243,13 @@ export interface PainRegion {
   painType?: string;
   label?: string;
   notes?: string;
+}
+
+export interface EvaluationDto {
+  modalities?: EvaluationModality[];
+  otherModality?: string;
+  notes?: string;
+  evaluation?: string;
 }
 
 export interface PainMapDto {
@@ -286,31 +322,65 @@ export interface GoalsDto {
 }
 
 export interface PosturalAssessmentDto {
-  head?: { position?: string };
-  shoulders?: { right?: string; left?: string };
-  elbows?: { right?: string; left?: string };
-  thorax?: { position?: string };
-  spine?: {
-    lumbar?: string;
-    scoliosis?: boolean;
-    scoliosisApex?: string;
-    scoliosisDirection?: string;
+  seatedPosition?: string;
+  trunkControl?: string;
+  head?: {
+    neutral?: boolean; hyperextended?: boolean; fwdFlexed?: boolean;
+    laterallyFlexed?: boolean; rotated?: { L?: boolean; R?: boolean };
   };
-  pelvis?: { tilt?: string; lateralTilt?: string };
-  hips?: { right?: string; left?: string };
-  knees?: { right?: string; left?: string };
-  feet?: { right?: string; left?: string };
+  shoulders?: {
+    level?: boolean;
+    elevated?: { L?: boolean; R?: boolean };
+    sublaxed?: { L?: boolean; R?: boolean };
+  };
+  elbow?: {
+    hyperextended?: boolean; flexed?: boolean;
+    supination?: { L?: boolean; R?: boolean };
+    pronation?: { L?: boolean; R?: boolean };
+  };
+  ribCage?: {
+    neutral?: boolean;
+    elevated?: { L?: boolean; R?: boolean };
+    rotatedFwd?: { L?: boolean; R?: boolean };
+  };
+  spine?: {
+    neutral?: boolean; kyphosis?: boolean; flatLumbar?: boolean;
+    normalLumbar?: boolean; hyperLordotic?: boolean;
+    scoliosisApex?: { L?: boolean; R?: boolean };
+  };
+  pelvis?: {
+    neutral?: boolean; rotatedFwd?: boolean; anteriorTilt?: boolean;
+    posteriorTilt?: boolean; oblique?: { L?: boolean; R?: boolean }; other?: string;
+  };
+  hips?: {
+    abducted?: { L?: boolean; R?: boolean }; adducted?: { L?: boolean; R?: boolean };
+    flexed?: { L?: boolean; R?: boolean }; extended?: { L?: boolean; R?: boolean };
+  };
+  knees?: {
+    flexedBeyond90?: { L?: boolean; R?: boolean };
+    extendedBeyond90?: { L?: boolean; R?: boolean };
+  };
+  feet?: {
+    pronateEvert?: { L?: boolean; R?: boolean }; supinateInv?: { L?: boolean; R?: boolean };
+    dorsiflexed?: { L?: boolean; R?: boolean }; plantarflexed?: { L?: boolean; R?: boolean };
+    other?: string;
+  };
   spasticityNotes?: string;
   generalNotes?: string;
   diagnosis?: string;
-  seatedPosition?: string;
-  trunkControl?: string;
 }
 
 export interface TreatmentPlanDto {
-  modalities: TherapyModality[];
+  treatmentFrom?: string;
+  treatmentTo?: string;
+  anticipatedVisits?: number;
+  physiotherapistId?: string;
+  caseManagerId?: string;
+  modalities?: TherapyModality[];
+  otherModality?: string;
   remarks?: string;
   observation?: string;
+  status?: "ACTIVE" | "INACTIVE";
 }
 
 export interface SupervisorReviewDto {
@@ -418,6 +488,11 @@ export const clinicPhysioApi = {
 
   submitTreatmentPlan: async (id: string, dto: TreatmentPlanDto) => {
     const { data } = await apiClient.post(`/physio/cases/${id}/treatment-plan`, dto);
+    return data?.data ?? data;
+  },
+
+  submitEvaluation: async (id: string, dto: EvaluationDto) => {
+    const { data } = await apiClient.post(`/physio/cases/${id}/evaluation`, dto);
     return data?.data ?? data;
   },
 

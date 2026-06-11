@@ -72,17 +72,22 @@ export default function PendingApprovalPage() {
   const [actionType, setActionType] = useState<"manager" | "hr">("manager");
 
   const searchParams = useSearchParams();
-  const { hasPermission, isAdmin } = usePermissions();
-  const canApproveHr   = isAdmin() || hasPermission("leave_requests:approve_hr");
-  const showManagerTab = isAdmin() || !canApproveHr;
-  const showHrTab      = canApproveHr;
-  const showAllTab     = canApproveHr;
+  const { hasPermission, hasRole, isAdmin } = usePermissions();
+  const isCeo             = hasRole("CEO");
+  const canApproveHr      = isAdmin() || hasPermission("leave_requests:approve_hr");
+  const canApproveManager = isAdmin() || hasPermission("leave_requests:approve_manager");
+  const showManagerTab    = canApproveManager;
+  const showHrTab         = canApproveHr && !isCeo;
+  const showAllTab        = canApproveHr && !isCeo;
 
   const defaultTab = (): "manager" | "hr" | "all" => {
     const tab = searchParams.get("tab");
     if (tab === "all" && showAllTab) return "all";
     if (tab === "hr" && showHrTab) return "hr";
-    return canApproveHr && !isAdmin() ? "hr" : "manager";
+    if (tab === "manager" && showManagerTab) return "manager";
+    if (showManagerTab) return "manager";
+    if (showHrTab) return "hr";
+    return "manager";
   };
 
   const [activeTab, setActiveTab] = useState<"manager" | "hr" | "all">(defaultTab);

@@ -5,6 +5,7 @@ import {
   UpdatePhysioCaseDto,
   PhysioStatus,
   PainMapDto,
+  EvaluationDto,
   MedicalHistoryDto,
   SurgeryDto,
   GoalsDto,
@@ -177,6 +178,19 @@ export function useSubmitTreatmentPlan() {
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
       toast.success("تم حفظ خطة العلاج");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useSubmitEvaluation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: EvaluationDto }) =>
+      clinicPhysioApi.submitEvaluation(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
+      toast.success("تم حفظ التقييم");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
   });
