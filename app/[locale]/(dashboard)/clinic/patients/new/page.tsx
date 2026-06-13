@@ -133,7 +133,8 @@ export default function NewPatientPage() {
   const [s4, setS4] = useState<Partial<Step4>>({});
 
   const createPatient = useCreateClinicPatient();
-  const { data: cities = [] } = useClinicCities();
+  const { data: rawCities = [] } = useClinicCities();
+  const cities = rawCities.filter((c, i, arr) => arr.findIndex((x) => x.name === c.name && x.governorate === c.governorate) === i);
 
   const idNumber = s1.idNumber ?? "";
   const { data: dupData } = useCheckDuplicate(idNumber);
@@ -285,19 +286,19 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>الاسم الأول <span className="text-destructive">*</span></Label>
+                  <Label>الاسم الأول / First Name <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("firstName")} />
                   {form1.formState.errors.firstName && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الاسم الأخير <span className="text-destructive">*</span></Label>
+                  <Label>الاسم الأخير / Last Name <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("lastName")} />
                   {form1.formState.errors.lastName && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>نوع الهوية <span className="text-destructive">*</span></Label>
+                  <Label>نوع الهوية / ID Type <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("identityType")} onValueChange={(v) => form1.setValue("identityType", v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -308,7 +309,7 @@ export default function NewPatientPage() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>رقم الهوية <span className="text-destructive">*</span></Label>
+                  <Label>رقم الهوية / ID Number <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("idNumber")} />
                   {form1.formState.errors.idNumber && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
@@ -326,17 +327,17 @@ export default function NewPatientPage() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>تاريخ الميلاد <span className="text-destructive">*</span></Label>
+                  <Label>تاريخ الميلاد / Date of Birth <span className="text-destructive">*</span></Label>
                   <Input type="date" {...form1.register("dateOfBirth")} />
                   {form1.formState.errors.dateOfBirth && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الجنس <span className="text-destructive">*</span></Label>
+                  <Label>الجنس / Gender <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("gender")} onValueChange={(v) => form1.setValue("gender", v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MALE">ذكر</SelectItem>
-                      <SelectItem value="FEMALE">أنثى</SelectItem>
+                      <SelectItem value="MALE">ذكر / Male</SelectItem>
+                      <SelectItem value="FEMALE">أنثى / Female</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -353,22 +354,22 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>رقم الهاتف <span className="text-destructive">*</span></Label>
+                  <Label>رقم الهاتف / Phone Number <span className="text-destructive">*</span></Label>
                   <Input dir="ltr" {...form2.register("phone")} placeholder="+963..." />
                   {form2.formState.errors.phone && <p className="text-xs text-destructive">مطلوب</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>واتساب</Label>
+                  <Label>واتساب / WhatsApp</Label>
                   <Input dir="ltr" {...form2.register("whatsapp")} placeholder="+963..." />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>البريد الإلكتروني</Label>
+                <Label>البريد الإلكتروني / E-mail</Label>
                 <Input dir="ltr" type="email" {...form2.register("email")} placeholder="email@example.com" />
                 {form2.formState.errors.email && <p className="text-xs text-destructive">بريد غير صالح</p>}
               </div>
               <div className="space-y-1.5">
-                <Label>المدينة / المحافظة</Label>
+                <Label>المدينة / City</Label>
                 <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)}>
                   <SelectTrigger><SelectValue placeholder="اختر المدينة..." /></SelectTrigger>
                   <SelectContent>
@@ -381,7 +382,7 @@ export default function NewPatientPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>تفاصيل العنوان</Label>
+                <Label>تفاصيل العنوان / Address Details</Label>
                 <Textarea rows={2} {...form2.register("addressDetails")} placeholder="الحي، الشارع، رقم المنزل..." />
               </div>
             </div>
@@ -392,17 +393,17 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>الطول (سم)</Label>
+                  <Label>الطول / Height (cm)</Label>
                   <Input type="number" {...form3.register("heightCm")} placeholder="170" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الوزن (كغ)</Label>
+                  <Label>الوزن / Weight (kg)</Label>
                   <Input type="number" {...form3.register("weightKg")} placeholder="70" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>المستوى التعليمي</Label>
+                  <Label>المستوى التعليمي / Education Level</Label>
                   <Select value={form3.watch("educationLevel") ?? ""} onValueChange={(v) => form3.setValue("educationLevel", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
@@ -411,7 +412,7 @@ export default function NewPatientPage() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الحالة الاجتماعية</Label>
+                  <Label>الحالة الاجتماعية / Marital Status</Label>
                   <Select value={form3.watch("maritalStatus") ?? ""} onValueChange={(v) => form3.setValue("maritalStatus", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
@@ -422,7 +423,7 @@ export default function NewPatientPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>وضع السكن</Label>
+                  <Label>وضع السكن / Living Condition</Label>
                   <Select value={form3.watch("livingCondition") ?? ""} onValueChange={(v) => form3.setValue("livingCondition", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
@@ -431,7 +432,7 @@ export default function NewPatientPage() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الوضع المالي</Label>
+                  <Label>الوضع المالي / Financial Status</Label>
                   <Select value={form3.watch("financialStatus") ?? ""} onValueChange={(v) => form3.setValue("financialStatus", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
@@ -441,7 +442,7 @@ export default function NewPatientPage() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>مصدر الإحالة</Label>
+                <Label>مصدر الإحالة / Referral Source</Label>
                 <Select
                   value={form3.watch("referralSource") ?? ""}
                   onValueChange={(v) => form3.setValue("referralSource", v as any)}
@@ -455,7 +456,7 @@ export default function NewPatientPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>تفاصيل الإحالة</Label>
+                <Label>تفاصيل الإحالة / Referral Details</Label>
                 <Input {...form3.register("referralDetails")} placeholder="تفاصيل إضافية..." />
               </div>
               <div className="space-y-1.5">
@@ -469,7 +470,7 @@ export default function NewPatientPage() {
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>موافقة الوثائق</Label>
+                <Label>موافقة الوثائق / Document Consent</Label>
                 <Select value={form4.watch("documentConsent") ?? "FULL"} onValueChange={(v) => form4.setValue("documentConsent", v as any)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -482,10 +483,10 @@ export default function NewPatientPage() {
                   checked={form4.watch("mediaConsent") ?? true}
                   onCheckedChange={(v) => form4.setValue("mediaConsent", v)}
                 />
-                <Label>موافقة على استخدام الصور/الوسائط</Label>
+                <Label>موافقة على استخدام الصور / Media Consent</Label>
               </div>
               <div className="space-y-1.5">
-                <Label>ملاحظات</Label>
+                <Label>ملاحظات / Notes</Label>
                 <Textarea rows={3} {...form4.register("notes")} placeholder="ملاحظات إضافية..." />
               </div>
 

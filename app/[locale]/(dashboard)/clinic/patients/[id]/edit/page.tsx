@@ -121,7 +121,7 @@ export default function EditPatientPage() {
       maritalStatus:   patient.maritalStatus ?? "",
       livingCondition: patient.livingCondition ?? "",
       financialStatus: patient.financialStatus ?? "",
-      receivesAid:     (patient.receivesAid != null && patient.receivesAid !== false) ? String(patient.receivesAid) : "",
+      receivesAid:     patient.receivesAid ?? "",
       referralSource:  (patient.referralSource as any) ?? "",
       referralDetails: patient.referralDetails ?? "",
       documentConsent: patient.documentConsent ?? "FULL",

@@ -22,8 +22,8 @@ const LIMIT = 15;
 
 const STATUS_VALUES: PhysioStatus[] = [
   "INTAKE", "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
-  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "SUPERVISOR_REVIEW",
-  "DOCTOR_SIGN", "ACTIVE_TREATMENT", "COMPLETED", "DISCHARGED", "CANCELLED",
+  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "EVALUATION",
+  "ACTIVE_TREATMENT", "SUPERVISOR_REVIEW", "COMPLETED", "DISCHARGED", "CANCELLED",
 ];
 
 const fmt = (d: string) => {
@@ -92,6 +92,7 @@ export default function PhysioListPage() {
               <TableHead>{t("table.patientNumber")}</TableHead>
               <TableHead>{t("table.patient")}</TableHead>
               <TableHead>{t("table.status")}</TableHead>
+              <TableHead>حالة الخطة</TableHead>
               <TableHead>{t("table.createdAt")}</TableHead>
               <TableHead className="w-10" />
             </TableRow>
@@ -107,7 +108,7 @@ export default function PhysioListPage() {
               ))
             ) : cases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <EmptyState icon={<Heart className="h-8 w-8 text-muted-foreground" />} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
@@ -125,6 +126,21 @@ export default function PhysioListPage() {
                     {c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—"}
                   </TableCell>
                   <TableCell><CaseStatusBadge status={c.status} /></TableCell>
+                  <TableCell>
+                    {c.treatmentPlan?.status === "ACTIVE" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                        <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
+                        نشط
+                      </span>
+                    ) : c.treatmentPlan?.status === "INACTIVE" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                        <span className="h-1.5 w-1.5 rounded-full bg-gray-400 inline-block" />
+                        غير نشط
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {fmt(c.createdAt)}
                   </TableCell>

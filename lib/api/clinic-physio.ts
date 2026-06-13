@@ -4,8 +4,8 @@ import { TimelineEvent } from "./clinic-prosthetics";
 // ─── Status ───────────────────────────────────────────────────────────────────
 export type PhysioStatus =
   | "INTAKE" | "COMPLAINT" | "PAIN_MAP" | "MEDICAL_HISTORY" | "GOALS"
-  | "POSTURAL_ASSESSMENT" | "TREATMENT_PLAN" | "SUPERVISOR_REVIEW"
-  | "DOCTOR_SIGN" | "ACTIVE_TREATMENT" | "COMPLETED" | "DISCHARGED" | "CANCELLED";
+  | "POSTURAL_ASSESSMENT" | "TREATMENT_PLAN" | "EVALUATION"
+  | "ACTIVE_TREATMENT" | "SUPERVISOR_REVIEW" | "COMPLETED" | "DISCHARGED" | "CANCELLED";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 export type PainLevel    = "MILD" | "MODERATE" | "SEVERE" | "EXCRUCIATING";

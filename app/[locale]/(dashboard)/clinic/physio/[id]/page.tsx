@@ -986,13 +986,8 @@ export default function PhysioCasePage() {
       });
       setSessionForm({ date: new Date().toISOString().slice(0, 10), sessionTime: "", notes: "" });
     } catch (err: any) {
-      const code = err?.response?.data?.error?.code ?? err?.response?.data?.code;
-      const msg  = err?.response?.data?.error?.message ?? err?.response?.data?.message;
-      if (code === "PREVIOUS_SESSION_INCOMPLETE") {
-        toast.error(msg || "يجب إدخال رأي رئيس القسم وقرار الطبيب للجلسة السابقة قبل إضافة جلسة جديدة");
-      } else {
-        toast.error(msg || "حدث خطأ أثناء إضافة الجلسة");
-      }
+      const msg = err?.response?.data?.error?.message ?? err?.response?.data?.message;
+      toast.error(msg || "حدث خطأ أثناء إضافة الجلسة");
     }
   };
 
@@ -1032,16 +1027,16 @@ export default function PhysioCasePage() {
     "GOALS",
     "POSTURAL_ASSESSMENT",
     "TREATMENT_PLAN",
-    "SUPERVISOR_REVIEW",
-    "DOCTOR_SIGN",
+    "EVALUATION",
     "ACTIVE_TREATMENT",
+    "SUPERVISOR_REVIEW",
   ];
   const defaultTab = (() => {
     if (["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status))
       return "timeline";
     if (c.status === "ACTIVE_TREATMENT") return "sessions";
     if (c.status === "SUPERVISOR_REVIEW") return "supervisor_review";
-    if (c.status === "DOCTOR_SIGN") return "doctor_sign";
+    if (c.status === "EVALUATION") return "evaluation";
     return c.status.toLowerCase();
   })();
 
@@ -3732,40 +3727,11 @@ export default function PhysioCasePage() {
           </Section>
         </TabsContent>
 
-        {/* ── DOCTOR SIGN ─────────────────────────────────────────────────── */}
-        <TabsContent value="doctor_sign" className="mt-4">
-          <Section title="توقيع الطبيب">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                التوقيع متاح بعد اعتماد رئيس القسم. يجب أن تكون الطبيب المشرف
-                المعيّن.
-              </p>
-              {c.status === "SUPERVISOR_REVIEW" && (
-                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
-                  <Button onClick={() => setSignOpen(true)} className="w-full">
-                    توقيع خطة العلاج وبدء الجلسات
-                  </Button>
-                </ActionGuard>
-              )}
-              {[
-                "DOCTOR_SIGN",
-                "ACTIVE_TREATMENT",
-                "COMPLETED",
-                "DISCHARGED",
-              ].includes(c.status) && (
-                <p className="text-sm text-green-600 font-medium">
-                  تمت عملية التوقيع — الحالة جاهزة للجلسات
-                </p>
-              )}
-            </div>
-          </Section>
-        </TabsContent>
-
         {/* ── SESSIONS ────────────────────────────────────────────────────── */}
         <TabsContent value="sessions" className="mt-4 space-y-4">
 
           {/* Add session form */}
-          {["ACTIVE_TREATMENT", "DOCTOR_SIGN"].includes(c.status) && (
+          {canEdit && (
             <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SESSIONS_CREATE}>
               <Section title="إضافة جلسة جديدة">
                 <div className="grid grid-cols-2 gap-4">
@@ -3882,14 +3848,14 @@ export default function PhysioCasePage() {
                           <div className="flex gap-2 items-center flex-wrap">
                             <Badge variant="secondary" className="text-xs font-bold">#{s.sessionNumber}</Badge>
                             <span className="font-medium text-sm">
-                              {new Date(s.sessionDate).toLocaleDateString("ar")}
+                              {new Date(s.sessionDate).toLocaleDateString("en-GB")}
                             </span>
                             {s.sessionTime && (
                               <span className="text-xs text-muted-foreground">{s.sessionTime}</span>
                             )}
                           </div>
                           <div className="flex gap-1">
-                            {["ACTIVE_TREATMENT", "DOCTOR_SIGN"].includes(c.status) && (
+                            {canEdit && (
                               <button
                                 onClick={() => setEditingSession({
                                   id: s.id,
