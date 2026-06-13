@@ -19,20 +19,20 @@ import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
 
 const STATUS_VALUES: PhysioStatus[] = [
   "INTAKE", "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
-  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "SUPERVISOR_REVIEW",
-  "DOCTOR_SIGN", "ACTIVE_TREATMENT", "COMPLETED", "DISCHARGED", "CANCELLED",
+  "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "EVALUATION",
+  "ACTIVE_TREATMENT", "SUPERVISOR_REVIEW", "COMPLETED", "DISCHARGED", "CANCELLED",
 ];
 
 const STATUS_LABEL: Record<PhysioStatus, string> = {
   INTAKE: "استقبال", COMPLAINT: "شكوى", PAIN_MAP: "خريطة الألم",
   MEDICAL_HISTORY: "التاريخ الطبي", GOALS: "الأهداف",
   POSTURAL_ASSESSMENT: "تقييم وضعي", TREATMENT_PLAN: "خطة العلاج",
-  SUPERVISOR_REVIEW: "رئيس القسم", DOCTOR_SIGN: "توقيع الطبيب",
+  EVALUATION: "التقييم", SUPERVISOR_REVIEW: "رئيس القسم",
   ACTIVE_TREATMENT: "جلسات نشطة", COMPLETED: "مكتملة",
   DISCHARGED: "مُخرَّج", CANCELLED: "ملغاة",
 };
 
-const fmt = (d: string) => new Date(d).toLocaleDateString("ar");
+const fmt = (d: string) => new Date(d).toLocaleDateString("en-GB");
 
 export default function MyPhysioCasesPage() {
   const router = useRouter();
