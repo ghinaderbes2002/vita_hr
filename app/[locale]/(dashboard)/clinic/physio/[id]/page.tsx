@@ -1390,9 +1390,7 @@ export default function PhysioCasePage() {
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">مقدم الرعاية / Care Provider</p>
                 <p className="text-sm font-medium">
-                  {(patientFull?.receivesAid != null && patientFull.receivesAid !== false)
-                    ? String(patientFull.receivesAid)
-                    : "—"}
+                  {patientFull?.receivesAid || "—"}
                 </p>
               </div>
             </div>
