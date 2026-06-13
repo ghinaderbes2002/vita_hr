@@ -455,7 +455,7 @@ export default function PhysioCasePage() {
       painLevel: caseData.painLevel ?? "",
       painDuration: caseData.painDuration ?? "",
       painProgression: caseData.painProgression ?? "",
-      hadPreviousInjury: (caseData.hadPreviousInjury != null && caseData.hadPreviousInjury !== false) ? String(caseData.hadPreviousInjury) : "",
+      hadPreviousInjury: caseData.hadPreviousInjury ?? "",
       bestTimeOfDay: caseData.bestTimeOfDay ?? "",
       worstTimeOfDay: caseData.worstTimeOfDay ?? "",
       complaintType: caseData.complaintType ?? "",
