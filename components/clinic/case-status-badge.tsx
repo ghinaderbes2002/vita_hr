@@ -30,9 +30,9 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   GOALS:               { label: "الأهداف",             className: "bg-indigo-100 text-indigo-800 border-indigo-200" },
   POSTURAL_ASSESSMENT: { label: "تقييم وضعي",         className: "bg-indigo-100 text-indigo-800 border-indigo-200" },
   TREATMENT_PLAN:      { label: "خطة العلاج",         className: "bg-orange-100 text-orange-800 border-orange-200" },
-  SUPERVISOR_REVIEW:   { label: "نظرة رئيس القسم",    className: "bg-purple-100 text-purple-800 border-purple-200" },
-  DOCTOR_SIGN:         { label: "توقيع الطبيب",       className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  EVALUATION:          { label: "التقييم",             className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
   ACTIVE_TREATMENT:    { label: "جلسات نشطة",         className: "bg-amber-100 text-amber-800 border-amber-200" },
+  SUPERVISOR_REVIEW:   { label: "نظرة رئيس القسم",    className: "bg-purple-100 text-purple-800 border-purple-200" },
   COMPLETED:           { label: "مكتملة",             className: "bg-green-100 text-green-800 border-green-200" },
   DISCHARGED:          { label: "مُخرَّج",             className: "bg-teal-100 text-teal-800 border-teal-200" },
 };

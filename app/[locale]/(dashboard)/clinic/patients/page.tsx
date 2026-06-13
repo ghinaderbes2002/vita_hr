@@ -120,8 +120,6 @@ export default function ClinicPatientsPage() {
               <TableHead>{t("table.age")}</TableHead>
               <TableHead>{t("table.phone")}</TableHead>
               <TableHead>{t("table.city")}</TableHead>
-              <TableHead>{t("table.cases")}</TableHead>
-              <TableHead>{t("table.lastVisit")}</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -129,14 +127,14 @@ export default function ClinicPatientsPage() {
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 9 }).map((_, j) => (
+                  {Array.from({ length: 7 }).map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : patients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9}>
+                <TableCell colSpan={7}>
                   <EmptyState icon={<Users className="h-8 w-8 text-muted-foreground" />} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
@@ -157,22 +155,6 @@ export default function ClinicPatientsPage() {
                   <TableCell>{age(p.dateOfBirth)} {t("ageSuffix")}</TableCell>
                   <TableCell dir="ltr" className="text-left">{p.phone}</TableCell>
                   <TableCell>{p.city?.name ?? "—"}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 flex-wrap">
-                      {(p.activeProstheticsCount ?? 0) > 0 && (
-                        <Badge variant="outline" className="text-xs">{t("badges.prosthetics")} {p.activeProstheticsCount}</Badge>
-                      )}
-                      {(p.activePhysioCount ?? 0) > 0 && (
-                        <Badge variant="outline" className="text-xs">{t("badges.physio")} {p.activePhysioCount}</Badge>
-                      )}
-                      {(p.activeProstheticsCount ?? 0) === 0 && (p.activePhysioCount ?? 0) === 0 && (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {p.lastVisitDate ? fmt(p.lastVisitDate) : "—"}
-                  </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
