@@ -3898,11 +3898,6 @@ export default function PhysioCasePage() {
                             )}
                           </div>
                         )}
-                        {(!s.supervisorOpinion || !s.doctorDecision) && (
-                          <p className="text-[11px] text-amber-600 mt-1">
-                            ⚠ {!s.supervisorOpinion && !s.doctorDecision ? "ينقص رأي رئيس القسم وقرار الطبيب" : !s.supervisorOpinion ? "ينقص رأي رئيس القسم" : "ينقص قرار الطبيب"}
-                          </p>
-                        )}
                       </>
                     )}
                   </div>
