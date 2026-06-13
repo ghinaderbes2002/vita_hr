@@ -302,7 +302,7 @@ export default function PatientProfilePage() {
                 <InfoRow label="المستوى التعليمي" value={patient.educationLevel ? EDUCATION_LABEL[patient.educationLevel] : null} />
                 <InfoRow label="الحالة الاجتماعية" value={patient.maritalStatus ? MARITAL_LABEL[patient.maritalStatus] : null} />
                 <InfoRow label="الوضع المادي" value={patient.financialStatus ? FINANCIAL_LABEL[patient.financialStatus] : null} />
-                <InfoRow label="مقدم الرعاية / Care Provider" value={(patient.receivesAid != null && patient.receivesAid !== false) ? String(patient.receivesAid) : null} />
+                <InfoRow label="مقدم الرعاية / Care Provider" value={patient.receivesAid ?? null} />
                 <InfoRow label="مصدر الإحالة" value={patient.referralSource} />
                 <InfoRow label="تفاصيل الإحالة" value={patient.referralDetails} />
               </CardContent>
