@@ -236,7 +236,7 @@ export default function PatientProfilePage() {
               آخر زيارة
             </div>
             <p className="text-sm font-medium">
-              {patient.lastVisitDate ? new Date(patient.lastVisitDate).toLocaleDateString("ar") : "—"}
+              {patient.lastVisitDate ? new Date(patient.lastVisitDate).toLocaleDateString("en-GB") : "—"}
             </p>
           </CardContent>
         </Card>
@@ -266,7 +266,7 @@ export default function PatientProfilePage() {
                 <InfoRow label="الاسم الكامل" value={`${patient.firstName} ${patient.lastName}`} />
                 <InfoRow label="نوع الهوية" value={IDENTITY_LABEL[patient.identityType]} />
                 <InfoRow label="رقم الهوية" value={patient.idNumber} />
-                <InfoRow label="تاريخ الميلاد" value={new Date(patient.dateOfBirth).toLocaleDateString("ar")} />
+                <InfoRow label="تاريخ الميلاد" value={new Date(patient.dateOfBirth).toLocaleDateString("en-GB")} />
                 <InfoRow label="الجنس" value={GENDER_LABEL[patient.gender]} />
                 <InfoRow label="الطول" value={patient.heightCm ? `${patient.heightCm} سم` : null} />
                 <InfoRow label="الوزن" value={patient.weightKg ? `${patient.weightKg} كغ` : null} />
@@ -302,7 +302,7 @@ export default function PatientProfilePage() {
                 <InfoRow label="المستوى التعليمي" value={patient.educationLevel ? EDUCATION_LABEL[patient.educationLevel] : null} />
                 <InfoRow label="الحالة الاجتماعية" value={patient.maritalStatus ? MARITAL_LABEL[patient.maritalStatus] : null} />
                 <InfoRow label="الوضع المادي" value={patient.financialStatus ? FINANCIAL_LABEL[patient.financialStatus] : null} />
-                <InfoRow label="مساعدات إنسانية" value={patient.receivesAid ? "نعم" : "لا"} />
+                <InfoRow label="مقدم الرعاية / Care Provider" value={(patient.receivesAid != null && patient.receivesAid !== false) ? String(patient.receivesAid) : null} />
                 <InfoRow label="مصدر الإحالة" value={patient.referralSource} />
                 <InfoRow label="تفاصيل الإحالة" value={patient.referralDetails} />
               </CardContent>
@@ -318,7 +318,7 @@ export default function PatientProfilePage() {
                     <div key={c.id} className="space-y-1">
                       <InfoRow label="توثيق البيانات" value={CONSENT_LABEL[c.documentConsent]} />
                       <InfoRow label="وسائط" value={c.mediaConsent ? "موافق" : "رافض"} />
-                      {c.signedAt && <InfoRow label="تاريخ التوقيع" value={new Date(c.signedAt).toLocaleDateString("ar")} />}
+                      {c.signedAt && <InfoRow label="تاريخ التوقيع" value={new Date(c.signedAt).toLocaleDateString("en-GB")} />}
                     </div>
                   ))}
                 </CardContent>
@@ -362,7 +362,7 @@ export default function PatientProfilePage() {
                         {c.amputationSide && <Badge variant="outline" className="text-xs">{c.amputationSide === "RIGHT" ? "أيمن" : c.amputationSide === "LEFT" ? "أيسر" : "ثنائي"}</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(c.createdAt).toLocaleDateString("ar")}
+                        {new Date(c.createdAt).toLocaleDateString("en-GB")}
                         {c.amputationLevel && ` — ${c.amputationLevel}`}
                       </p>
                     </div>
@@ -393,7 +393,7 @@ export default function PatientProfilePage() {
                   <CardContent className="pt-4 flex items-center justify-between">
                     <div>
                       <CaseStatusBadge status={c.status} />
-                      <p className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleDateString("ar")}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleDateString("en-GB")}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </CardContent>

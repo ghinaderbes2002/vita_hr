@@ -48,7 +48,7 @@ const step3Schema = z.object({
   maritalStatus:   z.string().optional(),
   livingCondition: z.string().optional(),
   financialStatus: z.string().optional(),
-  receivesAid:     z.boolean().optional(),
+  receivesAid:     z.string().optional(),
   referralSource:  z.enum(["SELF","RELATIVES","SOCIAL_MEDIA","MEDICAL_REFERRAL","OTHER",""]).optional(),
   referralDetails: z.string().optional(),
 });
@@ -150,7 +150,7 @@ export default function NewPatientPage() {
 
   const form3 = useForm<Step3>({
     resolver: zodResolver(step3Schema) as any,
-    defaultValues: { receivesAid: false, referralSource: "", referralDetails: "", ...s3 },
+    defaultValues: { receivesAid: "", referralSource: "", referralDetails: "", ...s3 },
   });
 
   const form4 = useForm<Step4>({
@@ -458,12 +458,9 @@ export default function NewPatientPage() {
                 <Label>تفاصيل الإحالة</Label>
                 <Input {...form3.register("referralDetails")} placeholder="تفاصيل إضافية..." />
               </div>
-              <div className="flex items-center gap-3 pt-1">
-                <Switch
-                  checked={form3.watch("receivesAid") ?? false}
-                  onCheckedChange={(v) => form3.setValue("receivesAid", v)}
-                />
-                <Label>يتلقى مساعدة إنسانية</Label>
+              <div className="space-y-1.5">
+                <Label>مقدم الرعاية / Care Provider</Label>
+                <Input {...form3.register("receivesAid")} placeholder="مقدم الرعاية..." />
               </div>
             </div>
           )}

@@ -38,6 +38,7 @@ import { StatusBadge } from "@/components/features/leave-requests/status-badge";
 import {
   useLeaveRequests,
   usePendingManagerLeaveRequests,
+  useManagerApprovedLeaveRequests,
   useApproveManager,
   useRejectManager,
   useApproveHr,
@@ -80,17 +81,18 @@ export default function PendingApprovalPage() {
   const showHrTab         = canApproveHr && !isCeo;
   const showAllTab        = canApproveHr && !isCeo;
 
-  const defaultTab = (): "manager" | "hr" | "all" => {
+  const defaultTab = (): "manager" | "hr" | "all" | "manager_approved" => {
     const tab = searchParams.get("tab");
     if (tab === "all" && showAllTab) return "all";
     if (tab === "hr" && showHrTab) return "hr";
+    if (tab === "manager_approved" && showManagerTab) return "manager_approved";
     if (tab === "manager" && showManagerTab) return "manager";
     if (showManagerTab) return "manager";
     if (showHrTab) return "hr";
     return "manager";
   };
 
-  const [activeTab, setActiveTab] = useState<"manager" | "hr" | "all">(defaultTab);
+  const [activeTab, setActiveTab] = useState<"manager" | "hr" | "all" | "manager_approved">(defaultTab);
   const [page, setPage] = useState(1);
   const [allPage, setAllPage] = useState(1);
   const [allStatus, setAllStatus] = useState("ALL");
@@ -98,6 +100,10 @@ export default function PendingApprovalPage() {
   const { data: managerData, isLoading: managerLoading } = usePendingManagerLeaveRequests(
     { status: "PENDING_MANAGER", page, limit: LIMIT },
     { enabled: activeTab === "manager" },
+  );
+  const { data: approvedData, isLoading: approvedLoading } = useManagerApprovedLeaveRequests(
+    { page, limit: LIMIT },
+    { enabled: activeTab === "manager_approved" },
   );
   const { data: hrData, isLoading: hrLoading } = useLeaveRequests(
     { status: "PENDING_HR" as any, page, limit: LIMIT },
@@ -112,8 +118,14 @@ export default function PendingApprovalPage() {
     { enabled: activeTab === "all" },
   );
 
-  const data = activeTab === "manager" ? managerData : activeTab === "hr" ? hrData : allData;
-  const isLoading = activeTab === "manager" ? managerLoading : activeTab === "hr" ? hrLoading : allLoading;
+  const data =
+    activeTab === "manager" ? managerData :
+    activeTab === "manager_approved" ? approvedData :
+    activeTab === "hr" ? hrData : allData;
+  const isLoading =
+    activeTab === "manager" ? managerLoading :
+    activeTab === "manager_approved" ? approvedLoading :
+    activeTab === "hr" ? hrLoading : allLoading;
 
   const approveManager = useApproveManager();
   const rejectManager  = useRejectManager();
@@ -353,6 +365,11 @@ export default function PendingApprovalPage() {
               بانتظار موافقتك {activeTab === "manager" && total > 0 ? `(${total})` : ""}
             </TabsTrigger>
           )}
+          {showManagerTab && (
+            <TabsTrigger value="manager_approved">
+              الطلبات المعتمدة {activeTab === "manager_approved" && total > 0 ? `(${total})` : ""}
+            </TabsTrigger>
+          )}
           {showHrTab && (
             <TabsTrigger value="hr">
               بانتظار موافقة HR {activeTab === "hr" && total > 0 ? `(${total})` : ""}
@@ -366,6 +383,75 @@ export default function PendingApprovalPage() {
         {showManagerTab && (
           <TabsContent value="manager" className="rounded-md border">
             {renderPendingTable(requests, "manager")}
+          </TabsContent>
+        )}
+
+        {showManagerTab && (
+          <TabsContent value="manager_approved" className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>الموظف</TableHead>
+                  <TableHead>{t("leaves.fields.leaveType")}</TableHead>
+                  <TableHead>{t("leaves.fields.startDate")}</TableHead>
+                  <TableHead>{t("leaves.fields.endDate")}</TableHead>
+                  <TableHead>المدة</TableHead>
+                  <TableHead>الوقت</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead className="w-16">{t("common.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {approvedLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 8 }).map((__, j) => (
+                        <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : ((approvedData as any)?.items || (approvedData as any)?.data?.items || []).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">{t("common.noData")}</TableCell>
+                  </TableRow>
+                ) : (
+                  ((approvedData as any)?.items || (approvedData as any)?.data?.items || []).map((request: LeaveRequest) => (
+                    <TableRow key={request.id}>
+                      <TableCell className="font-medium">
+                        {(request.employeeFirstNameAr || request.employee?.firstNameAr)}{" "}
+                        {(request.employeeLastNameAr || request.employee?.lastNameAr)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" style={{ backgroundColor: request.leaveType?.color }}>
+                            {request.leaveType?.nameAr}
+                          </Badge>
+                          {request.isHourlyLeave && (
+                            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">ساعية</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{format(new Date(request.startDate), "PPP", { locale: ar })}</TableCell>
+                      <TableCell>{format(new Date(request.endDate), "PPP", { locale: ar })}</TableCell>
+                      <TableCell>
+                        {request.isHourlyLeave && request.equivalentDays != null
+                          ? `${request.equivalentDays.toFixed(2)} يوم`
+                          : `${Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1} ${t("common.days")}`}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {request.isHourlyLeave && request.startTime ? `${request.startTime} - ${request.endTime}` : "—"}
+                      </TableCell>
+                      <TableCell><StatusBadge status={request.status} /></TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="ghost" onClick={() => handleViewDetails(request)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </TabsContent>
         )}
 
@@ -401,7 +487,7 @@ export default function PendingApprovalPage() {
         )}
       </Tabs>
 
-      {activeTab !== "all" && meta && (
+      {activeTab !== "all" && activeTab !== "manager_approved" && meta && (
         <Pagination
           page={page}
           totalPages={meta.totalPages}
@@ -422,6 +508,14 @@ export default function PendingApprovalPage() {
             limit={ALL_LIMIT}
             onPageChange={setAllPage}
           />
+        ) : null;
+      })()}
+
+      {activeTab === "manager_approved" && (() => {
+        const apTotal      = (approvedData as any)?.total ?? (approvedData as any)?.data?.total ?? 0;
+        const apTotalPages = (approvedData as any)?.totalPages ?? (approvedData as any)?.data?.totalPages ?? Math.ceil(apTotal / LIMIT);
+        return apTotal > 0 ? (
+          <Pagination page={page} totalPages={apTotalPages} total={apTotal} limit={LIMIT} onPageChange={setPage} />
         ) : null;
       })()}
 

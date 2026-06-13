@@ -35,7 +35,7 @@ export interface Patient {
   maritalStatus?: MaritalStatus | null;
   livingCondition?: LivingCondition | null;
   financialStatus?: FinancialStatus | null;
-  receivesAid?: boolean;
+  receivesAid?: string;
   referralSource?: string | null;
   referralDetails?: string | null;
   photoUrl?: string | null;
@@ -100,7 +100,7 @@ export interface CreatePatientDto {
   maritalStatus?: MaritalStatus;
   livingCondition?: LivingCondition;
   financialStatus?: FinancialStatus;
-  receivesAid?: boolean;
+  receivesAid?: string;
   referralSource?: string;
   referralDetails?: string;
   photoUrl?: string;

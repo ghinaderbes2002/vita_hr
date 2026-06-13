@@ -38,7 +38,7 @@ const schema = z.object({
   maritalStatus:   z.string().optional(),
   livingCondition: z.string().optional(),
   financialStatus: z.string().optional(),
-  receivesAid:     z.boolean().optional(),
+  receivesAid:     z.string().optional(),
   referralSource:  z.enum(["SELF","RELATIVES","SOCIAL_MEDIA","MEDICAL_REFERRAL","OTHER",""]).optional(),
   referralDetails: z.string().optional(),
   documentConsent: z.enum(["FULL", "ANONYMOUS", "NONE"]).optional(),
@@ -121,7 +121,7 @@ export default function EditPatientPage() {
       maritalStatus:   patient.maritalStatus ?? "",
       livingCondition: patient.livingCondition ?? "",
       financialStatus: patient.financialStatus ?? "",
-      receivesAid:     patient.receivesAid ?? false,
+      receivesAid:     (patient.receivesAid != null && patient.receivesAid !== false) ? String(patient.receivesAid) : "",
       referralSource:  (patient.referralSource as any) ?? "",
       referralDetails: patient.referralDetails ?? "",
       documentConsent: patient.documentConsent ?? "FULL",
@@ -345,12 +345,9 @@ export default function EditPatientPage() {
               <Label>تفاصيل الإحالة</Label>
               <Input {...register("referralDetails")} />
             </div>
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={watch("receivesAid") ?? false}
-                onCheckedChange={(v) => setValue("receivesAid", v)}
-              />
-              <Label>يتلقى مساعدات إنسانية</Label>
+            <div className="space-y-1.5">
+              <Label>مقدم الرعاية / Care Provider</Label>
+              <Input {...register("receivesAid")} placeholder="مقدم الرعاية..." />
             </div>
           </CardContent>
         </Card>

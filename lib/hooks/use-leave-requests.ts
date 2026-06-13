@@ -52,6 +52,18 @@ export function usePendingManagerLeaveRequests(
   });
 }
 
+// Get requests already approved by the logged-in manager
+export function useManagerApprovedLeaveRequests(
+  params?: { status?: string; page?: number; limit?: number },
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ["leave-requests-manager-approved", params],
+    queryFn: () => leaveRequestsApi.getManagerApproved(params),
+    enabled: options?.enabled ?? true,
+  });
+}
+
 // Get single leave request
 export function useLeaveRequest(id: string) {
   return useQuery({

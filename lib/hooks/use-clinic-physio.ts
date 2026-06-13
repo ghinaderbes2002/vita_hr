@@ -13,6 +13,8 @@ import {
   TreatmentPlanDto,
   SupervisorReviewDto,
   CreatePhysioSessionDto,
+  UpdatePhysioSessionDto,
+  FinalSummaryDto,
   PhysioCaseListParams,
 } from "@/lib/api/clinic-physio";
 import { toast } from "sonner";
@@ -269,6 +271,44 @@ export function useDeletePhysioSession() {
       toast.success("تم حذف الجلسة");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
+  });
+}
+
+export function useUpdatePhysioSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, sessionId, dto }: { id: string; sessionId: string; dto: UpdatePhysioSessionDto }) =>
+      clinicPhysioApi.updateSession(id, sessionId, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-sessions", id] });
+      toast.success("تم تعديل الجلسة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التعديل"),
+  });
+}
+
+export function useSubmitFinalSummary() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: FinalSummaryDto }) =>
+      clinicPhysioApi.submitFinalSummary(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
+      toast.success("تم حفظ الملخص النهائي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useDownloadFinalSummaryPdf() {
+  return useMutation({
+    mutationFn: (caseId: string) => clinicPhysioApi.downloadFinalSummaryPdf(caseId),
+    onSuccess: (blob) => {
+      const url = URL.createObjectURL(blob);
+      window.open(url);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    },
+    onError: () => toast.error("فشل تنزيل PDF"),
   });
 }
 

@@ -208,6 +208,16 @@ export const leaveRequestsApi = {
     return response.data;
   },
 
+  // Get requests already approved by the logged-in manager
+  getManagerApproved: async (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<LeaveRequest[]>> => {
+    const response = await apiClient.get("/leave-requests/manager-approved", { params });
+    return response.data;
+  },
+
   // Get requests pending substitute approval (for the logged-in substitute)
   getPendingSubstitute: async (): Promise<LeaveRequest[]> => {
     const response = await apiClient.get("/leave-requests/pending-substitute");

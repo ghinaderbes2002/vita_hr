@@ -137,6 +137,7 @@ export interface PhysioCase {
   supervisingDoctorId?: string | null;
   physiotherapistId?: string | null;
   caseManagerId?: string | null;
+  finalSummary?: string | null;
   // Complaint
   majorComplaint?: string | null;
   symptoms?: string | null;
@@ -149,7 +150,7 @@ export interface PhysioCase {
   painLevel?: PainLevel | null;
   painDuration?: PainDuration | null;
   painProgression?: string | null;
-  hadPreviousInjury?: boolean | null;
+  hadPreviousInjury?: string | null;
   bestTimeOfDay?: string | null;
   worstTimeOfDay?: string | null;
   complaintType?: string | null;
@@ -206,7 +207,7 @@ export interface UpdatePhysioCaseDto {
   painLevel?: PainLevel;
   painDuration?: PainDuration;
   painProgression?: string;
-  hadPreviousInjury?: boolean;
+  hadPreviousInjury?: string;
   bestTimeOfDay?: string;
   worstTimeOfDay?: string;
   complaintType?: string;
@@ -390,25 +391,33 @@ export interface SupervisorReviewDto {
 export interface PhysioSession {
   id: string;
   caseId: string;
-  date: string;
-  time?: string;
-  modalitiesApplied: string[];
+  sessionNumber: number;
+  sessionDate: string;
+  sessionTime?: string;
   notes?: string;
-  painLevel?: number | null;
-  romUpdates?: Record<string, number>;
-  appointmentId?: string | null;
+  supervisorOpinion?: string | null;
+  doctorDecision?: string | null;
   createdAt: string;
 }
 
 export interface CreatePhysioSessionDto {
   sessionDate: string;
-  physiotherapistId: string;
-  time?: string;
-  modalitiesApplied: string[];
+  sessionTime?: string;
   notes?: string;
-  painLevel?: number;
-  romUpdates?: Record<string, number>;
-  appointmentId?: string;
+  supervisorOpinion?: string;
+  doctorDecision?: string;
+}
+
+export interface UpdatePhysioSessionDto {
+  sessionDate?: string;
+  sessionTime?: string;
+  notes?: string;
+  supervisorOpinion?: string;
+  doctorDecision?: string;
+}
+
+export interface FinalSummaryDto {
+  finalSummary: string;
 }
 
 export interface PhysioCaseListParams {
@@ -517,13 +526,23 @@ export const clinicPhysioApi = {
     return data?.data ?? data;
   },
 
-  updateSession: async (id: string, sessionId: string, dto: Partial<CreatePhysioSessionDto>): Promise<PhysioSession> => {
+  updateSession: async (id: string, sessionId: string, dto: UpdatePhysioSessionDto): Promise<PhysioSession> => {
     const { data } = await apiClient.put(`/physio/cases/${id}/sessions/${sessionId}`, dto);
     return data?.data ?? data;
   },
 
   deleteSession: async (id: string, sessionId: string): Promise<void> => {
     await apiClient.delete(`/physio/cases/${id}/sessions/${sessionId}`);
+  },
+
+  submitFinalSummary: async (id: string, dto: FinalSummaryDto): Promise<{ caseId: string; finalSummary: string }> => {
+    const { data } = await apiClient.post(`/physio/cases/${id}/final-summary`, dto);
+    return data?.data ?? data;
+  },
+
+  downloadFinalSummaryPdf: async (id: string): Promise<Blob> => {
+    const response = await apiClient.get(`/physio/cases/${id}/final-summary/pdf`, { responseType: 'blob' });
+    return response.data;
   },
 
   getTimeline: async (id: string): Promise<TimelineEvent[]> => {

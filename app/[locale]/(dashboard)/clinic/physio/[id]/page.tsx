@@ -52,6 +52,9 @@ import {
   usePhysioSessions,
   useAddPhysioSession,
   useDeletePhysioSession,
+  useUpdatePhysioSession,
+  useSubmitFinalSummary,
+  useDownloadFinalSummaryPdf,
   usePhysioTimeline,
 } from "@/lib/hooks/use-clinic-physio";
 import { useUsers } from "@/lib/hooks/use-users";
@@ -69,6 +72,14 @@ import {
   TestType,
 } from "@/lib/api/clinic-physio";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
+import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -216,10 +227,15 @@ export default function PhysioCasePage() {
   const signPlan = useSignPhysioTreatmentPlan();
   const addSession = useAddPhysioSession();
   const deleteSession = useDeletePhysioSession();
+  const updateSessionMut = useUpdatePhysioSession();
+  const submitFinalSummary = useSubmitFinalSummary();
+  const downloadFinalPdf = useDownloadFinalSummaryPdf();
 
   const { data: usersData } = useUsers({ limit: 200 });
   const allUsers: { id: string; fullName: string }[] =
     (usersData as any)?.data?.items ?? (usersData as any)?.items ?? [];
+
+  const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
 
   // ── Complaint state ──────────────────────────────────────────────────────────
   const [complaint, setComplaint] = useState({
@@ -234,7 +250,7 @@ export default function PhysioCasePage() {
     painLevel: "",
     painDuration: "",
     painProgression: "",
-    hadPreviousInjury: false,
+    hadPreviousInjury: "",
     bestTimeOfDay: "",
     worstTimeOfDay: "",
     // New fields
@@ -390,11 +406,12 @@ export default function PhysioCasePage() {
   const [signOpen, setSignOpen] = useState(false);
   const [sessionForm, setSessionForm] = useState({
     date: new Date().toISOString().slice(0, 10),
-    time: "",
+    sessionTime: "",
     notes: "",
-    painLevel: "",
-    modalities: [] as TherapyModality[],
   });
+  const [editingSession, setEditingSession] = useState<{ id: string; sessionDate: string; sessionTime: string; notes: string; supervisorOpinion: string; doctorDecision: string } | null>(null);
+  const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
+  const [finalSummary, setFinalSummary] = useState("");
 
   // ── Auto-save pain regions ───────────────────────────────────────────────────
   const autoSaveReady = useRef(false);
@@ -438,7 +455,7 @@ export default function PhysioCasePage() {
       painLevel: caseData.painLevel ?? "",
       painDuration: caseData.painDuration ?? "",
       painProgression: caseData.painProgression ?? "",
-      hadPreviousInjury: caseData.hadPreviousInjury ?? false,
+      hadPreviousInjury: (caseData.hadPreviousInjury != null && caseData.hadPreviousInjury !== false) ? String(caseData.hadPreviousInjury) : "",
       bestTimeOfDay: caseData.bestTimeOfDay ?? "",
       worstTimeOfDay: caseData.worstTimeOfDay ?? "",
       complaintType: caseData.complaintType ?? "",
@@ -619,6 +636,9 @@ export default function PhysioCasePage() {
       });
     }
 
+    // Final summary
+    if (caseData.finalSummary) setFinalSummary(caseData.finalSummary);
+
     // Treatment plan
     const tp = caseData.treatmentPlan;
     if (tp) {
@@ -694,7 +714,7 @@ export default function PhysioCasePage() {
         painLevel: (complaint.painLevel as any) || undefined,
         painDuration: (complaint.painDuration as any) || undefined,
         painProgression: complaint.painProgression || undefined,
-        hadPreviousInjury: complaint.hadPreviousInjury,
+        hadPreviousInjury: complaint.hadPreviousInjury || undefined,
         bestTimeOfDay: complaint.bestTimeOfDay || undefined,
         worstTimeOfDay: complaint.worstTimeOfDay || undefined,
         complaintType: complaint.complaintType || undefined,
@@ -955,30 +975,45 @@ export default function PhysioCasePage() {
 
   const handleAddSession = async () => {
     if (!sessionForm.date) return;
-    if (!c.physiotherapistId) {
-      toast.error("لم يتم تعيين معالج فيزيائي للحالة");
-      return;
+    try {
+      await addSession.mutateAsync({
+        id,
+        dto: {
+          sessionDate: sessionForm.date,
+          sessionTime: sessionForm.sessionTime || undefined,
+          notes: sessionForm.notes || undefined,
+        },
+      });
+      setSessionForm({ date: new Date().toISOString().slice(0, 10), sessionTime: "", notes: "" });
+    } catch (err: any) {
+      const code = err?.response?.data?.error?.code ?? err?.response?.data?.code;
+      const msg  = err?.response?.data?.error?.message ?? err?.response?.data?.message;
+      if (code === "PREVIOUS_SESSION_INCOMPLETE") {
+        toast.error(msg || "يجب إدخال رأي رئيس القسم وقرار الطبيب للجلسة السابقة قبل إضافة جلسة جديدة");
+      } else {
+        toast.error(msg || "حدث خطأ أثناء إضافة الجلسة");
+      }
     }
-    await addSession.mutateAsync({
+  };
+
+  const handleUpdateSession = async () => {
+    if (!editingSession) return;
+    await updateSessionMut.mutateAsync({
       id,
+      sessionId: editingSession.id,
       dto: {
-        sessionDate: sessionForm.date,
-        physiotherapistId: c.physiotherapistId,
-        time: sessionForm.time || undefined,
-        modalitiesApplied: sessionForm.modalities,
-        notes: sessionForm.notes || undefined,
-        painLevel: sessionForm.painLevel
-          ? parseInt(sessionForm.painLevel)
-          : undefined,
+        sessionDate: editingSession.sessionDate || undefined,
+        sessionTime: editingSession.sessionTime || undefined,
+        notes: editingSession.notes || undefined,
+        supervisorOpinion: editingSession.supervisorOpinion || undefined,
+        doctorDecision: editingSession.doctorDecision || undefined,
       },
     });
-    setSessionForm({
-      date: new Date().toISOString().slice(0, 10),
-      time: "",
-      notes: "",
-      painLevel: "",
-      modalities: [],
-    });
+    setEditingSession(null);
+  };
+
+  const handleSaveFinalSummary = async () => {
+    await submitFinalSummary.mutateAsync({ id, dto: { finalSummary } });
   };
 
   const toggleArr = <T extends string>(
@@ -1060,21 +1095,26 @@ export default function PhysioCasePage() {
 
       {/* Tabs */}
       <Tabs defaultValue={defaultTab}>
-        <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="intake">الاستقبال</TabsTrigger>
-          <TabsTrigger value="complaint">الشكوى</TabsTrigger>
-          <TabsTrigger value="pain_map">خريطة الألم</TabsTrigger>
-          <TabsTrigger value="medical_history">التاريخ الطبي</TabsTrigger>
-          <TabsTrigger value="goals">الأهداف</TabsTrigger>
-          <TabsTrigger value="postural_assessment">التقييم الوضعي</TabsTrigger>
-          <TabsTrigger value="treatment_plan">خطة العلاج</TabsTrigger>
-          <TabsTrigger value="evaluation">الملاحظات والتقييم</TabsTrigger>
-          <TabsTrigger value="supervisor_review">رئيس القسم</TabsTrigger>
-          <TabsTrigger value="doctor_sign">توقيع الطبيب</TabsTrigger>
-          <TabsTrigger value="sessions">
-            الجلسات ({sessions.length})
-          </TabsTrigger>
-          <TabsTrigger value="timeline">السجل الزمني</TabsTrigger>
+        <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir="rtl">
+          {[
+            { value: "intake",              ar: "الاستقبال",              en: "Intake" },
+            { value: "patient_info",        ar: "نموذج العلاج الطبيعي",   en: "PT Medical Form" },
+            { value: "complaint",           ar: "الشكوى",                 en: "Complaint" },
+            { value: "pain_map",            ar: "حدد أماكن الألم",        en: "Mark Areas of Discomfort" },
+            { value: "medical_history",     ar: "التاريخ الطبي",          en: "Medical History" },
+            { value: "goals",               ar: "أهداف العلاج",           en: "Goals of Treatment" },
+            { value: "postural_assessment", ar: "خطة العلاج",             en: "Plan of Assessment" },
+            { value: "treatment_plan",      ar: "خطة العلاج",             en: "Plan of Treatment" },
+            { value: "evaluation",          ar: "الملاحظات والتقييم",     en: "Observation & Evaluation" },
+            { value: "sessions",            ar: `الجلسات العلاجية (${sessions.length})`, en: "Therapeutic Procedures" },
+            { value: "supervisor_review",   ar: "رأي رئيس القسم",         en: "Supervisor Review" },
+            { value: "timeline",            ar: "السجل الزمني",           en: "Timeline" },
+          ].map(({ value, ar, en }) => (
+            <TabsTrigger key={value} value={value} className="flex flex-col gap-0 leading-tight py-1.5">
+              <span>{ar}</span>
+              <span className="text-[10px] font-normal opacity-60">{en}</span>
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {/* ── INTAKE ─────────────────────────────────────────────────────── */}
@@ -1322,6 +1362,48 @@ export default function PhysioCasePage() {
           </Section>
         </TabsContent>
 
+        {/* ── PATIENT INFO ───────────────────────────────────────────────── */}
+        <TabsContent value="patient_info" className="mt-4">
+          <Section title="نموذج العلاج الطبيعي / Physical Therapy Medical Form">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">الاسم / Name</p>
+                <p className="text-sm font-medium">{patientName}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">العمر / Age</p>
+                <p className="text-sm font-medium">
+                  {patientFull?.dateOfBirth
+                    ? `${Math.floor((Date.now() - new Date(patientFull.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} سنة`
+                    : "—"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">التاريخ / Date</p>
+                <p className="text-sm font-medium">
+                  {c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-GB") : "—"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">رقم تعريف المريض / Patient ID</p>
+                <p className="text-sm font-medium font-mono">{c.patient?.patientNumber ?? "—"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">الوظيفة الحالية / Current Job</p>
+                <p className="text-sm font-medium">{patientFull?.occupation ?? "—"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">مقدم الرعاية / Care Provider</p>
+                <p className="text-sm font-medium">
+                  {(patientFull?.receivesAid != null && patientFull.receivesAid !== false)
+                    ? String(patientFull.receivesAid)
+                    : "—"}
+                </p>
+              </div>
+            </div>
+          </Section>
+        </TabsContent>
+
         {/* ── COMPLAINT ──────────────────────────────────────────────────── */}
         <TabsContent value="complaint" className="mt-4 space-y-4">
           <Section title="الشكوى الرئيسية">
@@ -1461,63 +1543,23 @@ export default function PhysioCasePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>
-                    {" "}
-                    في أي وقت من اليوم تكون الأعراض أقل إزعاجاً/ In what part of
-                    the day are the symptoms less bothersome
+                    في أي وقت من اليوم تكون الأعراض أقل إزعاجاً / In what part of the day are the symptoms less bothersome
                   </Label>
-                  <Select
+                  <Input
                     value={complaint.bestTimeOfDay}
-                    onValueChange={(v) =>
-                      setComplaint((f) => ({ ...f, bestTimeOfDay: v }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[
-                        ["MORNING", "صباحاً / Morning"],
-                        ["AFTERNOON", "ظهراً / Afternoon"],
-                        ["EVENING", "مساءً / Evening"],
-                        ["NIGHT", "ليلاً / Night"],
-                        ["ALL_DAY", "طوال اليوم / All Day"],
-                      ].map(([v, l]) => (
-                        <SelectItem key={v} value={v}>
-                          {l}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setComplaint((f) => ({ ...f, bestTimeOfDay: e.target.value }))}
+                    placeholder="مثال: الصباح / Morning"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>
-                    {" "}
-                    في أي وقت من اليوم تكون الأعراض أكثر إزعاجاً / In what part
-                    of the day are the symptoms more bothersome
+                    في أي وقت من اليوم تكون الأعراض أكثر إزعاجاً / In what part of the day are the symptoms more bothersome
                   </Label>
-                  <Select
+                  <Input
                     value={complaint.worstTimeOfDay}
-                    onValueChange={(v) =>
-                      setComplaint((f) => ({ ...f, worstTimeOfDay: v }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[
-                        ["MORNING", "صباحاً / Morning"],
-                        ["AFTERNOON", "ظهراً / Afternoon"],
-                        ["EVENING", "مساءً / Evening"],
-                        ["NIGHT", "ليلاً / Night"],
-                        ["ALL_DAY", "طوال اليوم / All Day"],
-                      ].map(([v, l]) => (
-                        <SelectItem key={v} value={v}>
-                          {l}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setComplaint((f) => ({ ...f, worstTimeOfDay: e.target.value }))}
+                    placeholder="مثال: المساء / Evening"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1542,17 +1584,14 @@ export default function PhysioCasePage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center gap-3 pt-6">
-                  <Switch
-                    checked={complaint.hadPreviousInjury}
-                    onCheckedChange={(v) =>
-                      setComplaint((f) => ({ ...f, hadPreviousInjury: v }))
-                    }
+                <div className="space-y-1.5">
+                  <Label>هل سبق التعرض لهذه الإصابة؟ / Have you had this injury before?</Label>
+                  <Input
+                    value={complaint.hadPreviousInjury}
+                    onChange={(e) => setComplaint((f) => ({ ...f, hadPreviousInjury: e.target.value }))}
+                    placeholder="مثال: نعم، قبل سنتين"
+                    disabled={!canEdit}
                   />
-                  <Label>
-                    هل سبق التعرض لهذه الإصابة؟ / Have you had this injury
-                    before؟
-                  </Label>
                 </div>
               </div>
 
@@ -2108,7 +2147,7 @@ export default function PhysioCasePage() {
               </div>
             </div>
           </Section>
-          <Section title="الأمراض المزمنة (30 مرض)">
+          <Section title=" هل لديك أي مما يلي ؟ (ضع علامة إذا نعم)/ do you have any of the following today؟">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
               {CHRONIC_CONDITIONS.map((cond) => (
                 <label
@@ -2696,9 +2735,7 @@ export default function PhysioCasePage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">
-                التحكم في التوازن / الجذع/  Balance / Trunk Control
-
-               
+                التحكم في التوازن / الجذع/ Balance / Trunk Control
               </Label>
               <Input
                 value={postural.trunkControl}
@@ -3343,7 +3380,6 @@ export default function PhysioCasePage() {
 
         {/* ── TREATMENT PLAN ──────────────────────────────────────────────── */}
         <TabsContent value="treatment_plan" className="mt-4 space-y-4">
-
           {/* Header */}
           <Section title="رأس خطة العلاج / Plan Header">
             <div className="grid grid-cols-2 gap-4">
@@ -3352,7 +3388,12 @@ export default function PhysioCasePage() {
                 <Input
                   type="date"
                   value={planHeader.treatmentFrom}
-                  onChange={(e) => setPlanHeader((h) => ({ ...h, treatmentFrom: e.target.value }))}
+                  onChange={(e) =>
+                    setPlanHeader((h) => ({
+                      ...h,
+                      treatmentFrom: e.target.value,
+                    }))
+                  }
                   disabled={!canEdit}
                 />
               </div>
@@ -3361,25 +3402,42 @@ export default function PhysioCasePage() {
                 <Input
                   type="date"
                   value={planHeader.treatmentTo}
-                  onChange={(e) => setPlanHeader((h) => ({ ...h, treatmentTo: e.target.value }))}
+                  onChange={(e) =>
+                    setPlanHeader((h) => ({
+                      ...h,
+                      treatmentTo: e.target.value,
+                    }))
+                  }
                   disabled={!canEdit}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">عدد الزيارات المتوقعة / Anticipated Visits</Label>
+                <Label className="text-sm">
+                  عدد الزيارات المتوقعة / Anticipated Visits
+                </Label>
                 <Input
                   type="number"
                   min={1}
                   value={planHeader.anticipatedVisits}
-                  onChange={(e) => setPlanHeader((h) => ({ ...h, anticipatedVisits: e.target.value }))}
+                  onChange={(e) =>
+                    setPlanHeader((h) => ({
+                      ...h,
+                      anticipatedVisits: e.target.value,
+                    }))
+                  }
                   disabled={!canEdit}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">اسم أخصائي العلاج الطبيعي / Physiotherapist</Label>
+                <Label className="text-sm">
+                  اسم أخصائي العلاج الطبيعي / Physiotherapist
+                </Label>
                 <Select
                   value={planHeader.physiotherapistId || ""}
-                  onValueChange={(v) => canEdit && setPlanHeader((h) => ({ ...h, physiotherapistId: v }))}
+                  onValueChange={(v) =>
+                    canEdit &&
+                    setPlanHeader((h) => ({ ...h, physiotherapistId: v }))
+                  }
                   disabled={!canEdit}
                 >
                   <SelectTrigger>
@@ -3387,7 +3445,9 @@ export default function PhysioCasePage() {
                   </SelectTrigger>
                   <SelectContent>
                     {allUsers.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.fullName}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -3396,7 +3456,10 @@ export default function PhysioCasePage() {
                 <Label className="text-sm">مدير الحالة / Case Manager</Label>
                 <Select
                   value={planHeader.caseManagerId || ""}
-                  onValueChange={(v) => canEdit && setPlanHeader((h) => ({ ...h, caseManagerId: v }))}
+                  onValueChange={(v) =>
+                    canEdit &&
+                    setPlanHeader((h) => ({ ...h, caseManagerId: v }))
+                  }
                   disabled={!canEdit}
                 >
                   <SelectTrigger>
@@ -3404,7 +3467,9 @@ export default function PhysioCasePage() {
                   </SelectTrigger>
                   <SelectContent>
                     {allUsers.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.fullName}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -3413,11 +3478,14 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Modalities — 2-col checkbox grid */}
-          <Section title="الوسائل العلاجية المستخدمة / Modalities Used">
+          <Section title="خطة علاج  المريض   /  patient treatment plan">
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               {THERAPY_MODALITY_PAIRS.flatMap(([right, left]) =>
                 [right, left].map((m) => (
-                  <label key={m} className="flex items-center gap-2 cursor-pointer">
+                  <label
+                    key={m}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       className="h-4 w-4 shrink-0 rounded border-border accent-primary"
@@ -3425,14 +3493,18 @@ export default function PhysioCasePage() {
                       onChange={(e) => {
                         if (!canEdit) return;
                         setPlanModalities((prev) =>
-                          e.target.checked ? [...prev, m] : prev.filter((x) => x !== m)
+                          e.target.checked
+                            ? [...prev, m]
+                            : prev.filter((x) => x !== m),
                         );
                       }}
                       disabled={!canEdit}
                     />
-                    <span className="text-sm leading-tight">{THERAPY_MODALITY_LABELS[m]}</span>
+                    <span className="text-sm leading-tight">
+                      {THERAPY_MODALITY_LABELS[m]}
+                    </span>
                   </label>
-                ))
+                )),
               )}
             </div>
             {planModalities.includes("OTHER") && (
@@ -3450,7 +3522,7 @@ export default function PhysioCasePage() {
           <Section title="الملاحظات والحالة / Remarks & Status">
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label className="text-sm">الملاحظة / Observation</Label>
+                <Label className="text-sm">ملاحظات / remarks</Label>
                 <Textarea
                   rows={3}
                   value={planObservation}
@@ -3460,7 +3532,7 @@ export default function PhysioCasePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">تعليقات الخطة / Remarks</Label>
+                <Label className="text-sm"> الملخص / summarizing</Label>
                 <Textarea
                   rows={2}
                   value={planRemarks}
@@ -3470,35 +3542,46 @@ export default function PhysioCasePage() {
               </div>
               <div className="flex items-center justify-between rounded-md border px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium">حالة الخطة / Plan Status</p>
+                  <p className="text-sm font-medium">
+                    حالة المريض / Plan Status
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {planStatus === "ACTIVE" ? "نشط / Active" : "غير نشط / Inactive"}
+                    {planStatus === "ACTIVE"
+                      ? "نشط / Active"
+                      : "غير نشط / Inactive"}
                   </p>
                 </div>
                 <Switch
                   checked={planStatus === "ACTIVE"}
-                  onCheckedChange={(v) => canEdit && setPlanStatus(v ? "ACTIVE" : "INACTIVE")}
+                  onCheckedChange={(v) =>
+                    canEdit && setPlanStatus(v ? "ACTIVE" : "INACTIVE")
+                  }
                   disabled={!canEdit}
                 />
               </div>
             </div>
           </Section>
 
-          {canEdit && ["POSTURAL_ASSESSMENT", "GOALS", "TREATMENT_PLAN", "MEDICAL_HISTORY"].includes(c.status) && (
-            <Button
-              onClick={handleSavePlan}
-              disabled={submitPlan.isPending || updateStatus.isPending}
-              className="w-full gap-2"
-            >
-              {submitPlan.isPending || updateStatus.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              حفظ خطة العلاج
-            </Button>
-          )}
-
+          {canEdit &&
+            [
+              "POSTURAL_ASSESSMENT",
+              "GOALS",
+              "TREATMENT_PLAN",
+              "MEDICAL_HISTORY",
+            ].includes(c.status) && (
+              <Button
+                onClick={handleSavePlan}
+                disabled={submitPlan.isPending || updateStatus.isPending}
+                className="w-full gap-2"
+              >
+                {submitPlan.isPending || updateStatus.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                حفظ خطة العلاج
+              </Button>
+            )}
         </TabsContent>
 
         {/* ── SUPERVISOR REVIEW ───────────────────────────────────────────── */}
@@ -3545,7 +3628,7 @@ export default function PhysioCasePage() {
             )}
           </Section>
 
-          <Section title="الملاحظات / Notes">
+          <Section title="التشخيص / observations">
             <Textarea
               rows={4}
               placeholder="اكتب ملاحظاتك حول تقدم المريض..."
@@ -3555,7 +3638,7 @@ export default function PhysioCasePage() {
             />
           </Section>
 
-          <Section title="التقييم / Evaluation">
+          {/* <Section title="التقييم / Evaluation">
             <Textarea
               rows={4}
               placeholder="اكتب تقييمك للحالة..."
@@ -3563,7 +3646,7 @@ export default function PhysioCasePage() {
               onChange={(e) => setEvalText(e.target.value)}
               disabled={!canEdit}
             />
-          </Section>
+          </Section> */}
 
           {canEdit && (
             <Button
@@ -3680,158 +3763,219 @@ export default function PhysioCasePage() {
 
         {/* ── SESSIONS ────────────────────────────────────────────────────── */}
         <TabsContent value="sessions" className="mt-4 space-y-4">
+
+          {/* Add session form */}
           {["ACTIVE_TREATMENT", "DOCTOR_SIGN"].includes(c.status) && (
             <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SESSIONS_CREATE}>
-              <Section title="إضافة جلسة">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>التاريخ</Label>
-                      <Input
-                        type="date"
-                        value={sessionForm.date}
-                        onChange={(e) =>
-                          setSessionForm((f) => ({
-                            ...f,
-                            date: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>الوقت</Label>
-                      <Input
-                        type="time"
-                        value={sessionForm.time}
-                        onChange={(e) =>
-                          setSessionForm((f) => ({
-                            ...f,
-                            time: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
+              <Section title="إضافة جلسة جديدة">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">التاريخ *</Label>
+                    <Input
+                      type="date"
+                      value={sessionForm.date}
+                      onChange={(e) => setSessionForm((f) => ({ ...f, date: e.target.value }))}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label>الوسائل المطبقة</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {THERAPY_MODALITIES.map((m) => (
-                        <ToggleChip
-                          key={m}
-                          label={THERAPY_MODALITY_LABELS[m]}
-                          active={sessionForm.modalities.includes(m)}
-                          onClick={() =>
-                            toggleArr(sessionForm.modalities, m, (v) =>
-                              setSessionForm((f) => ({ ...f, modalities: v })),
-                            )
-                          }
-                        />
-                      ))}
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">الوقت</Label>
+                    <Input
+                      type="time"
+                      value={sessionForm.sessionTime}
+                      onChange={(e) => setSessionForm((f) => ({ ...f, sessionTime: e.target.value }))}
+                    />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>شدة الألم (0-10)</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={10}
-                        value={sessionForm.painLevel}
-                        onChange={(e) =>
-                          setSessionForm((f) => ({
-                            ...f,
-                            painLevel: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>ملاحظات</Label>
-                      <Input
-                        value={sessionForm.notes}
-                        onChange={(e) =>
-                          setSessionForm((f) => ({
-                            ...f,
-                            notes: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-sm">ملاحظات</Label>
+                    <Textarea
+                      rows={2}
+                      value={sessionForm.notes}
+                      onChange={(e) => setSessionForm((f) => ({ ...f, notes: e.target.value }))}
+                      placeholder="ملاحظات الجلسة..."
+                    />
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleAddSession}
-                      disabled={addSession.isPending}
-                      className="flex-1 gap-2"
-                    >
-                      <Plus className="h-4 w-4" /> إضافة جلسة
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        updateStatus.mutate({ id, status: "COMPLETED" })
-                      }
-                      disabled={sessions.length === 0}
-                    >
-                      إنهاء الجلسات
-                    </Button>
-                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    onClick={handleAddSession}
+                    disabled={!sessionForm.date || addSession.isPending}
+                    className="flex-1 gap-2"
+                  >
+                    {addSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    إضافة جلسة
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => updateStatus.mutate({ id, status: "COMPLETED" })}
+                    disabled={sessions.length === 0}
+                  >
+                    إنهاء الجلسات
+                  </Button>
                 </div>
               </Section>
             </ActionGuard>
           )}
 
+          {/* Sessions list */}
           {sessions.length > 0 && (
-            <Section title={`الجلسات السابقة (${sessions.length})`}>
+            <Section title={`الجلسات (${sessions.length})`}>
               <div className="space-y-3">
-                {sessions.map((s) => (
+                {[...sessions].sort((a, b) => (a.sessionNumber ?? 0) - (b.sessionNumber ?? 0)).map((s) => (
                   <div key={s.id} className="rounded-lg border p-3 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div className="flex gap-2 items-center flex-wrap">
-                        <span className="font-medium text-sm">
-                          {new Date(s.date).toLocaleDateString("ar")}
-                        </span>
-                        {s.time && (
-                          <span className="text-xs text-muted-foreground">
-                            {s.time}
-                          </span>
-                        )}
-                        {s.painLevel != null && (
-                          <Badge variant="outline" className="text-xs">
-                            ألم: {s.painLevel}/10
-                          </Badge>
-                        )}
+                    {editingSession?.id === s.id ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">التاريخ</Label>
+                            <Input
+                              type="date"
+                              value={editingSession.sessionDate}
+                              onChange={(e) => setEditingSession((v) => v && ({ ...v, sessionDate: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">الوقت</Label>
+                            <Input
+                              type="time"
+                              value={editingSession.sessionTime}
+                              onChange={(e) => setEditingSession((v) => v && ({ ...v, sessionTime: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <Label className="text-xs">ملاحظات</Label>
+                            <Textarea
+                              rows={2}
+                              value={editingSession.notes}
+                              onChange={(e) => setEditingSession((v) => v && ({ ...v, notes: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <Label className="text-xs">رأي رئيس القسم / Supervisor Opinion</Label>
+                            <Textarea
+                              rows={2}
+                              value={editingSession.supervisorOpinion}
+                              onChange={(e) => setEditingSession((v) => v && ({ ...v, supervisorOpinion: e.target.value }))}
+                              placeholder="رأي رئيس القسم..."
+                            />
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <Label className="text-xs">قرار الطبيب / Doctor Decision</Label>
+                            <Textarea
+                              rows={2}
+                              value={editingSession.doctorDecision}
+                              onChange={(e) => setEditingSession((v) => v && ({ ...v, doctorDecision: e.target.value }))}
+                              placeholder="قرار الطبيب..."
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleUpdateSession} disabled={updateSessionMut.isPending} className="gap-1">
+                            {updateSessionMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                            حفظ
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingSession(null)}>إلغاء</Button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() =>
-                          deleteSession.mutate({ id, sessionId: s.id })
-                        }
-                        className="text-destructive hover:opacity-70"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    {s.modalitiesApplied.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {s.modalitiesApplied.map((m) => (
-                          <Badge
-                            key={m}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {THERAPY_MODALITY_LABELS[m as TherapyModality] ?? m}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {s.notes && (
-                      <p className="text-xs text-muted-foreground">{s.notes}</p>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-start">
+                          <div className="flex gap-2 items-center flex-wrap">
+                            <Badge variant="secondary" className="text-xs font-bold">#{s.sessionNumber}</Badge>
+                            <span className="font-medium text-sm">
+                              {new Date(s.sessionDate).toLocaleDateString("ar")}
+                            </span>
+                            {s.sessionTime && (
+                              <span className="text-xs text-muted-foreground">{s.sessionTime}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            {["ACTIVE_TREATMENT", "DOCTOR_SIGN"].includes(c.status) && (
+                              <button
+                                onClick={() => setEditingSession({
+                                  id: s.id,
+                                  sessionDate: s.sessionDate?.slice(0, 10) ?? "",
+                                  sessionTime: s.sessionTime ?? "",
+                                  notes: s.notes ?? "",
+                                  supervisorOpinion: s.supervisorOpinion ?? "",
+                                  doctorDecision: s.doctorDecision ?? "",
+                                })}
+                                className="text-muted-foreground hover:text-foreground p-1"
+                                title="تعديل"
+                              >
+                                <Save className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setConfirmDeleteSessionId(s.id)}
+                              className="text-destructive hover:opacity-70 p-1"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        {s.notes && (
+                          <p className="text-xs text-muted-foreground">{s.notes}</p>
+                        )}
+                        {(s.supervisorOpinion || s.doctorDecision) && (
+                          <div className="mt-2 grid grid-cols-2 gap-3 border-t pt-2">
+                            {s.supervisorOpinion && (
+                              <div className="space-y-0.5">
+                                <p className="text-[11px] font-medium text-muted-foreground">رأي رئيس القسم</p>
+                                <p className="text-xs">{s.supervisorOpinion}</p>
+                              </div>
+                            )}
+                            {s.doctorDecision && (
+                              <div className="space-y-0.5">
+                                <p className="text-[11px] font-medium text-muted-foreground">قرار الطبيب</p>
+                                <p className="text-xs">{s.doctorDecision}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {(!s.supervisorOpinion || !s.doctorDecision) && (
+                          <p className="text-[11px] text-amber-600 mt-1">
+                            ⚠ {!s.supervisorOpinion && !s.doctorDecision ? "ينقص رأي رئيس القسم وقرار الطبيب" : !s.supervisorOpinion ? "ينقص رأي رئيس القسم" : "ينقص قرار الطبيب"}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
               </div>
             </Section>
           )}
+
+          {/* Final Summary */}
+          <Section title="الملخص النهائي / Final Summary">
+            <div className="space-y-3">
+              <Textarea
+                rows={5}
+                value={finalSummary}
+                onChange={(e) => setFinalSummary(e.target.value)}
+                placeholder="ملخص الحالة بعد انتهاء كل الجلسات..."
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveFinalSummary}
+                  disabled={!finalSummary || submitFinalSummary.isPending}
+                  className="flex-1 gap-2"
+                >
+                  {submitFinalSummary.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  حفظ الملخص
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => downloadFinalPdf.mutate(id)}
+                  disabled={downloadFinalPdf.isPending}
+                  className="gap-2"
+                >
+                  {downloadFinalPdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  تصدير PDF
+                </Button>
+              </div>
+            </div>
+          </Section>
+
         </TabsContent>
 
         {/* ── TIMELINE ────────────────────────────────────────────────────── */}
@@ -3873,6 +4017,29 @@ export default function PhysioCasePage() {
         </TabsContent>
       </Tabs>
 
+      <Dialog open={confirmDeleteSessionId !== null} onOpenChange={(o) => !o && setConfirmDeleteSessionId(null)}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>حذف الجلسة</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">هل تريد حذف هذه الجلسة؟ لا يمكن التراجع عن هذا الإجراء.</p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmDeleteSessionId(null)}>إلغاء</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmDeleteSessionId) {
+                  deleteSession.mutate({ id, sessionId: confirmDeleteSessionId });
+                  setConfirmDeleteSessionId(null);
+                }
+              }}
+            >
+              حذف
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <SignaturePadDialog
         open={signOpen}
         onOpenChange={setSignOpen}
@@ -3881,6 +4048,8 @@ export default function PhysioCasePage() {
         onSign={handleSign}
         isLoading={signPlan.isPending}
       />
+
+
     </div>
   );
 }
