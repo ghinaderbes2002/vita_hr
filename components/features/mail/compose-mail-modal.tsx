@@ -121,7 +121,7 @@ export function ComposeMailModal({
 
   useEffect(() => {
     if (open && bodyRef.current) {
-      bodyRef.current.innerHTML = defaultBody;
+      bodyRef.current.innerHTML = forwardMessageId ? "" : defaultBody;
     } else if (!open && bodyRef.current) {
       bodyRef.current.innerHTML = "";
     }
@@ -406,11 +406,23 @@ export function ComposeMailModal({
               )}
             </div>
             {forwardMessageId ? (
-              <div
-                className="min-h-[168px] max-h-72 overflow-y-auto rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
-                dir="auto"
-                dangerouslySetInnerHTML={{ __html: defaultBody.replace(/\n/g, "<br>") }}
-              />
+              <>
+                {/* Editable area for user's added message */}
+                <div
+                  ref={bodyRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="min-h-[80px] rounded-md border px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto"
+                  dir="auto"
+                  placeholder="اكتب رسالتك هنا..."
+                />
+                {/* Forwarded message (read-only) */}
+                <div
+                  className="max-h-48 overflow-y-auto rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
+                  dir="auto"
+                  dangerouslySetInnerHTML={{ __html: defaultBody.replace(/\n/g, "<br>") }}
+                />
+              </>
             ) : (
               <>
                 {/* Formatting toolbar */}

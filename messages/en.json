@@ -935,7 +935,8 @@
       "CONSECUTIVE_ABSENCE": "Consecutive Absence",
       "LEAVE_ATTENDANCE_CONFLICT": "Leave Conflict",
       "ANOMALY_NO_STAMP": "Missing Stamp",
-      "BREAK_GAP": "Break Exceeded"
+      "BREAK_GAP": "Break Exceeded",
+      "ANOMALY_OVERTIME": "Overtime Anomaly"
     },
     "alertSeverities": {
       "LOW": "Low",

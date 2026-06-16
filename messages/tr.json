@@ -933,7 +933,8 @@
       "CONSECUTIVE_ABSENCE": "Ardışık Devamsızlık",
       "LEAVE_ATTENDANCE_CONFLICT": "İzin Çakışması",
       "ANOMALY_NO_STAMP": "Eksik Damga",
-      "BREAK_GAP": "Mola Aşımı"
+      "BREAK_GAP": "Mola Aşımı",
+      "ANOMALY_OVERTIME": "Fazla Mesai Anomalisi"
     },
     "alertSeverities": {
       "LOW": "Düşük",

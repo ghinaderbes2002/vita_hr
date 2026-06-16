@@ -123,7 +123,7 @@ export const PHYSIO_GOAL_LABELS: Record<PhysioGoal, string> = {
   BACK_TO_SPORTS: "العودة للرياضة / Back to sports",
   BACK_TO_WORK:   "العودة للعمل / Back to work",
   SIMPLE_WORKS:   "القيام بالأعمال البسيطة / Doing simple works",
-  PAIN_RELIEF:    "تخفيف الألم / Pain relief only",
+  PAIN_RELIEF:    " تسكين الألم فقط/ Pain relief only",
   OTHER:          "أي شيء أخرى / Anything else",
 };
 
@@ -272,7 +272,10 @@ export interface MedicalHistoryDto {
   pacemakerDetail?: string;
   allergies?: string;
   adhesiveAllergy?: boolean;
+  adhesiveAllergyDetail?: string;
   isPregnant?: boolean;
+  maritalStatus?: string;
+  lastMenstrualPeriod?: string;
   currentMedications?: string;
   prescriptionDrugs?: boolean;
   herbalSupplements?: boolean;
@@ -287,6 +290,7 @@ export interface MedicalHistoryDto {
   receivingOtherTreatment?: boolean;
   otherTreatmentDetail?: string;
   chronicConditions?: ChronicCondition[];
+  chronicConditionsOther?: string;
   testsHad?: TestType[];
   testsOther?: string;
   testResults?: string;
@@ -300,6 +304,8 @@ export interface MedicalHistoryDto {
   boneDensityDetail?: string;
   hospitalizedLastYear?: boolean;
   hospitalizedDetail?: string;
+  hadSurgeries?: boolean;
+  surgeriesDetail?: string;
 }
 
 export interface SurgeryDto {
@@ -316,9 +322,9 @@ export interface GoalsDto {
   improveStrength?: boolean;
   lessDifficultyWork?: boolean;
   improveMovement?: boolean;
-  standLongerMinutes?: number;
-  sleepLongerMinutes?: number;
-  sitLongerMinutes?: number;
+  standLonger?: string;
+  sleepLonger?: string;
+  sitLonger?: string;
   otherGoals?: string;
 }
 
@@ -327,7 +333,7 @@ export interface PosturalAssessmentDto {
   trunkControl?: string;
   head?: {
     neutral?: boolean; hyperextended?: boolean; fwdFlexed?: boolean;
-    laterallyFlexed?: boolean; rotated?: { L?: boolean; R?: boolean };
+    laterallyFlexed?: { L?: boolean; R?: boolean }; rotated?: { L?: boolean; R?: boolean };
   };
   shoulders?: {
     level?: boolean;

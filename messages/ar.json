@@ -825,7 +825,8 @@
       "CONSECUTIVE_ABSENCE": "غياب متتالي",
       "LEAVE_ATTENDANCE_CONFLICT": "تعارض إجازة مع حضور",
       "ANOMALY_NO_STAMP": "بصمة مفقودة",
-      "BREAK_GAP": "تجاوز وقت الاستراحة"
+      "BREAK_GAP": "تجاوز وقت الاستراحة",
+      "ANOMALY_OVERTIME": "وقت إضافي غير مبرر"
     },
     "alertSeverities": {
       "LOW": "منخفضة",
