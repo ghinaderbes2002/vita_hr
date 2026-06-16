@@ -412,9 +412,8 @@ export function ComposeMailModal({
                   ref={bodyRef}
                   contentEditable
                   suppressContentEditableWarning
-                  className="min-h-[80px] rounded-md border px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto"
+                  className="min-h-[80px] rounded-md border px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto empty:before:content-['اكتب_رسالتك_هنا...'] empty:before:text-muted-foreground"
                   dir="auto"
-                  placeholder="اكتب رسالتك هنا..."
                 />
                 {/* Forwarded message (read-only) */}
                 <div
