@@ -64,9 +64,9 @@ export default function ProbationEvaluationsPage() {
     seniorManagerId: "", workAreasNote: "",
   });
 
-  const { isAdmin } = usePermissions();
+  const { isAdmin, hasPermission } = usePermissions();
   const managerEmployeeId = user?.employeeId || "";
-  const showAllEmployees = isAdmin() || !managerEmployeeId;
+  const showAllEmployees = isAdmin() || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
 
   const { data: allEvals, isLoading: allLoading } = useProbationEvaluations();
   const { data: pendingEvals, isLoading: pendingLoading } = usePendingMyAction();

@@ -5,6 +5,7 @@ const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  transpilePackages: ["@react-pdf/renderer"],
   images: {
     remotePatterns: [
       {

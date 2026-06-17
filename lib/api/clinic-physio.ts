@@ -31,13 +31,13 @@ export type TherapyModality =
   | "MANUAL_THERAPY" | "MASSAGE" | "KINESIO_TAPING" | "COMPRESSION"
   | "PARAFFIN" | "GRASTON" | "MET" | "HOT_PACKS" | "COLD_PACKS"
   | "TRACTION" | "EXERCISES" | "ESWT" | "US" | "TENS" | "EMS"
-  | "LASER" | "CPM" | "PNF" | "INFRARED" | "OTHER";
+  | "LASER" | "CPM" | "PNF" | "INFRARED" | "SIS" | "OTHER";
 
 export type EvaluationModality =
   | "MANUAL_THERAPY" | "MASSAGE" | "KINESIO_TAPING" | "COMPRESSION"
   | "PARAFFIN" | "GRASTON" | "MET" | "HOT_PACKS" | "COLD_PACKS"
   | "TRACTION" | "EXERCISES" | "ESWT" | "US" | "TENS" | "EMS"
-  | "LASER" | "CPM" | "PNF" | "INFRARED" | "OTHER";
+  | "LASER" | "CPM" | "PNF" | "INFRARED" | "SIS" | "OTHER";
 
 // ─── Display labels ────────────────────────────────────────────────────────────
 export const THERAPY_MODALITY_LABELS: Record<TherapyModality, string> = {
@@ -60,6 +60,7 @@ export const THERAPY_MODALITY_LABELS: Record<TherapyModality, string> = {
   CPM:            "الحركة السلبية المستمرة / CPM",
   PNF:            "التسهيل العصبي العضلي الحسي / PNF",
   INFRARED:       "الأشعة تحت الحمراء / INFRARED",
+  SIS:            "التحفيز الكهرومغناطيسي / SIS",
   OTHER:          "أخرى / Other",
 };
 
@@ -116,6 +117,7 @@ export const EVALUATION_MODALITY_LABELS: Record<EvaluationModality, string> = {
   CPM:            "الحركة السلبية المستمرة / CPM",
   PNF:            "التسهيل العصبي العضلي الحسي / PNF",
   INFRARED:       "الأشعة تحت الحمراء / INFRARED",
+  SIS:            "التحفيز الكهرومغناطيسي / SIS",
   OTHER:          "أخرى / Other",
 };
 
@@ -403,6 +405,7 @@ export interface PhysioSession {
   notes?: string;
   supervisorOpinion?: string | null;
   doctorDecision?: string | null;
+  modalities?: TherapyModality[];
   createdAt: string;
 }
 
@@ -412,6 +415,7 @@ export interface CreatePhysioSessionDto {
   notes?: string;
   supervisorOpinion?: string;
   doctorDecision?: string;
+  modalities?: TherapyModality[];
 }
 
 export interface UpdatePhysioSessionDto {
@@ -420,6 +424,7 @@ export interface UpdatePhysioSessionDto {
   notes?: string;
   supervisorOpinion?: string;
   doctorDecision?: string;
+  modalities?: TherapyModality[];
 }
 
 export interface FinalSummaryDto {

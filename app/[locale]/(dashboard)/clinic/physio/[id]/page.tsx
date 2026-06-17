@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Loader2,
   Save,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -165,7 +166,7 @@ const EVALUATION_MODALITIES = Object.keys(
   EVALUATION_MODALITY_LABELS,
 ) as EvaluationModality[];
 // Paper form 2-col order: [right-col (ESWT side), left-col (MANUAL_THERAPY side)]
-const THERAPY_MODALITY_PAIRS: [TherapyModality, TherapyModality][] = [
+const THERAPY_MODALITY_PAIRS: [TherapyModality, TherapyModality?][] = [
   ["ESWT",       "MANUAL_THERAPY"],
   ["US",         "MASSAGE"],
   ["TENS",       "KINESIO_TAPING"],
@@ -175,9 +176,10 @@ const THERAPY_MODALITY_PAIRS: [TherapyModality, TherapyModality][] = [
   ["HOT_PACKS",  "MET"],
   ["COLD_PACKS", "PNF"],
   ["TRACTION",   "INFRARED"],
+  ["SIS"],
   ["EXERCISES",  "OTHER"],
 ];
-const EVAL_MODALITY_PAIRS: [EvaluationModality, EvaluationModality][] = [
+const EVAL_MODALITY_PAIRS: [EvaluationModality, EvaluationModality?][] = [
   ["ESWT", "MANUAL_THERAPY"],
   ["US", "MASSAGE"],
   ["TENS", "KINESIO_TAPING"],
@@ -187,6 +189,7 @@ const EVAL_MODALITY_PAIRS: [EvaluationModality, EvaluationModality][] = [
   ["HOT_PACKS", "MET"],
   ["COLD_PACKS", "PNF"],
   ["TRACTION", "INFRARED"],
+  ["SIS"],
   ["EXERCISES", "OTHER"],
 ];
 const CHRONIC_CONDITIONS = Object.keys(
@@ -230,6 +233,19 @@ export default function PhysioCasePage() {
   const updateSessionMut = useUpdatePhysioSession();
   const submitFinalSummary = useSubmitFinalSummary();
   const downloadFinalPdf = useDownloadFinalSummaryPdf();
+
+  const tryAdvanceStatus = async (expectedCurrent: PhysioStatus, next: PhysioStatus) => {
+    if (c.status !== expectedCurrent) return;
+    try {
+      await updateStatus.mutateAsync({ id, status: next });
+    } catch (err: unknown) {
+      const data = (err as any)?.response?.data;
+      if (data?.from) {
+        const allowed = Array.isArray(data.allowed) ? ` — المسموح: ${data.allowed.join(", ")}` : "";
+        toast.error(`لا يمكن الانتقال من ${data.from} إلى ${data.to}${allowed}`);
+      }
+    }
+  };
 
   const { data: usersData } = useUsers({ limit: 200 });
   const allUsers: { id: string; fullName: string }[] =
@@ -415,10 +431,12 @@ export default function PhysioCasePage() {
     date: new Date().toISOString().slice(0, 10),
     sessionTime: "",
     notes: "",
+    modalities: [] as TherapyModality[],
   });
-  const [editingSession, setEditingSession] = useState<{ id: string; sessionDate: string; sessionTime: string; notes: string; supervisorOpinion: string; doctorDecision: string } | null>(null);
+  const [editingSession, setEditingSession] = useState<{ id: string; sessionDate: string; sessionTime: string; notes: string; supervisorOpinion: string; doctorDecision: string; modalities: TherapyModality[] } | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
   const [finalSummary, setFinalSummary] = useState("");
+  const [pdfExporting, setPdfExporting] = useState(false);
 
   // ── Auto-save pain regions ───────────────────────────────────────────────────
   const autoSaveReady = useRef(false);
@@ -748,9 +766,7 @@ export default function PhysioCasePage() {
           : undefined,
       },
     });
-    if (c.status === "INTAKE") {
-      await updateStatus.mutateAsync({ id, status: "COMPLAINT" });
-    }
+    await tryAdvanceStatus("INTAKE", "COMPLAINT");
   };
 
   const handleSaveIntake = async () => {
@@ -804,9 +820,7 @@ export default function PhysioCasePage() {
           : undefined,
       },
     });
-    if (["COMPLAINT", "INTAKE"].includes(c.status)) {
-      await updateStatus.mutateAsync({ id, status: "PAIN_MAP" });
-    }
+    await tryAdvanceStatus("COMPLAINT", "PAIN_MAP");
   };
 
   const handleSaveHistory = async () => {
@@ -904,9 +918,7 @@ export default function PhysioCasePage() {
       await addSurgery.mutateAsync({ id, dto: s });
     }
 
-    if (["PAIN_MAP", "COMPLAINT", "INTAKE"].includes(c.status)) {
-      await updateStatus.mutateAsync({ id, status: "MEDICAL_HISTORY" });
-    }
+    await tryAdvanceStatus("PAIN_MAP", "MEDICAL_HISTORY");
   };
 
   const handleSaveGoals = async () => {
@@ -925,9 +937,7 @@ export default function PhysioCasePage() {
         otherGoals: goalsExtra.otherGoals || undefined,
       },
     });
-    if (["MEDICAL_HISTORY", "PAIN_MAP"].includes(c.status)) {
-      await updateStatus.mutateAsync({ id, status: "GOALS" });
-    }
+    await tryAdvanceStatus("MEDICAL_HISTORY", "GOALS");
   };
 
   const handleSavePostural = async () => {
@@ -951,9 +961,7 @@ export default function PhysioCasePage() {
         diagnosis: p.diagnosis || undefined,
       },
     });
-    if (["GOALS", "MEDICAL_HISTORY"].includes(c.status)) {
-      await updateStatus.mutateAsync({ id, status: "POSTURAL_ASSESSMENT" });
-    }
+    await tryAdvanceStatus("GOALS", "POSTURAL_ASSESSMENT");
   };
 
   const handleSavePlan = async () => {
@@ -972,9 +980,7 @@ export default function PhysioCasePage() {
         status: planStatus,
       },
     });
-    if (["POSTURAL_ASSESSMENT", "GOALS"].includes(c.status)) {
-      await updateStatus.mutateAsync({ id, status: "TREATMENT_PLAN" });
-    }
+    await tryAdvanceStatus("POSTURAL_ASSESSMENT", "TREATMENT_PLAN");
   };
 
   const handleSupervisorReview = async () => {
@@ -982,6 +988,7 @@ export default function PhysioCasePage() {
       id,
       dto: { supervisorGaze: supervisorGaze || undefined },
     });
+    await tryAdvanceStatus("ACTIVE_TREATMENT", "SUPERVISOR_REVIEW");
   };
 
   const handleSign = async (base64: string) => {
@@ -997,9 +1004,10 @@ export default function PhysioCasePage() {
           sessionDate: sessionForm.date,
           sessionTime: sessionForm.sessionTime || undefined,
           notes: sessionForm.notes || undefined,
+          modalities: sessionForm.modalities.length ? sessionForm.modalities : undefined,
         },
       });
-      setSessionForm({ date: new Date().toISOString().slice(0, 10), sessionTime: "", notes: "" });
+      setSessionForm({ date: new Date().toISOString().slice(0, 10), sessionTime: "", notes: "", modalities: [] });
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message ?? err?.response?.data?.message;
       toast.error(msg || "حدث خطأ أثناء إضافة الجلسة");
@@ -1017,6 +1025,7 @@ export default function PhysioCasePage() {
         notes: editingSession.notes || undefined,
         supervisorOpinion: editingSession.supervisorOpinion || undefined,
         doctorDecision: editingSession.doctorDecision || undefined,
+        modalities: editingSession.modalities.length ? editingSession.modalities : undefined,
       },
     });
     setEditingSession(null);
@@ -1032,6 +1041,66 @@ export default function PhysioCasePage() {
     set: (a: T[]) => void,
   ) => {
     set(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+  };
+
+  // ── PDF Export ───────────────────────────────────────────────────────────────
+  const handleExportFullPdf = async () => {
+    if (pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const { downloadPhysioCasePdf } = await import(
+        "@/components/clinic/physio-full-pdf"
+      );
+      await downloadPhysioCasePdf({
+        patient: {
+          firstName: patientFull?.firstName ?? c.patient?.firstName ?? "",
+          lastName: patientFull?.lastName ?? c.patient?.lastName ?? "",
+          patientNumber: patientFull?.patientNumber ?? c.patient?.patientNumber ?? "",
+          gender: (patientFull as any)?.gender ?? "",
+        },
+        caseId: c.id,
+        caseStatus: c.status,
+        caseCreatedAt: c.createdAt,
+        complaint,
+        painRegions,
+        painTypes,
+        painTypeOther,
+        aggravatingFactors,
+        alleviatingFactors,
+        aggravatingOther,
+        alleviatingOther,
+        history,
+        chronicConditions,
+        testsHad,
+        surgeries,
+        goals,
+        goalsExtra,
+        postural,
+        planModalities,
+        planOtherModality,
+        planHeader: {
+          treatmentFrom: planHeader.treatmentFrom,
+          treatmentTo: planHeader.treatmentTo,
+          anticipatedVisits: planHeader.anticipatedVisits,
+        },
+        planRemarks,
+        planObservation,
+        evalModalities,
+        evalOtherModality,
+        evalNotes,
+        evalText,
+        sessions,
+        supervisorGaze,
+        finalSummary,
+      });
+      toast.success("تم تصدير PDF");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`فشل تصدير PDF: ${msg.slice(0, 120)}`);
+      console.error("[PDF Export]", e);
+    } finally {
+      setPdfExporting(false);
+    }
   };
 
   const statusOrder: PhysioStatus[] = [
@@ -1090,6 +1159,20 @@ export default function PhysioCasePage() {
         </div>
         <div className="flex gap-2">
           <PdfExportButton type="physio-case" id={id} size="sm" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportFullPdf}
+            disabled={pdfExporting}
+            className="gap-2"
+          >
+            {pdfExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {pdfExporting ? "جاري التصدير..." : "PDF كامل"}
+          </Button>
           {canEdit && (
             <Button
               variant="outline"
@@ -1964,58 +2047,6 @@ export default function PhysioCasePage() {
                 />
               </div>
 
-              {/* هل خضعت لعمليات جراحية */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>
-                    هل خضعت لأي عمليات جراحية؟ / Have you had any surgeries؟
-                  </Label>
-                  <div className="flex items-center gap-2 shrink-0 mr-2">
-                    <span className="text-xs text-muted-foreground">لا</span>
-                    <Switch
-                      checked={history.hadSurgeries}
-                      onCheckedChange={(v) =>
-                        setHistory((h) => ({ ...h, hadSurgeries: v }))
-                      }
-                      disabled={!canEdit}
-                    />
-                    <span className="text-xs text-muted-foreground">نعم</span>
-                  </div>
-                </div>
-                {history.hadSurgeries && (
-                  <Input
-                    className="mr-4"
-                    value={history.surgeriesDetail}
-                    onChange={(e) =>
-                      setHistory((h) => ({
-                        ...h,
-                        surgeriesDetail: e.target.value,
-                      }))
-                    }
-                    placeholder="اذكر تفاصيل العمليات الجراحية..."
-                    disabled={!canEdit}
-                  />
-                )}
-              </div>
-
-              {/* الشكاوى والعمليات السابقة */}
-              <div className="space-y-1.5">
-                <Label>
-                  الشكاوى والعمليات السابقة / Previous complaints & surgeries
-                </Label>
-                <Textarea
-                  rows={2}
-                  value={history.previousComplaintsSurgeries}
-                  onChange={(e) =>
-                    setHistory((h) => ({
-                      ...h,
-                      previousComplaintsSurgeries: e.target.value,
-                    }))
-                  }
-                  disabled={!canEdit}
-                />
-              </div>
-
               {/* مشاكل صحية أخرى */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -2169,6 +2200,58 @@ export default function PhysioCasePage() {
                       }))
                     }
                     placeholder="إذا نعم يرجى ذكر ما يلي..."
+                    disabled={!canEdit}
+                  />
+                )}
+              </div>
+
+              {/* الشكاوى والعمليات السابقة */}
+              <div className="space-y-1.5">
+                <Label>
+                  الشكاوى والعمليات السابقة / Previous complaints & surgeries
+                </Label>
+                <Textarea
+                  rows={2}
+                  value={history.previousComplaintsSurgeries}
+                  onChange={(e) =>
+                    setHistory((h) => ({
+                      ...h,
+                      previousComplaintsSurgeries: e.target.value,
+                    }))
+                  }
+                  disabled={!canEdit}
+                />
+              </div>
+
+              {/* هل خضعت لعمليات جراحية */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>
+                    هل خضعت لأي عمليات جراحية؟ / Have you had any surgeries؟
+                  </Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch
+                      checked={history.hadSurgeries}
+                      onCheckedChange={(v) =>
+                        setHistory((h) => ({ ...h, hadSurgeries: v }))
+                      }
+                      disabled={!canEdit}
+                    />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
+                </div>
+                {history.hadSurgeries && (
+                  <Input
+                    className="mr-4"
+                    value={history.surgeriesDetail}
+                    onChange={(e) =>
+                      setHistory((h) => ({
+                        ...h,
+                        surgeriesDetail: e.target.value,
+                      }))
+                    }
+                    placeholder="اذكر تفاصيل العمليات الجراحية..."
                     disabled={!canEdit}
                   />
                 )}
@@ -3566,7 +3649,7 @@ export default function PhysioCasePage() {
           <Section title="خطة علاج  المريض   /  patient treatment plan">
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               {THERAPY_MODALITY_PAIRS.flatMap(([right, left]) =>
-                [right, left].map((m) => (
+                (left ? [right, left] : [right]).map((m) => (
                   <label
                     key={m}
                     className="flex items-center gap-2 cursor-pointer"
@@ -3657,7 +3740,7 @@ export default function PhysioCasePage() {
             {/* Modalities grid — 2 columns matching paper form */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               {EVAL_MODALITY_PAIRS.flatMap(([right, left]) =>
-                [right, left].map((m) => (
+                (left ? [right, left] : [right]).map((m) => (
                   <label
                     key={m}
                     className="flex items-center gap-2 cursor-pointer"
@@ -3730,6 +3813,7 @@ export default function PhysioCasePage() {
                     evaluation: evalText || undefined,
                   },
                 });
+                await tryAdvanceStatus("TREATMENT_PLAN", "EVALUATION");
               }}
               disabled={submitEval.isPending}
               className="w-full gap-2"
@@ -3756,7 +3840,7 @@ export default function PhysioCasePage() {
                   placeholder="رأي رئيس القسم وملاحظاته على خطة العلاج..."
                 />
               </div>
-              {c.status === "TREATMENT_PLAN" ? (
+              {c.status === "ACTIVE_TREATMENT" ? (
                 <ActionGuard
                   permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}
                 >
@@ -3770,7 +3854,7 @@ export default function PhysioCasePage() {
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
-                    اعتماد واتجاه لتوقيع الطبيب
+                    اعتماد ومراجعة المشرف
                   </Button>
                 </ActionGuard>
               ) : (
@@ -3831,6 +3915,29 @@ export default function PhysioCasePage() {
                       placeholder="ملاحظات الجلسة..."
                     />
                   </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-sm">العلاجات المُطبَّقة</Label>
+                    <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
+                      {(Object.keys(THERAPY_MODALITY_LABELS) as TherapyModality[]).map((m) => (
+                        <label key={m} className="flex items-center gap-1.5 cursor-pointer text-xs">
+                          <input
+                            type="checkbox"
+                            className="h-3.5 w-3.5 shrink-0 rounded accent-primary"
+                            checked={sessionForm.modalities.includes(m)}
+                            onChange={(e) =>
+                              setSessionForm((f) => ({
+                                ...f,
+                                modalities: e.target.checked
+                                  ? [...f.modalities, m]
+                                  : f.modalities.filter((x) => x !== m),
+                              }))
+                            }
+                          />
+                          <span className="leading-tight">{THERAPY_MODALITY_LABELS[m]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-3">
                   <Button
@@ -3843,7 +3950,7 @@ export default function PhysioCasePage() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => updateStatus.mutate({ id, status: "COMPLETED" })}
+                    onClick={() => tryAdvanceStatus("ACTIVE_TREATMENT", "SUPERVISOR_REVIEW")}
                     disabled={sessions.length === 0}
                   >
                     إنهاء الجلسات
@@ -3904,6 +4011,31 @@ export default function PhysioCasePage() {
                               placeholder="قرار الطبيب..."
                             />
                           </div>
+                          <div className="space-y-1 col-span-2">
+                            <Label className="text-xs">العلاجات المُطبَّقة</Label>
+                            <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
+                              {(Object.keys(THERAPY_MODALITY_LABELS) as TherapyModality[]).map((m) => (
+                                <label key={m} className="flex items-center gap-1.5 cursor-pointer text-xs">
+                                  <input
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 shrink-0 rounded accent-primary"
+                                    checked={editingSession.modalities.includes(m)}
+                                    onChange={(e) =>
+                                      setEditingSession((v) =>
+                                        v && ({
+                                          ...v,
+                                          modalities: e.target.checked
+                                            ? [...v.modalities, m]
+                                            : v.modalities.filter((x) => x !== m),
+                                        })
+                                      )
+                                    }
+                                  />
+                                  <span className="leading-tight">{THERAPY_MODALITY_LABELS[m]}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" onClick={handleUpdateSession} disabled={updateSessionMut.isPending} className="gap-1">
@@ -3935,6 +4067,7 @@ export default function PhysioCasePage() {
                                   notes: s.notes ?? "",
                                   supervisorOpinion: s.supervisorOpinion ?? "",
                                   doctorDecision: s.doctorDecision ?? "",
+                                  modalities: s.modalities ?? [],
                                 })}
                                 className="text-muted-foreground hover:text-foreground p-1"
                                 title="تعديل"
@@ -3952,6 +4085,15 @@ export default function PhysioCasePage() {
                         </div>
                         {s.notes && (
                           <p className="text-xs text-muted-foreground">{s.notes}</p>
+                        )}
+                        {s.modalities && s.modalities.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {s.modalities.map((m) => (
+                              <Badge key={m} variant="outline" className="text-[10px] px-1.5 py-0">
+                                {THERAPY_MODALITY_LABELS[m]}
+                              </Badge>
+                            ))}
+                          </div>
                         )}
                         {(s.supervisorOpinion || s.doctorDecision) && (
                           <div className="mt-2 grid grid-cols-2 gap-3 border-t pt-2">

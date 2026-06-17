@@ -39,6 +39,7 @@ import {
   PROBATION_RECOMMENDATION_OPTIONS,
 } from "@/lib/api/probation-evaluations";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { useEmployeeBasic } from "@/lib/hooks/use-employees";
 import { FinalScoreCard } from "@/components/features/probation-evaluations/final-score-card";
 
@@ -267,6 +268,7 @@ export default function ProbationEvaluationDetailPage() {
   const ev = evaluation as any;
   const hist = (history as any) || [];
   const { hasPermission, isAdmin } = usePermissions();
+  const { user } = useAuthStore();
 
   const { data: employeeRecord } = useEmployeeBasic(ev?.employeeId || "");
 
@@ -660,12 +662,14 @@ export default function ProbationEvaluationDetailPage() {
                       <CalendarClock className="h-4 w-4" />{t("actions.proposeMeeting")}
                     </Button>
                   )}
-                  {ev.meetingProposedAt && !ev.meetingConfirmedByEmployee && (
+                  {ev.meetingProposedAt && !ev.meetingConfirmedByEmployee &&
+                   (isAdmin() || user?.employeeId === ev.employeeId) && (
                     <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={() => openAction("confirm-employee")}>
                       <CalendarCheck className="h-4 w-4" />تأكيد كموظف
                     </Button>
                   )}
-                  {ev.meetingProposedAt && !ev.meetingConfirmedByManager && (
+                  {ev.meetingProposedAt && !ev.meetingConfirmedByManager &&
+                   (isAdmin() || canSeniorApprove) && (
                     <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => openAction("confirm-manager")}>
                       <CalendarCheck className="h-4 w-4" />تأكيد كمدير
                     </Button>

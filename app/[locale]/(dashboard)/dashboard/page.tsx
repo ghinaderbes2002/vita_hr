@@ -7,7 +7,7 @@ import {
   Users, Calendar, Clock, AlertCircle, PlusCircle,
   Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight, ChevronDown,
   UserPlus, Bell, FileText, ExternalLink, Hourglass, ClipboardCheck,
-  CheckCircle2, UserCheck, BarChart3, DollarSign, ShieldCheck,
+  CheckCircle2, UserCheck, BarChart3, DollarSign, ShieldCheck, ClipboardEdit,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { usePendingMyApproval } from "@/lib/hooks/use-requests";
 import { usePendingManagerLeaveRequests } from "@/lib/hooks/use-leave-requests";
+import { useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
@@ -76,8 +77,44 @@ function StatCard({
 // ── EMPLOYEE Dashboard ────────────────────────────────────────────────────────
 function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
   const t = useTranslations("dashboard");
+  const employeeId = d?.employee?.id ?? "";
+  const { data: myEvals } = useProbationEvaluationsByEmployee(employeeId);
+  const evalList = Array.isArray(myEvals) ? myEvals : [];
+  const selfEvalPending = evalList.filter((e: any) => e.status === "PENDING_SELF_EVALUATION");
+
   return (
     <div className="space-y-6">
+      {/* Self-evaluation alert banner */}
+      {selfEvalPending.map((ev: any) => (
+        <div
+          key={ev.id}
+          className="flex items-center justify-between gap-4 rounded-xl border-2 border-indigo-300 bg-indigo-50 px-5 py-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-indigo-100 p-2.5 shrink-0">
+              <ClipboardEdit className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-indigo-900 text-sm">لديك تقييم ذاتي معلق</p>
+              <p className="text-xs text-indigo-700 mt-0.5">
+                فترة التجربة — ينتهي في{" "}
+                {ev.probationEndDate
+                  ? new Date(ev.probationEndDate).toLocaleDateString("ar-SA")
+                  : "—"}
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+            onClick={() => router.push(`/${locale}/probation-evaluations/${ev.id}`)}
+          >
+            <ClipboardEdit className="h-4 w-4" />
+            ابدأ التقييم الآن
+          </Button>
+        </div>
+      ))}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title={t("employee.leaveBalance")} value={d.leaveBalance?.[0]?.balance ?? "—"} icon={Calendar}
           iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/my-profile`)} />
