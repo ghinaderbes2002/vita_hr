@@ -25,7 +25,7 @@ import {
   useProbationEvaluations,
   useCreateProbationEvaluation,
 } from "@/lib/hooks/use-probation-evaluations";
-import { useEmployeesBasicList, useSubordinates } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useSubordinates, useMyEmployee } from "@/lib/hooks/use-employees";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ProbationStatus, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
@@ -64,7 +64,8 @@ export default function ProbationEvaluationsPage() {
   });
 
   const { isAdmin, hasPermission } = usePermissions();
-  const managerEmployeeId = user?.employeeId || "";
+  const { data: myEmployee } = useMyEmployee();
+  const managerEmployeeId = (myEmployee as any)?.id || user?.employeeId || "";
   const showAllEmployees = isAdmin() || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
 
   const { data: allEvals, isLoading: allLoading } = useProbationEvaluations();
@@ -74,27 +75,37 @@ export default function ProbationEvaluationsPage() {
 
   const allList: any[] = Array.isArray(allEvals) ? allEvals : [];
 
-  // بناء قائمة "بانتظار إجرائي" من allEvals بدل endpoint منفصل
+  // بناء قائمة "بانتظار إجرائي" — مجمّعة، كل دور يُضاف بشكل مستقل
   const pendingList: any[] = (() => {
-    if (isAdmin() || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL)) {
-      // HR / admin → التقييمات الواصلة لمرحلة HR
-      return allList.filter((e) => e.status === "PENDING_HR" || e.status === "PENDING_MEETING_SCHEDULE");
+    const items: any[] = [];
+
+    // HR فقط → permission محددة بغض النظر عن isAdmin
+    if (hasPermission(PERMISSIONS.PROBATION.HR_REVIEW)) {
+      items.push(...allList.filter((e) => e.status === "PENDING_HR" || e.status === "PENDING_MEETING_SCHEDULE"));
     }
+
+    // المدير التنفيذي
     if (hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW)) {
-      return allList.filter((e) => e.status === "PENDING_CEO");
+      items.push(...allList.filter((e) => e.status === "PENDING_CEO"));
     }
-    if (hasPermission(PERMISSIONS.PROBATION.SENIOR_REVIEW)) {
-      return allList.filter((e) => e.status === "PENDING_SENIOR_MANAGER");
-    }
-    // مدير عادي: تقييمات موظفيه فقط
-    if (managerEmployeeId) {
-      return allList.filter(
-        (e) => e.status === "PENDING_SENIOR_MANAGER" && e.seniorManagerId === managerEmployeeId,
+
+    // PENDING_SENIOR_MANAGER → دائماً مقيّد بالموظفين المباشرين
+    // (SENIOR_REVIEW تتحكم بزرار الموافقة فقط، مش بمن يشوف القائمة)
+    const subordinateIds = new Set(
+      (Array.isArray(subordinatesData) ? subordinatesData : []).map((e: any) => e.id),
+    );
+    if (subordinateIds.size > 0) {
+      items.push(
+        ...allList.filter(
+          (e) => e.status === "PENDING_SENIOR_MANAGER" && subordinateIds.has(e.employeeId),
+        ),
       );
     }
-    return [];
+
+    return [...new Map(items.map((e) => [e.id, e])).values()];
   })();
 
+  const canViewAll = isAdmin() || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
   const evals: any[] = tab === "all" ? allList : pendingList;
   const isLoading = allLoading;
   const employees: any[] = showAllEmployees
@@ -133,21 +144,26 @@ export default function ProbationEvaluationsPage() {
 
       {/* Tabs */}
       <div className="flex gap-2">
-        {([
-          { key: "pending", icon: Clock },
-          { key: "all", icon: ClipboardCheck },
-        ] as const).map(({ key, icon: Icon }) => (
+        <button
+          onClick={() => setTab("pending")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            tab === "pending" ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-muted-foreground"
+          }`}
+        >
+          <Clock className="h-4 w-4" />
+          {t("tabs.pending")}
+        </button>
+        {canViewAll && (
           <button
-            key={key}
-            onClick={() => setTab(key)}
+            onClick={() => setTab("all")}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              tab === key ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-muted-foreground"
+              tab === "all" ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-muted-foreground"
             }`}
           >
-            <Icon className="h-4 w-4" />
-            {t(`tabs.${key}`)}
+            <ClipboardCheck className="h-4 w-4" />
+            {t("tabs.all")}
           </button>
-        ))}
+        )}
       </div>
 
       {/* Table */}
