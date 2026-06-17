@@ -199,7 +199,10 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
     (Array.isArray(subordinatesData) ? subordinatesData : []).map((e: any) => e.id),
   );
   const probationPendingCount = Array.isArray(allEvals)
-    ? allEvals.filter((e: any) => e.status === "PENDING_SENIOR_MANAGER" && subordinateIds.has(e.employeeId)).length
+    ? allEvals.filter((e: any) =>
+        (e.status === "PENDING_SENIOR_MANAGER" && subordinateIds.has(e.employeeId)) ||
+        (e.status === "PENDING_SELF_EVALUATION" && e.employeeId === employeeId),
+      ).length
     : 0;
 
   return (

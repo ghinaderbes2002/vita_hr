@@ -79,6 +79,16 @@ export default function ProbationEvaluationsPage() {
   const pendingList: any[] = (() => {
     const items: any[] = [];
 
+    // التقييم الذاتي → عندما يكون المستخدم هو الموظف المُقيَّم
+    const myEmpId = (myEmployee as any)?.id || user?.employeeId || "";
+    if (myEmpId) {
+      items.push(
+        ...allList.filter(
+          (e) => e.status === "PENDING_SELF_EVALUATION" && e.employeeId === myEmpId,
+        ),
+      );
+    }
+
     // HR فقط → من عنده HR_REVIEW وليس CEO
     if (hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) && !hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW)) {
       items.push(...allList.filter((e) => e.status === "PENDING_HR" || e.status === "PENDING_MEETING_SCHEDULE"));

@@ -28,8 +28,8 @@ import {
 // Font.register is called lazily inside downloadPhysioCasePdf to use window.location.origin
 
 // ── Theme ──────────────────────────────────────────────────────────────────────
-const BRAND = "#6B2D5E";
-const BRAND_LIGHT = "#f3e8f0";
+const BRAND = "#B07090";
+const BRAND_LIGHT = "#f8edf3";
 const TEXT = "#111827";
 const MUTED = "#6b7280";
 const BORDER = "#e5e7eb";
@@ -270,12 +270,11 @@ const SubHead = ({ label }: { label: string }) => (
 );
 
 const F = ({ label, value }: { label: string; value?: string | number | null }) => {
-  const v = value == null ? "" : String(value);
-  if (!v.trim()) return null;
+  const v = value == null ? "" : String(value).trim();
   return (
     <View style={S.fieldRow}>
       <Text style={S.fieldLabel}>{label}:</Text>
-      <Text style={S.fieldValue}>{v}</Text>
+      <Text style={S.fieldValue}>{v || "—"}</Text>
     </View>
   );
 };
@@ -479,9 +478,9 @@ const PhysioPdfDoc = ({ data }: { data: PhysioCasePdfData }) => {
         <F label="إصابات سابقة / Previous Injury" value={complaint.hadPreviousInjury} />
         <F label="طبيب سابق / Doctor Seen" value={complaint.previousDoctorSeen} />
         <F label="علاج سابق / Previous Treatment" value={complaint.previousTreatment} />
-        <Bool label="زيارة متخصص / Visited Specialist" value={complaint.visitedSpecialist} showNo={false} />
+        <Bool label="زيارة متخصص / Visited Specialist" value={complaint.visitedSpecialist} />
         {complaint.visitedSpecialist && <F label="سبب الزيارة / Reason" value={complaint.specialistReason} />}
-        <Bool label="أمراض مزمنة / Chronic Diseases" value={complaint.hasChronicDiseases} showNo={false} />
+        <Bool label="أمراض مزمنة / Chronic Diseases" value={complaint.hasChronicDiseases} />
         {complaint.hasChronicDiseases && <F label="التفاصيل / Details" value={complaint.chronicDiseasesDetail} />}
         <Bool label="علاج فيزيائي سابق / Previous PT" value={complaint.hadPreviousPT} />
         {complaint.hadPreviousPT && <F label="التفاصيل / Details" value={complaint.previousPTDetail} />}
@@ -563,9 +562,9 @@ const PhysioPdfDoc = ({ data }: { data: PhysioCasePdfData }) => {
         <F label="التشخيصات السابقة / Previous Diagnoses" value={history.previousDiagnoses} />
         <F label="الشكاوى والعمليات السابقة / Previous Complaints & Surgeries" value={history.previousComplaintsSurgeries} />
         <F label="تعليمات الطبيب / Doctor Restrictions" value={history.doctorRestrictions} />
-        <Bool label="علاج فيزيائي لنفس المشكلة؟ / PT Same Problem?" value={history.hadPTSameProblem} showNo={false} />
+        <Bool label="علاج فيزيائي لنفس المشكلة؟ / PT Same Problem?" value={history.hadPTSameProblem} />
         {history.hadPTSameProblem && <F label="التفاصيل / Details" value={history.ptSameProblemDetail} />}
-        <Bool label="علاج آخر حالياً؟ / Other Treatment?" value={history.receivingOtherTreatment} showNo={false} />
+        <Bool label="علاج آخر حالياً؟ / Other Treatment?" value={history.receivingOtherTreatment} />
         {history.receivingOtherTreatment && <F label="التفاصيل / Details" value={history.otherTreatmentDetail} />}
         <Bool label="هل خضعت لعمليات جراحية؟ / Had Surgeries?" value={history.hadSurgeries} />
         {history.hadSurgeries && <F label="التفاصيل / Details" value={history.surgeriesDetail} />}
