@@ -305,8 +305,8 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard title={t("hr.probationEvaluationsHR")} value={d.probationsPendingHR ?? 0} icon={ShieldCheck}
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
-        <StatCard title={t("hr.performanceEvaluationsHR")} value={d.evaluationsPendingHR ?? 0} icon={BarChart3}
-          iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/evaluations`)} />
+        <StatCard title={t("hr.performanceEvaluationsHR")} value={d.probationsPendingHR ?? 0} icon={BarChart3}
+          iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
         <StatCard title={t("hr.adminRequestsPending")} value={pendingCount} icon={Briefcase}
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
       </div>
