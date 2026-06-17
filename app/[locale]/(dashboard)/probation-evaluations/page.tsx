@@ -79,12 +79,8 @@ export default function ProbationEvaluationsPage() {
   const pendingList: any[] = (() => {
     const items: any[] = [];
 
-    // HR فقط → من عنده HR_REVIEW وليس CEO أو مدير مباشر
-    if (
-      hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) &&
-      !hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW) &&
-      !hasPermission(PERMISSIONS.PROBATION.SENIOR_REVIEW)
-    ) {
+    // HR فقط → من عنده HR_REVIEW وليس CEO
+    if (hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) && !hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW)) {
       items.push(...allList.filter((e) => e.status === "PENDING_HR" || e.status === "PENDING_MEETING_SCHEDULE"));
     }
 
