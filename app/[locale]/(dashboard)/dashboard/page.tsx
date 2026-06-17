@@ -22,7 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { usePendingMyApproval } from "@/lib/hooks/use-requests";
 import { usePendingManagerLeaveRequests } from "@/lib/hooks/use-leave-requests";
-import { useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
+import { useProbationEvaluations, useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
@@ -194,12 +194,20 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
     ? subordinatesData.length
     : ((subordinatesData as any)?.data?.length ?? (subordinatesData as any)?.length ?? "—");
 
+  const { data: allEvals } = useProbationEvaluations();
+  const subordinateIds = new Set(
+    (Array.isArray(subordinatesData) ? subordinatesData : []).map((e: any) => e.id),
+  );
+  const probationPendingCount = Array.isArray(allEvals)
+    ? allEvals.filter((e: any) => e.status === "PENDING_SENIOR_MANAGER" && subordinateIds.has(e.employeeId)).length
+    : 0;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title={t("manager.subordinates")} value={subordinatesCount} icon={Users}
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/employees/subordinates`)} />
-        <StatCard title={t("manager.probationEvaluations")} value="" icon={ClipboardCheck}
+        <StatCard title={t("manager.probationEvaluations")} value={probationPendingCount} icon={ClipboardCheck}
           iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
         <StatCard title={t("manager.adminRequestsPending")} value="" icon={FileText}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
