@@ -2458,7 +2458,7 @@
     "status": {
       "DRAFT": "مسودة",
       "PENDING_SELF_EVALUATION": "بانتظار التقييم الذاتي",
-      "PENDING_SENIOR_MANAGER": "بانتظار المدير الأعلى",
+      "PENDING_SENIOR_MANAGER": "بانتظار المدير المباشر",
       "PENDING_HR": "بانتظار HR",
       "PENDING_MEETING_SCHEDULE": "جدولة الاجتماع",
       "PENDING_CEO": "بانتظار المدير التنفيذي",
@@ -2484,8 +2484,8 @@
     "historyActions": {
       "CREATE": "إنشاء التقييم",
       "SELF_EVALUATE": "تقييم ذاتي من الموظف",
-      "SENIOR_APPROVE": "موافقة المدير الأعلى",
-      "SENIOR_REJECT": "رفض المدير الأعلى",
+      "SENIOR_APPROVE": "موافقة المدير المباشر",
+      "SENIOR_REJECT": "رفض المدير المباشر",
       "HR_DOCUMENT": "توثيق HR",
       "HR_REJECT": "رفض HR",
       "CEO_DECIDE": "قرار المدير التنفيذي",
@@ -2499,7 +2499,7 @@
     "workflow": {
       "DRAFT": "مسودة",
       "PENDING_SELF_EVALUATION": "تقييم ذاتي",
-      "PENDING_SENIOR_MANAGER": "المدير الأعلى",
+      "PENDING_SENIOR_MANAGER": "المدير المباشر",
       "PENDING_HR": "HR",
       "PENDING_CEO": "المدير التنفيذي",
       "PENDING_MEETING_SCHEDULE": "جدولة الاجتماع",
@@ -2551,7 +2551,7 @@
     },
     "actionDialog": {
       "selfEvaluate": "التقييم الذاتي",
-      "approve": "موافقة المدير الأعلى",
+      "approve": "موافقة المدير المباشر",
       "reject": "رفض التقييم",
       "document": "توثيق HR",
       "hrReject": "رفض من HR",

@@ -7,7 +7,7 @@ import {
   Users, Calendar, Clock, AlertCircle, PlusCircle,
   Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight, ChevronDown,
   UserPlus, Bell, FileText, ExternalLink, Hourglass, ClipboardCheck,
-  CheckCircle2, UserCheck, BarChart3, DollarSign, ShieldCheck, ClipboardEdit,
+  CheckCircle2, UserCheck, BarChart3, DollarSign, ShieldCheck, ClipboardEdit, CalendarCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,9 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
   const { data: myEvals } = useProbationEvaluationsByEmployee(employeeId);
   const evalList = Array.isArray(myEvals) ? myEvals : [];
   const selfEvalPending = evalList.filter((e: any) => e.status === "PENDING_SELF_EVALUATION");
+  const meetingPending = evalList.filter(
+    (e: any) => e.status === "PENDING_MEETING_SCHEDULE" && e.meetingProposedAt && !e.meetingConfirmedByEmployee,
+  );
 
   return (
     <div className="space-y-6">
@@ -111,6 +114,37 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
           >
             <ClipboardEdit className="h-4 w-4" />
             ابدأ التقييم الآن
+          </Button>
+        </div>
+      ))}
+
+      {/* Meeting confirmation banner */}
+      {meetingPending.map((ev: any) => (
+        <div
+          key={ev.id}
+          className="flex items-center justify-between gap-4 rounded-xl border-2 border-orange-300 bg-orange-50 px-5 py-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-orange-100 p-2.5 shrink-0">
+              <CalendarCheck className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-orange-900 text-sm">لديك اجتماع تقييم بانتظار تأكيدك</p>
+              <p className="text-xs text-orange-700 mt-0.5">
+                موعد مقترح:{" "}
+                {ev.meetingProposedAt
+                  ? new Date(ev.meetingProposedAt).toLocaleString("ar-SA")
+                  : "—"}
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 bg-orange-600 hover:bg-orange-700 text-white gap-2"
+            onClick={() => router.push(`/${locale}/probation-evaluations/${ev.id}`)}
+          >
+            <CalendarCheck className="h-4 w-4" />
+            تأكيد الموعد
           </Button>
         </div>
       ))}

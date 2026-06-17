@@ -23,7 +23,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
   useProbationEvaluations,
-  usePendingMyAction,
   useCreateProbationEvaluation,
 } from "@/lib/hooks/use-probation-evaluations";
 import { useEmployeesBasicList, useSubordinates } from "@/lib/hooks/use-employees";
@@ -69,13 +68,35 @@ export default function ProbationEvaluationsPage() {
   const showAllEmployees = isAdmin() || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
 
   const { data: allEvals, isLoading: allLoading } = useProbationEvaluations();
-  const { data: pendingEvals, isLoading: pendingLoading } = usePendingMyAction();
   const { data: allEmployeesData } = useEmployeesBasicList();
   const { data: subordinatesData } = useSubordinates(managerEmployeeId);
   const createEval = useCreateProbationEvaluation();
 
-  const evals: any[] = (tab === "all" ? (allEvals as any) : (pendingEvals as any)) || [];
-  const isLoading = tab === "all" ? allLoading : pendingLoading;
+  const allList: any[] = Array.isArray(allEvals) ? allEvals : [];
+
+  // بناء قائمة "بانتظار إجرائي" من allEvals بدل endpoint منفصل
+  const pendingList: any[] = (() => {
+    if (isAdmin() || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL)) {
+      // HR / admin → التقييمات الواصلة لمرحلة HR
+      return allList.filter((e) => e.status === "PENDING_HR" || e.status === "PENDING_MEETING_SCHEDULE");
+    }
+    if (hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW)) {
+      return allList.filter((e) => e.status === "PENDING_CEO");
+    }
+    if (hasPermission(PERMISSIONS.PROBATION.SENIOR_REVIEW)) {
+      return allList.filter((e) => e.status === "PENDING_SENIOR_MANAGER");
+    }
+    // مدير عادي: تقييمات موظفيه فقط
+    if (managerEmployeeId) {
+      return allList.filter(
+        (e) => e.status === "PENDING_SENIOR_MANAGER" && e.seniorManagerId === managerEmployeeId,
+      );
+    }
+    return [];
+  })();
+
+  const evals: any[] = tab === "all" ? allList : pendingList;
+  const isLoading = allLoading;
   const employees: any[] = showAllEmployees
     ? (Array.isArray(allEmployeesData) ? allEmployeesData : [])
     : (Array.isArray(subordinatesData) ? subordinatesData : []);
