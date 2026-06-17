@@ -105,7 +105,7 @@ export default function ProbationEvaluationsPage() {
     return [...new Map(items.map((e) => [e.id, e])).values()];
   })();
 
-  const canViewAll = isAdmin() || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
+  const canViewAll = hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) && !hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW);
   const evals: any[] = tab === "all" ? allList : pendingList;
   const isLoading = allLoading;
   const employees: any[] = showAllEmployees
