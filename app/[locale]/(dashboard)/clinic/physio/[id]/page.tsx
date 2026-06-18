@@ -4178,9 +4178,12 @@ export default function PhysioCasePage() {
                     <Textarea
                       rows={2}
                       value={sessionForm.notes}
-                      onChange={(e) =>
-                        setSessionForm((f) => ({ ...f, notes: e.target.value }))
-                      }
+                      onChange={(e) => {
+                        setSessionForm((f) => ({ ...f, notes: e.target.value }));
+                        e.target.style.height = "auto";
+                        e.target.style.height = e.target.scrollHeight + "px";
+                      }}
+                      className="resize-none overflow-hidden"
                       placeholder="ملاحظات الجلسة..."
                     />
                   </div>
