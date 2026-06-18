@@ -194,16 +194,8 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
     ? subordinatesData.length
     : ((subordinatesData as any)?.data?.length ?? (subordinatesData as any)?.length ?? "—");
 
-  const { data: allEvals } = useProbationEvaluations();
-  const subordinateIds = new Set(
-    (Array.isArray(subordinatesData) ? subordinatesData : []).map((e: any) => e.id),
-  );
-  const probationPendingCount = Array.isArray(allEvals)
-    ? allEvals.filter((e: any) =>
-        (e.status === "PENDING_SENIOR_MANAGER" && subordinateIds.has(e.employeeId)) ||
-        (e.status === "PENDING_SELF_EVALUATION" && e.employeeId === employeeId),
-      ).length
-    : 0;
+  const { data: pendingEvals } = usePendingMyAction();
+  const probationPendingCount = Array.isArray(pendingEvals) ? pendingEvals.length : 0;
 
   return (
     <div className="space-y-6">
@@ -403,6 +395,8 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
   const pendingAdminCount = (pendingAdminData as any)?.total ?? (pendingAdminData as any)?.data?.total ?? 0;
   const { data: pendingLeavesData } = usePendingManagerLeaveRequests({ status: "PENDING_MANAGER", limit: 1 });
   const pendingLeavesCount = (pendingLeavesData as any)?.total ?? (pendingLeavesData as any)?.data?.total ?? 0;
+  const { data: pendingEvals } = usePendingMyAction();
+  const probationPendingCount = Array.isArray(pendingEvals) ? pendingEvals.length : 0;
 
   return (
     <div className="space-y-6">
@@ -423,7 +417,7 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
           onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
         <StatCard
           title={t("ceo.probationPendingCEO")}
-          value={Array.isArray(d.probationsPendingCEO) ? d.probationsPendingCEO.length : (d.probationsPendingCEO ?? 0)}
+          value={probationPendingCount}
           icon={ShieldCheck}
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
       </div>

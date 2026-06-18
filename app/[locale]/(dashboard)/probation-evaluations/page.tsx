@@ -81,7 +81,7 @@ export default function ProbationEvaluationsPage() {
   const allList: any[] = Array.isArray(allEvals) ? allEvals : [];
   const pendingList: any[] = Array.isArray(pendingData) ? pendingData : [];
 
-  const canViewAll = hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) || hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW) || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
+  const canViewAll = isAdmin() || hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) || hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW);
   const evals: any[] = tab === "all" ? allList : pendingList;
   const isLoading = tab === "all" ? allLoading : pendingLoading;
 

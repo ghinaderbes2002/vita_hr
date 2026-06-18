@@ -2137,6 +2137,41 @@ export default function PhysioCasePage() {
                 </>
               )}
 
+              {/* أدوية بوصفة */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>
+                    هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟ / Are you
+                    currently taking any prescription / over-counter drugs؟
+                  </Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">لا</span>
+                    <Switch
+                      checked={history.prescriptionDrugs}
+                      onCheckedChange={(v) =>
+                        setHistory((h) => ({ ...h, prescriptionDrugs: v }))
+                      }
+                      disabled={!canEdit}
+                    />
+                    <span className="text-xs text-muted-foreground">نعم</span>
+                  </div>
+                </div>
+                {history.prescriptionDrugs && (
+                  <Input
+                    className="mr-4"
+                    value={history.currentMedications}
+                    onChange={(e) =>
+                      setHistory((h) => ({
+                        ...h,
+                        currentMedications: e.target.value,
+                      }))
+                    }
+                    placeholder="اذكر الأدوية..."
+                    disabled={!canEdit}
+                  />
+                )}
+              </div>
+
               {/* التشخيصات السابقة / الأدوية السابقة */}
               <div className="space-y-1.5">
                 <Label>
@@ -2224,41 +2259,6 @@ export default function PhysioCasePage() {
                       }))
                     }
                     placeholder="اذكر التعليمات..."
-                    disabled={!canEdit}
-                  />
-                )}
-              </div>
-
-              {/* أدوية بوصفة */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>
-                    هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟ / Are you
-                    currently taking any prescription / over-counter drugs؟
-                  </Label>
-                  <div className="flex items-center gap-2 shrink-0 mr-2">
-                    <span className="text-xs text-muted-foreground">لا</span>
-                    <Switch
-                      checked={history.prescriptionDrugs}
-                      onCheckedChange={(v) =>
-                        setHistory((h) => ({ ...h, prescriptionDrugs: v }))
-                      }
-                      disabled={!canEdit}
-                    />
-                    <span className="text-xs text-muted-foreground">نعم</span>
-                  </div>
-                </div>
-                {history.prescriptionDrugs && (
-                  <Input
-                    className="mr-4"
-                    value={history.currentMedications}
-                    onChange={(e) =>
-                      setHistory((h) => ({
-                        ...h,
-                        currentMedications: e.target.value,
-                      }))
-                    }
-                    placeholder="اذكر الأدوية..."
                     disabled={!canEdit}
                   />
                 )}
