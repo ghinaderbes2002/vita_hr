@@ -20,7 +20,7 @@ import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
 const STATUS_VALUES: PhysioStatus[] = [
   "INTAKE", "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
   "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "EVALUATION",
-  "ACTIVE_TREATMENT", "SUPERVISOR_REVIEW", "COMPLETED", "DISCHARGED", "CANCELLED",
+  "ACTIVE_TREATMENT", "SUPERVISOR_REVIEW", "DOCTOR_REVIEW", "COMPLETED", "DISCHARGED", "CANCELLED",
 ];
 
 const STATUS_LABEL: Record<PhysioStatus, string> = {
@@ -28,6 +28,7 @@ const STATUS_LABEL: Record<PhysioStatus, string> = {
   MEDICAL_HISTORY: "التاريخ الطبي", GOALS: "الأهداف",
   POSTURAL_ASSESSMENT: "تقييم وضعي", TREATMENT_PLAN: "خطة العلاج",
   EVALUATION: "التقييم", SUPERVISOR_REVIEW: "رئيس القسم",
+  DOCTOR_REVIEW: "رأي الطبيب",
   ACTIVE_TREATMENT: "جلسات نشطة", COMPLETED: "مكتملة",
   DISCHARGED: "مُخرَّج", CANCELLED: "ملغاة",
 };

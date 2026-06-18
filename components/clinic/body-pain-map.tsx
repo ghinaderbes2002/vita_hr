@@ -10,15 +10,17 @@ import { Button } from "@/components/ui/button";
 // ─── Pain type colors & labels ────────────────────────────────────────────────
 
 export const PAIN_TYPE_COLORS: Record<string, string> = {
+  NORMAL:         "#ef4444", // أحمر
   NUMBNESS:       "#22c55e", // أخضر
-  DULL_ACHE:      "#ef4444", // أحمر
-  HOT_BURNING:    "#f97316", // برتقالي
+  DULL_ACHE:      "#f97316", // برتقالي
+  HOT_BURNING:    "#fb923c", // برتقالي فاتح
   SHARP_STABBING: "#a855f7", // بنفسجي
   PINS:           "#eab308", // أصفر
   OTHER:          "#3b82f6", // أزرق
 };
 
 const PAIN_TYPE_LABELS: Record<string, string> = {
+  NORMAL:         "عادي",
   NUMBNESS:       "خدر",
   DULL_ACHE:      "ألم خفيف",
   HOT_BURNING:    "حارق",

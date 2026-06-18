@@ -5,7 +5,8 @@ import { TimelineEvent } from "./clinic-prosthetics";
 export type PhysioStatus =
   | "INTAKE" | "COMPLAINT" | "PAIN_MAP" | "MEDICAL_HISTORY" | "GOALS"
   | "POSTURAL_ASSESSMENT" | "TREATMENT_PLAN" | "EVALUATION"
-  | "ACTIVE_TREATMENT" | "SUPERVISOR_REVIEW" | "COMPLETED" | "DISCHARGED" | "CANCELLED";
+  | "ACTIVE_TREATMENT" | "SUPERVISOR_REVIEW" | "DOCTOR_REVIEW"
+  | "COMPLETED" | "DISCHARGED" | "CANCELLED";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 export type PainLevel    = "MILD" | "MODERATE" | "SEVERE" | "EXCRUCIATING";
@@ -286,6 +287,7 @@ export interface MedicalHistoryDto {
   previousComplaintsSurgeries?: string;
   hasOtherHealthProblems?: boolean;
   otherConditions?: string;
+  hasDoctorRestrictions?: boolean;
   doctorRestrictions?: string;
   hadPTSameProblem?: boolean;
   ptSameProblemDetail?: string;
@@ -384,6 +386,7 @@ export interface TreatmentPlanDto {
   treatmentTo?: string;
   anticipatedVisits?: number;
   physiotherapistId?: string;
+  physiotherapistIds?: string[];
   caseManagerId?: string;
   modalities?: TherapyModality[];
   otherModality?: string;
@@ -394,6 +397,10 @@ export interface TreatmentPlanDto {
 
 export interface SupervisorReviewDto {
   supervisorGaze?: string;
+}
+
+export interface DoctorReviewDto {
+  doctorGaze?: string;
 }
 
 export interface PhysioSession {
@@ -518,6 +525,11 @@ export const clinicPhysioApi = {
 
   supervisorReview: async (id: string, dto: SupervisorReviewDto): Promise<PhysioCase> => {
     const { data } = await apiClient.put(`/physio/cases/${id}/treatment-plan/supervisor-review`, dto);
+    return data?.data ?? data;
+  },
+
+  doctorReview: async (id: string, dto: DoctorReviewDto): Promise<PhysioCase> => {
+    const { data } = await apiClient.put(`/physio/cases/${id}/treatment-plan/doctor-review`, dto);
     return data?.data ?? data;
   },
 

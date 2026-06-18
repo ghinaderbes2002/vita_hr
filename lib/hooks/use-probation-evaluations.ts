@@ -20,10 +20,11 @@ const invalidateAll = (qc: ReturnType<typeof useQueryClient>, id: string) => {
 };
 
 
-export function useProbationEvaluations() {
+export function useProbationEvaluations(enabled = true) {
   return useQuery({
     queryKey: ["probation-evaluations"],
     queryFn: () => probationEvaluationsApi.getAll(),
+    enabled,
   });
 }
 
@@ -43,10 +44,11 @@ export function useProbationEvaluationsByEmployee(employeeId: string) {
   });
 }
 
-export function usePendingMyAction() {
+export function usePendingMyAction(enabled = true) {
   return useQuery({
     queryKey: ["probation-pending-my-action"],
     queryFn: () => probationEvaluationsApi.getPendingMyAction(),
+    enabled,
   });
 }
 

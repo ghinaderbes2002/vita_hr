@@ -23,6 +23,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
   useProbationEvaluations,
+  usePendingMyAction,
   useCreateProbationEvaluation,
 } from "@/lib/hooks/use-probation-evaluations";
 import { useEmployeesBasicList, useSubordinates, useMyEmployee } from "@/lib/hooks/use-employees";
@@ -66,62 +67,34 @@ export default function ProbationEvaluationsPage() {
   const { isAdmin, hasPermission } = usePermissions();
   const { data: myEmployee } = useMyEmployee();
   const managerEmployeeId = (myEmployee as any)?.id || user?.employeeId || "";
-  const showAllEmployees = isAdmin() || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
+  // HR أو admin يشوف كل الموظفين في الجدول، غيرهم يشوف مرؤوسيهم فقط
+  const canSeeAllEmployees = hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
+  // الـ dropdown في نافذة الإنشاء: HR يشوف الكل، المدير يشوف مرؤوسيه فقط
+  const canCreateForAll = hasPermission(PERMISSIONS.PROBATION.HR_REVIEW);
 
-  const { data: allEvals, isLoading: allLoading } = useProbationEvaluations();
+  const { data: allEvals, isLoading: allLoading } = useProbationEvaluations(tab === "all");
+  const { data: pendingData, isLoading: pendingLoading } = usePendingMyAction(tab === "pending");
   const { data: allEmployeesData } = useEmployeesBasicList();
   const { data: subordinatesData } = useSubordinates(managerEmployeeId);
   const createEval = useCreateProbationEvaluation();
 
   const allList: any[] = Array.isArray(allEvals) ? allEvals : [];
+  const pendingList: any[] = Array.isArray(pendingData) ? pendingData : [];
 
-  // بناء قائمة "بانتظار إجرائي" — مجمّعة، كل دور يُضاف بشكل مستقل
-  const pendingList: any[] = (() => {
-    const items: any[] = [];
-
-    // التقييم الذاتي → عندما يكون المستخدم هو الموظف المُقيَّم
-    const myEmpId = (myEmployee as any)?.id || user?.employeeId || "";
-    if (myEmpId) {
-      items.push(
-        ...allList.filter(
-          (e) => e.status === "PENDING_SELF_EVALUATION" && e.employeeId === myEmpId,
-        ),
-      );
-    }
-
-    // HR فقط → من عنده HR_REVIEW وليس CEO
-    if (hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) && !hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW)) {
-      items.push(...allList.filter((e) => e.status === "PENDING_HR" || e.status === "PENDING_MEETING_SCHEDULE"));
-    }
-
-    // المدير التنفيذي
-    if (hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW)) {
-      items.push(...allList.filter((e) => e.status === "PENDING_CEO"));
-    }
-
-    // PENDING_SENIOR_MANAGER → دائماً مقيّد بالموظفين المباشرين
-    // (SENIOR_REVIEW تتحكم بزرار الموافقة فقط، مش بمن يشوف القائمة)
-    const subordinateIds = new Set(
-      (Array.isArray(subordinatesData) ? subordinatesData : []).map((e: any) => e.id),
-    );
-    if (subordinateIds.size > 0) {
-      items.push(
-        ...allList.filter(
-          (e) => e.status === "PENDING_SENIOR_MANAGER" && subordinateIds.has(e.employeeId),
-        ),
-      );
-    }
-
-    return [...new Map(items.map((e) => [e.id, e])).values()];
-  })();
-
-  const canViewAll = hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) && !hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW);
+  const canViewAll = hasPermission(PERMISSIONS.PROBATION.HR_REVIEW) || hasPermission(PERMISSIONS.PROBATION.CEO_REVIEW) || hasPermission(PERMISSIONS.PROBATION.VIEW_ALL);
   const evals: any[] = tab === "all" ? allList : pendingList;
-  const isLoading = allLoading;
-  const employees: any[] = showAllEmployees
+  const isLoading = tab === "all" ? allLoading : pendingLoading;
+
+  // للجدول: اسم الموظف
+  const tableEmployees: any[] = canSeeAllEmployees
     ? (Array.isArray(allEmployeesData) ? allEmployeesData : [])
     : (Array.isArray(subordinatesData) ? subordinatesData : []);
-  const employeeMap = Object.fromEntries(employees.map((e: any) => [e.id, e]));
+  const employeeMap = Object.fromEntries(tableEmployees.map((e: any) => [e.id, e]));
+
+  // للـ dropdown في نافذة الإنشاء: HR يشوف الكل، غيره يشوف مرؤوسيه فقط
+  const employees: any[] = canCreateForAll
+    ? (Array.isArray(allEmployeesData) ? allEmployeesData : [])
+    : (Array.isArray(subordinatesData) ? subordinatesData : []);
 
   function handleCreate() {
     if (!form.employeeId || !form.hireDate || !form.probationEndDate) return;

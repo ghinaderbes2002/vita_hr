@@ -75,7 +75,8 @@ type ActionType =
   | "ceo"
   | "propose-meeting"
   | "confirm-employee"
-  | "confirm-manager"
+  | "confirm-direct-manager"
+  | "confirm-ceo"
   | "complete";
 
 function ScoreLabel({ score }: { score: number | null }) {
@@ -272,9 +273,9 @@ export default function ProbationEvaluationDetailPage() {
 
   const { data: employeeRecord } = useEmployeeBasic(ev?.employeeId || "");
 
-  const canSeniorApprove = isAdmin() || hasPermission("probation:senior-review");
-  const canHrDocument    = isAdmin() || hasPermission("probation:hr-review");
-  const canCeoDecide     = isAdmin() || hasPermission("probation:ceo-review");
+  const canSeniorApprove = hasPermission("probation:senior-review");
+  const canHrDocument    = hasPermission("probation:hr-review");
+  const canCeoDecide     = hasPermission("probation:ceo-review");
 
   if (isLoading) {
     return (
@@ -354,8 +355,11 @@ export default function ProbationEvaluationDetailPage() {
         case "confirm-employee":
           await confirmMeeting.mutateAsync({ id, data: { role: "employee" } });
           break;
-        case "confirm-manager":
+        case "confirm-direct-manager":
           await confirmMeeting.mutateAsync({ id, data: { role: "manager" } });
+          break;
+        case "confirm-ceo":
+          await confirmMeeting.mutateAsync({ id, data: { role: "ceo" } });
           break;
         case "complete":
           await completeProbation.mutateAsync({ id, employeeId: ev.employeeId, data: {} });
@@ -380,8 +384,9 @@ export default function ProbationEvaluationDetailPage() {
     "hr-reject":        t("actionDialog.hrReject"),
     ceo:                t("actionDialog.ceo"),
     "propose-meeting":  t("actionDialog.proposeMeeting"),
-    "confirm-employee": "تأكيد الموعد كموظف",
-    "confirm-manager":  "تأكيد الموعد كمدير",
+    "confirm-employee":       "تأكيد الموعد كموظف",
+    "confirm-direct-manager": "تأكيد الموعد كمدير مباشر",
+    "confirm-ceo":            "تأكيد الموعد كمدير تنفيذي",
     complete:           "إغلاق التقييم ورفع وثيقة القرار",
   };
 
@@ -470,7 +475,8 @@ export default function ProbationEvaluationDetailPage() {
             )}
             <div className="flex gap-4 text-xs text-muted-foreground sm:col-span-2">
               <span>موظف: {ev.meetingConfirmedByEmployee ? "✓ مؤكد" : "⏳ بانتظار"}</span>
-              <span>مدير: {ev.meetingConfirmedByManager ? "✓ مؤكد" : "⏳ بانتظار"}</span>
+              <span>مدير مباشر: {ev.meetingConfirmedByManager ? "✓ مؤكد" : "⏳ بانتظار"}</span>
+              <span>مدير تنفيذي: {(ev as any).meetingConfirmedByCeo ? "✓ مؤكد" : "⏳ بانتظار"}</span>
             </div>
           </CardContent>
         </Card>
@@ -657,7 +663,7 @@ export default function ProbationEvaluationDetailPage() {
               )}
               {ev.status === "PENDING_MEETING_SCHEDULE" && (
                 <>
-                  {!ev.meetingProposedAt && canHrDocument && (
+                  {!ev.meetingProposedAt && canHrDocument && !canCeoDecide && (
                     <Button className="gap-2 bg-orange-600 hover:bg-orange-700" onClick={() => openAction("propose-meeting")}>
                       <CalendarClock className="h-4 w-4" />{t("actions.proposeMeeting")}
                     </Button>
@@ -668,13 +674,20 @@ export default function ProbationEvaluationDetailPage() {
                       <CalendarCheck className="h-4 w-4" />تأكيد كموظف
                     </Button>
                   )}
-                  {ev.meetingProposedAt && !ev.meetingConfirmedByManager &&
-                   (isAdmin() || canSeniorApprove) && (
-                    <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => openAction("confirm-manager")}>
-                      <CalendarCheck className="h-4 w-4" />تأكيد كمدير
+                  {/* مدير مباشر: يظهر للمدير المباشر إذا لم يؤكد بعد */}
+                  {ev.meetingProposedAt && !ev.meetingConfirmedByManager && canSeniorApprove && (
+                    <Button className="gap-2 bg-teal-600 hover:bg-teal-700" onClick={() => openAction("confirm-direct-manager")}>
+                      <CalendarCheck className="h-4 w-4" />تأكيد كمدير مباشر
                     </Button>
                   )}
-                  {ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager && canHrDocument && (
+                  {/* مدير تنفيذي: يظهر للـ CEO فقط إذا لم يؤكد — ولا يظهر إذا هو نفسه المدير المباشر (الباك يحسبها) */}
+                  {ev.meetingProposedAt && !(ev as any).meetingConfirmedByCeo && canCeoDecide && !canSeniorApprove && (
+                    <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => openAction("confirm-ceo")}>
+                      <CalendarCheck className="h-4 w-4" />تأكيد كمدير تنفيذي
+                    </Button>
+                  )}
+                  {/* إغلاق التقييم: بعد تأكيد الثلاثة أطراف */}
+                  {ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager && (ev as any).meetingConfirmedByCeo && canHrDocument && !canCeoDecide && (
                     <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("complete")}>
                       <FileCheck className="h-4 w-4" />إغلاق التقييم
                     </Button>
@@ -858,7 +871,7 @@ export default function ProbationEvaluationDetailPage() {
             )}
 
             {/* Notes */}
-            {!["propose-meeting", "confirm-employee", "confirm-manager", "complete"].includes(actionType ?? "") && (
+            {!["propose-meeting", "confirm-employee", "confirm-direct-manager", "confirm-ceo", "complete"].includes(actionType ?? "") && (
               <div className="space-y-1.5">
                 <Label>
                   {actionType === "reject" || actionType === "hr-reject"

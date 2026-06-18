@@ -12,6 +12,7 @@ import {
   PosturalAssessmentDto,
   TreatmentPlanDto,
   SupervisorReviewDto,
+  DoctorReviewDto,
   CreatePhysioSessionDto,
   UpdatePhysioSessionDto,
   FinalSummaryDto,
@@ -208,6 +209,20 @@ export function useSupervisorReview() {
       toast.success("تم اعتماد نظرة رئيس القسم");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الاعتماد"),
+  });
+}
+
+export function useDoctorReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: DoctorReviewDto }) =>
+      clinicPhysioApi.doctorReview(id, dto),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", data.id] });
+      qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
+      toast.success("تم اعتماد رأي الطبيب");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حفظ رأي الطبيب"),
   });
 }
 

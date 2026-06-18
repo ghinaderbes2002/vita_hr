@@ -116,7 +116,7 @@ export interface ProposeMeetingData {
 
 // POST /:id/confirm-meeting
 export interface ConfirmMeetingData {
-  role: "employee" | "manager";
+  role: "employee" | "manager" | "ceo";
 }
 
 // POST /:id/close-evaluation
