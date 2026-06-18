@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ArrowRight, CheckCircle2, XCircle, FileCheck,
@@ -241,6 +241,8 @@ function StatusBanner({
 export default function ProbationEvaluationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isReadonly = searchParams.get("readonly") === "1";
   const t = useTranslations("probationEvaluations");
   const tCommon = useTranslations("common");
 
@@ -273,9 +275,9 @@ export default function ProbationEvaluationDetailPage() {
 
   const { data: employeeRecord } = useEmployeeBasic(ev?.employeeId || "");
 
-  const canSeniorApprove = hasPermission("probation:senior-review");
-  const canHrDocument    = hasPermission("probation:hr-review");
-  const canCeoDecide     = hasPermission("probation:ceo-review");
+  const canSeniorApprove = isAdmin() || hasPermission("probation:senior-review");
+  const canHrDocument    = isAdmin() || hasPermission("probation:hr-review");
+  const canCeoDecide     = isAdmin() || hasPermission("probation:ceo-review");
 
   if (isLoading) {
     return (
@@ -618,8 +620,8 @@ export default function ProbationEvaluationDetailPage() {
         </Card>
       )}
 
-      {/* Workflow Actions */}
-      <Card>
+      {/* Workflow Actions — مخفي عند الاطلاع من تاب "جميع التقييمات" إلا للـ super admin */}
+      {(!isReadonly || isAdmin()) && <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">{t("detail.availableActions")}</CardTitle>
         </CardHeader>
@@ -663,31 +665,27 @@ export default function ProbationEvaluationDetailPage() {
               )}
               {ev.status === "PENDING_MEETING_SCHEDULE" && (
                 <>
-                  {!ev.meetingProposedAt && canHrDocument && !canCeoDecide && (
+                  {!ev.meetingProposedAt && canHrDocument && (!canCeoDecide || isAdmin()) && (
                     <Button className="gap-2 bg-orange-600 hover:bg-orange-700" onClick={() => openAction("propose-meeting")}>
                       <CalendarClock className="h-4 w-4" />{t("actions.proposeMeeting")}
                     </Button>
                   )}
-                  {ev.meetingProposedAt && !ev.meetingConfirmedByEmployee &&
-                   (isAdmin() || user?.employeeId === ev.employeeId) && (
-                    <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={() => openAction("confirm-employee")}>
-                      <CalendarCheck className="h-4 w-4" />تأكيد كموظف
-                    </Button>
-                  )}
-                  {/* مدير مباشر: يظهر للمدير المباشر إذا لم يؤكد بعد */}
-                  {ev.meetingProposedAt && !ev.meetingConfirmedByManager && canSeniorApprove && (
-                    <Button className="gap-2 bg-teal-600 hover:bg-teal-700" onClick={() => openAction("confirm-direct-manager")}>
-                      <CalendarCheck className="h-4 w-4" />تأكيد كمدير مباشر
-                    </Button>
-                  )}
-                  {/* مدير تنفيذي: يظهر للـ CEO فقط إذا لم يؤكد — ولا يظهر إذا هو نفسه المدير المباشر (الباك يحسبها) */}
-                  {ev.meetingProposedAt && !(ev as any).meetingConfirmedByCeo && canCeoDecide && !canSeniorApprove && (
-                    <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => openAction("confirm-ceo")}>
-                      <CalendarCheck className="h-4 w-4" />تأكيد كمدير تنفيذي
-                    </Button>
-                  )}
+                  {/* زر تأكيد موحد — يحدد الدور تلقائياً */}
+                  {ev.meetingProposedAt && (() => {
+                    const isEmployee = user?.employeeId === ev.employeeId;
+                    const myRole =
+                      isEmployee && !ev.meetingConfirmedByEmployee ? "confirm-employee" :
+                      !isEmployee && canSeniorApprove && !ev.meetingConfirmedByManager ? "confirm-direct-manager" :
+                      !isEmployee && canCeoDecide && !(ev as any).meetingConfirmedByCeo ? "confirm-ceo" :
+                      null;
+                    return myRole ? (
+                      <Button className="gap-2 bg-teal-600 hover:bg-teal-700" onClick={() => openAction(myRole)}>
+                        <CalendarCheck className="h-4 w-4" />تأكيد الموعد
+                      </Button>
+                    ) : null;
+                  })()}
                   {/* إغلاق التقييم: بعد تأكيد الثلاثة أطراف */}
-                  {ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager && (ev as any).meetingConfirmedByCeo && canHrDocument && !canCeoDecide && (
+                  {ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager && (ev as any).meetingConfirmedByCeo && canHrDocument && (!canCeoDecide || isAdmin()) && (
                     <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("complete")}>
                       <FileCheck className="h-4 w-4" />إغلاق التقييم
                     </Button>
@@ -697,7 +695,7 @@ export default function ProbationEvaluationDetailPage() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* History */}
       {hist.length > 0 && (

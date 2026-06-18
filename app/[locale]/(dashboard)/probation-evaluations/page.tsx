@@ -175,7 +175,7 @@ export default function ProbationEvaluationsPage() {
               <TableBody>
                 {evals.map((ev) => (
                   <TableRow key={ev.id} className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => router.push(`/probation-evaluations/${ev.id}`)}>
+                    onClick={() => router.push(`/probation-evaluations/${ev.id}${tab === "all" ? "?readonly=1" : ""}`)}>
                     <TableCell className="font-medium">
                       {ev.employee
                         ? `${ev.employee.firstNameAr} ${ev.employee.lastNameAr}`
@@ -201,7 +201,7 @@ export default function ProbationEvaluationsPage() {
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" className="text-xs h-7"
-                        onClick={(e) => { e.stopPropagation(); router.push(`/probation-evaluations/${ev.id}`); }}>
+                        onClick={(e) => { e.stopPropagation(); router.push(`/probation-evaluations/${ev.id}${tab === "all" ? "?readonly=1" : ""}`); }}>
                         {t("table.open")}
                       </Button>
                     </TableCell>

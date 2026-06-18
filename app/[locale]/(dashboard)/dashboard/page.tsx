@@ -22,7 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { usePendingMyApproval } from "@/lib/hooks/use-requests";
 import { usePendingManagerLeaveRequests } from "@/lib/hooks/use-leave-requests";
-import { useProbationEvaluations, useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
+import { usePendingMyAction, useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
