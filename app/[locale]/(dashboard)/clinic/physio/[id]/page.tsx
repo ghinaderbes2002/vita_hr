@@ -452,6 +452,7 @@ export default function PhysioCasePage() {
     modalities: [] as TherapyModality[],
   });
   const [editingSession, setEditingSession] = useState<{ id: string; sessionDate: string; sessionTime: string; notes: string; supervisorOpinion: string; doctorDecision: string; modalities: TherapyModality[] } | null>(null);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
   const [finalSummary, setFinalSummary] = useState("");
   const [pdfExporting, setPdfExporting] = useState(false);
@@ -1096,6 +1097,9 @@ export default function PhysioCasePage() {
           lastName: patientFull?.lastName ?? c.patient?.lastName ?? "",
           patientNumber: patientFull?.patientNumber ?? c.patient?.patientNumber ?? "",
           gender: (patientFull as any)?.gender ?? "",
+          dateOfBirth: (patientFull as any)?.dateOfBirth ?? "",
+          occupation: (patientFull as any)?.occupation ?? "",
+          receivesAid: (patientFull as any)?.receivesAid ?? "",
         },
         caseId: c.id,
         caseStatus: c.status,
@@ -1200,7 +1204,6 @@ export default function PhysioCasePage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <PdfExportButton type="physio-case" id={id} size="sm" />
           <Button
             variant="outline"
             size="sm"
@@ -1306,7 +1309,7 @@ export default function PhysioCasePage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>نوع الشكاية المرضية / Type of medical complaint</Label>
+                  <Label>نوع الشكاية المرضية </Label>
                   <Input
                     value={complaint.complaintType}
                     onChange={(e) =>
@@ -1320,7 +1323,7 @@ export default function PhysioCasePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>تحديد مكان الألم / Locating the Pain</Label>
+                  <Label>تحديد مكان الألم </Label>
                   <Input
                     value={complaint.painLocation}
                     onChange={(e) =>
@@ -1338,8 +1341,7 @@ export default function PhysioCasePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>
-                    منذ متى وأنت تعاني من الشكاية؟ /how long have you been
-                    suffering from the complaint؟
+                    منذ متى وأنت تعاني من الشكاية؟ 
                   </Label>
                   <Input
                     value={complaint.complaintDuration}
@@ -1354,7 +1356,7 @@ export default function PhysioCasePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>ملاحظات / Notes</Label>
+                  <Label>ملاحظات </Label>
                   <Input
                     value={complaint.complaintNotes}
                     onChange={(e) =>
@@ -1386,7 +1388,7 @@ export default function PhysioCasePage() {
                       disabled={!canEdit}
                     />
                     <Label>
-                      هل يوجد أمراض مزمنة؟ / are there Chronic Diseases؟
+                      هل يوجد أمراض مزمنة؟ 
                     </Label>
                   </div>
                   {complaint.hasChronicDiseases && (
@@ -1398,7 +1400,7 @@ export default function PhysioCasePage() {
                           chronicDiseasesDetail: e.target.value,
                         }))
                       }
-                      placeholder="اذكر الأمراض المزمنة... / Please specify..."
+                      placeholder="اذكر الأمراض المزمنة..."
                       disabled={!canEdit}
                       className="mr-9"
                     />
@@ -1419,8 +1421,7 @@ export default function PhysioCasePage() {
                       disabled={!canEdit}
                     />
                     <Label>
-                      هل سبق وقمت بزيارة طبيباً مختصاً؟ /have you ever visited a
-                      specialist doctor؟
+                      هل سبق وقمت بزيارة طبيباً مختصاً؟ 
                     </Label>
                   </div>
                   {complaint.visitedSpecialist && (
@@ -1453,8 +1454,7 @@ export default function PhysioCasePage() {
                       disabled={!canEdit}
                     />
                     <Label>
-                      هل خضعت لجلسات علاج فيزيائي سابقاً؟ / have you undergone
-                      any physical therapy sessions before؟
+                      هل خضعت لجلسات علاج فيزيائي سابقاً؟ 
                     </Label>
                   </div>
                   {complaint.hadPreviousPT && (
@@ -1487,7 +1487,7 @@ export default function PhysioCasePage() {
                       disabled={!canEdit}
                     />
                     <Label>
-                      هل سبق أن خضعت لعمل جراحي ؟ / Have you undergone surgery؟
+                      هل سبق أن خضعت لعمل جراحي ؟ 
                     </Label>
                   </div>
                   {complaint.hadSurgery && (
@@ -1499,7 +1499,7 @@ export default function PhysioCasePage() {
                           surgeryDetail: e.target.value,
                         }))
                       }
-                      placeholder="التفاصيل / Details..."
+                      placeholder="التفاصيل "
                       disabled={!canEdit}
                       className="mr-9"
                     />
@@ -1543,14 +1543,14 @@ export default function PhysioCasePage() {
 
         {/* ── PATIENT INFO ───────────────────────────────────────────────── */}
         <TabsContent value="patient_info" className="mt-4">
-          <Section title="نموذج العلاج الطبيعي / Physical Therapy Medical Form">
+          <Section title="نموذج العلاج الطبيعي">
             <div className="grid grid-cols-2 gap-x-8 gap-y-5">
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">الاسم / Name</p>
+                <p className="text-xs text-muted-foreground">الاسم</p>
                 <p className="text-sm font-medium">{patientName}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">العمر / Age</p>
+                <p className="text-xs text-muted-foreground">العمر </p>
                 <p className="text-sm font-medium">
                   {patientFull?.dateOfBirth
                     ? `${Math.floor((Date.now() - new Date(patientFull.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} سنة`
@@ -1558,7 +1558,7 @@ export default function PhysioCasePage() {
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">التاريخ / Date</p>
+                <p className="text-xs text-muted-foreground">التاريخ </p>
                 <p className="text-sm font-medium">
                   {c.createdAt
                     ? new Date(c.createdAt).toLocaleDateString("en-GB")
@@ -1567,7 +1567,7 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  رقم تعريف المريض / Patient ID
+                  رقم تعريف المريض 
                 </p>
                 <p className="text-sm font-medium font-mono">
                   {c.patient?.patientNumber ?? "—"}
@@ -1575,7 +1575,7 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  الوظيفة الحالية / Current Job
+                  الوظيفة الحالية 
                 </p>
                 <p className="text-sm font-medium">
                   {patientFull?.occupation ?? "—"}
@@ -1583,7 +1583,7 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  مقدم الرعاية / Care Provider
+                  مقدم الرعاية 
                 </p>
                 <p className="text-sm font-medium">
                   {patientFull?.receivesAid || "—"}
@@ -1600,7 +1600,7 @@ export default function PhysioCasePage() {
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1.5">
                   <Label>
-                    ماهي شكواك الرئيسية؟ / What is your major complaint؟
+                    ماهي شكواك الرئيسية؟ 
                   </Label>
                   <Textarea
                     rows={2}
@@ -1615,7 +1615,7 @@ export default function PhysioCasePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>ماهي الأعراض التي تعاني منها؟ / Symptoms؟</Label>
+                  <Label>ماهي الأعراض التي تعاني منها؟ </Label>
                   <Textarea
                     rows={2}
                     value={complaint.symptoms}
@@ -1628,7 +1628,7 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label>السبب المحتمل / Possible Cause</Label>
+                  <Label>السبب المحتمل </Label>
                   <Input
                     value={complaint.possibleCause}
                     onChange={(e) =>
@@ -1640,7 +1640,7 @@ export default function PhysioCasePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>تاريخ البدء / Start Date</Label>
+                  <Label>تاريخ البدء  </Label>
                   <Input
                     value={complaint.complaintStartDate}
                     onChange={(e) =>
@@ -1656,8 +1656,7 @@ export default function PhysioCasePage() {
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>
-                    تمت زيارة الطبيب السابق بسبب الشكوى / Previous doctor seen
-                    for complaint
+                    تمت زيارة الطبيب السابق بسبب الشكوى 
                   </Label>
                   <Input
                     value={complaint.previousDoctorSeen}
@@ -1671,7 +1670,7 @@ export default function PhysioCasePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>
-                    العلاج السابق للشكوى / Previous treatment for complaint
+                    العلاج السابق للشكوى
                   </Label>
                   <Input
                     value={complaint.previousTreatment}
@@ -1687,8 +1686,7 @@ export default function PhysioCasePage() {
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>
-                    في أي وقت من اليوم تكون الأعراض أكثر إزعاجاً / In what part
-                    of the day are the symptoms more bothersome
+                    في أي وقت من اليوم تكون الأعراض أكثر إزعاجاً
                   </Label>
                   <Input
                     value={complaint.worstTimeOfDay}
@@ -1703,8 +1701,8 @@ export default function PhysioCasePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>
-                    في أي وقت من اليوم تكون الأعراض أقل إزعاجاً / In what part
-                    of the day are the symptoms less bothersome
+                    في أي وقت من اليوم تكون الأعراض أقل إزعاجاً 
+                    
                   </Label>
                   <Input
                     value={complaint.bestTimeOfDay}
@@ -1718,7 +1716,7 @@ export default function PhysioCasePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>نوع الألم / Type of the pain</Label>
+                  <Label>نوع الألم </Label>
                   <div className="flex flex-wrap gap-4">
                     {[
                       ["INTERMITTENT", "متقطع / Intermittent"],
@@ -1738,7 +1736,7 @@ export default function PhysioCasePage() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>مستوى الألم الحالي / Current level of pain</Label>
+                  <Label>مستوى الألم الحالي </Label>
                   <div className="flex flex-wrap gap-4">
                     {[
                       ["MILD", "خفيف / Mild"],
@@ -1760,7 +1758,7 @@ export default function PhysioCasePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>
-                    هل يتحسن الألم أم يزداد سوءاً؟ / Is your pain getting better or worse؟
+                    هل يتحسن الألم أم يزداد سوءاً؟ 
                   </Label>
                   <Select
                     value={complaint.painProgression}
@@ -1780,7 +1778,7 @@ export default function PhysioCasePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>
-                    هل سبق التعرض لهذه الإصابة؟ / Have you had this injury before?
+                    هل سبق التعرض لهذه الإصابة؟ 
                   </Label>
                   <Input
                     value={complaint.hadPreviousInjury}
@@ -1855,7 +1853,7 @@ export default function PhysioCasePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
-                  العوامل المحرضة / Aggravating Factors
+                  العوامل المحرضة 
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -1888,7 +1886,7 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
-                  العوامل المُخففة / Alleviating Factors
+                  العوامل المُخففة 
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -1943,7 +1941,7 @@ export default function PhysioCasePage() {
 
         {/* ── MEDICAL HISTORY ─────────────────────────────────────────────── */}
         <TabsContent value="medical_history" className="mt-4 space-y-4">
-          <Section title="التاريخ الطبي / Medical History">
+          <Section title="التاريخ الطبي ">
             <div className="space-y-4">
               {/* نمط الحياة */}
               <div className="space-y-1.5">
@@ -1959,16 +1957,16 @@ export default function PhysioCasePage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SEDENTARY">
-                      الحياة الخاملة / Sedentary Life
+                      الحياة الخاملة 
                     </SelectItem>
                     <SelectItem value="NORMAL">
-                      الحياة الطبيعية / Normal Life
+                      الحياة الطبيعية 
                     </SelectItem>
                     <SelectItem value="ABNORMAL">
-                      غير اعتيادي / غير صحي / Abnormal
+                      غير اعتيادي / غير صحي 
                     </SelectItem>
                     <SelectItem value="PROFESSIONAL">
-                      رياضي / Professional
+                      رياضي 
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -1977,7 +1975,7 @@ export default function PhysioCasePage() {
               {/* هل تدخن */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>هل تدخن؟ / Do you smoke؟</Label>
+                  <Label>هل تدخن؟ </Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">لا</span>
                     <Switch
@@ -1992,7 +1990,7 @@ export default function PhysioCasePage() {
                 </div>
                 {history.smokes && (
                   <div className="mr-4 space-y-1.5">
-                    <Label className="text-sm">عدد المرات / How often؟</Label>
+                    <Label className="text-sm">عدد المرات </Label>
                     <Input
                       value={history.smokingFrequency}
                       onChange={(e) =>
@@ -2011,7 +2009,7 @@ export default function PhysioCasePage() {
               {/* هل سبق أن دخنت */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>هل سبق لك أن دخنت؟ / Have you ever smoked؟</Label>
+                  <Label>هل سبق لك أن دخنت؟ </Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">لا</span>
                     <Switch
@@ -2026,7 +2024,7 @@ export default function PhysioCasePage() {
                 </div>
                 {history.hasSmokedBefore && (
                   <div className="mr-4 space-y-1.5">
-                    <Label className="text-sm">عدد المرات / How often؟</Label>
+                    <Label className="text-sm">عدد المرات </Label>
                     <Input
                       value={history.smokingFrequency}
                       onChange={(e) =>
@@ -2046,7 +2044,7 @@ export default function PhysioCasePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>
-                    هل لديك جهاز تنظيم ضربات القلب؟ / Do you have a pacemaker؟
+                    هل لديك جهاز تنظيم ضربات القلب؟ 
                   </Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2078,7 +2076,7 @@ export default function PhysioCasePage() {
 
               {/* الحساسية العامة */}
               <div className="space-y-1.5">
-                <Label>الحساسية / Allergies</Label>
+                <Label>الحساسية</Label>
                 <Input
                   value={history.allergies}
                   onChange={(e) =>
@@ -2093,7 +2091,7 @@ export default function PhysioCasePage() {
               {patientFull?.gender === "FEMALE" && (
                 <>
                   <div className="flex items-center justify-between">
-                    <Label>هل أنت حامل؟ / Are you pregnant؟</Label>
+                    <Label>هل أنت حامل؟</Label>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">لا</span>
                       <Switch
@@ -2107,7 +2105,7 @@ export default function PhysioCasePage() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>الحالة الاجتماعية / Marital Status</Label>
+                    <Label>الحالة الاجتماعية</Label>
                     <Input
                       value={history.maritalStatus}
                       onChange={(e) =>
@@ -2121,7 +2119,7 @@ export default function PhysioCasePage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>آخر دورة شهرية / Last Menstrual Period</Label>
+                    <Label>آخر دورة شهرية</Label>
                     <Input
                       value={history.lastMenstrualPeriod}
                       onChange={(e) =>
@@ -2141,8 +2139,7 @@ export default function PhysioCasePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>
-                    هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟ / Are you
-                    currently taking any prescription / over-counter drugs؟
+                    هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟ 
                   </Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2175,8 +2172,7 @@ export default function PhysioCasePage() {
               {/* التشخيصات السابقة / الأدوية السابقة */}
               <div className="space-y-1.5">
                 <Label>
-                  التشخيصات السابقة / الأدوية السابقة / Previous diagnoses /
-                  medications
+                  التشخيصات السابقة / الأدوية السابقة 
                 </Label>
                 <Textarea
                   rows={2}
@@ -2195,8 +2191,7 @@ export default function PhysioCasePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>
-                    هل تعاني من مشاكل صحية أخرى؟ / Do you have other health
-                    problems؟
+                    هل تعاني من مشاكل صحية أخرى؟ 
                   </Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2230,8 +2225,7 @@ export default function PhysioCasePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>
-                    هل هناك أي شيء نصحك طبيبك بعدم القيام به؟ / Is there
-                    anything your doctor told you not to do؟
+                    هل هناك أي شيء نصحك طبيبك بعدم القيام به؟ 
                   </Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2268,8 +2262,7 @@ export default function PhysioCasePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>
-                    هل تتناول حالياً أي مستحضرات عشبية أو فيتامينات؟ / Are you
-                    currently taking any herbal preparations / vitamins؟
+                    هل تتناول حالياً أي مستحضرات عشبية أو فيتامينات؟ 
                   </Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2304,7 +2297,7 @@ export default function PhysioCasePage() {
                 <div className="flex items-center justify-between">
                   <Label>
                     هل لديك حساسية من المواد اللاصقة/الشريط اللاصق أو اللاتكس أو
-                    لسعات النحل؟ / Adhesive / latex / bee sting allergy؟
+                    لسعات النحل؟ 
                   </Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2337,7 +2330,7 @@ export default function PhysioCasePage() {
               {/* الشكاوى والعمليات السابقة */}
               <div className="space-y-1.5">
                 <Label>
-                  الشكاوى والعمليات السابقة / Previous complaints & surgeries
+                  الشكاوى والعمليات السابقة 
                 </Label>
                 <Textarea
                   rows={2}
@@ -2356,7 +2349,7 @@ export default function PhysioCasePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>
-                    هل خضعت لأي عمليات جراحية؟ / Have you had any surgeries؟
+                    هل خضعت لأي عمليات جراحية؟ 
                   </Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2381,7 +2374,7 @@ export default function PhysioCasePage() {
                   <div key={i} className="grid grid-cols-3 gap-2 items-end">
                     <div className="space-y-1">
                       <Label className="text-xs">
-                        اسم العملية الجراحية / surgery name {i + 1}
+                        اسم العملية الجراحية  {i + 1}
                       </Label>
                       <Input
                         value={s.name}
@@ -2396,7 +2389,7 @@ export default function PhysioCasePage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">النوع / type</Label>
+                      <Label className="text-xs">النوع</Label>
                       <Input
                         value={s.type}
                         onChange={(e) =>
@@ -2410,7 +2403,7 @@ export default function PhysioCasePage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">التاريخ / date</Label>
+                      <Label className="text-xs">التاريخ</Label>
                       <Input
                         value={s.date}
                         onChange={(e) =>
@@ -2429,14 +2422,13 @@ export default function PhysioCasePage() {
             </Section>
           )}
 
-          <Section title="العلاج الطبيعي والعلاجات الأخرى / PT & Other Treatments">
+          <Section title="العلاج الطبيعي والعلاجات الأخرى ">
             <div className="space-y-4">
               {/* علاج طبيعي لنفس المشكلة */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>
-                    هل خضعت للعلاج الطبيعي لنفس المشكلة؟ / Have you had physical
-                    therapy for the same problem؟
+                    هل خضعت للعلاج الطبيعي لنفس المشكلة؟ 
                   </Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2470,8 +2462,7 @@ export default function PhysioCasePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>
-                    هل تتلقى علاجات أخرى لهذه المشكلة في هذا الوقت؟ / Are you
-                    receiving other treatments for this problem at this time؟
+                    هل تتلقى علاجات أخرى لهذه المشكلة في هذا الوقت؟ 
                   </Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2505,13 +2496,12 @@ export default function PhysioCasePage() {
               </div>
             </div>
           </Section>
-          <Section title="الفحوصات والتحاليل / Tests & Analysis">
+          <Section title="الفحوصات والتحاليل">
             <div className="space-y-4">
               {/* نوع التصوير الشعاعي */}
               <div className="space-y-2">
                 <Label className="block">
-                  ما هو نوع التصوير الشعاعي الذي قمت به لتشخيص حالتك؟ / What
-                  type of radiography did you undergo؟
+                  ما هو نوع التصوير الشعاعي الذي قمت به لتشخيص حالتك؟ 
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {(Object.entries(TEST_LABELS) as [TestType, string][]).map(
@@ -2552,14 +2542,13 @@ export default function PhysioCasePage() {
 
               {/* ماهي التحاليلات */}
               <Label className="block font-medium">
-                ماهي التحاليلات التي تم اجراؤها لمشكلتك الحالية؟ / What analysis
-                have been done for your current problem؟
+                ماهي التحاليلات التي تم اجراؤها لمشكلتك الحالية؟ 
               </Label>
 
               {/* تحليل جديد */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-sm">تحليل جديد / New analysis</Label>
+                  <Label className="text-sm">تحليل جديد </Label>
                   <Input
                     value={history.newAnalysis}
                     onChange={(e) =>
@@ -2570,7 +2559,7 @@ export default function PhysioCasePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">
-                    تاريخ التحليل الجديد / New analysis date
+                    تاريخ التحليل الجديد 
                   </Label>
                   <Input
                     value={history.newAnalysisDate}
@@ -2585,7 +2574,7 @@ export default function PhysioCasePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">تحليل قديم / Old analysis</Label>
+                  <Label className="text-sm">تحليل قديم </Label>
                   <Input
                     value={history.oldAnalysis}
                     onChange={(e) =>
@@ -2596,7 +2585,7 @@ export default function PhysioCasePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">
-                    تاريخ التحليل القديم / Old analysis date
+                    تاريخ التحليل القديم 
                   </Label>
                   <Input
                     value={history.oldAnalysisDate}
@@ -2699,7 +2688,7 @@ export default function PhysioCasePage() {
               {/* قياس كثافة العظام */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>قياس كثافة العظام / Bone density scan / test</Label>
+                  <Label>قياس كثافة العظام </Label>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs text-muted-foreground">لا</span>
                     <Switch
@@ -2733,8 +2722,7 @@ export default function PhysioCasePage() {
                 <div className="flex items-center justify-between">
                   <Label>
                     هل سبق لك أن دخلت المستشفى خلال العام الماضي بسبب هذه
-                    الحالة؟ / Have you been hospitalized in the past year for
-                    this condition؟
+                    الحالة؟ 
                   </Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">لا</span>
@@ -2765,7 +2753,7 @@ export default function PhysioCasePage() {
               </div>
             </div>
           </Section>
-          <Section title=" هل لديك أي مما يلي ؟ (ضع علامة إذا نعم)/ do you have any of the following today؟">
+          <Section title=" هل لديك أي مما يلي ؟ (ضع علامة إذا نعم)">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
               {CHRONIC_CONDITIONS.map((cond) => (
                 <label
@@ -2823,13 +2811,12 @@ export default function PhysioCasePage() {
 
         {/* ── GOALS ─────────────────────────────────────────────────────── */}
         <TabsContent value="goals" className="mt-4 space-y-4">
-          <Section title="أهداف العلاج / Goals of Treatments">
+          <Section title="أهداف العلاج ">
             <div className="space-y-5">
               {/* Main goals chips */}
               <div>
                 <Label className="mb-3 block text-sm font-medium">
-                  ماهي الأهداف المرجوة من حضور جلسات العلاج الطبيعي؟ / What are
-                  goals as a result of attending physical therapy?
+                  ماهي الأهداف المرجوة من حضور جلسات العلاج الطبيعي؟ 
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {PHYSIO_GOALS.map((g) => (
@@ -2878,7 +2865,7 @@ export default function PhysioCasePage() {
 
               {goals.includes("OTHER") && (
                 <div className="space-y-1.5">
-                  <Label className="text-sm">أي شيء أخرى / Anything else</Label>
+                  <Label className="text-sm">أي شيء أخرى </Label>
                   <Input
                     value={goalsExtra.customGoal}
                     onChange={(e) =>
@@ -2898,12 +2885,12 @@ export default function PhysioCasePage() {
               <div>
                 <p className="mb-3 text-xs text-muted-foreground">
                   {" "}
-                  يرجى تحديد المربع المناسب/ Please check appropriate box
+                  يرجى تحديد المربع المناسب
                 </p>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm whitespace-nowrap">
-                      أطول فترة وقوف / Stand longer
+                      أطول فترة وقوف 
                     </span>
                     <Input
                       className="h-8 w-24 text-sm"
@@ -2923,7 +2910,7 @@ export default function PhysioCasePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm whitespace-nowrap">
-                      أطول فترة نوم / Sleep longer
+                      أطول فترة نوم 
                     </span>
                     <Input
                       className="h-8 w-24 text-sm"
@@ -2943,7 +2930,7 @@ export default function PhysioCasePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm whitespace-nowrap">
-                      أطول فترة جلوس / Sit longer
+                      أطول فترة جلوس 
                     </span>
                     <Input
                       className="h-8 w-24 text-sm"
@@ -3019,8 +3006,7 @@ export default function PhysioCasePage() {
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">
                 الوضعية الحالية للجلوس (حسب أفضل تقييم مع - ملاحظة الوضعيات
-                الثابتة)/ Current seated position (as best evaluated - note
-                fixed positions)
+                الثابتة) 
               </Label>
               <Input
                 value={postural.seatedPosition}
@@ -3032,7 +3018,7 @@ export default function PhysioCasePage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">
-                التحكم في التوازن / الجذع/ Balance / Trunk Control
+                التحكم في التوازن / الجذع
               </Label>
               <Input
                 value={postural.trunkControl}
@@ -3045,13 +3031,13 @@ export default function PhysioCasePage() {
           </div>
 
           {/* Head */}
-          <Section title="الرأس / Head">
+          <Section title="الرأس">
             <div className="space-y-2">
               {(
                 [
-                  ["headNeutral", "حيادي / Neutral"],
-                  ["headHyperextended", "فرط البسط / Hyperextended"],
-                  ["headFwdFlexed", "تقدم للأمام / Fwd. Flexed"],
+                  ["headNeutral", "حيادي "],
+                  ["headHyperextended", "فرط البسط "],
+                  ["headFwdFlexed", "تقدم للأمام "],
                 ] as [string, string][]
               ).map(([k, lbl]) => (
                 <label
@@ -3071,7 +3057,7 @@ export default function PhysioCasePage() {
                 </label>
               ))}
               <div className="flex items-center justify-between py-0.5">
-                <span className="text-sm">عطف جانبي / Laterally Flexed</span>
+                <span className="text-sm">عطف جانبي</span>
                 <div className="flex items-center gap-4">
                   {(
                     ["headLaterallyFlexedL", "headLaterallyFlexedR"] as const
@@ -3097,7 +3083,7 @@ export default function PhysioCasePage() {
                 </div>
               </div>
               <div className="flex items-center justify-between py-0.5">
-                <span className="text-sm">دوران / Rotated</span>
+                <span className="text-sm">دوران </span>
                 <div className="flex items-center gap-4">
                   {(["headRotatedL", "headRotatedR"] as const).map((k, i) => (
                     <label
@@ -3124,7 +3110,7 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Shoulders */}
-          <Section title="الأكتاف / Shoulders">
+          <Section title="الأكتاف ">
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -3139,19 +3125,19 @@ export default function PhysioCasePage() {
                   }
                   disabled={!canEdit}
                 />
-                <span className="text-sm">متساوية / Level</span>
+                <span className="text-sm">متساوية </span>
               </label>
               {(
                 [
                   [
                     "shouldersElevatedL",
                     "shouldersElevatedR",
-                    "مرتفعة / Elevated",
+                    "مرتفعة ",
                   ],
                   [
                     "shouldersSublaxedL",
                     "shouldersSublaxedR",
-                    "غير مستقرة / Sublaxed",
+                    "غير مستقرة ",
                   ],
                 ] as [string, string, string][]
               ).map(([kL, kR, lbl]) => (
@@ -3193,12 +3179,12 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Elbow */}
-          <Section title="المرفق / Elbow">
+          <Section title="المرفق">
             <div className="space-y-2">
               {(
                 [
-                  ["elbowHyperextended", "فرط البسط / Hyperextended"],
-                  ["elbowFlexed", "عطف / Flexed"],
+                  ["elbowHyperextended", "فرط البسط "],
+                  ["elbowFlexed", "عطف "],
                 ] as [string, string][]
               ).map(([k, lbl]) => (
                 <label
@@ -3222,9 +3208,9 @@ export default function PhysioCasePage() {
                   [
                     "elbowSupinationL",
                     "elbowSupinationR",
-                    "استلقاء / Supination",
+                    "استلقاء ",
                   ],
-                  ["elbowPronationL", "elbowPronationR", "كب / Pronation"],
+                  ["elbowPronationL", "elbowPronationR", "كب "],
                 ] as [string, string, string][]
               ).map(([kL, kR, lbl]) => (
                 <div
@@ -3265,7 +3251,7 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Rib cage */}
-          <Section title="القفص الصدري / Rib Cage">
+          <Section title="القفص الصدري">
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -3280,15 +3266,15 @@ export default function PhysioCasePage() {
                   }
                   disabled={!canEdit}
                 />
-                <span className="text-sm">حيادي / Neutral</span>
+                <span className="text-sm">حيادي </span>
               </label>
               {(
                 [
-                  ["ribCageElevatedL", "ribCageElevatedR", "مرتفع / Elevated"],
+                  ["ribCageElevatedL", "ribCageElevatedR", "مرتفع "],
                   [
                     "ribCageRotatedFwdL",
                     "ribCageRotatedFwdR",
-                    "تدوير للأمام / Rotated Fwd",
+                    "تدوير للأمام ",
                   ],
                 ] as [string, string, string][]
               ).map(([kL, kR, lbl]) => (
@@ -3330,15 +3316,15 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Spine */}
-          <Section title="العمود الفقري / Spine">
+          <Section title="العمود الفقري">
             <div className="space-y-2">
               {(
                 [
-                  ["spineNeutral", "حيادي / Neutral"],
-                  ["spineKyphosis", "حداب / Kyphosis"],
-                  ["spineFlatLumbar", "تسطح قطني / Flat lumbar space"],
-                  ["spineNormalLumbar", "مسافة طبيعية / Normal lumbar space"],
-                  ["spineHyperLordotic", "فرط تقعر / Hyper-lordotic"],
+                  ["spineNeutral", "حيادي "],
+                  ["spineKyphosis", "حداب "],
+                  ["spineFlatLumbar", "تسطح قطني "],
+                  ["spineNormalLumbar", "مسافة طبيعية "],
+                  ["spineHyperLordotic", "فرط تقعر "],
                 ] as [string, string][]
               ).map(([k, lbl]) => (
                 <label
@@ -3358,7 +3344,7 @@ export default function PhysioCasePage() {
                 </label>
               ))}
               <div className="flex items-center justify-between py-0.5">
-                <span className="text-sm">جنف / Scoliosis, apex on</span>
+                <span className="text-sm">جنف</span>
                 <div className="flex items-center gap-4">
                   {(
                     ["spineScoliosisApexL", "spineScoliosisApexR"] as const
@@ -3387,14 +3373,14 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Pelvis */}
-          <Section title="الحوض / Pelvis">
+          <Section title="الحوض ">
             <div className="space-y-2">
               {(
                 [
-                  ["pelvisNeutral", "حيادي / Neutral"],
-                  ["pelvisRotatedFwd", "دوران للأمام / Rotated Fwd"],
-                  ["pelvisAnteriorTilt", "إمالة أمامية / Anterior Tilt"],
-                  ["pelvisPosteriorTilt", "إمالة خلفية / Posterior Tilt"],
+                  ["pelvisNeutral", "حيادي"],
+                  ["pelvisRotatedFwd", "دوران للأمام "],
+                  ["pelvisAnteriorTilt", "إمالة أمامية "],
+                  ["pelvisPosteriorTilt", "إمالة خلفية "],
                 ] as [string, string][]
               ).map(([k, lbl]) => (
                 <label
@@ -3414,7 +3400,7 @@ export default function PhysioCasePage() {
                 </label>
               ))}
               <div className="flex items-center justify-between py-0.5">
-                <span className="text-sm">ميل جانبي / Oblique</span>
+                <span className="text-sm">ميل جانبي</span>
                 <div className="flex items-center gap-4">
                   {(["pelvisObliqueL", "pelvisObliqueR"] as const).map(
                     (k, i) => (
@@ -3443,7 +3429,7 @@ export default function PhysioCasePage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm whitespace-nowrap">آخر / Other:</span>
+                <span className="text-sm whitespace-nowrap">آخر:</span>
                 <Input
                   className="h-8 text-sm"
                   value={postural.pelvisOther}
@@ -3457,22 +3443,22 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Hips */}
-          <Section title="الورك / Hip">
+          <Section title="الورك">
             <div className="space-y-2">
               {(
                 [
                   [
                     "hipsAbductedL",
                     "hipsAbductedR",
-                    "تبعيد (>90) / Abducted (beyond 90)",
+                    "تبعيد (>90)",
                   ],
-                  ["hipsAdductedL", "hipsAdductedR", "تقريب / Adducted"],
+                  ["hipsAdductedL", "hipsAdductedR", "تقريب "],
                   [
                     "hipsFlexedL",
                     "hipsFlexedR",
-                    "عطف (>90) / Flexed (beyond 90)",
+                    "عطف (>90) ",
                   ],
-                  ["hipsExtendedL", "hipsExtendedR", "بسط / Extended"],
+                  ["hipsExtendedL", "hipsExtendedR", "بسط "],
                 ] as [string, string, string][]
               ).map(([kL, kR, lbl]) => (
                 <div
@@ -3513,19 +3499,19 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Knees */}
-          <Section title="الركبتان / Knees">
+          <Section title="الركبتان">
             <div className="space-y-2">
               {(
                 [
                   [
                     "kneesFlexedBeyond90L",
                     "kneesFlexedBeyond90R",
-                    "عطف >90° / Flexed (beyond 90)",
+                    "عطف >90° ",
                   ],
                   [
                     "kneesExtendedBeyond90L",
                     "kneesExtendedBeyond90R",
-                    "بسط >90° / Extended (beyond 90)",
+                    "بسط >90° ",
                   ],
                 ] as [string, string, string][]
               ).map(([kL, kR, lbl]) => (
@@ -3567,29 +3553,29 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Feet */}
-          <Section title="القدم / Feet">
+          <Section title="القدم">
             <div className="space-y-2">
               {(
                 [
                   [
                     "feetPronateEvertL",
                     "feetPronateEvertR",
-                    "كب/انقلاب خارجي / Pronate/Evert",
+                    "كب/انقلاب خارجي ",
                   ],
                   [
                     "feetSupinateInvL",
                     "feetSupinateInvR",
-                    "استلقاء/انقلاب داخلي / Supinate/Inv",
+                    "استلقاء/انقلاب داخلي",
                   ],
                   [
                     "feetDorsiflexedL",
                     "feetDorsiflexedR",
-                    "عطف ظهري / Dorsiflexed",
+                    "عطف ظهري ",
                   ],
                   [
                     "feetPlantarflexedL",
                     "feetPlantarflexedR",
-                    "عطف أخمصي / Plantarflexed",
+                    "عطف أخمصي ",
                   ],
                 ] as [string, string, string][]
               ).map(([kL, kR, lbl]) => (
@@ -3628,7 +3614,7 @@ export default function PhysioCasePage() {
                 </div>
               ))}
               <div className="flex items-center gap-2">
-                <span className="text-sm whitespace-nowrap">آخر / Other:</span>
+                <span className="text-sm whitespace-nowrap">آخر:</span>
                 <Input
                   className="h-8 text-sm"
                   value={postural.feetOther}
@@ -3642,11 +3628,11 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Notes */}
-          <Section title="الملاحظات والتشخيص / Comments & Diagnosis">
+          <Section title="الملاحظات والتشخيص ">
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-sm">
-                  التشنج/ردود الفعل/التوتر العضلي / Spasticity / Reflexes / Tone
+                  التشنج/ردود الفعل/التوتر العضلي 
                 </Label>
                 <Textarea
                   rows={2}
@@ -3661,7 +3647,7 @@ export default function PhysioCasePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">تعليقات / Comments</Label>
+                <Label className="text-sm">تعليقات </Label>
                 <Textarea
                   rows={2}
                   value={postural.generalNotes}
@@ -3672,7 +3658,7 @@ export default function PhysioCasePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">تشخيص / Diagnosis</Label>
+                <Label className="text-sm">تشخيص </Label>
                 <Input
                   value={postural.diagnosis}
                   onChange={(e) =>
@@ -3703,10 +3689,10 @@ export default function PhysioCasePage() {
         {/* ── TREATMENT PLAN ──────────────────────────────────────────────── */}
         <TabsContent value="treatment_plan" className="mt-4 space-y-4">
           {/* Header */}
-          <Section title="رأس خطة العلاج / Plan Header">
+          <Section title="رأس خطة العلاج ">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-sm">من / From</Label>
+                <Label className="text-sm">من </Label>
                 <div className="flex gap-1.5">
                   <Input
                     value={planHeader.treatmentFrom}
@@ -3736,7 +3722,7 @@ export default function PhysioCasePage() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">إلى / To</Label>
+                <Label className="text-sm">إلى</Label>
                 <div className="flex gap-1.5">
                   <Input
                     value={planHeader.treatmentTo}
@@ -3767,7 +3753,7 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">
-                  عدد الزيارات المتوقعة / Anticipated Visits
+                  عدد الزيارات المتوقعة
                 </Label>
                 <Input
                   type="number"
@@ -3784,7 +3770,7 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">
-                  اسم أخصائي العلاج الطبيعي / Physiotherapist
+                  اسم أخصائي العلاج الطبيعي 
                 </Label>
                 <div className="rounded-md border max-h-40 overflow-y-auto divide-y">
                   {physioEmployees.length === 0 ? (
@@ -3819,7 +3805,7 @@ export default function PhysioCasePage() {
                 </div>
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label className="text-sm">مدير الحالة / Case Manager</Label>
+                <Label className="text-sm">مدير الحالة </Label>
                 <Select
                   value={planHeader.caseManagerId || ""}
                   onValueChange={(v) =>
@@ -3843,7 +3829,7 @@ export default function PhysioCasePage() {
               <div className="col-span-2 flex items-center justify-between rounded-md border px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">
-                    حالة المريض / Plan Status
+                    حالة المريض 
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {planStatus === "ACTIVE"
@@ -3863,7 +3849,7 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Modalities — 2-col checkbox grid */}
-          <Section title="خطة علاج  المريض   /  patient treatment plan">
+          <Section title="خطة علاج  المريض ">
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               {THERAPY_MODALITY_PAIRS.flatMap(([right, left]) =>
                 (left ? [right, left] : [right]).map((m) => (
@@ -3904,10 +3890,10 @@ export default function PhysioCasePage() {
           </Section>
 
           {/* Remarks + Observation + Status */}
-          <Section title="الملاحظات والحالة / Remarks & Status">
+          <Section title="الملاحظات والحالة">
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label className="text-sm">ملاحظات / remarks</Label>
+                <Label className="text-sm">ملاحظات </Label>
                 <Textarea
                   rows={3}
                   value={planObservation}
@@ -3917,7 +3903,7 @@ export default function PhysioCasePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm"> الملخص / summarizing</Label>
+                <Label className="text-sm"> الملخص</Label>
                 <Textarea
                   rows={2}
                   value={planRemarks}
@@ -3947,7 +3933,7 @@ export default function PhysioCasePage() {
         {/* ── SUPERVISOR REVIEW ───────────────────────────────────────────── */}
         {/* ── EVALUATION ──────────────────────────────────────────────────── */}
         <TabsContent value="evaluation" className="mt-4 space-y-4">
-          <Section title="التشخيص / observations">
+          <Section title="التشخيص">
             <Textarea
               rows={4}
               placeholder="اكتب ملاحظاتك حول تقدم المريض..."
@@ -4043,7 +4029,7 @@ export default function PhysioCasePage() {
           <Section title="نظرة رئيس القسم">
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>نظرة رئيس القسم / Supervisor Gaze</Label>
+                <Label>نظرة رئيس القسم </Label>
                 <Textarea
                   rows={4}
                   value={supervisorGaze}
@@ -4098,7 +4084,7 @@ export default function PhysioCasePage() {
           <Section title="رأي الطبيب">
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>رأي الطبيب / Doctor Gaze</Label>
+                <Label>رأي الطبيب </Label>
                 <Textarea
                   rows={4}
                   value={doctorGaze}
@@ -4224,7 +4210,10 @@ export default function PhysioCasePage() {
                     (a, b) => (a.sessionNumber ?? 0) - (b.sessionNumber ?? 0),
                   )
                   .map((s) => (
-                    <div key={s.id} className="rounded-lg border p-3 space-y-2">
+                    <div
+                      key={s.id}
+                      className="rounded-lg border p-3 space-y-2"
+                    >
                       {editingSession?.id === s.id ? (
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-3">
@@ -4235,11 +4224,7 @@ export default function PhysioCasePage() {
                                 value={editingSession.sessionDate}
                                 onChange={(e) =>
                                   setEditingSession(
-                                    (v) =>
-                                      v && {
-                                        ...v,
-                                        sessionDate: e.target.value,
-                                      },
+                                    (v) => v && { ...v, sessionDate: e.target.value },
                                   )
                                 }
                               />
@@ -4251,11 +4236,7 @@ export default function PhysioCasePage() {
                                 value={editingSession.sessionTime}
                                 onChange={(e) =>
                                   setEditingSession(
-                                    (v) =>
-                                      v && {
-                                        ...v,
-                                        sessionTime: e.target.value,
-                                      },
+                                    (v) => v && { ...v, sessionTime: e.target.value },
                                   )
                                 }
                               />
@@ -4273,83 +4254,30 @@ export default function PhysioCasePage() {
                               />
                             </div>
                             <div className="space-y-1 col-span-2">
-                              <Label className="text-xs">
-                                رأي رئيس القسم / Supervisor Opinion
-                              </Label>
+                              <Label className="text-xs">رأي رئيس القسم / Supervisor Opinion</Label>
                               <Textarea
                                 rows={2}
                                 value={editingSession.supervisorOpinion}
                                 onChange={(e) =>
                                   setEditingSession(
-                                    (v) =>
-                                      v && {
-                                        ...v,
-                                        supervisorOpinion: e.target.value,
-                                      },
+                                    (v) => v && { ...v, supervisorOpinion: e.target.value },
                                   )
                                 }
                                 placeholder="رأي رئيس القسم..."
                               />
                             </div>
                             <div className="space-y-1 col-span-2">
-                              <Label className="text-xs">
-                                قرار الطبيب / Doctor Decision
-                              </Label>
+                              <Label className="text-xs">قرار الطبيب / Doctor Decision</Label>
                               <Textarea
                                 rows={2}
                                 value={editingSession.doctorDecision}
                                 onChange={(e) =>
                                   setEditingSession(
-                                    (v) =>
-                                      v && {
-                                        ...v,
-                                        doctorDecision: e.target.value,
-                                      },
+                                    (v) => v && { ...v, doctorDecision: e.target.value },
                                   )
                                 }
                                 placeholder="قرار الطبيب..."
                               />
-                            </div>
-                            <div className="space-y-1 col-span-2">
-                              <Label className="text-xs">
-                                العلاجات المُطبَّقة
-                              </Label>
-                              <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
-                                {(
-                                  Object.keys(
-                                    THERAPY_MODALITY_LABELS,
-                                  ) as TherapyModality[]
-                                ).map((m) => (
-                                  <label
-                                    key={m}
-                                    className="flex items-center gap-1.5 cursor-pointer text-xs"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="h-3.5 w-3.5 shrink-0 rounded accent-primary"
-                                      checked={editingSession.modalities.includes(
-                                        m,
-                                      )}
-                                      onChange={(e) =>
-                                        setEditingSession(
-                                          (v) =>
-                                            v && {
-                                              ...v,
-                                              modalities: e.target.checked
-                                                ? [...v.modalities, m]
-                                                : v.modalities.filter(
-                                                    (x) => x !== m,
-                                                  ),
-                                            },
-                                        )
-                                      }
-                                    />
-                                    <span className="leading-tight">
-                                      {THERAPY_MODALITY_LABELS[m]}
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -4377,37 +4305,36 @@ export default function PhysioCasePage() {
                         </div>
                       ) : (
                         <>
-                          <div className="flex justify-between items-start">
+                          {/* رأس الجلسة — كلك يوسّع/يطوي التفاصيل */}
+                          <div
+                            className="flex justify-between items-start cursor-pointer select-none"
+                            onClick={() =>
+                              setExpandedSessionId((prev) =>
+                                prev === s.id ? null : s.id,
+                              )
+                            }
+                          >
                             <div className="flex gap-2 items-center flex-wrap">
-                              <Badge
-                                variant="secondary"
-                                className="text-xs font-bold"
-                              >
+                              <Badge variant="secondary" className="text-base font-bold px-3 py-1">
                                 #{s.sessionNumber}
                               </Badge>
                               <span className="font-medium text-sm">
-                                {new Date(s.sessionDate).toLocaleDateString(
-                                  "en-GB",
-                                )}
+                                {new Date(s.sessionDate).toLocaleDateString("en-GB")}
                               </span>
                               {s.sessionTime && (
-                                <span className="text-xs text-muted-foreground">
-                                  {s.sessionTime}
-                                </span>
+                                <span className="text-xs text-muted-foreground">{s.sessionTime}</span>
                               )}
                             </div>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                               {canEdit && (
                                 <button
                                   onClick={() =>
                                     setEditingSession({
                                       id: s.id,
-                                      sessionDate:
-                                        s.sessionDate?.slice(0, 10) ?? "",
+                                      sessionDate: s.sessionDate?.slice(0, 10) ?? "",
                                       sessionTime: s.sessionTime ?? "",
                                       notes: s.notes ?? "",
-                                      supervisorOpinion:
-                                        s.supervisorOpinion ?? "",
+                                      supervisorOpinion: s.supervisorOpinion ?? "",
                                       doctorDecision: s.doctorDecision ?? "",
                                       modalities: s.modalities ?? [],
                                     })
@@ -4426,44 +4353,31 @@ export default function PhysioCasePage() {
                               </button>
                             </div>
                           </div>
-                          {s.notes && (
-                            <p className="text-xs text-muted-foreground">
-                              {s.notes}
-                            </p>
-                          )}
-                          {s.modalities && s.modalities.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {s.modalities.map((m) => (
-                                <Badge
-                                  key={m}
-                                  variant="outline"
-                                  className="text-[10px] px-1.5 py-0"
-                                >
-                                  {THERAPY_MODALITY_LABELS[m]}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          {(s.supervisorOpinion || s.doctorDecision) && (
-                            <div className="mt-2 grid grid-cols-2 gap-3 border-t pt-2">
-                              {s.supervisorOpinion && (
-                                <div className="space-y-0.5">
-                                  <p className="text-[11px] font-medium text-muted-foreground">
-                                    رأي رئيس القسم
-                                  </p>
-                                  <p className="text-xs">
-                                    {s.supervisorOpinion}
-                                  </p>
+                          {/* التفاصيل — تظهر عند الكلك */}
+                          {expandedSessionId === s.id && (
+                            <div className="space-y-2 pt-1">
+                              {s.notes && (
+                                <p className="text-xs text-muted-foreground">{s.notes}</p>
+                              )}
+                              {s.modalities && s.modalities.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {s.modalities.map((m) => (
+                                    <Badge key={m} variant="outline" className="text-[10px] px-1.5 py-0">
+                                      {THERAPY_MODALITY_LABELS[m]}
+                                    </Badge>
+                                  ))}
                                 </div>
                               )}
-                              {s.doctorDecision && (
+                              <div className="grid grid-cols-2 gap-3 border-t pt-2">
                                 <div className="space-y-0.5">
-                                  <p className="text-[11px] font-medium text-muted-foreground">
-                                    قرار الطبيب
-                                  </p>
-                                  <p className="text-xs">{s.doctorDecision}</p>
+                                  <p className="text-[11px] font-medium text-muted-foreground">رأي رئيس القسم</p>
+                                  <p className="text-xs">{s.supervisorOpinion || <span className="text-muted-foreground/50">—</span>}</p>
                                 </div>
-                              )}
+                                <div className="space-y-0.5">
+                                  <p className="text-[11px] font-medium text-muted-foreground">قرار الطبيب</p>
+                                  <p className="text-xs">{s.doctorDecision || <span className="text-muted-foreground/50">—</span>}</p>
+                                </div>
+                              </div>
                             </div>
                           )}
                         </>
@@ -4475,7 +4389,7 @@ export default function PhysioCasePage() {
           )}
 
           {/* Final Summary */}
-          <Section title="الملخص النهائي / Final Summary">
+          <Section title="الملخص النهائي">
             <div className="space-y-3">
               <Textarea
                 rows={5}

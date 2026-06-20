@@ -5,6 +5,7 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
   Font,
   pdf,
@@ -25,14 +26,12 @@ import {
   PHYSIO_GOAL_LABELS,
 } from "@/lib/api/clinic-physio";
 
-// Font.register is called lazily inside downloadPhysioCasePdf to use window.location.origin
-
 // ── Theme ──────────────────────────────────────────────────────────────────────
-const BRAND = "#B07090";
-const BRAND_LIGHT = "#f8edf3";
-const TEXT = "#111827";
-const MUTED = "#6b7280";
-const BORDER = "#e5e7eb";
+const BRAND       = "#346180";
+const BRAND_LIGHT = "#EAF2F7";
+const TEXT        = "#111827";
+const MUTED       = "#6b7280";
+const BORDER      = "#d0dde6";
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 const S = StyleSheet.create({
@@ -40,55 +39,49 @@ const S = StyleSheet.create({
     fontFamily: "Amiri",
     fontSize: 10,
     color: TEXT,
-    paddingTop: 62,
-    paddingBottom: 44,
-    paddingHorizontal: 22,
+    paddingTop: 66,
+    paddingBottom: 62,
+    paddingHorizontal: 24,
     direction: "rtl",
     textAlign: "right",
     backgroundColor: "#ffffff",
   },
-  // Fixed header per page
   pageHeader: {
     position: "absolute",
-    top: 12,
-    left: 22,
-    right: 22,
-    flexDirection: "row-reverse",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
+    top: 10,
+    left: 24,
+    right: 24,
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
     borderBottomWidth: 2,
     borderBottomColor: BRAND,
     paddingBottom: 5,
   },
-  pageHeaderTitle: { fontSize: 11, fontWeight: "bold", color: BRAND },
-  pageHeaderSub: { fontSize: 8, color: MUTED, marginTop: 1 },
-  pageHeaderRight: { alignItems: "flex-end" },
-  pageHeaderLeft: { alignItems: "flex-start" },
-  // Fixed footer per page
+  pageHeaderTitle: { fontSize: 12, fontWeight: "bold", color: BRAND },
+  pageHeaderSub:   { fontSize: 8,  color: MUTED, marginTop: 2 },
   pageFooter: {
     position: "absolute",
-    bottom: 12,
-    left: 22,
-    right: 22,
+    bottom: 8,
+    left: 24,
+    right: 24,
+    borderTopWidth: 1,
+    borderTopColor: BRAND,
+    paddingTop: 5,
     flexDirection: "row-reverse",
     justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 0.5,
-    borderTopColor: BORDER,
-    paddingTop: 4,
+    alignItems: "flex-start",
   },
-  pageFooterText: { fontSize: 7.5, color: MUTED },
-  // Section header (colored bar)
+  pageFooterText: { fontSize: 7, color: BRAND },
   sectionHeader: {
     backgroundColor: BRAND,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    marginBottom: 7,
+    marginBottom: 6,
     marginTop: 14,
     borderRadius: 3,
   },
-  sectionHeaderText: { color: "#ffffff", fontWeight: "bold", fontSize: 10.5 },
-  // Sub-section header (light bar)
+  sectionHeaderText: { color: "#ffffff", fontWeight: "bold", fontSize: 11, textAlign: "center" },
   subHeader: {
     backgroundColor: BRAND_LIGHT,
     paddingHorizontal: 8,
@@ -100,18 +93,16 @@ const S = StyleSheet.create({
     borderRightColor: BRAND,
   },
   subHeaderText: { color: BRAND, fontWeight: "bold", fontSize: 9.5 },
-  // Field row
+  // Field row — label right, value left, both wrap
   fieldRow: {
     flexDirection: "row-reverse",
     marginBottom: 4,
-    gap: 6,
+    flexWrap: "nowrap",
   },
-  fieldLabel: { fontSize: 8.5, color: MUTED, flex: 1.2 },
-  fieldValue: { fontSize: 9.5, color: TEXT, flex: 2.8 },
-  // Yes/No
+  fieldLabel: { fontSize: 8.5, color: MUTED, width: 120, flexShrink: 0 },
+  fieldValue: { fontSize: 9.5, color: TEXT, flex: 1 },
   yes: { color: "#16a34a" },
-  no: { color: "#9ca3af" },
-  // Chips row
+  no:  { color: "#9ca3af" },
   chipsWrap: {
     flexDirection: "row-reverse",
     flexWrap: "wrap",
@@ -127,8 +118,7 @@ const S = StyleSheet.create({
     fontSize: 8,
     color: BRAND,
   },
-  // Table
-  table: { marginTop: 5, marginBottom: 5 },
+  table:        { marginTop: 5, marginBottom: 5 },
   tableHeaderRow: {
     flexDirection: "row-reverse",
     backgroundColor: BRAND,
@@ -142,28 +132,18 @@ const S = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3.5,
   },
-  tableRowAlt: { backgroundColor: "#faf5f9" },
-  tableCellHead: {
-    flex: 1,
-    fontSize: 8.5,
-    color: "#ffffff",
-    fontWeight: "bold",
-    textAlign: "right",
-  },
-  tableCell: { flex: 1, fontSize: 8.5, color: TEXT, textAlign: "right" },
-  // Divider
-  divider: { borderBottomWidth: 0.5, borderBottomColor: BORDER, marginVertical: 4 },
-  // Two-column grid
-  twoCol: { flexDirection: "row-reverse", gap: 12 },
-  col: { flex: 1 },
-  // Small note
-  note: { fontSize: 8, color: MUTED, fontStyle: "italic", marginTop: 2 },
+  tableRowAlt:  { backgroundColor: "#FDF5F5" },
+  tableCellHead: { flex: 1, fontSize: 8.5, color: "#ffffff", fontWeight: "bold", textAlign: "right" },
+  tableCell:     { flex: 1, fontSize: 8.5, color: TEXT, textAlign: "right" },
+  divider:       { borderBottomWidth: 0.5, borderBottomColor: BORDER, marginVertical: 4 },
+  twoCol:        { flexDirection: "row-reverse", gap: 16 },
+  col:           { flex: 1 },
+  note:          { fontSize: 8, color: MUTED, fontStyle: "italic", marginTop: 2 },
 });
 
 // ── Data type ──────────────────────────────────────────────────────────────────
-
 export interface PhysioCasePdfData {
-  patient: { firstName: string; lastName: string; patientNumber: string; gender?: string };
+  patient: { firstName: string; lastName: string; patientNumber: string; gender?: string; dateOfBirth?: string; occupation?: string; receivesAid?: string };
   caseId: string;
   caseStatus: string;
   caseCreatedAt: string;
@@ -196,7 +176,8 @@ export interface PhysioCasePdfData {
     herbalSupplements: boolean; supplementsList: string;
     previousDiagnoses: string; previousComplaintsSurgeries: string;
     hasOtherHealthProblems: boolean; otherConditions: string;
-    doctorRestrictions: string; hadPTSameProblem: boolean; ptSameProblemDetail: string;
+    hasDoctorRestrictions: boolean; doctorRestrictions: string;
+    hadPTSameProblem: boolean; ptSameProblemDetail: string;
     receivingOtherTreatment: boolean; otherTreatmentDetail: string;
     testsOther: string; testResults: string;
     newAnalysis: string; newAnalysisDate: string;
@@ -257,9 +238,9 @@ export interface PhysioCasePdfData {
 
 // ── Helper components ──────────────────────────────────────────────────────────
 
-const SecHead = ({ ar, en }: { ar: string; en: string }) => (
-  <View style={S.sectionHeader}>
-    <Text style={S.sectionHeaderText}>{ar}  /  {en}</Text>
+const SecHead = ({ label, break: brk }: { label: string; break?: boolean }) => (
+  <View style={S.sectionHeader} break={brk}>
+    <Text style={S.sectionHeaderText}>{label}</Text>
   </View>
 );
 
@@ -272,8 +253,8 @@ const SubHead = ({ label }: { label: string }) => (
 const F = ({ label, value }: { label: string; value?: string | number | null }) => {
   const v = value == null ? "" : String(value).trim();
   return (
-    <View style={S.fieldRow}>
-      <Text style={S.fieldLabel}>{label}:</Text>
+    <View style={S.fieldRow} wrap={false}>
+      <Text style={S.fieldLabel}>{label}{"‏"}</Text>
       <Text style={S.fieldValue}>{v || "—"}</Text>
     </View>
   );
@@ -282,11 +263,22 @@ const F = ({ label, value }: { label: string; value?: string | number | null }) 
 const Bool = ({ label, value, showNo = true }: { label: string; value: boolean; showNo?: boolean }) => {
   if (!value && !showNo) return null;
   return (
-    <View style={S.fieldRow}>
-      <Text style={S.fieldLabel}>{label}:</Text>
+    <View style={S.fieldRow} wrap={false}>
+      <Text style={S.fieldLabel}>{label}{"‏"}</Text>
       <Text style={[S.fieldValue, value ? S.yes : S.no]}>
-        {value ? "✓ نعم / Yes" : "✗ لا / No"}
+        {value ? "✓ نعم" : "✗ لا"}
       </Text>
+    </View>
+  );
+};
+
+// Card-style field: label small above, value bold below
+const FC = ({ label, value }: { label: string; value?: string | number | null }) => {
+  const v = value == null ? "" : String(value).trim();
+  return (
+    <View style={{ marginBottom: 6 }} wrap={false}>
+      <Text style={{ fontSize: 7.5, color: MUTED, marginBottom: 2 }}>{label}</Text>
+      <Text style={{ fontSize: 10, color: TEXT, fontWeight: "bold" }}>{v || "—"}</Text>
     </View>
   );
 };
@@ -302,128 +294,183 @@ const Chips = ({ items }: { items: string[] }) => {
   );
 };
 
-// ── Page header & footer (fixed, rendered on every page) ──────────────────────
+// ── Body pain map ─────────────────────────────────────────────────────────────
+// SVG viewBox: 1456 × 1360 → PDF width 260 → height ≈ 243
 
-const PH = ({ patient, caseId, generatedAt }: {
-  patient: PhysioCasePdfData["patient"];
-  caseId: string;
-  generatedAt: string;
-}) => (
+const BODY_W = 260;
+const BODY_H = Math.round(260 * (1360 / 1456));
+
+const PAIN_COLORS: Record<string, string> = {
+  NORMAL:         "#ef4444",
+  NUMBNESS:       "#22c55e",
+  DULL_ACHE:      "#f97316",
+  HOT_BURNING:    "#fb923c",
+  SHARP_STABBING: "#a855f7",
+  PINS:           "#eab308",
+  OTHER:          "#3b82f6",
+};
+
+const PAIN_LABELS_AR: Record<string, string> = {
+  NORMAL: "عادي", NUMBNESS: "خدر", DULL_ACHE: "ألم خفيف",
+  HOT_BURNING: "حارق", SHARP_STABBING: "حاد", PINS: "واخز", OTHER: "أخرى",
+};
+
+const BodyMapPdf = ({ regions, origin }: { regions: PainRegion[]; origin: string }) => {
+  const uniqueTypes = [...new Set(regions.map((r) => r.painType ?? "OTHER"))];
+  return (
+    <View style={{ alignItems: "center", marginTop: 6 }} wrap={false}>
+      {/* صورة الجسم مع النقاط */}
+      <View style={{ position: "relative", width: BODY_W, height: BODY_H }}>
+        <Image
+          src={`${origin}/human.svg`}
+          style={{ width: BODY_W, height: BODY_H, position: "absolute", top: 0, left: 0 }}
+        />
+        {regions.map((r, i) => {
+          const color = PAIN_COLORS[r.painType ?? "OTHER"] ?? "#ef4444";
+          const cx = (r.x / 100) * BODY_W;
+          const cy = (r.y / 100) * BODY_H;
+          return (
+            <View
+              key={i}
+              style={{
+                position: "absolute",
+                left: cx - 5,
+                top: cy - 5,
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor: color,
+                borderWidth: 1.5,
+                borderColor: "#ffffff",
+              }}
+            />
+          );
+        })}
+      </View>
+      {/* مفتاح الألوان */}
+      {uniqueTypes.length > 0 && (
+        <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 6, marginTop: 6, justifyContent: "center" }}>
+          {uniqueTypes.map((type) => (
+            <View key={type} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: PAIN_COLORS[type] ?? "#999" }} />
+              <Text style={{ fontSize: 7.5, color: MUTED }}>{PAIN_LABELS_AR[type] ?? type}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
+// ── Page header & footer ──────────────────────────────────────────────────────
+
+const PH = (_: { patient: PhysioCasePdfData["patient"]; caseId: string; generatedAt: string }) => (
   <View style={S.pageHeader} fixed>
-    <View style={S.pageHeaderRight}>
-      <Text style={S.pageHeaderTitle}>حالة علاج فيزيائي  /  Physical Therapy Case</Text>
-      <Text style={S.pageHeaderSub}>رقم الملف: #{caseId.slice(-8).toUpperCase()}</Text>
-    </View>
-    <View style={S.pageHeaderLeft}>
-      <Text style={{ fontSize: 10, fontWeight: "bold", color: TEXT, textAlign: "left" }}>
-        {patient.firstName} {patient.lastName}
-      </Text>
-      <Text style={[S.pageHeaderSub, { textAlign: "left" }]}>
-        {patient.patientNumber}  |  {generatedAt}
-      </Text>
+    <View style={{ flexDirection: "column" }}>
+      <Text style={{ fontSize: 28, fontWeight: "bold", color: BRAND, letterSpacing: 0.5 }}>VitaSyr.</Text>
+      {/* <Text style={{ fontSize: 8.5, color: "#6b93b0", marginTop: 1, marginLeft: 2 }}>Physical Therapy &amp; Prosthetics</Text> */}
     </View>
   </View>
 );
 
-const PF = ({ patient }: { patient: PhysioCasePdfData["patient"] }) => (
+const PF = (_: { patient: PhysioCasePdfData["patient"] }) => (
   <View style={S.pageFooter} fixed>
-    <Text style={S.pageFooterText}>{patient.firstName} {patient.lastName} — {patient.patientNumber}</Text>
-    <Text
-      style={[S.pageFooterText, { textAlign: "left" }]}
-      render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-    />
+    {/* يمين: العنوان */}
+    <View style={{ alignItems: "flex-end", gap: 2 }}>
+      <Text style={S.pageFooterText}>سوريا - حلب - حي حلب الجديدة شمالي</Text>
+      <Text style={S.pageFooterText}>خلف فيلا العقاد - شارع إيكاردا</Text>
+    </View>
+    {/* وسط: الموقع والإيميل */}
+    <View style={{ alignItems: "center", gap: 2 }}>
+      <Text style={S.pageFooterText}>www.VitaSyr-center.com</Text>
+      <Text style={S.pageFooterText}>info@VitaSyr-center.com</Text>
+    </View>
+    {/* يسار: الهواتف */}
+    <View style={{ alignItems: "flex-start", gap: 2 }}>
+      <Text style={S.pageFooterText}>MOB: +963 935 813 333</Text>
+      <Text style={S.pageFooterText}>TEL: +963 21 5226391  |  FAX: +963 21 5226392</Text>
+    </View>
   </View>
 );
 
-// ── Postural helper: collect TRUE items ───────────────────────────────────────
+// ── Postural findings ─────────────────────────────────────────────────────────
 
 function collectPosturalFindings(p: PhysioCasePdfData["postural"]): string[] {
   const items: string[] = [];
-  const add = (cond: boolean, ar: string, en: string) => {
-    if (cond) items.push(`${ar} / ${en}`);
-  };
-  add(p.headNeutral, "الرأس محايد", "Head Neutral");
-  add(p.headHyperextended, "الرأس بسط مفرط", "Head Hyperextended");
-  add(p.headFwdFlexed, "الرأس مثني للأمام", "Head Fwd Flexed");
-  add(p.headLaterallyFlexedL, "الرأس جانبي يسار", "Head Lat Flexed L");
-  add(p.headLaterallyFlexedR, "الرأس جانبي يمين", "Head Lat Flexed R");
-  add(p.headRotatedL, "الرأس دوران يسار", "Head Rotated L");
-  add(p.headRotatedR, "الرأس دوران يمين", "Head Rotated R");
-  add(p.shouldersLevel, "الكتفان مستويان", "Shoulders Level");
-  add(p.shouldersElevatedL, "كتف مرتفع يسار", "Shoulder Elevated L");
-  add(p.shouldersElevatedR, "كتف مرتفع يمين", "Shoulder Elevated R");
-  add(p.shouldersSublaxedL, "كتف تحت خلع يسار", "Shoulder Sublaxed L");
-  add(p.shouldersSublaxedR, "كتف تحت خلع يمين", "Shoulder Sublaxed R");
-  add(p.elbowHyperextended, "كوع بسط مفرط", "Elbow Hyperextended");
-  add(p.elbowFlexed, "كوع ثني", "Elbow Flexed");
-  add(p.ribCageNeutral, "القفص الصدري محايد", "Rib Cage Neutral");
-  add(p.ribCageElevatedL, "قفص صدري مرتفع يسار", "Rib Cage Elevated L");
-  add(p.ribCageElevatedR, "قفص صدري مرتفع يمين", "Rib Cage Elevated R");
-  add(p.spineNeutral, "العمود الفقري محايد", "Spine Neutral");
-  add(p.spineKyphosis, "حداب / Kyphosis", "Kyphosis");
-  add(p.spineFlatLumbar, "قطني مسطح", "Flat Lumbar");
-  add(p.spineNormalLumbar, "قطني طبيعي", "Normal Lumbar");
-  add(p.spineHyperLordotic, "قطني هايبر لوردوتيك", "Hyper Lordotic");
-  add(p.spineScoliosisApexL, "جنف قمة يسار", "Scoliosis Apex L");
-  add(p.spineScoliosisApexR, "جنف قمة يمين", "Scoliosis Apex R");
-  add(p.pelvisNeutral, "الحوض محايد", "Pelvis Neutral");
-  add(p.pelvisAnteriorTilt, "الحوض ميل أمامي", "Pelvis Anterior Tilt");
-  add(p.pelvisPosteriorTilt, "الحوض ميل خلفي", "Pelvis Posterior Tilt");
-  add(p.pelvisObliqueL, "الحوض مائل يسار", "Pelvis Oblique L");
-  add(p.pelvisObliqueR, "الحوض مائل يمين", "Pelvis Oblique R");
-  add(p.hipsFlexedL, "الورك ثني يسار", "Hip Flexed L");
-  add(p.hipsFlexedR, "الورك ثني يمين", "Hip Flexed R");
-  add(p.hipsAbductedL, "الورك بعد يسار", "Hip Abducted L");
-  add(p.hipsAbductedR, "الورك بعد يمين", "Hip Abducted R");
-  add(p.hipsAdductedL, "الورك تقريب يسار", "Hip Adducted L");
-  add(p.hipsAdductedR, "الورك تقريب يمين", "Hip Adducted R");
-  add(p.kneesFlexedBeyond90L, "الركبة ثني > 90 يسار", "Knee Flexed >90 L");
-  add(p.kneesFlexedBeyond90R, "الركبة ثني > 90 يمين", "Knee Flexed >90 R");
-  add(p.kneesExtendedBeyond90L, "الركبة بسط > 90 يسار", "Knee Extended >90 L");
-  add(p.kneesExtendedBeyond90R, "الركبة بسط > 90 يمين", "Knee Extended >90 R");
-  add(p.feetPronateEvertL, "القدم انقلاب خارجي يسار", "Foot Pronate/Evert L");
-  add(p.feetPronateEvertR, "القدم انقلاب خارجي يمين", "Foot Pronate/Evert R");
-  add(p.feetSupinateInvL, "القدم انقلاب داخلي يسار", "Foot Supinate/Inv L");
-  add(p.feetSupinateInvR, "القدم انقلاب داخلي يمين", "Foot Supinate/Inv R");
-  add(p.feetDorsiflexedL, "ظهر القدم يسار", "Foot Dorsiflexed L");
-  add(p.feetDorsiflexedR, "ظهر القدم يمين", "Foot Dorsiflexed R");
-  add(p.feetPlantarflexedL, "باطن القدم يسار", "Foot Plantarflexed L");
-  add(p.feetPlantarflexedR, "باطن القدم يمين", "Foot Plantarflexed R");
+  const add = (cond: boolean, label: string) => { if (cond) items.push(label); };
+  add(p.headNeutral,          "الرأس محايد");
+  add(p.headHyperextended,    "الرأس بسط مفرط");
+  add(p.headFwdFlexed,        "الرأس مثني للأمام");
+  add(p.headLaterallyFlexedL, "الرأس جانبي يسار");
+  add(p.headLaterallyFlexedR, "الرأس جانبي يمين");
+  add(p.headRotatedL,         "الرأس دوران يسار");
+  add(p.headRotatedR,         "الرأس دوران يمين");
+  add(p.shouldersLevel,       "الكتفان مستويان");
+  add(p.shouldersElevatedL,   "كتف مرتفع يسار");
+  add(p.shouldersElevatedR,   "كتف مرتفع يمين");
+  add(p.shouldersSublaxedL,   "كتف تحت خلع يسار");
+  add(p.shouldersSublaxedR,   "كتف تحت خلع يمين");
+  add(p.elbowHyperextended,   "كوع بسط مفرط");
+  add(p.elbowFlexed,          "كوع ثني");
+  add(p.ribCageNeutral,       "القفص الصدري محايد");
+  add(p.ribCageElevatedL,     "قفص صدري مرتفع يسار");
+  add(p.ribCageElevatedR,     "قفص صدري مرتفع يمين");
+  add(p.spineNeutral,         "العمود الفقري محايد");
+  add(p.spineKyphosis,        "حداب (Kyphosis)");
+  add(p.spineFlatLumbar,      "قطني مسطح");
+  add(p.spineNormalLumbar,    "قطني طبيعي");
+  add(p.spineHyperLordotic,   "قطني هايبر لوردوتيك");
+  add(p.spineScoliosisApexL,  "جنف قمة يسار");
+  add(p.spineScoliosisApexR,  "جنف قمة يمين");
+  add(p.pelvisNeutral,        "الحوض محايد");
+  add(p.pelvisAnteriorTilt,   "الحوض ميل أمامي");
+  add(p.pelvisPosteriorTilt,  "الحوض ميل خلفي");
+  add(p.pelvisObliqueL,       "الحوض مائل يسار");
+  add(p.pelvisObliqueR,       "الحوض مائل يمين");
+  add(p.hipsFlexedL,          "الورك ثني يسار");
+  add(p.hipsFlexedR,          "الورك ثني يمين");
+  add(p.hipsAbductedL,        "الورك بعد يسار");
+  add(p.hipsAbductedR,        "الورك بعد يمين");
+  add(p.hipsAdductedL,        "الورك تقريب يسار");
+  add(p.hipsAdductedR,        "الورك تقريب يمين");
+  add(p.kneesFlexedBeyond90L, "الركبة ثني > 90 يسار");
+  add(p.kneesFlexedBeyond90R, "الركبة ثني > 90 يمين");
+  add(p.kneesExtendedBeyond90L, "الركبة بسط > 90 يسار");
+  add(p.kneesExtendedBeyond90R, "الركبة بسط > 90 يمين");
+  add(p.feetPronateEvertL,    "القدم انقلاب خارجي يسار");
+  add(p.feetPronateEvertR,    "القدم انقلاب خارجي يمين");
+  add(p.feetSupinateInvL,     "القدم انقلاب داخلي يسار");
+  add(p.feetSupinateInvR,     "القدم انقلاب داخلي يمين");
+  add(p.feetDorsiflexedL,     "ظهر القدم يسار");
+  add(p.feetDorsiflexedR,     "ظهر القدم يمين");
+  add(p.feetPlantarflexedL,   "باطن القدم يسار");
+  add(p.feetPlantarflexedR,   "باطن القدم يمين");
   return items;
 }
 
 // ── PDF Document ──────────────────────────────────────────────────────────────
 
-const PhysioPdfDoc = ({ data }: { data: PhysioCasePdfData }) => {
+const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: string }) => {
   const { patient, complaint, history, postural, sessions, goals, goalsExtra,
     chronicConditions, testsHad, surgeries, painRegions, painTypes,
     aggravatingFactors, alleviatingFactors } = data;
 
-  const generatedAt = new Date().toLocaleDateString("en-GB");
+  const generatedAt = new Date().toLocaleDateString("ar-SA");
   const posturalFindings = collectPosturalFindings(postural);
 
   const allGoalChips = [
     ...goals.map((g) => PHYSIO_GOAL_LABELS[g] ?? g),
     ...([
-      goalsExtra.decreasePain && "تخفيف الألم / Decrease Pain",
-      goalsExtra.improveStrength && "تحسين القوة / Improve Strength",
-      goalsExtra.lessDifficultyWork && "سهولة العمل / Less Difficulty at Work",
-      goalsExtra.improveMovement && "تحسين الحركة / Improve Movement",
+      goalsExtra.decreasePain      && "تخفيف الألم",
+      goalsExtra.improveStrength   && "تحسين القوة العضلية",
+      goalsExtra.lessDifficultyWork && "سهولة العمل",
+      goalsExtra.improveMovement   && "تحسين الحركة",
     ].filter(Boolean) as string[]),
   ];
 
-  const allPainTypes = [
-    ...painTypes,
-    ...(data.painTypeOther ? [data.painTypeOther] : []),
-  ];
-  const allAgg = [
-    ...aggravatingFactors,
-    ...(data.aggravatingOther ? [data.aggravatingOther] : []),
-  ];
-  const allAlv = [
-    ...alleviatingFactors,
-    ...(data.alleviatingOther ? [data.alleviatingOther] : []),
-  ];
+  const allPainTypes = [...painTypes, ...(data.painTypeOther ? [data.painTypeOther] : [])];
+  const allAgg       = [...aggravatingFactors, ...(data.aggravatingOther ? [data.aggravatingOther] : [])];
+  const allAlv       = [...alleviatingFactors, ...(data.alleviatingOther ? [data.alleviatingOther] : [])];
 
   return (
     <Document
@@ -436,181 +483,123 @@ const PhysioPdfDoc = ({ data }: { data: PhysioCasePdfData }) => {
         <PF patient={patient} />
 
         {/* ── 1. معلومات المريض ── */}
-        <SecHead ar="معلومات المريض" en="Patient Information" />
-        <View style={S.twoCol}>
-          <View style={S.col}>
-            <F label="الاسم / Name" value={`${patient.firstName} ${patient.lastName}`} />
-            <F label="رقم المريض / Patient ID" value={patient.patientNumber} />
-            <F label="الجنس / Gender" value={
-              patient.gender === "MALE" ? "ذكر / Male" :
-              patient.gender === "FEMALE" ? "أنثى / Female" : patient.gender
-            } />
-          </View>
-          <View style={S.col}>
-            <F label="رقم الملف / Case ID" value={data.caseId.slice(-8).toUpperCase()} />
-            <F label="حالة الملف / Status" value={data.caseStatus} />
-            <F label="تاريخ الفتح / Opened" value={new Date(data.caseCreatedAt).toLocaleDateString("en-GB")} />
-          </View>
+        <SecHead label="معلومات المريض" />
+        <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 0 }}>
+          {[
+            { label: "الاسم",              value: `${patient.firstName} ${patient.lastName}` },
+            { label: "العمر",              value: patient.dateOfBirth
+                ? `${Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} سنة`
+                : "—" },
+            { label: "التاريخ",            value: new Date(data.caseCreatedAt).toLocaleDateString("ar-SA") },
+            { label: "رقم تعريف المريض",   value: patient.patientNumber },
+            { label: "الوظيفة الحالية",    value: patient.occupation || "—" },
+            { label: "مقدم الرعاية",       value: patient.receivesAid || "—" },
+          ].map((f) => (
+            <View key={f.label} style={{ width: "33%", paddingHorizontal: 6, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: BORDER }}>
+              <FC label={f.label} value={f.value} />
+            </View>
+          ))}
         </View>
 
         {/* ── 2. الشكوى ── */}
-        <SecHead ar="الشكوى الرئيسية" en="Chief Complaint" />
-        <F label="الشكوى / Complaint" value={complaint.majorComplaint} />
-        <F label="الأعراض / Symptoms" value={complaint.symptoms} />
-        <View style={S.twoCol}>
-          <View style={S.col}>
-            <F label="العمل الحالي / Current Job" value={complaint.currentJob} />
-            <F label="نمط الحياة / Life Type" value={complaint.lifeType} />
-            <F label="تاريخ بدء الشكوى / Start Date" value={complaint.complaintStartDate} />
-            <F label="مدة الشكوى / Duration" value={complaint.complaintDuration} />
-            <F label="نوع الشكوى / Type" value={complaint.complaintType} />
-            <F label="مكان الألم / Location" value={complaint.painLocation} />
-          </View>
-          <View style={S.col}>
-            <F label="مستوى الألم / Pain Level" value={complaint.painLevel} />
-            <F label="مدة الألم / Pain Duration" value={complaint.painDuration} />
-            <F label="تطور الألم / Progression" value={complaint.painProgression} />
-            <F label="أفضل وقت / Best Time" value={complaint.bestTimeOfDay} />
-            <F label="أسوأ وقت / Worst Time" value={complaint.worstTimeOfDay} />
-            <F label="السبب المحتمل / Possible Cause" value={complaint.possibleCause} />
-          </View>
-        </View>
-        <F label="إصابات سابقة / Previous Injury" value={complaint.hadPreviousInjury} />
-        <F label="طبيب سابق / Doctor Seen" value={complaint.previousDoctorSeen} />
-        <F label="علاج سابق / Previous Treatment" value={complaint.previousTreatment} />
-        <Bool label="زيارة متخصص / Visited Specialist" value={complaint.visitedSpecialist} />
-        {complaint.visitedSpecialist && <F label="سبب الزيارة / Reason" value={complaint.specialistReason} />}
-        <Bool label="أمراض مزمنة / Chronic Diseases" value={complaint.hasChronicDiseases} />
-        {complaint.hasChronicDiseases && <F label="التفاصيل / Details" value={complaint.chronicDiseasesDetail} />}
-        <Bool label="علاج فيزيائي سابق / Previous PT" value={complaint.hadPreviousPT} />
-        {complaint.hadPreviousPT && <F label="التفاصيل / Details" value={complaint.previousPTDetail} />}
-        <Bool label="عمليات جراحية سابقة / Previous Surgery" value={complaint.hadSurgery} />
-        {complaint.hadSurgery && <F label="التفاصيل / Details" value={complaint.surgeryDetail} />}
-        <F label="ملاحظات الشكوى / Complaint Notes" value={complaint.complaintNotes} />
+        <SecHead label="الشكوى الرئيسية" />
+        <F label="ماهي شكواك الرئيسية؟"                       value={complaint.majorComplaint} />
+        <F label="ماهي الأعراض التي تعاني منها؟"               value={complaint.symptoms} />
+        <F label="السبب المحتمل"                               value={complaint.possibleCause} />
+        <F label="تاريخ البدء"                                 value={complaint.complaintStartDate} />
+        <F label="تمت زيارة الطبيب السابق بسبب الشكوى"         value={complaint.previousDoctorSeen} />
+        <F label="العلاج السابق للشكوى"                        value={complaint.previousTreatment} />
+        <F label="في أي وقت تكون الأعراض أكثر إزعاجاً"        value={complaint.worstTimeOfDay} />
+        <F label="في أي وقت تكون الأعراض أقل إزعاجاً"         value={complaint.bestTimeOfDay} />
+        <F label="نوع الألم" value={
+          complaint.painDuration === "INTERMITTENT"      ? "متقطع" :
+          complaint.painDuration === "CONSTANT"          ? "مستمر" :
+          complaint.painDuration === "WITH_CERTAIN_MOTIONS" ? "مع حركات معينة" :
+          complaint.painDuration || undefined
+        } />
+        <F label="مستوى الألم الحالي" value={
+          complaint.painLevel === "MILD"         ? "خفيف" :
+          complaint.painLevel === "MODERATE"     ? "متوسط" :
+          complaint.painLevel === "SEVERE"       ? "شديد" :
+          complaint.painLevel === "EXCRUCIATING" ? "لا يُحتمل" :
+          complaint.painLevel || undefined
+        } />
+        <F label="هل يتحسن الألم أم يزداد سوءاً؟" value={
+          complaint.painProgression === "BETTER" ? "يتحسن" :
+          complaint.painProgression === "WORSE"  ? "يزداد سوءاً" :
+          complaint.painProgression === "SAME"   ? "ثابت" :
+          complaint.painProgression || undefined
+        } />
+        <F label="هل سبق التعرض لهذه الإصابة؟"               value={complaint.hadPreviousInjury} />
 
         {/* ── 3. خريطة الألم ── */}
-        <SecHead ar="حدد أماكن الألم" en="Mark Areas of Discomfort" />
-        {painRegions.length > 0 && (
-          <>
-            <Text style={[S.fieldLabel, { marginBottom: 3 }]}>مناطق الألم / Pain Regions ({painRegions.length}):</Text>
-            <View style={S.table}>
-              <View style={S.tableHeaderRow}>
-                <Text style={S.tableCellHead}>الجانب / Side</Text>
-                <Text style={S.tableCellHead}>موضع X</Text>
-                <Text style={S.tableCellHead}>موضع Y</Text>
-                <Text style={S.tableCellHead}>الشدة / Intensity</Text>
-                <Text style={S.tableCellHead}>نوع الألم / Type</Text>
-                <Text style={S.tableCellHead}>ملاحظات / Notes</Text>
-              </View>
-              {painRegions.map((r, i) => (
-                <View key={i} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]}>
-                  <Text style={S.tableCell}>{r.side === "front" ? "أمامي" : "خلفي"}</Text>
-                  <Text style={S.tableCell}>{Math.round(r.x)}%</Text>
-                  <Text style={S.tableCell}>{Math.round(r.y)}%</Text>
-                  <Text style={S.tableCell}>{r.intensity}/10</Text>
-                  <Text style={S.tableCell}>{r.painType ?? "—"}</Text>
-                  <Text style={S.tableCell}>{r.notes ?? "—"}</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
+        <SecHead label="حدد أماكن الألم" break />
+        <BodyMapPdf regions={painRegions} origin={origin} />
         {allPainTypes.length > 0 && (
           <View style={{ marginBottom: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>نوع الألم / Pain Types:</Text>
+            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>أنواع الألم:</Text>
             <Chips items={allPainTypes} />
           </View>
         )}
         {allAgg.length > 0 && (
           <View style={{ marginBottom: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العوامل المُفاقِمة / Aggravating Factors:</Text>
+            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العوامل المُفاقِمة:</Text>
             <Chips items={allAgg} />
           </View>
         )}
         {allAlv.length > 0 && (
           <View style={{ marginBottom: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العوامل المُخففة / Alleviating Factors:</Text>
+            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العوامل المُخففة:</Text>
             <Chips items={allAlv} />
           </View>
         )}
 
         {/* ── 4. التاريخ الطبي ── */}
-        <SecHead ar="التاريخ الطبي" en="Medical History" />
-        <F label="نمط الحياة / Life Type" value={history.lifeType} />
-        <View style={S.twoCol}>
-          <View style={S.col}>
-            <Bool label="هل تدخن؟ / Smokes?" value={history.smokes} />
-            {history.smokes && <F label="تكرار التدخين / Frequency" value={history.smokingFrequency} />}
-            <Bool label="سبق أن دخنت؟ / Ever Smoked?" value={history.hasSmokedBefore} />
-            <Bool label="جهاز القلب / Pacemaker?" value={history.hasPacemaker} />
-            {history.hasPacemaker && <F label="التفاصيل / Details" value={history.pacemakerDetail} />}
-          </View>
-          <View style={S.col}>
-            <Bool label="حساسية اللاصق / Adhesive Allergy?" value={history.adhesiveAllergy} />
-            {history.adhesiveAllergy && <F label="التفاصيل / Details" value={history.adhesiveAllergyDetail} />}
-            <Bool label="مشاكل صحية أخرى؟ / Other Health?" value={history.hasOtherHealthProblems} />
-            {history.hasOtherHealthProblems && <F label="التفاصيل / Details" value={history.otherConditions} />}
-            <Bool label="دخل المستشفى العام الماضي؟ / Hospitalized?" value={history.hospitalizedLastYear} />
-            {history.hospitalizedLastYear && <F label="التفاصيل / Details" value={history.hospitalizedDetail} />}
-          </View>
-        </View>
-        <F label="الحساسية / Allergies" value={history.allergies} />
-        <Bool label="تناول أدوية موصوفة؟ / Prescription Drugs?" value={history.prescriptionDrugs} />
-        {history.prescriptionDrugs && <F label="الأدوية الحالية / Current Medications" value={history.currentMedications} />}
-        <Bool label="مستحضرات عشبية؟ / Herbal Supplements?" value={history.herbalSupplements} />
-        {history.herbalSupplements && <F label="التفاصيل / Details" value={history.supplementsList} />}
-        <F label="التشخيصات السابقة / Previous Diagnoses" value={history.previousDiagnoses} />
-        <F label="الشكاوى والعمليات السابقة / Previous Complaints & Surgeries" value={history.previousComplaintsSurgeries} />
-        <F label="تعليمات الطبيب / Doctor Restrictions" value={history.doctorRestrictions} />
-        <Bool label="علاج فيزيائي لنفس المشكلة؟ / PT Same Problem?" value={history.hadPTSameProblem} />
-        {history.hadPTSameProblem && <F label="التفاصيل / Details" value={history.ptSameProblemDetail} />}
-        <Bool label="علاج آخر حالياً؟ / Other Treatment?" value={history.receivingOtherTreatment} />
-        {history.receivingOtherTreatment && <F label="التفاصيل / Details" value={history.otherTreatmentDetail} />}
-        <Bool label="هل خضعت لعمليات جراحية؟ / Had Surgeries?" value={history.hadSurgeries} />
-        {history.hadSurgeries && <F label="التفاصيل / Details" value={history.surgeriesDetail} />}
+        <SecHead label="التاريخ الطبي" break />
+        <F label="نمط الحياة" value={
+          history.lifeType === "SEDENTARY"   ? "الحياة الخاملة" :
+          history.lifeType === "NORMAL"      ? "الحياة الطبيعية" :
+          history.lifeType === "ABNORMAL"    ? "غير اعتيادي / غير صحي" :
+          history.lifeType === "PROFESSIONAL"? "رياضي" :
+          history.lifeType || undefined
+        } />
+        <Bool label="هل تدخن؟" value={history.smokes} />
+        {history.smokes && <F label="عدد المرات" value={history.smokingFrequency} />}
+        <Bool label="هل سبق لك أن دخنت؟" value={history.hasSmokedBefore} />
+        <Bool label="هل لديك جهاز تنظيم ضربات القلب؟" value={history.hasPacemaker} />
+        {history.hasPacemaker && <F label="نوع الجهاز" value={history.pacemakerDetail} />}
+        <F label="الحساسية" value={history.allergies} />
 
-        {/* Gender-specific fields */}
         {patient.gender === "FEMALE" && (
           <>
-            <Bool label="هل أنتِ حامل؟ / Pregnant?" value={history.isPregnant} />
-            <F label="الحالة الاجتماعية / Marital Status" value={history.maritalStatus} />
-            <F label="آخر دورة شهرية / Last Menstrual Period" value={history.lastMenstrualPeriod} />
+            <Bool label="هل أنتِ حامل؟" value={history.isPregnant} />
+            <F label="الحالة الاجتماعية" value={history.maritalStatus} />
+            <F label="آخر دورة شهرية" value={history.lastMenstrualPeriod} />
           </>
         )}
 
-        {/* Chronic conditions */}
-        {chronicConditions.length > 0 && (
-          <View style={{ marginTop: 5 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>الأمراض المزمنة / Chronic Conditions:</Text>
-            <Chips items={chronicConditions.map((c) => CHRONIC_CONDITION_LABELS[c] ?? c)} />
-            {history.chronicConditionsOther && (
-              <F label="أخرى / Other" value={history.chronicConditionsOther} />
-            )}
-          </View>
-        )}
+        <Bool label="هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟" value={history.prescriptionDrugs} />
+        {history.prescriptionDrugs && <F label="الأدوية" value={history.currentMedications} />}
+        <F label="التشخيصات السابقة / الأدوية السابقة" value={history.previousDiagnoses} />
+        <Bool label="هل تعاني من مشاكل صحية أخرى؟" value={history.hasOtherHealthProblems} />
+        {history.hasOtherHealthProblems && <F label="التفاصيل" value={history.otherConditions} />}
+        <Bool label="هل هناك أي شيء نصحك طبيبك بعدم القيام به؟" value={history.hasDoctorRestrictions} />
+        {history.hasDoctorRestrictions && <F label="التعليمات" value={history.doctorRestrictions} />}
+        <Bool label="هل تتناول حالياً أي مستحضرات عشبية أو فيتامينات؟" value={history.herbalSupplements} />
+        {history.herbalSupplements && <F label="التفاصيل" value={history.supplementsList} />}
+        <Bool label="هل لديك حساسية من المواد اللاصقة أو اللاتكس أو لسعات النحل؟" value={history.adhesiveAllergy} />
+        {history.adhesiveAllergy && <F label="التفاصيل" value={history.adhesiveAllergyDetail} />}
+        <F label="الشكاوى والعمليات السابقة" value={history.previousComplaintsSurgeries} />
+        <Bool label="هل خضعت لأي عمليات جراحية؟" value={history.hadSurgeries} />
 
-        {/* Tests */}
-        {testsHad.length > 0 && (
-          <View style={{ marginTop: 5 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>الفحوصات / Tests:</Text>
-            <Chips items={testsHad} />
-            <F label="نتائج الفحوصات / Results" value={history.testResults} />
-            <F label="تحاليل جديدة / New Analysis" value={history.newAnalysis} />
-            <F label="تاريخ التحليل الجديد / New Date" value={history.newAnalysisDate} />
-            <F label="تحاليل قديمة / Old Analysis" value={history.oldAnalysis} />
-            <F label="تاريخ التحليل القديم / Old Date" value={history.oldAnalysisDate} />
-          </View>
-        )}
-
-        {/* Surgeries table */}
         {history.hadSurgeries && surgeries.some((s) => s.name) && (
           <View style={{ marginTop: 6 }}>
-            <SubHead label="العمليات الجراحية / Surgeries" />
+            <SubHead label="العمليات الجراحية (حتى 5)" />
             <View style={S.table}>
               <View style={S.tableHeaderRow}>
-                <Text style={S.tableCellHead}>اسم العملية / Surgery Name</Text>
-                <Text style={S.tableCellHead}>النوع / Type</Text>
-                <Text style={S.tableCellHead}>التاريخ / Date</Text>
+                <Text style={S.tableCellHead}>اسم العملية</Text>
+                <Text style={S.tableCellHead}>النوع</Text>
+                <Text style={S.tableCellHead}>التاريخ</Text>
               </View>
               {surgeries.filter((s) => s.name).map((s, i) => (
                 <View key={i} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]}>
@@ -623,107 +612,144 @@ const PhysioPdfDoc = ({ data }: { data: PhysioCasePdfData }) => {
           </View>
         )}
 
+        <SubHead label="العلاج الطبيعي والعلاجات الأخرى" />
+        <Bool label="هل خضعت للعلاج الطبيعي لنفس المشكلة؟" value={history.hadPTSameProblem} />
+        {history.hadPTSameProblem && <F label="التفاصيل" value={history.ptSameProblemDetail} />}
+        <Bool label="هل تتلقى علاجات أخرى لهذه المشكلة في هذا الوقت؟" value={history.receivingOtherTreatment} />
+        {history.receivingOtherTreatment && <F label="التفاصيل" value={history.otherTreatmentDetail} />}
+
+        <SubHead label="الفحوصات والتحاليل" />
+        <View style={{ marginBottom: 4 }}>
+          <Text style={[S.fieldLabel, { marginBottom: 3 }]}>ما هو نوع التصوير الشعاعي الذي قمت به؟</Text>
+          {testsHad.length > 0
+            ? <Chips items={testsHad.map((t) => (EVALUATION_MODALITY_LABELS as any)[t] ?? t)} />
+            : <Text style={S.fieldValue}>—</Text>}
+          {history.testsOther && <F label="أخرى" value={history.testsOther} />}
+        </View>
+        <F label="نتائج / Results" value={history.testResults} />
+        <Text style={[S.fieldLabel, { marginBottom: 3, marginTop: 4 }]}>ماهي التحاليلات التي تم اجراؤها؟</Text>
+        <View style={S.twoCol}>
+          <View style={S.col}>
+            <F label="تحليل جديد"          value={history.newAnalysis} />
+            <F label="تاريخ التحليل الجديد" value={history.newAnalysisDate} />
+          </View>
+          <View style={S.col}>
+            <F label="تحليل قديم"          value={history.oldAnalysis} />
+            <F label="تاريخ التحليل القديم" value={history.oldAnalysisDate} />
+          </View>
+        </View>
+        <Bool label="قياس كثافة العظام" value={history.boneDensityTest} />
+        {history.boneDensityTest && <F label="التفاصيل" value={history.boneDensityDetail} />}
+        <Bool label="هل سبق لك أن دخلت المستشفى خلال العام الماضي بسبب هذه الحالة؟" value={history.hospitalizedLastYear} />
+        {history.hospitalizedLastYear && <F label="التفاصيل" value={history.hospitalizedDetail} />}
+
+        <SubHead label="هل لديك أي مما يلي؟ (ضع علامة إذا نعم)" />
+        {chronicConditions.length > 0
+          ? <Chips items={chronicConditions.map((c) => CHRONIC_CONDITION_LABELS[c] ?? c)} />
+          : <Text style={S.fieldValue}>—</Text>}
+        {history.chronicConditionsOther && <F label="أخرى" value={history.chronicConditionsOther} />}
+
         {/* ── 5. أهداف العلاج ── */}
-        <SecHead ar="أهداف العلاج" en="Treatment Goals" />
+        <SecHead label="أهداف العلاج" />
         {allGoalChips.length > 0 && (
           <>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>الأهداف / Goals:</Text>
+            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>الأهداف:</Text>
             <Chips items={allGoalChips} />
           </>
         )}
         <View style={S.twoCol}>
           <View style={S.col}>
-            {goalsExtra.standLonger && <F label="وقوف أطول / Stand Longer" value={`${goalsExtra.standLonger} ساعات/دقائق`} />}
-            {goalsExtra.sleepLonger && <F label="نوم أطول / Sleep Longer" value={`${goalsExtra.sleepLonger} ساعات/دقائق`} />}
-            {goalsExtra.sitLonger && <F label="جلوس أطول / Sit Longer" value={`${goalsExtra.sitLonger} ساعات/دقائق`} />}
+            {goalsExtra.standLonger && <F label="وقوف أطول" value={`${goalsExtra.standLonger} ساعات/دقائق`} />}
+            {goalsExtra.sleepLonger && <F label="نوم أطول"  value={`${goalsExtra.sleepLonger} ساعات/دقائق`} />}
+            {goalsExtra.sitLonger   && <F label="جلوس أطول" value={`${goalsExtra.sitLonger} ساعات/دقائق`} />}
           </View>
           <View style={S.col}>
-            {goalsExtra.customGoal && <F label="هدف مخصص / Custom Goal" value={goalsExtra.customGoal} />}
-            {goalsExtra.otherGoals && <F label="أهداف أخرى / Other Goals" value={goalsExtra.otherGoals} />}
+            {goalsExtra.customGoal && <F label="هدف مخصص"   value={goalsExtra.customGoal} />}
+            {goalsExtra.otherGoals && <F label="أهداف أخرى" value={goalsExtra.otherGoals} />}
           </View>
         </View>
 
         {/* ── 6. التقييم الوضعي ── */}
-        <SecHead ar="التقييم الوضعي" en="Postural Assessment" />
+        <SecHead label="التقييم الوضعي" />
         <View style={S.twoCol}>
           <View style={S.col}>
-            <F label="الوضع الجلوسي / Seated Position" value={postural.seatedPosition} />
-            <F label="التحكم بالجذع / Trunk Control" value={postural.trunkControl} />
+            <F label="الوضع الجلوسي"   value={postural.seatedPosition} />
+            <F label="التحكم بالجذع"   value={postural.trunkControl} />
           </View>
           <View style={S.col}>
-            <F label="التشخيص / Diagnosis" value={postural.diagnosis} />
+            <F label="التشخيص"         value={postural.diagnosis} />
           </View>
         </View>
         {posturalFindings.length > 0 && (
           <View style={{ marginTop: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>النتائج الإيجابية / Positive Findings:</Text>
+            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>النتائج الإيجابية:</Text>
             <Chips items={posturalFindings} />
           </View>
         )}
-        {postural.pelvisOther && <F label="أخرى (حوض) / Pelvis Other" value={postural.pelvisOther} />}
-        {postural.feetOther && <F label="أخرى (قدم) / Feet Other" value={postural.feetOther} />}
-        <F label="ملاحظات التشنج / Spasticity Notes" value={postural.spasticityNotes} />
-        <F label="ملاحظات عامة / General Notes" value={postural.generalNotes} />
+        {postural.pelvisOther    && <F label="ملاحظات الحوض"    value={postural.pelvisOther} />}
+        {postural.feetOther      && <F label="ملاحظات القدم"     value={postural.feetOther} />}
+        <F label="ملاحظات التشنج"   value={postural.spasticityNotes} />
+        <F label="ملاحظات عامة"     value={postural.generalNotes} />
 
         {/* ── 7. خطة العلاج ── */}
-        <SecHead ar="خطة العلاج" en="Treatment Plan" />
+        <SecHead label="خطة العلاج" />
         <View style={S.twoCol}>
           <View style={S.col}>
-            <F label="من تاريخ / From" value={data.planHeader.treatmentFrom} />
-            <F label="إلى تاريخ / To" value={data.planHeader.treatmentTo} />
-            <F label="عدد الزيارات / Anticipated Visits" value={data.planHeader.anticipatedVisits} />
+            <F label="من تاريخ"       value={data.planHeader.treatmentFrom} />
+            <F label="إلى تاريخ"      value={data.planHeader.treatmentTo} />
+            <F label="عدد الزيارات"   value={data.planHeader.anticipatedVisits} />
           </View>
           <View style={S.col}>
-            <F label="الملاحظة / Observation" value={data.planObservation} />
-            <F label="الملاحظات / Remarks" value={data.planRemarks} />
+            <F label="الملاحظة"       value={data.planObservation} />
+            <F label="ملاحظات"        value={data.planRemarks} />
           </View>
         </View>
         {data.planModalities.length > 0 && (
           <View style={{ marginTop: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العلاجات / Modalities:</Text>
+            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العلاجات المقترحة:</Text>
             <Chips items={data.planModalities.map((m) => THERAPY_MODALITY_LABELS[m] ?? m)} />
-            {data.planOtherModality && <F label="علاجات أخرى / Other Modalities" value={data.planOtherModality} />}
+            {data.planOtherModality && <F label="علاجات أخرى" value={data.planOtherModality} />}
           </View>
         )}
 
-        {/* ── 8. التقييم ── */}
-        <SecHead ar="الملاحظات والتقييم" en="Observation & Evaluation" />
+        {/* ── 8. الملاحظات والتقييم ── */}
+        <SecHead label="الملاحظات والتقييم" />
         {data.evalModalities.length > 0 && (
           <View style={{ marginBottom: 5 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العلاجات المطبقة / Applied Modalities:</Text>
+            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العلاجات المطبقة:</Text>
             <Chips items={data.evalModalities.map((m) => EVALUATION_MODALITY_LABELS[m] ?? m)} />
-            {data.evalOtherModality && <F label="أخرى / Other" value={data.evalOtherModality} />}
+            {data.evalOtherModality && <F label="أخرى" value={data.evalOtherModality} />}
           </View>
         )}
-        <F label="الملاحظات / Notes" value={data.evalNotes} />
-        <F label="التقييم / Evaluation" value={data.evalText} />
+        <F label="الملاحظات" value={data.evalNotes} />
+        <F label="التقييم"   value={data.evalText} />
 
-        {/* ── 9. الجلسات ── */}
-        <SecHead ar="الجلسات العلاجية" en="Therapeutic Sessions" />
+        {/* ── 9. الجلسات العلاجية ── */}
+        <SecHead label="الجلسات العلاجية" />
         {sessions.length === 0 ? (
-          <Text style={S.note}>لا توجد جلسات مسجلة / No sessions recorded</Text>
+          <Text style={S.note}>لا توجد جلسات مسجلة</Text>
         ) : (
           <View style={S.table}>
             <View style={S.tableHeaderRow}>
-              <Text style={[S.tableCellHead, { flex: 0.5 }]}>#</Text>
-              <Text style={S.tableCellHead}>التاريخ / Date</Text>
-              <Text style={S.tableCellHead}>الوقت / Time</Text>
-              <Text style={[S.tableCellHead, { flex: 2 }]}>العلاجات / Modalities</Text>
-              <Text style={[S.tableCellHead, { flex: 2 }]}>ملاحظات / Notes</Text>
+              <Text style={[S.tableCellHead, { flex: 0.4 }]}>#</Text>
+              <Text style={[S.tableCellHead, { flex: 0.9 }]}>التاريخ</Text>
+              <Text style={[S.tableCellHead, { flex: 0.7 }]}>الوقت</Text>
+              <Text style={[S.tableCellHead, { flex: 2 }]}>ملاحظات</Text>
+              <Text style={[S.tableCellHead, { flex: 1.5 }]}>رأي رئيس القسم</Text>
+              <Text style={[S.tableCellHead, { flex: 1.5 }]}>قرار الطبيب</Text>
             </View>
             {[...sessions]
               .sort((a, b) => (a.sessionNumber ?? 0) - (b.sessionNumber ?? 0))
               .map((s, i) => (
-                <View key={i} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]}>
-                  <Text style={[S.tableCell, { flex: 0.5 }]}>{s.sessionNumber}</Text>
-                  <Text style={S.tableCell}>
-                    {new Date(s.sessionDate).toLocaleDateString("en-GB")}
+                <View key={i} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]} wrap={false}>
+                  <Text style={[S.tableCell, { flex: 0.4 }]}>{s.sessionNumber}</Text>
+                  <Text style={[S.tableCell, { flex: 0.9 }]}>
+                    {new Date(s.sessionDate).toLocaleDateString("ar-SA")}
                   </Text>
-                  <Text style={S.tableCell}>{s.sessionTime ?? "—"}</Text>
-                  <Text style={[S.tableCell, { flex: 2 }]}>
-                    {s.modalities?.map((m) => THERAPY_MODALITY_LABELS[m] ?? m).join("، ") || "—"}
-                  </Text>
+                  <Text style={[S.tableCell, { flex: 0.7 }]}>{s.sessionTime ?? "—"}</Text>
                   <Text style={[S.tableCell, { flex: 2 }]}>{s.notes ?? "—"}</Text>
+                  <Text style={[S.tableCell, { flex: 1.5 }]}>{(s as any).supervisorOpinion ?? "—"}</Text>
+                  <Text style={[S.tableCell, { flex: 1.5 }]}>{(s as any).doctorDecision ?? "—"}</Text>
                 </View>
               ))}
           </View>
@@ -732,7 +758,7 @@ const PhysioPdfDoc = ({ data }: { data: PhysioCasePdfData }) => {
         {/* ── 10. رأي رئيس القسم ── */}
         {data.supervisorGaze && (
           <>
-            <SecHead ar="رأي رئيس القسم" en="Supervisor Review" />
+            <SecHead label="رأي رئيس القسم" />
             <Text style={S.fieldValue}>{data.supervisorGaze}</Text>
           </>
         )}
@@ -740,22 +766,17 @@ const PhysioPdfDoc = ({ data }: { data: PhysioCasePdfData }) => {
         {/* ── 11. الملخص النهائي ── */}
         {data.finalSummary && (
           <>
-            <SecHead ar="الملخص النهائي" en="Final Summary" />
+            <SecHead label="الملخص النهائي" />
             <Text style={S.fieldValue}>{data.finalSummary}</Text>
           </>
         )}
 
-        {/* ── Signature line ── */}
+        {/* ── توقيعات ── */}
         <View style={{ marginTop: 30, flexDirection: "row-reverse", justifyContent: "space-around" }}>
-          {[
-            { ar: "توقيع المعالج الفيزيائي", en: "Physiotherapist Signature" },
-            { ar: "توقيع المريض", en: "Patient Signature" },
-            { ar: "توقيع رئيس القسم", en: "Supervisor Signature" },
-          ].map((sig, i) => (
+          {["توقيع المعالج الفيزيائي", "توقيع المريض", "توقيع رئيس القسم"].map((label, i) => (
             <View key={i} style={{ alignItems: "center", gap: 6 }}>
               <View style={{ width: 100, borderBottomWidth: 0.5, borderBottomColor: TEXT }} />
-              <Text style={{ fontSize: 8, color: MUTED, textAlign: "center" }}>{sig.ar}</Text>
-              <Text style={{ fontSize: 7, color: MUTED, textAlign: "center" }}>{sig.en}</Text>
+              <Text style={{ fontSize: 8.5, color: MUTED, textAlign: "center" }}>{label}</Text>
             </View>
           ))}
         </View>
@@ -764,7 +785,7 @@ const PhysioPdfDoc = ({ data }: { data: PhysioCasePdfData }) => {
   );
 };
 
-// ── Public export function ─────────────────────────────────────────────────────
+// ── Public export ─────────────────────────────────────────────────────────────
 
 let fontsRegistered = false;
 
@@ -774,18 +795,20 @@ export async function downloadPhysioCasePdf(data: PhysioCasePdfData): Promise<vo
     Font.register({
       family: "Amiri",
       fonts: [
-        { src: `${origin}/fonts/amiri-regular.ttf`, fontWeight: "normal", fontStyle: "normal" },
-        { src: `${origin}/fonts/amiri-bold.ttf`, fontWeight: "bold", fontStyle: "normal" },
-        { src: `${origin}/fonts/amiri-italic.ttf`, fontWeight: "normal", fontStyle: "italic" },
+        { src: `${origin}/fonts/amiri-regular.ttf`, fontWeight: "normal",  fontStyle: "normal" },
+        { src: `${origin}/fonts/amiri-bold.ttf`,    fontWeight: "bold",    fontStyle: "normal" },
+        { src: `${origin}/fonts/amiri-italic.ttf`,  fontWeight: "normal",  fontStyle: "italic" },
       ],
     });
+    Font.registerHyphenationCallback((word) => [word]);
     fontsRegistered = true;
   }
 
-  const blob = await pdf(<PhysioPdfDoc data={data} />).toBlob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
+  const origin = window.location.origin;
+  const blob = await pdf(<PhysioPdfDoc data={data} origin={origin} />).toBlob();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
   a.download = `physio-${data.patient.patientNumber}-${data.caseId.slice(-8)}.pdf`;
   document.body.appendChild(a);
   a.click();
