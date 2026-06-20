@@ -238,15 +238,83 @@ export interface PhysioCasePdfData {
 
 // ── Helper components ──────────────────────────────────────────────────────────
 
+// ── Arabic pre-shaper ─────────────────────────────────────────────────────────
+// react-pdf's Arabic shaping is unreliable; we pre-shape to Presentation Forms.
+const _AF: Record<number, readonly [string,string,string,string]> = {
+  0x0626:['ﺉ','ﺊ','ﺋ','ﺌ'],
+  0x0627:['ﺍ','ﺎ','',''],
+  0x0628:['ﺏ','ﺐ','ﺑ','ﺒ'],
+  0x0629:['ﺓ','ﺔ','',''],
+  0x062A:['ﺕ','ﺖ','ﺗ','ﺘ'],
+  0x062B:['ﺙ','ﺚ','ﺛ','ﺜ'],
+  0x062C:['ﺝ','ﺞ','ﺟ','ﺠ'],
+  0x062D:['ﺡ','ﺢ','ﺣ','ﺤ'],
+  0x062E:['ﺥ','ﺦ','ﺧ','ﺨ'],
+  0x062F:['ﺩ','ﺪ','',''],
+  0x0630:['ﺫ','ﺬ','',''],
+  0x0631:['ﺭ','ﺮ','',''],
+  0x0632:['ﺯ','ﺰ','',''],
+  0x0633:['ﺱ','ﺲ','ﺳ','ﺴ'],
+  0x0634:['ﺵ','ﺶ','ﺷ','ﺸ'],
+  0x0635:['ﺹ','ﺺ','ﺻ','ﺼ'],
+  0x0636:['ﺽ','ﺾ','ﺿ','ﻀ'],
+  0x0637:['ﻁ','ﻂ','ﻃ','ﻄ'],
+  0x0638:['ﻅ','ﻆ','ﻇ','ﻈ'],
+  0x0639:['ﻉ','ﻊ','ﻋ','ﻌ'],
+  0x063A:['ﻍ','ﻎ','ﻏ','ﻐ'],
+  0x0641:['ﻑ','ﻒ','ﻓ','ﻔ'],
+  0x0642:['ﻕ','ﻖ','ﻗ','ﻘ'],
+  0x0643:['ﻙ','ﻚ','ﻛ','ﻜ'],
+  0x0644:['ﻝ','ﻞ','ﻟ','ﻠ'],
+  0x0645:['ﻡ','ﻢ','ﻣ','ﻤ'],
+  0x0646:['ﻥ','ﻦ','ﻧ','ﻨ'],
+  0x0647:['ﻩ','ﻪ','ﻫ','ﻬ'],
+  0x0648:['ﻭ','ﻮ','',''],
+  0x0649:['ﻯ','ﻰ','',''],
+  0x064A:['ﻱ','ﻲ','ﻳ','ﻴ'],
+};
+// Non-joining: connect to right only (ا و ر ز د ذ ة ى ...)
+const _ANJ = new Set([0x0621,0x0622,0x0623,0x0624,0x0625,0x0627,0x0629,0x062F,0x0630,0x0631,0x0632,0x0648,0x0649]);
+// Mandatory lam-alef ligatures
+const _ALA: Record<number,[string,string]> = {
+  0x0622:['ﻵ','ﻶ'],
+  0x0623:['ﻷ','ﻸ'],
+  0x0625:['ﻹ','ﻺ'],
+  0x0627:['ﻻ','ﻼ'],
+};
+
+function ar(s: string): string {
+  if (!s || !/[؀-ۿ]/.test(s)) return s;
+  const cs = [...s];
+  const res: string[] = [];
+  for (let i = 0; i < cs.length; i++) {
+    const c = cs[i].codePointAt(0) ?? 0;
+    const f = _AF[c];
+    if (!f) { res.push(cs[i]); continue; }
+    const p = i > 0 ? (cs[i-1].codePointAt(0) ?? 0) : 0;
+    const n = i+1 < cs.length ? (cs[i+1].codePointAt(0) ?? 0) : 0;
+    // Lam-Alef mandatory ligature
+    if (c === 0x0644 && _ALA[n]) {
+      const pj = !!(p && _AF[p] && !_ANJ.has(p));
+      res.push(_ALA[n][pj ? 1 : 0]);
+      i++; continue;
+    }
+    const pj = !!(p && _AF[p] && !_ANJ.has(p));
+    const nj = !_ANJ.has(c) && !!(n && _AF[n]);
+    res.push(f[pj&&nj?3:pj?1:nj?2:0] || cs[i]);
+  }
+  return res.join('');
+}
+
 const SecHead = ({ label, break: brk }: { label: string; break?: boolean }) => (
   <View style={S.sectionHeader} break={brk}>
-    <Text style={S.sectionHeaderText}>{label}</Text>
+    <Text style={S.sectionHeaderText}>{ar(label)}</Text>
   </View>
 );
 
 const SubHead = ({ label }: { label: string }) => (
   <View style={S.subHeader}>
-    <Text style={S.subHeaderText}>{label}</Text>
+    <Text style={S.subHeaderText}>{ar(label)}</Text>
   </View>
 );
 
@@ -254,8 +322,8 @@ const F = ({ label, value }: { label: string; value?: string | number | null }) 
   const v = value == null ? "" : String(value).trim();
   return (
     <View style={S.fieldRow} wrap={false}>
-      <Text style={S.fieldLabel}>{label}{"‏"}</Text>
-      <Text style={S.fieldValue}>{v || "—"}</Text>
+      <Text style={S.fieldLabel}>{ar(label)}</Text>
+      <Text style={S.fieldValue}>{ar(v) || "—"}</Text>
     </View>
   );
 };
@@ -264,7 +332,7 @@ const Bool = ({ label, value, showNo = true }: { label: string; value: boolean; 
   if (!value && !showNo) return null;
   return (
     <View style={S.fieldRow} wrap={false}>
-      <Text style={S.fieldLabel}>{label}{"‏"}</Text>
+      <Text style={S.fieldLabel}>{ar(label)}</Text>
       <Text style={[S.fieldValue, value ? S.yes : S.no]}>
         {value ? "✓ نعم" : "✗ لا"}
       </Text>
@@ -277,8 +345,8 @@ const FC = ({ label, value }: { label: string; value?: string | number | null })
   const v = value == null ? "" : String(value).trim();
   return (
     <View style={{ marginBottom: 6 }} wrap={false}>
-      <Text style={{ fontSize: 7.5, color: MUTED, marginBottom: 2 }}>{label}</Text>
-      <Text style={{ fontSize: 10, color: TEXT, fontWeight: "bold" }}>{v || "—"}</Text>
+      <Text style={{ fontSize: 7.5, color: MUTED, marginBottom: 2 }}>{ar(label)}</Text>
+      <Text style={{ fontSize: 10, color: TEXT, fontWeight: "bold" }}>{ar(v) || "—"}</Text>
     </View>
   );
 };
@@ -288,7 +356,7 @@ const Chips = ({ items }: { items: string[] }) => {
   return (
     <View style={S.chipsWrap}>
       {items.map((item, i) => (
-        <Text key={i} style={S.chip}>{item}</Text>
+        <Text key={i} style={S.chip}>{ar(item)}</Text>
       ))}
     </View>
   );
