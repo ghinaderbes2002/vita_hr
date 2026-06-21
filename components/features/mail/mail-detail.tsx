@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History, AlertCircle, Bold, Underline, Italic } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -28,9 +28,9 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useMailMessage, useMailThread, useArchiveFolders, useDeleteMail, useMoveMail, useEditMail } from "@/lib/hooks/use-mail";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAllUsers } from "@/lib/hooks/use-users";
 import { AttachmentList } from "./attachment-list";
 import { ComposeMailModal } from "./compose-mail-modal";
-import { EmployeeName } from "./employee-name";
 
 interface Props {
   messageId: string;
@@ -46,6 +46,15 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const moveMail   = useMoveMail();
   const editMail   = useEditMail();
   const { user }   = useAuthStore();
+  const { data: allUsersData } = useAllUsers();
+  const empNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    const users = (allUsersData as any)?.data?.items ?? (allUsersData as any)?.data ?? [];
+    for (const u of users) {
+      if (u.id && u.fullName) map[u.id] = u.fullName;
+    }
+    return map;
+  }, [allUsersData]);
   const [replyOpen, setReplyOpen]       = useState(false);
   const [replyAll, setReplyAll]         = useState(false);
   const [forwardOpen, setForwardOpen]   = useState(false);
@@ -309,7 +318,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground w-10 shrink-0">{t("from")}</span>
             <span className="font-medium">
-              {senderName ?? <EmployeeName userId={message.senderId} />}
+              {senderName ?? empNameById[message.senderId] ?? null}
             </span>
           </div>
           <div className="flex items-start gap-2">
@@ -318,12 +327,12 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
               {toRecipients.length > 0
                 ? toRecipients.map((r) => {
                     const info = r.employeeInfo ?? r.recipient;
+                    const name = info
+                      ? `${info.firstNameAr} ${info.lastNameAr}`
+                      : empNameById[r.recipientId];
+                    if (!name) return null;
                     return (
-                      <Badge key={r.id} variant="secondary" className="text-xs">
-                        {info
-                          ? `${info.firstNameAr} ${info.lastNameAr}`
-                          : <EmployeeName userId={r.recipientId} />}
-                      </Badge>
+                      <Badge key={r.id} variant="secondary" className="text-xs">{name}</Badge>
                     );
                   })
                 : <span className="text-muted-foreground">—</span>}
@@ -335,12 +344,12 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
               <div className="flex flex-wrap gap-1">
                 {ccRecipients.map((r) => {
                   const info = r.employeeInfo ?? r.recipient;
+                  const name = info
+                    ? `${info.firstNameAr} ${info.lastNameAr}`
+                    : empNameById[r.recipientId];
+                  if (!name) return null;
                   return (
-                    <Badge key={r.id} variant="outline" className="text-xs">
-                      {info
-                        ? `${info.firstNameAr} ${info.lastNameAr}`
-                        : <EmployeeName userId={r.recipientId} />}
-                    </Badge>
+                    <Badge key={r.id} variant="outline" className="text-xs">{name}</Badge>
                   );
                 })}
               </div>
@@ -422,7 +431,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 mb-0.5">
                             <span className="text-sm font-semibold truncate">
-                              {senderN ?? <EmployeeName userId={m.senderId} />}
+                              {senderN ?? empNameById[m.senderId] ?? null}
                             </span>
                             <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
                               {format(new Date(m.createdAt), "d MMM · HH:mm", { locale: ar })}

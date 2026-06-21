@@ -22,6 +22,14 @@ export function useUser(id: string) {
   });
 }
 
+export function useAllUsers() {
+  return useQuery({
+    queryKey: ["users-all"],
+    queryFn: () => usersApi.getAll({ page: 1, limit: 500 }),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useCreateUser() {
   const queryClient = useQueryClient();
 

@@ -1408,7 +1408,7 @@ export default function EmployeeDetailsPage() {
         onOpenChange={setSalaryChangeOpen}
         employeeId={employeeId}
         currentSalary={emp?.basicSalary}
-        currentCurrency={emp?.salaryCurrency ?? "SYP"}
+        currentCurrency={emp?.salaryCurrency ?? "USD"}
       />
 
       {/* ─── Start Workflow Dialog ─────────────────────────── */}

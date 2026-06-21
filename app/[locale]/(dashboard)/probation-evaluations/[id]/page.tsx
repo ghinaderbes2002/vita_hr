@@ -475,11 +475,19 @@ export default function ProbationEvaluationDetailPage() {
                 <p className="font-medium text-green-700">{new Date(ev.confirmedMeetingDate).toLocaleString()}</p>
               </div>
             )}
-            <div className="flex gap-4 text-xs text-muted-foreground sm:col-span-2">
-              <span>موظف: {ev.meetingConfirmedByEmployee ? "✓ مؤكد" : "⏳ بانتظار"}</span>
-              <span>مدير مباشر: {ev.meetingConfirmedByManager ? "✓ مؤكد" : "⏳ بانتظار"}</span>
-              <span>مدير تنفيذي: {(ev as any).meetingConfirmedByCeo ? "✓ مؤكد" : "⏳ بانتظار"}</span>
-            </div>
+            {(() => {
+              const ceoConfirmed = !!(ev as any).meetingConfirmedByCeo ||
+                (ev.seniorIsCeo === true && !!ev.meetingConfirmedByManager);
+              return (
+                <div className="flex gap-4 text-xs text-muted-foreground sm:col-span-2">
+                  <span>موظف: {ev.meetingConfirmedByEmployee ? "✓ مؤكد" : "⏳ بانتظار"}</span>
+                  <span>مدير مباشر: {ev.meetingConfirmedByManager ? "✓ مؤكد" : "⏳ بانتظار"}</span>
+                  {!ev.seniorIsCeo && (
+                    <span>مدير تنفيذي: {ceoConfirmed ? "✓ مؤكد" : "⏳ بانتظار"}</span>
+                  )}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       )}
@@ -684,8 +692,8 @@ export default function ProbationEvaluationDetailPage() {
                       </Button>
                     ) : null;
                   })()}
-                  {/* إغلاق التقييم: بعد تأكيد الثلاثة أطراف */}
-                  {ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager && (ev as any).meetingConfirmedByCeo && canHrDocument && (!canCeoDecide || isAdmin()) && (
+                  {/* إغلاق التقييم: بعد تأكيد الموظف + المدير المباشر (يكفي) */}
+                  {(ev.confirmedMeetingDate || ev.meetingConfirmedAt || (ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager)) && canHrDocument && (!canCeoDecide || isAdmin()) && (
                     <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("complete")}>
                       <FileCheck className="h-4 w-4" />إغلاق التقييم
                     </Button>

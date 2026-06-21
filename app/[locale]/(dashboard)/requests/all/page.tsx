@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
 import { CheckCircle, XCircle, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,8 @@ const TYPE_OPTIONS = ["TRANSFER", "RESIGNATION", "REWARD", "OTHER", "PENALTY_PRO
 
 export default function AllRequestsPage() {
   const t = useTranslations();
+  const locale = useLocale();
+  const router = useRouter();
   const { hasPermission, isAdmin } = usePermissions();
   const canApprove = isAdmin() || hasPermission("requests:hr-approve");
   const canReject = isAdmin() || hasPermission("requests:hr-reject");
@@ -131,7 +134,11 @@ export default function AllRequestsPage() {
               </TableRow>
             ) : (
               requests.map((req) => (
-                <TableRow key={req.id}>
+                <TableRow
+                  key={req.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/${locale}/requests/${req.id}`)}
+                >
                   <TableCell className="font-mono text-sm">{req.requestNumber}</TableCell>
                   <TableCell>
                     {req.employee
@@ -144,7 +151,7 @@ export default function AllRequestsPage() {
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(req.createdAt).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {(req.status === "PENDING_HR" || req.status === "IN_APPROVAL") && (canApprove || canReject) && (
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>

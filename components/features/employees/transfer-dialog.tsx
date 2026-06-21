@@ -180,8 +180,7 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
               <Select value={form.salaryCurrency} onValueChange={(v) => set("salaryCurrency", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SYP">ل.س</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="USD">$ (USD)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -208,7 +208,7 @@ export default function HrReportsPage() {
               onChange={(e) => setExchangeRate(Math.max(1, Number(e.target.value)))}
               className="w-24 bg-transparent outline-none text-center font-medium"
             />
-            <span className="text-muted-foreground">SYP</span>
+            <span className="text-muted-foreground">$</span>
           </div>
           <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs"
             onClick={() => {

@@ -68,9 +68,6 @@ apiClient.interceptors.response.use(
 
     // Rate limit (429) — handle globally, except on login (login page shows its own message)
     if (error.response?.status === 429) {
-      if (!originalRequest?.url?.includes('/auth/login')) {
-        toast.error("تجاوزت الحد المسموح، يرجى الانتظار قليلاً والمحاولة مجدداً");
-      }
       return Promise.reject(error);
     }
 

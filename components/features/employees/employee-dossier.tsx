@@ -18,10 +18,9 @@ function fmtDate(d: string) {
   catch { return d; }
 }
 
-function fmtMoney(amount?: number, currency?: string) {
+function fmtMoney(amount?: number, _currency?: string) {
   if (!amount) return "—";
-  const cur = currency ?? "SYP";
-  return `${amount.toLocaleString("en-US")} ${cur === "USD" ? "$" : "ل.س"}`;
+  return `${amount.toLocaleString("en-US")} $`;
 }
 
 // ─── event meta ───────────────────────────────────────────────────────────────
@@ -107,7 +106,7 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
   // currency: new structure is v.salary.currency; fall back to flat fields for old events
   function getCurrency(v: Record<string, any>): string {
     return v.salary?.currency ?? v.salaryCurrency ?? v.newSalaryCurrency ?? v.currency ??
-           (ev as any).salaryCurrency ?? "SYP";
+           (ev as any).salaryCurrency ?? "USD";
   }
 
   const hasChanges = ev.category === "HISTORY" && (

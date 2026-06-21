@@ -1,13 +1,7 @@
 "use client";
 
-import { useUser } from "@/lib/hooks/use-users";
+interface Props { userId: string; }
 
-interface Props {
-  userId: string;
-}
-
-export function EmployeeName({ userId }: Props) {
-  const { data } = useUser(userId);
-  if (data?.fullName) return <>{data.fullName}</>;
-  return <>{userId}</>;
+export function EmployeeName({ userId: _userId }: Props) {
+  return null;
 }

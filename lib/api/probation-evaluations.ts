@@ -75,8 +75,10 @@ export interface ProbationEvaluation {
   employee?: { firstNameAr: string; lastNameAr: string; employeeNumber: string };
   meetingProposedAt?: string;
   confirmedMeetingDate?: string;
+  meetingConfirmedAt?: string;
   meetingConfirmedByEmployee?: boolean;
   meetingConfirmedByManager?: boolean;
+  seniorIsCeo?: boolean;
 }
 
 // POST /probation-evaluations

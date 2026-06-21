@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X, AlertCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { mailApi } from "@/lib/api/mail";
 import {
   useUpdateRead, useUpdateStar, useMoveMail,
 } from "@/lib/hooks/use-mail";
-import { EmployeeName } from "./employee-name";
+import { useAllUsers } from "@/lib/hooks/use-users";
 import type { MailFolder } from "@/lib/api/mail";
 
 interface Props {
@@ -68,6 +68,15 @@ export function MailList({
   const updateRead = useUpdateRead();
   const updateStar = useUpdateStar();
   const moveMail   = useMoveMail();
+  const { data: allUsersData } = useAllUsers();
+  const userNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    const users = (allUsersData as any)?.data?.items ?? (allUsersData as any)?.data ?? [];
+    for (const u of users) {
+      if (u.id && u.fullName) map[u.id] = u.fullName;
+    }
+    return map;
+  }, [allUsersData]);
 
   // DRAFTS still returns message objects directly; all other folders return recipient-wrapped items
   const isDraft = folder === "DRAFTS";
@@ -281,7 +290,7 @@ export function MailList({
 
                 {/* Sender */}
                 <span className={cn("w-32 shrink-0 text-sm truncate", unread ? "font-semibold" : "text-muted-foreground")}>
-                  {(() => { const s = getSender(item); return s.name ?? <EmployeeName userId={s.id!} />; })()}
+                  {(() => { const s = getSender(item); return s.name ?? (s.id ? userNameById[s.id] ?? null : null); })()}
                 </span>
 
                 {/* Subject + preview */}

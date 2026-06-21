@@ -44,6 +44,7 @@ export function resolveNotificationLink(notif: Notification): string | null {
     case "ATTENDANCE_NEEDS_REVIEW":     return "/attendance/needs-review";
     case "BREAK_EXCEEDED":              return "/attendance/records";
     case "PROBATION_REMINDER":
+      return d.evaluationId ? `/probation-evaluations/${d.evaluationId}` : "/probation-evaluations";
     case "PROBATION_END_REMINDER":      return "/probation-evaluations";
     case "ONBOARDING_TASK":
     case "OFFBOARDING_TASK":            return "/onboarding/workflows";

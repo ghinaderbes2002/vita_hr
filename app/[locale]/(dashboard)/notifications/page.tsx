@@ -7,7 +7,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { ar } from "date-fns/locale";
 import {
   Bell, CheckCheck, AlertTriangle, CheckCircle2, XCircle, Info, ExternalLink,
-  Clock, FileWarning, CalendarX, User, ClipboardList, FileCheck, Briefcase,
+  Clock, FileWarning, CalendarX, CalendarClock, User, ClipboardList, FileCheck, Briefcase,
   Cake, UserPlus, FileX, ListTodo, UserX, Filter, ChevronDown, Mail, Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   ATTENDANCE_ALERT:               { icon: AlertTriangle, color: "text-red-600",    bg: "bg-red-100",    label: "تنبيه حضور" },
   ATTENDANCE_JUSTIFICATION:       { icon: FileCheck,     color: "text-orange-600", bg: "bg-orange-100", label: "تبرير حضور" },
   EVALUATION_ASSIGNED:            { icon: ClipboardList, color: "text-purple-600", bg: "bg-purple-100", label: "تقييم التجربة" },
+  PROBATION_REMINDER:             { icon: CalendarClock, color: "text-teal-600",   bg: "bg-teal-100",   label: "تذكير تقييم التجربة" },
   PROBATION_END_REMINDER:         { icon: Clock,         color: "text-orange-600", bg: "bg-orange-100", label: "انتهاء التجربة" },
   DOCUMENT_EXPIRY:                { icon: FileWarning,   color: "text-red-600",    bg: "bg-red-100",    label: "انتهاء وثيقة" },
   BIRTHDAY:                       { icon: Cake,          color: "text-pink-600",   bg: "bg-pink-100",   label: "عيد ميلاد 🎂" },
@@ -58,7 +59,7 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   GENERAL:                        { icon: Info,          color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },
 };
 
-const EVAL_TYPES = ["PROBATION_END_REMINDER", "EVALUATION_ASSIGNED"];
+const EVAL_TYPES = ["PROBATION_END_REMINDER", "EVALUATION_ASSIGNED", "PROBATION_REMINDER"];
 
 const TYPE_LABELS: Record<string, string> = Object.fromEntries(
   Object.entries(TYPE_CONFIG).map(([k, v]) => [k, v.label])
