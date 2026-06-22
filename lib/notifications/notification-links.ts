@@ -9,7 +9,9 @@ export function resolveNotificationLink(notif: Notification): string | null {
 
   switch (notif.type) {
     case "GENERAL":
-      return d.messageId ? `/mail?messageId=${d.messageId}` : null;
+      if (d.messageId) return `/mail?messageId=${d.messageId}`;
+      if (d.requestId) return `/requests/${d.requestId}`;
+      return null;
 
     case "PENALTY_DECISION":
     case "REWARD_DECISION":

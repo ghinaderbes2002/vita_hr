@@ -304,7 +304,8 @@ export default function PhysioCasePage() {
   // ── Pain map state ───────────────────────────────────────────────────────────
   const [painRegions, setPainRegions] = useState<PainRegion[]>([]);
   const [painTypes, setPainTypes] = useState<string[]>([]);
-  const [painTypeOther, setPainTypeOther] = useState("");
+  const [customPainTypes, setCustomPainTypes] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [pendingCustomPain, setPendingCustomPain] = useState<{ name: string; color: string } | null>(null);
   const [aggravatingFactors, setAggravatingFactors] = useState<string[]>([]);
   const [alleviatingFactors, setAlleviatingFactors] = useState<string[]>([]);
   const [aggravatingOther, setAggravatingOther] = useState("");
@@ -523,7 +524,7 @@ export default function PhysioCasePage() {
       setPainRegions(caseData.painMap.regions);
     }
     if (caseData.painTypes?.length) setPainTypes(caseData.painTypes);
-    if (caseData.painTypeOther) setPainTypeOther(caseData.painTypeOther);
+    if (caseData.customPainTypes?.length) setCustomPainTypes(caseData.customPainTypes);
     if (caseData.aggravatingFactors?.length)
       setAggravatingFactors(caseData.aggravatingFactors);
     if (caseData.alleviatingFactors?.length)
@@ -832,10 +833,12 @@ export default function PhysioCasePage() {
       id,
       dto: {
         regions: painRegions,
-        painTypes: painTypes.length ? painTypes : undefined,
-        painTypeOther: painTypes.includes("OTHER")
-          ? painTypeOther || undefined
-          : undefined,
+        painTypes: (() => {
+          const types = [...painTypes];
+          if (customPainTypes.length && !types.includes("OTHER")) types.push("OTHER");
+          return types.length ? types : undefined;
+        })(),
+        customPainTypes: customPainTypes.length ? customPainTypes : undefined,
         aggravatingFactors: aggravatingFactors.length
           ? aggravatingFactors
           : undefined,
@@ -1111,7 +1114,8 @@ export default function PhysioCasePage() {
         complaint,
         painRegions,
         painTypes,
-        painTypeOther,
+        painTypeOther: "",
+        customPainTypes,
         aggravatingFactors,
         alleviatingFactors,
         aggravatingOther,
@@ -1129,6 +1133,11 @@ export default function PhysioCasePage() {
           treatmentFrom: planHeader.treatmentFrom,
           treatmentTo: planHeader.treatmentTo,
           anticipatedVisits: planHeader.anticipatedVisits,
+          physiotherapistName: (() => {
+            const emp = physioEmployees.find((e) => planPhysiotherapistIds.includes(e.id));
+            return emp ? `${emp.firstNameAr} ${emp.lastNameAr}` : undefined;
+          })(),
+          caseManagerName: allUsers.find((u) => u.id === planHeader.caseManagerId)?.fullName,
         },
         planRemarks,
         planObservation,
@@ -1138,6 +1147,7 @@ export default function PhysioCasePage() {
         evalText,
         sessions,
         supervisorGaze,
+        doctorGaze,
         finalSummary,
       });
       toast.success(t("sessions.pdfExported"));
@@ -1734,22 +1744,74 @@ export default function PhysioCasePage() {
         <TabsContent value="pain_map" className="mt-4 space-y-4">
           <Section title={t("painMap.painTypesTitle")}>
             <div className="flex flex-wrap gap-2">
-              {(["NORMAL","NUMBNESS","DULL_ACHE","HOT_BURNING","SHARP_STABBING","PINS","OTHER"] as const).map((v) => (
+              {(["NORMAL","NUMBNESS","DULL_ACHE","HOT_BURNING","SHARP_STABBING","PINS"] as const).map((v) => (
                 <ToggleChip
                   key={v}
                   label={t(`painMap.${v}`)}
                   active={painTypes.includes(v)}
-                  onClick={() => toggleArr(painTypes, v, setPainTypes)}
+                  onClick={() => canEdit && toggleArr(painTypes, v, setPainTypes)}
                 />
               ))}
+              {customPainTypes.map((ct) => (
+                <div key={ct.id} className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border"
+                  style={{ borderColor: ct.color, backgroundColor: ct.color + "20", color: ct.color }}>
+                  <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ct.color }} />
+                  {ct.name || "أخرى"}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomPainTypes((prev) => prev.filter((c) => c.id !== ct.id))}
+                      className="opacity-60 hover:opacity-100 mr-0.5 text-[11px] leading-none"
+                    >×</button>
+                  )}
+                </div>
+              ))}
+              {canEdit && !pendingCustomPain && (
+                <button
+                  type="button"
+                  onClick={() => setPendingCustomPain({ name: "", color: "#00BCD4" })}
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs rounded-full border border-dashed border-muted-foreground text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  + إضافة نوع
+                </button>
+              )}
             </div>
-            {painTypes.includes("OTHER") && (
-              <Input
-                className="mt-2"
-                placeholder={t("other")}
-                value={painTypeOther}
-                onChange={(e) => setPainTypeOther(e.target.value)}
-              />
+            {pendingCustomPain && canEdit && (
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  type="color"
+                  value={pendingCustomPain.color}
+                  onChange={(e) => setPendingCustomPain((p) => p && { ...p, color: e.target.value })}
+                  className="w-9 h-8 rounded cursor-pointer border border-input p-0.5 bg-background"
+                />
+                <Input
+                  placeholder="اسم النوع (مثلاً: وخز كهربائي)"
+                  value={pendingCustomPain.name}
+                  onChange={(e) => setPendingCustomPain((p) => p && { ...p, name: e.target.value })}
+                  className="flex-1"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!pendingCustomPain.name.trim()) return;
+                    const id = `CUSTOM_${Date.now()}`;
+                    const newType = { id, ...pendingCustomPain };
+                    setCustomPainTypes((prev) => [...prev, newType]);
+                    setPendingCustomPain(null);
+                  }}
+                  className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  تم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingCustomPain(null)}
+                  className="px-3 py-1.5 text-xs border rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
             )}
           </Section>
           <Section title={t("painMap.mapTitle")}>
@@ -1757,6 +1819,7 @@ export default function PhysioCasePage() {
               points={painRegions as any}
               onChange={(pts) => setPainRegions(pts as any)}
               readonly={!canEdit}
+              customTypes={customPainTypes}
             />
           </Section>
           <Section title={t("painMap.factorsTitle")}>
@@ -2922,37 +2985,22 @@ export default function PhysioCasePage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">{t("treatmentPlan.physiotherapistName")}</Label>
-                <div className="rounded-md border max-h-40 overflow-y-auto divide-y">
-                  {physioEmployees.length === 0 ? (
-                    <p className="text-xs text-muted-foreground p-2">{t("loadingData")}</p>
-                  ) : (
-                    physioEmployees.map((emp) => {
-                      const selected = planPhysiotherapistIds.includes(emp.id);
-                      return (
-                        <label
-                          key={emp.id}
-                          className={`flex items-center gap-2 px-3 py-2 cursor-pointer text-sm hover:bg-muted/50 transition-colors ${!canEdit ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 shrink-0 accent-primary"
-                            checked={selected}
-                            disabled={!canEdit}
-                            onChange={() => {
-                              if (!canEdit) return;
-                              setPlanPhysiotherapistIds((prev) =>
-                                selected
-                                  ? prev.filter((x) => x !== emp.id)
-                                  : [...prev, emp.id],
-                              );
-                            }}
-                          />
-                          {emp.firstNameAr} {emp.lastNameAr}
-                        </label>
-                      );
-                    })
-                  )}
-                </div>
+                <Select
+                  value={planPhysiotherapistIds[0] ?? ""}
+                  onValueChange={(v) => canEdit && setPlanPhysiotherapistIds(v ? [v] : [])}
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("treatmentPlan.physiotherapistName")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {physioEmployees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.firstNameAr} {emp.lastNameAr}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5 col-span-2">
                 <Label className="text-sm">{t("treatmentPlan.caseManager")}</Label>

@@ -3350,7 +3350,7 @@
           "careProvider": "مقدم الرعاية"
         },
         "complaint": {
-          "title": "الشكوى الرئيسية",
+          "title": "الشكوى",
           "majorComplaint": "ماهي شكواك الرئيسية؟",
           "symptoms": "ماهي الأعراض التي تعاني منها؟",
           "possibleCause": "السبب المحتمل",

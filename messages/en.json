@@ -3194,7 +3194,7 @@
           "careProvider": "Care Provider"
         },
         "complaint": {
-          "title": "Chief Complaint",
+          "title": "Complaint",
           "majorComplaint": "What is your chief complaint?",
           "symptoms": "What symptoms are you experiencing?",
           "possibleCause": "Possible Cause",

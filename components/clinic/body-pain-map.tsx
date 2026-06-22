@@ -10,13 +10,12 @@ import { Button } from "@/components/ui/button";
 // ─── Pain type colors & labels ────────────────────────────────────────────────
 
 export const PAIN_TYPE_COLORS: Record<string, string> = {
-  NORMAL:         "#ef4444", // أحمر
-  NUMBNESS:       "#22c55e", // أخضر
-  DULL_ACHE:      "#f97316", // برتقالي
-  HOT_BURNING:    "#fb923c", // برتقالي فاتح
-  SHARP_STABBING: "#a855f7", // بنفسجي
-  PINS:           "#eab308", // أصفر
-  OTHER:          "#3b82f6", // أزرق
+  NORMAL:         "#ef4444",
+  NUMBNESS:       "#22c55e",
+  DULL_ACHE:      "#f97316",
+  HOT_BURNING:    "#fb923c",
+  SHARP_STABBING: "#a855f7",
+  PINS:           "#eab308",
 };
 
 const PAIN_TYPE_LABELS: Record<string, string> = {
@@ -26,12 +25,21 @@ const PAIN_TYPE_LABELS: Record<string, string> = {
   HOT_BURNING:    "حارق",
   SHARP_STABBING: "حاد",
   PINS:           "واخز",
-  OTHER:          "أخرى",
 };
 
-const PAIN_TYPES = Object.keys(PAIN_TYPE_COLORS);
+const FIXED_PAIN_TYPES = Object.keys(PAIN_TYPE_COLORS);
 
-function getDotColor(painType?: string) {
+export interface CustomPainType {
+  id: string;
+  name: string;
+  color: string;
+}
+
+function getDotColor(painType?: string, customTypes?: CustomPainType[]) {
+  if (painType && customTypes) {
+    const custom = customTypes.find((c) => c.id === painType);
+    if (custom) return custom.color;
+  }
   return PAIN_TYPE_COLORS[painType ?? ""] ?? "#ef4444";
 }
 
@@ -42,9 +50,10 @@ interface HumanBodyMapProps {
   onAreaClick?: (x: number, y: number) => void;
   onPointClick?: (index: number) => void;
   readonly?: boolean;
+  customTypes?: CustomPainType[];
 }
 
-function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false }: HumanBodyMapProps) {
+function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false, customTypes }: HumanBodyMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleContainerClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -69,33 +78,30 @@ function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false }: H
         className="w-full h-auto block"
         draggable={false}
       />
-
       {points.map((pt, i) => {
-        const color = getDotColor(pt.painType);
+        const color = getDotColor(pt.painType, customTypes);
         return (
           <div
             key={i}
             data-pain-marker="1"
-            title={PAIN_TYPE_LABELS[pt.painType ?? ""] ?? ""}
             onClick={(e) => { e.stopPropagation(); if (!readonly) onPointClick?.(i); }}
             style={{
               position: "absolute",
               left: `${pt.x}%`,
               top: `${pt.y}%`,
               transform: "translate(-50%, -50%)",
-              width: "12px",
-              height: "12px",
+              width: 14,
+              height: 14,
               borderRadius: "50%",
               backgroundColor: color,
               border: "2px solid white",
-              boxShadow: `0 1px 4px rgba(0,0,0,0.4)`,
+              boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
               cursor: readonly ? "default" : "pointer",
               zIndex: 10,
             }}
           />
         );
       })}
-
       {!readonly && (
         <p className="text-[10px] text-muted-foreground text-center mt-1 select-none pointer-events-none">
           انقر على الجسم لتحديد موقع الألم · انقر على النقطة لحذفها
@@ -111,9 +117,10 @@ interface BodyPainMapProps {
   points: PainPoint[];
   onChange?: (points: PainPoint[]) => void;
   readonly?: boolean;
+  customTypes?: CustomPainType[];
 }
 
-export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapProps) {
+export function BodyPainMap({ points, onChange, readonly = false, customTypes = [] }: BodyPainMapProps) {
   const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
   const [activePainType, setActivePainType] = useState<string>("DULL_ACHE");
 
@@ -127,22 +134,36 @@ export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapP
     setConfirmIndex(null);
   }
 
+  function getColor(type: string) {
+    const custom = customTypes.find((c) => c.id === type);
+    if (custom) return custom.color;
+    return PAIN_TYPE_COLORS[type] ?? "#ef4444";
+  }
+
+  function getLabel(type: string) {
+    const custom = customTypes.find((c) => c.id === type);
+    if (custom) return custom.name || "أخرى";
+    return PAIN_TYPE_LABELS[type] ?? type;
+  }
+
+  const allTypes = [
+    ...FIXED_PAIN_TYPES.map((id) => ({ id, name: PAIN_TYPE_LABELS[id], color: PAIN_TYPE_COLORS[id] })),
+    ...customTypes,
+  ];
+
   return (
     <div className="space-y-3">
-
-      {/* Pain type selector */}
       {!readonly && (
         <div className="space-y-1.5">
           <p className="text-xs text-muted-foreground text-center">اختر نوع الألم قبل التحديد على الجسم</p>
           <div className="flex flex-wrap gap-2 justify-center">
-            {PAIN_TYPES.map((type) => {
-              const color = PAIN_TYPE_COLORS[type];
-              const active = activePainType === type;
+            {allTypes.map(({ id, name, color }) => {
+              const active = activePainType === id;
               return (
                 <button
-                  key={type}
+                  key={id}
                   type="button"
-                  onClick={() => setActivePainType(type)}
+                  onClick={() => setActivePainType(id)}
                   className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-all"
                   style={{
                     borderColor: active ? color : "#e5e7eb",
@@ -152,7 +173,7 @@ export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapP
                   }}
                 >
                   <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-                  {PAIN_TYPE_LABELS[type]}
+                  {name}
                 </button>
               );
             })}
@@ -165,25 +186,24 @@ export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapP
         onAreaClick={readonly ? undefined : handleAdd}
         onPointClick={readonly ? undefined : (i) => setConfirmIndex(i)}
         readonly={readonly}
+        customTypes={customTypes}
       />
 
-      {/* Legend */}
       {readonly && points.length > 0 && (
         <div className="flex flex-wrap gap-2 justify-center">
-          {PAIN_TYPES.filter((t) => points.some((p) => p.painType === t)).map((type) => (
-            <span key={type} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PAIN_TYPE_COLORS[type] }} />
-              {PAIN_TYPE_LABELS[type]}
+          {allTypes.filter(({ id }) => points.some((p) => p.painType === id)).map(({ id, name, color }) => (
+            <span key={id} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+              {name}
             </span>
           ))}
         </div>
       )}
 
-      {/* Point badges */}
       {points.length > 0 && (
         <div className="flex flex-wrap gap-2 justify-center">
           {points.map((pt, i) => {
-            const color = getDotColor(pt.painType);
+            const color = getDotColor(pt.painType, customTypes);
             return (
               <button
                 key={i}
@@ -191,15 +211,11 @@ export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapP
                 onClick={() => !readonly && setConfirmIndex(i)}
                 disabled={readonly}
                 className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border transition-colors disabled:cursor-default"
-                style={{
-                  borderColor: color + "60",
-                  backgroundColor: color + "15",
-                  color: color,
-                }}
+                style={{ borderColor: color + "60", backgroundColor: color + "15", color }}
               >
                 <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                 نقطة {i + 1}
-                {pt.painType && <span className="opacity-70">· {PAIN_TYPE_LABELS[pt.painType]}</span>}
+                {pt.painType && <span className="opacity-70">· {getLabel(pt.painType)}</span>}
                 {!readonly && <span className="opacity-60 text-[10px]">×</span>}
               </button>
             );
@@ -209,9 +225,7 @@ export function BodyPainMap({ points, onChange, readonly = false }: BodyPainMapP
 
       <Dialog open={confirmIndex !== null} onOpenChange={(o) => !o && setConfirmIndex(null)}>
         <DialogContent className="max-w-xs" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>حذف نقطة الألم</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>حذف نقطة الألم</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
             هل تريد حذف نقطة {confirmIndex !== null ? confirmIndex + 1 : ""}؟
           </p>

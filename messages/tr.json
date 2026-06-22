@@ -2287,7 +2287,7 @@
           "careProvider": "Bakım Sağlayıcı"
         },
         "complaint": {
-          "title": "Ana Şikayet",
+          "title": "Şikayet",
           "majorComplaint": "Ana şikayetiniz nedir?",
           "symptoms": "Hangi semptomları yaşıyorsunuz?",
           "possibleCause": "Olası Neden",

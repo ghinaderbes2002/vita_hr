@@ -96,11 +96,11 @@ const S = StyleSheet.create({
   // Field row — label right, value left, both wrap
   fieldRow: {
     flexDirection: "row-reverse",
-    marginBottom: 4,
+    marginBottom: 2,
     flexWrap: "nowrap",
   },
-  fieldLabel: { fontSize: 8.5, color: MUTED, width: 120, flexShrink: 0 },
-  fieldValue: { fontSize: 9.5, color: TEXT, flex: 1 },
+  fieldLabel: { fontSize: 8.5, color: TEXT, flex: 1.2 },
+  fieldValue: { fontSize: 9.5, color: MUTED, flex: 1, textAlign: "right" },
   yes: { color: "#16a34a" },
   no:  { color: "#9ca3af" },
   chipsWrap: {
@@ -162,6 +162,7 @@ export interface PhysioCasePdfData {
   painRegions: PainRegion[];
   painTypes: string[];
   painTypeOther: string;
+  customPainTypes?: { id: string; name: string; color: string }[];
   aggravatingFactors: string[];
   alleviatingFactors: string[];
   aggravatingOther: string;
@@ -224,7 +225,7 @@ export interface PhysioCasePdfData {
   };
   planModalities: TherapyModality[];
   planOtherModality: string;
-  planHeader: { treatmentFrom: string; treatmentTo: string; anticipatedVisits: string };
+  planHeader: { treatmentFrom: string; treatmentTo: string; anticipatedVisits: string; physiotherapistName?: string; caseManagerName?: string };
   planRemarks: string;
   planObservation: string;
   evalModalities: EvaluationModality[];
@@ -233,77 +234,84 @@ export interface PhysioCasePdfData {
   evalText: string;
   sessions: PhysioSession[];
   supervisorGaze: string;
+  doctorGaze: string;
   finalSummary: string;
 }
 
 // ── Helper components ──────────────────────────────────────────────────────────
 
-// ── Arabic pre-shaper ─────────────────────────────────────────────────────────
-// react-pdf's Arabic shaping is unreliable; we pre-shape to Presentation Forms.
+// react-pdf does NOT apply OpenType GSUB for Arabic — letters appear disconnected without
+// pre-shaping. We convert to Unicode Presentation Forms (FB50-FDFF) which Amiri has in its
+// cmap, so fontkit renders the correct contextual glyph for each char.
 const _AF: Record<number, readonly [string,string,string,string]> = {
-  0x0626:['ﺉ','ﺊ','ﺋ','ﺌ'],
-  0x0627:['ﺍ','ﺎ','',''],
-  0x0628:['ﺏ','ﺐ','ﺑ','ﺒ'],
-  0x0629:['ﺓ','ﺔ','',''],
-  0x062A:['ﺕ','ﺖ','ﺗ','ﺘ'],
-  0x062B:['ﺙ','ﺚ','ﺛ','ﺜ'],
-  0x062C:['ﺝ','ﺞ','ﺟ','ﺠ'],
-  0x062D:['ﺡ','ﺢ','ﺣ','ﺤ'],
-  0x062E:['ﺥ','ﺦ','ﺧ','ﺨ'],
-  0x062F:['ﺩ','ﺪ','',''],
-  0x0630:['ﺫ','ﺬ','',''],
-  0x0631:['ﺭ','ﺮ','',''],
-  0x0632:['ﺯ','ﺰ','',''],
-  0x0633:['ﺱ','ﺲ','ﺳ','ﺴ'],
-  0x0634:['ﺵ','ﺶ','ﺷ','ﺸ'],
-  0x0635:['ﺹ','ﺺ','ﺻ','ﺼ'],
-  0x0636:['ﺽ','ﺾ','ﺿ','ﻀ'],
-  0x0637:['ﻁ','ﻂ','ﻃ','ﻄ'],
-  0x0638:['ﻅ','ﻆ','ﻇ','ﻈ'],
-  0x0639:['ﻉ','ﻊ','ﻋ','ﻌ'],
-  0x063A:['ﻍ','ﻎ','ﻏ','ﻐ'],
-  0x0641:['ﻑ','ﻒ','ﻓ','ﻔ'],
-  0x0642:['ﻕ','ﻖ','ﻗ','ﻘ'],
-  0x0643:['ﻙ','ﻚ','ﻛ','ﻜ'],
-  0x0644:['ﻝ','ﻞ','ﻟ','ﻠ'],
-  0x0645:['ﻡ','ﻢ','ﻣ','ﻤ'],
-  0x0646:['ﻥ','ﻦ','ﻧ','ﻨ'],
-  0x0647:['ﻩ','ﻪ','ﻫ','ﻬ'],
-  0x0648:['ﻭ','ﻮ','',''],
-  0x0649:['ﻯ','ﻰ','',''],
-  0x064A:['ﻱ','ﻲ','ﻳ','ﻴ'],
+  0x0622:['آ','ﺂ','',''],   0x0623:['أ','ﺄ','',''],   0x0624:['ؤ','ﺆ','',''],
+  0x0625:['إ','ﺈ','',''],   0x0626:['ﺉ','ﺊ','ﺋ','ﺌ'], 0x0627:['ﺍ','ﺎ','',''],
+  0x0628:['ﺏ','ﺐ','ﺑ','ﺒ'], 0x0629:['ﺓ','ﺔ','',''],   0x062A:['ﺕ','ﺖ','ﺗ','ﺘ'],
+  0x062B:['ﺙ','ﺚ','ﺛ','ﺜ'], 0x062C:['ﺝ','ﺞ','ﺟ','ﺠ'], 0x062D:['ﺡ','ﺢ','ﺣ','ﺤ'],
+  0x062E:['ﺥ','ﺦ','ﺧ','ﺨ'], 0x062F:['ﺩ','ﺪ','',''],   0x0630:['ﺫ','ﺬ','',''],
+  0x0631:['ﺭ','ﺮ','',''],   0x0632:['ﺯ','ﺰ','',''],   0x0633:['ﺱ','ﺲ','ﺳ','ﺴ'],
+  0x0634:['ﺵ','ﺶ','ﺷ','ﺸ'], 0x0635:['ﺹ','ﺺ','ﺻ','ﺼ'], 0x0636:['ﺽ','ﺾ','ﺿ','ﻀ'],
+  0x0637:['ﻁ','ﻂ','ﻃ','ﻄ'], 0x0638:['ﻅ','ﻆ','ﻇ','ﻈ'], 0x0639:['ﻉ','ﻊ','ﻋ','ﻌ'],
+  0x063A:['ﻍ','ﻎ','ﻏ','ﻐ'], 0x0641:['ﻑ','ﻒ','ﻓ','ﻔ'], 0x0642:['ﻕ','ﻖ','ﻗ','ﻘ'],
+  0x0643:['ﻙ','ﻚ','ﻛ','ﻜ'], 0x0644:['ﻝ','ﻞ','ﻟ','ﻠ'], 0x0645:['ﻡ','ﻢ','ﻣ','ﻤ'],
+  0x0646:['ﻥ','ﻦ','ﻧ','ﻨ'], 0x0647:['ﻩ','ﻪ','ﻫ','ﻬ'], 0x0648:['ﻭ','ﻮ','',''],
+  0x0649:['ﻯ','ﻰ','',''],   0x064A:['ﻱ','ﻲ','ﻳ','ﻴ'],
 };
-// Non-joining: connect to right only (ا و ر ز د ذ ة ى ...)
-const _ANJ = new Set([0x0621,0x0622,0x0623,0x0624,0x0625,0x0627,0x0629,0x062F,0x0630,0x0631,0x0632,0x0648,0x0649]);
-// Mandatory lam-alef ligatures
-const _ALA: Record<number,[string,string]> = {
-  0x0622:['ﻵ','ﻶ'],
-  0x0623:['ﻷ','ﻸ'],
-  0x0625:['ﻹ','ﻺ'],
-  0x0627:['ﻻ','ﻼ'],
+// Letters that do NOT join on their LEFT side (non-joining to left / right-joining only)
+const _NJL = new Set([0x0621,0x0622,0x0623,0x0624,0x0625,0x0627,0x0629,0x062F,0x0630,0x0631,0x0632,0x0648,0x0649]);
+// Mandatory lam-alef ligatures [isolated, final]
+const _LA: Record<number,[string,string]> = {
+  0x0622:['ﻵ','ﻶ'], 0x0623:['ﻷ','ﻸ'], 0x0625:['ﻹ','ﻺ'], 0x0627:['ﻻ','ﻼ'],
 };
+// Combining / transparent characters — skip when computing joining context
+const _CMB = new Set([
+  0x0610,0x0611,0x0612,0x0613,0x0614,0x0615,0x0616,0x0617,0x0618,0x0619,0x061A,
+  0x064B,0x064C,0x064D,0x064E,0x064F,0x0650,0x0651,0x0652,0x0653,0x0654,0x0655,
+  0x0656,0x0657,0x0658,0x0659,0x065A,0x065B,0x065C,0x065D,0x065E,0x065F,0x0640,
+]);
 
 function ar(s: string): string {
-  if (!s || !/[؀-ۿ]/.test(s)) return s;
+  if (!s) return "";
+  if (!/[؀-ۿ]/.test(s)) return s;
   const cs = [...s];
-  const res: string[] = [];
+  const out: string[] = [];
+  // Find nearest base (non-combining) codepoint in direction dir from index idx
+  const base = (idx: number, dir: -1 | 1): number => {
+    let i = idx + dir;
+    while (i >= 0 && i < cs.length) {
+      const cp = cs[i].codePointAt(0) ?? 0;
+      if (!_CMB.has(cp)) return cp;
+      i += dir;
+    }
+    return 0;
+  };
+
   for (let i = 0; i < cs.length; i++) {
     const c = cs[i].codePointAt(0) ?? 0;
+    // Combining / transparent → pass through
+    if (_CMB.has(c)) { out.push(cs[i]); continue; }
     const f = _AF[c];
-    if (!f) { res.push(cs[i]); continue; }
-    const p = i > 0 ? (cs[i-1].codePointAt(0) ?? 0) : 0;
-    const n = i+1 < cs.length ? (cs[i+1].codePointAt(0) ?? 0) : 0;
-    // Lam-Alef mandatory ligature
-    if (c === 0x0644 && _ALA[n]) {
-      const pj = !!(p && _AF[p] && !_ANJ.has(p));
-      res.push(_ALA[n][pj ? 1 : 0]);
-      i++; continue;
+    if (!f) { out.push(cs[i]); continue; }
+    const p = base(i, -1);  // previous base char (toward index 0)
+    const n = base(i,  1);  // next base char (toward end)
+    // Mandatory lam-alef ligature
+    if (c === 0x0644 && _LA[n]) {
+      const pj = !!(p && _AF[p] && !_NJL.has(p));
+      out.push(_LA[n][pj ? 1 : 0]);
+      // consume the alef (and any combining marks between lam and alef)
+      i++;
+      while (i + 1 < cs.length && _CMB.has(cs[i + 1].codePointAt(0) ?? 0)) {
+        out.push(cs[++i]);
+      }
+      continue;
     }
-    const pj = !!(p && _AF[p] && !_ANJ.has(p));
-    const nj = !_ANJ.has(c) && !!(n && _AF[n]);
-    res.push(f[pj&&nj?3:pj?1:nj?2:0] || cs[i]);
+    // pj = previous char can join on its LEFT (= toward this char)
+    const pj = !!(p && _AF[p] && !_NJL.has(p));
+    // nj = this char can join on its LEFT (= toward next), AND next char exists in _AF
+    const nj = !_NJL.has(c) && !!(n && _AF[n]);
+    out.push(f[pj && nj ? 3 : pj ? 1 : nj ? 2 : 0] || cs[i]);
   }
-  return res.join('');
+  return out.join('');
 }
 
 const SecHead = ({ label, break: brk }: { label: string; break?: boolean }) => (
@@ -312,9 +320,41 @@ const SecHead = ({ label, break: brk }: { label: string; break?: boolean }) => (
   </View>
 );
 
-const SubHead = ({ label }: { label: string }) => (
-  <View style={S.subHeader}>
+const SubHead = ({ label, break: brk }: { label: string; break?: boolean }) => (
+  <View style={S.subHeader} break={brk}>
     <Text style={S.subHeaderText}>{ar(label)}</Text>
+  </View>
+);
+
+// ── Postural checkbox helpers ───────────────────────────────────────────────────
+const BOX = { width: 9, height: 9, borderWidth: 0.8, borderColor: BRAND, justifyContent: "center" as const, alignItems: "center" as const };
+const Chk = ({ checked, label }: { checked: boolean; label: string }) => (
+  <View wrap={false} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 4, marginBottom: 3 }}>
+    <View style={{ ...BOX, backgroundColor: checked ? BRAND : "transparent" }}>
+      {checked && <Text style={{ fontSize: 6, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
+    </View>
+    <Text style={{ fontSize: 8.5, color: TEXT }}>{ar(label)}</Text>
+  </View>
+);
+const LRChk = ({ left, right, label }: { left: boolean; right: boolean; label: string }) => (
+  <View wrap={false} style={{ flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+    <Text style={{ fontSize: 8.5, color: TEXT, flex: 1 }}>{ar(label)}</Text>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+      <Text style={{ fontSize: 7.5, color: MUTED }}>R</Text>
+      <View style={{ ...BOX, backgroundColor: right ? BRAND : "transparent" }}>
+        {right && <Text style={{ fontSize: 6, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
+      </View>
+      <Text style={{ fontSize: 7.5, color: MUTED }}>L</Text>
+      <View style={{ ...BOX, backgroundColor: left ? BRAND : "transparent" }}>
+        {left && <Text style={{ fontSize: 6, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
+      </View>
+    </View>
+  </View>
+);
+const PostSec = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <View wrap={false} style={{ borderWidth: 0.5, borderColor: BORDER, borderRadius: 4, padding: 7, marginBottom: 5 }}>
+    <Text style={{ fontSize: 9, fontWeight: "bold", color: BRAND, marginBottom: 5, textAlign: "right" }}>{ar(title)}</Text>
+    {children}
   </View>
 );
 
@@ -351,17 +391,6 @@ const FC = ({ label, value }: { label: string; value?: string | number | null })
   );
 };
 
-const Chips = ({ items }: { items: string[] }) => {
-  if (!items.length) return null;
-  return (
-    <View style={S.chipsWrap}>
-      {items.map((item, i) => (
-        <Text key={i} style={S.chip}>{ar(item)}</Text>
-      ))}
-    </View>
-  );
-};
-
 // ── Body pain map ─────────────────────────────────────────────────────────────
 // SVG viewBox: 1456 × 1360 → PDF width 260 → height ≈ 243
 
@@ -383,16 +412,85 @@ const PAIN_LABELS_AR: Record<string, string> = {
   HOT_BURNING: "حارق", SHARP_STABBING: "حاد", PINS: "واخز", OTHER: "أخرى",
 };
 
+const TEST_LABELS_PDF: Record<string, string> = {
+  MRI:       "التصوير بالرنين المغناطيسي / MRI",
+  MYELOGRAM: "تصوير النخاع / Scan Myelogram",
+  XRAY:      "الأشعة السينية / X-Ray",
+  CT:        "التصوير المقطعي المحوسب / CT",
+  OTHER:     "أخرى / Other",
+};
+
 const FACTOR_LABELS_AR: Record<string, string> = {
   SITTING: "الجلوس", HEAT: "الحرارة", COLD: "البرد", COUGHING: "السعال",
   WALKING: "المشي", EXERCISE: "التمرين", LYING_DOWN: "الاستلقاء", OTHER: "أخرى",
 };
 
-// Standalone label style — right-aligned, no fixed width (different from fieldLabel in fieldRow)
-const SL = { fontSize: 8.5, color: MUTED, marginBottom: 2, textAlign: "right" as const };
+const EVAL_PDF_PAIRS: [EvaluationModality, EvaluationModality?][] = [
+  ["ESWT",       "MANUAL_THERAPY"],
+  ["US",         "MASSAGE"],
+  ["TENS",       "KINESIO_TAPING"],
+  ["EMS",        "COMPRESSION"],
+  ["LASER",      "PARAFFIN"],
+  ["CPM",        "GRASTON"],
+  ["HOT_PACKS",  "MET"],
+  ["COLD_PACKS", "PNF"],
+  ["TRACTION",   "INFRARED"],
+  ["SIS",        "EXERCISES"],
+  ["OTHER"],
+];
 
-const BodyMapPdf = ({ regions, origin }: { regions: PainRegion[]; origin: string }) => {
+const PLAN_PDF_PAIRS: [TherapyModality, TherapyModality?][] = [
+  ["ESWT",       "MANUAL_THERAPY"],
+  ["US",         "MASSAGE"],
+  ["TENS",       "KINESIO_TAPING"],
+  ["EMS",        "COMPRESSION"],
+  ["LASER",      "PARAFFIN"],
+  ["CPM",        "GRASTON"],
+  ["HOT_PACKS",  "MET"],
+  ["COLD_PACKS", "PNF"],
+  ["TRACTION",   "INFRARED"],
+  ["SIS",        "EXERCISES"],
+  ["OTHER"],
+];
+
+const AllTagChips = ({ options, selected }: { options: { key: string; label: string }[]; selected: string[] }) => (
+  <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 6, marginTop: 4, marginBottom: 4 }}>
+    {options.map(({ key, label }) => {
+      const active = selected.includes(key);
+      return (
+        <View key={key} wrap={false} style={{
+          backgroundColor: active ? BRAND : BRAND_LIGHT,
+          borderWidth: 0.5,
+          borderColor: active ? BRAND : BORDER,
+          borderRadius: 10,
+          paddingHorizontal: 7,
+          paddingVertical: 2.5,
+        }}>
+          <Text style={{ fontSize: 7.5, color: active ? "#ffffff" : MUTED }}>{ar(label)}</Text>
+        </View>
+      );
+    })}
+  </View>
+);
+
+// Standalone label style — right-aligned, no fixed width (different from fieldLabel in fieldRow)
+const SL = { fontSize: 8.5, color: TEXT, marginBottom: 2, textAlign: "right" as const };
+
+const BodyMapPdf = ({ regions, origin, customTypes }: { regions: PainRegion[]; origin: string; customTypes?: { id: string; name: string; color: string }[] }) => {
   const uniqueTypes = [...new Set(regions.map((r) => r.painType ?? "OTHER"))];
+
+  function getPainColor(type: string) {
+    const custom = customTypes?.find((c) => c.id === type);
+    if (custom) return custom.color;
+    return PAIN_COLORS[type] ?? "#ef4444";
+  }
+
+  function getPainLabel(type: string) {
+    const custom = customTypes?.find((c) => c.id === type);
+    if (custom) return custom.name || "أخرى";
+    return PAIN_LABELS_AR[type] ?? type;
+  }
+
   return (
     <View style={{ alignItems: "center", marginTop: 6 }} wrap={false}>
       {/* صورة الجسم مع النقاط */}
@@ -402,7 +500,7 @@ const BodyMapPdf = ({ regions, origin }: { regions: PainRegion[]; origin: string
           style={{ width: BODY_W, height: BODY_H, position: "absolute", top: 0, left: 0 }}
         />
         {regions.map((r, i) => {
-          const color = PAIN_COLORS[r.painType ?? "OTHER"] ?? "#ef4444";
+          const color = getPainColor(r.painType ?? "OTHER");
           const cx = (r.x / 100) * BODY_W;
           const cy = (r.y / 100) * BODY_H;
           return (
@@ -428,8 +526,8 @@ const BodyMapPdf = ({ regions, origin }: { regions: PainRegion[]; origin: string
         <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 6, marginTop: 6, justifyContent: "center" }}>
           {uniqueTypes.map((type) => (
             <View key={type} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: PAIN_COLORS[type] ?? "#999" }} />
-              <Text style={{ fontSize: 7.5, color: MUTED }}>{PAIN_LABELS_AR[type] ?? type}</Text>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: getPainColor(type) }} />
+              <Text style={{ fontSize: 7.5, color: MUTED }}>{ar(getPainLabel(type))}</Text>
             </View>
           ))}
         </View>
@@ -453,8 +551,8 @@ const PF = (_: { patient: PhysioCasePdfData["patient"] }) => (
   <View style={S.pageFooter} fixed>
     {/* يمين: العنوان */}
     <View style={{ alignItems: "flex-end", gap: 2 }}>
-      <Text style={S.pageFooterText}>سوريا - حلب - حي حلب الجديدة شمالي</Text>
-      <Text style={S.pageFooterText}>خلف فيلا العقاد - شارع إيكاردا</Text>
+      <Text style={S.pageFooterText}>{ar("سوريا - حلب - حي حلب الجديدة شمالي")}</Text>
+      <Text style={S.pageFooterText}>{ar("خلف فيلا العقاد - شارع إيكاردا")}</Text>
     </View>
     {/* وسط: الموقع والإيميل */}
     <View style={{ alignItems: "center", gap: 2 }}>
@@ -469,61 +567,6 @@ const PF = (_: { patient: PhysioCasePdfData["patient"] }) => (
   </View>
 );
 
-// ── Postural findings ─────────────────────────────────────────────────────────
-
-function collectPosturalFindings(p: PhysioCasePdfData["postural"]): string[] {
-  const items: string[] = [];
-  const add = (cond: boolean, label: string) => { if (cond) items.push(label); };
-  add(p.headNeutral,          "الرأس محايد");
-  add(p.headHyperextended,    "الرأس بسط مفرط");
-  add(p.headFwdFlexed,        "الرأس مثني للأمام");
-  add(p.headLaterallyFlexedL, "الرأس جانبي يسار");
-  add(p.headLaterallyFlexedR, "الرأس جانبي يمين");
-  add(p.headRotatedL,         "الرأس دوران يسار");
-  add(p.headRotatedR,         "الرأس دوران يمين");
-  add(p.shouldersLevel,       "الكتفان مستويان");
-  add(p.shouldersElevatedL,   "كتف مرتفع يسار");
-  add(p.shouldersElevatedR,   "كتف مرتفع يمين");
-  add(p.shouldersSublaxedL,   "كتف تحت خلع يسار");
-  add(p.shouldersSublaxedR,   "كتف تحت خلع يمين");
-  add(p.elbowHyperextended,   "كوع بسط مفرط");
-  add(p.elbowFlexed,          "كوع ثني");
-  add(p.ribCageNeutral,       "القفص الصدري محايد");
-  add(p.ribCageElevatedL,     "قفص صدري مرتفع يسار");
-  add(p.ribCageElevatedR,     "قفص صدري مرتفع يمين");
-  add(p.spineNeutral,         "العمود الفقري محايد");
-  add(p.spineKyphosis,        "حداب (Kyphosis)");
-  add(p.spineFlatLumbar,      "قطني مسطح");
-  add(p.spineNormalLumbar,    "قطني طبيعي");
-  add(p.spineHyperLordotic,   "قطني هايبر لوردوتيك");
-  add(p.spineScoliosisApexL,  "جنف قمة يسار");
-  add(p.spineScoliosisApexR,  "جنف قمة يمين");
-  add(p.pelvisNeutral,        "الحوض محايد");
-  add(p.pelvisAnteriorTilt,   "الحوض ميل أمامي");
-  add(p.pelvisPosteriorTilt,  "الحوض ميل خلفي");
-  add(p.pelvisObliqueL,       "الحوض مائل يسار");
-  add(p.pelvisObliqueR,       "الحوض مائل يمين");
-  add(p.hipsFlexedL,          "الورك ثني يسار");
-  add(p.hipsFlexedR,          "الورك ثني يمين");
-  add(p.hipsAbductedL,        "الورك بعد يسار");
-  add(p.hipsAbductedR,        "الورك بعد يمين");
-  add(p.hipsAdductedL,        "الورك تقريب يسار");
-  add(p.hipsAdductedR,        "الورك تقريب يمين");
-  add(p.kneesFlexedBeyond90L, "الركبة ثني > 90 يسار");
-  add(p.kneesFlexedBeyond90R, "الركبة ثني > 90 يمين");
-  add(p.kneesExtendedBeyond90L, "الركبة بسط > 90 يسار");
-  add(p.kneesExtendedBeyond90R, "الركبة بسط > 90 يمين");
-  add(p.feetPronateEvertL,    "القدم انقلاب خارجي يسار");
-  add(p.feetPronateEvertR,    "القدم انقلاب خارجي يمين");
-  add(p.feetSupinateInvL,     "القدم انقلاب داخلي يسار");
-  add(p.feetSupinateInvR,     "القدم انقلاب داخلي يمين");
-  add(p.feetDorsiflexedL,     "ظهر القدم يسار");
-  add(p.feetDorsiflexedR,     "ظهر القدم يمين");
-  add(p.feetPlantarflexedL,   "باطن القدم يسار");
-  add(p.feetPlantarflexedR,   "باطن القدم يمين");
-  return items;
-}
-
 // ── PDF Document ──────────────────────────────────────────────────────────────
 
 const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: string }) => {
@@ -531,22 +574,9 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
     chronicConditions, testsHad, surgeries, painRegions, painTypes,
     aggravatingFactors, alleviatingFactors } = data;
 
-  const generatedAt = new Date().toLocaleDateString("ar-SA");
-  const posturalFindings = collectPosturalFindings(postural);
+  const generatedAt = new Date().toLocaleDateString("en-GB");
 
-  const allGoalChips = [
-    ...goals.map((g) => PHYSIO_GOAL_LABELS[g] ?? g),
-    ...([
-      goalsExtra.decreasePain      && "تخفيف الألم",
-      goalsExtra.improveStrength   && "تحسين القوة العضلية",
-      goalsExtra.lessDifficultyWork && "سهولة العمل",
-      goalsExtra.improveMovement   && "تحسين الحركة",
-    ].filter(Boolean) as string[]),
-  ];
 
-  const allPainTypes = [...painTypes, ...(data.painTypeOther ? [data.painTypeOther] : [])];
-  const allAgg       = [...aggravatingFactors, ...(data.aggravatingOther ? [data.aggravatingOther] : [])];
-  const allAlv       = [...alleviatingFactors, ...(data.alleviatingOther ? [data.alleviatingOther] : [])];
 
   return (
     <Document
@@ -566,7 +596,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
             { label: "العمر",              value: patient.dateOfBirth
                 ? `${Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} سنة`
                 : "—" },
-            { label: "التاريخ",            value: new Date(data.caseCreatedAt).toLocaleDateString("ar-SA") },
+            { label: "التاريخ",            value: new Date(data.caseCreatedAt).toLocaleDateString("en-GB") },
             { label: "رقم تعريف المريض",   value: patient.patientNumber },
             { label: "الوظيفة الحالية",    value: patient.occupation || "—" },
             { label: "مقدم الرعاية",       value: patient.receivesAid || "—" },
@@ -578,11 +608,11 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         </View>
 
         {/* ── 2. الشكوى ── */}
-        <SecHead label="الشكوى الرئيسية" />
+        <SecHead label="الشكوى" />
         <F label="ماهي شكواك الرئيسية؟"                       value={complaint.majorComplaint} />
         <F label="ماهي الأعراض التي تعاني منها؟"               value={complaint.symptoms} />
         <F label="السبب المحتمل"                               value={complaint.possibleCause} />
-        <F label="تاريخ البدء"                                 value={complaint.complaintStartDate} />
+        <F label=":تاريخ البدء"                                 value={complaint.complaintStartDate} />
         <F label="تمت زيارة الطبيب السابق بسبب الشكوى"         value={complaint.previousDoctorSeen} />
         <F label="العلاج السابق للشكوى"                        value={complaint.previousTreatment} />
         <F label="في أي وقت تكون الأعراض أكثر إزعاجاً"        value={complaint.worstTimeOfDay} />
@@ -610,25 +640,35 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
 
         {/* ── 3. خريطة الألم ── */}
         <SecHead label="حدد أماكن الألم" break />
-        <BodyMapPdf regions={painRegions} origin={origin} />
-        {allPainTypes.length > 0 && (
-          <View style={{ marginBottom: 4 }}>
-            <Text style={SL}>{ar("أنواع الألم:")}</Text>
-            <Chips items={allPainTypes.map((v) => PAIN_LABELS_AR[v] ?? v)} />
-          </View>
-        )}
-        {allAgg.length > 0 && (
-          <View style={{ marginBottom: 4 }}>
-            <Text style={SL}>{ar("العوامل المُفاقِمة:")}</Text>
-            <Chips items={allAgg.map((v) => FACTOR_LABELS_AR[v] ?? v)} />
-          </View>
-        )}
-        {allAlv.length > 0 && (
-          <View style={{ marginBottom: 4 }}>
-            <Text style={SL}>{ar("العوامل المُخففة:")}</Text>
-            <Chips items={allAlv.map((v) => FACTOR_LABELS_AR[v] ?? v)} />
-          </View>
-        )}
+        <BodyMapPdf
+          regions={painRegions}
+          origin={origin}
+          customTypes={data.customPainTypes}
+        />
+        <View style={{ marginBottom: 4 }}>
+          <Text style={SL}>{ar("أنواع الألم")}</Text>
+          <AllTagChips
+            options={Object.entries(PAIN_LABELS_AR).map(([key, label]) => ({ key, label }))}
+            selected={painTypes}
+          />
+          {data.painTypeOther && <F label="أخرى" value={data.painTypeOther} />}
+        </View>
+        <View style={{ marginBottom: 4 }}>
+          <Text style={SL}>{ar("العوامل المحرضة")}</Text>
+          <AllTagChips
+            options={Object.entries(FACTOR_LABELS_AR).map(([key, label]) => ({ key, label }))}
+            selected={aggravatingFactors}
+          />
+          {data.aggravatingOther && <F label="أخرى" value={data.aggravatingOther} />}
+        </View>
+        <View style={{ marginBottom: 4 }}>
+          <Text style={SL}>{ar("العوامل المخففة")}</Text>
+          <AllTagChips
+            options={Object.entries(FACTOR_LABELS_AR).map(([key, label]) => ({ key, label }))}
+            selected={alleviatingFactors}
+          />
+          {data.alleviatingOther && <F label="أخرى" value={data.alleviatingOther} />}
+        </View>
 
         {/* ── 4. التاريخ الطبي ── */}
         <SecHead label="التاريخ الطبي" break />
@@ -642,6 +682,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         <Bool label="هل تدخن؟" value={history.smokes} />
         {history.smokes && <F label="عدد المرات" value={history.smokingFrequency} />}
         <Bool label="هل سبق لك أن دخنت؟" value={history.hasSmokedBefore} />
+        {!history.smokes && history.hasSmokedBefore && <F label="عدد المرات" value={history.smokingFrequency} />}
         <Bool label="هل لديك جهاز تنظيم ضربات القلب؟" value={history.hasPacemaker} />
         {history.hasPacemaker && <F label="نوع الجهاز" value={history.pacemakerDetail} />}
         <F label="الحساسية" value={history.allergies} />
@@ -688,7 +729,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
           </View>
         )}
 
-        <SubHead label="العلاج الطبيعي والعلاجات الأخرى" />
+        <SubHead label="العلاج الطبيعي والعلاجات الأخرى" break />
         <Bool label="هل خضعت للعلاج الطبيعي لنفس المشكلة؟" value={history.hadPTSameProblem} />
         {history.hadPTSameProblem && <F label="التفاصيل" value={history.ptSameProblemDetail} />}
         <Bool label="هل تتلقى علاجات أخرى لهذه المشكلة في هذا الوقت؟" value={history.receivingOtherTreatment} />
@@ -697,10 +738,14 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         <SubHead label="الفحوصات والتحاليل" />
         <View style={{ marginBottom: 4 }}>
           <Text style={SL}>{ar("ما هو نوع التصوير الشعاعي الذي قمت به؟")}</Text>
-          {testsHad.length > 0
-            ? <Chips items={testsHad.map((t) => (EVALUATION_MODALITY_LABELS as any)[t] ?? t)} />
-            : <Text style={S.fieldValue}>—</Text>}
-          {history.testsOther && <F label="أخرى" value={history.testsOther} />}
+          <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 2, marginTop: 3 }}>
+            {(Object.entries(TEST_LABELS_PDF) as [TestType, string][]).map(([key, label]) => (
+              <View key={key} style={{ width: "48%" }}>
+                <Chk checked={testsHad.includes(key)} label={label} />
+              </View>
+            ))}
+          </View>
+          {history.testsOther && <F label="تفاصيل أخرى" value={history.testsOther} />}
         </View>
         <F label="نتائج / Results" value={history.testResults} />
         <Text style={[SL, { marginTop: 4 }]}>{ar("ما هي التحاليلات التي تم إجراؤها؟")}</Text>
@@ -720,93 +765,193 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         {history.hospitalizedLastYear && <F label="التفاصيل" value={history.hospitalizedDetail} />}
 
         <SubHead label="هل لديك أي مما يلي؟ (ضع علامة إذا نعم)" />
-        {chronicConditions.length > 0
-          ? <Chips items={chronicConditions.map((c) => CHRONIC_CONDITION_LABELS[c] ?? c)} />
-          : <Text style={S.fieldValue}>—</Text>}
+        {(() => {
+          const entries = Object.entries(CHRONIC_CONDITION_LABELS) as [ChronicCondition, string][];
+          const rows: [ChronicCondition, string][][] = [];
+          for (let i = 0; i < entries.length; i += 3) rows.push(entries.slice(i, i + 3));
+          return rows.map((row, ri) => (
+            <View key={ri} style={{ flexDirection: "row-reverse", gap: 4 }}>
+              {row.map(([key, label]) => (
+                <View key={key} style={{ flex: 1 }}>
+                  <Chk checked={chronicConditions.includes(key)} label={label} />
+                </View>
+              ))}
+              {row.length < 3 && Array.from({ length: 3 - row.length }).map((_, j) => (
+                <View key={j} style={{ flex: 1 }} />
+              ))}
+            </View>
+          ));
+        })()}
         {history.chronicConditionsOther && <F label="أخرى" value={history.chronicConditionsOther} />}
 
         {/* ── 5. أهداف العلاج ── */}
-        <SecHead label="أهداف العلاج" />
-        {allGoalChips.length > 0 && (
-          <>
-            <Text style={SL}>{ar("الأهداف:")}</Text>
-            <Chips items={allGoalChips} />
-          </>
-        )}
-        <View style={S.twoCol}>
-          <View style={S.col}>
-            {goalsExtra.standLonger && <F label="وقوف أطول" value={`${goalsExtra.standLonger} ساعات/دقائق`} />}
-            {goalsExtra.sleepLonger && <F label="نوم أطول"  value={`${goalsExtra.sleepLonger} ساعات/دقائق`} />}
-            {goalsExtra.sitLonger   && <F label="جلوس أطول" value={`${goalsExtra.sitLonger} ساعات/دقائق`} />}
+        <SecHead label="أهداف العلاج" break />
+        {/* All goal checkboxes — 2 columns */}
+        <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 2, marginBottom: 6 }}>
+          {(Object.entries(PHYSIO_GOAL_LABELS) as [PhysioGoal, string][]).map(([key, label]) => (
+            <View key={key} style={{ width: "48%" }}>
+              <Chk checked={goals.includes(key)} label={label} />
+            </View>
+          ))}
+          <View style={{ width: "48%" }}>
+            <Chk checked={goalsExtra.decreasePain}       label="تخفيف الألم / Decrease Pain" />
           </View>
-          <View style={S.col}>
-            {goalsExtra.customGoal && <F label="هدف مخصص"   value={goalsExtra.customGoal} />}
-            {goalsExtra.otherGoals && <F label="أهداف أخرى" value={goalsExtra.otherGoals} />}
+          <View style={{ width: "48%" }}>
+            <Chk checked={goalsExtra.improveStrength}    label="تحسين القوة / Improve Strength" />
           </View>
+          <View style={{ width: "48%" }}>
+            <Chk checked={goalsExtra.lessDifficultyWork} label="القيام ببعض الأنشطة / Less Difficulty" />
+          </View>
+          <View style={{ width: "48%" }}>
+            <Chk checked={goalsExtra.improveMovement}    label="تحسين الحركة / Improve Movement" />
+          </View>
+        </View>
+        {/* Duration fields — always shown */}
+        <View style={{ flexDirection: "row-reverse", gap: 8, marginBottom: 4 }}>
+          <View style={{ flex: 1, borderWidth: 0.5, borderColor: BORDER, borderRadius: 3, padding: 5 }}>
+            <Text style={{ fontSize: 8, color: MUTED, textAlign: "right", marginBottom: 3 }}>{ar("أطول فترة وقوف (ساعات/دقائق)")}</Text>
+            <Text style={{ fontSize: 9, color: TEXT, textAlign: "right" }}>{ar(goalsExtra.standLonger || "—")}</Text>
+          </View>
+          <View style={{ flex: 1, borderWidth: 0.5, borderColor: BORDER, borderRadius: 3, padding: 5 }}>
+            <Text style={{ fontSize: 8, color: MUTED, textAlign: "right", marginBottom: 3 }}>{ar("أطول فترة نوم (ساعات/دقائق)")}</Text>
+            <Text style={{ fontSize: 9, color: TEXT, textAlign: "right" }}>{ar(goalsExtra.sleepLonger || "—")}</Text>
+          </View>
+          <View style={{ flex: 1, borderWidth: 0.5, borderColor: BORDER, borderRadius: 3, padding: 5 }}>
+            <Text style={{ fontSize: 8, color: MUTED, textAlign: "right", marginBottom: 3 }}>{ar("أطول فترة جلوس (ساعات/دقائق)")}</Text>
+            <Text style={{ fontSize: 9, color: TEXT, textAlign: "right" }}>{ar(goalsExtra.sitLonger || "—")}</Text>
+          </View>
+        </View>
+        {goalsExtra.customGoal && <F label="هدف مخصص"   value={goalsExtra.customGoal} />}
+        {goalsExtra.otherGoals && <F label="أهداف أخرى" value={goalsExtra.otherGoals} />}
+
+        {/* ── 6. خطة التقييم ── */}
+        <SecHead label="خطة التقييم" break />
+        <F label="الوضعية الحالية للجلوس (حسب أفضل تقييم مع ملاحظة الوضعيات الثابتة)" value={postural.seatedPosition} />
+        <F label="التحكم في التوازن / الجذع" value={postural.trunkControl} />
+
+        <View style={{ marginTop: 4 }}>
+          <PostSec title="الرأس">
+            <Chk checked={postural.headNeutral}       label="حيادي" />
+            <Chk checked={postural.headHyperextended} label="فرط البسط" />
+            <Chk checked={postural.headFwdFlexed}     label="تقدم للأمام" />
+            <LRChk left={postural.headLaterallyFlexedL} right={postural.headLaterallyFlexedR} label="عطف جانبي" />
+            <LRChk left={postural.headRotatedL}         right={postural.headRotatedR}         label="دوران" />
+          </PostSec>
+
+          <PostSec title="الأكتاف">
+            <Chk  checked={postural.shouldersLevel}     label="مستوية" />
+            <LRChk left={postural.shouldersElevatedL}   right={postural.shouldersElevatedR}   label="مرتفعة" />
+            <LRChk left={postural.shouldersSublaxedL}   right={postural.shouldersSublaxedR}   label="متصلبة" />
+          </PostSec>
+
+          <PostSec title="المرفق">
+            <Chk checked={postural.elbowHyperextended} label="فرط البسط" />
+            <Chk checked={postural.elbowFlexed}        label="عطف" />
+          </PostSec>
+
+          <PostSec title="القفص الصدري">
+            <Chk  checked={postural.ribCageNeutral}    label="حيادي" />
+            <LRChk left={postural.ribCageElevatedL}    right={postural.ribCageElevatedR}      label="مرتفع" />
+          </PostSec>
+
+          <PostSec title="العمود الفقري">
+            <Chk checked={postural.spineNeutral}         label="حيادي" />
+            <Chk checked={postural.spineKyphosis}        label="كيفوز" />
+            <Chk checked={postural.spineFlatLumbar}      label="قعس مسطح" />
+            <Chk checked={postural.spineNormalLumbar}    label="قعس طبيعي" />
+            <Chk checked={postural.spineHyperLordotic}   label="قعس زائد" />
+            <LRChk left={postural.spineScoliosisApexL}   right={postural.spineScoliosisApexR} label="جنف قمة" />
+          </PostSec>
+
+          <PostSec title="الحوض">
+            <Chk  checked={postural.pelvisNeutral}       label="حيادي" />
+            <Chk  checked={postural.pelvisAnteriorTilt}  label="ميل أمامي" />
+            <Chk  checked={postural.pelvisPosteriorTilt} label="ميل خلفي" />
+            <LRChk left={postural.pelvisObliqueL}        right={postural.pelvisObliqueR}      label="مائل" />
+            {postural.pelvisOther && <F label="أخرى" value={postural.pelvisOther} />}
+          </PostSec>
+
+          <PostSec title="الوركين">
+            <LRChk left={postural.hipsAbductedL}  right={postural.hipsAbductedR}  label="مبعد" />
+            <LRChk left={postural.hipsAdductedL}  right={postural.hipsAdductedR}  label="مقرب" />
+            <LRChk left={postural.hipsFlexedL}    right={postural.hipsFlexedR}    label="عطف" />
+          </PostSec>
+
+          <PostSec title="الركبتين">
+            <LRChk left={postural.kneesFlexedBeyond90L}    right={postural.kneesFlexedBeyond90R}    label="عطف > 90" />
+            <LRChk left={postural.kneesExtendedBeyond90L}  right={postural.kneesExtendedBeyond90R}  label="بسط > 90" />
+          </PostSec>
+
+          <PostSec title="القدمان">
+            <LRChk left={postural.feetPronateEvertL}   right={postural.feetPronateEvertR}   label="انبساط خارجي" />
+            <LRChk left={postural.feetSupinateInvL}    right={postural.feetSupinateInvR}    label="تقوس داخلي" />
+            <LRChk left={postural.feetDorsiflexedL}    right={postural.feetDorsiflexedR}    label="دورسيفلكس" />
+            <LRChk left={postural.feetPlantarflexedL}  right={postural.feetPlantarflexedR}  label="بلانتارفلكس" />
+            {postural.feetOther && <F label="أخرى" value={postural.feetOther} />}
+          </PostSec>
         </View>
 
-        {/* ── 6. التقييم الوضعي ── */}
-        <SecHead label="التقييم الوضعي" />
-        <View style={S.twoCol}>
-          <View style={S.col}>
-            <F label="الوضع الجلوسي"   value={postural.seatedPosition} />
-            <F label="التحكم بالجذع"   value={postural.trunkControl} />
-          </View>
-          <View style={S.col}>
-            <F label="التشخيص"         value={postural.diagnosis} />
-          </View>
-        </View>
-        {posturalFindings.length > 0 && (
-          <View style={{ marginTop: 4 }}>
-            <Text style={SL}>{ar("النتائج الإيجابية:")}</Text>
-            <Chips items={posturalFindings} />
-          </View>
-        )}
-        {postural.pelvisOther    && <F label="ملاحظات الحوض"    value={postural.pelvisOther} />}
-        {postural.feetOther      && <F label="ملاحظات القدم"     value={postural.feetOther} />}
-        <F label="ملاحظات التشنج"   value={postural.spasticityNotes} />
-        <F label="ملاحظات عامة"     value={postural.generalNotes} />
+        <F label="التشنج/ ردود الفعل / التوتر العضلي" value={postural.spasticityNotes} />
+        <F label="تعليقات"  value={postural.generalNotes} />
+        <F label="تشخيص"   value={postural.diagnosis} />
 
         {/* ── 7. خطة العلاج ── */}
-        <SecHead label="خطة العلاج" />
+        <SecHead label="خطة العلاج" break />
+        {/* Header row */}
         <View style={S.twoCol}>
           <View style={S.col}>
-            <F label="من تاريخ"       value={data.planHeader.treatmentFrom} />
-            <F label="إلى تاريخ"      value={data.planHeader.treatmentTo} />
-            <F label="عدد الزيارات"   value={data.planHeader.anticipatedVisits} />
+            <F label="من تاريخ"                         value={data.planHeader.treatmentFrom} />
+            <F label="إلى تاريخ"                        value={data.planHeader.treatmentTo} />
+            <F label="عدد الزيارات"                     value={data.planHeader.anticipatedVisits} />
           </View>
           <View style={S.col}>
-            <F label="الملاحظة"       value={data.planObservation} />
-            <F label="ملاحظات"        value={data.planRemarks} />
+            <F label="اسم أخصائي العلاج الفيزيائي"     value={data.planHeader.physiotherapistName} />
+            <F label="مدير الحالة"                      value={data.planHeader.caseManagerName} />
           </View>
         </View>
-        {data.planModalities.length > 0 && (
-          <View style={{ marginTop: 4 }}>
-            <Text style={SL}>{ar("العلاجات المقترحة:")}</Text>
-            <Chips items={data.planModalities.map((m) => THERAPY_MODALITY_LABELS[m] ?? m)} />
-            {data.planOtherModality && <F label="علاجات أخرى" value={data.planOtherModality} />}
+        {/* Modalities — 2-col checkbox grid, ALL options */}
+        <SubHead label="خطة علاج المريض" />
+        <View style={{ flexDirection: "row-reverse", gap: 8, marginBottom: 4 }}>
+          <View style={{ flex: 1 }}>
+            {PLAN_PDF_PAIRS.map(([right]) => (
+              <Chk key={right} checked={data.planModalities.includes(right)} label={THERAPY_MODALITY_LABELS[right] ?? right} />
+            ))}
           </View>
-        )}
+          <View style={{ flex: 1 }}>
+            {PLAN_PDF_PAIRS.map(([, left]) => left ? (
+              <Chk key={left} checked={data.planModalities.includes(left)} label={THERAPY_MODALITY_LABELS[left] ?? left} />
+            ) : <View key="_gap" style={{ marginBottom: 3, height: 12 }} />)}
+          </View>
+        </View>
+        {data.planOtherModality && <F label="أخرى / Other" value={data.planOtherModality} />}
+        <F label="الملاحظات" value={data.planObservation} />
+        <F label="الملخص"    value={data.planRemarks} />
 
         {/* ── 8. الملاحظات والتقييم ── */}
-        <SecHead label="الملاحظات والتقييم" />
-        {data.evalModalities.length > 0 && (
-          <View style={{ marginBottom: 5 }}>
-            <Text style={SL}>{ar("العلاجات المطبقة:")}</Text>
-            <Chips items={data.evalModalities.map((m) => EVALUATION_MODALITY_LABELS[m] ?? m)} />
-            {data.evalOtherModality && <F label="أخرى" value={data.evalOtherModality} />}
+        <SecHead label="الملاحظات والتقييم" break />
+        <F label="التشخيص" value={data.postural.diagnosis} />
+        <SubHead label="العلاج المطبق" />
+        <View style={{ flexDirection: "row-reverse", gap: 8, marginBottom: 4 }}>
+          <View style={{ flex: 1 }}>
+            {EVAL_PDF_PAIRS.map(([right]) => (
+              <Chk key={right} checked={data.evalModalities.includes(right)} label={EVALUATION_MODALITY_LABELS[right] ?? right} />
+            ))}
           </View>
-        )}
-        <F label="الملاحظات" value={data.evalNotes} />
-        <F label="التقييم"   value={data.evalText} />
+          <View style={{ flex: 1 }}>
+            {EVAL_PDF_PAIRS.map(([, left]) => left ? (
+              <Chk key={left} checked={data.evalModalities.includes(left)} label={EVALUATION_MODALITY_LABELS[left] ?? left} />
+            ) : <View key="_gap" style={{ marginBottom: 3, height: 12 }} />)}
+          </View>
+        </View>
+        {data.evalOtherModality && <F label="أخرى / Other" value={data.evalOtherModality} />}
 
         {/* ── 9. الجلسات العلاجية ── */}
-        <SecHead label="الجلسات العلاجية" />
+        <SecHead label="الجلسات العلاجية" break />
         {sessions.length === 0 ? (
           <Text style={S.note}>{ar("لا توجد جلسات مسجلة")}</Text>
         ) : (
           <View style={S.table}>
-            <View style={S.tableHeaderRow}>
+            <View style={S.tableHeaderRow} fixed>
               <Text style={[S.tableCellHead, { flex: 0.4 }]}>#</Text>
               <Text style={[S.tableCellHead, { flex: 0.9 }]}>{ar("التاريخ")}</Text>
               <Text style={[S.tableCellHead, { flex: 0.7 }]}>{ar("الوقت")}</Text>
@@ -820,7 +965,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
                 <View key={i} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]} wrap={false}>
                   <Text style={[S.tableCell, { flex: 0.4 }]}>{s.sessionNumber}</Text>
                   <Text style={[S.tableCell, { flex: 0.9 }]}>
-                    {new Date(s.sessionDate).toLocaleDateString("ar-SA")}
+                    {new Date(s.sessionDate).toLocaleDateString("en-GB")}
                   </Text>
                   <Text style={[S.tableCell, { flex: 0.7 }]}>{s.sessionTime ?? "—"}</Text>
                   <Text style={[S.tableCell, { flex: 2 }]}>{ar(s.notes ?? "") || "—"}</Text>
@@ -830,22 +975,18 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
               ))}
           </View>
         )}
-
-        {/* ── 10. رأي رئيس القسم ── */}
-        {data.supervisorGaze && (
-          <>
-            <SecHead label="رأي رئيس القسم" />
-            <Text style={S.fieldValue}>{ar(data.supervisorGaze)}</Text>
-          </>
-        )}
-
-        {/* ── 11. الملخص النهائي ── */}
         {data.finalSummary && (
           <>
             <SecHead label="الملخص النهائي" />
             <Text style={S.fieldValue}>{ar(data.finalSummary)}</Text>
           </>
         )}
+
+        {/* ── 10. رأي رئيس القسم ورأي الطبيب ── */}
+        <SecHead label="رأي رئيس القسم" break />
+        <Text style={S.fieldValue}>{ar(data.supervisorGaze ?? "") || "—"}</Text>
+        <SecHead label="رأي الطبيب" />
+        <Text style={S.fieldValue}>{ar(data.doctorGaze ?? "") || "—"}</Text>
 
         {/* ── توقيعات ── */}
         <View style={{ marginTop: 30, flexDirection: "row-reverse", justifyContent: "space-around" }}>

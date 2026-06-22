@@ -170,6 +170,8 @@ export interface PhysioCase {
   surgeryDetail?: string | null;
   painTypes?: string[] | null;
   painTypeOther?: string | null;
+  painTypeOtherColor?: string | null;
+  customPainTypes?: { id: string; name: string; color: string }[] | null;
   aggravatingFactors?: string[] | null;
   alleviatingFactors?: string[] | null;
   aggravatingOther?: string | null;
@@ -259,7 +261,7 @@ export interface EvaluationDto {
 export interface PainMapDto {
   regions: PainRegion[];
   painTypes?: string[];
-  painTypeOther?: string;
+  customPainTypes?: { id: string; name: string; color: string }[];
   aggravatingFactors?: string[];
   aggravatingOther?: string;
   alleviatingFactors?: string[];
