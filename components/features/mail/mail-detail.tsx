@@ -140,7 +140,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     ? toRecipients.map(getRecipientEmpId).filter(Boolean)
     : isSender
       ? toRecipients.map(getRecipientEmpId).filter(Boolean)
-      : [(senderInfo as any)?.employeeId].filter(Boolean);
+      : [(senderInfo as any)?.employeeId ?? message.senderId].filter(Boolean);
 
   const defaultCcIds = replyAll
     ? ccRecipients.map(getRecipientEmpId).filter(Boolean)

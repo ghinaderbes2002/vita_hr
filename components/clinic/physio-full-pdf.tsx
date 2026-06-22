@@ -334,7 +334,7 @@ const Bool = ({ label, value, showNo = true }: { label: string; value: boolean; 
     <View style={S.fieldRow} wrap={false}>
       <Text style={S.fieldLabel}>{ar(label)}</Text>
       <Text style={[S.fieldValue, value ? S.yes : S.no]}>
-        {value ? "✓ نعم" : "✗ لا"}
+        {value ? `✓ ${ar("نعم")}` : `✗ ${ar("لا")}`}
       </Text>
     </View>
   );
@@ -382,6 +382,14 @@ const PAIN_LABELS_AR: Record<string, string> = {
   NORMAL: "عادي", NUMBNESS: "خدر", DULL_ACHE: "ألم خفيف",
   HOT_BURNING: "حارق", SHARP_STABBING: "حاد", PINS: "واخز", OTHER: "أخرى",
 };
+
+const FACTOR_LABELS_AR: Record<string, string> = {
+  SITTING: "الجلوس", HEAT: "الحرارة", COLD: "البرد", COUGHING: "السعال",
+  WALKING: "المشي", EXERCISE: "التمرين", LYING_DOWN: "الاستلقاء", OTHER: "أخرى",
+};
+
+// Standalone label style — right-aligned, no fixed width (different from fieldLabel in fieldRow)
+const SL = { fontSize: 8.5, color: MUTED, marginBottom: 2, textAlign: "right" as const };
 
 const BodyMapPdf = ({ regions, origin }: { regions: PainRegion[]; origin: string }) => {
   const uniqueTypes = [...new Set(regions.map((r) => r.painType ?? "OTHER"))];
@@ -605,20 +613,20 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         <BodyMapPdf regions={painRegions} origin={origin} />
         {allPainTypes.length > 0 && (
           <View style={{ marginBottom: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>أنواع الألم:</Text>
-            <Chips items={allPainTypes} />
+            <Text style={SL}>{ar("أنواع الألم:")}</Text>
+            <Chips items={allPainTypes.map((v) => PAIN_LABELS_AR[v] ?? v)} />
           </View>
         )}
         {allAgg.length > 0 && (
           <View style={{ marginBottom: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العوامل المُفاقِمة:</Text>
-            <Chips items={allAgg} />
+            <Text style={SL}>{ar("العوامل المُفاقِمة:")}</Text>
+            <Chips items={allAgg.map((v) => FACTOR_LABELS_AR[v] ?? v)} />
           </View>
         )}
         {allAlv.length > 0 && (
           <View style={{ marginBottom: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العوامل المُخففة:</Text>
-            <Chips items={allAlv} />
+            <Text style={SL}>{ar("العوامل المُخففة:")}</Text>
+            <Chips items={allAlv.map((v) => FACTOR_LABELS_AR[v] ?? v)} />
           </View>
         )}
 
@@ -688,14 +696,14 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
 
         <SubHead label="الفحوصات والتحاليل" />
         <View style={{ marginBottom: 4 }}>
-          <Text style={[S.fieldLabel, { marginBottom: 3 }]}>ما هو نوع التصوير الشعاعي الذي قمت به؟</Text>
+          <Text style={SL}>{ar("ما هو نوع التصوير الشعاعي الذي قمت به؟")}</Text>
           {testsHad.length > 0
             ? <Chips items={testsHad.map((t) => (EVALUATION_MODALITY_LABELS as any)[t] ?? t)} />
             : <Text style={S.fieldValue}>—</Text>}
           {history.testsOther && <F label="أخرى" value={history.testsOther} />}
         </View>
         <F label="نتائج / Results" value={history.testResults} />
-        <Text style={[S.fieldLabel, { marginBottom: 3, marginTop: 4 }]}>ماهي التحاليلات التي تم اجراؤها؟</Text>
+        <Text style={[SL, { marginTop: 4 }]}>{ar("ما هي التحاليلات التي تم إجراؤها؟")}</Text>
         <View style={S.twoCol}>
           <View style={S.col}>
             <F label="تحليل جديد"          value={history.newAnalysis} />
@@ -721,7 +729,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         <SecHead label="أهداف العلاج" />
         {allGoalChips.length > 0 && (
           <>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>الأهداف:</Text>
+            <Text style={SL}>{ar("الأهداف:")}</Text>
             <Chips items={allGoalChips} />
           </>
         )}
@@ -750,7 +758,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         </View>
         {posturalFindings.length > 0 && (
           <View style={{ marginTop: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>النتائج الإيجابية:</Text>
+            <Text style={SL}>{ar("النتائج الإيجابية:")}</Text>
             <Chips items={posturalFindings} />
           </View>
         )}
@@ -774,7 +782,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         </View>
         {data.planModalities.length > 0 && (
           <View style={{ marginTop: 4 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العلاجات المقترحة:</Text>
+            <Text style={SL}>{ar("العلاجات المقترحة:")}</Text>
             <Chips items={data.planModalities.map((m) => THERAPY_MODALITY_LABELS[m] ?? m)} />
             {data.planOtherModality && <F label="علاجات أخرى" value={data.planOtherModality} />}
           </View>
@@ -784,7 +792,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         <SecHead label="الملاحظات والتقييم" />
         {data.evalModalities.length > 0 && (
           <View style={{ marginBottom: 5 }}>
-            <Text style={[S.fieldLabel, { marginBottom: 2 }]}>العلاجات المطبقة:</Text>
+            <Text style={SL}>{ar("العلاجات المطبقة:")}</Text>
             <Chips items={data.evalModalities.map((m) => EVALUATION_MODALITY_LABELS[m] ?? m)} />
             {data.evalOtherModality && <F label="أخرى" value={data.evalOtherModality} />}
           </View>
@@ -795,16 +803,16 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         {/* ── 9. الجلسات العلاجية ── */}
         <SecHead label="الجلسات العلاجية" />
         {sessions.length === 0 ? (
-          <Text style={S.note}>لا توجد جلسات مسجلة</Text>
+          <Text style={S.note}>{ar("لا توجد جلسات مسجلة")}</Text>
         ) : (
           <View style={S.table}>
             <View style={S.tableHeaderRow}>
               <Text style={[S.tableCellHead, { flex: 0.4 }]}>#</Text>
-              <Text style={[S.tableCellHead, { flex: 0.9 }]}>التاريخ</Text>
-              <Text style={[S.tableCellHead, { flex: 0.7 }]}>الوقت</Text>
-              <Text style={[S.tableCellHead, { flex: 2 }]}>ملاحظات</Text>
-              <Text style={[S.tableCellHead, { flex: 1.5 }]}>رأي رئيس القسم</Text>
-              <Text style={[S.tableCellHead, { flex: 1.5 }]}>قرار الطبيب</Text>
+              <Text style={[S.tableCellHead, { flex: 0.9 }]}>{ar("التاريخ")}</Text>
+              <Text style={[S.tableCellHead, { flex: 0.7 }]}>{ar("الوقت")}</Text>
+              <Text style={[S.tableCellHead, { flex: 2 }]}>{ar("ملاحظات")}</Text>
+              <Text style={[S.tableCellHead, { flex: 1.5 }]}>{ar("رأي رئيس القسم")}</Text>
+              <Text style={[S.tableCellHead, { flex: 1.5 }]}>{ar("قرار الطبيب")}</Text>
             </View>
             {[...sessions]
               .sort((a, b) => (a.sessionNumber ?? 0) - (b.sessionNumber ?? 0))
@@ -815,9 +823,9 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
                     {new Date(s.sessionDate).toLocaleDateString("ar-SA")}
                   </Text>
                   <Text style={[S.tableCell, { flex: 0.7 }]}>{s.sessionTime ?? "—"}</Text>
-                  <Text style={[S.tableCell, { flex: 2 }]}>{s.notes ?? "—"}</Text>
-                  <Text style={[S.tableCell, { flex: 1.5 }]}>{(s as any).supervisorOpinion ?? "—"}</Text>
-                  <Text style={[S.tableCell, { flex: 1.5 }]}>{(s as any).doctorDecision ?? "—"}</Text>
+                  <Text style={[S.tableCell, { flex: 2 }]}>{ar(s.notes ?? "") || "—"}</Text>
+                  <Text style={[S.tableCell, { flex: 1.5 }]}>{ar((s as any).supervisorOpinion ?? "") || "—"}</Text>
+                  <Text style={[S.tableCell, { flex: 1.5 }]}>{ar((s as any).doctorDecision ?? "") || "—"}</Text>
                 </View>
               ))}
           </View>
@@ -827,7 +835,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         {data.supervisorGaze && (
           <>
             <SecHead label="رأي رئيس القسم" />
-            <Text style={S.fieldValue}>{data.supervisorGaze}</Text>
+            <Text style={S.fieldValue}>{ar(data.supervisorGaze)}</Text>
           </>
         )}
 
@@ -835,7 +843,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         {data.finalSummary && (
           <>
             <SecHead label="الملخص النهائي" />
-            <Text style={S.fieldValue}>{data.finalSummary}</Text>
+            <Text style={S.fieldValue}>{ar(data.finalSummary)}</Text>
           </>
         )}
 
@@ -844,7 +852,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
           {["توقيع المعالج الفيزيائي", "توقيع المريض", "توقيع رئيس القسم"].map((label, i) => (
             <View key={i} style={{ alignItems: "center", gap: 6 }}>
               <View style={{ width: 100, borderBottomWidth: 0.5, borderBottomColor: TEXT }} />
-              <Text style={{ fontSize: 8.5, color: MUTED, textAlign: "center" }}>{label}</Text>
+              <Text style={{ fontSize: 8.5, color: MUTED, textAlign: "center" }}>{ar(label)}</Text>
             </View>
           ))}
         </View>

@@ -190,50 +190,61 @@ export function ComposeMailModal({
       return;
     }
 
-    let message: any;
+    try {
+      let message: any;
 
-    if (replyAllMessageId) {
-      message = await replyAllMail.mutateAsync({
-        messageId: replyAllMessageId,
-        dto: {
+      if (replyAllMessageId) {
+        message = await replyAllMail.mutateAsync({
+          messageId: replyAllMessageId,
+          dto: {
+            subject,
+            body: bodyRef.current?.innerHTML || undefined,
+            recipients: replyAllRecipients,
+            ...(isHighImportance ? { importance: "HIGH" } : {}),
+          },
+        });
+      } else if (forwardMessageId) {
+        message = await forwardMail.mutateAsync({
+          messageId: forwardMessageId,
+          dto: {
+            recipients: buildRecipients(),
+            subject: subject || undefined,
+            body: bodyRef.current?.innerHTML || undefined,
+            ...(forwardAttachments.length > 0
+              ? { attachmentIds: forwardAttachments.map((a) => a.id) }
+              : {}),
+          },
+        });
+      } else {
+        message = await sendMail.mutateAsync({
           subject,
           body: bodyRef.current?.innerHTML || undefined,
-          recipients: replyAllRecipients,
-          ...(isHighImportance ? { importance: "HIGH" } : {}),
-        },
-      });
-    } else if (forwardMessageId) {
-      message = await forwardMail.mutateAsync({
-        messageId: forwardMessageId,
-        dto: {
           recipients: buildRecipients(),
-          subject: subject || undefined,
-          body: bodyRef.current?.innerHTML || undefined,
-          ...(forwardAttachments.length > 0
-            ? { attachmentIds: forwardAttachments.map((a) => a.id) }
-            : {}),
-        },
-      });
-    } else {
-      message = await sendMail.mutateAsync({
-        subject,
-        body: bodyRef.current?.innerHTML || undefined,
-        recipients: buildRecipients(),
-        ...(departmentIds.length > 0 ? { departmentIds } : {}),
-        parentMessageId: replyToMessageId,
-        ...(isHighImportance ? { importance: "HIGH" } : {}),
-      });
-    }
+          ...(departmentIds.length > 0 ? { departmentIds } : {}),
+          parentMessageId: replyToMessageId,
+          ...(isHighImportance ? { importance: "HIGH" } : {}),
+        });
+      }
 
-    if (pendingFiles.length > 0 && message?.id) {
-      await Promise.all(
-        pendingFiles.map((file) =>
-          uploadAttachment.mutateAsync({ messageId: message.id, file }),
-        ),
-      );
-    }
+      if (pendingFiles.length > 0 && message?.id) {
+        await Promise.all(
+          pendingFiles.map((file) =>
+            uploadAttachment.mutateAsync({ messageId: message.id, file }),
+          ),
+        );
+      }
 
-    onClose();
+      onClose();
+    } catch (err: any) {
+      const code = err?.response?.data?.error?.code;
+      const details: { employeeId: string }[] = err?.response?.data?.error?.details ?? [];
+      if (code === "RECIPIENTS_NOT_RESOLVED") {
+        const ids = details.map((d) => d.employeeId.slice(-8)).join(", ");
+        toast.error(`بعض المستلمين لا يملكون حسابات مستخدمين في النظام${ids ? ` (${ids})` : ""}. يرجى التواصل مع المسؤول لربط الحسابات.`);
+      } else {
+        toast.error(err?.response?.data?.error?.message ?? err?.message ?? "حدث خطأ أثناء الإرسال");
+      }
+    }
   };
 
   const handleDraft = async () => {

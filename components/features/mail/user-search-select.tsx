@@ -61,9 +61,20 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [] }:
     .filter((e: any) => e.id && !exclude.includes(e.id))
     .map((e: any) => ({ id: e.id, label: `${e.firstNameAr} ${e.lastNameAr}` }));
 
-  const selectedOptions = (Array.isArray(allData) ? allData : [])
-    .filter((e: any) => value.includes(e.id))
-    .map((e: any) => ({ id: e.id, label: `${e.firstNameAr} ${e.lastNameAr}` }));
+  // Normalize: if value contains user IDs instead of employee IDs, swap them once data loads
+  useEffect(() => {
+    if (!Array.isArray(allData) || allData.length === 0) return;
+    const normalized = value.map((id) => {
+      if ((allData as any[]).some((e) => e.id === id)) return id;
+      const byUser = (allData as any[]).find((e) => e.userId === id);
+      return byUser ? byUser.id : id;
+    });
+    if (normalized.some((id, i) => id !== value[i])) onChange(normalized);
+  }, [allData]);
+
+  const selectedOptions = (Array.isArray(allData) ? allData as any[] : [])
+    .filter((e) => value.includes(e.id) || value.includes(e.userId))
+    .map((e) => ({ id: e.id, label: `${e.firstNameAr} ${e.lastNameAr}` }));
 
   const allVisibleSelected = options.length > 0 && options.every((o) => value.includes(o.id));
 
