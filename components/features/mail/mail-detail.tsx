@@ -158,6 +158,12 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
       ].filter((n): n is string => !!n)
     : [
         senderName,
+        ...toRecipients
+          .filter((r: any) => {
+            const empId = getRecipientEmpId(r);
+            return empId && empId !== user?.employeeId && empId !== user?.id;
+          })
+          .map(getDisplayName),
         ...ccRecipients.map(getDisplayName),
       ].filter((n): n is string => !!n);
 
@@ -168,6 +174,12 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
       ].filter((r) => !!r.employeeId)
     : [
         ...((senderInfo as any)?.employeeId ? [{ employeeId: (senderInfo as any).employeeId, type: "TO" as const }] : []),
+        ...toRecipients
+          .filter((r: any) => {
+            const empId = getRecipientEmpId(r);
+            return empId && empId !== user?.employeeId && empId !== user?.id;
+          })
+          .map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "TO" as const })),
         ...ccRecipients.map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "CC" as const })).filter((r) => !!r.employeeId),
       ];
 
