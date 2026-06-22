@@ -272,11 +272,11 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
   const pendingCount = (pendingData as any)?.total ?? (pendingData as any)?.data?.total ?? 0;
 
   const { data: probationEndingData } = useQuery({
-    queryKey: ["probation-ending", 7],
+    queryKey: ["probation-ending", 30],
     queryFn: async () => {
       const { apiClient } = await import("@/lib/api/client");
-      const res = await apiClient.get("/employees/reports/probation-ending", { params: { days: 7 } });
-      return res.data?.data ?? res.data ?? [];
+      const res = await apiClient.get("/employees/reports/probation-ending", { params: { days: 30 } });
+      return res.data?.data?.items ?? res.data?.data ?? res.data ?? [];
     },
     staleTime: 60_000,
   });
@@ -364,11 +364,11 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
               probationEndingList.map((emp: any) => (
                 <div key={emp.id} className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm">
                   <div>
-                    <p className="font-medium">{emp.firstNameAr} {emp.lastNameAr}</p>
+                    <p className="font-medium">{emp.fullNameAr ?? `${emp.firstNameAr ?? ""} ${emp.lastNameAr ?? ""}`.trim()}</p>
                     <p className="text-xs text-muted-foreground">{emp.employeeNumber}</p>
                   </div>
                   <div className="text-left">
-                    <Badge variant="outline" className={`text-xs ${emp.daysRemaining <= 3 ? "border-red-300 text-red-700" : "border-amber-300 text-amber-700"}`}>
+                    <Badge variant="outline" className={`text-xs ${emp.daysRemaining <= 7 ? "border-red-300 text-red-700" : emp.daysRemaining <= 14 ? "border-amber-300 text-amber-700" : "border-blue-300 text-blue-700"}`}>
                       {t("hr.daysRemaining", { days: emp.daysRemaining })}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-0.5">{emp.probationEndDate}</p>

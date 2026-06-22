@@ -81,7 +81,7 @@
       "payrollCompleted": "Tamamlandı",
       "viewPayroll": "Bordroyu Görüntüle",
       "candidatesByStage": "Aşamaya Göre Adaylar",
-      "probationDialogTitle": "7 Gün İçinde Deneme Süresi Bitenler",
+      "probationDialogTitle": "30 Gün İçinde Deneme Süresi Bitenler",
       "noProbationEmployees": "Bu dönemde çalışan yok",
       "daysRemaining": "{days} gün kaldı",
       "viewProbationEvaluations": "Deneme Değerlendirmelerini Görüntüle"

@@ -51,6 +51,7 @@ type FormData = {
   contractType: "FIXED_TERM" | "INDEFINITE" | "TEMPORARY" | "TRAINEE" | "CONSULTANT" | "SERVICE_PROVIDER" | "UNSPECIFIED";
   probationPeriod?: "ONE_MONTH" | "TWO_MONTHS" | "THREE_MONTHS" | "PERMANENT" | "UNSPECIFIED";
   interviewEvaluation?: string;
+  company?: "VITAXIR" | "VITASYR";
   employmentStatus?: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
   workType?: "FULL_TIME" | "PART_TIME" | "REMOTE" | "UNSPECIFIED";
   contractEndDate?: string;
@@ -259,6 +260,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     university2: z.string().optional(),
     certificateAttachment2: z.string().optional(),
     notes: z.string().optional(),
+    company: z.enum(["VITAXIR", "VITASYR"]).optional(),
   });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attUploading, setAttUploading] = useState(false);
@@ -329,6 +331,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       university2: "",
       certificateAttachment2: "",
       notes: "",
+      company: undefined,
     },
   });
 
@@ -384,6 +387,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         university2: (employee as any).university2 || "",
         certificateAttachment2: (employee as any).certificateAttachment2 || "",
         notes: (employee as any).notes || "",
+        company: (employee as any).company || undefined,
       });
       setAttachments((employee as any).attachments || []);
       setTrainingCertificates((employee as any).trainingCertificates || []);
@@ -489,6 +493,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           universityYear: data.universityYear ?? undefined,
           religion: data.religion || undefined,
           notes: data.notes || null,
+          company: data.company || undefined,
           ...qualificationFields,
           ...(attachments.length > 0 && { attachments }),
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
@@ -527,6 +532,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           specialization2: rest.specialization2 || undefined,
           certificateAttachment2: rest.certificateAttachment2 || undefined,
           notes: rest.notes || undefined,
+          company: rest.company || undefined,
           ...(attachments.length > 0 && { attachments }),
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
           ...(allowances.length > 0 && { allowances }),
@@ -1066,6 +1072,41 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       <FormControl>
                         <Textarea {...field} rows={3} placeholder="ملاحظات حرة عن الموظف..." />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>الشركة ({t("common.optional")})</FormLabel>
+                      <div className="flex gap-4 pt-1">
+                        {(["VITAXIR", "VITASYR"] as const).map((val) => (
+                          <label key={val} className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="radio"
+                              name={field.name}
+                              value={val}
+                              checked={field.value === val}
+                              onChange={() => field.onChange(val)}
+                              className="accent-primary"
+                            />
+                            <span className="text-sm">{val === "VITAXIR" ? "VitaXir" : "VitaSyr"}</span>
+                          </label>
+                        ))}
+                        {field.value && (
+                          <button
+                            type="button"
+                            onClick={() => field.onChange(undefined)}
+                            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            مسح
+                          </button>
+                        )}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

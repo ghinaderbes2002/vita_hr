@@ -128,12 +128,12 @@ export const employeesApi = {
 
   getProbationReport: async (days: number): Promise<any[]> => {
     const response = await apiClient.get("/employees/reports/probation-ending", { params: { days } });
-    return response.data?.data ?? response.data ?? [];
+    return response.data?.data?.items ?? response.data?.data ?? response.data ?? [];
   },
 
   getContractReport: async (days: number): Promise<any[]> => {
     const response = await apiClient.get("/employees/reports/contract-ending", { params: { days } });
-    return response.data?.data ?? response.data ?? [];
+    return response.data?.data?.items ?? response.data?.data ?? response.data ?? [];
   },
 
   transfer: async (id: string, dto: TransferDto): Promise<void> => {

@@ -217,7 +217,7 @@
       "payrollCompleted": "مكتمل",
       "viewPayroll": "عرض الرواتب",
       "candidatesByStage": "المرشحون حسب المرحلة",
-      "probationDialogTitle": "موظفون تنتهي فترتهم التجريبية خلال 7 أيام",
+      "probationDialogTitle": "موظفون تنتهي فترتهم التجريبية خلال 30 يوماً",
       "noProbationEmployees": "لا يوجد موظفون في هذه الفترة",
       "daysRemaining": "{days} يوم متبقي",
       "viewProbationEvaluations": "عرض تقييمات التجربة"

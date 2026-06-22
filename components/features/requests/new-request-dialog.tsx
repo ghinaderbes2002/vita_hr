@@ -210,6 +210,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   }, [open, defaultType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedType = form.watch("type");
+  const watchedDelegationType = form.watch("delegationType");
   const watchedStartTime      = form.watch("startTime");
   const watchedEndTime        = form.watch("endTime");
   const watchedMissionStart   = form.watch("missionStartDate");
@@ -1307,7 +1308,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("requests.fields.notes")} ({t("common.optional")})</FormLabel>
+                    <FormLabel>{selectedType === "DELEGATION" && watchedDelegationType === "PARTIAL" ? "التفويض بالصلاحيات التالية" : `${t("requests.fields.notes")} (${t("common.optional")})`}</FormLabel>
                     <FormControl><Textarea {...field} rows={2} /></FormControl>
                   </FormItem>
                 )}

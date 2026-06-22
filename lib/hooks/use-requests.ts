@@ -121,6 +121,14 @@ export function usePendingMyApproval(params?: { page?: number; limit?: number })
   });
 }
 
+export function useCeoApprovedRequests(params?: { page?: number; limit?: number; type?: string }, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["requests", "ceo-approved", params],
+    queryFn: () => requestsApi.getCeoApproved(params),
+    enabled: options?.enabled ?? true,
+  });
+}
+
 export function useRequestApprovals(id: string) {
   return useQuery({
     queryKey: ["request-approvals", id],

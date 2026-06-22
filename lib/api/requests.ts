@@ -72,6 +72,11 @@ export const requestsApi = {
     return response.data;
   },
 
+  getCeoApproved: async (params?: { page?: number; limit?: number; type?: string }) => {
+    const response = await apiClient.get("/requests/ceo-approved", { params });
+    return response.data;
+  },
+
   getApprovals: async (id: string) => {
     const response = await apiClient.get(`/requests/${id}/approvals`);
     return response.data.data;

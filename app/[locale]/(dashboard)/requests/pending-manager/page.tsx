@@ -24,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { usePendingMyApproval, useApproveRequest, useRejectRequest } from "@/lib/hooks/use-requests";
+import { usePendingMyApproval, useApproveRequest, useRejectRequest, useCeoApprovedRequests } from "@/lib/hooks/use-requests";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
@@ -57,7 +57,8 @@ export default function PendingManagerPage() {
   const locale = useLocale();
   const dateLocale = locale === "ar" ? ar : locale === "tr" ? tr : enUS;
 
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin, hasRole } = usePermissions();
+  const isCeo = hasRole("CEO" as any);
   const canManagerApprove = isAdmin() || hasPermission("maintenance:manager-approve" as any);
   const canLogistics = isAdmin() || hasPermission("maintenance:logistics" as any);
   const canExecutiveApprove = isAdmin() || hasPermission("maintenance:executive-approve" as any);
@@ -69,11 +70,13 @@ export default function PendingManagerPage() {
   const [selectedGeneric, setSelectedGeneric] = useState<Request | null>(null);
 
   const { data, isLoading } = usePendingMyApproval({ limit: 50 });
+  const { data: ceoApprovedData, isLoading: ceoApprovedLoading } = useCeoApprovedRequests({ limit: 50 }, { enabled: isCeo || isAdmin() });
   const approveRequest = useApproveRequest();
   const rejectRequest = useRejectRequest();
   const { data: allEmployeesData } = useEmployeesBasicList();
 
   const requests: Request[] = (data as any)?.data?.items || (data as any)?.data || [];
+  const ceoApprovedRequests: Request[] = (ceoApprovedData as any)?.data?.items || (ceoApprovedData as any)?.data?.data?.items || [];
   const empMap = new Map(
     (Array.isArray(allEmployeesData) ? allEmployeesData : []).map((e: any) => [e.id, e])
   );
@@ -224,6 +227,9 @@ export default function PendingManagerPage() {
           {showAnyMaintenance && (
             <TabsTrigger value="maintenance">{t("maintenance.title")}</TabsTrigger>
           )}
+          {(isCeo || isAdmin()) && (
+            <TabsTrigger value="ceo-approved">الطلبات المعتمدة</TabsTrigger>
+          )}
         </TabsList>
 
         {/* ── Generic admin requests tab ── */}
@@ -307,6 +313,65 @@ export default function PendingManagerPage() {
             </Table>
           </div>
         </TabsContent>
+
+        {/* ── CEO Approved requests tab ── */}
+        {(isCeo || isAdmin()) && (
+          <TabsContent value="ceo-approved">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("requests.fields.requestNumber")}</TableHead>
+                    <TableHead>{t("requests.fields.employee")}</TableHead>
+                    <TableHead>{t("requests.fields.type")}</TableHead>
+                    <TableHead>{t("requests.fields.reason")}</TableHead>
+                    <TableHead>{t("requests.fields.status")}</TableHead>
+                    <TableHead>{t("requests.fields.createdAt")}</TableHead>
+                    <TableHead className="w-17.5">{t("common.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ceoApprovedLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 7 }).map((_, j) => (
+                          <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : ceoApprovedRequests.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">{t("common.noData")}</TableCell>
+                    </TableRow>
+                  ) : (
+                    ceoApprovedRequests.map((req) => (
+                      <TableRow key={req.id}>
+                        <TableCell className="font-mono text-sm">{req.requestNumber}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const emp = (req as any).employee || empMap.get((req as any).employeeId);
+                            return emp ? `${emp.firstNameAr} ${emp.lastNameAr}` : "—";
+                          })()}
+                        </TableCell>
+                        <TableCell>{t(`requests.types.${req.type}` as any)}</TableCell>
+                        <TableCell className="max-w-40 truncate">{req.reason}</TableCell>
+                        <TableCell><RequestStatusBadge status={req.status} /></TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {new Date(req.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => router.push(`/requests/${req.id}`)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        )}
 
         {/* ── Maintenance requests tab ── */}
         {showAnyMaintenance && (

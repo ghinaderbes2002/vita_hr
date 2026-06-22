@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notificationsApi } from "@/lib/api/notifications";
 import { toast } from "sonner";
 
-export function useNotifications(params?: { isRead?: boolean }) {
+export function useNotifications(params?: { isRead?: boolean; limit?: number }) {
   return useQuery({
     queryKey: ["notifications", params],
     queryFn: () => notificationsApi.getAll(params),

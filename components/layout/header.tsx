@@ -36,7 +36,7 @@ export function Header() {
   const pathname = usePathname();
 
   const { data: unreadCount = 0 } = useUnreadCount();
-  const { data: notifications = [] } = useNotifications();
+  const { data: notifications = [] } = useNotifications({ limit: 50 } as any);
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
 
@@ -212,7 +212,7 @@ export function Header() {
                   لا توجد إشعارات
                 </div>
               ) : (
-                notifList.slice(0, 10).map((notif: any) => {
+                notifList.map((notif: any) => {
                   const cfg = NOTIF_CONFIG[notif.type] ?? DEFAULT_NOTIF_CFG;
                   const NotifIcon = cfg.icon;
                   return (

@@ -51,6 +51,7 @@ export default function EmployeesPage() {
   const [page, setPage] = useState(1);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [exemptFilter, setExemptFilter] = useState<"all" | "exempt" | "linked">("all");
+  const [companyFilter, setCompanyFilter] = useState<"" | "VITAXIR" | "VITASYR">("");
   const [view, setView] = useState<"list" | "tree">("list");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -58,7 +59,7 @@ export default function EmployeesPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
   const LIMIT = 10;
-  const { data: allEmployeesData, isLoading: allEmployeesLoading } = useEmployees({ search, page, limit: LIMIT });
+  const { data: allEmployeesData, isLoading: allEmployeesLoading } = useEmployees({ search, page: companyFilter ? 1 : page, limit: companyFilter ? 500 : LIMIT });
   const { data: departmentEmployees, isLoading: departmentEmployeesLoading } = useEmployeesByDepartment(selectedDepartment);
   const { data: departmentsData } = useDepartments({ limit: 500 });
   const deleteEmployee = useDeleteEmployee();
@@ -81,6 +82,7 @@ export default function EmployeesPage() {
     const linked = e.attendanceConfig?.salaryLinked ?? true;
     if (exemptFilter === "exempt") return linked === false;
     if (exemptFilter === "linked") return linked === true;
+    if (companyFilter && e.company !== companyFilter) return false;
     return true;
   });
 
@@ -186,6 +188,16 @@ export default function EmployeesPage() {
                 {dept.nameAr}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={companyFilter || "all"} onValueChange={(v) => { setCompanyFilter(v === "all" ? "" : v as any); setPage(1); }}>
+          <SelectTrigger className="w-40 bg-background">
+            <SelectValue placeholder="كل الشركات" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الشركات</SelectItem>
+            <SelectItem value="VITAXIR">VitaXir</SelectItem>
+            <SelectItem value="VITASYR">VitaSyr</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -307,7 +319,7 @@ export default function EmployeesPage() {
         </Table>
       </div>
 
-      {!selectedDepartment && meta && (
+      {!selectedDepartment && !companyFilter && meta && (
         <Pagination
           page={page}
           totalPages={meta.totalPages}

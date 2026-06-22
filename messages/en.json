@@ -79,7 +79,7 @@
       "payrollCompleted": "Completed",
       "viewPayroll": "View Payroll",
       "candidatesByStage": "Candidates by Stage",
-      "probationDialogTitle": "Employees Whose Probation Ends Within 7 Days",
+      "probationDialogTitle": "Employees Whose Probation Ends Within 30 Days",
       "noProbationEmployees": "No employees in this period",
       "daysRemaining": "{days} days remaining",
       "viewProbationEvaluations": "View Probation Evaluations"
