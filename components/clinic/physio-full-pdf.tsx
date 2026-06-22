@@ -98,9 +98,10 @@ const S = StyleSheet.create({
     flexDirection: "row-reverse",
     marginBottom: 2,
     flexWrap: "nowrap",
+    alignItems: "flex-start",
   },
-  fieldLabel: { fontSize: 8.5, color: TEXT, flex: 1.2, textAlign: "right" },
-  fieldValue: { fontSize: 9.5, color: MUTED, flex: 1, textAlign: "left" },
+  fieldLabel: { fontSize: 8.5, color: TEXT, flexShrink: 0 },
+  fieldValue: { fontSize: 8.5, color: MUTED, flex: 1, textAlign: "right", paddingRight: 12 },
   yes: { color: "#16a34a" },
   no:  { color: "#9ca3af" },
   chipsWrap: {
