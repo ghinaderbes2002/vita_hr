@@ -99,8 +99,8 @@ const S = StyleSheet.create({
     marginBottom: 2,
     flexWrap: "nowrap",
   },
-  fieldLabel: { fontSize: 8.5, color: TEXT, flex: 1.2 },
-  fieldValue: { fontSize: 9.5, color: MUTED, flex: 1, textAlign: "right" },
+  fieldLabel: { fontSize: 8.5, color: TEXT, flex: 1.2, textAlign: "right" },
+  fieldValue: { fontSize: 9.5, color: MUTED, flex: 1, textAlign: "left" },
   yes: { color: "#16a34a" },
   no:  { color: "#9ca3af" },
   chipsWrap: {
@@ -162,7 +162,7 @@ export interface PhysioCasePdfData {
   painRegions: PainRegion[];
   painTypes: string[];
   painTypeOther: string;
-  customPainTypes?: { id: string; name: string; color: string }[];
+  painTypeOtherColor?: string;
   aggravatingFactors: string[];
   alleviatingFactors: string[];
   aggravatingOther: string;
@@ -385,8 +385,8 @@ const FC = ({ label, value }: { label: string; value?: string | number | null })
   const v = value == null ? "" : String(value).trim();
   return (
     <View style={{ marginBottom: 6 }} wrap={false}>
-      <Text style={{ fontSize: 7.5, color: MUTED, marginBottom: 2 }}>{ar(label)}</Text>
-      <Text style={{ fontSize: 10, color: TEXT, fontWeight: "bold" }}>{ar(v) || "—"}</Text>
+      <Text style={{ fontSize: 7.5, color: TEXT, marginBottom: 2 }}>{ar(label)}</Text>
+      <Text style={{ fontSize: 10, color: MUTED, fontWeight: "bold" }}>{ar(v) || "—"}</Text>
     </View>
   );
 };
@@ -476,18 +476,16 @@ const AllTagChips = ({ options, selected }: { options: { key: string; label: str
 // Standalone label style — right-aligned, no fixed width (different from fieldLabel in fieldRow)
 const SL = { fontSize: 8.5, color: TEXT, marginBottom: 2, textAlign: "right" as const };
 
-const BodyMapPdf = ({ regions, origin, customTypes }: { regions: PainRegion[]; origin: string; customTypes?: { id: string; name: string; color: string }[] }) => {
+const BodyMapPdf = ({ regions, origin, otherColor, otherLabel }: { regions: PainRegion[]; origin: string; otherColor?: string; otherLabel?: string }) => {
   const uniqueTypes = [...new Set(regions.map((r) => r.painType ?? "OTHER"))];
 
   function getPainColor(type: string) {
-    const custom = customTypes?.find((c) => c.id === type);
-    if (custom) return custom.color;
+    if (type === "OTHER" && otherColor) return otherColor;
     return PAIN_COLORS[type] ?? "#ef4444";
   }
 
   function getPainLabel(type: string) {
-    const custom = customTypes?.find((c) => c.id === type);
-    if (custom) return custom.name || "أخرى";
+    if (type === "OTHER" && otherLabel) return otherLabel;
     return PAIN_LABELS_AR[type] ?? type;
   }
 
@@ -643,7 +641,8 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         <BodyMapPdf
           regions={painRegions}
           origin={origin}
-          customTypes={data.customPainTypes}
+          otherColor={data.painTypeOtherColor}
+          otherLabel={data.painTypeOther || undefined}
         />
         <View style={{ marginBottom: 4 }}>
           <Text style={SL}>{ar("أنواع الألم")}</Text>
