@@ -777,13 +777,6 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
           </>
         )}
 
-        <Bool
-          label="هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟"
-          value={history.prescriptionDrugs}
-        />
-        {history.prescriptionDrugs && (
-          <F label="الأدوية" value={history.currentMedications} />
-        )}
         <F
           label="التشخيصات السابقة / الأدوية السابقة"
           value={history.previousDiagnoses}
@@ -801,6 +794,13 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         />
         {history.hasDoctorRestrictions && (
           <F label="التعليمات" value={history.doctorRestrictions} />
+        )}
+        <Bool
+          label="هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟"
+          value={history.prescriptionDrugs}
+        />
+        {history.prescriptionDrugs && (
+          <F label="الأدوية" value={history.currentMedications} />
         )}
         <Bool
           label="هل تتناول حالياً أي مستحضرات عشبية أو فيتامينات؟"

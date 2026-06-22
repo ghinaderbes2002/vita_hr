@@ -1923,20 +1923,6 @@ export default function PhysioCasePage() {
                 </>
               )}
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>{t("medicalHistory.prescriptionDrugs")}</Label>
-                  <div className="flex items-center gap-2 shrink-0 mr-2">
-                    <span className="text-xs text-muted-foreground">{t("no")}</span>
-                    <Switch checked={history.prescriptionDrugs} onCheckedChange={(v) => setHistory((h) => ({ ...h, prescriptionDrugs: v }))} disabled={!canEdit} />
-                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
-                  </div>
-                </div>
-                {history.prescriptionDrugs && (
-                  <Input className="mr-4" value={history.currentMedications} onChange={(e) => setHistory((h) => ({ ...h, currentMedications: e.target.value }))} placeholder={t("medicalHistory.currentMedicationsPlaceholder")} disabled={!canEdit} />
-                )}
-              </div>
-
               <div className="space-y-1.5">
                 <Label>{t("medicalHistory.previousDiagnoses")}</Label>
                 <Textarea rows={2} value={history.previousDiagnoses} onChange={(e) => setHistory((h) => ({ ...h, previousDiagnoses: e.target.value }))} disabled={!canEdit} />
@@ -1967,6 +1953,20 @@ export default function PhysioCasePage() {
                 </div>
                 {history.hasDoctorRestrictions && (
                   <Input value={history.doctorRestrictions} onChange={(e) => setHistory((h) => ({ ...h, doctorRestrictions: e.target.value }))} placeholder={t("medicalHistory.doctorRestrictionsPlaceholder")} disabled={!canEdit} />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("medicalHistory.prescriptionDrugs")}</Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">{t("no")}</span>
+                    <Switch checked={history.prescriptionDrugs} onCheckedChange={(v) => setHistory((h) => ({ ...h, prescriptionDrugs: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
+                  </div>
+                </div>
+                {history.prescriptionDrugs && (
+                  <Input className="mr-4" value={history.currentMedications} onChange={(e) => setHistory((h) => ({ ...h, currentMedications: e.target.value }))} placeholder={t("medicalHistory.currentMedicationsPlaceholder")} disabled={!canEdit} />
                 )}
               </div>
 
