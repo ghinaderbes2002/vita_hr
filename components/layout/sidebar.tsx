@@ -136,7 +136,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.requests",
         icon: ClipboardList,
-        hiddenForRoles: ["IT", "تقنية المعلومات", "CFO"],
+        hiddenForRoles: ["IT", "تقنية المعلومات", "CFO", "CEO"],
         children: [
           { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permissions: ["requests:manager-approve", "requests:hr-approve"] },
           { title: "nav.allRequests", href: "/requests/all", icon: ClipboardList, permission: "requests:read", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
