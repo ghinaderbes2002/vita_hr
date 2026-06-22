@@ -491,8 +491,8 @@ export default function PhysioCasePage() {
 
     // Complaint
     setComplaint({
-      majorComplaint: caseData.majorComplaint ?? "",
-      symptoms: caseData.symptoms ?? "",
+      majorComplaint: [caseData.majorComplaint, caseData.symptoms].filter(Boolean).join("\n") || "",
+      symptoms: "",
       currentJob: caseData.currentJob ?? "",
       lifeType: caseData.lifeType ?? "",
       complaintStartDate: caseData.complaintStartDate ?? "",
@@ -1553,56 +1553,36 @@ export default function PhysioCasePage() {
         <TabsContent value="complaint" className="mt-4 space-y-4">
           <Section title={t("complaint.title")}>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-1.5">
-                  <Label>{t("complaint.majorComplaint")}</Label>
-                  <Textarea
-                    rows={2}
-                    value={complaint.majorComplaint}
-                    onChange={(e) =>
-                      setComplaint((f) => ({
-                        ...f,
-                        majorComplaint: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t("complaint.symptoms")}</Label>
-                  <Textarea
-                    rows={2}
-                    value={complaint.symptoms}
-                    onChange={(e) =>
-                      setComplaint((f) => ({ ...f, symptoms: e.target.value }))
-                    }
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label>{t("complaint.majorComplaint")} / {t("complaint.symptoms")}</Label>
+                <Textarea
+                  rows={3}
+                  value={complaint.majorComplaint}
+                  onChange={(e) =>
+                    setComplaint((f) => ({ ...f, majorComplaint: e.target.value, symptoms: "" }))
+                  }
+                  disabled={!canEdit}
+                />
               </div>
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>{t("complaint.possibleCause")}</Label>
-                  <Input
-                    value={complaint.possibleCause}
-                    onChange={(e) =>
-                      setComplaint((f) => ({
-                        ...f,
-                        possibleCause: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t("complaint.startDate")}</Label>
-                  <Input
-                    value={complaint.complaintStartDate}
-                    onChange={(e) =>
-                      setComplaint((f) => ({
-                        ...f,
-                        complaintStartDate: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label>{t("complaint.startDate")}</Label>
+                <Input
+                  value={complaint.complaintStartDate}
+                  onChange={(e) =>
+                    setComplaint((f) => ({ ...f, complaintStartDate: e.target.value }))
+                  }
+                  disabled={!canEdit}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("complaint.possibleCause")}</Label>
+                <Input
+                  value={complaint.possibleCause}
+                  onChange={(e) =>
+                    setComplaint((f) => ({ ...f, possibleCause: e.target.value }))
+                  }
+                  disabled={!canEdit}
+                />
               </div>
               <div className="space-y-4">
                 <div className="space-y-1.5">
