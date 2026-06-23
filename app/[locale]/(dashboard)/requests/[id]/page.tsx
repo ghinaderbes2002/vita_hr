@@ -151,6 +151,7 @@ const APPROVER_ROLE_LABELS: Record<string, string> = {
   CFO: "المدير المالي",
   LOGISTICS: "مسؤول اللوجستي",
   ASSIGNED_EMPLOYEE: "الموظف المكلَّف",
+  QS: "مشرف الجودة",
 };
 
 const MAINTENANCE_STATUS_ORDER = [
@@ -258,6 +259,7 @@ export default function RequestDetailPage() {
   const { hasPermission, isAdmin } = usePermissions();
   const canHrApprove = isAdmin() || hasPermission("requests:hr-approve");
   const canHrReject  = isAdmin() || hasPermission("requests:hr-reject");
+  const canAnyApprove = isAdmin() || hasPermission("requests:manager-approve") || hasPermission("requests:hr-approve") || hasPermission("requests:qs-approve") || hasPermission("requests:ceo-approve");
   const uploadHiringPdf = useUploadHiringPdf();
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
@@ -348,6 +350,7 @@ export default function RequestDetailPage() {
   };
 
   const isPenaltyOrReward = request?.type === "PENALTY_PROPOSAL" || request?.type === "REWARD";
+  const usesUnifiedApproval = isPenaltyOrReward || request?.type === "OVERTIME_EMPLOYEE";
 
   if (isLoading) {
     return (
@@ -387,7 +390,30 @@ export default function RequestDetailPage() {
               <ArrowRight className="h-4 w-4 ml-2" />
               {t("common.back")}
             </Button>
-            {(request.status === "PENDING_HR" || request.status === "IN_APPROVAL") && (
+            {/* REWARD / PENALTY_PROPOSAL / OVERTIME_EMPLOYEE — unified approve/reject */}
+            {usesUnifiedApproval && request.status === "IN_APPROVAL" && canAnyApprove && (
+              <>
+                <Button
+                  className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => setApproveOpen(true)}
+                  disabled={approveRequest.isPending}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  موافقة
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="gap-1.5"
+                  onClick={() => setRejectOpen(true)}
+                  disabled={rejectRequest.isPending}
+                >
+                  <XCircle className="h-4 w-4" />
+                  رفض
+                </Button>
+              </>
+            )}
+            {/* Other request types — HR approve/reject */}
+            {!usesUnifiedApproval && (request.status === "PENDING_HR" || request.status === "IN_APPROVAL") && (
               <>
                 {canHrApprove && (
                   <Button

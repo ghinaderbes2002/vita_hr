@@ -83,7 +83,7 @@ export const requestsApi = {
   },
 
   getSteps: async (id: string) => {
-    const response = await apiClient.get(`/requests/${id}/steps`);
+    const response = await apiClient.get(`/requests/${id}/approval-steps`);
     return response.data?.data ?? response.data;
   },
 

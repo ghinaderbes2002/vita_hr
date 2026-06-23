@@ -93,7 +93,7 @@ const navigation: NavItem[] = [
     
     title: "nav.management",
     icon: Settings,
-    hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية", "dep_manager", "مدير قسم", "DIRECT_MANAGER", "CFO"],
+    hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية", "dep_manager", "مدير قسم", "DIRECT_MANAGER", "QS", "CFO"],
     children: [
       { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
       { title: "nav.roles", href: "/roles", icon: Shield, permission: "roles:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
@@ -105,7 +105,7 @@ const navigation: NavItem[] = [
   },
   {
     title: "nav.hr",
-    titleForRoles: { "DIRECT_MANAGER": "nav.subordinatesAffairs" },
+    titleForRoles: { "DIRECT_MANAGER": "nav.subordinatesAffairs", "QS": "nav.subordinatesAffairs" },
     icon: Briefcase,
     hiddenForRoles: ["employee", "موظف"],
     children: [
@@ -145,7 +145,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.jobApplications",
         icon: Briefcase,
-        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات", "CFO"],
+        hiddenForRoles: ["DIRECT_MANAGER", "QS", "IT", "تقنية المعلومات", "CFO"],
         children: [
           { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
           { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
@@ -154,7 +154,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.onboarding",
         icon: LayoutList,
-        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات", "CEO", "المدير التنفيذي", "General Manager", "المدير العام", "CFO"],
+        hiddenForRoles: ["DIRECT_MANAGER", "QS", "IT", "تقنية المعلومات", "CEO", "المدير التنفيذي", "General Manager", "المدير العام", "CFO"],
         children: [
           { title: "nav.onboardingTemplates", href: "/onboarding/templates", icon: ClipboardList },
           { title: "nav.onboardingWorkflows", href: "/onboarding/workflows", icon: LayoutList },
@@ -163,7 +163,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.custodies",
         icon: Package,
-        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات", "CFO"],
+        hiddenForRoles: ["DIRECT_MANAGER", "QS", "IT", "تقنية المعلومات", "CFO"],
         children: [
           { title: "nav.allCustodies", href: "/custodies", icon: Package, permission: "custodies:read" },
         ],
@@ -171,7 +171,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.biometricDevices",
         icon: Fingerprint,
-        hiddenForRoles: ["DIRECT_MANAGER", "CFO"],
+        hiddenForRoles: ["DIRECT_MANAGER", "QS", "CFO"],
         children: [
           { title: "nav.allBiometricDevices", href: "/biometric-devices", icon: Fingerprint },
         ],
@@ -179,7 +179,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.deductionPolicies",
         icon: ShieldCheck,
-        hiddenForRoles: ["DIRECT_MANAGER", "IT", "تقنية المعلومات", "CFO"],
+        hiddenForRoles: ["DIRECT_MANAGER", "QS", "IT", "تقنية المعلومات", "CFO"],
         children: [
           { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
         ],
@@ -187,7 +187,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.payrollManagement",
         icon: Wallet,
-        hiddenForRoles: ["DIRECT_MANAGER", "General Manager", "Follow-up official", "موظف", "HR_Specialist", "IT", "تقنية المعلومات"],
+        hiddenForRoles: ["DIRECT_MANAGER", "QS", "General Manager", "Follow-up official", "موظف", "HR_Specialist", "IT", "تقنية المعلومات"],
         children: [
           { title: "nav.payrollList", href: "/payroll", icon: Wallet },
           { title: "nav.salaryAdvances", href: "/salary-advances", icon: Banknote },
@@ -197,7 +197,7 @@ const navigation: NavItem[] = [
       {
         title: "nav.hrReports",
         icon: FileBarChart,
-        hiddenForRoles: ["DIRECT_MANAGER", "Follow-up official", "مسؤول متابعة", "IT", "تقنية المعلومات", "CFO"],
+        hiddenForRoles: ["DIRECT_MANAGER", "QS", "Follow-up official", "مسؤول متابعة", "IT", "تقنية المعلومات", "CFO"],
         children: [
           { title: "nav.hrReportsSummary", href: "/reports/hr", icon: FileBarChart },
           { title: "nav.leaveReports", href: "/reports/leave", icon: FileBarChart },
