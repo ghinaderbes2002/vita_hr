@@ -306,6 +306,16 @@ export default function NotificationsPage() {
                           إرسال تهنئة
                         </button>
                       )}
+                      {notif.data?.requestId && (
+                        <button
+                          type="button"
+                          className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
+                          onClick={(e) => { e.stopPropagation(); if (!notif.isRead) markAsRead.mutate(notif.id); router.push(`/${locale}/requests/${notif.data.requestId}`); }}
+                        >
+                          <ClipboardList className="h-3 w-3" />
+                          عرض الطلب ←
+                        </button>
+                      )}
                       {notif.data?.employeeId && !isBirthday && (
                         <button
                           type="button"

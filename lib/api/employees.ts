@@ -74,6 +74,12 @@ export const employeesApi = {
            Array.isArray(d) ? d : [];
   },
 
+  getByCompany: async (company: string): Promise<{ id: string; firstNameAr: string; lastNameAr: string; employeeNumber?: string; company?: string; department?: { id: string; nameAr: string }; jobTitle?: { id: string; titleAr: string } }[]> => {
+    const response = await apiClient.get(`/employees/by-company/${company}`);
+    const d = response.data;
+    return Array.isArray(d?.data) ? d.data : Array.isArray(d) ? d : [];
+  },
+
   getMyProfile: async (): Promise<Employee> => {
     const response = await apiClient.get("/employees/my");
     return response.data?.data || response.data;

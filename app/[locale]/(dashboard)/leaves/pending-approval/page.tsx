@@ -39,6 +39,7 @@ import {
   useLeaveRequests,
   usePendingManagerLeaveRequests,
   useManagerApprovedLeaveRequests,
+  usePendingHrLeaveRequests,
   useApproveManager,
   useRejectManager,
   useApproveHr,
@@ -87,6 +88,8 @@ export default function PendingApprovalPage() {
     if (tab === "hr" && showHrTab) return "hr";
     if (tab === "manager_approved" && showManagerTab) return "manager_approved";
     if (tab === "manager" && showManagerTab) return "manager";
+    // if HR-only (no manager permission) → default to hr tab
+    if (!showManagerTab && showHrTab) return "hr";
     if (showManagerTab) return "manager";
     if (showHrTab) return "hr";
     return "manager";
@@ -105,8 +108,8 @@ export default function PendingApprovalPage() {
     { page, limit: LIMIT },
     { enabled: activeTab === "manager_approved" },
   );
-  const { data: hrData, isLoading: hrLoading } = useLeaveRequests(
-    { status: "PENDING_HR" as any, page, limit: LIMIT },
+  const { data: hrData, isLoading: hrLoading } = usePendingHrLeaveRequests(
+    { page, limit: LIMIT },
     { enabled: activeTab === "hr" },
   );
   const { data: allData, isLoading: allLoading } = useLeaveRequests(

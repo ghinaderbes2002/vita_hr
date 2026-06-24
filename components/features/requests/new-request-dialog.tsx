@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateRequest, useSubmitRequest } from "@/lib/hooks/use-requests";
 import { useCreateMaintenanceRequest } from "@/lib/hooks/use-maintenance-requests";
 import { useDepartments } from "@/lib/hooks/use-departments";
-import { useEmployeesBasicList, useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useMyEmployee, useSubordinates, useEmployeesByCompany } from "@/lib/hooks/use-employees";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { useCheckUnreturnedCustodies } from "@/lib/hooks/use-custodies";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -153,9 +153,10 @@ interface NewRequestDialogProps {
 export function NewRequestDialog({ open, onOpenChange, defaultType, title }: NewRequestDialogProps) {
   const t = useTranslations();
   const { user } = useAuthStore();
-  const { hasAnyPermission, isAdmin } = usePermissions();
+  const { hasAnyPermission, isAdmin, hasRole } = usePermissions();
 
   const isManager = isAdmin() || hasAnyPermission(MANAGER_PERMISSIONS);
+  const isQS = !isAdmin() && hasRole("QS");
 
   const availableTypes = ALL_REQUEST_TYPES.filter((type) => {
     if (MANAGER_ONLY_TYPES.includes(type)) return isManager;
@@ -169,6 +170,9 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   const [rewardEmployees, setRewardEmployees] = useState<RewardEmployee[]>([
     { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" },
   ]);
+  const [rewardErrors, setRewardErrors] = useState<{ employeeId: boolean; rewardType: boolean; reason: boolean; amount: boolean }[]>([
+    { employeeId: false, rewardType: false, reason: false, amount: false },
+  ]);
   const [penaltyCategory, setPenaltyCategory] = useState<"MATERIAL" | "MORAL">("MORAL");
   const [penaltyType, setPenaltyType] = useState<string>("");
   const [penaltyDays, setPenaltyDays] = useState<string>("");
@@ -180,13 +184,14 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
 
   const { data: myEmployee } = useMyEmployee();
   const managerEmployeeId = (myEmployee as any)?.id || user?.employeeId || "";
-  const showAllEmployees = isAdmin() || !managerEmployeeId;
+  const showAllEmployees = isAdmin() || isQS || !managerEmployeeId;
 
   const createRequest = useCreateRequest();
   const submitRequest = useSubmitRequest();
   const createMaintenanceRequest = useCreateMaintenanceRequest();
   const { data: deptData } = useDepartments({ limit: 100 });
   const { data: empData } = useEmployeesBasicList();
+  const { data: qsEmpData } = useEmployeesByCompany(isQS ? "VITASYR" : null);
   const { data: subordinatesData } = useSubordinates(managerEmployeeId);
   const { data: titlesData } = useJobTitles({ limit: 100 });
 
@@ -194,6 +199,10 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   const employees: any[] = showAllEmployees
     ? (Array.isArray(empData) ? empData : [])
     : (Array.isArray(subordinatesData) ? subordinatesData : []);
+  const allEmployees: any[] = Array.isArray(empData) ? empData : [];
+  const rewardPenaltyEmployees: any[] = isQS
+    ? (Array.isArray(qsEmpData) ? qsEmpData : [])
+    : employees;
   const jobTitles: any[] = Array.isArray(titlesData)
     ? titlesData
     : (titlesData as any)?.data?.items || (titlesData as any)?.data || [];
@@ -348,18 +357,8 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
         };
       case "REMOTE_WORK":
         return {
-          remoteWorkType: remoteWork.remoteWorkType,
-          temporaryDays: remoteWork.temporaryDays ? Number(remoteWork.temporaryDays) : undefined,
-          emergencyReason: remoteWork.emergencyReason || undefined,
           startDate: remoteWork.startDate,
-          endDate: remoteWork.endDate || undefined,
-          weeklyDaysCount: remoteWork.weeklyDaysCount ? Number(remoteWork.weeklyDaysCount) : undefined,
-          proposedDays: remoteWork.proposedDays || undefined,
-          justification: remoteWork.justification,
-          justificationOther: remoteWork.justificationOther || undefined,
-          tasks: remoteWork.tasks.filter(Boolean),
-          requiredTools: remoteWork.requiredTools,
-          specificSoftware: remoteWork.specificSoftware || undefined,
+          endDate: remoteWork.endDate,
         };
       default:
         return undefined;
@@ -399,6 +398,23 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
         if (!data.purpose?.trim()) { toast.error(t("requests.dialog.overtime.purposeLabel")); return; }
         if (overtimeManagerEmployeeIds.length === 0) { toast.error(t("requests.dialog.overtime.assignedEmployees")); return; }
       }
+
+      if (actualType === "REMOTE_WORK") {
+        if (!remoteWork.startDate) { toast.error("تاريخ البداية مطلوب"); return; }
+        if (!remoteWork.endDate) { toast.error("تاريخ الانتهاء مطلوب"); return; }
+        if (remoteWork.endDate < remoteWork.startDate) { toast.error("تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية"); return; }
+      }
+
+      if (actualType === "REWARD") {
+        const errs = rewardEmployees.map((e) => ({
+          employeeId: !e.employeeId,
+          rewardType: !e.rewardType.trim(),
+          reason: !e.reason.trim(),
+          amount: e.category === "MATERIAL" && !e.amount,
+        }));
+        setRewardErrors(errs);
+        if (errs.some((e) => e.employeeId || e.rewardType || e.reason || e.amount)) return;
+      }
       const created = await createRequest.mutateAsync({
         type: actualType,
         reason: data.reason || "",
@@ -412,6 +428,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
       form.reset({ type: "OTHER", reason: "", notes: "" });
       setHiringPositions([{ departmentId: "", jobTitle: "", count: "1", reason: "" }]);
       setRewardEmployees([{ employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" }]);
+      setRewardErrors([{ employeeId: false, rewardType: false, reason: false, amount: false }]);
       setPenaltyCategory("MORAL");
       setPenaltyType("");
       setPenaltyDays("");
@@ -543,7 +560,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormLabel>{t("requests.dialog.penalty.targetEmployee")}</FormLabel>
                     <Select value={field.value || ""} onValueChange={field.onChange}>
                       <FormControl><SelectTrigger><SelectValue placeholder={t("requests.dialog.chooseEmployee")} /></SelectTrigger></FormControl>
-                      <SelectContent>{employees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}</SelectContent>
+                      <SelectContent>{rewardPenaltyEmployees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}</SelectContent>
                     </Select>
                   </FormItem>
                 )} />
@@ -795,7 +812,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormLabel>{t("requests.dialog.delegation.delegateEmployee")}</FormLabel>
                     <Select value={field.value || ""} onValueChange={field.onChange}>
                       <FormControl><SelectTrigger><SelectValue placeholder={t("requests.dialog.chooseEmployee")} /></SelectTrigger></FormControl>
-                      <SelectContent>{employees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}</SelectContent>
+                      <SelectContent>{allEmployees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}</SelectContent>
                     </Select>
                   </FormItem>
                 )} />
@@ -867,7 +884,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                   </div>
                   {rewardEmployees.length < 10 && (
                     <Button type="button" variant="outline" size="sm" className="gap-1"
-                      onClick={() => setRewardEmployees((a) => [...a, { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" }])}>
+                      onClick={() => { setRewardEmployees((a) => [...a, { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" }]); setRewardErrors((a) => [...a, { employeeId: false, rewardType: false, reason: false, amount: false }]); }}>
                       <Plus className="h-3.5 w-3.5" />{t("requests.dialog.reward.addEmployee")}
                     </Button>
                   )}
@@ -876,16 +893,17 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                   <div key={i} className="rounded border p-3 space-y-2 relative">
                     {rewardEmployees.length > 1 && (
                       <Button type="button" variant="ghost" size="icon" className="absolute top-1 left-1 h-7 w-7"
-                        onClick={() => setRewardEmployees((a) => a.filter((_, j) => j !== i))}>
+                        onClick={() => { setRewardEmployees((a) => a.filter((_, j) => j !== i)); setRewardErrors((a) => a.filter((_, j) => j !== i)); }}>
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     )}
                     <div className="space-y-1">
                       <label className="text-xs font-medium">{t("requests.dialog.reward.employeeLabel")}</label>
-                      <Select value={emp.employeeId} onValueChange={(v) => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, employeeId: v } : x))}>
-                        <SelectTrigger><SelectValue placeholder={t("requests.dialog.chooseEmployee")} /></SelectTrigger>
-                        <SelectContent>{employees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}</SelectContent>
+                      <Select value={emp.employeeId} onValueChange={(v) => { setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, employeeId: v } : x)); setRewardErrors((a) => a.map((e, j) => j === i ? { ...e, employeeId: false } : e)); }}>
+                        <SelectTrigger className={rewardErrors[i]?.employeeId ? "border-destructive" : ""}><SelectValue placeholder={t("requests.dialog.chooseEmployee")} /></SelectTrigger>
+                        <SelectContent>{rewardPenaltyEmployees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}</SelectContent>
                       </Select>
+                      {rewardErrors[i]?.employeeId && <p className="text-xs text-destructive">{t("requests.dialog.reward.employeeRequired")}</p>}
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-medium">{t("requests.dialog.reward.categoryLabel")}</label>
@@ -904,20 +922,26 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                       <div className="space-y-1">
                         <label className="text-xs font-medium">{t("requests.dialog.reward.rewardTypeLabel")}</label>
                         <Input value={emp.rewardType} placeholder={t("requests.dialog.reward.rewardTypePlaceholder")}
-                          onChange={(e) => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, rewardType: e.target.value } : x))} />
+                          className={rewardErrors[i]?.rewardType ? "border-destructive" : ""}
+                          onChange={(e) => { setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, rewardType: e.target.value } : x)); setRewardErrors((a) => a.map((er, j) => j === i ? { ...er, rewardType: false } : er)); }} />
+                        {rewardErrors[i]?.rewardType && <p className="text-xs text-destructive">{t("requests.dialog.reward.rewardTypeRequired")}</p>}
                       </div>
                       {emp.category === "MATERIAL" && (
                         <div className="space-y-1">
                           <label className="text-xs font-medium">{t("requests.dialog.reward.amountLabel")}</label>
                           <Input type="number" min={0} value={emp.amount}
-                            onChange={(e) => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))} />
+                            className={rewardErrors[i]?.amount ? "border-destructive" : ""}
+                            onChange={(e) => { setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, amount: e.target.value } : x)); setRewardErrors((a) => a.map((er, j) => j === i ? { ...er, amount: false } : er)); }} />
+                          {rewardErrors[i]?.amount && <p className="text-xs text-destructive">{t("requests.dialog.reward.amountRequired")}</p>}
                         </div>
                       )}
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-medium">{t("requests.dialog.reward.reasonLabel")}</label>
                       <Input value={emp.reason} placeholder={t("requests.dialog.reward.reasonPlaceholder")}
-                        onChange={(e) => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, reason: e.target.value } : x))} />
+                        className={rewardErrors[i]?.reason ? "border-destructive" : ""}
+                        onChange={(e) => { setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, reason: e.target.value } : x)); setRewardErrors((a) => a.map((er, j) => j === i ? { ...er, reason: false } : er)); }} />
+                      {rewardErrors[i]?.reason && <p className="text-xs text-destructive">{t("requests.dialog.reward.reasonRequired")}</p>}
                     </div>
                   </div>
                 ))}
@@ -1096,141 +1120,23 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
 
             {/* ── REMOTE_WORK ── */}
             {selectedType === "REMOTE_WORK" && (
-              <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
-                <p className="text-sm font-semibold">{t("requests.dialog.remoteWork.sectionTitle")}</p>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium">{t("requests.dialog.remoteWork.typeLabel")}</label>
-                  <div className="flex gap-2">
-                    {REMOTE_WORK_TYPE_VALUES.map((rv) => (
-                      <button key={rv} type="button"
-                        onClick={() => setRemoteWork((p) => ({ ...p, remoteWorkType: rv }))}
-                        className={`px-4 py-1.5 rounded-full text-sm border transition-colors ${remoteWork.remoteWorkType === rv ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
-                      >
-                        {t(`requests.dialog.remoteWork.workTypes.${rv}` as any)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {remoteWork.remoteWorkType === "TEMPORARY" && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.remoteWork.temporaryDaysLabel")}</label>
-                    <Input type="number" min={1} value={remoteWork.temporaryDays} placeholder={t("requests.dialog.remoteWork.temporaryDaysPlaceholder")}
-                      onChange={(e) => setRemoteWork((p) => ({ ...p, temporaryDays: e.target.value }))} />
-                  </div>
-                )}
-
-                {remoteWork.remoteWorkType === "EMERGENCY" && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.remoteWork.emergencyReasonLabel")}</label>
-                    <Input value={remoteWork.emergencyReason} placeholder={t("requests.dialog.remoteWork.emergencyReasonPlaceholder")}
-                      onChange={(e) => setRemoteWork((p) => ({ ...p, emergencyReason: e.target.value }))} />
-                  </div>
-                )}
-
+              <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.remoteWork.startDate")}</label>
+                    <label className="text-xs font-medium">{t("requests.dialog.remoteWork.startDate")} *</label>
                     <Input type="date" value={remoteWork.startDate}
                       onChange={(e) => setRemoteWork((p) => ({ ...p, startDate: e.target.value }))} />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.remoteWork.endDate")}</label>
+                    <label className="text-xs font-medium">{t("requests.dialog.remoteWork.endDate")} *</label>
                     <Input type="date" value={remoteWork.endDate}
+                      min={remoteWork.startDate || undefined}
                       onChange={(e) => setRemoteWork((p) => ({ ...p, endDate: e.target.value }))} />
                   </div>
                 </div>
-
-                {remoteWork.remoteWorkType === "REGULAR" && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium">{t("requests.dialog.remoteWork.weeklyDays")}</label>
-                      <Input type="number" min={1} max={7} value={remoteWork.weeklyDaysCount}
-                        onChange={(e) => setRemoteWork((p) => ({ ...p, weeklyDaysCount: e.target.value }))} />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium">{t("requests.dialog.remoteWork.proposedDays")}</label>
-                      <Input value={remoteWork.proposedDays} placeholder={t("requests.dialog.remoteWork.proposedDaysPlaceholder")}
-                        onChange={(e) => setRemoteWork((p) => ({ ...p, proposedDays: e.target.value }))} />
-                    </div>
-                  </div>
+                {remoteWork.startDate && remoteWork.endDate && remoteWork.endDate < remoteWork.startDate && (
+                  <p className="text-xs text-destructive">تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية</p>
                 )}
-
-                <div className="space-y-2">
-                  <label className="text-xs font-medium">{t("requests.dialog.remoteWork.justificationsLabel")}</label>
-                  <div className="flex flex-wrap gap-2">
-                    {JUSTIFICATION_OPTION_VALUES.map((jv) => {
-                      const checked = remoteWork.justification.includes(jv);
-                      return (
-                        <button key={jv} type="button"
-                          onClick={() => setRemoteWork((p) => ({
-                            ...p,
-                            justification: checked
-                              ? p.justification.filter((x) => x !== jv)
-                              : [...p.justification, jv],
-                          }))}
-                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${checked ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
-                        >
-                          {t(`requests.dialog.remoteWork.justificationOptions.${jv}` as any)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {remoteWork.justification.includes("OTHER") && (
-                    <Input value={remoteWork.justificationOther} placeholder={t("requests.dialog.remoteWork.justificationOtherPlaceholder")}
-                      onChange={(e) => setRemoteWork((p) => ({ ...p, justificationOther: e.target.value }))} />
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium">{t("requests.dialog.remoteWork.tasksLabel")}</label>
-                    <button type="button"
-                      onClick={() => setRemoteWork((p) => ({ ...p, tasks: [...p.tasks, ""] }))}
-                      className="text-xs text-primary hover:underline flex items-center gap-1"
-                    >
-                      <Plus className="h-3 w-3" /> {t("requests.dialog.remoteWork.addTask")}
-                    </button>
-                  </div>
-                  {remoteWork.tasks.map((task, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Input value={task} placeholder={t("requests.dialog.remoteWork.taskPlaceholder", { number: i + 1 })}
-                        onChange={(e) => setRemoteWork((p) => ({ ...p, tasks: p.tasks.map((tk, j) => j === i ? e.target.value : tk) }))} />
-                      {remoteWork.tasks.length > 1 && (
-                        <button type="button" onClick={() => setRemoteWork((p) => ({ ...p, tasks: p.tasks.filter((_, j) => j !== i) }))}>
-                          <X className="h-4 w-4 text-destructive" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-medium">{t("requests.dialog.remoteWork.toolsLabel")}</label>
-                  <div className="flex flex-wrap gap-2">
-                    {REQUIRED_TOOL_VALUES.map((tv) => {
-                      const checked = remoteWork.requiredTools.includes(tv);
-                      return (
-                        <button key={tv} type="button"
-                          onClick={() => setRemoteWork((p) => ({
-                            ...p,
-                            requiredTools: checked
-                              ? p.requiredTools.filter((x) => x !== tv)
-                              : [...p.requiredTools, tv],
-                          }))}
-                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${checked ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
-                        >
-                          {t(`requests.dialog.remoteWork.requiredTools.${tv}` as any)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {remoteWork.requiredTools.includes("SPECIFIC_SOFTWARE") && (
-                    <Input value={remoteWork.specificSoftware} placeholder={t("requests.dialog.remoteWork.specificSoftwarePlaceholder")}
-                      onChange={(e) => setRemoteWork((p) => ({ ...p, specificSoftware: e.target.value }))} />
-                  )}
-                </div>
               </div>
             )}
 

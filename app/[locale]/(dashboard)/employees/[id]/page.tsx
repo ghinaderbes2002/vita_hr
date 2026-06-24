@@ -1163,6 +1163,12 @@ export default function EmployeeDetailsPage() {
               label={t("employees.updatedAt")}
               value={employee.updatedAt ? new Date(employee.updatedAt).toLocaleDateString("en-GB") : undefined}
             />
+            {(employee as any).separationDate && (
+              <InfoRow
+                label="تاريخ الانفكاك"
+                value={new Date((employee as any).separationDate).toLocaleDateString("en-GB")}
+              />
+            )}
           </CardContent>
         </Card>
 

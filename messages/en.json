@@ -1161,7 +1161,11 @@
         "rewardTypePlaceholder": "Reward type",
         "amountLabel": "Amount *",
         "reasonLabel": "Reward Reason *",
-        "reasonPlaceholder": "Reward reason"
+        "reasonPlaceholder": "Reward reason",
+        "employeeRequired": "Please select an employee",
+        "rewardTypeRequired": "Reward type is required",
+        "reasonRequired": "Reason is required",
+        "amountRequired": "Amount is required"
       },
       "complaint": {
         "descLabel": "Complaint Details *",
@@ -3612,6 +3616,7 @@
       "situationDescription": "Situation Description",
       "situationDescriptionPlaceholder": "Describe the current situation (optional)",
       "repairOption": "Repair Option",
+      "amount": "Estimated Cost",
       "assignedEmployee": "Assigned Employee",
       "notes": "Notes",
       "notesPlaceholder": "Add optional notes..."

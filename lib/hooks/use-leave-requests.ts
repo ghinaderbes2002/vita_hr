@@ -40,6 +40,18 @@ export function useLeaveRequests(
   });
 }
 
+// Get PENDING_HR leave requests (requires approve_hr only — no read_all needed)
+export function usePendingHrLeaveRequests(
+  params?: { page?: number; limit?: number },
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ["leave-requests-pending-hr", params],
+    queryFn: () => leaveRequestsApi.getPendingHr(params),
+    enabled: options?.enabled ?? true,
+  });
+}
+
 // Get leave requests pending the logged-in manager (uses /pending-manager endpoint, no managerId needed)
 export function usePendingManagerLeaveRequests(
   params?: { status?: string; page?: number; limit?: number },

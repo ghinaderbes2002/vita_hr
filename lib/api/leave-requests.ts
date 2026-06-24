@@ -139,6 +139,12 @@ export const leaveRequestsApi = {
     return response.data;
   },
 
+  // Get PENDING_HR leave requests (requires approve_hr only)
+  getPendingHr: async (params?: { page?: number; limit?: number }): Promise<ApiResponse<LeaveRequest[]>> => {
+    const response = await apiClient.get("/leave-requests/pending-hr", { params });
+    return response.data;
+  },
+
   // Get single leave request
   getById: async (id: string): Promise<LeaveRequest> => {
     const response = await apiClient.get(`/leave-requests/${id}`);

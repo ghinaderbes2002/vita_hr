@@ -1393,7 +1393,11 @@
         "rewardTypePlaceholder": "نوع المكافأة",
         "amountLabel": "المبلغ *",
         "reasonLabel": "سبب المكافأة *",
-        "reasonPlaceholder": "سبب المكافأة"
+        "reasonPlaceholder": "سبب المكافأة",
+        "employeeRequired": "اختر الموظف",
+        "rewardTypeRequired": "نوع المكافأة مطلوب",
+        "reasonRequired": "السبب مطلوب",
+        "amountRequired": "المبلغ مطلوب"
       },
       "complaint": {
         "descLabel": "تفاصيل الشكوى *",
@@ -3832,6 +3836,7 @@
       "situationDescription": "وصف الحالة",
       "situationDescriptionPlaceholder": "صف الحالة الراهنة (اختياري)",
       "repairOption": "خيار الإصلاح",
+      "amount": "التكلفة التقديرية",
       "assignedEmployee": "الموظف المكلَّف",
       "notes": "ملاحظات",
       "notesPlaceholder": "أضف ملاحظات اختيارية..."

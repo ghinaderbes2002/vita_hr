@@ -71,6 +71,11 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
   rewardType: "نوع المكافأة",
   employeeId: "الموظف",
   employeeIds: "الموظف",
+  resignationReason: "سبب الاستقالة",
+  workEnvironmentRating: "تقييم بيئة العمل",
+  managementRating: "تقييم الإدارة",
+  suggestions: "اقتراحات للتحسين",
+  wouldRejoin: "يرغب بالعودة مستقبلاً",
 };
 
 function formatDetailKey(key: string): string {
@@ -259,7 +264,8 @@ export default function RequestDetailPage() {
   const { hasPermission, isAdmin } = usePermissions();
   const canHrApprove = isAdmin() || hasPermission("requests:hr-approve");
   const canHrReject  = isAdmin() || hasPermission("requests:hr-reject");
-  const canAnyApprove = isAdmin() || hasPermission("requests:manager-approve") || hasPermission("requests:hr-approve") || hasPermission("requests:qs-approve") || hasPermission("requests:ceo-approve");
+  const canAnyApprove = isAdmin() || hasPermission("requests:approve") || hasPermission("requests:manager-approve") || hasPermission("requests:hr-approve") || hasPermission("requests:qs-approve") || hasPermission("requests:ceo-approve");
+  const canAnyReject  = isAdmin() || hasPermission("requests:reject") || hasPermission("requests:manager-approve") || hasPermission("requests:hr-approve") || hasPermission("requests:qs-approve") || hasPermission("requests:ceo-approve");
   const uploadHiringPdf = useUploadHiringPdf();
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
@@ -350,7 +356,8 @@ export default function RequestDetailPage() {
   };
 
   const isPenaltyOrReward = request?.type === "PENALTY_PROPOSAL" || request?.type === "REWARD";
-  const usesUnifiedApproval = isPenaltyOrReward || request?.type === "OVERTIME_EMPLOYEE";
+  const isTransfer = request?.type === "TRANSFER";
+  const usesUnifiedApproval = request?.status === "IN_APPROVAL" || isPenaltyOrReward || request?.type === "OVERTIME_EMPLOYEE" || isTransfer;
 
   if (isLoading) {
     return (
@@ -390,26 +397,30 @@ export default function RequestDetailPage() {
               <ArrowRight className="h-4 w-4 ml-2" />
               {t("common.back")}
             </Button>
-            {/* REWARD / PENALTY_PROPOSAL / OVERTIME_EMPLOYEE — unified approve/reject */}
-            {usesUnifiedApproval && request.status === "IN_APPROVAL" && canAnyApprove && (
+            {/* unified approve/reject — all IN_APPROVAL requests */}
+            {usesUnifiedApproval && request.status === "IN_APPROVAL" && (canAnyApprove || canAnyReject) && (
               <>
-                <Button
-                  className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => setApproveOpen(true)}
-                  disabled={approveRequest.isPending}
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  موافقة
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="gap-1.5"
-                  onClick={() => setRejectOpen(true)}
-                  disabled={rejectRequest.isPending}
-                >
-                  <XCircle className="h-4 w-4" />
-                  رفض
-                </Button>
+                {canAnyApprove && (
+                  <Button
+                    className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => setApproveOpen(true)}
+                    disabled={approveRequest.isPending}
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    موافقة
+                  </Button>
+                )}
+                {canAnyReject && (
+                  <Button
+                    variant="destructive"
+                    className="gap-1.5"
+                    onClick={() => setRejectOpen(true)}
+                    disabled={rejectRequest.isPending}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    رفض
+                  </Button>
+                )}
               </>
             )}
             {/* Other request types — HR approve/reject */}
@@ -700,7 +711,7 @@ export default function RequestDetailPage() {
         </Card>
       )}
 
-      {/* Exit Interview Form */}
+      {/* Exit Interview Form — HR only */}
       {request.status === "PENDING_EXIT_INTERVIEW" && (
         <Card className="border-orange-200">
           <CardHeader>
@@ -717,15 +728,17 @@ export default function RequestDetailPage() {
                   {Object.entries((request as any).details.exitInterview).map(([k, v]) => (
                     <div key={k} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{DETAIL_KEY_LABELS[k] || k}:</span>
-                      <span className="font-medium">{String(v ?? "—")}</span>
+                      <span className="font-medium">
+                        {k === "wouldRejoin" ? (v ? "نعم" : "لا") : String(v ?? "—")}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : canHrApprove ? (
               <>
                 <p className="text-sm text-muted-foreground">
-                  تمت الموافقة على طلب استقالتك. يرجى ملء استمارة مقابلة الخروج لإتمام الإجراء.
+                  تمت موافقة المدير المباشر والموارد البشرية. يرجى إجراء مقابلة الخروج مع الموظف وتعبئة الاستمارة.
                 </p>
                 <div className="space-y-3">
                   <div className="space-y-1.5">
@@ -734,7 +747,7 @@ export default function RequestDetailPage() {
                       rows={3}
                       value={exitForm.resignationReason}
                       onChange={(e) => setExitForm((p) => ({ ...p, resignationReason: e.target.value }))}
-                      placeholder="اذكر السبب الرئيسي لاستقالتك..."
+                      placeholder="سبب الاستقالة كما أفصح عنه الموظف..."
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -763,11 +776,11 @@ export default function RequestDetailPage() {
                       rows={2}
                       value={exitForm.suggestions}
                       onChange={(e) => setExitForm((p) => ({ ...p, suggestions: e.target.value }))}
-                      placeholder="اقتراحاتك لتحسين بيئة العمل..."
+                      placeholder="اقتراحات الموظف لتحسين بيئة العمل..."
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>هل ترغب بالعودة مستقبلاً؟</Label>
+                    <Label>هل يرغب بالعودة مستقبلاً؟</Label>
                     <div className="flex gap-3">
                       {["نعم", "لا"].map((opt) => (
                         <button
@@ -800,11 +813,32 @@ export default function RequestDetailPage() {
                     })}
                   >
                     {submitExitInterview.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                    إرسال الاستمارة وإنهاء الخدمة
+                    تسجيل مقابلة الخروج
                   </Button>
                 </div>
               </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                بانتظار الموارد البشرية لإجراء مقابلة الخروج
+              </p>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CEO pending notice for RESIGNATION / TRANSFER */}
+      {(request.type === "RESIGNATION" || request.type === "TRANSFER") && request.status === "IN_APPROVAL" &&
+        steps.some((s) => (s as any).approverRole === "CEO" && s.status === "PENDING") && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-blue-500 shrink-0" />
+              <p className="text-sm text-blue-700">
+                {request.type === "TRANSFER"
+                  ? "بانتظار موافقة المدير التنفيذي على طلب النقل"
+                  : "بانتظار موافقة المدير التنفيذي على طلب الاستقالة"}
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -884,10 +918,10 @@ export default function RequestDetailPage() {
         action="approve"
         onConfirm={handleApprove}
         isLoading={approveRequest.isPending}
-        extraContent={isPenaltyOrReward ? (
+        extraContent={(isPenaltyOrReward || isTransfer) ? (
           <div className="space-y-3 border-t pt-3 mt-1">
             <div className="space-y-1.5">
-              <Label className="text-sm">التوصية التنفيذية (اختياري)</Label>
+              <Label className="text-sm">{isTransfer ? "التوصية (اختياري)" : "التوصية التنفيذية (اختياري)"}</Label>
               <Textarea rows={2} value={approveExtra.recommendation} onChange={(e) => setApproveExtra((p) => ({ ...p, recommendation: e.target.value }))} placeholder="أضف توصيتك..." />
             </div>
             {request?.type === "PENALTY_PROPOSAL" && (request as any).details?.category === "MATERIAL" && (

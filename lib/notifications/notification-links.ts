@@ -26,15 +26,18 @@ export function resolveNotificationLink(notif: Notification): string | null {
     case "EVALUATION_SUBMITTED":
       return d.evaluationId ? `/probation-evaluations/${d.evaluationId}` : "/probation-evaluations";
 
-    case "LEAVE_REQUEST_SUBMITTED":
-      return d.leaveRequestId ? `/leaves/view/${d.leaveRequestId}` : "/leaves/pending-approval";
+    case "LEAVE_REQUEST_SUBMITTED": {
+      if (d.leaveRequestId) return `/leaves/view/${d.leaveRequestId}`;
+      const isHrStep = d.step === "hr" || d.approvalType === "hr" || d.role === "hr";
+      return isHrStep ? "/leaves/pending-approval?tab=hr" : "/leaves/pending-approval";
+    }
     case "LEAVE_REQUEST_APPROVED":
     case "LEAVE_REQUEST_REJECTED":
     case "LEAVE_REQUEST_CANCELLED":
       return d.leaveRequestId ? `/leaves/view/${d.leaveRequestId}` : "/leaves/my-leaves";
 
     case "LEAVE_REQUEST_PENDING_APPROVAL":
-      return "/leaves/pending-approval";
+      return "/leaves/pending-approval?tab=hr";
 
     case "DOCUMENT_EXPIRY":
       return d.employeeId ? `/employees/${d.employeeId}` : "/employees";

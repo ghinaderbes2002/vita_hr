@@ -36,6 +36,15 @@ export function useEmployeesBasicList() {
   });
 }
 
+export function useEmployeesByCompany(company: string | null) {
+  return useQuery({
+    queryKey: ["employees-by-company", company],
+    queryFn: () => employeesApi.getByCompany(company!),
+    enabled: !!company,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useMyEmployee() {
   return useQuery({
     queryKey: ["employee-my-profile"],

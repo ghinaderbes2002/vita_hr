@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network, UserCheck, BellOff } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network, UserCheck, BellOff, PowerOff, Power } from "lucide-react";
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users } from "lucide-react";
-import { useEmployees, useDeleteEmployee, useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { useEmployees, useDeleteEmployee, useEmployeesByDepartment, useUpdateEmployee } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { LinkUserDialog } from "@/components/features/employees/link-user-dialog";
@@ -63,6 +63,7 @@ export default function EmployeesPage() {
   const { data: departmentEmployees, isLoading: departmentEmployeesLoading } = useEmployeesByDepartment(selectedDepartment);
   const { data: departmentsData } = useDepartments({ limit: 500 });
   const deleteEmployee = useDeleteEmployee();
+  const updateEmployee = useUpdateEmployee();
 
   const departments = (departmentsData as any)?.data?.items || [];
 
@@ -300,6 +301,23 @@ export default function EmployeesPage() {
                             {t("employees.linkUser")}
                           </DropdownMenuItem>
                         </ActionGuard>
+                        {(employee.employmentStatus === "ACTIVE" || employee.employmentStatus === "INACTIVE") && (
+                          <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const next = employee.employmentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+                                updateEmployee.mutate({ id: employee.id, data: { employmentStatus: next } });
+                              }}
+                              className={employee.employmentStatus === "ACTIVE" ? "text-amber-600" : "text-green-600"}
+                            >
+                              {employee.employmentStatus === "ACTIVE"
+                                ? <><PowerOff className="h-4 w-4 ml-2" />إلغاء تفعيل</>
+                                : <><Power className="h-4 w-4 ml-2" />تفعيل</>
+                              }
+                            </DropdownMenuItem>
+                          </ActionGuard>
+                        )}
                         <ActionGuard permission={PERMISSIONS.EMPLOYEES.DELETE}>
                           <DropdownMenuItem
                             onClick={(e) => { e.stopPropagation(); handleDelete(employee); }}

@@ -1159,7 +1159,11 @@
         "rewardTypePlaceholder": "Ödül türü",
         "amountLabel": "Tutar *",
         "reasonLabel": "Ödül Nedeni *",
-        "reasonPlaceholder": "Ödül nedeni"
+        "reasonPlaceholder": "Ödül nedeni",
+        "employeeRequired": "Lütfen çalışan seçin",
+        "rewardTypeRequired": "Ödül türü zorunludur",
+        "reasonRequired": "Neden zorunludur",
+        "amountRequired": "Tutar zorunludur"
       },
       "complaint": {
         "descLabel": "Şikayet Detayları *",

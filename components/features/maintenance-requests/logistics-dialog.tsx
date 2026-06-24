@@ -37,6 +37,7 @@ export function LogisticsDialog({ open, onOpenChange, requestId }: Props) {
   const t = useTranslations();
   const [repairOption, setRepairOption] = useState<RepairOption>("INTERNAL");
   const [assignedEmployeeId, setAssignedEmployeeId] = useState("");
+  const [amount, setAmount] = useState("");
   const [situationDescription, setSituationDescription] = useState("");
 
   const processLogistics = useProcessLogistics();
@@ -50,6 +51,7 @@ export function LogisticsDialog({ open, onOpenChange, requestId }: Props) {
       data: {
         repairOption,
         assignedEmployeeId,
+        amount: amount ? Number(amount) : undefined,
         situationDescription: situationDescription || undefined,
       },
     });
@@ -60,6 +62,7 @@ export function LogisticsDialog({ open, onOpenChange, requestId }: Props) {
   const reset = () => {
     setRepairOption("INTERNAL");
     setAssignedEmployeeId("");
+    setAmount("");
     setSituationDescription("");
   };
 
@@ -102,6 +105,18 @@ export function LogisticsDialog({ open, onOpenChange, requestId }: Props) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("maintenance.fields.amount")}</Label>
+            <input
+              type="number"
+              min={0}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
           </div>
 
           <div className="space-y-1.5">
