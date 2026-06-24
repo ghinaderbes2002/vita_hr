@@ -16,7 +16,13 @@ import {
   useLeaveRequest,
   useSubmitLeaveRequest,
   useCancelLeaveRequest,
+  useApproveHr,
+  useRejectHr,
+  useApproveManager,
+  useRejectManager,
 } from "@/lib/hooks/use-leave-requests";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
@@ -38,10 +44,25 @@ export default function ViewLeaveRequestPage() {
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [approveNotes, setApproveNotes] = useState("");
+  const [rejectNotes, setRejectNotes] = useState("");
 
   const { data: request, isLoading } = useLeaveRequest(id);
   const submitRequest = useSubmitLeaveRequest();
   const cancelRequest = useCancelLeaveRequest();
+  const approveHr = useApproveHr();
+  const rejectHr = useRejectHr();
+  const approveManager = useApproveManager();
+  const rejectManager = useRejectManager();
+  const { hasPermission, isAdmin, hasRole } = usePermissions();
+  const currentUser = useAuthStore((s) => s.user);
+  const isCeo = hasRole("CEO") || hasRole("CEOO");
+  const isOwner = !!request && (request.employeeId === currentUser?.employeeId || request.employeeId === currentUser?.id);
+
+  const canApproveAsHr = !isCeo && (isAdmin() || hasPermission("leave_requests:approve_hr")) && request?.status === "PENDING_HR";
+  const canApproveAsManager = (isAdmin() || hasPermission("leave_requests:approve_manager")) && request?.status === "PENDING_MANAGER";
 
   const handleSubmit = async () => {
     await submitRequest.mutateAsync(id);
@@ -95,7 +116,7 @@ export default function ViewLeaveRequestPage() {
 
   const canEdit = request.status === "DRAFT";
   const canSubmit = request.status === "DRAFT";
-  const canCancel = ["PENDING_MANAGER", "PENDING_HR", "MANAGER_APPROVED"].includes(request.status);
+  const canCancel = isOwner && ["PENDING_MANAGER", "PENDING_HR", "MANAGER_APPROVED"].includes(request.status);
 
   return (
     <div className="space-y-6">
@@ -103,7 +124,17 @@ export default function ViewLeaveRequestPage() {
         title={t("leaves.viewRequest")}
         description="عرض تفاصيل طلب الإجازة"
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {(canApproveAsHr || canApproveAsManager) && (
+              <>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setApproveDialogOpen(true)}>
+                  موافقة
+                </Button>
+                <Button variant="destructive" onClick={() => setRejectDialogOpen(true)}>
+                  رفض
+                </Button>
+              </>
+            )}
             {canEdit && (
               <Button onClick={() => router.push(`/leaves/edit/${id}`)}>
                 <Edit className="h-4 w-4 ml-2" />
@@ -310,6 +341,64 @@ export default function ViewLeaveRequestPage() {
           </Card>
         );
       })()}
+
+      {/* Approve dialog */}
+      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>الموافقة على طلب الإجازة</DialogTitle>
+            <DialogDescription>هل أنت متأكد من الموافقة على هذا الطلب؟</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>ملاحظات (اختياري)</Label>
+            <Textarea rows={3} value={approveNotes} onChange={(e) => setApproveNotes(e.target.value)} placeholder="أضف ملاحظات..." />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              disabled={approveHr.isPending || approveManager.isPending}
+              onClick={async () => {
+                if (canApproveAsHr) await approveHr.mutateAsync({ id, data: { notes: approveNotes || undefined } });
+                else await approveManager.mutateAsync({ id, data: { notes: approveNotes || undefined } });
+                setApproveDialogOpen(false);
+                setApproveNotes("");
+              }}
+            >
+              موافقة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>رفض طلب الإجازة</DialogTitle>
+            <DialogDescription>الرجاء كتابة سبب الرفض</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>سبب الرفض *</Label>
+            <Textarea rows={3} value={rejectNotes} onChange={(e) => setRejectNotes(e.target.value)} placeholder="اكتب سبب الرفض..." />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              variant="destructive"
+              disabled={!rejectNotes || rejectHr.isPending || rejectManager.isPending}
+              onClick={async () => {
+                if (canApproveAsHr) await rejectHr.mutateAsync({ id, data: { notes: rejectNotes } });
+                else await rejectManager.mutateAsync({ id, data: { notes: rejectNotes } });
+                setRejectDialogOpen(false);
+                setRejectNotes("");
+              }}
+            >
+              رفض
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={submitDialogOpen}

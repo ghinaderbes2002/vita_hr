@@ -75,7 +75,7 @@ export default function PendingApprovalPage() {
 
   const searchParams = useSearchParams();
   const { hasPermission, hasRole, isAdmin } = usePermissions();
-  const isCeo             = hasRole("CEO");
+  const isCeo             = hasRole("CEO") || hasRole("CEOO");
   const canApproveHr      = isAdmin() || hasPermission("leave_requests:approve_hr");
   const canApproveManager = isAdmin() || hasPermission("leave_requests:approve_manager");
   const showManagerTab    = canApproveManager;
