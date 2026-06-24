@@ -86,7 +86,7 @@ export interface CreateLeaveRequestData {
   startDate: string;
   endDate: string;
   reason?: string;
-  isHalfDay: boolean;
+  isHalfDay?: boolean;
   halfDayPeriod?: "MORNING" | "AFTERNOON";
   substituteId?: string;
   attachmentUrl?: string;
