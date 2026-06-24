@@ -261,7 +261,7 @@ export default function RequestDetailPage() {
   const [hrApproveOpen, setHrApproveOpen] = useState(false);
   const [hrRejectOpen, setHrRejectOpen] = useState(false);
   const [approveExtra, setApproveExtra] = useState<{ recommendation: string; penaltyDays: string; amount: string }>({ recommendation: "", penaltyDays: "", amount: "" });
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, isAdmin, hasRole } = usePermissions();
   const canHrApprove = isAdmin() || hasPermission("requests:hr-approve");
   const canHrReject  = isAdmin() || hasPermission("requests:hr-reject");
   const canAnyApprove = isAdmin() || hasPermission("requests:approve") || hasPermission("requests:manager-approve") || hasPermission("requests:hr-approve") || hasPermission("requests:qs-approve") || hasPermission("requests:ceo-approve");
@@ -319,6 +319,11 @@ export default function RequestDetailPage() {
       ? buildMaintenancePath(request)
       : rawSteps;
   const isStepsLoading = stepsLoading && approvalsLoading;
+
+  // Show approve/reject only if there's a PENDING step matching the current user's role
+  const hasPendingStepForUser = steps.some(
+    (s) => s.status === "PENDING" && hasRole(s.approverRole as any)
+  );
 
   const handleApprove = async (notes: string) => {
     const body: import("@/types").ApproveRequestBody = { notes: notes || undefined };
@@ -397,8 +402,8 @@ export default function RequestDetailPage() {
               <ArrowRight className="h-4 w-4 ml-2" />
               {t("common.back")}
             </Button>
-            {/* unified approve/reject — all IN_APPROVAL requests */}
-            {usesUnifiedApproval && request.status === "IN_APPROVAL" && (canAnyApprove || canAnyReject) && (
+            {/* unified approve/reject — only if user has a PENDING step */}
+            {usesUnifiedApproval && request.status === "IN_APPROVAL" && hasPendingStepForUser && (canAnyApprove || canAnyReject) && (
               <>
                 {canAnyApprove && (
                   <Button

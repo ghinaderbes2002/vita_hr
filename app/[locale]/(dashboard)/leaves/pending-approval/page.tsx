@@ -173,9 +173,9 @@ export default function PendingApprovalPage() {
   const confirmReject = async () => {
     if (selectedRequest && rejectReason) {
       if (actionType === "manager") {
-        await rejectManager.mutateAsync({ id: selectedRequest.id, data: { reason: rejectReason } });
+        await rejectManager.mutateAsync({ id: selectedRequest.id, data: { notes: rejectReason } });
       } else {
-        await rejectHr.mutateAsync({ id: selectedRequest.id, data: { reason: rejectReason } });
+        await rejectHr.mutateAsync({ id: selectedRequest.id, data: { notes: rejectReason } });
       }
       setRejectDialogOpen(false);
       setSelectedRequest(null);

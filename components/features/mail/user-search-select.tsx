@@ -74,7 +74,7 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [] }:
 
   const selectedOptions = (Array.isArray(allData) ? allData as any[] : [])
     .filter((e) => value.includes(e.id) || value.includes(e.userId))
-    .map((e) => ({ id: e.id, label: `${e.firstNameAr} ${e.lastNameAr}` }));
+    .map((e) => ({ id: e.id, userId: e.userId as string | undefined, label: `${e.firstNameAr} ${e.lastNameAr}` }));
 
   const allVisibleSelected = options.length > 0 && options.every((o) => value.includes(o.id));
 
@@ -113,7 +113,7 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [] }:
         <div className="space-y-1">
           <div className="flex flex-wrap gap-1">
             {value.map((id) => {
-              const opt = selectedOptions.find((o) => o.id === id);
+              const opt = selectedOptions.find((o) => o.id === id || o.userId === id);
               const label = opt?.label ?? id;
               return (
                 <Badge key={id} variant="secondary" className="gap-1 text-xs">

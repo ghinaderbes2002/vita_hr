@@ -279,10 +279,9 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
       leaveTypeId: data.leaveTypeId,
       startDate: format(data.startDate, "yyyy-MM-dd"),
       endDate: format(data.endDate, "yyyy-MM-dd"),
-      reason: data.reason || "",
-      isHalfDay: isHalfDayType,
-      halfDayPeriod: isHalfDayType ? data.halfDayPeriod : undefined,
-      substituteId: data.substituteId || undefined,
+      ...(data.reason && { reason: data.reason }),
+      ...(isHalfDayType && { isHalfDay: true, halfDayPeriod: data.halfDayPeriod }),
+      ...(data.substituteId && { substituteId: data.substituteId }),
       ...(data.attachmentUrl && { attachmentUrl: data.attachmentUrl }),
       ...(isBereavement && data.deceasedRelation && { deceasedRelation: data.deceasedRelation }),
     };

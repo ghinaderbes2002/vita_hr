@@ -85,7 +85,7 @@ export interface CreateLeaveRequestData {
   leaveTypeId: string;
   startDate: string;
   endDate: string;
-  reason: string;
+  reason?: string;
   isHalfDay: boolean;
   halfDayPeriod?: "MORNING" | "AFTERNOON";
   substituteId?: string;
@@ -107,7 +107,7 @@ export interface ApproveData {
 }
 
 export interface RejectData {
-  reason: string;
+  notes: string;
 }
 
 export interface CancelData {
