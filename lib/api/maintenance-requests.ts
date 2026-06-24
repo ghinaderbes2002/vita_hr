@@ -61,6 +61,7 @@ export interface LogisticsData {
   situationDescription?: string;
   repairOption: RepairOption;
   assignedEmployeeId: string;
+  amount?: number;
 }
 
 export const maintenanceRequestsApi = {

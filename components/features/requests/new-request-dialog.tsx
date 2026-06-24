@@ -516,7 +516,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormItem>
                       <FormLabel>{t("requests.dialog.transfer.currentDept")}</FormLabel>
                       <Select value={field.value || ""} onValueChange={field.onChange}>
-                        <FormControl><SelectTrigger><SelectValue placeholder={t("requests.dialog.choose")} /></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger className="w-full overflow-hidden [&>span]:truncate"><SelectValue placeholder={t("requests.dialog.choose")} /></SelectTrigger></FormControl>
                         <SelectContent>{departments.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.nameAr}</SelectItem>)}</SelectContent>
                       </Select>
                     </FormItem>
@@ -525,7 +525,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormItem>
                       <FormLabel>{t("requests.dialog.transfer.currentTitle")}</FormLabel>
                       <Select value={field.value || ""} onValueChange={field.onChange}>
-                        <FormControl><SelectTrigger><SelectValue placeholder={t("requests.dialog.choose")} /></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger className="w-full overflow-hidden [&>span]:truncate"><SelectValue placeholder={t("requests.dialog.choose")} /></SelectTrigger></FormControl>
                         <SelectContent>{jobTitles.map((j: any) => <SelectItem key={j.id} value={j.id}>{j.nameAr}</SelectItem>)}</SelectContent>
                       </Select>
                     </FormItem>
@@ -534,7 +534,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormItem>
                       <FormLabel>{t("requests.dialog.transfer.newDept")}</FormLabel>
                       <Select value={field.value || ""} onValueChange={field.onChange}>
-                        <FormControl><SelectTrigger><SelectValue placeholder={t("requests.dialog.choose")} /></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger className="w-full overflow-hidden [&>span]:truncate"><SelectValue placeholder={t("requests.dialog.choose")} /></SelectTrigger></FormControl>
                         <SelectContent>{departments.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.nameAr}</SelectItem>)}</SelectContent>
                       </Select>
                     </FormItem>
@@ -543,7 +543,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormItem>
                       <FormLabel>{t("requests.dialog.transfer.newTitle")}</FormLabel>
                       <Select value={field.value || ""} onValueChange={field.onChange}>
-                        <FormControl><SelectTrigger><SelectValue placeholder={t("requests.dialog.choose")} /></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger className="w-full overflow-hidden [&>span]:truncate"><SelectValue placeholder={t("requests.dialog.choose")} /></SelectTrigger></FormControl>
                         <SelectContent>{jobTitles.map((j: any) => <SelectItem key={j.id} value={j.id}>{j.nameAr}</SelectItem>)}</SelectContent>
                       </Select>
                     </FormItem>
