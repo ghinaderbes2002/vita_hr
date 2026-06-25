@@ -26,6 +26,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { RequestType } from "@/types";
 import { Loader2, Plus, Trash2, AlertTriangle, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -122,7 +123,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 type HiringPosition = { departmentId: string; jobTitle: string; count: string; reason: string };
-type RewardEmployee = { employeeId: string; category: "MATERIAL" | "MORAL"; rewardType: string; amount: string; reason: string };
+type RewardEmployee = { employeeId: string; category: "MATERIAL" | "MORAL"; rewardType: string; amount: string; reason: string; paidDirectly: boolean };
 
 const defaultWorkAccident = {
   incidentLocation: "", incidentType: "", incidentTypeOther: "",
@@ -168,7 +169,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
     { departmentId: "", jobTitle: "", count: "1", reason: "" },
   ]);
   const [rewardEmployees, setRewardEmployees] = useState<RewardEmployee[]>([
-    { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" },
+    { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "", paidDirectly: false },
   ]);
   const [rewardErrors, setRewardErrors] = useState<{ employeeId: boolean; rewardType: boolean; reason: boolean; amount: boolean }[]>([
     { employeeId: false, rewardType: false, reason: false, amount: false },
@@ -427,7 +428,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
       onOpenChange(false);
       form.reset({ type: "OTHER", reason: "", notes: "" });
       setHiringPositions([{ departmentId: "", jobTitle: "", count: "1", reason: "" }]);
-      setRewardEmployees([{ employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" }]);
+      setRewardEmployees([{ employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "", paidDirectly: false }]);
       setRewardErrors([{ employeeId: false, rewardType: false, reason: false, amount: false }]);
       setPenaltyCategory("MORAL");
       setPenaltyType("");
@@ -884,7 +885,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                   </div>
                   {rewardEmployees.length < 10 && (
                     <Button type="button" variant="outline" size="sm" className="gap-1"
-                      onClick={() => { setRewardEmployees((a) => [...a, { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "" }]); setRewardErrors((a) => [...a, { employeeId: false, rewardType: false, reason: false, amount: false }]); }}>
+                      onClick={() => { setRewardEmployees((a) => [...a, { employeeId: "", category: "MORAL", rewardType: "", amount: "", reason: "", paidDirectly: false }]); setRewardErrors((a) => [...a, { employeeId: false, rewardType: false, reason: false, amount: false }]); }}>
                       <Plus className="h-3.5 w-3.5" />{t("requests.dialog.reward.addEmployee")}
                     </Button>
                   )}

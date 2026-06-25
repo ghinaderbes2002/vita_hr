@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useRoles } from "@/lib/hooks/use-roles";
 import { useAssignRoles } from "@/lib/hooks/use-users";
 import { User } from "@/types";
@@ -24,25 +24,31 @@ interface AssignRolesDialogProps {
 
 export function AssignRolesDialog({ open, onOpenChange, user }: AssignRolesDialogProps) {
   const t = useTranslations();
-  const [selectedRole, setSelectedRole] = useState<string>("");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const { data: roles, isLoading: rolesLoading } = useRoles();
   const assignRoles = useAssignRoles();
 
   useEffect(() => {
     if (user?.roles && user.roles.length > 0) {
-      setSelectedRole(user.roles[0].role.id);
+      setSelectedRoles(user.roles.map((r: any) => r.role?.id ?? r.id).filter(Boolean));
     } else {
-      setSelectedRole("");
+      setSelectedRoles([]);
     }
   }, [user]);
+
+  const toggle = (id: string) => {
+    setSelectedRoles((prev) =>
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+    );
+  };
 
   const handleSubmit = async () => {
     if (!user) return;
     try {
-      await assignRoles.mutateAsync({ id: user.id, roleIds: selectedRole ? [selectedRole] : [] });
+      await assignRoles.mutateAsync({ id: user.id, roleIds: selectedRoles });
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       // Error handled by mutation
     }
   };
@@ -67,31 +73,35 @@ export function AssignRolesDialog({ open, onOpenChange, user }: AssignRolesDialo
                 {t("common.noData")}
               </div>
             ) : (
-              <RadioGroup value={selectedRole} onValueChange={setSelectedRole} className="space-y-3">
-                {roles.map((role: any) => (
+              <div className="space-y-3">
+                {(roles as any[]).map((role) => (
                   <div key={role.id} className="flex items-center gap-3">
-                    <RadioGroupItem value={role.id} id={role.id} />
+                    <Checkbox
+                      id={role.id}
+                      checked={selectedRoles.includes(role.id)}
+                      onCheckedChange={() => toggle(role.id)}
+                    />
                     <label htmlFor={role.id} className="text-sm font-medium cursor-pointer">
                       {role.displayNameAr}
                     </label>
                   </div>
                 ))}
-              </RadioGroup>
+              </div>
             )}
           </ScrollArea>
 
+          {selectedRoles.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {selectedRoles.length} دور مختار
+            </p>
+          )}
+
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={assignRoles.isPending}>
-              {assignRoles.isPending && (
-                <Loader2 className="h-4 w-4 animate-spin ml-2" />
-              )}
+              {assignRoles.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
               {t("common.save")}
             </Button>
           </div>

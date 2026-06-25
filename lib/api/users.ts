@@ -54,7 +54,7 @@ export const usersApi = {
   },
 
   assignRoles: async (id: string, roleIds: string[]): Promise<void> => {
-    await apiClient.post(`/users/${id}/roles`, { roleIds });
+    await apiClient.put(`/users/${id}/roles`, { roleIds });
   },
 
   changePassword: async (id: string, data: { currentPassword: string; newPassword: string }): Promise<void> => {
