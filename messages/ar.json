@@ -1230,6 +1230,8 @@
     },
     "statuses": {
       "DRAFT": "مسودة",
+      "PENDING_MANAGER": "بانتظار المدير",
+      "PENDING_HR": "بانتظار HR",
       "IN_APPROVAL": "قيد الموافقة",
       "APPROVED": "مقبول",
       "REJECTED": "مرفوض",

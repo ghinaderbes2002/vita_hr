@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -55,7 +54,6 @@ const PRIORITIES: MaintenancePriority[] = ["URGENT", "MEDIUM", "NORMAL"];
 
 export function MaintenanceRequestDialog({ open, onOpenChange }: Props) {
   const t = useTranslations();
-  const router = useRouter();
   const createRequest = useCreateMaintenanceRequest();
 
   const form = useForm<FormData>({
@@ -81,7 +79,6 @@ export function MaintenanceRequestDialog({ open, onOpenChange }: Props) {
     });
     form.reset();
     onOpenChange(false);
-    router.push("/maintenance-requests");
   };
 
   return (

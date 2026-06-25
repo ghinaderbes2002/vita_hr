@@ -932,7 +932,7 @@ export default function RequestDetailPage() {
                           </div>
                           {isSkipped && (
                             <p className="text-xs text-muted-foreground mt-1 italic">
-                              تم تخطي هذه الخطوة تلقائياً (المدير المباشر = المدير التنفيذي)
+                              تم تخطي هذه الخطوة تلقائياً
                             </p>
                           )}
                           {step.reviewedAt && (

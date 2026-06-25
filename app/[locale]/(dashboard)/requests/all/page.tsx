@@ -152,7 +152,7 @@ export default function AllRequestsPage() {
                     {new Date(req.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    {req.status === "IN_APPROVAL" && (canApprove || canReject) && (
+                    {(req.status === "IN_APPROVAL" || req.status === "PENDING_HR" || req.status === "PENDING_MANAGER") && (canApprove || canReject) && (
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
