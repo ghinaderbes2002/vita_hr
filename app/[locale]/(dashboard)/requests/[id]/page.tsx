@@ -76,6 +76,27 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
   managementRating: "تقييم الإدارة",
   suggestions: "اقتراحات للتحسين",
   wouldRejoin: "يرغب بالعودة مستقبلاً",
+  // maintenance
+  workLocation: "موقع العمل",
+  assetType: "نوع الأصل",
+  assetNumber: "رقم الأصل",
+  brandModel: "الماركة / الموديل",
+  faultDescription: "وصف العطل",
+  priority: "الأولوية",
+  paidDirectly: "دُفع نقداً",
+  category: "الفئة",
+  situationDescription: "وصف الحالة",
+};
+
+const DETAIL_VALUE_LABELS: Record<string, string> = {
+  NORMAL: "عادي",
+  URGENT: "عاجل",
+  MEDIUM: "متوسط",
+  SHAHBA: "شركة (الشهباء)",
+  CENTER: "المركز",
+  NEW_ALEPPO: "حلب الجديدة",
+  MATERIAL: "مادي",
+  MORAL: "معنوي",
 };
 
 function formatDetailKey(key: string): string {
@@ -108,9 +129,16 @@ function renderDetailValue(value: any, employeeMap: Record<string, string> = {})
           <div key={i} className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
             {Object.entries(item).map(([k, v]) => {
               if (k === "departmentId") return null;
-              const display = typeof v === "string" && isUUID(v as string)
-                ? (employeeMap[v as string] ?? null)
-                : String(v ?? "—");
+              let display: string | null;
+              if (typeof v === "boolean") {
+                display = v ? "نعم" : "لا";
+              } else if (typeof v === "string" && isUUID(v as string)) {
+                display = employeeMap[v as string] ?? null;
+              } else if (typeof v === "string" && DETAIL_VALUE_LABELS[v as string]) {
+                display = DETAIL_VALUE_LABELS[v as string];
+              } else {
+                display = String(v ?? "—");
+              }
               if (display === null) return null;
               return (
                 <div key={k} className="flex items-start justify-between gap-2 text-xs">
@@ -142,6 +170,16 @@ function renderDetailValue(value: any, employeeMap: Record<string, string> = {})
   // UUID string — look up name, hide raw ID if not found
   if (typeof value === "string" && isUUID(value)) {
     return employeeMap[value] ? <span>{employeeMap[value]}</span> : null;
+  }
+
+  // Boolean
+  if (typeof value === "boolean") {
+    return <span>{value ? "نعم" : "لا"}</span>;
+  }
+
+  // Known enum value
+  if (typeof value === "string" && DETAIL_VALUE_LABELS[value]) {
+    return <span>{DETAIL_VALUE_LABELS[value]}</span>;
   }
 
   return <span>{String(value)}</span>;
