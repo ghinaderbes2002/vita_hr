@@ -337,6 +337,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
             rewardType: e.rewardType,
             amount: e.category === "MATERIAL" ? (Number(e.amount) || 0) : undefined,
             reason: e.reason,
+            ...(e.category === "MATERIAL" && { paidDirectly: e.paidDirectly }),
           })),
         };
       case "COMPLAINT":
@@ -928,12 +929,24 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                         {rewardErrors[i]?.rewardType && <p className="text-xs text-destructive">{t("requests.dialog.reward.rewardTypeRequired")}</p>}
                       </div>
                       {emp.category === "MATERIAL" && (
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium">{t("requests.dialog.reward.amountLabel")}</label>
-                          <Input type="number" min={0} value={emp.amount}
-                            className={rewardErrors[i]?.amount ? "border-destructive" : ""}
-                            onChange={(e) => { setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, amount: e.target.value } : x)); setRewardErrors((a) => a.map((er, j) => j === i ? { ...er, amount: false } : er)); }} />
-                          {rewardErrors[i]?.amount && <p className="text-xs text-destructive">{t("requests.dialog.reward.amountRequired")}</p>}
+                        <div className="space-y-2">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">{t("requests.dialog.reward.amountLabel")}</label>
+                            <Input type="number" min={0} value={emp.amount}
+                              className={rewardErrors[i]?.amount ? "border-destructive" : ""}
+                              onChange={(e) => { setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, amount: e.target.value } : x)); setRewardErrors((a) => a.map((er, j) => j === i ? { ...er, amount: false } : er)); }} />
+                            {rewardErrors[i]?.amount && <p className="text-xs text-destructive">{t("requests.dialog.reward.amountRequired")}</p>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`paidDirectly-${i}`}
+                              checked={emp.paidDirectly}
+                              onCheckedChange={(checked) => setRewardEmployees((a) => a.map((x, j) => j === i ? { ...x, paidDirectly: !!checked } : x))}
+                            />
+                            <label htmlFor={`paidDirectly-${i}`} className="text-xs font-medium cursor-pointer">
+                              دُفع نقداً (بدون صرف من الراتب)
+                            </label>
+                          </div>
                         </div>
                       )}
                     </div>
