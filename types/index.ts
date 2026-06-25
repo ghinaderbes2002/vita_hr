@@ -15,8 +15,6 @@ export type RequestType =
 
 export type RequestStatus =
   | "DRAFT"
-  | "PENDING_MANAGER"
-  | "PENDING_HR"
   | "IN_APPROVAL"
   | "APPROVED"
   | "REJECTED"

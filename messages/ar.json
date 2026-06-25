@@ -1230,8 +1230,6 @@
     },
     "statuses": {
       "DRAFT": "مسودة",
-      "PENDING_MANAGER": "بانتظار المدير",
-      "PENDING_HR": "بانتظار HR",
       "IN_APPROVAL": "قيد الموافقة",
       "APPROVED": "مقبول",
       "REJECTED": "مرفوض",
@@ -3815,7 +3813,8 @@
     "title": "طلبات الصيانة",
     "myRequests": "طلبات الصيانة الخاصة بي",
     "myRequestsDescription": "تتبع وإدارة طلبات الصيانة المقدمة منك",
-    "newRequest": "طلب صيانة جديد",
+    "newRequest": "طلب صيانة",
+    "newRequestDescription": "أبلغ عن عطل أو مشكلة في أحد الأصول",
     "createTitle": "طلب صيانة جديد",
     "createDescription": "قدّم طلب صيانة لأصل معطوب",
     "pendingTitle": "طلبات الصيانة المعلقة",

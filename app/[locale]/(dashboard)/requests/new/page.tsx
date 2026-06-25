@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { CalendarDays, FileText, ShieldAlert } from "lucide-react";
+import { CalendarDays, FileText, ShieldAlert, Wrench } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { LeaveRequestForm } from "@/components/features/leave-requests/leave-request-form";
 import { NewRequestDialog } from "@/components/features/requests/new-request-dialog";
+import { MaintenanceRequestDialog } from "@/components/features/maintenance-requests/maintenance-request-dialog";
 import { useCreateLeaveRequest, useCreateHourlyLeave, useSubmitLeaveRequest, useMyHourlyUsedHours } from "@/lib/hooks/use-leave-requests";
 import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
 import { CreateLeaveRequestData, CreateHourlyLeaveData } from "@/lib/api/leave-requests";
@@ -21,6 +22,7 @@ export default function NewRequestChoicePage() {
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [accidentDialogOpen, setAccidentDialogOpen] = useState(false);
+  const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
   const createLeaveRequest = useCreateLeaveRequest();
   const createHourlyLeave = useCreateHourlyLeave();
   const submitLeaveRequest = useSubmitLeaveRequest();
@@ -122,6 +124,25 @@ export default function NewRequestChoicePage() {
           </CardHeader>
           <CardContent />
         </Card>
+
+        {/* طلب صيانة */}
+        <Card
+          className="cursor-pointer hover:border-yellow-400 hover:shadow-md transition-all"
+          onClick={() => setMaintenanceDialogOpen(true)}
+        >
+          <CardHeader className="flex flex-row items-center gap-4 pb-2">
+            <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
+              <Wrench className="h-6 w-6" />
+            </div>
+            <div>
+              <CardTitle className="text-base">{t("maintenance.newRequest")}</CardTitle>
+              <CardDescription className="text-xs mt-1">
+                {t("maintenance.newRequestDescription")}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent />
+        </Card>
       </div>
 
       {/* ديالوق طلب الإجازة */}
@@ -151,6 +172,12 @@ export default function NewRequestChoicePage() {
         onOpenChange={setAccidentDialogOpen}
         defaultType="WORK_ACCIDENT"
         title={t("requests.workAccidentTitle")}
+      />
+
+      {/* ديالوق طلب الصيانة */}
+      <MaintenanceRequestDialog
+        open={maintenanceDialogOpen}
+        onOpenChange={setMaintenanceDialogOpen}
       />
     </div>
   );

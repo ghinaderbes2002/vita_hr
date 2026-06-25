@@ -52,16 +52,6 @@ const MANAGER_PERMISSIONS = [
   "requests:read-all-steps",
 ];
 
-const INCIDENT_TYPE_VALUES = [
-  "EMPLOYEE_INJURY", "PATIENT_ACCIDENT", "VISITOR_ACCIDENT",
-  "PROPERTY_DAMAGE", "BIOLOGICAL_CHEMICAL", "MEDICATION_ERROR", "OTHER",
-];
-
-const CONTRIBUTING_FACTOR_VALUES = [
-  "SAFETY_PROCEDURES", "MEDICAL_DEVICE", "CHEMICAL_SPILL",
-  "CROWDING", "HUMAN_ERROR", "OTHER",
-];
-
 const REMOTE_WORK_TYPE_VALUES = ["TEMPORARY", "REGULAR", "EMERGENCY"];
 
 const JUSTIFICATION_OPTION_VALUES = ["HEALTH", "FAMILY_CARE", "PRODUCTIVITY", "TRAVEL", "OTHER"];
@@ -113,18 +103,6 @@ type FormData = z.infer<typeof formSchema>;
 type HiringPosition = { departmentId: string; jobTitle: string; count: string; reason: string };
 type RewardEmployee = { employeeId: string; category: "MATERIAL" | "MORAL"; rewardType: string; amount: string; reason: string; paidDirectly: boolean };
 
-const defaultWorkAccident = {
-  incidentLocation: "", incidentType: "", incidentTypeOther: "",
-  affectedPersonName: "", affectedPersonJobTitle: "", affectedPersonId: "",
-  incidentTime: "", incidentTimeOfDay: "AM",
-  incidentDetails: "", contributingFactors: [] as string[],
-  immediateActions: {
-    firstAid: false, firstAidBy: "", hospitalTransfer: false, hospitalName: "",
-    supervisorNotified: false, supervisorName: "", supervisorNotifiedTime: "",
-  },
-  preventionRecommendations: "",
-};
-
 const defaultRemoteWork = {
   remoteWorkType: "", temporaryDays: "", emergencyReason: "",
   startDate: "", endDate: "", weeklyDaysCount: "", proposedDays: "",
@@ -166,7 +144,6 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
   const [penaltyType, setPenaltyType] = useState<string>("");
   const [penaltyDays, setPenaltyDays] = useState<string>("");
   const [overtimeManagerEmployeeIds, setOvertimeManagerEmployeeIds] = useState<string[]>([]);
-  const [workAccident, setWorkAccident] = useState(defaultWorkAccident);
   const [remoteWork, setRemoteWork] = useState(defaultRemoteWork);
 
   const { data: myEmployee } = useMyEmployee();
@@ -315,22 +292,8 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
           })),
         };
       case "COMPLAINT":
-        return { complaintDescription: data.complaintDescription };
       case "WORK_ACCIDENT":
-        return {
-          incidentLocation: workAccident.incidentLocation,
-          incidentType: workAccident.incidentType,
-          incidentTypeOther: workAccident.incidentTypeOther || undefined,
-          affectedPersonName: workAccident.affectedPersonName,
-          affectedPersonJobTitle: workAccident.affectedPersonJobTitle || undefined,
-          affectedPersonId: workAccident.affectedPersonId || undefined,
-          incidentTime: workAccident.incidentTime,
-          incidentTimeOfDay: workAccident.incidentTimeOfDay,
-          incidentDetails: workAccident.incidentDetails,
-          contributingFactors: workAccident.contributingFactors,
-          immediateActions: workAccident.immediateActions,
-          preventionRecommendations: workAccident.preventionRecommendations || undefined,
-        };
+        return { complaintDescription: data.complaintDescription };
       case "REMOTE_WORK":
         return {
           startDate: remoteWork.startDate,
@@ -386,7 +349,6 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
       setPenaltyType("");
       setPenaltyDays("");
       setOvertimeManagerEmployeeIds([]);
-      setWorkAccident(defaultWorkAccident);
       setRemoteWork(defaultRemoteWork);
     } catch {
       // Error handled by mutation
@@ -915,159 +877,15 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
 
             {/* ── WORK_ACCIDENT ── */}
             {selectedType === "WORK_ACCIDENT" && (
-              <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
-                <p className="text-sm font-semibold">{t("requests.dialog.workAccident.sectionTitle")}</p>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.workAccident.locationLabel")}</label>
-                    <Input value={workAccident.incidentLocation} placeholder={t("requests.dialog.workAccident.locationPlaceholder")}
-                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentLocation: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.workAccident.incidentTypeLabel")}</label>
-                    <select
-                      value={workAccident.incidentType}
-                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentType: e.target.value }))}
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="">{t("requests.dialog.choose")}</option>
-                      {INCIDENT_TYPE_VALUES.map((v) => <option key={v} value={v}>{t(`requests.dialog.workAccident.incidentTypes.${v}` as any)}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                {workAccident.incidentType === "OTHER" && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.workAccident.incidentTypeOtherLabel")}</label>
-                    <Input value={workAccident.incidentTypeOther} placeholder={t("requests.dialog.workAccident.incidentTypeOtherPlaceholder")}
-                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentTypeOther: e.target.value }))} />
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.workAccident.affectedName")}</label>
-                    <Input value={workAccident.affectedPersonName} placeholder={t("requests.dialog.workAccident.affectedNamePlaceholder")}
-                      onChange={(e) => setWorkAccident((p) => ({ ...p, affectedPersonName: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.workAccident.affectedTitle")}</label>
-                    <Input value={workAccident.affectedPersonJobTitle} placeholder={t("requests.dialog.workAccident.affectedTitlePlaceholder")}
-                      onChange={(e) => setWorkAccident((p) => ({ ...p, affectedPersonJobTitle: e.target.value }))} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.workAccident.affectedId")}</label>
-                    <Input value={workAccident.affectedPersonId} placeholder={t("requests.dialog.workAccident.affectedIdPlaceholder")}
-                      onChange={(e) => setWorkAccident((p) => ({ ...p, affectedPersonId: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.workAccident.incidentTime")}</label>
-                    <Input type="time" value={workAccident.incidentTime}
-                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentTime: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">{t("requests.dialog.workAccident.amPm")}</label>
-                    <select
-                      value={workAccident.incidentTimeOfDay}
-                      onChange={(e) => setWorkAccident((p) => ({ ...p, incidentTimeOfDay: e.target.value }))}
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium">{t("requests.dialog.workAccident.detailsLabel")}</label>
-                  <textarea
-                    value={workAccident.incidentDetails}
-                    rows={3}
-                    placeholder={t("requests.dialog.workAccident.detailsPlaceholder")}
-                    onChange={(e) => setWorkAccident((p) => ({ ...p, incidentDetails: e.target.value }))}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-medium">{t("requests.dialog.workAccident.contributingFactorsLabel")}</label>
-                  <div className="flex flex-wrap gap-2">
-                    {CONTRIBUTING_FACTOR_VALUES.map((fv) => {
-                      const checked = workAccident.contributingFactors.includes(fv);
-                      return (
-                        <button key={fv} type="button"
-                          onClick={() => setWorkAccident((p) => ({
-                            ...p,
-                            contributingFactors: checked
-                              ? p.contributingFactors.filter((x) => x !== fv)
-                              : [...p.contributingFactors, fv],
-                          }))}
-                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${checked ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground/30 hover:border-primary/50"}`}
-                        >
-                          {t(`requests.dialog.workAccident.factorTypes.${fv}` as any)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-2 rounded border p-3">
-                  <p className="text-xs font-semibold">{t("requests.dialog.workAccident.immediateActionsTitle")}</p>
-                  <div className="space-y-2">
-                    {[
-                      { key: "firstAid", labelKey: "requests.dialog.workAccident.firstAid" },
-                      { key: "hospitalTransfer", labelKey: "requests.dialog.workAccident.hospitalTransfer" },
-                      { key: "supervisorNotified", labelKey: "requests.dialog.workAccident.supervisorNotified" },
-                    ].map(({ key, labelKey }) => (
-                      <div key={key}>
-                        <label className="flex items-center gap-2 cursor-pointer text-sm">
-                          <input type="checkbox"
-                            checked={(workAccident.immediateActions as any)[key]}
-                            onChange={(e) => setWorkAccident((p) => ({
-                              ...p, immediateActions: { ...p.immediateActions, [key]: e.target.checked },
-                            }))}
-                          />
-                          {t(labelKey as any)}
-                        </label>
-                        {key === "firstAid" && workAccident.immediateActions.firstAid && (
-                          <Input className="mt-1" placeholder={t("requests.dialog.workAccident.firstAidPlaceholder")}
-                            value={workAccident.immediateActions.firstAidBy}
-                            onChange={(e) => setWorkAccident((p) => ({ ...p, immediateActions: { ...p.immediateActions, firstAidBy: e.target.value } }))} />
-                        )}
-                        {key === "hospitalTransfer" && workAccident.immediateActions.hospitalTransfer && (
-                          <Input className="mt-1" placeholder={t("requests.dialog.workAccident.hospitalPlaceholder")}
-                            value={workAccident.immediateActions.hospitalName}
-                            onChange={(e) => setWorkAccident((p) => ({ ...p, immediateActions: { ...p.immediateActions, hospitalName: e.target.value } }))} />
-                        )}
-                        {key === "supervisorNotified" && workAccident.immediateActions.supervisorNotified && (
-                          <div className="grid grid-cols-2 gap-2 mt-1">
-                            <Input placeholder={t("requests.dialog.workAccident.supervisorNamePlaceholder")}
-                              value={workAccident.immediateActions.supervisorName}
-                              onChange={(e) => setWorkAccident((p) => ({ ...p, immediateActions: { ...p.immediateActions, supervisorName: e.target.value } }))} />
-                            <Input placeholder={t("requests.dialog.workAccident.supervisorTimePlaceholder")}
-                              value={workAccident.immediateActions.supervisorNotifiedTime}
-                              onChange={(e) => setWorkAccident((p) => ({ ...p, immediateActions: { ...p.immediateActions, supervisorNotifiedTime: e.target.value } }))} />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium">{t("requests.dialog.workAccident.preventionLabel")}</label>
-                  <textarea
-                    value={workAccident.preventionRecommendations}
-                    rows={2}
-                    placeholder={t("requests.dialog.workAccident.preventionPlaceholder")}
-                    onChange={(e) => setWorkAccident((p) => ({ ...p, preventionRecommendations: e.target.value }))}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                  />
-                </div>
+              <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                <FormField control={form.control} name="complaintDescription" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("requests.dialog.workAccident.detailsLabel")}</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={4} placeholder={t("requests.dialog.workAccident.detailsPlaceholder")} />
+                    </FormControl>
+                  </FormItem>
+                )} />
               </div>
             )}
 
