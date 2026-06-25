@@ -80,8 +80,8 @@ export default function PendingManagerPage() {
   const empMap = new Map(
     (Array.isArray(allEmployeesData) ? allEmployeesData : []).map((e: any) => [e.id, e])
   );
-  // filter out MAINTENANCE from generic tab — they have their own tab
-  const genericRequests = requests.filter((r) => (r as any).type !== "MAINTENANCE");
+  const genericRequests = requests;
+  const maintenancePendingItems = requests.filter((r) => (r as any).type === "MAINTENANCE") as any[];
 
   const handleApproveConfirm = async (notes: string) => {
     if (selectedGeneric) {
@@ -100,7 +100,7 @@ export default function PendingManagerPage() {
   };
 
   // ── Maintenance requests ──
-  const defaultMaintenanceTab = canManagerApprove || isAdmin() ? "manager" : canLogistics ? "logistics" : "executive";
+  const defaultMaintenanceTab = canManagerApprove || isAdmin() ? "manager" : canLogistics ? "logistics" : canExecutiveApprove ? "executive" : "manager";
   const [maintenanceTab, setMaintenanceTab] = useState(defaultMaintenanceTab);
   const [maintenanceActionDialog, setMaintenanceActionDialog] = useState<{ type: MaintenanceActionType; req: MaintenanceRequest } | null>(null);
   const [actionNotes, setActionNotes] = useState("");
@@ -128,11 +128,16 @@ export default function PendingManagerPage() {
   const execReject = useExecutiveRejectMaintenanceRequest();
 
   const getMaintenanceList = (tab: string): MaintenanceRequest[] => {
+    if (tab === "manager" && !isAdmin() && !canManagerApprove) {
+      return maintenancePendingItems;
+    }
     const d = tab === "manager" ? managerData : tab === "logistics" ? logisticsData : execData;
     return (d as any)?.data?.items || (d as any)?.data || (d as any)?.items || [];
   };
 
-  const isMaintenanceLoading = maintenanceTab === "manager" ? managerLoading : maintenanceTab === "logistics" ? logisticsLoading : execLoading;
+  const isMaintenanceLoading = maintenanceTab === "manager"
+    ? (!isAdmin() && !canManagerApprove ? false : managerLoading)
+    : maintenanceTab === "logistics" ? logisticsLoading : execLoading;
 
   const confirmMaintenanceAction = async () => {
     if (!maintenanceActionDialog) return;
@@ -224,9 +229,6 @@ export default function PendingManagerPage() {
       <Tabs defaultValue="admin" className="space-y-4">
         <TabsList>
           <TabsTrigger value="admin">{t("requests.tabs.adminRequests")}</TabsTrigger>
-          {showAnyMaintenance && (
-            <TabsTrigger value="maintenance">{t("maintenance.title")}</TabsTrigger>
-          )}
           {(isCeo || isAdmin()) && (
             <TabsTrigger value="ceo-approved">الطلبات المعتمدة</TabsTrigger>
           )}
@@ -284,25 +286,43 @@ export default function PendingManagerPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/requests/${req.id}`)}>
+                            <DropdownMenuItem onClick={() => router.push(`/${locale}/requests/${req.id}`)}>
                               <Eye className="h-4 w-4 ml-2" />
                               {t("common.view")}
                             </DropdownMenuItem>
-                            <ActionGuard permission={PERMISSIONS.REQUESTS.MANAGER_APPROVE}>
-                              <DropdownMenuItem onClick={() => { setSelectedGeneric(req); setApproveDialogOpen(true); }}>
-                                <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
-                                {t("requests.actions.approve")}
-                              </DropdownMenuItem>
-                            </ActionGuard>
-                            <ActionGuard permission={PERMISSIONS.REQUESTS.MANAGER_REJECT}>
-                              <DropdownMenuItem
-                                onClick={() => { setSelectedGeneric(req); setRejectDialogOpen(true); }}
-                                className="text-destructive"
-                              >
-                                <XCircle className="h-4 w-4 ml-2" />
-                                {t("requests.actions.reject")}
-                              </DropdownMenuItem>
-                            </ActionGuard>
+                            {(req as any).type === "MAINTENANCE" ? (
+                              <>
+                                <DropdownMenuItem onClick={() => { setMaintenanceActionDialog({ type: "manager-approve", req: req as any }); setActionNotes(""); }}>
+                                  <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
+                                  {t("requests.actions.approve")}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => { setMaintenanceActionDialog({ type: "manager-reject", req: req as any }); setActionNotes(""); }}
+                                  className="text-destructive"
+                                >
+                                  <XCircle className="h-4 w-4 ml-2" />
+                                  {t("requests.actions.reject")}
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <>
+                                <ActionGuard permission={PERMISSIONS.REQUESTS.MANAGER_APPROVE}>
+                                  <DropdownMenuItem onClick={() => { setSelectedGeneric(req); setApproveDialogOpen(true); }}>
+                                    <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
+                                    {t("requests.actions.approve")}
+                                  </DropdownMenuItem>
+                                </ActionGuard>
+                                <ActionGuard permission={PERMISSIONS.REQUESTS.MANAGER_REJECT}>
+                                  <DropdownMenuItem
+                                    onClick={() => { setSelectedGeneric(req); setRejectDialogOpen(true); }}
+                                    className="text-destructive"
+                                  >
+                                    <XCircle className="h-4 w-4 ml-2" />
+                                    {t("requests.actions.reject")}
+                                  </DropdownMenuItem>
+                                </ActionGuard>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -373,66 +393,6 @@ export default function PendingManagerPage() {
           </TabsContent>
         )}
 
-        {/* ── Maintenance requests tab ── */}
-        {showAnyMaintenance && (
-          <TabsContent value="maintenance">
-            <Tabs value={maintenanceTab} onValueChange={setMaintenanceTab} className="space-y-3">
-              <TabsList>
-                {(isAdmin() || canManagerApprove) && (
-                  <TabsTrigger value="manager">{t("maintenance.tabs.manager")}</TabsTrigger>
-                )}
-                {(isAdmin() || canLogistics) && (
-                  <TabsTrigger value="logistics">{t("maintenance.tabs.logistics")}</TabsTrigger>
-                )}
-                {(isAdmin() || canExecutiveApprove) && (
-                  <TabsTrigger value="executive">{t("maintenance.tabs.executive")}</TabsTrigger>
-                )}
-              </TabsList>
-
-              <div className="rounded-md border">
-                {maintenanceTab === "manager" && renderMaintenanceTable(
-                  getMaintenanceList("manager"),
-                  (req) => (
-                    <>
-                      <Button size="sm" onClick={() => { setMaintenanceActionDialog({ type: "manager-approve", req }); setActionNotes(""); }}>
-                        <Check className="h-4 w-4 ml-1" />
-                        {t("maintenance.actions.approve")}
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => { setMaintenanceActionDialog({ type: "manager-reject", req }); setActionNotes(""); }}>
-                        <X className="h-4 w-4 ml-1" />
-                        {t("maintenance.actions.reject")}
-                      </Button>
-                    </>
-                  ),
-                )}
-                {maintenanceTab === "logistics" && renderMaintenanceTable(
-                  getMaintenanceList("logistics"),
-                  (req) => (
-                    <Button size="sm" variant="outline" onClick={() => { setLogisticsRequestId(req.id); setLogisticsDialogOpen(true); }}>
-                      <Settings className="h-4 w-4 ml-1" />
-                      {t("maintenance.actions.process")}
-                    </Button>
-                  ),
-                )}
-                {maintenanceTab === "executive" && renderMaintenanceTable(
-                  getMaintenanceList("executive"),
-                  (req) => (
-                    <>
-                      <Button size="sm" onClick={() => { setMaintenanceActionDialog({ type: "executive-approve", req }); setActionNotes(""); }}>
-                        <Check className="h-4 w-4 ml-1" />
-                        {t("maintenance.actions.approve")}
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => { setMaintenanceActionDialog({ type: "executive-reject", req }); setActionNotes(""); }}>
-                        <X className="h-4 w-4 ml-1" />
-                        {t("maintenance.actions.reject")}
-                      </Button>
-                    </>
-                  ),
-                )}
-              </div>
-            </Tabs>
-          </TabsContent>
-        )}
       </Tabs>
 
       {/* Generic request dialogs */}

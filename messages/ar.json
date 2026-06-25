@@ -1236,7 +1236,11 @@
       "APPROVED": "مقبول",
       "REJECTED": "مرفوض",
       "CANCELLED": "ملغي",
-      "PENDING_EXIT_INTERVIEW": "بانتظار مقابلة الخروج"
+      "PENDING_EXIT_INTERVIEW": "بانتظار مقابلة الخروج",
+      "PENDING_LOGISTICS": "بانتظار اللوجستي",
+      "PENDING_EXECUTIVE": "بانتظار المدير التنفيذي",
+      "ASSIGNED": "مكلَّف",
+      "DONE": "منجز"
     },
     "actions": {
       "submit": "تقديم",

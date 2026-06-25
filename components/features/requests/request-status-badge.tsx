@@ -13,6 +13,10 @@ const statusVariantMap: Record<RequestStatus, "default" | "secondary" | "destruc
   REJECTED: "destructive",
   CANCELLED: "outline",
   PENDING_EXIT_INTERVIEW: "secondary",
+  PENDING_LOGISTICS: "secondary",
+  PENDING_EXECUTIVE: "secondary",
+  ASSIGNED: "secondary",
+  DONE: "default",
 };
 
 const statusColorMap: Record<RequestStatus, string> = {
@@ -24,6 +28,10 @@ const statusColorMap: Record<RequestStatus, string> = {
   REJECTED: "",
   CANCELLED: "text-slate-500 border-slate-300 bg-slate-50",
   PENDING_EXIT_INTERVIEW: "text-orange-600 border-orange-300 bg-orange-50 dark:bg-orange-950",
+  PENDING_LOGISTICS: "text-cyan-600 border-cyan-300 bg-cyan-50 dark:bg-cyan-950",
+  PENDING_EXECUTIVE: "text-violet-600 border-violet-300 bg-violet-50 dark:bg-violet-950",
+  ASSIGNED: "text-indigo-600 border-indigo-300 bg-indigo-50 dark:bg-indigo-950",
+  DONE: "text-green-600 border-green-300 bg-green-50 dark:bg-green-950",
 };
 
 interface RequestStatusBadgeProps {

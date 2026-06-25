@@ -21,7 +21,11 @@ export type RequestStatus =
   | "APPROVED"
   | "REJECTED"
   | "CANCELLED"
-  | "PENDING_EXIT_INTERVIEW";
+  | "PENDING_EXIT_INTERVIEW"
+  | "PENDING_LOGISTICS"
+  | "PENDING_EXECUTIVE"
+  | "ASSIGNED"
+  | "DONE";
 
 export type ApproverRole =
   | "DIRECT_MANAGER"
