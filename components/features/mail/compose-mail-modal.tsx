@@ -299,6 +299,7 @@ export function ComposeMailModal({
                   value={toIds}
                   onChange={setToIds}
                   placeholder={t("searchEmployee")}
+                  requireLinkedUser
                 />
               </div>
 
@@ -311,7 +312,7 @@ export function ComposeMailModal({
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <UserSearchSelect value={ccIds} onChange={setCcIds} placeholder={t("searchEmployee")} exclude={toIds} />
+                  <UserSearchSelect value={ccIds} onChange={setCcIds} placeholder={t("searchEmployee")} exclude={toIds} requireLinkedUser />
                 </div>
               )}
 
@@ -324,7 +325,7 @@ export function ComposeMailModal({
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <UserSearchSelect value={bccIds} onChange={setBccIds} placeholder={t("searchEmployee")} exclude={[...toIds, ...ccIds]} />
+                  <UserSearchSelect value={bccIds} onChange={setBccIds} placeholder={t("searchEmployee")} exclude={[...toIds, ...ccIds]} requireLinkedUser />
                 </div>
               )}
 

@@ -3062,25 +3062,14 @@
       },
       "new": {
         "title": "تسجيل مريض جديد",
-        "subtitle": "أدخل بيانات المريض في 4 خطوات",
+        "subtitle": "أدخل بيانات المريض عبر الخطوات التالية",
         "steps": {
-          "0": {
-            "label": "المعلومات الأساسية",
-            "desc": "الهوية والجنس"
-          },
-          "1": {
-            "label": "التواصل والموقع",
-            "desc": "الهاتف والعنوان"
-          },
-          "2": {
-            "label": "البيانات الاجتماعية",
-            "desc": "المستوى التعليمي والحالة"
-          },
-          "3": {
-            "label": "الموافقات والملاحظات",
-            "desc": "الإذن بالبيانات"
-          }
+          "0": { "label": "المعلومات الأساسية", "desc": "الاسم والهوية وتاريخ الميلاد" },
+          "1": { "label": "التواصل والعنوان", "desc": "الهاتف والبريد والموقع" },
+          "2": { "label": "البيانات الاجتماعية", "desc": "التعليم والوضع المعيشي" },
+          "3": { "label": "الموافقات والملاحظات", "desc": "الموافقات والملاحظات الإضافية" }
         },
+        "gender": { "MALE": "ذكر", "FEMALE": "أنثى" },
         "identityTypes": {
           "NATIONAL_ID": "هوية وطنية",
           "PASSPORT": "جواز سفر",
@@ -3088,9 +3077,10 @@
           "OTHER": "أخرى"
         },
         "education": {
-          "NONE": "بدون تعليم",
+          "ILLITERATE": "أمي",
           "PRIMARY": "ابتدائي",
-          "SECONDARY": "ثانوي",
+          "SECONDARY": "إعدادي",
+          "HIGH_SCHOOL": "ثانوي",
           "UNIVERSITY": "جامعي",
           "POSTGRADUATE": "دراسات عليا"
         },
@@ -3101,9 +3091,10 @@
           "WIDOWED": "أرمل"
         },
         "living": {
-          "ALONE": "وحده",
-          "FAMILY": "مع العائلة",
-          "INSTITUTION": "مؤسسة"
+          "WITH_FAMILY": "مع العائلة",
+          "INDEPENDENT": "مستقل",
+          "SHELTER_CAMP": "ملجأ / مخيم",
+          "OTHER": "أخرى"
         },
         "financial": {
           "LOW": "منخفض",
@@ -3114,8 +3105,15 @@
         },
         "consent": {
           "FULL": "موافقة كاملة",
-          "ANONYMOUS": "موافقة مجهولة",
+          "ANONYMOUS": "مجهول الهوية",
           "NONE": "رفض"
+        },
+        "referral": {
+          "SELF": "ذاتي",
+          "RELATIVES": "أقارب",
+          "SOCIAL_MEDIA": "وسائل التواصل",
+          "MEDICAL_REFERRAL": "إحالة طبية",
+          "OTHER": "أخرى"
         },
         "fields": {
           "firstName": "الاسم الأول",
@@ -3124,47 +3122,49 @@
           "idNumber": "رقم الهوية",
           "dateOfBirth": "تاريخ الميلاد",
           "gender": "الجنس",
+          "occupation": "المهنة",
+          "occupationPlaceholder": "مثال: مهندس، معلم، ربة منزل...",
           "phone": "رقم الهاتف",
+          "phonePlaceholder": "+963...",
           "whatsapp": "واتساب",
           "email": "البريد الإلكتروني",
+          "emailPlaceholder": "email@example.com",
           "city": "المدينة",
-          "cityPlaceholder": "اختر المدينة",
-          "address": "العنوان التفصيلي",
-          "addressPlaceholder": "الحي، الشارع...",
+          "cityPlaceholder": "اختر المدينة...",
+          "address": "تفاصيل العنوان",
+          "addressPlaceholder": "الحي، الشارع، رقم المنزل...",
           "height": "الطول (سم)",
           "weight": "الوزن (كغ)",
           "educationLevel": "المستوى التعليمي",
           "maritalStatus": "الحالة الاجتماعية",
-          "livingStatus": "وضع السكن",
+          "livingCondition": "وضع السكن",
           "financialStatus": "الوضع المادي",
-          "centerAccessMethod": "طريقة الوصول إلى المركز",
-          "centerAccessPlaceholder": "سيارة خاصة، مواصلات عامة...",
-          "receivesHumanitarianAid": "يتلقى مساعدات إنسانية",
-          "documentConsent": "الموافقة على توثيق البيانات",
-          "mediaConsent": "الموافقة على استخدام الوسائط",
+          "referralSource": "مصدر الإحالة",
+          "referralDetails": "تفاصيل الإحالة",
+          "referralDetailsPlaceholder": "تفاصيل إضافية...",
+          "careProvider": "مقدم الرعاية",
+          "careProviderPlaceholder": "مقدم الرعاية...",
+          "documentConsent": "موافقة الوثائق",
+          "mediaConsent": "الموافقة على استخدام الصور والوسائط",
           "notes": "ملاحظات",
-          "notesPlaceholder": "أي ملاحظات إضافية عن المريض...",
-          "governorate": "المحافظة",
-          "governoratePlaceholder": "اختار المحافظة"
+          "notesPlaceholder": "أي ملاحظات إضافية عن المريض..."
         },
         "validation": {
-          "firstNameRequired": "الاسم الأول مطلوب",
-          "lastNameRequired": "اسم العائلة مطلوب",
-          "idNumberRequired": "رقم الهوية مطلوب",
-          "dobRequired": "تاريخ الميلاد مطلوب",
-          "phoneRequired": "رقم الهاتف مطلوب",
-          "invalidEmail": "بريد إلكتروني غير صحيح"
+          "required": "مطلوب",
+          "invalidEmail": "بريد إلكتروني غير صحيح",
+          "heightRange": "يجب أن يكون بين 50 و 250 سم",
+          "weightRange": "يجب أن يكون بين 10 و 300 كغ"
         },
         "duplicate": {
-          "message": "هذا الرقم مسجل مسبقاً.",
-          "viewFile": "عرض ملف المريض"
+          "message": "يوجد مريض بهذا الرقم.",
+          "viewFile": "عرض الملف"
         },
         "summary": {
           "title": "ملخص البيانات",
           "name": "الاسم",
           "idNumber": "رقم الهوية",
           "phone": "الهاتف",
-          "city": "المدينة"
+          "occupation": "المهنة"
         },
         "nav": {
           "cancel": "إلغاء",

@@ -197,6 +197,9 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
   const { data: pendingEvals } = usePendingMyAction();
   const probationPendingCount = Array.isArray(pendingEvals) ? pendingEvals.length : 0;
 
+  const { data: pendingAdminData } = usePendingMyApproval({ limit: 1 });
+  const adminRequestsPendingCount = (pendingAdminData as any)?.total ?? (pendingAdminData as any)?.data?.total ?? 0;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -204,7 +207,7 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/employees/subordinates`)} />
         <StatCard title={t("manager.probationEvaluations")} value={probationPendingCount} icon={ClipboardCheck}
           iconBg="bg-indigo-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
-        <StatCard title={t("manager.adminRequestsPending")} value="" icon={FileText}
+        <StatCard title={t("manager.adminRequestsPending")} value={adminRequestsPendingCount} icon={FileText}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
         <StatCard
           title={t("manager.leavesPending")}

@@ -2928,25 +2928,14 @@
       },
       "new": {
         "title": "Register New Patient",
-        "subtitle": "Enter patient data in 4 steps",
+        "subtitle": "Enter patient data through the following steps",
         "steps": {
-          "0": {
-            "label": "Basic Information",
-            "desc": "Identity and gender"
-          },
-          "1": {
-            "label": "Contact & Location",
-            "desc": "Phone and address"
-          },
-          "2": {
-            "label": "Social Data",
-            "desc": "Education and status"
-          },
-          "3": {
-            "label": "Consents & Notes",
-            "desc": "Data permission"
-          }
+          "0": { "label": "Basic Information", "desc": "Name, identity & date of birth" },
+          "1": { "label": "Contact & Address", "desc": "Phone, email & location" },
+          "2": { "label": "Social Data", "desc": "Education & living conditions" },
+          "3": { "label": "Consents & Notes", "desc": "Consents & additional notes" }
         },
+        "gender": { "MALE": "Male", "FEMALE": "Female" },
         "identityTypes": {
           "NATIONAL_ID": "National ID",
           "PASSPORT": "Passport",
@@ -2954,9 +2943,10 @@
           "OTHER": "Other"
         },
         "education": {
-          "NONE": "No education",
+          "ILLITERATE": "Illiterate",
           "PRIMARY": "Primary",
           "SECONDARY": "Secondary",
+          "HIGH_SCHOOL": "High School",
           "UNIVERSITY": "University",
           "POSTGRADUATE": "Postgraduate"
         },
@@ -2967,21 +2957,29 @@
           "WIDOWED": "Widowed"
         },
         "living": {
-          "ALONE": "Alone",
-          "FAMILY": "With family",
-          "INSTITUTION": "Institution"
+          "WITH_FAMILY": "With Family",
+          "INDEPENDENT": "Independent",
+          "SHELTER_CAMP": "Shelter / Camp",
+          "OTHER": "Other"
         },
         "financial": {
           "LOW": "Low",
           "MODERATE": "Moderate",
           "GOOD": "Good",
-          "NOT_WORKING": "Not working",
+          "NOT_WORKING": "Not Working",
           "RETIRED": "Retired"
         },
         "consent": {
-          "FULL": "Full consent",
-          "ANONYMOUS": "Anonymous consent",
+          "FULL": "Full Consent",
+          "ANONYMOUS": "Anonymous",
           "NONE": "Refused"
+        },
+        "referral": {
+          "SELF": "Self",
+          "RELATIVES": "Relatives",
+          "SOCIAL_MEDIA": "Social Media",
+          "MEDICAL_REFERRAL": "Medical Referral",
+          "OTHER": "Other"
         },
         "fields": {
           "firstName": "First Name",
@@ -2990,47 +2988,49 @@
           "idNumber": "ID Number",
           "dateOfBirth": "Date of Birth",
           "gender": "Gender",
-          "phone": "Phone",
+          "occupation": "Occupation",
+          "occupationPlaceholder": "e.g. Engineer, Teacher, Homemaker...",
+          "phone": "Phone Number",
+          "phonePlaceholder": "+963...",
           "whatsapp": "WhatsApp",
           "email": "Email",
+          "emailPlaceholder": "email@example.com",
           "city": "City",
-          "cityPlaceholder": "Select city",
-          "address": "Detailed Address",
-          "addressPlaceholder": "Neighborhood, street...",
+          "cityPlaceholder": "Select city...",
+          "address": "Address Details",
+          "addressPlaceholder": "Neighborhood, street, building...",
           "height": "Height (cm)",
           "weight": "Weight (kg)",
           "educationLevel": "Education Level",
           "maritalStatus": "Marital Status",
-          "livingStatus": "Living Status",
+          "livingCondition": "Living Condition",
           "financialStatus": "Financial Status",
-          "centerAccessMethod": "Access to Center",
-          "centerAccessPlaceholder": "Private car, public transport...",
-          "receivesHumanitarianAid": "Receives humanitarian aid",
-          "documentConsent": "Consent to document data",
-          "mediaConsent": "Consent to media use (photos/video)",
+          "referralSource": "Referral Source",
+          "referralDetails": "Referral Details",
+          "referralDetailsPlaceholder": "Additional details...",
+          "careProvider": "Care Provider",
+          "careProviderPlaceholder": "Care provider...",
+          "documentConsent": "Document Consent",
+          "mediaConsent": "Consent to use photos / Media",
           "notes": "Notes",
-          "notesPlaceholder": "Any additional notes about the patient...",
-          "governorate": "Governorate",
-          "governoratePlaceholder": "Select governorate"
+          "notesPlaceholder": "Any additional notes about the patient..."
         },
         "validation": {
-          "firstNameRequired": "First name is required",
-          "lastNameRequired": "Last name is required",
-          "idNumberRequired": "ID number is required",
-          "dobRequired": "Date of birth is required",
-          "phoneRequired": "Phone number is required",
-          "invalidEmail": "Invalid email address"
+          "required": "Required",
+          "invalidEmail": "Invalid email",
+          "heightRange": "Must be between 50 and 250 cm",
+          "weightRange": "Must be between 10 and 300 kg"
         },
         "duplicate": {
-          "message": "This ID is already registered.",
-          "viewFile": "View patient file"
+          "message": "A patient with this ID already exists.",
+          "viewFile": "View File"
         },
         "summary": {
           "title": "Data Summary",
           "name": "Name",
           "idNumber": "ID Number",
           "phone": "Phone",
-          "city": "City"
+          "occupation": "Occupation"
         },
         "nav": {
           "cancel": "Cancel",

@@ -14,6 +14,8 @@ import {
   Download,
   Calendar as CalendarIcon,
   XCircle,
+  AlertTriangle,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -39,6 +41,7 @@ import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { ActionGuard } from "@/components/permissions/action-guard";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import {
   usePhysioCase,
   useUpdatePhysioCase,
@@ -61,6 +64,10 @@ import {
   useSubmitFinalSummary,
   useDownloadFinalSummaryPdf,
   usePhysioTimeline,
+  useSendEmergencyAlert,
+  useMyEmergencyAlerts,
+  useIncomingEmergencyAlerts,
+  useRespondToAlert,
 } from "@/lib/hooks/use-clinic-physio";
 import { useUsers } from "@/lib/hooks/use-users";
 import { useEmployeesByDepartment } from "@/lib/hooks/use-employees";
@@ -226,9 +233,15 @@ export default function PhysioCasePage() {
   const t = useTranslations("clinic.physio.case");
   const isRtl = locale === "ar";
 
+  const { user } = useAuthStore();
+  const canSendAlert = !!user?.permissions?.includes("physio:emergency-alert");
   const { data: caseData, isLoading } = usePhysioCase(id);
   const { data: sessions = [] } = usePhysioSessions(id);
   const { data: timeline = [] } = usePhysioTimeline(id);
+  const { data: myAlerts = [] } = useMyEmergencyAlerts(canSendAlert);
+  const { data: incomingAlerts = [] } = useIncomingEmergencyAlerts(!canSendAlert);
+  const sendAlert = useSendEmergencyAlert();
+  const respondAlert = useRespondToAlert();
 
   const updateCase = useUpdatePhysioCase();
   const updateStatus = useUpdatePhysioStatus();
@@ -328,6 +341,8 @@ export default function PhysioCasePage() {
   const [painRegions, setPainRegions] = useState<PainRegion[]>([]);
   const [painTypes, setPainTypes] = useState<string[]>([]);
   const [customPainTypes, setCustomPainTypes] = useState<{ name: string; color: string }[]>([]);
+  const [customPainTypesDialogOpen, setCustomPainTypesDialogOpen] = useState(false);
+  const [customPainTypesDraft, setCustomPainTypesDraft] = useState<{ name: string; color: string }[]>([]);
   const [aggravatingFactors, setAggravatingFactors] = useState<string[]>([]);
   const [alleviatingFactors, setAlleviatingFactors] = useState<string[]>([]);
   const [aggravatingOther, setAggravatingOther] = useState("");
@@ -485,6 +500,8 @@ export default function PhysioCasePage() {
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
   const [finalSummary, setFinalSummary] = useState("");
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [respondingAlertId, setRespondingAlertId] = useState<string | null>(null);
+  const [respondNote, setRespondNote] = useState("");
 
   // ── Auto-save pain regions ───────────────────────────────────────────────────
   const autoSaveReady = useRef(false);
@@ -1296,6 +1313,10 @@ export default function PhysioCasePage() {
               </TabsTrigger>
             );
           })}
+          <TabsTrigger value="emergency" className="text-sm py-1.5 gap-1.5 text-destructive data-[state=active]:text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            تنبيه طارئ
+          </TabsTrigger>
         </TabsList>
 
         {/* ── INTAKE ─────────────────────────────────────────────────────── */}
@@ -1759,43 +1780,68 @@ export default function PhysioCasePage() {
               ))}
             </div>
             {painTypes.includes("OTHER") && (
-              <div className="mt-3 space-y-2">
-                {customPainTypes.map((ct, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={ct.color}
-                      onChange={(e) => {
-                        if (!canEdit) return;
-                        setCustomPainTypes(prev => prev.map((x, j) => j === i ? { ...x, color: e.target.value } : x));
-                      }}
-                      disabled={!canEdit}
-                      className="w-9 h-8 rounded cursor-pointer border border-input p-0.5 bg-background disabled:cursor-not-allowed disabled:opacity-50"
-                    />
-                    <Input
-                      placeholder="اسم النوع (مثلاً: وخز كهربائي)"
-                      value={ct.name}
-                      onChange={(e) => {
-                        if (!canEdit) return;
-                        setCustomPainTypes(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x));
-                      }}
-                      disabled={!canEdit}
-                      className="flex-1"
-                    />
-                    {canEdit && (
-                      <Button type="button" variant="ghost" size="icon" onClick={() => setCustomPainTypes(prev => prev.filter((_, j) => j !== i))}>
-                        <XCircle className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
+              <div className="mt-3 flex items-center gap-2">
+                {customPainTypes.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {customPainTypes.map((ct, i) => (
+                      <span key={i} className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium text-white" style={{ backgroundColor: ct.color }}>
+                        {ct.name || "—"}
+                      </span>
+                    ))}
                   </div>
-                ))}
-                {canEdit && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setCustomPainTypes(prev => [...prev, { name: "", color: "#00BCD4" }])}>
-                    + إضافة نوع مخصص
-                  </Button>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setCustomPainTypesDraft([...customPainTypes]); setCustomPainTypesDialogOpen(true); }}
+                >
+                  {customPainTypes.length > 0 ? "تعديل الأنواع" : "+ إضافة نوع مخصص"}
+                </Button>
               </div>
             )}
+
+            <Dialog open={customPainTypesDialogOpen} onOpenChange={setCustomPainTypesDialogOpen}>
+              <DialogContent className="max-w-md" dir={isRtl ? "rtl" : "ltr"}>
+                <DialogHeader>
+                  <DialogTitle>أنواع الألم المخصصة</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 py-2 max-h-72 overflow-y-auto">
+                  {customPainTypesDraft.map((ct, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={ct.color}
+                        onChange={(e) => setCustomPainTypesDraft(prev => prev.map((x, j) => j === i ? { ...x, color: e.target.value } : x))}
+                        className="w-9 h-8 rounded cursor-pointer border border-input p-0.5 bg-background"
+                      />
+                      <Input
+                        placeholder="اسم النوع (مثلاً: وخز كهربائي)"
+                        value={ct.name}
+                        onChange={(e) => setCustomPainTypesDraft(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                        className="flex-1"
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => setCustomPainTypesDraft(prev => prev.filter((_, j) => j !== i))}>
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setCustomPainTypesDraft(prev => [...prev, { name: "", color: "#00BCD4" }])}
+                  >
+                    + إضافة نوع
+                  </Button>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setCustomPainTypesDialogOpen(false)}>إلغاء</Button>
+                  <Button onClick={() => { setCustomPainTypes(customPainTypesDraft); setCustomPainTypesDialogOpen(false); }}>حفظ</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </Section>
           <Section title={t("painMap.mapTitle")}>
             <BodyPainMap
@@ -3416,6 +3462,143 @@ export default function PhysioCasePage() {
               </div>
             </div>
           </Section>
+        </TabsContent>
+
+        {/* ── EMERGENCY ───────────────────────────────────────────────────── */}
+        <TabsContent value="emergency" className="mt-4 space-y-6">
+          {/* زر إرسال التنبيه */}
+          {canSendAlert && (
+            <Section title="إرسال تنبيه طارئ">
+              <div className="flex flex-col items-center gap-4 py-4">
+                <p className="text-sm text-muted-foreground text-center">
+                  اضغط الزر لإرسال تنبيه طارئ فوري للموظف الثابت
+                </p>
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="gap-2 px-8"
+                  onClick={() => sendAlert.mutate()}
+                  disabled={sendAlert.isPending}
+                >
+                  {sendAlert.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <AlertTriangle className="h-5 w-5" />}
+                  إرسال تنبيه طارئ
+                </Button>
+              </div>
+            </Section>
+          )}
+
+          {/* تنبيهاتي المُرسَلة */}
+          {canSendAlert && (
+            <Section title="تنبيهاتي المُرسَلة">
+              {(myAlerts as any[]).length === 0 ? (
+                <p className="text-center py-6 text-muted-foreground text-sm">لا توجد تنبيهات مُرسَلة</p>
+              ) : (
+                <div className="space-y-2">
+                  {(myAlerts as any[]).map((alert: any) => (
+                    <div key={alert.id} className="flex items-start justify-between rounded-lg border p-3 gap-3">
+                      <div className="space-y-0.5 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={alert.status === "RESPONDED" ? "default" : "destructive"} className="text-xs">
+                            {alert.status === "RESPONDED" ? "تم الرد" : "بانتظار الرد"}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(alert.createdAt).toLocaleString(locale)}
+                          </span>
+                        </div>
+                        {alert.note && (
+                          <p className="text-sm mt-1">
+                            <span className="font-medium">رد الموظف: </span>{alert.note}
+                          </p>
+                        )}
+                        {alert.respondedAt && (
+                          <p className="text-xs text-muted-foreground">
+                            رُدَّ عليه في: {new Date(alert.respondedAt).toLocaleString(locale)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
+
+          {/* التنبيهات الواردة (الموظف الثابت) */}
+          {!canSendAlert && (
+            <Section title="التنبيهات الطارئة الواردة">
+              {(incomingAlerts as any[]).length === 0 ? (
+                <p className="text-center py-6 text-muted-foreground text-sm">لا توجد تنبيهات واردة</p>
+              ) : (
+                <div className="space-y-3">
+                  {(incomingAlerts as any[]).map((alert: any) => (
+                    <div key={alert.id} className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Bell className="h-4 w-4 text-destructive" />
+                          <span className="font-medium text-sm">تنبيه طارئ</span>
+                          <Badge variant={alert.status === "RESPONDED" ? "secondary" : "destructive"} className="text-xs">
+                            {alert.status === "RESPONDED" ? "تم الرد" : "جديد"}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(alert.createdAt).toLocaleString(locale)}
+                        </span>
+                      </div>
+
+                      {alert.note ? (
+                        <p className="text-sm bg-muted/50 rounded p-2">
+                          <span className="font-medium">ردك: </span>{alert.note}
+                        </p>
+                      ) : (
+                        respondingAlertId === alert.id ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              value={respondNote}
+                              onChange={(e) => setRespondNote(e.target.value)}
+                              placeholder="اكتب ملاحظتك هنا..."
+                              rows={3}
+                              className="text-sm"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={async () => {
+                                  if (!respondNote.trim()) return;
+                                  await respondAlert.mutateAsync({ id: alert.id, note: respondNote.trim() });
+                                  setRespondingAlertId(null);
+                                  setRespondNote("");
+                                }}
+                                disabled={respondAlert.isPending || !respondNote.trim()}
+                              >
+                                {respondAlert.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "إرسال الرد"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => { setRespondingAlertId(null); setRespondNote(""); }}
+                              >
+                                إلغاء
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={() => setRespondingAlertId(alert.id)}
+                          >
+                            <Bell className="h-3.5 w-3.5" />
+                            الرد على التنبيه
+                          </Button>
+                        )
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
         </TabsContent>
 
         {/* ── TIMELINE ────────────────────────────────────────────────────── */}

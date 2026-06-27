@@ -442,6 +442,15 @@ export interface FinalSummaryDto {
   finalSummary: string;
 }
 
+export interface EmergencyAlert {
+  id: string;
+  sentByUserId: string;
+  status: "PENDING" | "RESPONDED";
+  note: string | null;
+  respondedAt: string | null;
+  createdAt: string;
+}
+
 export interface PhysioCaseListParams {
   page?: number;
   limit?: number;
@@ -581,5 +590,28 @@ export const clinicPhysioApi = {
   downloadPdf: async (id: string): Promise<Blob> => {
     const response = await apiClient.get(`/physio/cases/${id}/pdf`, { responseType: "blob" });
     return response.data;
+  },
+
+  // ── Emergency alerts ──────────────────────────────────────────────────────
+  sendEmergencyAlert: async (): Promise<EmergencyAlert> => {
+    const { data } = await apiClient.post("/physio/emergency");
+    return data?.data ?? data;
+  },
+
+  respondToAlert: async (id: string, note: string): Promise<EmergencyAlert> => {
+    const { data } = await apiClient.post(`/physio/emergency/${id}/respond`, { note });
+    return data?.data ?? data;
+  },
+
+  getIncomingAlerts: async (): Promise<EmergencyAlert[]> => {
+    const { data } = await apiClient.get("/physio/emergency/incoming");
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  getMyAlerts: async (): Promise<EmergencyAlert[]> => {
+    const { data } = await apiClient.get("/physio/emergency/my");
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
   },
 };

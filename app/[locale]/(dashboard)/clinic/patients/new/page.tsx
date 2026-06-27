@@ -71,52 +71,7 @@ const LIVING_VALUES         = ["WITH_FAMILY", "INDEPENDENT", "SHELTER_CAMP", "OT
 const FINANCIAL_VALUES      = ["LOW", "MODERATE", "GOOD", "NOT_WORKING", "RETIRED"] as const;
 const CONSENT_VALUES        = ["FULL", "ANONYMOUS", "NONE"] as const;
 
-const EDUCATION_LABELS: Record<string, string> = {
-  ILLITERATE:   "أمي",
-  PRIMARY:      "ابتدائي",
-  SECONDARY:    "إعدادي",
-  HIGH_SCHOOL:  "ثانوي",
-  UNIVERSITY:   "جامعي",
-  POSTGRADUATE: "دراسات عليا",
-};
-const LIVING_LABELS: Record<string, string> = {
-  WITH_FAMILY:  "مع العائلة",
-  INDEPENDENT:  "مستقل",
-  SHELTER_CAMP: "مخيم",
-  OTHER:        "أخرى",
-};
-const FINANCIAL_LABELS: Record<string, string> = {
-  LOW:         "منخفض",
-  MODERATE:    "متوسط",
-  GOOD:        "جيد",
-  NOT_WORKING: "لا يعمل",
-  RETIRED:     "متقاعد",
-};
-const MARITAL_LABELS: Record<string, string> = {
-  SINGLE:   "أعزب",
-  MARRIED:  "متزوج",
-  DIVORCED: "مطلق",
-  WIDOWED:  "أرمل",
-};
-const IDENTITY_LABELS: Record<string, string> = {
-  NATIONAL_ID: "هوية وطنية",
-  PASSPORT:    "جواز سفر",
-  UNHCR:       "بطاقة UNHCR",
-  OTHER:       "أخرى",
-};
-const CONSENT_LABELS: Record<string, string> = {
-  FULL:      "موافقة كاملة",
-  ANONYMOUS: "مجهول الهوية",
-  NONE:      "رفض",
-};
 const REFERRAL_VALUES = ["SELF", "RELATIVES", "SOCIAL_MEDIA", "MEDICAL_REFERRAL", "OTHER"] as const;
-const REFERRAL_LABELS: Record<string, string> = {
-  SELF:             "نفسه",
-  RELATIVES:        "أقارب",
-  SOCIAL_MEDIA:     "وسائل التواصل الاجتماعي",
-  MEDICAL_REFERRAL: "إحالة طبية",
-  OTHER:            "أخرى",
-};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -236,17 +191,17 @@ export default function NewPatientPage() {
   const isDuplicate = dupData?.exists && idNumber.length >= 7;
 
   const STEPS = [
-    { label: "المعلومات الأساسية", desc: "الاسم والهوية وتاريخ الميلاد" },
-    { label: "التواصل والعنوان",   desc: "الهاتف والبريد والموقع" },
-    { label: "البيانات الاجتماعية", desc: "المستوى التعليمي والوضع المعيشي" },
-    { label: "الموافقة والملاحظات", desc: "الموافقات والملاحظات الإضافية" },
+    { label: t("steps.0.label"), desc: t("steps.0.desc") },
+    { label: t("steps.1.label"), desc: t("steps.1.desc") },
+    { label: t("steps.2.label"), desc: t("steps.2.desc") },
+    { label: t("steps.3.label"), desc: t("steps.3.desc") },
   ];
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">تسجيل مريض جديد</h1>
-        <p className="text-muted-foreground text-sm mt-1">أدخل بيانات المريض عبر الخطوات التالية</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t("subtitle")}</p>
       </div>
 
       {/* Stepper */}
@@ -286,65 +241,65 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>الاسم الأول / First Name <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.firstName")} <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("firstName")} />
-                  {form1.formState.errors.firstName && <p className="text-xs text-destructive">مطلوب</p>}
+                  {form1.formState.errors.firstName && <p className="text-xs text-destructive">{t("validation.required")}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الاسم الأخير / Last Name <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.lastName")} <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("lastName")} />
-                  {form1.formState.errors.lastName && <p className="text-xs text-destructive">مطلوب</p>}
+                  {form1.formState.errors.lastName && <p className="text-xs text-destructive">{t("validation.required")}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>نوع الهوية / ID Type <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.identityType")} <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("identityType")} onValueChange={(v) => form1.setValue("identityType", v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {IDENTITY_TYPE_VALUES.map((v) => (
-                        <SelectItem key={v} value={v}>{IDENTITY_LABELS[v]}</SelectItem>
+                        <SelectItem key={v} value={v}>{t(`identityTypes.${v}`)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>رقم الهوية / ID Number <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.idNumber")} <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("idNumber")} />
-                  {form1.formState.errors.idNumber && <p className="text-xs text-destructive">مطلوب</p>}
+                  {form1.formState.errors.idNumber && <p className="text-xs text-destructive">{t("validation.required")}</p>}
                 </div>
               </div>
               {isDuplicate && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    يوجد مريض بهذا الرقم.{" "}
+                    {t("duplicate.message")}{" "}
                     <button type="button" className="underline font-medium" onClick={() => router.push(`/${locale}/clinic/patients/${dupData?.patientId}`)}>
-                      عرض الملف
+                      {t("duplicate.viewFile")}
                     </button>
                   </AlertDescription>
                 </Alert>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>تاريخ الميلاد / Date of Birth <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.dateOfBirth")} <span className="text-destructive">*</span></Label>
                   <Input type="date" {...form1.register("dateOfBirth")} />
-                  {form1.formState.errors.dateOfBirth && <p className="text-xs text-destructive">مطلوب</p>}
+                  {form1.formState.errors.dateOfBirth && <p className="text-xs text-destructive">{t("validation.required")}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الجنس / Gender <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.gender")} <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("gender")} onValueChange={(v) => form1.setValue("gender", v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MALE">ذكر / Male</SelectItem>
-                      <SelectItem value="FEMALE">أنثى / Female</SelectItem>
+                      <SelectItem value="MALE">{t("gender.MALE")}</SelectItem>
+                      <SelectItem value="FEMALE">{t("gender.FEMALE")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>المهنة / Occupation</Label>
-                <Input {...form1.register("occupation")} placeholder="مثال: مهندس، معلم، ربة منزل..." />
+                <Label>{t("fields.occupation")}</Label>
+                <Input {...form1.register("occupation")} placeholder={t("fields.occupationPlaceholder")} />
               </div>
             </div>
           )}
@@ -354,24 +309,24 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>رقم الهاتف / Phone Number <span className="text-destructive">*</span></Label>
-                  <Input dir="ltr" {...form2.register("phone")} placeholder="+963..." />
-                  {form2.formState.errors.phone && <p className="text-xs text-destructive">مطلوب</p>}
+                  <Label>{t("fields.phone")} <span className="text-destructive">*</span></Label>
+                  <Input dir="ltr" {...form2.register("phone")} placeholder={t("fields.phonePlaceholder")} />
+                  {form2.formState.errors.phone && <p className="text-xs text-destructive">{t("validation.required")}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>واتساب / WhatsApp</Label>
-                  <Input dir="ltr" {...form2.register("whatsapp")} placeholder="+963..." />
+                  <Label>{t("fields.whatsapp")}</Label>
+                  <Input dir="ltr" {...form2.register("whatsapp")} placeholder={t("fields.phonePlaceholder")} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>البريد الإلكتروني / E-mail</Label>
-                <Input dir="ltr" type="email" {...form2.register("email")} placeholder="email@example.com" />
-                {form2.formState.errors.email && <p className="text-xs text-destructive">بريد غير صالح</p>}
+                <Label>{t("fields.email")}</Label>
+                <Input dir="ltr" type="email" {...form2.register("email")} placeholder={t("fields.emailPlaceholder")} />
+                {form2.formState.errors.email && <p className="text-xs text-destructive">{t("validation.invalidEmail")}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label>المدينة / City</Label>
+                <Label>{t("fields.city")}</Label>
                 <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر المدينة..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("fields.cityPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {cities.map((c) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
@@ -382,8 +337,8 @@ export default function NewPatientPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>تفاصيل العنوان / Address Details</Label>
-                <Textarea rows={2} {...form2.register("addressDetails")} placeholder="الحي، الشارع، رقم المنزل..." />
+                <Label>{t("fields.address")}</Label>
+                <Textarea rows={2} {...form2.register("addressDetails")} placeholder={t("fields.addressPlaceholder")} />
               </div>
             </div>
           )}
@@ -393,56 +348,58 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>الطول / Height (cm)</Label>
+                  <Label>{t("fields.height")}</Label>
                   <Input type="number" {...form3.register("heightCm")} placeholder="170" />
+                  {form3.formState.errors.heightCm && <p className="text-xs text-destructive">{t("validation.heightRange")}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الوزن / Weight (kg)</Label>
+                  <Label>{t("fields.weight")}</Label>
                   <Input type="number" {...form3.register("weightKg")} placeholder="70" />
+                  {form3.formState.errors.weightKg && <p className="text-xs text-destructive">{t("validation.weightRange")}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>المستوى التعليمي / Education Level</Label>
+                  <Label>{t("fields.educationLevel")}</Label>
                   <Select value={form3.watch("educationLevel") ?? ""} onValueChange={(v) => form3.setValue("educationLevel", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {EDUCATION_VALUES.map((v) => <SelectItem key={v} value={v}>{EDUCATION_LABELS[v]}</SelectItem>)}
+                      {EDUCATION_VALUES.map((v) => <SelectItem key={v} value={v}>{t(`education.${v}`)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الحالة الاجتماعية / Marital Status</Label>
+                  <Label>{t("fields.maritalStatus")}</Label>
                   <Select value={form3.watch("maritalStatus") ?? ""} onValueChange={(v) => form3.setValue("maritalStatus", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {MARITAL_VALUES.map((v) => <SelectItem key={v} value={v}>{MARITAL_LABELS[v]}</SelectItem>)}
+                      {MARITAL_VALUES.map((v) => <SelectItem key={v} value={v}>{t(`marital.${v}`)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>وضع السكن / Living Condition</Label>
+                  <Label>{t("fields.livingCondition")}</Label>
                   <Select value={form3.watch("livingCondition") ?? ""} onValueChange={(v) => form3.setValue("livingCondition", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {LIVING_VALUES.map((v) => <SelectItem key={v} value={v}>{LIVING_LABELS[v]}</SelectItem>)}
+                      {LIVING_VALUES.map((v) => <SelectItem key={v} value={v}>{t(`living.${v}`)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>الوضع المالي / Financial Status</Label>
+                  <Label>{t("fields.financialStatus")}</Label>
                   <Select value={form3.watch("financialStatus") ?? ""} onValueChange={(v) => form3.setValue("financialStatus", v)}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      {FINANCIAL_VALUES.map((v) => <SelectItem key={v} value={v}>{FINANCIAL_LABELS[v]}</SelectItem>)}
+                      {FINANCIAL_VALUES.map((v) => <SelectItem key={v} value={v}>{t(`financial.${v}`)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>مصدر الإحالة / Referral Source</Label>
+                <Label>{t("fields.referralSource")}</Label>
                 <Select
                   value={form3.watch("referralSource") ?? ""}
                   onValueChange={(v) => form3.setValue("referralSource", v as any)}
@@ -450,18 +407,18 @@ export default function NewPatientPage() {
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {REFERRAL_VALUES.map((v) => (
-                      <SelectItem key={v} value={v}>{REFERRAL_LABELS[v]}</SelectItem>
+                      <SelectItem key={v} value={v}>{t(`referral.${v}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>تفاصيل الإحالة / Referral Details</Label>
-                <Input {...form3.register("referralDetails")} placeholder="تفاصيل إضافية..." />
+                <Label>{t("fields.referralDetails")}</Label>
+                <Input {...form3.register("referralDetails")} placeholder={t("fields.referralDetailsPlaceholder")} />
               </div>
               <div className="space-y-1.5">
-                <Label>مقدم الرعاية / Care Provider</Label>
-                <Input {...form3.register("receivesAid")} placeholder="مقدم الرعاية..." />
+                <Label>{t("fields.careProvider")}</Label>
+                <Input {...form3.register("receivesAid")} placeholder={t("fields.careProviderPlaceholder")} />
               </div>
             </div>
           )}
@@ -470,11 +427,11 @@ export default function NewPatientPage() {
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>موافقة الوثائق / Document Consent</Label>
+                <Label>{t("fields.documentConsent")}</Label>
                 <Select value={form4.watch("documentConsent") ?? "FULL"} onValueChange={(v) => form4.setValue("documentConsent", v as any)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CONSENT_VALUES.map((v) => <SelectItem key={v} value={v}>{CONSENT_LABELS[v]}</SelectItem>)}
+                    {CONSENT_VALUES.map((v) => <SelectItem key={v} value={v}>{t(`consent.${v}`)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -483,21 +440,21 @@ export default function NewPatientPage() {
                   checked={form4.watch("mediaConsent") ?? true}
                   onCheckedChange={(v) => form4.setValue("mediaConsent", v)}
                 />
-                <Label>موافقة على استخدام الصور / Media Consent</Label>
+                <Label>{t("fields.mediaConsent")}</Label>
               </div>
               <div className="space-y-1.5">
-                <Label>ملاحظات / Notes</Label>
-                <Textarea rows={3} {...form4.register("notes")} placeholder="ملاحظات إضافية..." />
+                <Label>{t("fields.notes")}</Label>
+                <Textarea rows={3} {...form4.register("notes")} placeholder={t("fields.notesPlaceholder")} />
               </div>
 
               {/* Summary */}
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
-                <p className="font-semibold">ملخص البيانات</p>
+                <p className="font-semibold">{t("summary.title")}</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
-                  <span>الاسم:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
-                  <span>رقم الهوية:</span><span className="text-foreground font-mono">{s1.idNumber}</span>
-                  <span>الهاتف:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
-                  {s1.occupation && <><span>المهنة:</span><span className="text-foreground">{s1.occupation}</span></>}
+                  <span>{t("summary.name")}:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
+                  <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{s1.idNumber}</span>
+                  <span>{t("summary.phone")}:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
+                  {s1.occupation && <><span>{t("summary.occupation")}:</span><span className="text-foreground">{s1.occupation}</span></>}
                 </div>
               </div>
             </div>
@@ -510,16 +467,16 @@ export default function NewPatientPage() {
       <div className="flex justify-between">
         <Button variant="outline" onClick={step === 0 ? () => router.back() : prevStep}>
           <ChevronRight className="h-4 w-4 ml-1" />
-          {step === 0 ? "إلغاء" : "السابق"}
+          {step === 0 ? t("nav.cancel") : t("nav.prev")}
         </Button>
         {step < 3 ? (
           <Button onClick={nextStep} disabled={isDuplicate && step === 0}>
-            التالي
+            {t("nav.next")}
             <ChevronLeft className="h-4 w-4 mr-1" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={createPatient.isPending}>
-            {createPatient.isPending ? "جاري الحفظ..." : "حفظ المريض"}
+            {createPatient.isPending ? t("nav.saving") : t("nav.save")}
             <Check className="h-4 w-4 mr-1" />
           </Button>
         )}

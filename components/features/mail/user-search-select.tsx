@@ -28,9 +28,10 @@ interface Props {
   onChange: (ids: string[]) => void;
   placeholder?: string;
   exclude?: string[];
+  requireLinkedUser?: boolean;
 }
 
-export function UserSearchSelect({ value, onChange, placeholder, exclude = [] }: Props) {
+export function UserSearchSelect({ value, onChange, placeholder, exclude = [], requireLinkedUser = false }: Props) {
   const t = useTranslations("mail");
   const resolvedPlaceholder = placeholder ?? t("searchEmployee");
   const [query, setQuery] = useState("");
@@ -68,7 +69,7 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [] }:
     : rawItems;
 
   const options: UserOption[] = filtered
-    .filter((e: any) => e.id && !exclude.includes(e.id))
+    .filter((e: any) => e.id && !exclude.includes(e.id) && (!requireLinkedUser || !!e.userId))
     .map((e: any) => ({ id: e.id, label: `${e.firstNameAr} ${e.lastNameAr}` }));
 
   // Normalize: if value contains user IDs instead of employee IDs, swap them once data loads

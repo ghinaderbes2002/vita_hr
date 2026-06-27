@@ -17,6 +17,7 @@ import {
   UpdatePhysioSessionDto,
   FinalSummaryDto,
   PhysioCaseListParams,
+  EmergencyAlert,
 } from "@/lib/api/clinic-physio";
 import { toast } from "sonner";
 
@@ -344,5 +345,48 @@ export function useDownloadPhysioPdf() {
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     },
     onError: () => toast.error("فشل تنزيل PDF"),
+  });
+}
+
+export function useMyEmergencyAlerts(enabled = true) {
+  return useQuery({
+    queryKey: ["physio-emergency-my"],
+    queryFn: () => clinicPhysioApi.getMyAlerts(),
+    staleTime: 30_000,
+    enabled,
+  });
+}
+
+export function useIncomingEmergencyAlerts(enabled = true) {
+  return useQuery({
+    queryKey: ["physio-emergency-incoming"],
+    queryFn: () => clinicPhysioApi.getIncomingAlerts(),
+    staleTime: 30_000,
+    enabled,
+  });
+}
+
+export function useSendEmergencyAlert() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => clinicPhysioApi.sendEmergencyAlert(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["physio-emergency-my"] });
+      toast.success("تم إرسال التنبيه الطارئ");
+    },
+    onError: () => toast.error("فشل إرسال التنبيه"),
+  });
+}
+
+export function useRespondToAlert() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note: string }) =>
+      clinicPhysioApi.respondToAlert(id, note),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["physio-emergency-incoming"] });
+      toast.success("تم إرسال الرد");
+    },
+    onError: () => toast.error("فشل إرسال الرد"),
   });
 }

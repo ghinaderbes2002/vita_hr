@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { useEmployeeStatic, useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
 import {
   LayoutDashboard,
   ChevronDown,
@@ -237,14 +237,14 @@ const navigation: NavItem[] = [
     icon: Stethoscope,
     separator: true,
     permission: "clinic.patients.view",
-    showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034"],
+    showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000038", "VTX-JTL-000018"],
     children: [
       { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view" },
-      { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
-      { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
+      { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000018"] },
+      { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000018"] },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
-      { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
-      { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor" },
+      { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034"] },
+      { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000018"] },
     ],
   },
   {
@@ -271,10 +271,7 @@ export function Sidebar() {
   });
   const { hasPermission, isAdmin, hasRole } = usePermissions();
   const authUser = useAuthStore((s) => s.user);
-  const { data: basicList } = useEmployeesBasicList();
-  const myBasicEmployee = (basicList as any[])?.find((e) => e.userId === authUser?.id);
-  const resolvedEmployeeId = authUser?.employeeId ?? myBasicEmployee?.id ?? "";
-  const { data: currentEmployee } = useEmployeeStatic(resolvedEmployeeId);
+  const { data: currentEmployee } = useMyEmployee();
   const currentJobTitleCode: string = (currentEmployee as any)?.jobTitle?.code ?? "";
 
   // مستخدم بدون دور — يرى لوحة التحكم فقط
@@ -466,9 +463,14 @@ export function Sidebar() {
               item.showForJobTitleCodes.includes(currentJobTitleCode)
             );
             // فلترة العناصر الفرعية حسب الصلاحيات (recursive)
-            const visibleChildren = item.children.filter((child) =>
-              parentAllowedByJobTitle || hasSectionPermission(child)
-            );
+            const visibleChildren = item.children.filter((child) => {
+              // إذا الـ child عنده showForJobTitleCodes والمستخدم عنده مسمى وظيفي، المسمى يأخذ الأولوية على الصلاحيات
+              if (currentJobTitleCode && child.showForJobTitleCodes) {
+                return child.showForJobTitleCodes.includes(currentJobTitleCode);
+              }
+              if (parentAllowedByJobTitle) return true;
+              return hasSectionPermission(child);
+            });
 
             if (visibleChildren.length === 0) return null;
 
