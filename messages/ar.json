@@ -3497,7 +3497,7 @@
           "lateralFlexion": "عطف جانبي",
           "rotation": "دوران",
           "oblique": "ميل جانبي",
-          "scoliosis": "جنف",
+          "scoliosis": "جنف/ذرة الانحناء",
           "saveAndNext": "حفظ والانتقال لخطة العلاج",
           "neutral": "حيادي",
           "hyperextended": "فرط البسط",
@@ -3547,7 +3547,7 @@
           "save": "حفظ خطة العلاج"
         },
         "evaluation": {
-          "diagnosisTitle": "التشخيص",
+          "diagnosisTitle": "التشخيص والتقييم",
           "diagnosisPlaceholder": "اكتب ملاحظاتك حول تقدم المريض...",
           "appliedTreatmentTitle": "العلاج المطبق",
           "otherModalityPlaceholder": "حدد الوسيلة العلاجية الأخرى...",
@@ -3853,7 +3853,7 @@
     },
     "priorities": {
       "URGENT": "عاجل",
-      "MEDIUM": "متوسط",
+      "HIGH": "عالي",
       "NORMAL": "عادي"
     },
     "repairOptions": {

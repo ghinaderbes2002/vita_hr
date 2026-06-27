@@ -9,7 +9,7 @@ export type MaintenanceStatus =
   | "REJECTED";
 
 export type WorkLocation = "SHAHBA" | "CENTER" | "NEW_ALEPPO";
-export type MaintenancePriority = "URGENT" | "MEDIUM" | "NORMAL";
+export type MaintenancePriority = "URGENT" | "HIGH" | "NORMAL";
 export type RepairOption = "INTERNAL" | "INTERNAL_PARTS" | "EXTERNAL_WORKSHOP";
 
 export interface MaintenanceRequest {

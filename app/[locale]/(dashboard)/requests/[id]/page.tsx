@@ -91,6 +91,7 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
 const DETAIL_VALUE_LABELS: Record<string, string> = {
   NORMAL: "عادي",
   URGENT: "عاجل",
+  HIGH: "عالي",
   MEDIUM: "متوسط",
   SHAHBA: "شركة (الشهباء)",
   CENTER: "المركز",
@@ -352,8 +353,9 @@ export default function RequestDetailPage() {
   // prefer /steps endpoint, fall back to /approvals
   const rawSteps = Array.isArray(stepsData) && stepsData.length > 0 ? stepsData : (Array.isArray(approvals) ? approvals : []);
   const isMaintenance = (request as any)?.type === "MAINTENANCE";
+  // maintenance has no approval-steps endpoint — always build path from current status
   const steps: ApprovalStep[] =
-    isMaintenance && rawSteps.length === 0
+    isMaintenance
       ? buildMaintenancePath(request)
       : rawSteps;
   const isStepsLoading = stepsLoading && approvalsLoading;

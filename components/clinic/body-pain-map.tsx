@@ -31,8 +31,12 @@ const PAIN_TYPE_LABELS: Record<string, string> = {
 
 const PAIN_TYPES = Object.keys(PAIN_TYPE_COLORS);
 
-function getDotColor(painType?: string, otherColor?: string) {
-  if ((painType === "OTHER" || painType?.startsWith("CUSTOM_")) && otherColor) return otherColor;
+function getDotColor(painType?: string, customPainTypes?: { name: string; color: string }[]) {
+  if (painType?.startsWith("CUSTOM_")) {
+    const idx = parseInt(painType.replace("CUSTOM_", ""), 10);
+    return customPainTypes?.[idx]?.color ?? "#3b82f6";
+  }
+  if (painType === "OTHER") return customPainTypes?.[0]?.color ?? "#3b82f6";
   return PAIN_TYPE_COLORS[painType ?? ""] ?? "#ef4444";
 }
 
@@ -43,10 +47,10 @@ interface HumanBodyMapProps {
   onAreaClick?: (x: number, y: number) => void;
   onPointClick?: (index: number) => void;
   readonly?: boolean;
-  otherColor?: string;
+  customPainTypes?: { name: string; color: string }[];
 }
 
-function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false, otherColor }: HumanBodyMapProps) {
+function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false, customPainTypes }: HumanBodyMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -69,7 +73,7 @@ function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false, oth
       >
         <img ref={imgRef} src="/human.svg" alt="خريطة جسم الإنسان" className="w-full h-auto block" draggable={false} />
         {points.map((pt, i) => {
-          const color = getDotColor(pt.painType, otherColor);
+          const color = getDotColor(pt.painType, customPainTypes);
           return (
             <div
               key={i}
@@ -105,24 +109,37 @@ interface BodyPainMapProps {
   points: PainPoint[];
   onChange?: (points: PainPoint[]) => void;
   readonly?: boolean;
+  customPainTypes?: { name: string; color: string }[];
   otherColor?: string;
   otherLabel?: string;
 }
 
-export function BodyPainMap({ points, onChange, readonly = false, otherColor, otherLabel }: BodyPainMapProps) {
+export function BodyPainMap({ points, onChange, readonly = false, customPainTypes = [], otherColor, otherLabel }: BodyPainMapProps) {
   const [confirmIndex, setConfirmIndex] = useState<number | null>(null);
   const [activePainType, setActivePainType] = useState<string>("DULL_ACHE");
 
+  const effectiveCustom = customPainTypes.length > 0
+    ? customPainTypes
+    : otherColor || otherLabel ? [{ name: otherLabel || "أخرى", color: otherColor || "#3b82f6" }] : [];
+
   function getColor(type: string) {
-    if ((type === "OTHER" || type.startsWith("CUSTOM_")) && otherColor) return otherColor;
+    if (type.startsWith("CUSTOM_")) {
+      const idx = parseInt(type.replace("CUSTOM_", ""), 10);
+      return effectiveCustom[idx]?.color ?? "#3b82f6";
+    }
     return PAIN_TYPE_COLORS[type] ?? "#ef4444";
   }
 
   function getLabel(type: string) {
-    if ((type === "OTHER" || type.startsWith("CUSTOM_")) && otherLabel) return otherLabel;
-    if (type === "OTHER" || type.startsWith("CUSTOM_")) return "أخرى";
+    if (type.startsWith("CUSTOM_")) {
+      const idx = parseInt(type.replace("CUSTOM_", ""), 10);
+      return effectiveCustom[idx]?.name || "أخرى";
+    }
     return PAIN_TYPE_LABELS[type] ?? type;
   }
+
+  const standardTypes = PAIN_TYPES.filter((t) => t !== "OTHER");
+  const allTypes = [...standardTypes, ...effectiveCustom.map((_, i) => `CUSTOM_${i}`)];
 
   return (
     <div className="space-y-3">
@@ -130,7 +147,7 @@ export function BodyPainMap({ points, onChange, readonly = false, otherColor, ot
         <div className="space-y-1.5">
           <p className="text-xs text-muted-foreground text-center">اختر نوع الألم قبل التحديد على الجسم</p>
           <div className="flex flex-wrap gap-2 justify-center">
-            {PAIN_TYPES.map((type) => {
+            {allTypes.map((type) => {
               const color = getColor(type);
               const active = activePainType === type;
               return (
@@ -157,12 +174,12 @@ export function BodyPainMap({ points, onChange, readonly = false, otherColor, ot
         onAreaClick={readonly ? undefined : (x, y) => onChange?.([...points, { side: "front", x, y, intensity: 0, painType: activePainType }])}
         onPointClick={readonly ? undefined : (i) => setConfirmIndex(i)}
         readonly={readonly}
-        otherColor={otherColor}
+        customPainTypes={effectiveCustom}
       />
 
       {readonly && points.length > 0 && (
         <div className="flex flex-wrap gap-2 justify-center">
-          {PAIN_TYPES.filter((t) => points.some((p) => p.painType === t)).map((type) => (
+          {allTypes.filter((t) => points.some((p) => p.painType === t)).map((type) => (
             <span key={type} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getColor(type) }} />
               {getLabel(type)}
@@ -174,7 +191,7 @@ export function BodyPainMap({ points, onChange, readonly = false, otherColor, ot
       {points.length > 0 && (
         <div className="flex flex-wrap gap-2 justify-center">
           {points.map((pt, i) => {
-            const color = getDotColor(pt.painType, otherColor);
+            const color = getDotColor(pt.painType, effectiveCustom);
             return (
               <button key={i} type="button" onClick={() => !readonly && setConfirmIndex(i)} disabled={readonly}
                 className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border transition-colors disabled:cursor-default"

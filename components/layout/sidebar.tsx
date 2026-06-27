@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useEmployeeStatic, useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import {
   LayoutDashboard,
   ChevronDown,
@@ -67,6 +68,8 @@ interface NavItem {
   hiddenForDepartments?: string[];
   /** إظهار العنصر دائماً إذا اسم قسم المستخدم يحتوي على أي كلمة من القائمة */
   showForDepartments?: string[];
+  /** إظهار العنصر دائماً إذا كود المسمى الوظيفي ضمن القائمة */
+  showForJobTitleCodes?: string[];
   children?: NavItem[];
 }
 
@@ -234,6 +237,7 @@ const navigation: NavItem[] = [
     icon: Stethoscope,
     separator: true,
     permission: "clinic.patients.view",
+    showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034"],
     children: [
       { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view" },
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
@@ -267,6 +271,11 @@ export function Sidebar() {
   });
   const { hasPermission, isAdmin, hasRole } = usePermissions();
   const authUser = useAuthStore((s) => s.user);
+  const { data: basicList } = useEmployeesBasicList();
+  const myBasicEmployee = (basicList as any[])?.find((e) => e.userId === authUser?.id);
+  const resolvedEmployeeId = authUser?.employeeId ?? myBasicEmployee?.id ?? "";
+  const { data: currentEmployee } = useEmployeeStatic(resolvedEmployeeId);
+  const currentJobTitleCode: string = (currentEmployee as any)?.jobTitle?.code ?? "";
 
   // مستخدم بدون دور — يرى لوحة التحكم فقط
   const userRoles = authUser?.roles ?? [];
@@ -366,6 +375,8 @@ export function Sidebar() {
     }
     // إذا العنصر مجبر على الظهور لدور معين، نظهره
     if (item.showForRoles && item.showForRoles.some((role) => hasRole(role))) return true;
+    // إذا كود المسمى الوظيفي مطابق، نظهره
+    if (item.showForJobTitleCodes && currentJobTitleCode && item.showForJobTitleCodes.includes(currentJobTitleCode)) return true;
     // إذا ما في أطفال، نتحقق من صلاحية العنصر مباشرة
     if (!item.children || item.children.length === 0) {
       return hasItemPermission(item);
@@ -448,9 +459,15 @@ export function Sidebar() {
             : item.title;
 
           if (item.children) {
+            // إذا الـ parent ظهر بسبب job title، نظهر كل الأطفال
+            const parentAllowedByJobTitle = !!(
+              item.showForJobTitleCodes &&
+              currentJobTitleCode &&
+              item.showForJobTitleCodes.includes(currentJobTitleCode)
+            );
             // فلترة العناصر الفرعية حسب الصلاحيات (recursive)
             const visibleChildren = item.children.filter((child) =>
-              hasSectionPermission(child)
+              parentAllowedByJobTitle || hasSectionPermission(child)
             );
 
             if (visibleChildren.length === 0) return null;

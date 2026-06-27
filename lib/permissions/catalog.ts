@@ -180,6 +180,7 @@ export const PERMISSIONS = {
     REJECT: "requests:reject",
     CEO_APPROVE: "requests:ceo-approve",
     CFO_APPROVE: "requests:cfo-approve",
+    LO_APPROVE: "requests:lo-approve",
     READ_ALL_STEPS: "requests:read-all-steps",
     MANAGE_WORKFLOWS: "requests:manage-workflows",
     HIRING_COMPLETE: "requests:hiring:complete",

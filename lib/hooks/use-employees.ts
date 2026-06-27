@@ -20,6 +20,15 @@ export function useEmployee(id: string) {
   });
 }
 
+export function useEmployeeStatic(id: string) {
+  return useQuery({
+    queryKey: ["employee-static", id],
+    queryFn: () => employeesApi.getById(id),
+    enabled: !!id,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
 export function useEmployeeBasic(id: string) {
   return useQuery({
     queryKey: ["employee-basic", id],

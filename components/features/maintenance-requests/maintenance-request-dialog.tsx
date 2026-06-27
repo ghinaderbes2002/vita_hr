@@ -39,7 +39,7 @@ const schema = z.object({
   assetNumber: z.string().optional(),
   brandModel: z.string().optional(),
   faultDescription: z.string().min(5, "Description must be at least 5 characters"),
-  priority: z.enum(["URGENT", "MEDIUM", "NORMAL"]),
+  priority: z.enum(["URGENT", "HIGH", "NORMAL"]),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -50,7 +50,7 @@ interface Props {
 }
 
 const WORK_LOCATIONS: WorkLocation[] = ["SHAHBA", "CENTER", "NEW_ALEPPO"];
-const PRIORITIES: MaintenancePriority[] = ["URGENT", "MEDIUM", "NORMAL"];
+const PRIORITIES: MaintenancePriority[] = ["URGENT", "HIGH", "NORMAL"];
 
 export function MaintenanceRequestDialog({ open, onOpenChange }: Props) {
   const t = useTranslations();

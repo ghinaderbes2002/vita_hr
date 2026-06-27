@@ -13,8 +13,10 @@ import {
   Save,
   Download,
   Calendar as CalendarIcon,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -62,6 +64,7 @@ import {
 } from "@/lib/hooks/use-clinic-physio";
 import { useUsers } from "@/lib/hooks/use-users";
 import { useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { useDepartments } from "@/lib/hooks/use-departments";
 import {
   PhysioStatus,
   PainRegion,
@@ -263,6 +266,26 @@ export default function PhysioCasePage() {
   const allUsers: { id: string; fullName: string }[] =
     (usersData as any)?.data?.items ?? (usersData as any)?.items ?? [];
 
+  const { data: depsData } = useDepartments({ limit: 100 }, 30 * 60 * 1000);
+  const caseManagerOptions: { id: string; name: string }[] = (
+    (depsData as any)?.data?.items ?? (depsData as any)?.items ?? []
+  )
+    .filter((d: any) => {
+      if (!d.manager) return false;
+      const name: string = d.nameAr ?? "";
+      return (
+        name === "الإدارة العامة" ||
+        name === "الإدارة الطبية" ||
+        name.includes("فيزيائي") ||
+        name.includes("طبيعي") ||
+        name.includes("فيزيوثيرابي")
+      );
+    })
+    .map((d: any) => ({
+      id: d.manager.id,
+      name: `${d.manager.firstNameAr} ${d.manager.lastNameAr}`,
+    }));
+
   const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
   const { data: physioDeptData } = useEmployeesByDepartment(PHYSIO_DEPT_ID);
   const physioEmployees: { id: string; firstNameAr: string; lastNameAr: string }[] =
@@ -304,8 +327,7 @@ export default function PhysioCasePage() {
   // ── Pain map state ───────────────────────────────────────────────────────────
   const [painRegions, setPainRegions] = useState<PainRegion[]>([]);
   const [painTypes, setPainTypes] = useState<string[]>([]);
-  const [painTypeOther, setPainTypeOther] = useState("");
-  const [painTypeOtherColor, setPainTypeOtherColor] = useState("#00BCD4");
+  const [customPainTypes, setCustomPainTypes] = useState<{ name: string; color: string }[]>([]);
   const [aggravatingFactors, setAggravatingFactors] = useState<string[]>([]);
   const [alleviatingFactors, setAlleviatingFactors] = useState<string[]>([]);
   const [aggravatingOther, setAggravatingOther] = useState("");
@@ -454,6 +476,8 @@ export default function PhysioCasePage() {
     date: new Date().toISOString().slice(0, 10),
     sessionTime: "",
     notes: "",
+    supervisorOpinion: "",
+    doctorDecision: "",
     modalities: [] as TherapyModality[],
   });
   const [editingSession, setEditingSession] = useState<{ id: string; sessionDate: string; sessionTime: string; notes: string; supervisorOpinion: string; doctorDecision: string; modalities: TherapyModality[] } | null>(null);
@@ -524,8 +548,11 @@ export default function PhysioCasePage() {
       setPainRegions(caseData.painMap.regions);
     }
     if (caseData.painTypes?.length) setPainTypes(caseData.painTypes);
-    if (caseData.painTypeOther) setPainTypeOther(caseData.painTypeOther);
-    if (caseData.painTypeOtherColor) setPainTypeOtherColor(caseData.painTypeOtherColor);
+    if (caseData.customPainTypes?.length) {
+      setCustomPainTypes(caseData.customPainTypes);
+    } else if (caseData.painTypeOther) {
+      setCustomPainTypes([{ name: caseData.painTypeOther, color: caseData.painTypeOtherColor || "#00BCD4" }]);
+    }
     if (caseData.aggravatingFactors?.length)
       setAggravatingFactors(caseData.aggravatingFactors);
     if (caseData.alleviatingFactors?.length)
@@ -835,8 +862,7 @@ export default function PhysioCasePage() {
       dto: {
         regions: painRegions,
         painTypes: painTypes.length ? painTypes : undefined,
-        painTypeOther: painTypes.includes("OTHER") ? painTypeOther || undefined : undefined,
-        painTypeOtherColor: painTypes.includes("OTHER") ? painTypeOtherColor || undefined : undefined,
+        customPainTypes: painTypes.includes("OTHER") && customPainTypes.length ? customPainTypes : undefined,
         aggravatingFactors: aggravatingFactors.length
           ? aggravatingFactors
           : undefined,
@@ -1049,10 +1075,12 @@ export default function PhysioCasePage() {
           sessionDate: sessionForm.date,
           sessionTime: sessionForm.sessionTime || undefined,
           notes: sessionForm.notes || undefined,
+          supervisorOpinion: sessionForm.supervisorOpinion || undefined,
+          doctorDecision: sessionForm.doctorDecision || undefined,
           modalities: sessionForm.modalities.length ? sessionForm.modalities : undefined,
         },
       });
-      setSessionForm({ date: new Date().toISOString().slice(0, 10), sessionTime: "", notes: "", modalities: [] });
+      setSessionForm({ date: new Date().toISOString().slice(0, 10), sessionTime: "", notes: "", supervisorOpinion: "", doctorDecision: "", modalities: [] });
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message ?? err?.response?.data?.message;
       toast.error(msg || t("sessions.addError"));
@@ -1112,8 +1140,7 @@ export default function PhysioCasePage() {
         complaint,
         painRegions,
         painTypes,
-        painTypeOther: painTypeOther || "",
-        painTypeOtherColor: painTypeOtherColor || undefined,
+        customPainTypes: customPainTypes.length ? customPainTypes : undefined,
         aggravatingFactors,
         alleviatingFactors,
         aggravatingOther,
@@ -1135,7 +1162,7 @@ export default function PhysioCasePage() {
             const emp = physioEmployees.find((e) => planPhysiotherapistIds.includes(e.id));
             return emp ? `${emp.firstNameAr} ${emp.lastNameAr}` : undefined;
           })(),
-          caseManagerName: allUsers.find((u) => u.id === planHeader.caseManagerId)?.fullName,
+          caseManagerName: caseManagerOptions.find((u) => u.id === planHeader.caseManagerId)?.name,
         },
         planRemarks,
         planObservation,
@@ -1725,28 +1752,48 @@ export default function PhysioCasePage() {
               {(["NORMAL","NUMBNESS","DULL_ACHE","HOT_BURNING","SHARP_STABBING","PINS","OTHER"] as const).map((v) => (
                 <ToggleChip
                   key={v}
-                  label={v === "OTHER" && painTypeOther ? painTypeOther : t(`painMap.${v}`)}
+                  label={v === "OTHER" && customPainTypes.length > 0 ? customPainTypes.map(c => c.name).filter(Boolean).join("، ") || t(`painMap.${v}`) : t(`painMap.${v}`)}
                   active={painTypes.includes(v)}
                   onClick={() => canEdit && toggleArr(painTypes, v, setPainTypes)}
                 />
               ))}
             </div>
             {painTypes.includes("OTHER") && (
-              <div className="mt-3 flex items-center gap-2">
-                <input
-                  type="color"
-                  value={painTypeOtherColor}
-                  onChange={(e) => canEdit && setPainTypeOtherColor(e.target.value)}
-                  disabled={!canEdit}
-                  className="w-9 h-8 rounded cursor-pointer border border-input p-0.5 bg-background disabled:cursor-not-allowed disabled:opacity-50"
-                />
-                <Input
-                  placeholder="اسم النوع (مثلاً: وخز كهربائي)"
-                  value={painTypeOther}
-                  onChange={(e) => setPainTypeOther(e.target.value)}
-                  disabled={!canEdit}
-                  className="flex-1"
-                />
+              <div className="mt-3 space-y-2">
+                {customPainTypes.map((ct, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={ct.color}
+                      onChange={(e) => {
+                        if (!canEdit) return;
+                        setCustomPainTypes(prev => prev.map((x, j) => j === i ? { ...x, color: e.target.value } : x));
+                      }}
+                      disabled={!canEdit}
+                      className="w-9 h-8 rounded cursor-pointer border border-input p-0.5 bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                    <Input
+                      placeholder="اسم النوع (مثلاً: وخز كهربائي)"
+                      value={ct.name}
+                      onChange={(e) => {
+                        if (!canEdit) return;
+                        setCustomPainTypes(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x));
+                      }}
+                      disabled={!canEdit}
+                      className="flex-1"
+                    />
+                    {canEdit && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => setCustomPainTypes(prev => prev.filter((_, j) => j !== i))}>
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {canEdit && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setCustomPainTypes(prev => [...prev, { name: "", color: "#00BCD4" }])}>
+                    + إضافة نوع مخصص
+                  </Button>
+                )}
               </div>
             )}
           </Section>
@@ -1755,8 +1802,7 @@ export default function PhysioCasePage() {
               points={painRegions as any}
               onChange={(pts) => setPainRegions(pts as any)}
               readonly={!canEdit}
-              otherColor={painTypeOtherColor}
-              otherLabel={painTypeOther || undefined}
+              customPainTypes={customPainTypes}
             />
           </Section>
           <Section title={t("painMap.factorsTitle")}>
@@ -2946,9 +2992,9 @@ export default function PhysioCasePage() {
                     <SelectValue placeholder={t("treatmentPlan.caseManagerPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allUsers.map((u) => (
+                    {caseManagerOptions.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
-                        {u.fullName}
+                        {u.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -3143,11 +3189,65 @@ export default function PhysioCasePage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm">{t("sessions.time")}</Label>
-                    <Input type="time" value={sessionForm.sessionTime} onChange={(e) => setSessionForm((f) => ({ ...f, sessionTime: e.target.value }))} />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between font-normal">
+                          <span className={sessionForm.sessionTime ? "" : "text-muted-foreground"}>
+                            {sessionForm.sessionTime || "--:--"}
+                          </span>
+                          <CalendarIcon className="h-4 w-4 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-3" align="start">
+                        <div className="text-center text-3xl font-bold tracking-widest mb-3 text-primary">
+                          {sessionForm.sessionTime || "--:--"}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الساعة</p>
+                        <div className="grid grid-cols-3 gap-1.5 mb-3">
+                          {Array.from({ length: 9 }, (_, i) => {
+                            const h = String(10 + i).padStart(2, "0");
+                            const active = sessionForm.sessionTime?.split(":")[0] === h;
+                            return (
+                              <button key={h} type="button"
+                                className={`py-1.5 rounded-md text-sm font-medium transition-colors ${active ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70"}`}
+                                onClick={() => {
+                                  const m = sessionForm.sessionTime?.split(":")[1] || "00";
+                                  setSessionForm((f) => ({ ...f, sessionTime: `${h}:${m}` }));
+                                }}
+                              >{h}</button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الدقيقة</p>
+                        <div className="grid grid-cols-6 gap-1">
+                          {Array.from({ length: 60 }, (_, i) => {
+                            const m = String(i).padStart(2, "0");
+                            const active = sessionForm.sessionTime?.split(":")[1] === m;
+                            return (
+                              <button key={m} type="button"
+                                className={`py-1 rounded text-xs font-medium transition-colors ${active ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70"}`}
+                                onClick={() => {
+                                  const h = sessionForm.sessionTime?.split(":")[0] || "10";
+                                  setSessionForm((f) => ({ ...f, sessionTime: `${h}:${m}` }));
+                                }}
+                              >{m}</button>
+                            );
+                          })}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-1.5 col-span-2">
                     <Label className="text-sm">{t("sessions.notes")}</Label>
                     <Textarea rows={2} value={sessionForm.notes} onChange={(e) => { setSessionForm((f) => ({ ...f, notes: e.target.value })); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }} className="resize-none overflow-hidden" placeholder={t("sessions.notesPlaceholder")} />
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-sm">{t("sessions.supervisorOpinion")}</Label>
+                    <Textarea rows={2} value={sessionForm.supervisorOpinion} onChange={(e) => { setSessionForm((f) => ({ ...f, supervisorOpinion: e.target.value })); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }} className="resize-none overflow-hidden" placeholder={t("sessions.supervisorOpinionPlaceholder")} />
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-sm">{t("sessions.doctorDecision")}</Label>
+                    <Textarea rows={2} value={sessionForm.doctorDecision} onChange={(e) => { setSessionForm((f) => ({ ...f, doctorDecision: e.target.value })); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }} className="resize-none overflow-hidden" placeholder={t("sessions.doctorDecisionPlaceholder")} />
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
@@ -3177,7 +3277,53 @@ export default function PhysioCasePage() {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">{t("sessions.time")}</Label>
-                            <Input type="time" value={editingSession.sessionTime} onChange={(e) => setEditingSession((v) => v && { ...v, sessionTime: e.target.value })} />
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-between font-normal">
+                                  <span className={editingSession.sessionTime ? "" : "text-muted-foreground"}>
+                                    {editingSession.sessionTime || "--:--"}
+                                  </span>
+                                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 p-3" align="start">
+                                <div className="text-center text-3xl font-bold tracking-widest mb-3 text-primary">
+                                  {editingSession.sessionTime || "--:--"}
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الساعة</p>
+                                <div className="grid grid-cols-3 gap-1.5 mb-3">
+                                  {Array.from({ length: 9 }, (_, i) => {
+                                    const h = String(10 + i).padStart(2, "0");
+                                    const active = editingSession.sessionTime?.split(":")[0] === h;
+                                    return (
+                                      <button key={h} type="button"
+                                        className={`py-1.5 rounded-md text-sm font-medium transition-colors ${active ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70"}`}
+                                        onClick={() => {
+                                          const m = editingSession.sessionTime?.split(":")[1] || "00";
+                                          setEditingSession((s) => s && { ...s, sessionTime: `${h}:${m}` });
+                                        }}
+                                      >{h}</button>
+                                    );
+                                  })}
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الدقيقة</p>
+                                <div className="grid grid-cols-6 gap-1">
+                                  {Array.from({ length: 60 }, (_, i) => {
+                                    const m = String(i).padStart(2, "0");
+                                    const active = editingSession.sessionTime?.split(":")[1] === m;
+                                    return (
+                                      <button key={m} type="button"
+                                        className={`py-1 rounded text-xs font-medium transition-colors ${active ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70"}`}
+                                        onClick={() => {
+                                          const h = editingSession.sessionTime?.split(":")[0] || "10";
+                                          setEditingSession((s) => s && { ...s, sessionTime: `${h}:${m}` });
+                                        }}
+                                      >{m}</button>
+                                    );
+                                  })}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </div>
                           <div className="space-y-1 col-span-2">
                             <Label className="text-xs">{t("sessions.notes")}</Label>

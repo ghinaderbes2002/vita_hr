@@ -45,7 +45,7 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const priorityClasses: Record<string, string> = {
   URGENT: "bg-red-100 text-red-800 border-red-300",
-  MEDIUM: "bg-orange-100 text-orange-800 border-orange-300",
+  HIGH: "bg-orange-100 text-orange-800 border-orange-300",
   NORMAL: "bg-gray-100 text-gray-700 border-gray-300",
 };
 
@@ -60,8 +60,8 @@ export default function PendingManagerPage() {
   const { hasPermission, isAdmin, hasRole } = usePermissions();
   const isCeo = hasRole("CEO" as any);
   const canManagerApprove = isAdmin() || hasPermission("maintenance:manager-approve" as any);
-  const canLogistics = isAdmin() || hasPermission("maintenance:logistics" as any);
-  const canExecutiveApprove = isAdmin() || hasPermission("maintenance:executive-approve" as any);
+  const canLogistics = isAdmin() || hasPermission(PERMISSIONS.REQUESTS.LO_APPROVE);
+  const canExecutiveApprove = isAdmin() || hasPermission(PERMISSIONS.REQUESTS.CEO_APPROVE);
   const showAnyMaintenance = isAdmin() || canManagerApprove || canLogistics || canExecutiveApprove;
 
   // ── Generic requests ──
@@ -292,17 +292,45 @@ export default function PendingManagerPage() {
                             </DropdownMenuItem>
                             {(req as any).type === "MAINTENANCE" ? (
                               <>
-                                <DropdownMenuItem onClick={() => { setMaintenanceActionDialog({ type: "manager-approve", req: req as any }); setActionNotes(""); }}>
-                                  <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
-                                  {t("requests.actions.approve")}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => { setMaintenanceActionDialog({ type: "manager-reject", req: req as any }); setActionNotes(""); }}
-                                  className="text-destructive"
-                                >
-                                  <XCircle className="h-4 w-4 ml-2" />
-                                  {t("requests.actions.reject")}
-                                </DropdownMenuItem>
+                                {(req as any).status === "PENDING_MANAGER" && canLogistics ? (
+                                  <DropdownMenuItem onClick={() => { setLogisticsRequestId(req.id); setLogisticsDialogOpen(true); }}>
+                                    <Settings className="h-4 w-4 ml-2 text-blue-600" />
+                                    {t("maintenance.actions.process")}
+                                  </DropdownMenuItem>
+                                ) : (req as any).status === "PENDING_MANAGER" ? (
+                                  <DropdownMenuItem onClick={() => { setMaintenanceActionDialog({ type: "manager-approve", req: req as any }); setActionNotes(""); }}>
+                                    <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
+                                    {t("requests.actions.approve")}
+                                  </DropdownMenuItem>
+                                ) : (req as any).status === "PENDING_LOGISTICS" && canLogistics ? (
+                                  <DropdownMenuItem onClick={() => { setLogisticsRequestId(req.id); setLogisticsDialogOpen(true); }}>
+                                    <Settings className="h-4 w-4 ml-2 text-blue-600" />
+                                    {t("maintenance.actions.process")}
+                                  </DropdownMenuItem>
+                                ) : (req as any).status === "PENDING_EXECUTIVE" && canExecutiveApprove ? (
+                                  <>
+                                    <DropdownMenuItem onClick={() => { setMaintenanceActionDialog({ type: "executive-approve", req: req as any }); setActionNotes(""); }}>
+                                      <CheckCircle className="h-4 w-4 ml-2 text-green-600" />
+                                      {t("requests.actions.approve")}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => { setMaintenanceActionDialog({ type: "executive-reject", req: req as any }); setActionNotes(""); }}
+                                      className="text-destructive"
+                                    >
+                                      <XCircle className="h-4 w-4 ml-2" />
+                                      {t("requests.actions.reject")}
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : null}
+                                {(req as any).status === "PENDING_MANAGER" && (
+                                  <DropdownMenuItem
+                                    onClick={() => { setMaintenanceActionDialog({ type: "manager-reject", req: req as any }); setActionNotes(""); }}
+                                    className="text-destructive"
+                                  >
+                                    <XCircle className="h-4 w-4 ml-2" />
+                                    {t("requests.actions.reject")}
+                                  </DropdownMenuItem>
+                                )}
                               </>
                             ) : (
                               <>

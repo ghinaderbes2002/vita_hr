@@ -3,10 +3,11 @@ import { departmentsApi, CreateDepartmentData, UpdateDepartmentData } from "@/li
 import { PaginationParams } from "@/types";
 import { toast } from "sonner";
 
-export function useDepartments(params?: PaginationParams & { search?: string }) {
+export function useDepartments(params?: PaginationParams & { search?: string }, staleTime?: number) {
   return useQuery({
     queryKey: ["departments", params],
     queryFn: () => departmentsApi.getAll(params),
+    staleTime: staleTime ?? 0,
   });
 }
 
