@@ -263,6 +263,7 @@ export interface PainMapDto {
   painTypes?: string[];
   painTypeOther?: string;
   painTypeOtherColor?: string;
+  customPainTypes?: { name: string; color: string }[];
   aggravatingFactors?: string[];
   aggravatingOther?: string;
   alleviatingFactors?: string[];
