@@ -171,6 +171,7 @@ export interface PhysioCase {
   painTypes?: string[] | null;
   painTypeOther?: string | null;
   painTypeOtherColor?: string | null;
+  customPainTypes?: { name: string; color: string }[] | null;
   aggravatingFactors?: string[] | null;
   alleviatingFactors?: string[] | null;
   aggravatingOther?: string | null;
