@@ -162,7 +162,7 @@ export interface PhysioCasePdfData {
   };
   painRegions: PainRegion[];
   painTypes: string[];
-  painTypeOther: string;
+  painTypeOther?: string;
   painTypeOtherColor?: string;
   customPainTypes?: { name: string; color: string }[];
   aggravatingFactors: string[];
