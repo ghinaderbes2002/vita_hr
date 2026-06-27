@@ -3687,18 +3687,61 @@
     },
     "reports": {
       "title": "تقارير العيادة",
-      "donor": "تقرير المانح",
+      "description": "نظرة شاملة على أداء العيادة الطبية",
+      "donor": "تقرير المانحين",
       "exportPdf": "تصدير PDF",
       "exportExcel": "تصدير Excel",
       "period": "الفترة الزمنية",
       "from": "من",
       "to": "إلى",
+      "noData": "لا توجد بيانات للفترة المحددة",
+      "overview": {
+        "title": "نظرة عامة على العيادة",
+        "totalPatients": "إجمالي المرضى",
+        "activeProstCases": "حالات أطراف نشطة",
+        "activePhysioCases": "حالات فيزيائي نشطة",
+        "completedCases": "حالات مكتملة",
+        "completedSub": "{prost} أطراف + {physio} فيزيائي"
+      },
+      "charts": {
+        "prostByStage": "توزيع حالات الأطراف حسب المرحلة",
+        "prostByType": "توزيع حالات الأطراف حسب النوع"
+      },
       "summary": {
         "totalCases": "إجمالي الحالات",
-        "patientsServed": "المستفيدون",
-        "deliveredCases": "تم التسليم",
-        "successRate": "معدل النجاح",
-        "followUpsCompleted": "المتابعات المكتملة"
+        "patientsServed": "المرضى المخدومون",
+        "deliveredCases": "الحالات المسلّمة",
+        "successRate": "نسبة النجاح",
+        "followUpsCompleted": "متابعات منجزة"
+      },
+      "resources": {
+        "title": "الموارد المستخدمة",
+        "components": "قطعة أطراف",
+        "consumables": "مستهلك"
+      },
+      "donorCharts": {
+        "byStatus": "توزيع حسب الحالة",
+        "byAmputationType": "توزيع حسب نوع البتر"
+      },
+      "lowStock": {
+        "warning": "⚠️ تنبيه مخزون — {count} صنف تحت الحد الأدنى"
+      },
+      "prostStatuses": {
+        "INTAKE": "استقبال",
+        "ASSESSMENT": "تقييم",
+        "COMMITTEE_REVIEW": "مراجعة اللجنة",
+        "COMMITTEE_APPROVED": "اعتمدت اللجنة",
+        "FITTING": "تركيب",
+        "GAIT_ANALYSIS": "تحليل مشي",
+        "FINAL_EVALUATION": "تقييم نهائي",
+        "DELIVERED": "تم التسليم",
+        "FOLLOW_UP": "متابعة",
+        "CLOSED": "مغلقة",
+        "CANCELLED": "ملغاة"
+      },
+      "prostTypes": {
+        "UPPER": "طرف علوي",
+        "LOWER": "طرف سفلي"
       }
     },
     "common": {

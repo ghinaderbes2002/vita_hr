@@ -3121,6 +3121,7 @@
         "description": "Physiotherapy cases will appear here"
       },
       "statuses": {
+        "INTAKE": "Intake",
         "COMPLAINT": "Complaint",
         "PAIN_MAP": "Pain Map",
         "MEDICAL_HISTORY": "Medical History",
@@ -3527,18 +3528,61 @@
     },
     "reports": {
       "title": "Clinic Reports",
+      "description": "Comprehensive overview of clinic performance",
       "donor": "Donor Report",
       "exportPdf": "Export PDF",
       "exportExcel": "Export Excel",
       "period": "Period",
       "from": "From",
       "to": "To",
+      "noData": "No data available for the selected period",
+      "overview": {
+        "title": "Clinic Overview",
+        "totalPatients": "Total Patients",
+        "activeProstCases": "Active Prosthetics Cases",
+        "activePhysioCases": "Active Physio Cases",
+        "completedCases": "Completed Cases",
+        "completedSub": "{prost} prosthetics + {physio} physio"
+      },
+      "charts": {
+        "prostByStage": "Prosthetics Cases by Stage",
+        "prostByType": "Prosthetics Cases by Type"
+      },
       "summary": {
         "totalCases": "Total Cases",
         "patientsServed": "Patients Served",
         "deliveredCases": "Delivered Cases",
         "successRate": "Success Rate",
         "followUpsCompleted": "Follow-Ups Completed"
+      },
+      "resources": {
+        "title": "Resources Used",
+        "components": "prosthetic components",
+        "consumables": "consumables"
+      },
+      "donorCharts": {
+        "byStatus": "Distribution by Status",
+        "byAmputationType": "Distribution by Amputation Type"
+      },
+      "lowStock": {
+        "warning": "Stock Alert — {count} item(s) below minimum"
+      },
+      "prostStatuses": {
+        "INTAKE": "Intake",
+        "ASSESSMENT": "Assessment",
+        "COMMITTEE_REVIEW": "Committee Review",
+        "COMMITTEE_APPROVED": "Committee Approved",
+        "FITTING": "Fitting",
+        "GAIT_ANALYSIS": "Gait Analysis",
+        "FINAL_EVALUATION": "Final Evaluation",
+        "DELIVERED": "Delivered",
+        "FOLLOW_UP": "Follow-Up",
+        "CLOSED": "Closed",
+        "CANCELLED": "Cancelled"
+      },
+      "prostTypes": {
+        "UPPER": "Upper Limb",
+        "LOWER": "Lower Limb"
       }
     },
     "common": {
