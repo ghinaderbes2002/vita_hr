@@ -417,7 +417,7 @@ export default function MyRequestsPage() {
                         {task.details?.priority && (
                           <Badge variant="outline" className={
                             task.details.priority === "URGENT" ? "bg-red-100 text-red-800 border-red-300" :
-                            task.details.priority === "MEDIUM" ? "bg-orange-100 text-orange-800 border-orange-300" :
+                            task.details.priority === "HIGH" ? "bg-orange-100 text-orange-800 border-orange-300" :
                             "bg-gray-100 text-gray-700 border-gray-300"
                           }>
                             {t(`maintenance.priorities.${task.details.priority}` as any)}
