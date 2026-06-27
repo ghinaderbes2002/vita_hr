@@ -6,6 +6,7 @@ export function useJobTitles(params?: { page?: number; limit?: number; gradeId?:
   return useQuery({
     queryKey: ["job-titles", params],
     queryFn: () => jobTitlesApi.getAll(params),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

@@ -6,6 +6,7 @@ export function useJobGrades(params?: { page?: number; limit?: number; isActive?
   return useQuery({
     queryKey: ["job-grades", params],
     queryFn: () => jobGradesApi.getAll(params),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

@@ -7,7 +7,7 @@ export function useDepartments(params?: PaginationParams & { search?: string }, 
   return useQuery({
     queryKey: ["departments", params],
     queryFn: () => departmentsApi.getAll(params),
-    staleTime: staleTime ?? 0,
+    staleTime: staleTime ?? 5 * 60 * 1000,
   });
 }
 

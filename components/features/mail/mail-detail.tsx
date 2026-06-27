@@ -29,6 +29,7 @@ import { ar } from "date-fns/locale";
 import { useMailMessage, useMailThread, useArchiveFolders, useDeleteMail, useMoveMail, useEditMail } from "@/lib/hooks/use-mail";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAllUsers } from "@/lib/hooks/use-users";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { AttachmentList } from "./attachment-list";
 import { ComposeMailModal } from "./compose-mail-modal";
 
@@ -47,11 +48,29 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const editMail   = useEditMail();
   const { user }   = useAuthStore();
   const { data: allUsersData } = useAllUsers();
+  const { data: basicEmployees } = useEmployeesBasicList();
   const empNameById = useMemo(() => {
     const map: Record<string, string> = {};
     const users = (allUsersData as any)?.data?.items ?? (allUsersData as any)?.data ?? [];
     for (const u of users) {
       if (u.id && u.fullName) map[u.id] = u.fullName;
+    }
+    return map;
+  }, [allUsersData]);
+  const empBasicByUserId = useMemo(() => {
+    const map: Record<string, { id: string; nameAr: string }> = {};
+    const list = Array.isArray(basicEmployees) ? basicEmployees : [];
+    for (const e of list) {
+      if (e.userId) map[e.userId] = { id: e.id, nameAr: `${e.firstNameAr} ${e.lastNameAr}`.trim() };
+    }
+    return map;
+  }, [basicEmployees]);
+  // userId → employeeId from users list (User.employeeId field)
+  const userIdToEmpId = useMemo(() => {
+    const map: Record<string, string> = {};
+    const users = (allUsersData as any)?.data?.items ?? (allUsersData as any)?.data ?? [];
+    for (const u of users) {
+      if (u.id && u.employeeId) map[u.id] = u.employeeId;
     }
     return map;
   }, [allUsersData]);
@@ -121,7 +140,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const editHistory = (data as any).editHistory ?? (message as any).editHistory ?? [];
   const senderName = senderInfo
     ? `${senderInfo.firstNameAr} ${senderInfo.lastNameAr}`
-    : null;
+    : (empBasicByUserId[message.senderId]?.nameAr ?? empNameById[message.senderId] ?? null);
 
   const renderBody = (body: string) => {
     // Body is stored as HTML from the rich-text editor — render directly.
@@ -133,8 +152,13 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const stripTags = (text: string) => text.replace(/<[^>]*>/g, "");
 
   const defaultSubject = `${t("rePrefix")}${message.subject}`;
-  const getRecipientEmpId = (r: any) =>
-    r.employeeInfo?.employeeId ?? r.recipient?.id ?? r.recipientId;
+  const getRecipientEmpId = (r: any) => {
+    const direct = r.employeeInfo?.employeeId ?? r.recipient?.id;
+    if (direct) return direct;
+    const rid = r.recipientId;
+    // recipientId may be a userId — resolve to employeeId via users list or basic list
+    return userIdToEmpId[rid] ?? empBasicByUserId[rid]?.id ?? rid;
+  };
 
   const defaultToIds = replyAll
     ? toRecipients.map(getRecipientEmpId).filter(Boolean)
@@ -148,8 +172,10 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
 
   const getDisplayName = (r: any) => {
     const info = r.employeeInfo ?? r.recipient ?? r.recipientInfo;
-    if (!info) return null;
-    return `${info.firstNameAr ?? ""} ${info.lastNameAr ?? ""}`.trim() || null;
+    if (info) return `${info.firstNameAr ?? ""} ${info.lastNameAr ?? ""}`.trim() || null;
+    const rid = r.recipientId;
+    // Try arabic name from basic list, then fallback to user fullName
+    return empBasicByUserId[rid]?.nameAr ?? empNameById[rid] ?? null;
   };
   const replyAllDisplayNames: string[] = isSender
     ? [

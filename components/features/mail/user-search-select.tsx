@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Search, X, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useEmployeesBasicList, useEmployeesByDepartment } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
+import { useAllUsers } from "@/lib/hooks/use-users";
 import {
   Select,
   SelectContent,
@@ -41,6 +42,15 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [] }:
   const departments: any[] = (deptData as any)?.data?.items || (deptData as any)?.data || [];
 
   const { data: allData, isLoading: allLoading } = useEmployeesBasicList();
+  const { data: allUsersData } = useAllUsers();
+  const userIdToName = useMemo(() => {
+    const map: Record<string, string> = {};
+    const users = (allUsersData as any)?.data?.items ?? (allUsersData as any)?.data ?? [];
+    for (const u of users) {
+      if (u.id && u.fullName) map[u.id] = u.fullName;
+    }
+    return map;
+  }, [allUsersData]);
   const { data: deptData2, isLoading: deptLoading } = useEmployeesByDepartment(
     selectedDeptId !== "__all__" ? selectedDeptId : ""
   );
@@ -114,7 +124,7 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [] }:
           <div className="flex flex-wrap gap-1">
             {value.map((id) => {
               const opt = selectedOptions.find((o) => o.id === id || o.userId === id);
-              const label = opt?.label ?? id;
+              const label = opt?.label ?? userIdToName[id] ?? id;
               return (
                 <Badge key={id} variant="secondary" className="gap-1 text-xs">
                   {label}

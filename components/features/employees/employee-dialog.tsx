@@ -459,6 +459,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       if (data.certificateAttachment2) qualificationFields.certificateAttachment2 = data.certificateAttachment2;
 
       if (isEdit) {
+        const toISO = (d?: string) => d ? new Date(d + "T00:00:00.000Z").toISOString() : undefined;
         const updateData: Record<string, any> = {
           firstNameAr: data.firstNameAr,
           lastNameAr: data.lastNameAr,
@@ -469,10 +470,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           mobile: data.mobile || undefined,
           nationalId: data.nationalId,
           gender: data.gender,
-          dateOfBirth: data.dateOfBirth,
+          dateOfBirth: toISO(data.dateOfBirth),
           departmentId: data.departmentId,
+          hireDate: toISO(data.hireDate),
           contractType: data.contractType,
-          contractEndDate: data.contractEndDate || null,
+          contractEndDate: data.contractEndDate ? toISO(data.contractEndDate) : null,
           probationPeriod: data.probationPeriod || undefined,
           interviewEvaluation: data.interviewEvaluation || undefined,
           employmentStatus: data.employmentStatus,
