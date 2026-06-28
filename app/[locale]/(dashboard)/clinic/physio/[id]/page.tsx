@@ -1219,6 +1219,7 @@ export default function PhysioCasePage() {
     "COMPLETED",
   ];
   const defaultTab = (() => {
+    if (myJobTitleCode === "VTX-JTL-000011") return "intake";
     if (["DISCHARGED", "CANCELLED"].includes(c.status)) return "timeline";
     if (c.status === "COMPLETED") return "doctor_review";
     if (c.status === "DOCTOR_REVIEW") return "doctor_review";
@@ -1290,7 +1291,7 @@ export default function PhysioCasePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue={defaultTab}>
+      <Tabs key={`${id}-${myJobTitleCode}`} defaultValue={defaultTab}>
         <TabsList
           className="flex-wrap h-auto gap-1 w-full justify-start"
           dir={isRtl ? "rtl" : "ltr"}
