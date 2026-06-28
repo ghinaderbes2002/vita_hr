@@ -17,6 +17,8 @@ import { Pagination } from "@/components/shared/pagination";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { usePhysioCases } from "@/lib/hooks/use-clinic-physio";
 import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
+import { usePractitionerPatients } from "@/lib/hooks/use-clinic-appointments";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
 
 const LIMIT = 15;
 
@@ -39,6 +41,19 @@ export default function PhysioListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PhysioStatus | "all">("all");
 
+  const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
+  const { data: myEmployee } = useMyEmployee();
+  const isPhysioDept = (myEmployee as any)?.departmentId === PHYSIO_DEPT_ID;
+  const deptManagerId: string | undefined = (myEmployee as any)?.department?.managerId;
+  const isDeptHead = isPhysioDept && !!deptManagerId && (myEmployee as any)?.id === deptManagerId;
+  const shouldFilter = isPhysioDept && !isDeptHead;
+
+  const { data: practitionerPatientsData, isLoading: patientsLoading } = usePractitionerPatients(
+    undefined,
+    shouldFilter
+  );
+  const practitionerPatientIds: string[] | undefined = shouldFilter ? practitionerPatientsData : undefined;
+
   const { data, isLoading } = usePhysioCases({
     page,
     limit: LIMIT,
@@ -46,6 +61,8 @@ export default function PhysioListPage() {
   });
 
   const cases = (data?.items ?? []).filter((c: PhysioCase) => {
+    // انتظر حتى يكتمل تحميل قائمة المرضى قبل الفلترة
+    if (practitionerPatientIds !== undefined && !practitionerPatientIds.includes(c.patientId)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     const name = c.patient ? `${c.patient.firstName} ${c.patient.lastName}`.toLowerCase() : "";
@@ -98,7 +115,7 @@ export default function PhysioListPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoading || (shouldFilter && patientsLoading) ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
                   {Array.from({ length: 5 }).map((_, j) => (

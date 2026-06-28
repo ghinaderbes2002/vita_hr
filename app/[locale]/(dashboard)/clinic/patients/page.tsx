@@ -154,7 +154,7 @@ export default function ClinicPatientsPage() {
                   </TableCell>
                   <TableCell>{age(p.dateOfBirth)} {t("ageSuffix")}</TableCell>
                   <TableCell dir="ltr" className="text-left">{p.phone}</TableCell>
-                  <TableCell>{p.city?.name ?? "—"}</TableCell>
+                  <TableCell>{p.city?.governorate ?? p.city?.name ?? "—"}</TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

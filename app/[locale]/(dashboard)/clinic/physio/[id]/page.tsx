@@ -501,10 +501,15 @@ export default function PhysioCasePage() {
   const [editingSession, setEditingSession] = useState<{ id: string; sessionDate: string; sessionTime: string; notes: string; supervisorOpinion: string; doctorDecision: string; modalities: TherapyModality[] } | null>(null);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [finalSummary, setFinalSummary] = useState("");
   const [pdfExporting, setPdfExporting] = useState(false);
   const [respondingAlertId, setRespondingAlertId] = useState<string | null>(null);
   const [respondNote, setRespondNote] = useState("");
+  const [emergencyNote, setEmergencyNote] = useState("");
+  const [emergencyDialogOpen, setEmergencyDialogOpen] = useState(false);
+  const [selectedAlertNote, setSelectedAlertNote] = useState<string | null | undefined>(undefined);
 
   // ── Auto-save pain regions ───────────────────────────────────────────────────
   const autoSaveReady = useRef(false);
@@ -1261,6 +1266,11 @@ export default function PhysioCasePage() {
               </span>
             )}
             <CaseStatusBadge status={c.status} />
+            {c.status === "CANCELLED" && (c as any).cancellationReason && (
+              <span className="text-xs text-muted-foreground">
+                سبب الإلغاء: {(c as any).cancellationReason}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex gap-2">
@@ -1282,7 +1292,7 @@ export default function PhysioCasePage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => updateStatus.mutate({ id, status: "CANCELLED" })}
+              onClick={() => { setCancelReason(""); setCancelDialogOpen(true); }}
               className="text-destructive"
             >
               {t("cancelCase")}
@@ -1302,7 +1312,7 @@ export default function PhysioCasePage() {
             : [
                 "intake", "patient_info", "complaint", "pain_map",
                 "medical_history", "goals", "postural_assessment",
-                "treatment_plan", "evaluation", "sessions",
+                "treatment_plan", "evaluation", "sessions", "summary",
                 "supervisor_review", "doctor_review", "timeline",
               ]
           ).map((value) => {
@@ -3231,8 +3241,19 @@ export default function PhysioCasePage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>{t("doctorReview.label")}</Label>
-                <Textarea rows={4} value={doctorGaze} onChange={(e) => setDoctorGaze(e.target.value)} placeholder={t("doctorReview.placeholder")} disabled={!["SUPERVISOR_REVIEW", "DOCTOR_REVIEW"].includes(c.status)} />
+                <Textarea rows={4} value={doctorGaze} onChange={(e) => setDoctorGaze(e.target.value)} placeholder={t("doctorReview.placeholder")} disabled={!canEdit} />
               </div>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  onClick={() => doctorRev.mutate({ id, dto: { doctorGaze: doctorGaze || undefined } })}
+                  disabled={doctorRev.isPending}
+                  className="w-full gap-2"
+                >
+                  {doctorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {t("doctorReview.save")}
+                </Button>
+              )}
               {c.status === "SUPERVISOR_REVIEW" && (
                 <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
                   <Button onClick={handleDoctorReview} disabled={doctorRev.isPending || updateStatus.isPending} className="w-full gap-2">
@@ -3426,13 +3447,13 @@ export default function PhysioCasePage() {
                       </div>
                     ) : (
                       <>
-                        <div className="flex justify-between items-start cursor-pointer select-none" onClick={() => setExpandedSessionId((prev) => prev === s.id ? null : s.id)}>
+                        <div className="flex justify-between items-start">
                           <div className="flex gap-2 items-center flex-wrap">
                             <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{s.sessionNumber}</Badge>
                             <span className="font-medium text-sm">{new Date(s.sessionDate).toLocaleDateString("en-GB")}</span>
                             {s.sessionTime && <span className="text-xs text-muted-foreground">{s.sessionTime}</span>}
                           </div>
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-1">
                             {canEdit && (
                               <button
                                 onClick={() => setEditingSession({ id: s.id, sessionDate: s.sessionDate?.slice(0, 10) ?? "", sessionTime: s.sessionTime ?? "", notes: s.notes ?? "", supervisorOpinion: s.supervisorOpinion ?? "", doctorDecision: s.doctorDecision ?? "", modalities: s.modalities ?? [] })}
@@ -3447,28 +3468,32 @@ export default function PhysioCasePage() {
                             </button>
                           </div>
                         </div>
-                        {expandedSessionId === s.id && (
-                          <div className="space-y-2 pt-1">
-                            {s.notes && <p className="text-xs text-muted-foreground">{s.notes}</p>}
-                            {s.modalities && s.modalities.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {s.modalities.map((m) => (
-                                  <Badge key={m} variant="outline" className="text-[10px] px-1.5 py-0">{THERAPY_MODALITY_LABELS[m]}</Badge>
-                                ))}
-                              </div>
-                            )}
-                            <div className="grid grid-cols-2 gap-3 border-t pt-2">
-                              <div className="space-y-0.5">
-                                <p className="text-[11px] font-medium text-muted-foreground">{t("sessions.supervisorOpinion")}</p>
-                                <p className="text-xs">{s.supervisorOpinion || <span className="text-muted-foreground/50">—</span>}</p>
-                              </div>
-                              <div className="space-y-0.5">
-                                <p className="text-[11px] font-medium text-muted-foreground">{t("sessions.doctorDecision")}</p>
-                                <p className="text-xs">{s.doctorDecision || <span className="text-muted-foreground/50">—</span>}</p>
-                              </div>
+                        <div className="space-y-2 pt-1">
+                          {s.notes && <p className="text-xs text-muted-foreground">{s.notes}</p>}
+                          {s.modalities && s.modalities.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {s.modalities.map((m) => (
+                                <Badge key={m} variant="outline" className="text-[10px] px-1.5 py-0">{THERAPY_MODALITY_LABELS[m]}</Badge>
+                              ))}
                             </div>
-                          </div>
-                        )}
+                          )}
+                          {(s.supervisorOpinion || s.doctorDecision) && (
+                            <div className="grid grid-cols-2 gap-3 border-t pt-2">
+                              {s.supervisorOpinion && (
+                                <div className="space-y-0.5">
+                                  <p className="text-[11px] font-medium text-muted-foreground">{t("sessions.supervisorOpinion")}</p>
+                                  <p className="text-xs">{s.supervisorOpinion}</p>
+                                </div>
+                              )}
+                              {s.doctorDecision && (
+                                <div className="space-y-0.5">
+                                  <p className="text-[11px] font-medium text-muted-foreground">{t("sessions.doctorDecision")}</p>
+                                  <p className="text-xs">{s.doctorDecision}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>
@@ -3477,19 +3502,17 @@ export default function PhysioCasePage() {
             </Section>
           )}
 
+        </TabsContent>
+
+        {/* ── SUMMARY ─────────────────────────────────────────────────────── */}
+        <TabsContent value="summary" className="mt-4">
           <Section title={t("sessions.finalSummaryTitle")}>
             <div className="space-y-3">
               <Textarea rows={5} value={finalSummary} onChange={(e) => setFinalSummary(e.target.value)} placeholder={t("sessions.finalSummaryPlaceholder")} />
-              <div className="flex gap-2">
-                <Button onClick={handleSaveFinalSummary} disabled={!finalSummary || submitFinalSummary.isPending} className="flex-1 gap-2">
-                  {submitFinalSummary.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  {t("sessions.saveSummary")}
-                </Button>
-                <Button variant="outline" onClick={() => downloadFinalPdf.mutate(id)} disabled={downloadFinalPdf.isPending} className="gap-2">
-                  {downloadFinalPdf.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {t("sessions.exportPdf")}
-                </Button>
-              </div>
+              <Button onClick={handleSaveFinalSummary} disabled={!finalSummary || submitFinalSummary.isPending} className="w-full gap-2">
+                {submitFinalSummary.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {t("sessions.saveSummary")}
+              </Button>
             </div>
           </Section>
         </TabsContent>
@@ -3498,34 +3521,72 @@ export default function PhysioCasePage() {
         <TabsContent value="emergency" className="mt-4 space-y-6">
           {/* زر إرسال التنبيه */}
           {canSendAlert && (
-            <Section title="إرسال تنبيه طارئ">
-              <div className="flex flex-col items-center gap-4 py-4">
-                <p className="text-sm text-muted-foreground text-center">
-                  اضغط الزر لإرسال تنبيه طارئ فوري للموظف الثابت
-                </p>
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  className="gap-2 px-8"
-                  onClick={() => sendAlert.mutate()}
-                  disabled={sendAlert.isPending}
-                >
-                  {sendAlert.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <AlertTriangle className="h-5 w-5" />}
-                  إرسال تنبيه طارئ
-                </Button>
-              </div>
-            </Section>
+            <>
+              <Section title="إرسال تنبيه طارئ">
+                <div className="flex flex-col items-center py-4">
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    className="gap-2 px-8"
+                    onClick={() => { setEmergencyNote(""); setEmergencyDialogOpen(true); }}
+                  >
+                    <AlertTriangle className="h-5 w-5" />
+                    إرسال تنبيه طارئ
+                  </Button>
+                </div>
+              </Section>
+
+              <Dialog open={emergencyDialogOpen} onOpenChange={setEmergencyDialogOpen}>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="h-5 w-5" />
+                      إرسال تنبيه طارئ
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 py-2">
+                    <Textarea
+                      rows={3}
+                      value={emergencyNote}
+                      onChange={(e) => setEmergencyNote(e.target.value)}
+                      placeholder="ملاحظة اختيارية (مثال: المريض فقد الوعي)"
+                      className="text-sm"
+                    />
+                  </div>
+                  <DialogFooter className="gap-2">
+                    <Button variant="outline" onClick={() => setEmergencyDialogOpen(false)}>إلغاء</Button>
+                    <Button
+                      variant="destructive"
+                      disabled={sendAlert.isPending}
+                      onClick={async () => {
+                        await sendAlert.mutateAsync(emergencyNote.trim() || undefined);
+                        setEmergencyNote("");
+                        setEmergencyDialogOpen(false);
+                      }}
+                    >
+                      {sendAlert.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <AlertTriangle className="h-4 w-4 ml-2" />}
+                      إرسال
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
           )}
 
           {/* تنبيهاتي المُرسَلة */}
           {canSendAlert && (
+            <>
             <Section title="تنبيهاتي المُرسَلة">
               {(myAlerts as any[]).length === 0 ? (
                 <p className="text-center py-6 text-muted-foreground text-sm">لا توجد تنبيهات مُرسَلة</p>
               ) : (
                 <div className="space-y-2">
                   {(myAlerts as any[]).map((alert: any) => (
-                    <div key={alert.id} className="flex items-start justify-between rounded-lg border p-3 gap-3">
+                    <div
+                      key={alert.id}
+                      className="flex items-start justify-between rounded-lg border p-3 gap-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                      onClick={() => setSelectedAlertNote(alert.senderNote ?? null)}
+                    >
                       <div className="space-y-0.5 flex-1">
                         <div className="flex items-center gap-2">
                           <Badge variant={alert.status === "RESPONDED" ? "default" : "destructive"} className="text-xs">
@@ -3551,6 +3612,25 @@ export default function PhysioCasePage() {
                 </div>
               )}
             </Section>
+
+            {/* dialog عرض ملاحظة التنبيه */}
+            <Dialog open={selectedAlertNote !== undefined} onOpenChange={(o) => { if (!o) setSelectedAlertNote(undefined); }}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    ملاحظة التنبيه
+                  </DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground py-2">
+                  {selectedAlertNote || "لا توجد ملاحظة"}
+                </p>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSelectedAlertNote(undefined)}>إغلاق</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            </>
           )}
 
           {/* التنبيهات الواردة (الموظف الثابت) */}
@@ -3574,6 +3654,12 @@ export default function PhysioCasePage() {
                           {new Date(alert.createdAt).toLocaleString(locale)}
                         </span>
                       </div>
+                      <p className="text-sm font-medium text-destructive">
+                        {alert.senderNote
+                          ? `هناك حالة طارئة: ${alert.senderNote}`
+                          : "هناك حالة طارئة تستدعي تدخلك الفوري"
+                        }
+                      </p>
 
                       {alert.note ? (
                         <p className="text-sm bg-muted/50 rounded p-2">
@@ -3657,6 +3743,41 @@ export default function PhysioCasePage() {
           </Section>
         </TabsContent>
       </Tabs>
+
+      {/* Cancel Case Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={(o) => { if (!updateStatus.isPending) setCancelDialogOpen(o); }}>
+        <DialogContent className="max-w-sm" dir={isRtl ? "rtl" : "ltr"}>
+          <DialogHeader>
+            <DialogTitle>{t("cancelCase")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">هل أنت متأكد من إلغاء هذه الحالة؟</p>
+            <Textarea
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="سبب الإلغاء (اختياري)"
+              className="text-sm"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)} disabled={updateStatus.isPending}>
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={updateStatus.isPending}
+              onClick={async () => {
+                await updateStatus.mutateAsync({ id, status: "CANCELLED", cancellationReason: cancelReason.trim() || undefined });
+                setCancelDialogOpen(false);
+              }}
+            >
+              {updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+              تأكيد الإلغاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={confirmDeleteSessionId !== null} onOpenChange={(o) => !o && setConfirmDeleteSessionId(null)}>
         <DialogContent className="max-w-sm" dir={isRtl ? "rtl" : "ltr"}>

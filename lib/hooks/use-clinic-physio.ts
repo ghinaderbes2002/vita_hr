@@ -76,8 +76,8 @@ export function useUpdatePhysioCase() {
 export function useUpdatePhysioStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: PhysioStatus }) =>
-      clinicPhysioApi.updateStatus(id, status),
+    mutationFn: ({ id, status, cancellationReason }: { id: string; status: PhysioStatus; cancellationReason?: string }) =>
+      clinicPhysioApi.updateStatus(id, status, cancellationReason),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["clinic-physio-case", data.id] });
       qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
@@ -369,7 +369,7 @@ export function useIncomingEmergencyAlerts(enabled = true) {
 export function useSendEmergencyAlert() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => clinicPhysioApi.sendEmergencyAlert(),
+    mutationFn: (note?: string) => clinicPhysioApi.sendEmergencyAlert(note),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["physio-emergency-my"] });
       toast.success("تم إرسال التنبيه الطارئ");

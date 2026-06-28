@@ -1183,6 +1183,7 @@
       "clinic": "العيادة الطبية",
       "clinic_appointments": "المواعيد",
       "clinic_physio": "العلاج الفيزيائي",
+      "clinical-physio": "العلاج الفيزيائي",
       "clinic_prosthetics": "الأطراف الصناعية",
       "clinic_reports": "تقارير العيادة",
       "clinic_inventory": "مخزون العيادة",
@@ -3324,6 +3325,7 @@
           "treatmentPlan": "خطة العلاج",
           "evaluation": "الملاحظات والتقييم",
           "sessions": "الجلسات العلاجية",
+          "summary": "الملخص",
           "supervisorReview": "رأي رئيس القسم",
           "doctorReview": "رأي الطبيب",
           "timeline": "السجل الزمني"
@@ -3564,6 +3566,7 @@
           "title": "رأي الطبيب",
           "label": "رأي الطبيب",
           "placeholder": "رأي الطبيب وملاحظاته على خطة العلاج...",
+          "save": "حفظ الرأي",
           "approveDoctorReview": "اعتماد رأي الطبيب",
           "closeCase": "إغلاق الحالة (COMPLETED)"
         },
@@ -3576,9 +3579,9 @@
           "addSession": "إضافة جلسة",
           "endSessions": "إنهاء الجلسات",
           "sessionsListTitle": "الجلسات",
-          "supervisorOpinion": "رأي رئيس القسم / Supervisor Opinion",
+          "supervisorOpinion": "رأي رئيس القسم",
           "supervisorOpinionPlaceholder": "رأي رئيس القسم...",
-          "doctorDecision": "قرار الطبيب / Doctor Decision",
+          "doctorDecision": "قرار الطبيب",
           "doctorDecisionPlaceholder": "قرار الطبيب...",
           "supervisorOpinionShort": "رأي رئيس القسم",
           "doctorDecisionShort": "قرار الطبيب",
@@ -3620,13 +3623,18 @@
         "FITTING": "تركيب",
         "SESSION": "جلسة",
         "FOLLOW_UP": "متابعة",
-        "COMMITTEE": "لجنة"
+        "COMMITTEE": "لجنة",
+        "EXAMINATION": "معاينة"
       },
       "roles": {
         "PROSTHETIST": "أخصائي أطراف",
         "PHYSIOTHERAPIST": "أخصائي فيزيائي",
         "DOCTOR": "طبيب",
-        "NURSE": "ممرض"
+        "TECHNICIAN": "تقني"
+      },
+      "cancelReason": "سبب الإلغاء",
+      "filter": {
+        "allStatuses": "كل الحالات"
       },
       "statuses": {
         "SCHEDULED": "مجدول",
@@ -3644,6 +3652,8 @@
         "noResults": "لا توجد نتائج",
         "appointmentType": "نوع الموعد",
         "practitionerRole": "دور المختص",
+        "physiotherapistId": " المعالج الفيزيائي",
+        "physiotherapistIdPlaceholder": " (اختياري)",
         "date": "التاريخ",
         "startTime": "وقت البداية",
         "endTime": "وقت النهاية",
@@ -3654,7 +3664,10 @@
       },
       "actions": {
         "confirm": "تأكيد",
-        "complete": "إنجاز"
+        "complete": "إنجاز",
+        "cancelConfirmTitle": "إلغاء الموعد",
+        "cancelReasonPlaceholder": "سبب الإلغاء (اختياري)",
+        "cancelConfirm": "تأكيد الإلغاء"
       }
     },
     "inventory": {

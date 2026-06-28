@@ -92,3 +92,12 @@ export function useUpdateAppointmentStatus() {
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تغيير الحالة"),
   });
 }
+
+export function usePractitionerPatients(practitionerId?: string, enabled = true) {
+  return useQuery({
+    queryKey: ["practitioner-patients", practitionerId],
+    queryFn: () => clinicAppointmentsApi.getPractitionerPatients(practitionerId),
+    staleTime: 60_000,
+    enabled,
+  });
+}

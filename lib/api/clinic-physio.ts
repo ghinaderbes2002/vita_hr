@@ -188,6 +188,7 @@ export interface PhysioCase {
   treatmentPlan?: any;
   evaluation?: { modalities?: EvaluationModality[]; otherModality?: string | null; notes?: string | null; evaluation?: string | null } | null;
   notes?: string | null;
+  cancellationReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -444,9 +445,11 @@ export interface FinalSummaryDto {
 
 export interface EmergencyAlert {
   id: string;
+  caseId?: string | null;
   sentByUserId: string;
   status: "PENDING" | "RESPONDED";
   note: string | null;
+  senderNote?: string | null;
   respondedAt: string | null;
   createdAt: string;
 }
@@ -485,8 +488,10 @@ export const clinicPhysioApi = {
     return data?.data ?? data;
   },
 
-  updateStatus: async (id: string, status: PhysioStatus): Promise<PhysioCase> => {
-    const { data } = await apiClient.put(`/physio/cases/${id}/status`, { status });
+  updateStatus: async (id: string, status: PhysioStatus, cancellationReason?: string): Promise<PhysioCase> => {
+    const body: Record<string, unknown> = { status };
+    if (status === "CANCELLED" && cancellationReason) body.cancellationReason = cancellationReason;
+    const { data } = await apiClient.put(`/physio/cases/${id}/status`, body);
     return data?.data ?? data;
   },
 
@@ -593,8 +598,8 @@ export const clinicPhysioApi = {
   },
 
   // ── Emergency alerts ──────────────────────────────────────────────────────
-  sendEmergencyAlert: async (): Promise<EmergencyAlert> => {
-    const { data } = await apiClient.post("/physio/emergency");
+  sendEmergencyAlert: async (note?: string): Promise<EmergencyAlert> => {
+    const { data } = await apiClient.post("/physio/emergency", note ? { note } : {});
     return data?.data ?? data;
   },
 
@@ -613,5 +618,10 @@ export const clinicPhysioApi = {
     const { data } = await apiClient.get("/physio/emergency/my");
     const d = data?.data ?? data;
     return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  getAlertById: async (alertId: string): Promise<EmergencyAlert> => {
+    const { data } = await apiClient.get(`/physio/emergency/${alertId}`);
+    return data?.data ?? data;
   },
 };

@@ -345,6 +345,7 @@
       "clinic": "Medical Clinic",
       "clinic_appointments": "Appointments",
       "clinic_physio": "Physiotherapy",
+      "clinical-physio": "Physiotherapy",
       "clinic_prosthetics": "Prosthetics",
       "clinic_reports": "Clinic Reports",
       "audit": "Audit Log"
@@ -3165,6 +3166,7 @@
           "treatmentPlan": "Plan of Treatment",
           "evaluation": "Observation & Evaluation",
           "sessions": "Therapeutic Procedures",
+          "summary": "Summary",
           "supervisorReview": "Supervisor Review",
           "doctorReview": "Doctor Review",
           "timeline": "Timeline"
@@ -3405,6 +3407,7 @@
           "title": "Doctor's Review",
           "label": "Doctor's Opinion",
           "placeholder": "Doctor's opinion and notes on the treatment plan...",
+          "save": "Save Opinion",
           "approveDoctorReview": "Approve Doctor's Review",
           "closeCase": "Close Case (COMPLETED)"
         },
@@ -3461,13 +3464,18 @@
         "FITTING": "Fitting",
         "SESSION": "Session",
         "FOLLOW_UP": "Follow-Up",
-        "COMMITTEE": "Committee"
+        "COMMITTEE": "Committee",
+        "EXAMINATION": "Examination"
       },
       "roles": {
         "PROSTHETIST": "Prosthetist",
         "PHYSIOTHERAPIST": "Physiotherapist",
         "DOCTOR": "Doctor",
-        "NURSE": "Nurse"
+        "TECHNICIAN": "Technician"
+      },
+      "cancelReason": "Cancellation Reason",
+      "filter": {
+        "allStatuses": "All Statuses"
       },
       "statuses": {
         "SCHEDULED": "Scheduled",
@@ -3485,6 +3493,8 @@
         "noResults": "No results",
         "appointmentType": "Appointment Type",
         "practitionerRole": "Practitioner Role",
+        "physiotherapistId": "Physiotherapist ID",
+        "physiotherapistIdPlaceholder": "UUID (optional)",
         "date": "Date",
         "startTime": "Start Time",
         "endTime": "End Time",
@@ -3495,7 +3505,10 @@
       },
       "actions": {
         "confirm": "Confirm",
-        "complete": "Complete"
+        "complete": "Complete",
+        "cancelConfirmTitle": "Cancel Appointment",
+        "cancelReasonPlaceholder": "Reason for cancellation (optional)",
+        "cancelConfirm": "Confirm Cancellation"
       }
     },
     "inventory": {

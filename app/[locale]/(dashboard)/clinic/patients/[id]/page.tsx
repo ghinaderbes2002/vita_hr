@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
@@ -65,6 +67,7 @@ export default function PatientProfilePage() {
   const router = useRouter();
   const locale = useLocale();
   const [deletePatientOpen, setDeletePatientOpen] = useState(false);
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -91,6 +94,24 @@ export default function PatientProfilePage() {
   const deleteDoc = useDeletePatientDocument();
   const downloadDoc = useDownloadPatientDocument();
   const createNote = useCreatePatientNote();
+
+  const photoDoc = useMemo(() => documents.find((d) => d.type === "PERSONAL_PHOTO"), [documents]);
+  const [photoLoadError, setPhotoLoadError] = useState(false);
+  useEffect(() => { setPhotoLoadError(false); }, [photoDoc?.id]);
+  const { data: photoUrl } = useQuery({
+    queryKey: ["patient-photo-blob", photoDoc?.id],
+    queryFn: async () => {
+      const blob = await clinicPatientsApi.downloadDocument(id, photoDoc!.id);
+      if (!blob.type.startsWith("image/")) return null;
+      return URL.createObjectURL(blob);
+    },
+    enabled: !!photoDoc?.id,
+    staleTime: Infinity,
+    gcTime: 60_000,
+  });
+  useEffect(() => {
+    return () => { if (photoUrl) URL.revokeObjectURL(photoUrl); };
+  }, [photoUrl]);
   const createProst = useCreateProstheticsCase();
   const createPhysio = useCreatePhysioCase();
 
@@ -167,9 +188,30 @@ export default function PatientProfilePage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
-            {patient.firstName[0]}{patient.lastName[0]}
-          </div>
+          {photoUrl && !photoLoadError ? (
+            <button
+              type="button"
+              className="h-16 w-16 rounded-full overflow-hidden border-2 border-primary/20 hover:border-primary transition-colors focus:outline-none"
+              onClick={() => window.open(photoUrl, "_blank")}
+              title="فتح الصورة"
+            >
+              <img
+                src={photoUrl}
+                alt={`${patient.firstName} ${patient.lastName}`}
+                className="h-full w-full object-cover"
+                onError={() => setPhotoLoadError(true)}
+              />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={`h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold ${photoDoc && photoUrl ? "cursor-pointer hover:opacity-80 border-2 border-primary/20" : "cursor-default"}`}
+              onClick={() => photoDoc && photoUrl && window.open(photoUrl, "_blank")}
+              disabled={!photoDoc || !photoUrl}
+            >
+              {patient.firstName[0]}{patient.lastName[0]}
+            </button>
+          )}
           <div>
             <h1 className="text-2xl font-bold">{patient.firstName} {patient.lastName}</h1>
             <div className="flex items-center gap-3 mt-1">
@@ -418,36 +460,32 @@ export default function PatientProfilePage() {
           {documents.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground border rounded-lg">لا توجد مستندات</div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
               {documents.map((doc) => (
-                <Card key={doc.id}>
-                  <CardContent className="pt-4">
-                    <div className="aspect-video rounded border bg-muted flex items-center justify-center overflow-hidden">
-                      <FileText className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-1">
-                      <span className="text-xs font-medium truncate">{DOC_TYPE_LABEL[doc.type] ?? doc.type}</span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          className="text-primary hover:opacity-80 disabled:opacity-40"
-                          title="عرض"
-                          disabled={downloadDoc.isPending}
-                          onClick={() => downloadDoc.mutate({ patientId: id, docId: doc.id })}
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                        </button>
-                        <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.DELETE}>
-                          <button
-                            className="text-destructive hover:opacity-80"
-                            onClick={() => deleteDoc.mutate({ patientId: id, docId: doc.id })}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </ActionGuard>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div key={doc.id} className="flex items-center gap-3 rounded-lg border p-3">
+                  <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <span className="flex-1 text-sm font-medium">{DOC_TYPE_LABEL[doc.type] ?? doc.type}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      className="flex items-center gap-1 text-sm text-primary hover:opacity-80 disabled:opacity-40"
+                      title="عرض"
+                      disabled={downloadDoc.isPending}
+                      onClick={() => downloadDoc.mutate({ patientId: id, docId: doc.id })}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.DELETE}>
+                      <button
+                        className="text-destructive hover:opacity-80"
+                        onClick={() => setDeleteDocId(doc.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </ActionGuard>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -538,6 +576,19 @@ export default function PatientProfilePage() {
         confirmText="حذف"
         variant="destructive"
         onConfirm={handleDeletePatient}
+      />
+
+      <ConfirmDialog
+        open={!!deleteDocId}
+        onOpenChange={(o) => { if (!o) setDeleteDocId(null); }}
+        title="حذف المستند"
+        description="هل تريد حذف هذا المستند؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteDocId) deleteDoc.mutate({ patientId: id, docId: deleteDocId });
+          setDeleteDocId(null);
+        }}
       />
 
       {/* New Prosthetics Case Dialog */}

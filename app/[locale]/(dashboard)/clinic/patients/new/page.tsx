@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ChevronRight, ChevronLeft, Check, AlertCircle } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, AlertCircle, Upload, X, FileText, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,8 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useCreateClinicPatient, useCheckDuplicate } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
-import { clinicPatientsApi } from "@/lib/api/clinic-patients";
-import { CreatePatientDto, IdentityType, ConsentOption } from "@/lib/api/clinic-patients";
+import { clinicPatientsApi, CreatePatientDto, IdentityType, ConsentOption, DocumentType } from "@/lib/api/clinic-patients";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -73,6 +72,15 @@ const CONSENT_VALUES        = ["FULL", "ANONYMOUS", "NONE"] as const;
 
 const REFERRAL_VALUES = ["SELF", "RELATIVES", "SOCIAL_MEDIA", "MEDICAL_REFERRAL", "OTHER"] as const;
 
+const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
+  { value: "PERSONAL_PHOTO",      label: "صورة شخصية" },
+  { value: "ID_COPY",             label: "نسخة هوية" },
+  { value: "AMPUTATION_PHOTO",    label: "صورة البتر" },
+  { value: "RESIDUAL_LIMB_PHOTO", label: "صورة الطرف المتبقي" },
+  { value: "MEDICAL_REPORT",      label: "تقرير طبي" },
+  { value: "OTHER",               label: "أخرى" },
+];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function NewPatientPage() {
@@ -86,6 +94,9 @@ export default function NewPatientPage() {
   const [s2, setS2] = useState<Partial<Step2>>({});
   const [s3, setS3] = useState<Partial<Step3>>({});
   const [s4, setS4] = useState<Partial<Step4>>({});
+  const [pendingDocs, setPendingDocs] = useState<{ id: string; file: File; type: DocumentType }[]>([]);
+  const [docType, setDocType] = useState<DocumentType>("OTHER");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createPatient = useCreateClinicPatient();
   const { data: rawCities = [] } = useClinicCities();
@@ -116,18 +127,19 @@ export default function NewPatientPage() {
 
   const nextStep = async () => {
     if (step === 0) {
-      const ok = await form1.trigger();
-      if (!ok) return;
+      // البيانات الشخصية = form1 + form3
+      const ok1 = await form1.trigger();
+      const ok3 = await form3.trigger();
+      if (!ok1 || !ok3) return;
       setS1(form1.getValues());
+      setS3(form3.getValues());
     } else if (step === 1) {
+      // بيانات التواصل
       const ok = await form2.trigger();
       if (!ok) return;
       setS2(form2.getValues());
-    } else if (step === 2) {
-      const ok = await form3.trigger();
-      if (!ok) return;
-      setS3(form3.getValues());
     }
+    // step 2 = documents (no validation), step 3 = consent (handled in handleSubmit)
     setStep((s) => s + 1);
   };
 
@@ -185,17 +197,27 @@ export default function NewPatientPage() {
       }
     }
 
+    // Upload pending documents
+    for (const doc of pendingDocs) {
+      try {
+        await clinicPatientsApi.uploadDocument(patient.id, doc.file, doc.type);
+      } catch {
+        // non-blocking
+      }
+    }
+
     router.push(`/${locale}/clinic/patients/${patient.id}`);
   };
 
   const isDuplicate = dupData?.exists && idNumber.length >= 7;
 
   const STEPS = [
-    { label: t("steps.0.label"), desc: t("steps.0.desc") },
-    { label: t("steps.1.label"), desc: t("steps.1.desc") },
-    { label: t("steps.2.label"), desc: t("steps.2.desc") },
-    { label: t("steps.3.label"), desc: t("steps.3.desc") },
+    { label: "البيانات الشخصية",       desc: "المعلومات الأساسية والبيانات الاجتماعية" },
+    { label: "بيانات التواصل ", desc: "معلومات التواصل والموقع" },
+    { label: "المستندات",              desc: "رفع مستندات المريض (اختياري)" },
+    { label: t("steps.3.label"),       desc: t("steps.3.desc") },
   ];
+  
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -209,14 +231,18 @@ export default function NewPatientPage() {
         {STEPS.map((s, i) => (
           <div key={i} className="flex items-center flex-1">
             <div className="flex flex-col items-center gap-1 flex-1">
-              <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors",
-                i < step  ? "bg-primary border-primary text-primary-foreground"
-                : i === step ? "border-primary text-primary"
-                : "border-muted-foreground/30 text-muted-foreground",
-              )}>
+              <button
+                type="button"
+                onClick={() => setStep(i)}
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors",
+                  i < step  ? "bg-primary border-primary text-primary-foreground hover:opacity-80"
+                  : i === step ? "border-primary text-primary"
+                  : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary/70",
+                )}
+              >
                 {i < step ? <Check className="h-4 w-4" /> : i + 1}
-              </div>
+              </button>
               <span className={cn("text-xs font-medium text-center hidden sm:block", i === step ? "text-primary" : "text-muted-foreground")}>
                 {s.label}
               </span>
@@ -301,52 +327,9 @@ export default function NewPatientPage() {
                 <Label>{t("fields.occupation")}</Label>
                 <Input {...form1.register("occupation")} placeholder={t("fields.occupationPlaceholder")} />
               </div>
-            </div>
-          )}
 
-          {/* Step 2: Contact */}
-          {step === 1 && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>{t("fields.phone")} <span className="text-destructive">*</span></Label>
-                  <Input dir="ltr" {...form2.register("phone")} placeholder={t("fields.phonePlaceholder")} />
-                  {form2.formState.errors.phone && <p className="text-xs text-destructive">{t("validation.required")}</p>}
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t("fields.whatsapp")}</Label>
-                  <Input dir="ltr" {...form2.register("whatsapp")} placeholder={t("fields.phonePlaceholder")} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.email")}</Label>
-                <Input dir="ltr" type="email" {...form2.register("email")} placeholder={t("fields.emailPlaceholder")} />
-                {form2.formState.errors.email && <p className="text-xs text-destructive">{t("validation.invalidEmail")}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.city")}</Label>
-                <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)}>
-                  <SelectTrigger><SelectValue placeholder={t("fields.cityPlaceholder")} /></SelectTrigger>
-                  <SelectContent>
-                    {cities.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.name}{c.governorate ? ` — ${c.governorate}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.address")}</Label>
-                <Textarea rows={2} {...form2.register("addressDetails")} placeholder={t("fields.addressPlaceholder")} />
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Social data */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {/* البيانات الاجتماعية */}
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                 <div className="space-y-1.5">
                   <Label>{t("fields.height")}</Label>
                   <Input type="number" {...form3.register("heightCm")} placeholder="170" />
@@ -400,15 +383,10 @@ export default function NewPatientPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>{t("fields.referralSource")}</Label>
-                <Select
-                  value={form3.watch("referralSource") ?? ""}
-                  onValueChange={(v) => form3.setValue("referralSource", v as any)}
-                >
+                <Select value={form3.watch("referralSource") ?? ""} onValueChange={(v) => form3.setValue("referralSource", v as any)}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
-                    {REFERRAL_VALUES.map((v) => (
-                      <SelectItem key={v} value={v}>{t(`referral.${v}`)}</SelectItem>
-                    ))}
+                    {REFERRAL_VALUES.map((v) => <SelectItem key={v} value={v}>{t(`referral.${v}`)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -423,7 +401,119 @@ export default function NewPatientPage() {
             </div>
           )}
 
-          {/* Step 4: Consent & notes */}
+          {/* Step 2: Contact */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>{t("fields.phone")} <span className="text-destructive">*</span></Label>
+                  <Input dir="ltr" {...form2.register("phone")} placeholder={t("fields.phonePlaceholder")} />
+                  {form2.formState.errors.phone && <p className="text-xs text-destructive">{t("validation.required")}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("fields.whatsapp")}</Label>
+                  <Input dir="ltr" {...form2.register("whatsapp")} placeholder={t("fields.phonePlaceholder")} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("fields.email")}</Label>
+                <Input dir="ltr" type="email" {...form2.register("email")} placeholder={t("fields.emailPlaceholder")} />
+                {form2.formState.errors.email && <p className="text-xs text-destructive">{t("validation.invalidEmail")}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("fields.city")}</Label>
+                <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)}>
+                  <SelectTrigger><SelectValue placeholder={t("fields.cityPlaceholder")} /></SelectTrigger>
+                  <SelectContent>
+                    {cities.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        {c.name}{c.governorate ? ` — ${c.governorate}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("fields.address")}</Label>
+                <Textarea rows={2} {...form2.register("addressDetails")} placeholder={t("fields.addressPlaceholder")} />
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Documents */}
+          {step === 2 && (
+            <div className="space-y-4">
+              {/* قائمة المستندات المضافة */}
+              {pendingDocs.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
+                  لم يتم إضافة مستندات بعد
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {pendingDocs.map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-3 rounded-lg border p-3">
+                      <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{doc.file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {DOC_TYPE_OPTIONS.find((o) => o.value === doc.type)?.label}
+                          {" · "}{(doc.file.size / 1024).toFixed(0)} KB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => setPendingDocs((prev) => prev.filter((d) => d.id !== doc.id))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* إضافة مستند جديد */}
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+                <p className="text-sm font-medium">إضافة مستند</p>
+                <div className="flex items-end gap-3">
+                  <div className="flex-1 space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">نوع المستند</Label>
+                    <Select value={docType} onValueChange={(v) => setDocType(v as DocumentType)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {DOC_TYPE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="button"
+                    className="gap-2 h-9"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Plus className="h-4 w-4" />
+                    رفع ملف
+                  </Button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setPendingDocs((prev) => [...prev, { id: crypto.randomUUID(), file, type: docType }]);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Consent & notes */}
           {step === 3 && (
             <div className="space-y-4">
               <div className="space-y-1.5">
@@ -469,15 +559,18 @@ export default function NewPatientPage() {
           <ChevronRight className="h-4 w-4 ml-1" />
           {step === 0 ? t("nav.cancel") : t("nav.prev")}
         </Button>
-        {step < 3 ? (
+        {step < 4 ? (
           <Button onClick={nextStep} disabled={isDuplicate && step === 0}>
             {t("nav.next")}
             <ChevronLeft className="h-4 w-4 mr-1" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={createPatient.isPending}>
-            {createPatient.isPending ? t("nav.saving") : t("nav.save")}
-            <Check className="h-4 w-4 mr-1" />
+            {createPatient.isPending ? (
+              <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("nav.saving")}</>
+            ) : (
+              <>{t("nav.save")}<Check className="h-4 w-4 mr-1" /></>
+            )}
           </Button>
         )}
       </div>

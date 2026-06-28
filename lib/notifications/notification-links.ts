@@ -9,6 +9,10 @@ export function resolveNotificationLink(notif: Notification): string | null {
 
   switch (notif.type) {
     case "GENERAL":
+      if (d.alertType === "PHYSIO_EMERGENCY") {
+        if (d.alertId) return `/clinic/physio/emergency/${d.alertId}`;
+        return "/clinic/physio";
+      }
       if (d.messageId) return `/mail?messageId=${d.messageId}`;
       if (d.requestId) return `/requests/${d.requestId}`;
       return null;
@@ -62,6 +66,11 @@ export function resolveNotificationLink(notif: Notification): string | null {
     case "TARDINESS_OFFSET_RESTORED":   return "/leaves/my-hourly-balance";
     case "TARDINESS_COMPENSATION_DUE":  return "/attendance/my-attendance";
     case "TARDINESS_DEDUCTION_PENDING": return "/payroll";
+
+    case "PHYSIO_EMERGENCY":
+      if (d.route) return d.route;
+      if (d.alertId) return `/clinic/physio/emergency/${d.alertId}`;
+      return "/clinic/physio";
 
     case "BIRTHDAY":                    return null;
     default:                            return null;

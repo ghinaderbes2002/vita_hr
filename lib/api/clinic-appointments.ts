@@ -1,8 +1,8 @@
 import { apiClient } from "./client";
 
 export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "RESCHEDULED";
-export type AppointmentType = "ASSESSMENT" | "FITTING" | "SESSION" | "FOLLOW_UP" | "COMMITTEE";
-export type PractitionerRole = "PROSTHETIST" | "PHYSIOTHERAPIST" | "DOCTOR" | "NURSE";
+export type AppointmentType = "ASSESSMENT" | "FITTING" | "SESSION" | "FOLLOW_UP" | "COMMITTEE" | "EXAMINATION";
+export type PractitionerRole = "PROSTHETIST" | "PHYSIOTHERAPIST" | "DOCTOR" | "TECHNICIAN";
 
 export interface Appointment {
   id: string;
@@ -21,6 +21,9 @@ export interface Appointment {
   durationMinutes?: number;
   notes?: string | null;
   cancelReason?: string | null;
+  cancelledReason?: string | null;
+  physiotherapistId?: string | null;
+  patientName?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +34,7 @@ export interface CreateAppointmentDto {
   caseType?: "prosthetics" | "physio";
   practitionerId: string;
   practitionerRole: PractitionerRole;
+  physiotherapistId?: string;
   appointmentType: AppointmentType;
   startTime: string;
   endTime: string;
@@ -106,5 +110,13 @@ export const clinicAppointmentsApi = {
   updateStatus: async (id: string, status: AppointmentStatus): Promise<Appointment> => {
     const { data } = await apiClient.put(`/appointments/${id}/status`, { status });
     return data?.data ?? data;
+  },
+
+  getPractitionerPatients: async (practitionerId?: string): Promise<string[]> => {
+    const { data } = await apiClient.get("/appointments/practitioner-patients", {
+      params: practitionerId ? { practitionerId } : undefined,
+    });
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.patientIds ?? d?.items ?? [];
   },
 };
