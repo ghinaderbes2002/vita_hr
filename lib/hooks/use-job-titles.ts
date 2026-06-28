@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { jobTitlesApi, CreateJobTitleData, UpdateJobTitleData } from "@/lib/api/job-titles";
 import { toast } from "sonner";
 
-export function useJobTitles(params?: { page?: number; limit?: number; gradeId?: string }) {
+export function useJobTitles(params?: { page?: number; limit?: number; gradeId?: string; search?: string }) {
   return useQuery({
     queryKey: ["job-titles", params],
     queryFn: () => jobTitlesApi.getAll(params),

@@ -237,7 +237,7 @@ const navigation: NavItem[] = [
     icon: Stethoscope,
     separator: true,
     permission: "clinic.patients.view",
-    showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000038", "VTX-JTL-000018"],
+    showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000011", "VTX-JTL-000018"],
     children: [
       { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view" },
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000018"] },
@@ -372,8 +372,12 @@ export function Sidebar() {
     }
     // إذا العنصر مجبر على الظهور لدور معين، نظهره
     if (item.showForRoles && item.showForRoles.some((role) => hasRole(role))) return true;
+    // الأدمن يتجاوز كل قيود المسمى الوظيفي
+    if (item.showForJobTitleCodes && isAdmin()) return true;
     // إذا كود المسمى الوظيفي مطابق، نظهره
     if (item.showForJobTitleCodes && currentJobTitleCode && item.showForJobTitleCodes.includes(currentJobTitleCode)) return true;
+    // إذا showForJobTitleCodes موجود والمسمى مش فيه، نخفيه بغض النظر عن الصلاحيات
+    if (item.showForJobTitleCodes && currentJobTitleCode && !item.showForJobTitleCodes.includes(currentJobTitleCode)) return false;
     // إذا ما في أطفال، نتحقق من صلاحية العنصر مباشرة
     if (!item.children || item.children.length === 0) {
       return hasItemPermission(item);

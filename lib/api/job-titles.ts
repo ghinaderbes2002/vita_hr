@@ -13,7 +13,7 @@ export interface CreateJobTitleData {
 export interface UpdateJobTitleData extends Partial<CreateJobTitleData> {}
 
 export const jobTitlesApi = {
-  getAll: async (params?: { page?: number; limit?: number; gradeId?: string }) => {
+  getAll: async (params?: { page?: number; limit?: number; gradeId?: string; search?: string }) => {
     const response = await apiClient.get("/job-titles", { params });
     return response.data;
   },

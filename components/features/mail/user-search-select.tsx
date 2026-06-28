@@ -69,7 +69,7 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
     : rawItems;
 
   const options: UserOption[] = filtered
-    .filter((e: any) => e.id && !exclude.includes(e.id) && (!requireLinkedUser || !!e.userId))
+    .filter((e: any) => e.id && !exclude.includes(e.id) && (!requireLinkedUser || !!e.userId) && e.employmentStatus === "ACTIVE")
     .map((e: any) => ({ id: e.id, label: `${e.firstNameAr} ${e.lastNameAr}` }));
 
   // Normalize: if value contains user IDs instead of employee IDs, swap them once data loads

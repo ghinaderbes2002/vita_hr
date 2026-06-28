@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -36,29 +36,27 @@ export default function JobTitlesPage() {
   const router = useRouter();
   const locale = useLocale();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTitle, setSelectedTitle] = useState<JobTitle | null>(null);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const LIMIT = 10;
-  const { data, isLoading } = useJobTitles({ page, limit: LIMIT });
+  const { data, isLoading } = useJobTitles({ page, limit: LIMIT, search: debouncedSearch || undefined });
   const deleteJobTitle = useDeleteJobTitle();
 
-  const allTitles: JobTitle[] = Array.isArray(data)
+  const titles: JobTitle[] = Array.isArray(data)
     ? data
     : (data as any)?.data?.items || (data as any)?.data || [];
 
   const total: number = (data as any)?.data?.total ?? 0;
   const totalPages: number = (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
-
-  const titles = allTitles.filter(
-    (t) =>
-      !search ||
-      t.nameAr?.toLowerCase().includes(search.toLowerCase()) ||
-      t.nameEn?.toLowerCase().includes(search.toLowerCase()) ||
-      t.code?.toLowerCase().includes(search.toLowerCase())
-  );
 
   const handleSearch = (val: string) => {
     setSearch(val);
