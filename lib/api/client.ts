@@ -71,9 +71,16 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Insufficient permissions (403)
-    if (errorCode === AUTH_ERROR_CODES.INSUFFICIENT_PERMISSIONS) {
+    // Endpoints that return 403 silently (background polling, not user-initiated)
+    const SILENT_403_PATHS = ["/physio/emergency/incoming"];
+    if (
+      errorCode === AUTH_ERROR_CODES.INSUFFICIENT_PERMISSIONS &&
+      !SILENT_403_PATHS.some((p) => originalRequest?.url?.includes(p))
+    ) {
       toast.error("ليس لديك صلاحية لهذا الإجراء");
+      return Promise.reject(error);
+    }
+    if (errorCode === AUTH_ERROR_CODES.INSUFFICIENT_PERMISSIONS) {
       return Promise.reject(error);
     }
 

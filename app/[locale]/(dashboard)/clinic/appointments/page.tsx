@@ -21,6 +21,7 @@ import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCanc
 import { Appointment, AppointmentType, AppointmentStatus, PractitionerRole } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,8 @@ export default function AppointmentsPage() {
 
   const today = new Date();
   const currentUser = useAuthStore((s) => s.user);
+  const { data: myEmployee } = useMyEmployee();
+  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string>(toISO(today));
@@ -146,10 +149,12 @@ export default function AppointmentsPage() {
         title={t("title")}
         description={t("description")}
         actions={
-          <Button onClick={() => setNewApptOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {t("newAppointment")}
-          </Button>
+          myJobTitleCode !== "VTX-JTL-000011" ? (
+            <Button onClick={() => setNewApptOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t("newAppointment")}
+            </Button>
+          ) : undefined
         }
       />
 

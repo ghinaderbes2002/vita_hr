@@ -70,7 +70,7 @@ import {
   useRespondToAlert,
 } from "@/lib/hooks/use-clinic-physio";
 import { useUsers } from "@/lib/hooks/use-users";
-import { useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { useEmployeesByDepartment, useMyEmployee } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import {
   PhysioStatus,
@@ -235,6 +235,8 @@ export default function PhysioCasePage() {
 
   const { user } = useAuthStore();
   const canSendAlert = !!user?.permissions?.includes("physio:emergency-alert");
+  const { data: myEmployee } = useMyEmployee();
+  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
   const { data: caseData, isLoading } = usePhysioCase(id);
   const { data: sessions = [] } = usePhysioSessions(id);
   const { data: timeline = [] } = usePhysioTimeline(id);
@@ -1293,12 +1295,15 @@ export default function PhysioCasePage() {
           className="flex-wrap h-auto gap-1 w-full justify-start"
           dir={isRtl ? "rtl" : "ltr"}
         >
-          {[
-            "intake", "patient_info", "complaint", "pain_map",
-            "medical_history", "goals", "postural_assessment",
-            "treatment_plan", "evaluation", "sessions",
-            "supervisor_review", "doctor_review", "timeline",
-          ].map((value) => {
+          {(myJobTitleCode === "VTX-JTL-000011"
+            ? ["intake"]
+            : [
+                "intake", "patient_info", "complaint", "pain_map",
+                "medical_history", "goals", "postural_assessment",
+                "treatment_plan", "evaluation", "sessions",
+                "supervisor_review", "doctor_review", "timeline",
+              ]
+          ).map((value) => {
             const key = value.replace(/_([a-z])/g, (_, c) => c.toUpperCase()) as any;
             const label = value === "sessions"
               ? `${t("tabs.sessions")} (${sessions.length})`
@@ -1313,10 +1318,12 @@ export default function PhysioCasePage() {
               </TabsTrigger>
             );
           })}
-          <TabsTrigger value="emergency" className="text-sm py-1.5 gap-1.5 text-destructive data-[state=active]:text-destructive">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            تنبيه طارئ
-          </TabsTrigger>
+          {myJobTitleCode !== "VTX-JTL-000011" && (
+            <TabsTrigger value="emergency" className="text-sm py-1.5 gap-1.5 text-destructive data-[state=active]:text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              تنبيه طارئ
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* ── INTAKE ─────────────────────────────────────────────────────── */}

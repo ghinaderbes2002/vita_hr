@@ -241,7 +241,7 @@ const navigation: NavItem[] = [
     children: [
       { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view" },
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000018"] },
-      { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000018"] },
+      { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000018", "VTX-JTL-000011"] },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034"] },
       { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor", showForJobTitleCodes: ["VTX-JTL-000002", "VTX-JTL-000007", "VTX-JTL-000034", "VTX-JTL-000018"] },
