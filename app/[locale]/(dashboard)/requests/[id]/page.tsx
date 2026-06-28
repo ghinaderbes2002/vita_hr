@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/shared/page-header";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { useRequest, useRequestApprovals, useRequestSteps, useApproveRequest, useRejectRequest, useSubmitExitInterview, useHrApproveRequest, useHrRejectRequest } from "@/lib/hooks/use-requests";
-import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { useRef, useState } from "react";
 import { ApprovalStep, ApprovalStatus } from "@/types";
@@ -341,9 +341,10 @@ export default function RequestDetailPage() {
   const hrApproveRequest = useHrApproveRequest();
   const hrRejectRequest = useHrRejectRequest();
   const submitExitInterview = useSubmitExitInterview();
+  const { data: myEmployee } = useMyEmployee();
+  const isRequestEmployee = !!(myEmployee && request && (myEmployee as any).id === (request as any).employeeId);
 
   const [exitForm, setExitForm] = useState({
-    resignationReason: "",
     workEnvironmentRating: "",
     managementRating: "",
     suggestions: "",
@@ -756,7 +757,7 @@ export default function RequestDetailPage() {
         </Card>
       )}
 
-      {/* Exit Interview Form — HR only */}
+      {/* Exit Interview Form — Employee only */}
       {request.status === "PENDING_EXIT_INTERVIEW" && (
         <Card className="border-orange-200">
           <CardHeader>
@@ -780,21 +781,12 @@ export default function RequestDetailPage() {
                   ))}
                 </div>
               </div>
-            ) : canHrApprove ? (
+            ) : isRequestEmployee ? (
               <>
                 <p className="text-sm text-muted-foreground">
-                  تمت موافقة المدير المباشر والموارد البشرية. يرجى إجراء مقابلة الخروج مع الموظف وتعبئة الاستمارة.
+                  تمت الموافقات المطلوبة. يرجى تعبئة استمارة مقابلة الخروج.
                 </p>
                 <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label>سبب الاستقالة *</Label>
-                    <Textarea
-                      rows={3}
-                      value={exitForm.resignationReason}
-                      onChange={(e) => setExitForm((p) => ({ ...p, resignationReason: e.target.value }))}
-                      placeholder="سبب الاستقالة كما أفصح عنه الموظف..."
-                    />
-                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label>تقييم بيئة العمل (1–5)</Label>
@@ -821,11 +813,11 @@ export default function RequestDetailPage() {
                       rows={2}
                       value={exitForm.suggestions}
                       onChange={(e) => setExitForm((p) => ({ ...p, suggestions: e.target.value }))}
-                      placeholder="اقتراحات الموظف لتحسين بيئة العمل..."
+                      placeholder="اقتراحات لتحسين بيئة العمل..."
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>هل يرغب بالعودة مستقبلاً؟</Label>
+                    <Label>هل ترغب بالعودة مستقبلاً؟</Label>
                     <div className="flex gap-3">
                       {["نعم", "لا"].map((opt) => (
                         <button
@@ -845,11 +837,10 @@ export default function RequestDetailPage() {
                   </div>
                   <Button
                     className="w-full"
-                    disabled={!exitForm.resignationReason.trim() || submitExitInterview.isPending}
+                    disabled={submitExitInterview.isPending}
                     onClick={() => submitExitInterview.mutate({
                       id,
                       data: {
-                        resignationReason: exitForm.resignationReason,
                         workEnvironmentRating: exitForm.workEnvironmentRating ? Number(exitForm.workEnvironmentRating) : undefined,
                         managementRating: exitForm.managementRating ? Number(exitForm.managementRating) : undefined,
                         suggestions: exitForm.suggestions || undefined,
@@ -858,13 +849,13 @@ export default function RequestDetailPage() {
                     })}
                   >
                     {submitExitInterview.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                    تسجيل مقابلة الخروج
+                    تقديم الاستمارة
                   </Button>
                 </div>
               </>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                بانتظار الموارد البشرية لإجراء مقابلة الخروج
+                بانتظار الموظف لتعبئة استمارة الخروج
               </p>
             )}
           </CardContent>

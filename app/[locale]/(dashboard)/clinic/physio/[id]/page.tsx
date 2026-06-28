@@ -401,6 +401,7 @@ export default function PhysioCasePage() {
   const [attachmentUploading, setAttachmentUploading] = useState<
     "new" | "old" | null
   >(null);
+  const [attachmentDownloading, setAttachmentDownloading] = useState<"new" | "old" | null>(null);
   const [surgeries, setSurgeries] = useState([
     { name: "", type: "", date: "" },
     { name: "", type: "", date: "" },
@@ -2210,14 +2211,35 @@ export default function PhysioCasePage() {
                 {(["new", "old"] as const).map((kind) => {
                   const label = kind === "new" ? t("medicalHistory.newAttachment") : t("medicalHistory.oldAttachment");
                   const attachKey = kind === "new" ? "newAnalysisAttachment" : "oldAnalysisAttachment";
-                  const url = history[attachKey];
+                  const docId = history[attachKey];
                   const isUploading = attachmentUploading === kind;
+                  const isDownloading = attachmentDownloading === kind;
                   return (
                     <div key={kind} className="space-y-1.5">
                       <Label className="text-sm">{label}</Label>
-                      {url ? (
+                      {docId ? (
                         <div className="flex items-center gap-2">
-                          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline truncate flex-1">{t("viewFile")}</a>
+                          <button
+                            type="button"
+                            disabled={isDownloading}
+                            className="text-xs text-primary underline truncate flex-1 text-right disabled:opacity-40"
+                            onClick={async () => {
+                              if (!c.patientId) return;
+                              setAttachmentDownloading(kind);
+                              try {
+                                const blob = await clinicPatientsApi.downloadDocument(c.patientId, docId);
+                                const blobUrl = URL.createObjectURL(blob);
+                                window.open(blobUrl, "_blank");
+                                setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                              } catch {
+                                toast.error(t("uploadFailed"));
+                              } finally {
+                                setAttachmentDownloading(null);
+                              }
+                            }}
+                          >
+                            {isDownloading ? <Loader2 className="h-3 w-3 animate-spin inline" /> : t("viewFile")}
+                          </button>
                           {canEdit && (
                             <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive" onClick={() => setHistory((h) => ({ ...h, [attachKey]: "" }))}>{t("deleteFile")}</Button>
                           )}
@@ -2233,7 +2255,7 @@ export default function PhysioCasePage() {
                               setAttachmentUploading(kind);
                               try {
                                 const doc = await clinicPatientsApi.uploadDocument(c.patientId, file, "MEDICAL_REPORT");
-                                setHistory((h) => ({ ...h, [attachKey]: doc.url ?? doc.filePath ?? "" }));
+                                setHistory((h) => ({ ...h, [attachKey]: doc.id ?? "" }));
                               } catch {
                                 toast.error(t("uploadFailed"));
                               } finally {

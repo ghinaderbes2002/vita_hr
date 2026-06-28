@@ -83,6 +83,19 @@ export function useUploadPatientDocument() {
   });
 }
 
+export function useDownloadPatientDocument() {
+  return useMutation({
+    mutationFn: ({ patientId, docId }: { patientId: string; docId: string }) =>
+      clinicPatientsApi.downloadDocument(patientId, docId),
+    onSuccess: (blob) => {
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    },
+    onError: () => toast.error("فشل تحميل المستند"),
+  });
+}
+
 export function useDeletePatientDocument() {
   const qc = useQueryClient();
   return useMutation({

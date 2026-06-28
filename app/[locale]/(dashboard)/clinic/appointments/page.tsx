@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
 import { Appointment, AppointmentType, AppointmentStatus, PractitionerRole } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
-import { useAuthStore } from "@/lib/stores/auth-store";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
@@ -60,7 +59,6 @@ export default function AppointmentsPage() {
   );
 
   const today = new Date();
-  const currentUser = useAuthStore((s) => s.user);
   const { data: myEmployee } = useMyEmployee();
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -119,7 +117,7 @@ export default function AppointmentsPage() {
     const endISO = new Date(`${newForm.date}T${newForm.endTime}:00`).toISOString();
     await createAppt.mutateAsync({
       patientId: newForm.patientId,
-      practitionerId: currentUser?.id ?? "",
+      practitionerId: (myEmployee as any)?.userId ?? "",
       practitionerRole: newForm.practitionerRole,
       appointmentType: newForm.appointmentType,
       startTime: startISO,
@@ -372,7 +370,7 @@ export default function AppointmentsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewApptOpen(false)}>{t("form.cancel")}</Button>
-            <Button onClick={handleCreateAppt} disabled={!newForm.patientId || createAppt.isPending}>
+            <Button onClick={handleCreateAppt} disabled={!newForm.patientId || !myEmployee || createAppt.isPending}>
               {createAppt.isPending ? t("form.saving") : t("form.create")}
             </Button>
           </DialogFooter>

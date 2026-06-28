@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
   User, Phone, MapPin, Calendar, FileText, Activity, Heart,
-  Edit2, Trash2, Plus, Upload, Loader2, ArrowRight,
+  Edit2, Trash2, Plus, Upload, Loader2, ArrowRight, Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import {
   useClinicPatient, useDeleteClinicPatient,
-  usePatientDocuments, useUploadPatientDocument, useDeletePatientDocument,
+  usePatientDocuments, useUploadPatientDocument, useDeletePatientDocument, useDownloadPatientDocument,
   usePatientNotes, useCreatePatientNote,
   usePatientConsents,
 } from "@/lib/hooks/use-clinic-patients";
@@ -89,6 +89,7 @@ export default function PatientProfilePage() {
   const deletePatient = useDeleteClinicPatient();
   const uploadDoc = useUploadPatientDocument();
   const deleteDoc = useDeletePatientDocument();
+  const downloadDoc = useDownloadPatientDocument();
   const createNote = useCreatePatientNote();
   const createProst = useCreateProstheticsCase();
   const createPhysio = useCreatePhysioCase();
@@ -422,22 +423,28 @@ export default function PatientProfilePage() {
                 <Card key={doc.id}>
                   <CardContent className="pt-4">
                     <div className="aspect-video rounded border bg-muted flex items-center justify-center overflow-hidden">
-                      {doc.url?.match(/\.(jpg|jpeg|png|webp)$/i) ? (
-                        <img src={doc.url} alt={DOC_TYPE_LABEL[doc.type]} className="w-full h-full object-cover" />
-                      ) : (
-                        <FileText className="h-8 w-8 text-muted-foreground" />
-                      )}
+                      <FileText className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs font-medium">{DOC_TYPE_LABEL[doc.type] ?? doc.type}</span>
-                      <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.DELETE}>
+                    <div className="mt-2 flex items-center justify-between gap-1">
+                      <span className="text-xs font-medium truncate">{DOC_TYPE_LABEL[doc.type] ?? doc.type}</span>
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
-                          className="text-destructive hover:opacity-80"
-                          onClick={() => deleteDoc.mutate({ patientId: id, docId: doc.id })}
+                          className="text-primary hover:opacity-80 disabled:opacity-40"
+                          title="عرض"
+                          disabled={downloadDoc.isPending}
+                          onClick={() => downloadDoc.mutate({ patientId: id, docId: doc.id })}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Eye className="h-3.5 w-3.5" />
                         </button>
-                      </ActionGuard>
+                        <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.DELETE}>
+                          <button
+                            className="text-destructive hover:opacity-80"
+                            onClick={() => deleteDoc.mutate({ patientId: id, docId: doc.id })}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </ActionGuard>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
