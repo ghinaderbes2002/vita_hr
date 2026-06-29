@@ -559,7 +559,7 @@ export default function NewPatientPage() {
           <ChevronRight className="h-4 w-4 ml-1" />
           {step === 0 ? t("nav.cancel") : t("nav.prev")}
         </Button>
-        {step < 4 ? (
+        {step < 3 ? (
           <Button onClick={nextStep} disabled={isDuplicate && step === 0}>
             {t("nav.next")}
             <ChevronLeft className="h-4 w-4 mr-1" />

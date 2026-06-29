@@ -186,7 +186,7 @@ export default function ClinicPatientsPage() {
         </Table>
       </div>
 
-      {totalPages > 1 && (
+      {total > 0 && (
         <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
       )}
 
