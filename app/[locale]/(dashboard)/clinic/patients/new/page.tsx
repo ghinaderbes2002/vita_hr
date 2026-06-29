@@ -505,7 +505,7 @@ export default function NewPatientPage() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    setPendingDocs((prev) => [...prev, { id: crypto.randomUUID(), file, type: docType }]);
+                    setPendingDocs((prev) => [...prev, { id: `${Date.now()}-${Math.random()}`, file, type: docType }]);
                     e.target.value = "";
                   }}
                 />
