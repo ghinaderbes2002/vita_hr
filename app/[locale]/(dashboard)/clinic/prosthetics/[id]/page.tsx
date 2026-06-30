@@ -30,6 +30,7 @@ import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
+import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import {
   useProstheticsCase, useUpdateProstheticsCase, useUpdateProstheticsStatus,
@@ -337,8 +338,8 @@ export default function ProstheticsCasePage() {
     supplier: "OTTOBOCK" as "OTTOBOCK" | "OTHER",
     supplierOther: "",
   });
-  const [compRows, setCompRows] = useState(
-    Array.from({ length: 10 }, () => ({ partName: "", partCode: "" }))
+  const [compRows, setCompRows] = useState<Array<{ inventoryItemId: string }>>(
+    Array.from({ length: 10 }, () => ({ inventoryItemId: "" }))
   );
   const [gaitForm, setGaitForm] = useState({ clinicalConclusion: "", recommendations: "", treatmentPlan: "" });
   const [balanceForm, setBalanceForm] = useState({ overallLevel: "", fallRisk: "LOW" as "LOW" | "MODERATE" | "HIGH", notes: "" });
@@ -351,6 +352,9 @@ export default function ProstheticsCasePage() {
   const [patientEditMode, setPatientEditMode] = useState(false);
   const [patientEditForm, setPatientEditForm] = useState({ firstName: "", lastName: "", dateOfBirth: "", phone: "", heightCm: "", weightKg: "" });
   const [followUpForm, setFollowUpForm] = useState({ date: new Date().toISOString().slice(0, 10), notes: "", kLevel: null as KLevel | null, painLevel: "" });
+
+  const { data: inventoryData } = useInventoryItems();
+  const inventoryItems = Array.isArray(inventoryData) ? inventoryData : (inventoryData as any)?.items ?? [];
 
   // يمنع إعادة تهيئة الفورم مباشرة بعد الحفظ
   const justSavedRef = useRef(false);
@@ -605,21 +609,23 @@ export default function ProstheticsCasePage() {
   };
 
   const handleAddComponents = async () => {
-    const filled = compRows.filter((r) => r.partCode.trim() || r.partName.trim());
+    const filled = compRows.filter((r) => r.inventoryItemId);
     if (!filled.length) return;
     const supplierValue = compShared.supplier === "OTTOBOCK" ? "OTTOBOCK" : compShared.supplierOther.trim() || undefined;
     for (const row of filled) {
+      const item = inventoryItems.find((it: any) => it.id === row.inventoryItemId);
+      if (!item) continue;
       await addComponent.mutateAsync({
         id,
         dto: {
-          partCode: row.partCode.trim(),
-          partName: row.partName.trim(),
+          partCode: item.code ?? item.partCode ?? "",
+          partName: item.name ?? "",
           supplier: supplierValue,
           sourceLocation: compShared.sourceLocation,
         },
       });
     }
-    setCompRows(Array.from({ length: 10 }, () => ({ partName: "", partCode: "" })));
+    setCompRows(Array.from({ length: 10 }, () => ({ inventoryItemId: "" })));
   };
 
   const handleAdvanceToGait = async () => {
@@ -1815,32 +1821,42 @@ export default function ProstheticsCasePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {compRows.map((row, i) => (
-                      <tr key={i}>
-                        <td className="border border-border px-2 py-0.5 text-center text-muted-foreground text-xs">{i + 1}</td>
-                        <td className="border border-border p-0.5">
-                          <Input
-                            className="h-7 border-0 shadow-none text-sm focus-visible:ring-0 bg-transparent"
-                            value={row.partName}
-                            onChange={(e) => setCompRows((prev) => prev.map((r, j) => j === i ? { ...r, partName: e.target.value } : r))}
-                          />
-                        </td>
-                        <td className="border border-border p-0.5">
-                          <Input
-                            className="h-7 border-0 shadow-none text-sm font-mono focus-visible:ring-0 bg-transparent"
-                            value={row.partCode}
-                            onChange={(e) => setCompRows((prev) => prev.map((r, j) => j === i ? { ...r, partCode: e.target.value } : r))}
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {compRows.map((row, i) => {
+                      const selectedItem = inventoryItems.find((it: any) => it.id === row.inventoryItemId);
+                      return (
+                        <tr key={i}>
+                          <td className="border border-border px-2 py-0.5 text-center text-muted-foreground text-xs">{i + 1}</td>
+                          <td className="border border-border p-0.5">
+                            <Select
+                              value={row.inventoryItemId}
+                              onValueChange={(v) => setCompRows((prev) => prev.map((r, j) => j === i ? { inventoryItemId: v } : r))}
+                            >
+                              <SelectTrigger className="h-7 border-0 shadow-none text-sm focus:ring-0 bg-transparent">
+                                <SelectValue placeholder="اختر من المخزون..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {inventoryItems.map((item: any) => (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    {item.name}
+                                    {item.code ? ` — ${item.code}` : ""}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="border border-border px-3 py-1.5 text-sm font-mono text-muted-foreground">
+                            {selectedItem?.code ?? ""}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               <Button
                 onClick={handleAddComponents}
-                disabled={addComponent.isPending || !compRows.some((r) => r.partCode.trim() || r.partName.trim())}
+                disabled={addComponent.isPending || !compRows.some((r) => r.inventoryItemId)}
                 className="w-full gap-2"
               >
                 {addComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
