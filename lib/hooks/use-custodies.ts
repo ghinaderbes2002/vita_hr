@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { custodiesApi, CreateCustodyData, UpdateCustodyData, ReturnCustodyData } from "@/lib/api/custodies";
+import { custodiesApi, CreateCustodyData, UpdateCustodyData, ReturnCustodyData, TransferCustodyData } from "@/lib/api/custodies";
 import { toast } from "sonner";
 
 export function useCustodies(params?: {
@@ -60,7 +60,7 @@ export function useCreateCustody() {
   return useMutation({
     mutationFn: (data: CreateCustodyData) => custodiesApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["custodies"] });
+      queryClient.refetchQueries({ queryKey: ["custodies"] });
       toast.success("تم إضافة العهدة بنجاح");
     },
     onError: (error: any) => {
@@ -75,8 +75,9 @@ export function useUpdateCustody() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateCustodyData }) =>
       custodiesApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["custodies"] });
+    onSuccess: (_result, { id }) => {
+      queryClient.refetchQueries({ queryKey: ["custodies"] });
+      queryClient.refetchQueries({ queryKey: ["custody", id] });
       toast.success("تم تحديث العهدة بنجاح");
     },
     onError: (error: any) => {
@@ -90,8 +91,9 @@ export function useReturnCustody() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ReturnCustodyData }) =>
       custodiesApi.return(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["custodies"] });
+    onSuccess: (_result, { id }) => {
+      queryClient.refetchQueries({ queryKey: ["custodies"] });
+      queryClient.refetchQueries({ queryKey: ["custody", id] });
       toast.success("تم تحديث حالة العهدة بنجاح");
     },
     onError: (error: any) => {
@@ -100,12 +102,37 @@ export function useReturnCustody() {
   });
 }
 
+export function useTransferCustody() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: TransferCustodyData }) =>
+      custodiesApi.transfer(id, data),
+    onSuccess: (_result, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["custodies"] });
+      queryClient.invalidateQueries({ queryKey: ["custody", id] });
+      queryClient.invalidateQueries({ queryKey: ["custody-transfers", id] });
+      toast.success("تم نقل العهدة بنجاح");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "حدث خطأ");
+    },
+  });
+}
+
+export function useCustodyTransfers(id: string) {
+  return useQuery({
+    queryKey: ["custody-transfers", id],
+    queryFn: () => custodiesApi.getTransfers(id),
+    enabled: !!id,
+  });
+}
+
 export function useDeleteCustody() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => custodiesApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["custodies"] });
+      queryClient.refetchQueries({ queryKey: ["custodies"] });
       toast.success("تم حذف العهدة بنجاح");
     },
     onError: (error: any) => {

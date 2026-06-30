@@ -21,20 +21,33 @@ export interface InventoryItem {
   id: string;
   code: string;
   name: string;
-  type: ItemType;
+  nameAr?: string | null;
+  type: ItemType | null;
   categoryId?: string | null;
   category?: InventoryCategory | null;
   supplierId?: string | null;
   supplier?: InventorySupplier | null;
   currentStock: number;
-  minStockLevel: number;
+  minStockLevel: number | null;
   unitPrice?: number | null;
   unit?: string | null;
   imageUrl?: string | null;
   description?: string | null;
+  isActive?: boolean;
   isLowStock?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+function normalizeItem(raw: any): InventoryItem {
+  return {
+    ...raw,
+    code: raw.code ?? raw.partCode ?? "",
+    unitPrice: raw.unitPrice ?? raw.unitCostUsd ?? null,
+    isLowStock:
+      raw.isLowStock ??
+      (raw.minStockLevel != null ? raw.currentStock <= raw.minStockLevel : false),
+  };
 }
 
 export interface InventoryTransaction {
@@ -97,27 +110,38 @@ export const clinicInventoryApi = {
   listItems: async (params?: InventoryListParams): Promise<InventoryItem[]> => {
     const { data } = await apiClient.get("/inventory/items", { params });
     const d = data?.data ?? data;
-    return Array.isArray(d) ? d : d?.items ?? [];
+    const items: any[] = Array.isArray(d) ? d : d?.items ?? [];
+    return items.map(normalizeItem);
   },
 
   createItem: async (dto: CreateItemDto): Promise<InventoryItem> => {
-    const { data } = await apiClient.post("/inventory/items", dto);
-    return data?.data ?? data;
+    const { code, unitPrice, ...rest } = dto;
+    const { data } = await apiClient.post("/inventory/items", {
+      ...rest,
+      partCode: code,
+      ...(unitPrice != null ? { unitCostUsd: unitPrice } : {}),
+    });
+    return normalizeItem(data?.data ?? data);
   },
 
   updateItem: async (id: string, dto: Partial<CreateItemDto>): Promise<InventoryItem> => {
-    const { data } = await apiClient.put(`/inventory/items/${id}`, dto);
-    return data?.data ?? data;
+    const { code, unitPrice, ...rest } = dto;
+    const { data } = await apiClient.put(`/inventory/items/${id}`, {
+      ...rest,
+      ...(code != null ? { partCode: code } : {}),
+      ...(unitPrice != null ? { unitCostUsd: unitPrice } : {}),
+    });
+    return normalizeItem(data?.data ?? data);
   },
 
   getItemById: async (id: string): Promise<InventoryItem> => {
     const { data } = await apiClient.get(`/inventory/items/${id}`);
-    return data?.data ?? data;
+    return normalizeItem(data?.data ?? data);
   },
 
   getItemByCode: async (code: string): Promise<InventoryItem> => {
     const { data } = await apiClient.get(`/inventory/items/by-code/${code}`);
-    return data?.data ?? data;
+    return normalizeItem(data?.data ?? data);
   },
 
   addTransaction: async (id: string, dto: { type: TransactionType; quantity: number; notes?: string; caseId?: string }): Promise<InventoryTransaction> => {
@@ -140,6 +164,7 @@ export const clinicInventoryApi = {
   getLowStockAlerts: async (): Promise<InventoryItem[]> => {
     const { data } = await apiClient.get("/inventory/low-stock-alerts");
     const d = data?.data ?? data;
-    return Array.isArray(d) ? d : d?.items ?? [];
+    const items: any[] = Array.isArray(d) ? d : d?.items ?? [];
+    return items.map(normalizeItem);
   },
 };

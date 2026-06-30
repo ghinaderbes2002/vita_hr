@@ -222,7 +222,9 @@ export default function InventoryPage() {
                           {item.name}
                           {item.description && <p className="text-xs text-muted-foreground truncate max-w-40">{item.description}</p>}
                         </TableCell>
-                        <TableCell><Badge variant="outline" className="text-xs">{TYPE_LABEL[item.type]}</Badge></TableCell>
+                        <TableCell>
+                          {item.type ? <Badge variant="outline" className="text-xs">{TYPE_LABEL[item.type]}</Badge> : <span className="text-muted-foreground text-xs">—</span>}
+                        </TableCell>
                         <TableCell className="text-sm">{item.category?.name ?? "—"}</TableCell>
                         <TableCell>
                           <span className={item.isLowStock ? "text-orange-600 font-bold" : "font-medium"}>
@@ -232,7 +234,7 @@ export default function InventoryPage() {
                           {item.isLowStock && <AlertTriangle className="h-3.5 w-3.5 text-orange-500 inline mr-1" />}
                         </TableCell>
                         <TableCell className="text-sm">{item.minStockLevel}</TableCell>
-                        <TableCell className="text-sm">{item.unitPrice ? `${item.unitPrice.toLocaleString("en-US")} ل.س` : "—"}</TableCell>
+                        <TableCell className="text-sm">{item.unitPrice != null && item.unitPrice > 0 ? `$${item.unitPrice.toLocaleString("en-US")}` : "—"}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7"

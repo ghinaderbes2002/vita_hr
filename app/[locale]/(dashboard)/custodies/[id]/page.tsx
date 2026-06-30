@@ -4,17 +4,21 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { format } from "date-fns";
-import { ArrowRight, Pencil, RotateCcw, Trash2, X } from "lucide-react";
+import { ArrowRight, ArrowLeftRight, Pencil, RotateCcw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
 import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
-import { useCustody, useDeleteCustody } from "@/lib/hooks/use-custodies";
+import { TransferCustodyDialog } from "@/components/features/custodies/transfer-custody-dialog";
+import { useCustody, useDeleteCustody, useCustodyTransfers } from "@/lib/hooks/use-custodies";
 import { assetUrl } from "@/lib/utils";
-import { Custody, CustodyStatus } from "@/types";
+import { Custody, CustodyStatus, CustodyTransfer } from "@/types";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 
@@ -36,8 +40,14 @@ export default function CustodyDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const { data: transfersData = [] } = useCustodyTransfers(id);
+  const transfers: CustodyTransfer[] = Array.isArray(transfersData)
+    ? transfersData
+    : (custody as any)?.transfers ?? [];
 
   const deleteCustody = useDeleteCustody();
 
@@ -108,6 +118,14 @@ export default function CustodyDetailPage() {
               </Button>
             </ActionGuard>
           )}
+          {custody.status === "WITH_EMPLOYEE" && (
+            <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
+              <Button variant="outline" size="sm" onClick={() => setTransferOpen(true)}>
+                <ArrowLeftRight className="h-4 w-4 ml-1.5" />
+                نقل لموظف آخر
+              </Button>
+            </ActionGuard>
+          )}
           <ActionGuard permission={PERMISSIONS.CUSTODIES.DELETE}>
             <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 ml-1.5" />
@@ -172,6 +190,53 @@ export default function CustodyDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Transfer History */}
+      {transfers.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">سجل النقل ({transfers.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>من</TableHead>
+                  <TableHead>إلى</TableHead>
+                  <TableHead>تاريخ الاستلام</TableHead>
+                  <TableHead>تاريخ التسليم</TableHead>
+                  <TableHead>ملاحظات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...transfers].reverse().map((tr) => (
+                  <TableRow key={tr.id}>
+                    <TableCell className="text-sm">
+                      {tr.fromEmployee
+                        ? `${tr.fromEmployee.firstNameAr} ${tr.fromEmployee.lastNameAr}`
+                        : tr.fromEmployeeId}
+                    </TableCell>
+                    <TableCell className="text-sm font-medium">
+                      {tr.toEmployee
+                        ? `${tr.toEmployee.firstNameAr} ${tr.toEmployee.lastNameAr}`
+                        : tr.toEmployeeId}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {tr.returnedDate ? format(new Date(tr.returnedDate), "yyyy/MM/dd") : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {tr.handoverDate ? format(new Date(tr.handoverDate), "yyyy/MM/dd") : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-48 truncate">
+                      {tr.notes ?? "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Attachments */}
       {attachments.length > 0 && (
@@ -251,6 +316,11 @@ export default function CustodyDetailPage() {
       <ReturnCustodyDialog
         open={returnOpen}
         onOpenChange={setReturnOpen}
+        custody={custody}
+      />
+      <TransferCustodyDialog
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
         custody={custody}
       />
       <ConfirmDialog

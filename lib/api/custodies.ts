@@ -25,6 +25,13 @@ export interface ReturnCustodyData {
   notes?: string;
 }
 
+export interface TransferCustodyData {
+  newEmployeeId: string;
+  returnedDate?: string;
+  handoverDate?: string;
+  notes?: string;
+}
+
 export const custodiesApi = {
   getAll: async (params?: {
     page?: number;
@@ -56,6 +63,17 @@ export const custodiesApi = {
   return: async (id: string, data: ReturnCustodyData) => {
     const response = await apiClient.patch(`/custodies/${id}/return`, data);
     return response.data.data;
+  },
+
+  transfer: async (id: string, data: TransferCustodyData) => {
+    const response = await apiClient.patch(`/custodies/${id}/transfer`, data);
+    return response.data.data;
+  },
+
+  getTransfers: async (id: string) => {
+    const response = await apiClient.get(`/custodies/${id}/transfers`);
+    const d = response.data?.data ?? response.data;
+    return Array.isArray(d) ? d : d?.items ?? [];
   },
 
   delete: async (id: string) => {

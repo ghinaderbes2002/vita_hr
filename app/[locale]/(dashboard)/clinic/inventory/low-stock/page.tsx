@@ -47,7 +47,7 @@ export default function LowStockPage() {
             .sort((a, b) => a.currentStock - b.currentStock)
             .map((item) => {
               const pct = Math.min(
-                Math.round((item.currentStock / Math.max(item.minStockLevel, 1)) * 100),
+                Math.round((item.currentStock / Math.max(item.minStockLevel ?? 1, 1)) * 100),
                 100
               );
               const critical = item.currentStock === 0;

@@ -52,7 +52,7 @@ export default function InventoryItemPage() {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold">{item.name}</h1>
-            <Badge variant="outline">{TYPE_LABEL[item.type]}</Badge>
+            {item.type && <Badge variant="outline">{TYPE_LABEL[item.type]}</Badge>}
             {item.isLowStock && <Badge className="bg-orange-100 text-orange-800 border-orange-200" variant="outline">مخزون منخفض</Badge>}
           </div>
           <p className="text-muted-foreground font-mono text-sm">{item.code}</p>

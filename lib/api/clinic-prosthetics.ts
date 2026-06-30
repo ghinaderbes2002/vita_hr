@@ -67,6 +67,8 @@ export interface ProstheticsCase {
   notes?: string | null;
   upperAssessment?: AssessmentResult[];
   lowerAssessment?: AssessmentResult[];
+  prosthesisCompleted?: boolean | null;
+  prosthesisType?: ProstheticType | null;
   createdAt: string;
   updatedAt: string;
 }

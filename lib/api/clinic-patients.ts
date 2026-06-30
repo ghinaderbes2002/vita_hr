@@ -147,7 +147,12 @@ export const clinicPatientsApi = {
 
   getById: async (id: string): Promise<Patient> => {
     const { data } = await apiClient.get(`/patients/${id}`);
-    return data?.data ?? data;
+    const raw = data?.data ?? data;
+    return {
+      ...raw,
+      identityType: raw.identityType ?? raw.idType,
+      cityId: raw.cityId ?? raw.city?.id,
+    };
   },
 
   create: async (dto: CreatePatientDto): Promise<Patient> => {

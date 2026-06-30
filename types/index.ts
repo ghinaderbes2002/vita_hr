@@ -353,6 +353,20 @@ export interface ApiResponse<T> {
 export type CustodyStatus = "WITH_EMPLOYEE" | "RETURNED" | "DAMAGED" | "LOST";
 export type CustodyCategory = "ELECTRONICS" | "FURNITURE" | "VEHICLE" | "TOOLS" | "KEYS" | "UNIFORM" | "OTHER";
 
+export interface CustodyTransfer {
+  id: string;
+  custodyId: string;
+  fromEmployeeId: string;
+  toEmployeeId: string;
+  returnedDate?: string | null;
+  handoverDate?: string | null;
+  notes?: string | null;
+  transferredBy?: string | null;
+  createdAt: string;
+  fromEmployee?: { id: string; firstNameAr: string; lastNameAr: string; employeeNumber?: string };
+  toEmployee?: { id: string; firstNameAr: string; lastNameAr: string; employeeNumber?: string };
+}
+
 export interface Custody {
   id: string;
   name: string;
@@ -377,6 +391,7 @@ export interface Custody {
     employeeNumber: string;
     department?: { id: string; nameAr: string };
   };
+  transfers?: CustodyTransfer[];
 }
 
 export type JobApplicationStatus = "PENDING" | "INTERVIEW_READY" | "ACCEPTED" | "REJECTED" | "HIRED";

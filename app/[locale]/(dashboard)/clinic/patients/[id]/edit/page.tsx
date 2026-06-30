@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowRight, Save, Loader2 } from "lucide-react";
@@ -89,9 +89,10 @@ function FieldError({ msg }: { msg?: string }) {
 
 export default function EditPatientPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: patient, isLoading } = useClinicPatient(id);
+  const { data: patient, isLoading: patientLoading } = useClinicPatient(id);
+  const { data: cities = [], isLoading: citiesLoading } = useClinicCities();
 
-  if (isLoading) {
+  if (patientLoading || citiesLoading) {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -101,20 +102,26 @@ export default function EditPatientPage() {
   }
   if (!patient) return <div className="text-center py-20 text-muted-foreground">المريض غير موجود</div>;
 
-  return <EditPatientForm patient={patient} />;
+  return <EditPatientForm patient={patient} cities={cities} />;
 }
 
 import type { Patient } from "@/lib/api/clinic-patients";
+import type { City } from "@/lib/api/clinic-cities";
 
-function EditPatientForm({ patient }: { patient: Patient }) {
+function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[] }) {
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
   const locale  = useLocale();
 
-  const { data: cities = [] } = useClinicCities();
   const updatePatient = useUpdateClinicPatient();
 
-  const defaultValues = useMemo<FormValues>(() => ({
+  const defaultValues = useMemo<FormValues>(() => {
+    const patientCityIdStr = (patient.cityId ?? patient.city?.id)?.toString();
+    const matchedCity =
+      cities.find((c) => c.id.toString() === patientCityIdStr) ??
+      cities.find((c) => c.name === patient.city?.name);
+
+    return {
     firstName:       patient.firstName,
     lastName:        patient.lastName,
     identityType:    patient.identityType,
@@ -124,7 +131,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
     phone:           patient.phone,
     whatsapp:        patient.whatsapp ?? "",
     email:           patient.email ?? "",
-    cityId:          patient.cityId?.toString() ?? "",
+    cityId:          matchedCity?.id.toString() ?? patientCityIdStr ?? "",
     addressDetails:  patient.addressDetails ?? "",
     heightCm:        patient.heightCm ?? "",
     weightKg:        patient.weightKg ?? "",
@@ -139,9 +146,10 @@ function EditPatientForm({ patient }: { patient: Patient }) {
     documentConsent: patient.documentConsent ?? "FULL",
     mediaConsent:    patient.mediaConsent ?? true,
     notes:           patient.notes ?? "",
-  }), [patient]);
+    };
+  }, [patient, cities]);
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, control, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema) as any,
     defaultValues,
   });
@@ -209,12 +217,14 @@ function EditPatientForm({ patient }: { patient: Patient }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>نوع الهوية</Label>
-                <Select value={watch("identityType")} onValueChange={(v) => setValue("identityType", v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {IDENTITY_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Controller name="identityType" control={control} render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {IDENTITY_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
               <div className="space-y-1.5">
                 <Label>رقم الهوية <span className="text-destructive">*</span></Label>
@@ -230,13 +240,15 @@ function EditPatientForm({ patient }: { patient: Patient }) {
               </div>
               <div className="space-y-1.5">
                 <Label>الجنس</Label>
-                <Select value={watch("gender")} onValueChange={(v) => setValue("gender", v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MALE">ذكر</SelectItem>
-                    <SelectItem value="FEMALE">أنثى</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller name="gender" control={control} render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MALE">ذكر</SelectItem>
+                      <SelectItem value="FEMALE">أنثى</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
             </div>
             <div className="space-y-1.5">
@@ -268,12 +280,14 @@ function EditPatientForm({ patient }: { patient: Patient }) {
             </div>
             <div className="space-y-1.5">
               <Label>المدينة</Label>
-              <Select value={watch("cityId") ?? ""} onValueChange={(v) => setValue("cityId", v)}>
-                <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
-                <SelectContent>
-                  {cities.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Controller name="cityId" control={control} render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <SelectContent>
+                    {cities.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )} />
             </div>
             <div className="space-y-1.5">
               <Label>تفاصيل العنوان</Label>
@@ -299,53 +313,63 @@ function EditPatientForm({ patient }: { patient: Patient }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>المستوى التعليمي</Label>
-                <Select value={watch("educationLevel") ?? ""} onValueChange={(v) => setValue("educationLevel", v)}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    {EDUCATION.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Controller name="educationLevel" control={control} render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {EDUCATION.map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
               <div className="space-y-1.5">
                 <Label>الحالة الاجتماعية</Label>
-                <Select value={watch("maritalStatus") ?? ""} onValueChange={(v) => setValue("maritalStatus", v)}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    {MARITAL.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Controller name="maritalStatus" control={control} render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {MARITAL.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>وضع السكن</Label>
-                <Select value={watch("livingCondition") ?? ""} onValueChange={(v) => setValue("livingCondition", v)}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    {LIVING.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label>الوضع المعيشي</Label>
+                <Controller name="livingCondition" control={control} render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {LIVING.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
               <div className="space-y-1.5">
                 <Label>الوضع المالي</Label>
-                <Select value={watch("financialStatus") ?? ""} onValueChange={(v) => setValue("financialStatus", v)}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    {FINANCIAL.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Controller name="financialStatus" control={control} render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {FINANCIAL.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>مصدر الإحالة</Label>
-              <Select value={watch("referralSource") ?? ""} onValueChange={(v) => setValue("referralSource", v as any)}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>
-                  {REFERRAL_SOURCE.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>طريقة الوصول</Label>
+              <Controller name="referralSource" control={control} render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    {REFERRAL_SOURCE.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
             </div>
             <div className="space-y-1.5">
               <Label>تفاصيل الإحالة</Label>
@@ -364,15 +388,19 @@ function EditPatientForm({ patient }: { patient: Patient }) {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label>موافقة الوثائق</Label>
-              <Select value={watch("documentConsent") ?? "FULL"} onValueChange={(v) => setValue("documentConsent", v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CONSENT.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Controller name="documentConsent" control={control} render={({ field }) => (
+                <Select value={field.value ?? "FULL"} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CONSENT.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )} />
             </div>
             <div className="flex items-center gap-3">
-              <Switch checked={watch("mediaConsent") ?? true} onCheckedChange={(v) => setValue("mediaConsent", v)} />
+              <Controller name="mediaConsent" control={control} render={({ field }) => (
+                <Switch checked={field.value ?? true} onCheckedChange={field.onChange} />
+              )} />
               <Label>موافقة على الوسائط</Label>
             </div>
             <div className="space-y-1.5">
