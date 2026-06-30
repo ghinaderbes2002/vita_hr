@@ -17,6 +17,7 @@ import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
 import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
 import { TransferCustodyDialog } from "@/components/features/custodies/transfer-custody-dialog";
 import { useCustody, useDeleteCustody, useCustodyTransfers } from "@/lib/hooks/use-custodies";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { assetUrl } from "@/lib/utils";
 import { Custody, CustodyStatus, CustodyTransfer } from "@/types";
 import { ActionGuard } from "@/components/permissions/action-guard";
@@ -48,6 +49,19 @@ export default function CustodyDetailPage() {
   const transfers: CustodyTransfer[] = Array.isArray(transfersData)
     ? transfersData
     : (custody as any)?.transfers ?? [];
+
+  const { data: empData } = useEmployeesBasicList();
+  const empList: any[] = Array.isArray(empData)
+    ? empData
+    : (empData as any)?.data?.items ?? (empData as any)?.items ?? [];
+  const empMap = Object.fromEntries(
+    empList.map((e) => [e.id, `${e.firstNameAr} ${e.lastNameAr}`])
+  );
+  const resolveEmp = (empId: string) =>
+    empMap[empId] ??
+    (custody?.employee?.id === empId
+      ? `${custody.employee.firstNameAr} ${custody.employee.lastNameAr}`
+      : empId);
 
   const deleteCustody = useDeleteCustody();
 
@@ -211,16 +225,8 @@ export default function CustodyDetailPage() {
               <TableBody>
                 {[...transfers].reverse().map((tr) => (
                   <TableRow key={tr.id}>
-                    <TableCell className="text-sm">
-                      {tr.fromEmployee
-                        ? `${tr.fromEmployee.firstNameAr} ${tr.fromEmployee.lastNameAr}`
-                        : tr.fromEmployeeId}
-                    </TableCell>
-                    <TableCell className="text-sm font-medium">
-                      {tr.toEmployee
-                        ? `${tr.toEmployee.firstNameAr} ${tr.toEmployee.lastNameAr}`
-                        : tr.toEmployeeId}
-                    </TableCell>
+                    <TableCell className="text-sm">{resolveEmp(tr.fromEmployeeId)}</TableCell>
+                    <TableCell className="text-sm font-medium">{resolveEmp(tr.toEmployeeId)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {tr.returnedDate ? format(new Date(tr.returnedDate), "yyyy/MM/dd") : "—"}
                     </TableCell>
