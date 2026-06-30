@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, ArrowLeftRight } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import { useCustodies, useDeleteCustody } from "@/lib/hooks/use-custodies";
 import { EmptyState } from "@/components/shared/empty-state";
 import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
 import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
+import { BulkTransferDialog } from "@/components/features/custodies/bulk-transfer-dialog";
 import { Custody, CustodyStatus } from "@/types";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -48,6 +49,7 @@ export default function CustodiesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bulkTransferGroup, setBulkTransferGroup] = useState<{ custodies: Custody[]; empName: string } | null>(null);
   const [selected, setSelected] = useState<Custody | null>(null);
 
   const { data, isLoading } = useCustodies({
@@ -206,7 +208,25 @@ export default function CustodiesPage() {
                       </div>
                     </TableCell>
                     <TableCell colSpan={4}>
-                      <Badge variant="outline" className="text-xs">{group.items.length} {t("custodies.custodyUnit")}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{group.items.length} {t("custodies.custodyUnit")}</Badge>
+                        {group.items.some((c) => c.status === "WITH_EMPLOYEE") && (
+                          <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBulkTransferGroup({ custodies: group.items, empName });
+                              }}
+                            >
+                              <ArrowLeftRight className="h-3 w-3" />
+                              نقل الكل
+                            </Button>
+                          </ActionGuard>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>,
                   // Custody rows (shown when expanded)
@@ -261,6 +281,13 @@ export default function CustodiesPage() {
           </TableBody>
         </Table>
       </div>
+
+      <BulkTransferDialog
+        open={!!bulkTransferGroup}
+        onOpenChange={(v) => { if (!v) setBulkTransferGroup(null); }}
+        custodies={bulkTransferGroup?.custodies ?? []}
+        fromEmployeeName={bulkTransferGroup?.empName ?? ""}
+      />
 
       <CustodyDialog
         open={dialogOpen}
