@@ -130,11 +130,11 @@ export function useSubmitCommitteeDecision() {
 export function useSignCommitteeDecision() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, signatureBase64 }: { id: string; signatureBase64: string }) =>
-      clinicProstheticsApi.signCommitteeDecision(id, signatureBase64),
+    mutationFn: ({ id, role, signatureBase64 }: { id: string; role: "DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST"; signatureBase64: string }) =>
+      clinicProstheticsApi.signCommitteeDecision(id, role, signatureBase64),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
-      toast.success("تم التوقيع — الحالة انتقلت لمرحلة التركيب");
+      toast.success("تم التوقيع");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التوقيع"),
   });
@@ -153,10 +153,14 @@ export function useAddCaseComponent() {
   return useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: AddComponentDto }) =>
       clinicProstheticsApi.addComponent(id, dto),
-    onSuccess: (_, { id }) => {
+    onSuccess: (data: any, { id }) => {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-components", id] });
-      qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
-      toast.success("تمت إضافة القطعة وخصمها من المخزون");
+      if (data?.matchedInInventory === false) {
+        toast.warning("تم الحفظ — الكود غير موجود بالمخزون، لن يتم خصم أي كمية");
+      } else {
+        qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
+        toast.success("تمت إضافة القطعة وخُصمت من المخزون تلقائياً");
+      }
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة القطعة"),
   });

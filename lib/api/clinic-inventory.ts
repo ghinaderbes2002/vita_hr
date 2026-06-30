@@ -52,7 +52,8 @@ export interface InventoryTransaction {
 export interface CreateItemDto {
   code: string;
   name: string;
-  type: ItemType;
+  type?: ItemType;
+  currentStock?: number;
   categoryId?: string;
   supplierId?: string;
   minStockLevel?: number;

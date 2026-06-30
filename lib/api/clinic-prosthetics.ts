@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type AmputationType = "UPPER" | "LOWER";
+export type AmputationType = "UPPER" | "LOWER" | "BOTH";
 export type AmputationSide = "RIGHT" | "LEFT" | "BILATERAL";
 export type ProstheticsStatus =
   | "INTAKE"
@@ -18,6 +18,16 @@ export type ComponentSource = "WAREHOUSE" | "SUPPLIER";
 export type ProstheticType = "BIONIC" | "MYOBOCK" | "MECHANIC" | "COSMETIC";
 export type KLevel = "K0" | "K1" | "K2" | "K3" | "K4";
 export type CommitteeDecision = "APPROVED" | "NEEDS_ADJUSTMENT" | "REJECTED";
+export type AmputationCause = "WAR_INJURY" | "TRAFFIC_ACCIDENT" | "DIABETES" | "VASCULAR_DISEASE" | "CONGENITAL" | "INFECTION" | "TUMOR" | "WORK_INJURY" | "OTHER";
+export type LimbShape = "CONICAL_SOFT" | "CONICAL_BONY" | "NORMAL" | "BONY" | "SOFT";
+export type SkinAppearanceVal = "NORMAL" | "PALE" | "DRY" | "PEELING" | "INFLAMED" | "OOZING";
+export type SkinColorVal = "NORMAL" | "PALE" | "CYANOTIC" | "ERYTHEMATOUS" | "YELLOWISH";
+export type SkinTemperatureVal = "NORMAL" | "HOT" | "COLD";
+export type ScarConditionVal = "OPEN" | "CLOSED" | "FLEXIBLE" | "HEALED" | "OOZING" | "INFLAMED" | "DRY";
+export type PainTypeVal = "NUMBNESS" | "DULL_ACHE" | "HOT_BURNING" | "SHARP_STABBING" | "PINS" | "OTHER";
+export type JointsROMVal = "NORMAL" | "ACTIVE" | "SEDENTARY";
+export type LoadToleranceVal = "PALPABLE" | "NOT_PALPABLE" | "WEIGHT_BEARING" | "NON_WEIGHT_BEARING";
+export type WeightBearingLevelVal = "FULL" | "HIGH" | "MEDIUM" | "LOW";
 
 export interface ProstheticsCase {
   id: string;
@@ -30,92 +40,182 @@ export interface ProstheticsCase {
   dateOfAmputation?: string | null;
   causeOfAmputation?: string | null;
   numberOfAmputations?: number | null;
+  // General assessment fields
+  amputationCause?: AmputationCause | null;
+  amputationCauseOtherDetail?: string | null;
+  moreAffectedSide?: "RIGHT" | "LEFT" | null;
+  currentlyUsingProsthesis?: boolean | null;
+  previouslyUsedProsthesis?: boolean | null;
+  previousProsthesisSystemDetail?: string | null;
+  // Intake fields
+  hasChronicDiseases?: boolean | null;
+  chronicDiseases?: string | null;
+  hasPhysicalTherapy?: boolean | null;
+  physicalTherapyDetails?: string | null;
+  hasPreviousProsthesis?: boolean | null;
+  previousProsthesisDetails?: string | null;
+  previousProsthesisWhen?: string | null;
+  previousProsthesisWhere?: string | null;
+  previousProsthesisType?: string | null;
+  hasRevisionSurgery?: boolean | null;
+  revisionDetails?: string | null;
   assignedProsthetistId?: string | null;
   supervisingDoctorId?: string | null;
   committeeDecision?: CommitteeDecision | null;
   proposedProstheticType?: ProstheticType | null;
   deliveryDate?: string | null;
   notes?: string | null;
+  upperAssessment?: AssessmentResult[];
+  lowerAssessment?: AssessmentResult[];
   createdAt: string;
   updatedAt: string;
 }
 
+export interface AssessmentResult {
+  id: string;
+  caseId: string;
+  side: "LEFT" | "RIGHT";
+  residualLimbLength?: string | null;
+  residualLimbShape?: string | null;
+  [key: string]: any;
+}
+
 export interface CreateProstheticsCaseDto {
   patientId: string;
-  amputationType: AmputationType;
-  amputationSide: AmputationSide;
-  amputationLevel: string;
-  amputationDate: string;
-  amputationCause: string;
-  amputationCount: number;
+  amputationType?: AmputationType;
+  amputationSide?: AmputationSide;
+  amputationLevel?: string;
+  amputationDate?: string;
+  amputationCause?: AmputationCause | string;
+  amputationCauseOtherDetail?: string;
+  moreAffectedSide?: "RIGHT" | "LEFT";
+  currentlyUsingProsthesis?: boolean;
+  previouslyUsedProsthesis?: boolean;
+  previousProsthesisSystemDetail?: string;
+  amputationCount?: number;
+  hasChronicDiseases?: boolean;
+  chronicDiseases?: string;
+  hasPhysicalTherapy?: boolean;
+  physicalTherapyDetails?: string;
+  hasPreviousProsthesis?: boolean;
+  previousProsthesisDetails?: string;
+  previousProsthesisWhen?: string;
+  previousProsthesisWhere?: string;
+  previousProsthesisType?: string;
+  hasRevisionSurgery?: boolean;
+  revisionDetails?: string;
+  clinicalHistory?: string;
+  prosthesisType?: ProstheticType;
+  prosthesisCompleted?: boolean;
   notes?: string;
 }
 
 export interface AssessmentUpperDto {
-  amputationSide: AmputationSide;
-  residualLimbLength: "LONG" | "MEDIUM" | "SHORT" | "VERY_SHORT";
-  residualLimbShape?: string;
-  residualLimbPhotoUrl?: string;
-  hasPain: boolean;
-  painArea?: string;
+  side: "LEFT" | "RIGHT";
+  residualLimbLength?: "VERY_SHORT" | "SHORT" | "MEDIUM" | "LONG";
+  residualLimbShape?: LimbShape;
+  amputationLevelNote?: string;
+  painPresent?: boolean;
   painIntensity?: number;
-  painTypes?: string[];
-  hasPhantomPain?: boolean;
+  painTypes?: PainTypeVal[];
+  painTypeOtherDetail?: string;
+  phantomPainPresent?: boolean;
   phantomPainIntensity?: number;
-  phantomPainType?: string;
-  neuromaStatus?: "PALPABLE" | "NOT_PALPABLE";
-  skinAppearance?: string;
-  skinGraft?: boolean;
-  skinGraftArea?: string;
-  scarCondition?: string;
-  kLevel?: KLevel;
-  romData?: Record<string, number>;
-  muscleMotion?: Record<string, boolean>;
-  notes?: string;
+  neuromaPalpable?: boolean;
+  skinNotes?: string;
+  skinAppearance?: SkinAppearanceVal[];
+  skinColor?: SkinColorVal[];
+  skinTemperature?: SkinTemperatureVal;
+  scarCondition?: string[];
+  hasSkinGrafts?: boolean;
+  graftArea?: string;
+  closureNotes?: string;
+  generalHealthNotes?: string;
+  otherLimbCondition?: string;
+  canBalanceOneSide?: boolean;
+  usesCompressionBandage?: boolean;
+  jointsRangeOfMotion?: JointsROMVal;
+  activityLevel?: KLevel;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
 }
 
-export interface AssessmentLowerDto extends AssessmentUpperDto {
-  weightBearing?: "NONE" | "FULL" | "HIGH" | "MEDIUM" | "LOW";
+export interface AssessmentLowerDto {
+  side: "LEFT" | "RIGHT";
+  residualLimbLength?: "VERY_SHORT" | "SHORT" | "MEDIUM" | "LONG";
+  residualLimbShape?: LimbShape;
+  amputationLevelNote?: string;
+  painPresent?: boolean;
+  painIntensity?: number;
+  painArea?: string;
+  painTypes?: PainTypeVal[];
+  painTypeOtherDetail?: string;
+  phantomPainPresent?: boolean;
+  phantomPainIntensity?: number;
+  neuromaPalpable?: boolean;
+  loadTolerance?: LoadToleranceVal;
+  weightBearingLevel?: WeightBearingLevelVal;
+  notes?: string;
+  skinAppearance?: SkinAppearanceVal[];
+  skinColor?: SkinColorVal[];
+  skinTemperature?: SkinTemperatureVal;
+  scarCondition?: string[];
+  hasSkinGrafts?: boolean;
+  graftArea?: string;
+  generalHealthNotes?: string;
   otherLimbCondition?: string;
   usesAssistiveDevices?: boolean;
-  assistiveDeviceType?: string;
+  assistiveDeviceTypes?: string;
   canClimbStairs?: boolean;
-  singleLegBalance?: boolean;
+  canBalanceOneSide?: boolean;
+  jointsRangeOfMotion?: JointsROMVal;
+  activityLevel?: KLevel;
+  romData?: {
+    ankle?: { dorsiflexion?: boolean; plantarFlexion?: boolean; inversion?: boolean; eversion?: boolean };
+    knee?: { flexion?: boolean; extension?: boolean };
+    hip?: { flexion?: boolean; extension?: boolean; abduction?: boolean; adduction?: boolean; internalRotation?: boolean };
+  };
+  muscleMotionNotes?: string;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
 }
 
 export interface CommitteeOpinionDto {
+  role: "PROSTHETIST" | "PHYSIOTHERAPIST" | "DOCTOR";
   opinion: string;
-  recommendation?: string;
 }
 
 export interface CommitteeDecisionDto {
   decision: CommitteeDecision;
-  summary: string;
-  proposedProstheticType?: ProstheticType;
+  finalSummary: string;
 }
 
 export interface CaseComponent {
   id: string;
   caseId: string;
-  inventoryItemId?: string | null;
-  source: ComponentSource;
+  partCode?: string | null;
+  partName?: string | null;
   supplier?: string | null;
-  code?: string | null;
-  name: string;
+  sourceLocation?: string | null;
   reason?: string | null;
-  quantity: number;
-  unitPrice?: number | null;
+  matchedInInventory?: boolean;
+  // legacy fields (kept for backward compat with old saved data)
+  inventoryItemId?: string | null;
+  source?: ComponentSource;
+  code?: string | null;
+  name?: string | null;
+  quantity?: number;
   createdAt: string;
 }
 
 export interface AddComponentDto {
-  inventoryItemId?: string;
-  source: ComponentSource;
+  partCode: string;
+  partName: string;
   supplier?: string;
-  code?: string;
-  name: string;
+  sourceLocation?: "WAREHOUSE" | "SUPPLIER";
   reason?: string;
-  quantity?: number;
 }
 
 export interface GaitAnalysisDto {
@@ -216,8 +316,8 @@ export const clinicProstheticsApi = {
     return data?.data ?? data;
   },
 
-  signCommitteeDecision: async (id: string, signatureBase64: string) => {
-    const { data } = await apiClient.post(`/prosthetics/cases/${id}/committee/sign`, { signatureBase64 });
+  signCommitteeDecision: async (id: string, role: "DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST", signatureBase64: string) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${id}/committee/sign`, { role, signatureBase64 });
     return data?.data ?? data;
   },
 

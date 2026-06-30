@@ -598,8 +598,8 @@ export const clinicPhysioApi = {
   },
 
   // ── Emergency alerts ──────────────────────────────────────────────────────
-  sendEmergencyAlert: async (note?: string): Promise<EmergencyAlert> => {
-    const { data } = await apiClient.post("/physio/emergency", note ? { note } : {});
+  sendEmergencyAlert: async (caseId: string, note?: string): Promise<EmergencyAlert> => {
+    const { data } = await apiClient.post("/physio/emergency", { caseId, ...(note ? { note } : {}) });
     return data?.data ?? data;
   },
 

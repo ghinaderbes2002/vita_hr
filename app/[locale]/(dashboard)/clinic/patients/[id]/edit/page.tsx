@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useForm } from "react-hook-form";
@@ -89,46 +89,62 @@ function FieldError({ msg }: { msg?: string }) {
 
 export default function EditPatientPage() {
   const { id } = useParams<{ id: string }>();
+  const { data: patient, isLoading } = useClinicPatient(id);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-4">
+        <Skeleton className="h-8 w-48" />
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-40" />)}
+      </div>
+    );
+  }
+  if (!patient) return <div className="text-center py-20 text-muted-foreground">المريض غير موجود</div>;
+
+  return <EditPatientForm patient={patient} />;
+}
+
+import type { Patient } from "@/lib/api/clinic-patients";
+
+function EditPatientForm({ patient }: { patient: Patient }) {
+  const { id } = useParams<{ id: string }>();
   const router  = useRouter();
   const locale  = useLocale();
 
-  const { data: patient, isLoading } = useClinicPatient(id);
-  const { data: cities = [] }        = useClinicCities();
+  const { data: cities = [] } = useClinicCities();
   const updatePatient = useUpdateClinicPatient();
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema) as any,
-  });
+  const defaultValues = useMemo<FormValues>(() => ({
+    firstName:       patient.firstName,
+    lastName:        patient.lastName,
+    identityType:    patient.identityType,
+    idNumber:        patient.idNumber,
+    dateOfBirth:     patient.dateOfBirth.slice(0, 10),
+    gender:          patient.gender,
+    phone:           patient.phone,
+    whatsapp:        patient.whatsapp ?? "",
+    email:           patient.email ?? "",
+    cityId:          patient.cityId?.toString() ?? "",
+    addressDetails:  patient.addressDetails ?? "",
+    heightCm:        patient.heightCm ?? "",
+    weightKg:        patient.weightKg ?? "",
+    occupation:      patient.occupation ?? "",
+    educationLevel:  patient.educationLevel ?? "",
+    maritalStatus:   patient.maritalStatus ?? "",
+    livingCondition: patient.livingCondition ?? "",
+    financialStatus: patient.financialStatus ?? "",
+    receivesAid:     patient.receivesAid ?? "",
+    referralSource:  (patient.referralSource as any) ?? "",
+    referralDetails: patient.referralDetails ?? "",
+    documentConsent: patient.documentConsent ?? "FULL",
+    mediaConsent:    patient.mediaConsent ?? true,
+    notes:           patient.notes ?? "",
+  }), [patient]);
 
-  useEffect(() => {
-    if (!patient) return;
-    reset({
-      firstName:       patient.firstName,
-      lastName:        patient.lastName,
-      identityType:    patient.identityType,
-      idNumber:        patient.idNumber,
-      dateOfBirth:     patient.dateOfBirth.slice(0, 10),
-      gender:          patient.gender,
-      phone:           patient.phone,
-      whatsapp:        patient.whatsapp ?? "",
-      email:           patient.email ?? "",
-      cityId:          patient.cityId?.toString() ?? "",
-      addressDetails:  patient.addressDetails ?? "",
-      heightCm:        patient.heightCm ?? "",
-      weightKg:        patient.weightKg ?? "",
-      occupation:      patient.occupation ?? "",
-      educationLevel:  patient.educationLevel ?? "",
-      maritalStatus:   patient.maritalStatus ?? "",
-      livingCondition: patient.livingCondition ?? "",
-      financialStatus: patient.financialStatus ?? "",
-      receivesAid:     patient.receivesAid ?? "",
-      referralSource:  (patient.referralSource as any) ?? "",
-      referralDetails: patient.referralDetails ?? "",
-      documentConsent: patient.documentConsent ?? "FULL",
-      mediaConsent:    patient.mediaConsent ?? true,
-      notes:           patient.notes ?? "",
-    });
-  }, [patient, reset]);
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(schema) as any,
+    defaultValues,
+  });
 
   const onSubmit = async (values: FormValues) => {
     const dto: UpdatePatientDto = {
@@ -160,16 +176,6 @@ export default function EditPatientPage() {
     await updatePatient.mutateAsync({ id, dto });
     router.push(`/${locale}/clinic/patients/${id}`);
   };
-
-  if (isLoading) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-4">
-        <Skeleton className="h-8 w-48" />
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-40" />)}
-      </div>
-    );
-  }
-  if (!patient) return <div className="text-center py-20 text-muted-foreground">المريض غير موجود</div>;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

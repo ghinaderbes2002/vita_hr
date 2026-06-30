@@ -369,7 +369,7 @@ export function useIncomingEmergencyAlerts(enabled = true) {
 export function useSendEmergencyAlert() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (note?: string) => clinicPhysioApi.sendEmergencyAlert(note),
+    mutationFn: ({ caseId, note }: { caseId: string; note?: string }) => clinicPhysioApi.sendEmergencyAlert(caseId, note),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["physio-emergency-my"] });
       toast.success("تم إرسال التنبيه الطارئ");

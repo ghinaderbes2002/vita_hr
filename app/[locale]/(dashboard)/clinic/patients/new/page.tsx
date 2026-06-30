@@ -33,10 +33,10 @@ const step1Schema = z.object({
 });
 
 const step2Schema = z.object({
-  phone:    z.string().min(7),
-  whatsapp: z.string().optional(),
-  email:    z.string().email().optional().or(z.literal("")),
-  cityId:   z.string().optional(),
+  phone:          z.string().min(7),
+  whatsapp:       z.string().optional(),
+  email:          z.string().email().optional().or(z.literal("")),
+  cityId:         z.string().optional(),
   addressDetails: z.string().optional(),
 });
 
@@ -341,6 +341,23 @@ export default function NewPatientPage() {
                   {form3.formState.errors.weightKg && <p className="text-xs text-destructive">{t("validation.weightRange")}</p>}
                 </div>
               </div>
+              {(() => {
+                const h = Number(form3.watch("heightCm"));
+                const w = Number(form3.watch("weightKg"));
+                if (!h || !w || h < 50 || w < 10) return null;
+                const bmi = w / ((h / 100) ** 2);
+                const cat = bmi < 18.5 ? { label: "نقص وزن", color: "text-blue-600" }
+                  : bmi < 25 ? { label: "طبيعي", color: "text-green-600" }
+                  : bmi < 30 ? { label: "زيادة وزن", color: "text-amber-600" }
+                  : { label: "سمنة", color: "text-red-600" };
+                return (
+                  <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">مؤشر كتلة الجسم (BMI):</span>
+                    <span className={`font-bold ${cat.color}`}>{bmi.toFixed(1)}</span>
+                    <span className={`text-xs ${cat.color}`}>— {cat.label}</span>
+                  </div>
+                );
+              })()}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("fields.educationLevel")}</Label>

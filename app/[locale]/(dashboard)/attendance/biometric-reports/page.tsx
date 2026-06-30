@@ -735,7 +735,10 @@ export default function BiometricReportsPage() {
                             return (
                               <TableRow key={day.date}>
                                 <TableCell className="font-medium">{day.date}</TableCell>
-                                <TableCell className="text-muted-foreground text-xs">{day.dayName}</TableCell>
+                                <TableCell className="text-muted-foreground text-xs">{({
+                                  Monday: "الاثنين", Tuesday: "الثلاثاء", Wednesday: "الأربعاء",
+                                  Thursday: "الخميس", Friday: "الجمعة", Saturday: "السبت", Sunday: "الأحد",
+                                } as Record<string, string>)[day.dayName] ?? day.dayName}</TableCell>
                                 <TableCell>
                                   <Badge className={`text-xs ${statusColors[day.status] || "bg-gray-100 text-gray-600"}`}>
                                     {statusLabels[day.status] || day.status}

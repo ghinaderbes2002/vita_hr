@@ -28,6 +28,7 @@ export interface Patient {
   cityId?: number | string | null;
   city?: { id: number | string; name: string; governorate: string } | null;
   addressDetails?: string | null;
+  currentAddress?: string | null;
   phone: string;
   whatsapp?: string | null;
   email?: string | null;
@@ -93,6 +94,7 @@ export interface CreatePatientDto {
   weightKg?: number;
   cityId?: number | string;
   addressDetails?: string;
+  currentAddress?: string;
   phone: string;
   whatsapp?: string;
   email?: string;

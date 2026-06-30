@@ -3559,7 +3559,7 @@ export default function PhysioCasePage() {
                       variant="destructive"
                       disabled={sendAlert.isPending}
                       onClick={async () => {
-                        await sendAlert.mutateAsync(emergencyNote.trim() || undefined);
+                        await sendAlert.mutateAsync({ caseId: id, note: emergencyNote.trim() || undefined });
                         setEmergencyNote("");
                         setEmergencyDialogOpen(false);
                       }}

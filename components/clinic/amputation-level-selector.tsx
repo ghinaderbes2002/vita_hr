@@ -1,47 +1,107 @@
 "use client";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 const UPPER_LEVELS = [
-  { value: "SD", label: "Shoulder Disarticulation (SD) — مفصلة الكتف" },
-  { value: "TH", label: "Transhumeral (TH) — فوق المرفق" },
-  { value: "ED", label: "Elbow Disarticulation (ED) — مفصلة المرفق" },
-  { value: "TR", label: "Transradial (TR) — تحت المرفق" },
-  { value: "WD", label: "Wrist Disarticulation (WD) — مفصلة الرسغ" },
-  { value: "PF", label: "Partial Hand — جزء من الكف" },
+  { value: "PH", labelAr: "بتر جزئي / الأصابع", labelCode: "PH / Finger" },
+  { value: "WD", labelAr: "عبر الرسغ",           labelCode: "WD" },
+  { value: "TR", labelAr: "تحت المرفق",           labelCode: "TR" },
+  { value: "ED", labelAr: "عبر المرفق",           labelCode: "ED" },
+  { value: "TH", labelAr: "فوق المرفق",           labelCode: "TH" },
+  { value: "SD", labelAr: "عبر الكتف",            labelCode: "SD" },
 ];
 
 const LOWER_LEVELS = [
-  { value: "PH", label: "Hemipelvectomy (PH) — ما فوق الورك" },
-  { value: "HD", label: "Hip Disarticulation (HD) — مفصلة الورك" },
-  { value: "TF", label: "Transfemoral (TF) — فوق الركبة" },
-  { value: "KD", label: "Knee Disarticulation (KD) — مفصلة الركبة" },
-  { value: "TT", label: "Transtibial (TT) — تحت الركبة" },
-  { value: "CHOPART", label: "Chopart — مفصلة شوبار" },
-  { value: "PF", label: "Partial Foot — جزء من القدم" },
+  { value: "PF",      labelAr: "بتر جزئي / الأصابع", labelCode: "PF / toe" },
+  { value: "CHOPART", labelAr: "عبر الكاحل",          labelCode: "chopart" },
+  { value: "TT",      labelAr: "تحت الركبة",          labelCode: "TT" },
+  { value: "KD",      labelAr: "عبر الركبة",          labelCode: "KD" },
+  { value: "TF",      labelAr: "فوق الركبة",          labelCode: "TF" },
+  { value: "HD",      labelAr: "عبر الحوض",           labelCode: "HD" },
 ];
 
 interface AmputationLevelSelectorProps {
-  type: "upper" | "lower";
+  type?: string | null;
   value?: string | null;
-  onChange?: (value: string) => void;
+  onChange?: (level: string) => void;
+  onTypeChange?: (type: "UPPER" | "LOWER") => void;
   disabled?: boolean;
 }
 
-export function AmputationLevelSelector({ type, value, onChange, disabled }: AmputationLevelSelectorProps) {
-  const levels = type === "upper" ? UPPER_LEVELS : LOWER_LEVELS;
+function CheckItem({
+  labelAr, labelCode, selected, onClick, disabled,
+}: {
+  labelAr: string; labelCode: string; selected: boolean;
+  onClick: () => void; disabled?: boolean;
+}) {
   return (
-    <Select value={value ?? ""} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger>
-        <SelectValue placeholder="اختر مستوى البتر" />
-      </SelectTrigger>
-      <SelectContent>
-        {levels.map((l) => (
-          <SelectItem key={l.value} value={l.value}>
-            {l.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex items-start gap-1.5 text-right group disabled:opacity-40"
+    >
+      <div className={`mt-0.5 h-3.5 w-3.5 shrink-0 rounded-none border flex items-center justify-center transition-colors ${
+        selected ? "border-primary bg-primary" : "border-muted-foreground group-hover:border-primary/60"
+      }`}>
+        {selected && (
+          <svg viewBox="0 0 10 10" className="h-2 w-2 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="1.5,5 4,7.5 8.5,2.5" />
+          </svg>
+        )}
+      </div>
+      <div className="flex flex-col leading-tight">
+        <span className="text-xs font-medium">{labelAr}</span>
+        <span className="text-[10px] text-muted-foreground">{labelCode}</span>
+      </div>
+    </button>
+  );
+}
+
+export function AmputationLevelSelector({ type, value, onChange, onTypeChange, disabled }: AmputationLevelSelectorProps) {
+  const upperVals = new Set(UPPER_LEVELS.map((l) => l.value));
+  const lowerVals = new Set(LOWER_LEVELS.map((l) => l.value));
+
+  const handleSelect = (level: string, sectionType: "UPPER" | "LOWER") => {
+    onChange?.(level);
+    if (onTypeChange && type?.toUpperCase() !== sectionType) {
+      onTypeChange(sectionType);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* طرف علوي */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-muted-foreground">طرف علوي</p>
+        <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-6">
+          {UPPER_LEVELS.map((l) => (
+            <CheckItem
+              key={l.value}
+              labelAr={l.labelAr}
+              labelCode={l.labelCode}
+              selected={value === l.value}
+              onClick={() => handleSelect(l.value, "UPPER")}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* طرف سفلي */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-muted-foreground">طرف سفلي</p>
+        <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-6">
+          {LOWER_LEVELS.map((l) => (
+            <CheckItem
+              key={l.value}
+              labelAr={l.labelAr}
+              labelCode={l.labelCode}
+              selected={value === l.value}
+              onClick={() => handleSelect(l.value, "LOWER")}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

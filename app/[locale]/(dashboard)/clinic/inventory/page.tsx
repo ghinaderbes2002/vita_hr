@@ -40,10 +40,11 @@ export default function InventoryPage() {
   const locale = useLocale();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<ItemType | "all">("all");
+  const [incompleteOnly, setIncompleteOnly] = useState(false);
   const [newItemOpen, setNewItemOpen] = useState(false);
   const [txDialogItem, setTxDialogItem] = useState<InventoryItem | null>(null);
   const [newItemForm, setNewItemForm] = useState<Partial<CreateItemDto>>({
-    code: "", name: "", type: "COMPONENT", minStockLevel: 5, unit: "قطعة",
+    code: "", name: "", unit: "قطعة",
   });
   const [txForm, setTxForm] = useState({ type: "RECEIVE" as TransactionType, quantity: "1", notes: "" });
 
@@ -62,8 +63,12 @@ export default function InventoryPage() {
     if (!newItemForm.code || !newItemForm.name) return;
     await createItem.mutateAsync(newItemForm as CreateItemDto);
     setNewItemOpen(false);
-    setNewItemForm({ code: "", name: "", type: "COMPONENT", minStockLevel: 5, unit: "قطعة" });
+    setNewItemForm({ code: "", name: "", unit: "قطعة" });
   };
+
+  const displayedItems = incompleteOnly
+    ? items.filter((i) => !i.categoryId)
+    : items;
 
   const handleAddTx = async () => {
     if (!txDialogItem || !txForm.quantity) return;
@@ -166,6 +171,18 @@ export default function InventoryPage() {
                   <SelectItem value="CONSUMABLE">مستهلكات</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant={incompleteOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIncompleteOnly((v) => !v)}
+                className="gap-1.5"
+              >
+                <AlertTriangle className="h-3.5 w-3.5" />
+                بيانات ناقصة
+                {!incompleteOnly && items.filter((i) => !i.categoryId).length > 0 && (
+                  <Badge variant="secondary" className="h-4 text-xs px-1">{items.filter((i) => !i.categoryId).length}</Badge>
+                )}
+              </Button>
             </div>
 
             <div className="rounded-md border">
@@ -189,14 +206,16 @@ export default function InventoryPage() {
                         {Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
                       </TableRow>
                     ))
-                  ) : items.length === 0 ? (
+                  ) : displayedItems.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8}>
-                        <EmptyState icon={<Package className="h-8 w-8 text-muted-foreground" />} title="لا توجد أصناف" description="أضف أول صنف للمخزون" />
+                        <EmptyState icon={<Package className="h-8 w-8 text-muted-foreground" />}
+                          title={incompleteOnly ? "لا توجد أصناف بيانات ناقصة" : "لا توجد أصناف"}
+                          description={incompleteOnly ? "جميع الأصناف مكتملة البيانات" : "أضف أول صنف للمخزون"} />
                       </TableCell>
                     </TableRow>
                   ) : (
-                    items.map((item: InventoryItem) => (
+                    displayedItems.map((item: InventoryItem) => (
                       <TableRow key={item.id} className="hover:bg-muted/50">
                         <TableCell className="font-mono text-sm">{item.code}</TableCell>
                         <TableCell className="font-medium">
@@ -280,9 +299,10 @@ export default function InventoryPage() {
         {/* Low stock tab */}
         <TabsContent value="low-stock" className="mt-4">
           {lowStock.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="h-8 w-8 mx-auto mb-2 opacity-40" />
-              <p>المخزون في مستوى جيد</p>
+            <div className="text-center py-12 text-muted-foreground space-y-2">
+              <Package className="h-8 w-8 mx-auto opacity-40" />
+              <p className="font-medium">لا توجد تنبيهات نقص حالياً</p>
+              <p className="text-sm max-w-sm mx-auto">ستظهر التنبيهات فقط بعد تحديد الحد الأدنى للأصناف — استخدم فلتر "بيانات ناقصة" لتعبئة البيانات الناقصة</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
@@ -319,12 +339,12 @@ export default function InventoryPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>الكود <span className="text-destructive">*</span></Label>
-                <Input value={newItemForm.code ?? ""} onChange={(e) => setNewItemForm((f) => ({ ...f, code: e.target.value }))} placeholder="PRO-001" />
+                <Input value={newItemForm.code ?? ""} onChange={(e) => setNewItemForm((f) => ({ ...f, code: e.target.value }))} placeholder="PRO-001" className="font-mono" />
               </div>
               <div className="space-y-1.5">
                 <Label>النوع</Label>
-                <Select value={newItemForm.type} onValueChange={(v) => setNewItemForm((f) => ({ ...f, type: v as ItemType }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={newItemForm.type ?? ""} onValueChange={(v) => setNewItemForm((f) => ({ ...f, type: v ? v as ItemType : undefined }))}>
+                  <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="COMPONENT">قطعة</SelectItem>
                     <SelectItem value="CONSUMABLE">مستهلك</SelectItem>
@@ -336,10 +356,14 @@ export default function InventoryPage() {
               <Label>الاسم <span className="text-destructive">*</span></Label>
               <Input value={newItemForm.name ?? ""} onChange={(e) => setNewItemForm((f) => ({ ...f, name: e.target.value }))} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label>الحد الأدنى للمخزون</Label>
-                <Input type="number" min={0} value={newItemForm.minStockLevel ?? 5} onChange={(e) => setNewItemForm((f) => ({ ...f, minStockLevel: parseInt(e.target.value) || 0 }))} />
+                <Label>الكمية الابتدائية</Label>
+                <Input type="number" min={0} value={newItemForm.currentStock ?? ""} placeholder="0" onChange={(e) => setNewItemForm((f) => ({ ...f, currentStock: parseInt(e.target.value) || 0 }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>الحد الأدنى</Label>
+                <Input type="number" min={0} value={newItemForm.minStockLevel ?? ""} placeholder="اختياري" onChange={(e) => setNewItemForm((f) => ({ ...f, minStockLevel: parseInt(e.target.value) || 0 }))} />
               </div>
               <div className="space-y-1.5">
                 <Label>الوحدة</Label>
@@ -348,10 +372,10 @@ export default function InventoryPage() {
             </div>
             <div className="space-y-1.5">
               <Label>التصنيف</Label>
-              <Select value={newItemForm.categoryId ?? ""} onValueChange={(v) => setNewItemForm((f) => ({ ...f, categoryId: v || undefined }))}>
+              <Select value={newItemForm.categoryId ?? ""} onValueChange={(v) => setNewItemForm((f) => ({ ...f, categoryId: v === "none" ? undefined : v }))}>
                 <SelectTrigger><SelectValue placeholder="اختر تصنيفاً" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">بدون تصنيف</SelectItem>
+                  <SelectItem value="none">بدون تصنيف</SelectItem>
                   {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>

@@ -20,7 +20,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AmputationLevelSelector } from "@/components/clinic/amputation-level-selector";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -34,7 +33,7 @@ import {
 import { DocumentType } from "@/lib/api/clinic-patients";
 import { useProstheticsCasesByPatient, useCreateProstheticsCase } from "@/lib/hooks/use-clinic-prosthetics";
 import { usePhysioCasesByPatient, useCreatePhysioCase } from "@/lib/hooks/use-clinic-physio";
-import { ProstheticsCase, AmputationType, AmputationSide } from "@/lib/api/clinic-prosthetics";
+import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
 import { PhysioCase } from "@/lib/api/clinic-physio";
 
 const GENDER_LABEL: Record<string, string> = { MALE: "ذكر", FEMALE: "أنثى" };
@@ -72,15 +71,6 @@ export default function PatientProfilePage() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadType, setUploadType] = useState<DocumentType>("OTHER");
-  const [prostDialogOpen, setProstDialogOpen] = useState(false);
-  const [prostForm, setProstForm] = useState({
-    amputationType: "" as AmputationType | "",
-    amputationSide: "" as AmputationSide | "",
-    amputationLevel: "",
-    amputationDate: "",
-    amputationCause: "",
-    amputationCount: "1",
-  });
 
   const { data: patient, isLoading } = useClinicPatient(id);
   const { data: prostCases = [] } = useProstheticsCasesByPatient(id);
@@ -158,23 +148,8 @@ export default function PatientProfilePage() {
     setUploadType("OTHER");
   };
 
-  const handleNewProstheticsCase = () => {
-    setProstForm({ amputationType: "", amputationSide: "", amputationLevel: "", amputationDate: "", amputationCause: "", amputationCount: "1" });
-    setProstDialogOpen(true);
-  };
-
-  const handleCreateProstheticsCase = async () => {
-    if (!prostForm.amputationType || !prostForm.amputationSide || !prostForm.amputationLevel || !prostForm.amputationDate || !prostForm.amputationCause) return;
-    const c = await createProst.mutateAsync({
-      patientId: id,
-      amputationType: prostForm.amputationType as AmputationType,
-      amputationSide: prostForm.amputationSide as AmputationSide,
-      amputationLevel: prostForm.amputationLevel,
-      amputationDate: prostForm.amputationDate,
-      amputationCause: prostForm.amputationCause,
-      amputationCount: parseInt(prostForm.amputationCount) || 1,
-    });
-    setProstDialogOpen(false);
+  const handleNewProstheticsCase = async () => {
+    const c = await createProst.mutateAsync({ patientId: id });
     router.push(`/${locale}/clinic/prosthetics/${c.id}`);
   };
 
@@ -591,80 +566,6 @@ export default function PatientProfilePage() {
         }}
       />
 
-      {/* New Prosthetics Case Dialog */}
-      <Dialog open={prostDialogOpen} onOpenChange={setProstDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>حالة أطراف صناعية جديدة</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>نوع البتر <span className="text-destructive">*</span></Label>
-                <Select value={prostForm.amputationType} onValueChange={(v) => setProstForm((f) => ({ ...f, amputationType: v as AmputationType, amputationLevel: "" }))}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UPPER">طرف علوي</SelectItem>
-                    <SelectItem value="LOWER">طرف سفلي</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>الجانب <span className="text-destructive">*</span></Label>
-                <Select value={prostForm.amputationSide} onValueChange={(v) => setProstForm((f) => ({ ...f, amputationSide: v as AmputationSide }))}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="RIGHT">أيمن</SelectItem>
-                    <SelectItem value="LEFT">أيسر</SelectItem>
-                    <SelectItem value="BILATERAL">ثنائي</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {prostForm.amputationType && (
-              <div className="space-y-1.5">
-                <Label>مستوى البتر <span className="text-destructive">*</span></Label>
-                <AmputationLevelSelector
-                  type={prostForm.amputationType.toLowerCase() as "upper" | "lower"}
-                  value={prostForm.amputationLevel}
-                  onChange={(v) => setProstForm((f) => ({ ...f, amputationLevel: v }))}
-                />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>تاريخ البتر <span className="text-destructive">*</span></Label>
-                <Input type="date" value={prostForm.amputationDate} onChange={(e) => setProstForm((f) => ({ ...f, amputationDate: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>عدد البترات (1-4) <span className="text-destructive">*</span></Label>
-                <Input type="number" min={1} max={4} value={prostForm.amputationCount} onChange={(e) => setProstForm((f) => ({ ...f, amputationCount: e.target.value }))} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>سبب البتر <span className="text-destructive">*</span></Label>
-              <Input value={prostForm.amputationCause} onChange={(e) => setProstForm((f) => ({ ...f, amputationCause: e.target.value }))} placeholder="حادث، مرض، خلقي..." />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProstDialogOpen(false)}>إلغاء</Button>
-            <Button
-              onClick={handleCreateProstheticsCase}
-              disabled={
-                createProst.isPending ||
-                !prostForm.amputationType ||
-                !prostForm.amputationSide ||
-                !prostForm.amputationLevel ||
-                !prostForm.amputationDate ||
-                !prostForm.amputationCause
-              }
-            >
-              {createProst.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-              إنشاء الحالة
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
