@@ -52,7 +52,7 @@ export default function CustodiesPage() {
   const [bulkTransferGroup, setBulkTransferGroup] = useState<{ custodies: Custody[]; empName: string } | null>(null);
   const [selected, setSelected] = useState<Custody | null>(null);
 
-  const { data, isLoading } = useCustodies({
+  const { data, isLoading, refetch } = useCustodies({
     search: search || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     category: categoryFilter !== "all" ? categoryFilter : undefined,
@@ -95,6 +95,7 @@ export default function CustodiesPage() {
   const confirmDelete = async () => {
     if (selected) {
       await deleteCustody.mutateAsync(selected.id);
+      refetch();
       setDeleteDialogOpen(false);
       setSelected(null);
     }
@@ -287,18 +288,21 @@ export default function CustodiesPage() {
         onOpenChange={(v) => { if (!v) setBulkTransferGroup(null); }}
         custodies={bulkTransferGroup?.custodies ?? []}
         fromEmployeeName={bulkTransferGroup?.empName ?? ""}
+        onSuccess={refetch}
       />
 
       <CustodyDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         custody={selected || undefined}
+        onSuccess={refetch}
       />
 
       <ReturnCustodyDialog
         open={returnDialogOpen}
         onOpenChange={setReturnDialogOpen}
         custody={selected}
+        onSuccess={refetch}
       />
 
       <ConfirmDialog

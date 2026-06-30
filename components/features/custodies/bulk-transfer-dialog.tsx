@@ -23,9 +23,10 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   custodies: Custody[];
   fromEmployeeName: string;
+  onSuccess?: () => void;
 }
 
-export function BulkTransferDialog({ open, onOpenChange, custodies, fromEmployeeName }: Props) {
+export function BulkTransferDialog({ open, onOpenChange, custodies, fromEmployeeName, onSuccess }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const [form, setForm] = useState({
     newEmployeeId: "",
@@ -69,7 +70,6 @@ export function BulkTransferDialog({ open, onOpenChange, custodies, fromEmployee
       }
     }
 
-    await queryClient.refetchQueries({ queryKey: ["custodies"] });
     setIsPending(false);
     setProgress(null);
 
@@ -79,6 +79,7 @@ export function BulkTransferDialog({ open, onOpenChange, custodies, fromEmployee
       toast.warning(`تم نقل ${successCount} من ${eligible.length} عهدة`);
     }
 
+    onSuccess?.();
     onOpenChange(false);
     setForm({ newEmployeeId: "", returnedDate: today, handoverDate: today, notes: "" });
   };

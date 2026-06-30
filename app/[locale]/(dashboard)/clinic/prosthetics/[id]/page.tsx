@@ -576,7 +576,7 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSubmitAssessmentAndAdvance = async () => {
-    const ampType = (intakeForm.amputationType || c.amputationType || "").toUpperCase();
+    const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
     if (ampType === "UPPER" || ampType === "BOTH") {
       await submitAssessmentUpper.mutateAsync({ id, dto: buildUpperDto() });
     }
@@ -1131,7 +1131,7 @@ export default function ProstheticsCasePage() {
         <TabsContent value="assessment" className="mt-4 space-y-4" dir="rtl">
           {/* ─── Upper Assessment ───────────────────────────────────────────── */}
           {(() => {
-            const ampType = (intakeForm.amputationType || c.amputationType || "").toUpperCase();
+            const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
             if (ampType !== "UPPER" && ampType !== "BOTH") return null;
             const f = upperAssessForm;
             const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
@@ -1334,7 +1334,7 @@ export default function ProstheticsCasePage() {
 
           {/* ─── Muscle Strength Assessment (Upper only) ───────────────────── */}
           {(() => {
-            const ampType = (intakeForm.amputationType || c.amputationType || "").toUpperCase();
+            const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
             if (ampType !== "UPPER" && ampType !== "BOTH") return null;
             const f = upperAssessForm;
             const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
@@ -1376,7 +1376,7 @@ export default function ProstheticsCasePage() {
 
           {/* ─── 3. Lower Assessment ────────────────────────────────────────── */}
           {(() => {
-            const ampType = (intakeForm.amputationType || c.amputationType || "").toUpperCase();
+            const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
             if (ampType !== "LOWER" && ampType !== "BOTH") return null;
             const f = lowerAssessForm;
             const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));
@@ -1597,7 +1597,7 @@ export default function ProstheticsCasePage() {
 
           {/* ─── 4. Lower Muscle Strength ───────────────────────────────────── */}
           {(() => {
-            const ampType = (intakeForm.amputationType || c.amputationType || "").toUpperCase();
+            const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
             if (ampType !== "LOWER" && ampType !== "BOTH") return null;
             const f = lowerAssessForm;
             const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));

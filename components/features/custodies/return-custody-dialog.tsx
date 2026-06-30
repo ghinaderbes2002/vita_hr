@@ -27,9 +27,10 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   custody: Custody | null;
+  onSuccess?: () => void;
 }
 
-export function ReturnCustodyDialog({ open, onOpenChange, custody }: Props) {
+export function ReturnCustodyDialog({ open, onOpenChange, custody, onSuccess }: Props) {
   const t = useTranslations();
 
   const formSchema = z.object({
@@ -69,6 +70,7 @@ export function ReturnCustodyDialog({ open, onOpenChange, custody }: Props) {
     if (!custody) return;
     try {
       await returnCustody.mutateAsync({ id: custody.id, data });
+      onSuccess?.();
       onOpenChange(false);
     } catch {
       // handled by mutation

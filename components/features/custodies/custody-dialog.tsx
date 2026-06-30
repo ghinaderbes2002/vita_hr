@@ -32,6 +32,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   custody?: Custody;
   defaultEmployeeId?: string;
+  onSuccess?: () => void;
 }
 
 type FormData = {
@@ -44,7 +45,7 @@ type FormData = {
   notes?: string;
 };
 
-export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }: Props) {
+export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId, onSuccess }: Props) {
   const t = useTranslations();
   const isEdit = !!custody;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -178,6 +179,7 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
   const onSubmit = async (data: FormData) => {
     try {
       await submitData(data);
+      onSuccess?.();
       onOpenChange(false);
     } catch {
       // handled by mutation
@@ -187,6 +189,7 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId }
   const onSubmitAndAddAnother = async (data: FormData) => {
     try {
       await submitData(data);
+      onSuccess?.();
       resetForm(true);
     } catch {
       // handled by mutation

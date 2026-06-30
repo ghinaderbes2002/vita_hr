@@ -162,7 +162,7 @@ export const clinicPatientsApi = {
   },
 
   update: async (id: string, dto: UpdatePatientDto): Promise<Patient> => {
-    const { identityType, ...rest } = dto;
+    const { identityType, documentConsent, ...rest } = dto;
     const payload = identityType ? { ...rest, idType: identityType } : rest;
     const { data } = await apiClient.put(`/patients/${id}`, payload);
     return data?.data ?? data;
