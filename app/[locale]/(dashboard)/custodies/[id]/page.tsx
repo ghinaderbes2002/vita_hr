@@ -132,7 +132,7 @@ export default function CustodyDetailPage() {
               </Button>
             </ActionGuard>
           )}
-          {custody.status === "WITH_EMPLOYEE" && (
+          {(custody.status === "WITH_EMPLOYEE" || custody.status === "RETURNED") && (
             <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
               <Button variant="outline" size="sm" onClick={() => setTransferOpen(true)}>
                 <ArrowLeftRight className="h-4 w-4 ml-1.5" />

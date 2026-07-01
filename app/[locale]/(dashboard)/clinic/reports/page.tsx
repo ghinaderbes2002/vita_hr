@@ -155,8 +155,9 @@ export default function ClinicReportsPage() {
                 data={(() => {
                   const counts: Record<string, number> = {};
                   prostCases.forEach((c: ProstheticsCase) => {
-                    const k = c.amputationType ?? "UNKNOWN";
-                    counts[k] = (counts[k] ?? 0) + 1;
+                    const raw = c.amputationType;
+                    const keys = Array.isArray(raw) ? raw : [raw ?? "UNKNOWN"];
+                    keys.forEach((k) => { counts[String(k)] = (counts[String(k)] ?? 0) + 1; });
                   });
                   return Object.entries(counts).map(([k, v]) => ({
                     label: t(`prostTypes.${k}` as any, { default: k }),

@@ -44,7 +44,7 @@ export function BulkTransferDialog({ open, onOpenChange, custodies, fromEmployee
     : (empData as any)?.data?.items ?? (empData as any)?.items ?? [];
 
   const currentEmployeeId = custodies[0]?.employeeId;
-  const eligible = custodies.filter((c) => c.status === "WITH_EMPLOYEE");
+  const eligible = custodies.filter((c) => c.status === "WITH_EMPLOYEE" || c.status === "RETURNED");
   const otherEmployees = employees.filter((e) => e.id !== currentEmployeeId);
 
   const handleSubmit = async () => {
@@ -98,7 +98,7 @@ export function BulkTransferDialog({ open, onOpenChange, custodies, fromEmployee
             <p className="text-muted-foreground text-xs mt-1">
               {eligible.length} عهدة نشطة سيتم نقلها
               {eligible.length < custodies.length && (
-                <span className="mr-1">({custodies.length - eligible.length} مُرجَعة/تالفة، لن تُنقل)</span>
+                <span className="mr-1">({custodies.length - eligible.length} تالفة/مفقودة، لن تُنقل)</span>
               )}
             </p>
           </div>

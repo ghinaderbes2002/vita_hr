@@ -29,12 +29,24 @@ export type JointsROMVal = "NORMAL" | "ACTIVE" | "SEDENTARY";
 export type LoadToleranceVal = "PALPABLE" | "NOT_PALPABLE" | "WEIGHT_BEARING" | "NON_WEIGHT_BEARING";
 export type WeightBearingLevelVal = "FULL" | "HIGH" | "MEDIUM" | "LOW";
 
+type StaffMember = { firstNameAr: string; lastNameAr: string; jobTitleAr?: string } | null;
+
+export interface ProstheticsAttachment {
+  id: string;
+  fileName: string;
+  fileSize?: number;
+  mimeType?: string;
+  caption?: string | null;
+  uploadedAt: string;
+  uploadedBy?: string | null;
+}
+
 export interface ProstheticsCase {
   id: string;
   patientId: string;
   patient?: { id: string; firstName: string; lastName: string; patientNumber: string };
   status: ProstheticsStatus;
-  amputationType?: AmputationType | null;
+  amputationType?: AmputationType | AmputationType[] | null;
   amputationSide?: AmputationSide | null;
   amputationLevel?: string | null;
   dateOfAmputation?: string | null;
@@ -59,8 +71,17 @@ export interface ProstheticsCase {
   previousProsthesisType?: string | null;
   hasRevisionSurgery?: boolean | null;
   revisionDetails?: string | null;
+  // Staff IDs
+  prosthetistId?: string | null;
+  physiotherapistId?: string | null;
   assignedProsthetistId?: string | null;
   supervisingDoctorId?: string | null;
+  workshopSupervisorId?: string | null;
+  // Staff objects (new)
+  prosthetist?: StaffMember;
+  physiotherapist?: StaffMember;
+  supervisingDoctor?: StaffMember;
+  workshopSupervisor?: StaffMember;
   committeeDecision?: CommitteeDecision | null;
   proposedProstheticType?: ProstheticType | null;
   deliveryDate?: string | null;
@@ -431,5 +452,21 @@ export const clinicProstheticsApi = {
       responseType: "blob",
     });
     return response.data;
+  },
+
+  getAttachments: async (id: string): Promise<ProstheticsAttachment[]> => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${id}/attachments`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  uploadAttachment: async (id: string, file: File, caption?: string): Promise<ProstheticsAttachment> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (caption) fd.append("caption", caption);
+    const { data } = await apiClient.post(`/prosthetics/cases/${id}/attachments`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data?.data ?? data;
   },
 };

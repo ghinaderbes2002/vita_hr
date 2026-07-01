@@ -309,3 +309,24 @@ export function useSignDelivery() {
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التوقيع"),
   });
 }
+
+export function useProstheticsAttachments(caseId: string) {
+  return useQuery({
+    queryKey: ["clinic-prosthetics-attachments", caseId],
+    queryFn: () => clinicProstheticsApi.getAttachments(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useUploadProstheticsAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file, caption }: { id: string; file: File; caption?: string }) =>
+      clinicProstheticsApi.uploadAttachment(id, file, caption),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-attachments", id] });
+      toast.success("تم رفع الملف");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل رفع الملف"),
+  });
+}

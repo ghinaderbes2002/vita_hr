@@ -42,7 +42,16 @@ export const custodiesApi = {
     search?: string;
   }) => {
     const response = await apiClient.get("/custodies", { params });
-    return response.data;
+    // Normalize to always return { items: [...], total: N }
+    const d = response.data;
+    const items: any[] =
+      Array.isArray(d?.data?.items) ? d.data.items :
+      Array.isArray(d?.data)        ? d.data        :
+      Array.isArray(d?.items)       ? d.items        :
+      Array.isArray(d)              ? d              : [];
+    const total: number =
+      d?.data?.total ?? d?.total ?? items.length;
+    return { items, total };
   },
 
   getById: async (id: string) => {

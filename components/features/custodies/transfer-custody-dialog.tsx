@@ -20,9 +20,10 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   custody: Custody;
+  onSuccess?: () => void;
 }
 
-export function TransferCustodyDialog({ open, onOpenChange, custody }: Props) {
+export function TransferCustodyDialog({ open, onOpenChange, custody, onSuccess }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const [form, setForm] = useState({
     newEmployeeId: "",
@@ -50,6 +51,7 @@ export function TransferCustodyDialog({ open, onOpenChange, custody }: Props) {
         notes: form.notes || undefined,
       },
     });
+    onSuccess?.();
     onOpenChange(false);
     setForm({ newEmployeeId: "", returnedDate: today, handoverDate: today, notes: "" });
   };

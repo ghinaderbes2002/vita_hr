@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, ArrowLeftRight } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, ArrowLeftRight, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,8 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
 import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
 import { BulkTransferDialog } from "@/components/features/custodies/bulk-transfer-dialog";
+import { TransferCustodyDialog } from "@/components/features/custodies/transfer-custody-dialog";
+import { downloadCustodyGroupPdf } from "@/components/features/custodies/custody-group-pdf";
 import { Custody, CustodyStatus } from "@/types";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -50,7 +52,23 @@ export default function CustodiesPage() {
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkTransferGroup, setBulkTransferGroup] = useState<{ custodies: Custody[]; empName: string } | null>(null);
+  const [transferDialogCustody, setTransferDialogCustody] = useState<Custody | null>(null);
   const [selected, setSelected] = useState<Custody | null>(null);
+  const [printingGroup, setPrintingGroup] = useState<string | null>(null);
+
+  const handlePrintGroup = async (empKey: string, items: Custody[], employee: any) => {
+    setPrintingGroup(empKey);
+    try {
+      const empName = employee ? `${employee.firstNameAr} ${employee.lastNameAr}` : "—";
+      await downloadCustodyGroupPdf(items, {
+        name: empName,
+        number: employee?.employeeNumber,
+        department: employee?.department?.nameAr,
+      });
+    } finally {
+      setPrintingGroup(null);
+    }
+  };
 
   const { data, isLoading, refetch } = useCustodies({
     search: search || undefined,
@@ -61,11 +79,8 @@ export default function CustodiesPage() {
 
   const deleteCustody = useDeleteCustody();
 
-  const raw = (data as any)?.data;
-  const custodies: Custody[] =
-    Array.isArray(raw?.items) ? raw.items :
-    Array.isArray(raw) ? raw :
-    Array.isArray(data) ? data : [];
+  // getAll now always returns { items, total } after normalization
+  const custodies: Custody[] = (data as any)?.items ?? [];
 
   // Group custodies by employee
   const grouped = custodies.reduce<{ empKey: string; employee: any; items: Custody[] }[]>((acc, c) => {
@@ -211,7 +226,7 @@ export default function CustodiesPage() {
                     <TableCell colSpan={4}>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">{group.items.length} {t("custodies.custodyUnit")}</Badge>
-                        {group.items.some((c) => c.status === "WITH_EMPLOYEE") && (
+                        {group.items.some((c) => c.status === "WITH_EMPLOYEE" || c.status === "RETURNED") && (
                           <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
                             <Button
                               variant="ghost"
@@ -227,6 +242,19 @@ export default function CustodiesPage() {
                             </Button>
                           </ActionGuard>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                          disabled={printingGroup === group.empKey}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintGroup(group.empKey, group.items, group.employee);
+                          }}
+                        >
+                          <Printer className="h-3 w-3" />
+                          {printingGroup === group.empKey ? "جاري..." : "طباعة"}
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>,
@@ -266,6 +294,13 @@ export default function CustodiesPage() {
                                 </DropdownMenuItem>
                               </ActionGuard>
                             )}
+                            {(c.status === "WITH_EMPLOYEE" || c.status === "RETURNED") && (
+                              <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
+                                <DropdownMenuItem onClick={() => setTransferDialogCustody(c)}>
+                                  <ArrowLeftRight className="h-4 w-4 ml-2" />نقل لموظف آخر
+                                </DropdownMenuItem>
+                              </ActionGuard>
+                            )}
                             <ActionGuard permission={PERMISSIONS.CUSTODIES.DELETE}>
                               <DropdownMenuItem onClick={() => handleDelete(c)} className="text-destructive">
                                 <Trash2 className="h-4 w-4 ml-2" />{t("common.delete")}
@@ -290,6 +325,15 @@ export default function CustodiesPage() {
         fromEmployeeName={bulkTransferGroup?.empName ?? ""}
         onSuccess={refetch}
       />
+
+      {transferDialogCustody && (
+        <TransferCustodyDialog
+          open={!!transferDialogCustody}
+          onOpenChange={(v) => { if (!v) setTransferDialogCustody(null); }}
+          custody={transferDialogCustody}
+          onSuccess={() => { refetch(); setTransferDialogCustody(null); }}
+        />
+      )}
 
       <CustodyDialog
         open={dialogOpen}

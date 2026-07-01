@@ -31,6 +31,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import {
   useProstheticsCase, useUpdateProstheticsCase, useUpdateProstheticsStatus,
@@ -42,6 +43,7 @@ import {
   useSubmitDelivery, useSignDelivery,
   useProstheticsFollowUps, useAddProstheticsFollowUp,
   useProstheticsTimeline, useDownloadProstheticsPdf,
+  useProstheticsAttachments, useUploadProstheticsAttachment,
 } from "@/lib/hooks/use-clinic-prosthetics";
 import {
   ProstheticsStatus, ProstheticsCase,
@@ -187,6 +189,7 @@ export default function ProstheticsCasePage() {
   const { data: components = [] } = useCaseComponents(id);
   const { data: followUps = [] } = useProstheticsFollowUps(id);
   const { data: timeline = [] } = useProstheticsTimeline(id);
+  const { data: attachments = [] } = useProstheticsAttachments(id);
 
   const qc = useQueryClient();
   const updateCase = useUpdateProstheticsCase();
@@ -208,6 +211,8 @@ export default function ProstheticsCasePage() {
   const signDelivery = useSignDelivery();
   const addFollowUp = useAddProstheticsFollowUp();
   const downloadPdf = useDownloadProstheticsPdf();
+  const uploadAttachment = useUploadProstheticsAttachment();
+  const attachFileRef = useRef<HTMLInputElement>(null);
 
   // ── Local form state ──
   const [intakeForm, setIntakeForm] = useState({
@@ -352,9 +357,20 @@ export default function ProstheticsCasePage() {
   const [patientEditMode, setPatientEditMode] = useState(false);
   const [patientEditForm, setPatientEditForm] = useState({ firstName: "", lastName: "", dateOfBirth: "", phone: "", heightCm: "", weightKg: "" });
   const [followUpForm, setFollowUpForm] = useState({ date: new Date().toISOString().slice(0, 10), notes: "", kLevel: null as KLevel | null, painLevel: "" });
+  const [staffForm, setStaffForm] = useState({
+    prosthetistId: "",
+    physiotherapistId: "",
+    supervisingDoctorId: "",
+    workshopSupervisorId: "",
+  });
 
   const { data: inventoryData } = useInventoryItems();
   const inventoryItems = Array.isArray(inventoryData) ? inventoryData : (inventoryData as any)?.items ?? [];
+
+  const { data: staffData } = useEmployeesBasicList();
+  const staffList: any[] = Array.isArray(staffData)
+    ? staffData
+    : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
 
   // يمنع إعادة تهيئة الفورم مباشرة بعد الحفظ
   const justSavedRef = useRef(false);
@@ -367,7 +383,16 @@ export default function ProstheticsCasePage() {
       return;
     }
     setIntakeForm({
-      amputationType: caseData.amputationType ?? "",
+      amputationType: (() => {
+        const raw = caseData.amputationType;
+        if (!raw) return "";
+        if (Array.isArray(raw)) {
+          const up = raw.some((t: string) => String(t).toUpperCase() === "UPPER");
+          const lo = raw.some((t: string) => String(t).toUpperCase() === "LOWER");
+          return up && lo ? "BOTH" : up ? "UPPER" : lo ? "LOWER" : "";
+        }
+        return String(raw).toUpperCase() === "BOTH" ? "BOTH" : raw;
+      })(),
       amputationSide: caseData.amputationSide ?? "",
       amputationLevel: caseData.amputationLevel ?? "",
       amputationDate: caseData.dateOfAmputation ? caseData.dateOfAmputation.slice(0, 10) : "",
@@ -388,6 +413,12 @@ export default function ProstheticsCasePage() {
       hasRevisionSurgery: caseData.hasRevisionSurgery ?? null,
       revisionDetails: caseData.revisionDetails ?? "",
     });
+    setStaffForm({
+      prosthetistId: caseData.prosthetistId ?? caseData.assignedProsthetistId ?? "",
+      physiotherapistId: caseData.physiotherapistId ?? "",
+      supervisingDoctorId: caseData.supervisingDoctorId ?? "",
+      workshopSupervisorId: caseData.workshopSupervisorId ?? "",
+    });
   }, [caseData?.updatedAt]);
 
   if (isLoading) {
@@ -399,6 +430,18 @@ export default function ProstheticsCasePage() {
   }
 
   const c = caseData;
+
+  // Normalise amputationType (backend may return array OR legacy string)
+  const getAmpTypes = (): string[] => {
+    const raw = intakeForm.amputationType || c.amputationType;
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw.map((s: any) => String(s).toUpperCase());
+    const s = String(raw).toUpperCase();
+    if (s === "BOTH") return ["UPPER", "LOWER"];
+    return s ? [s] : [];
+  };
+  const ampTypes = getAmpTypes();
+
   const patientName = patientFull
     ? `${patientFull.firstName} ${patientFull.lastName}`
     : c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—";
@@ -452,6 +495,19 @@ export default function ProstheticsCasePage() {
   const handleSaveIntake = async () => {
     justSavedRef.current = true;
     await updateCase.mutateAsync({ id, dto: buildIntakeDto() });
+  };
+
+  const handleSaveStaff = async () => {
+    justSavedRef.current = true;
+    await updateCase.mutateAsync({
+      id,
+      dto: {
+        prosthetistId: staffForm.prosthetistId || undefined,
+        physiotherapistId: staffForm.physiotherapistId || undefined,
+        supervisingDoctorId: staffForm.supervisingDoctorId || undefined,
+        workshopSupervisorId: staffForm.workshopSupervisorId || undefined,
+      } as any,
+    });
   };
 
   const handleSaveIntakeAndAdvance = async () => {
@@ -580,11 +636,10 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSubmitAssessmentAndAdvance = async () => {
-    const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
-    if (ampType === "UPPER" || ampType === "BOTH") {
+    if (ampTypes.includes("UPPER")) {
       await submitAssessmentUpper.mutateAsync({ id, dto: buildUpperDto() });
     }
-    if (ampType === "LOWER" || ampType === "BOTH") {
+    if (ampTypes.includes("LOWER")) {
       await submitAssessmentLower.mutateAsync({ id, dto: buildLowerDto() });
     }
     await updateStatus.mutateAsync({ id, status: "COMMITTEE_REVIEW" });
@@ -713,10 +768,26 @@ export default function ProstheticsCasePage() {
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold">حالة أطراف صناعية</h1>
             <CaseStatusBadge status={c.status} />
-            {c.amputationType && <Badge variant="outline">{TYPE_LABEL[c.amputationType]}</Badge>}
+            {ampTypes.map((t) => <Badge key={t} variant="outline">{TYPE_LABEL[t] ?? t}</Badge>)}
             {c.amputationSide && <Badge variant="outline">{SIDE_LABEL[c.amputationSide]}</Badge>}
           </div>
           <StepIndicator status={c.status} />
+          {/* Staff team */}
+          {(c.prosthetist || c.physiotherapist || c.supervisingDoctor || c.workshopSupervisor) && (
+            <div className="flex flex-wrap gap-x-5 gap-y-1 mt-1">
+              {[
+                { label: "أخصائي أطراف", obj: c.prosthetist },
+                { label: "أخصائي علاج فيزيائي", obj: c.physiotherapist },
+                { label: "الطبيب المشرف", obj: c.supervisingDoctor },
+                { label: "مشرف الورشة", obj: c.workshopSupervisor },
+              ].filter((s) => s.obj).map((s) => (
+                <span key={s.label} className="text-xs text-muted-foreground">
+                  <span className="text-foreground font-medium">{s.obj!.firstNameAr} {s.obj!.lastNameAr}</span>
+                  {" · "}{s.obj!.jobTitleAr ?? s.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <PdfExportButton type="prosthetics-case" id={id} size="sm" />
@@ -752,10 +823,75 @@ export default function ProstheticsCasePage() {
           <TabsTrigger value="delivered" className="text-sm py-1.5">التسليم</TabsTrigger>
           <TabsTrigger value="follow_up" className="text-sm py-1.5">المتابعة</TabsTrigger>
           <TabsTrigger value="timeline" className="text-sm py-1.5">السجل الزمني</TabsTrigger>
+          <TabsTrigger value="attachments" className="text-sm py-1.5">المرفقات {attachments.length > 0 && `(${attachments.length})`}</TabsTrigger>
         </TabsList>
 
         {/* ── INTAKE ──────────────────────────────────────────────────────── */}
         <TabsContent value="intake" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
+
+          {/* ── فريق العمل ── */}
+          <Section
+            title="فريق العمل المعالج"
+            action={
+              <Button size="sm" onClick={handleSaveStaff} disabled={updateCase.isPending}>
+                {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : null}
+                حفظ
+              </Button>
+            }
+          >
+            <div className="grid grid-cols-2 gap-4">
+              {([
+                { key: "prosthetistId",      label: "فني الأطراف الصناعية" },
+                { key: "physiotherapistId",  label: "المعالج الفيزيائي" },
+                { key: "supervisingDoctorId","label": "الطبيب المشرف" },
+                { key: "workshopSupervisorId","label": "مشرف الورشة" },
+              ] as { key: keyof typeof staffForm; label: string }[]).map(({ key, label }) => (
+                <div key={key} className="space-y-1.5">
+                  <Label>{label}</Label>
+                  <Select
+                    value={staffForm[key] || "none"}
+                    onValueChange={(v) => setStaffForm((f) => ({ ...f, [key]: v === "none" ? "" : v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      {staffList.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.firstNameAr} {emp.lastNameAr}
+                          {emp.jobTitle?.nameAr ? ` — ${emp.jobTitle.nameAr}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {/* عرض الاسم المحفوظ من السيرفر */}
+                  {key === "prosthetistId" && c.prosthetist && (
+                    <p className="text-xs text-muted-foreground">
+                      محفوظ: {c.prosthetist.firstNameAr} {c.prosthetist.lastNameAr}
+                    </p>
+                  )}
+                  {key === "physiotherapistId" && c.physiotherapist && (
+                    <p className="text-xs text-muted-foreground">
+                      محفوظ: {c.physiotherapist.firstNameAr} {c.physiotherapist.lastNameAr}
+                    </p>
+                  )}
+                  {key === "supervisingDoctorId" && c.supervisingDoctor && (
+                    <p className="text-xs text-muted-foreground">
+                      محفوظ: {c.supervisingDoctor.firstNameAr} {c.supervisingDoctor.lastNameAr}
+                    </p>
+                  )}
+                  {key === "workshopSupervisorId" && c.workshopSupervisor && (
+                    <p className="text-xs text-muted-foreground">
+                      محفوظ: {c.workshopSupervisor.firstNameAr} {c.workshopSupervisor.lastNameAr}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <div className="mt-4">
           <Section title="بيانات الاستقبال">
             <div className="space-y-5">
 
@@ -871,13 +1007,12 @@ export default function ProstheticsCasePage() {
                 <Label>نوع البتر</Label>
                 <div className="flex gap-5">
                   {([["UPPER", "طرف علوي"], ["LOWER", "طرف سفلي"]] as const).map(([val, label]) => {
-                    const current = (intakeForm.amputationType || c.amputationType || "") as string;
-                    const selected = current === val || current === "BOTH";
+                    const selected = ampTypes.includes(val);
                     return (
                       <button key={val} type="button"
                         onClick={() => {
-                          const isUpper = current === "UPPER" || current === "BOTH";
-                          const isLower = current === "LOWER" || current === "BOTH";
+                          const isUpper = ampTypes.includes("UPPER");
+                          const isLower = ampTypes.includes("LOWER");
                           const newUpper = val === "UPPER" ? !isUpper : isUpper;
                           const newLower = val === "LOWER" ? !isLower : isLower;
                           const next = newUpper && newLower ? "BOTH" : newUpper ? "UPPER" : newLower ? "LOWER" : "";
@@ -902,7 +1037,7 @@ export default function ProstheticsCasePage() {
               <div className="space-y-1.5">
                 <Label>مستوى البتر</Label>
                 <AmputationLevelSelector
-                  type={intakeForm.amputationType || c.amputationType || ""}
+                  type={intakeForm.amputationType || (ampTypes.length === 2 ? "BOTH" : ampTypes[0] ?? "")}
                   value={intakeForm.amputationLevel || c.amputationLevel || ""}
                   onChange={(v) => setIntakeForm((f) => ({ ...f, amputationLevel: v }))}
                   onTypeChange={(t) => setIntakeForm((f) => ({ ...f, amputationType: t, amputationLevel: f.amputationLevel }))}
@@ -1015,6 +1150,7 @@ export default function ProstheticsCasePage() {
               </div>
             </div>
           </Section>
+          </div>
         </TabsContent>
 
         {/* ── PATIENT INFO ─────────────────────────────────────────────────── */}
@@ -1137,8 +1273,7 @@ export default function ProstheticsCasePage() {
         <TabsContent value="assessment" className="mt-4 space-y-4" dir="rtl">
           {/* ─── Upper Assessment ───────────────────────────────────────────── */}
           {(() => {
-            const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
-            if (ampType !== "UPPER" && ampType !== "BOTH") return null;
+            if (!ampTypes.includes("UPPER")) return null;
             const f = upperAssessForm;
             const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
             const g = genAssessForm;
@@ -1340,8 +1475,7 @@ export default function ProstheticsCasePage() {
 
           {/* ─── Muscle Strength Assessment (Upper only) ───────────────────── */}
           {(() => {
-            const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
-            if (ampType !== "UPPER" && ampType !== "BOTH") return null;
+            if (!ampTypes.includes("UPPER")) return null;
             const f = upperAssessForm;
             const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
             return (
@@ -1382,8 +1516,7 @@ export default function ProstheticsCasePage() {
 
           {/* ─── 3. Lower Assessment ────────────────────────────────────────── */}
           {(() => {
-            const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
-            if (ampType !== "LOWER" && ampType !== "BOTH") return null;
+            if (!ampTypes.includes("LOWER")) return null;
             const f = lowerAssessForm;
             const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));
             const g = genAssessForm;
@@ -1603,8 +1736,7 @@ export default function ProstheticsCasePage() {
 
           {/* ─── 4. Lower Muscle Strength ───────────────────────────────────── */}
           {(() => {
-            const ampType = String(intakeForm.amputationType || c.amputationType || "").toUpperCase();
-            if (ampType !== "LOWER" && ampType !== "BOTH") return null;
+            if (!ampTypes.includes("LOWER")) return null;
             const f = lowerAssessForm;
             const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));
             const rd = f.romData;
@@ -2225,6 +2357,60 @@ export default function ProstheticsCasePage() {
                       {ev.description && <p className="text-xs text-muted-foreground">{ev.description}</p>}
                       {ev.actorName && <p className="text-xs text-muted-foreground">بواسطة: {ev.actorName}</p>}
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        </TabsContent>
+
+        {/* ── ATTACHMENTS ──────────────────────────────────────────────── */}
+        <TabsContent value="attachments" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
+          <Section
+            title="المرفقات"
+            action={
+              <>
+                <Button size="sm" variant="outline" onClick={() => attachFileRef.current?.click()} disabled={uploadAttachment.isPending}>
+                  {uploadAttachment.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Plus className="h-4 w-4 ml-1" />}
+                  رفع ملف
+                </Button>
+                <input
+                  ref={attachFileRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadAttachment.mutate({ id, file });
+                    e.target.value = "";
+                  }}
+                />
+              </>
+            }
+          >
+            {attachments.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">لا توجد مرفقات</p>
+            ) : (
+              <div className="divide-y">
+                {attachments.map((att) => (
+                  <div key={att.id} className="flex items-center justify-between py-3 gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 shrink-0 rounded bg-muted flex items-center justify-center text-xs font-mono text-muted-foreground">
+                        {att.fileName.split(".").pop()?.toUpperCase() ?? "—"}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{att.fileName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {att.caption && <span className="ml-2">{att.caption}</span>}
+                          {att.fileSize && <span>{(att.fileSize / 1024).toFixed(0)} KB</span>}
+                          {" · "}{new Date(att.uploadedAt).toLocaleDateString("ar")}
+                        </p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost" asChild>
+                      <a href={`${process.env.NEXT_PUBLIC_API_URL ?? ""}/prosthetics/cases/${id}/attachments/${att.id}`} target="_blank" rel="noopener noreferrer">
+                        <Download className="h-4 w-4" />
+                      </a>
+                    </Button>
                   </div>
                 ))}
               </div>
