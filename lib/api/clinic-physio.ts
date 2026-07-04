@@ -471,10 +471,12 @@ export const clinicPhysioApi = {
   list: async (params?: PhysioCaseListParams) => {
     const { data } = await apiClient.get("/physio/cases", { params });
     const d = data?.data ?? data;
+    const total = d?.total ?? 0;
+    const limit = d?.limit ?? params?.limit ?? 15;
     return {
       items: d?.items ?? d?.data ?? (Array.isArray(d) ? d : []) as PhysioCase[],
-      total: d?.total ?? 0,
-      totalPages: d?.totalPages ?? 0,
+      total,
+      totalPages: d?.totalPages ?? (total > 0 ? Math.ceil(total / limit) : 0),
     };
   },
 

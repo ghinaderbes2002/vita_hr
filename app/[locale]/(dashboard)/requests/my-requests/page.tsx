@@ -100,6 +100,7 @@ export default function MyRequestsPage() {
   const [cancelLeaveDialogOpen, setCancelLeaveDialogOpen] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [cancelLeaveReason, setCancelLeaveReason] = useState("");
+  const [cancelLeaveIsApproved, setCancelLeaveIsApproved] = useState(false);
 
   const { data: leaveData, isLoading: leaveLoading } = useMyLeaveRequests();
   const deleteLeaveRequest = useDeleteLeaveRequest();
@@ -164,10 +165,15 @@ export default function MyRequestsPage() {
 
   const confirmLeaveCancel = async () => {
     if (selectedLeave && cancelLeaveReason) {
-      await cancelLeaveRequest.mutateAsync({ id: selectedLeave.id, data: { reason: cancelLeaveReason } });
-      setCancelLeaveDialogOpen(false);
-      setSelectedLeave(null);
-      setCancelLeaveReason("");
+      try {
+        await cancelLeaveRequest.mutateAsync({ id: selectedLeave.id, data: { reason: cancelLeaveReason } });
+        setCancelLeaveDialogOpen(false);
+        setSelectedLeave(null);
+        setCancelLeaveReason("");
+        setCancelLeaveIsApproved(false);
+      } catch {
+        // error toast is handled by onError in the hook — keep dialog open
+      }
     }
   };
 
@@ -264,7 +270,19 @@ export default function MyRequestsPage() {
                       </>
                     )}
                     {["PENDING_MANAGER", "PENDING_HR", "MANAGER_APPROVED"].includes(request.status) && (
-                      <DropdownMenuItem onClick={() => { setSelectedLeave(request); setCancelLeaveDialogOpen(true); }} className="text-destructive">
+                      <DropdownMenuItem
+                        onClick={() => { setCancelLeaveIsApproved(false); setSelectedLeave(request); setCancelLeaveDialogOpen(true); }}
+                        className="text-destructive"
+                      >
+                        <XCircle className="h-4 w-4 ml-2" />
+                        {t("requests.actions.cancel")}
+                      </DropdownMenuItem>
+                    )}
+                    {request.status === "APPROVED" && new Date() < new Date(request.startDate) && (
+                      <DropdownMenuItem
+                        onClick={() => { setCancelLeaveIsApproved(true); setSelectedLeave(request); setCancelLeaveDialogOpen(true); }}
+                        className="text-destructive"
+                      >
                         <XCircle className="h-4 w-4 ml-2" />
                         {t("requests.actions.cancel")}
                       </DropdownMenuItem>
@@ -615,11 +633,15 @@ export default function MyRequestsPage() {
       />
 
       {/* Leave cancel dialog */}
-      <Dialog open={cancelLeaveDialogOpen} onOpenChange={setCancelLeaveDialogOpen}>
+      <Dialog open={cancelLeaveDialogOpen} onOpenChange={(v) => { setCancelLeaveDialogOpen(v); if (!v) { setCancelLeaveReason(""); setCancelLeaveIsApproved(false); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("leaves.cancelTitle")}</DialogTitle>
-            <DialogDescription>{t("leaves.cancelDescription")}</DialogDescription>
+            <DialogDescription>
+              {cancelLeaveIsApproved
+                ? "هل تريد إلغاء هذه الإجازة المعتمدة؟ سيتم إشعار مديرك المباشر والموارد البشرية."
+                : t("leaves.cancelDescription")}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="cancel-leave-reason">{t("leaves.cancelReasonLabel")}</Label>

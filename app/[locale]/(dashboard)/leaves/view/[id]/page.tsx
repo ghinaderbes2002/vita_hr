@@ -61,8 +61,8 @@ export default function ViewLeaveRequestPage() {
   const isCeo = hasRole("CEO") || hasRole("CEOO");
   const isOwner = !!request && (request.employeeId === currentUser?.employeeId || request.employeeId === currentUser?.id);
 
-  const canApproveAsHr = !isCeo && (isAdmin() || hasPermission("leave_requests:approve_hr")) && request?.status === "PENDING_HR";
-  const canApproveAsManager = (isAdmin() || hasPermission("leave_requests:approve_manager")) && request?.status === "PENDING_MANAGER";
+  const canApproveAsHr = !isCeo && !isOwner && (isAdmin() || hasPermission("leave_requests:approve_hr")) && request?.status === "PENDING_HR";
+  const canApproveAsManager = !isOwner && (isAdmin() || hasPermission("leave_requests:approve_manager")) && request?.status === "PENDING_MANAGER";
 
   const handleSubmit = async () => {
     await submitRequest.mutateAsync(id);

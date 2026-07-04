@@ -339,8 +339,8 @@ export const clinicProstheticsApi = {
     return data?.data ?? data;
   },
 
-  signCommitteeDecision: async (id: string, role: "DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST", signatureBase64: string) => {
-    const { data } = await apiClient.post(`/prosthetics/cases/${id}/committee/sign`, { role, signatureBase64 });
+  signCommitteeDecision: async (id: string, role: "DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST", signatureUrl: string) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${id}/committee/sign`, { role, signatureUrl });
     return data?.data ?? data;
   },
 
@@ -379,19 +379,45 @@ export const clinicProstheticsApi = {
     return data?.data ?? data;
   },
 
-  addWorkshopSession: async (id: string, dto: Record<string, unknown>) => {
-    const { data } = await apiClient.post(`/prosthetics/cases/${id}/sessions/workshop`, dto);
+  getTreatmentPrograms: async (caseId: string): Promise<any[]> => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${caseId}/treatment-programs`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  createTreatmentProgram: async (caseId: string, dto: TreatmentProgramSessionDto) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/treatment-programs`, dto);
     return data?.data ?? data;
   },
 
-  addPtSession: async (id: string, dto: Record<string, unknown>) => {
-    const { data } = await apiClient.post(`/prosthetics/cases/${id}/sessions/pt`, dto);
+  updateTreatmentProgram: async (caseId: string, programId: string, dto: TreatmentProgramSessionDto) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/treatment-programs/${programId}`, dto);
     return data?.data ?? data;
   },
 
-  addMediaSession: async (id: string, dto: Record<string, unknown>) => {
-    const { data } = await apiClient.post(`/prosthetics/cases/${id}/sessions/media`, dto);
+  deleteTreatmentProgram: async (caseId: string, programId: string) => {
+    const { data } = await apiClient.delete(`/prosthetics/cases/${caseId}/treatment-programs/${programId}`);
     return data?.data ?? data;
+  },
+
+  getReviewPrograms: async (caseId: string): Promise<any[]> => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${caseId}/review-program`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  createReviewProgram: async (caseId: string, dto: ReviewProgramDto) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/review-program`, dto);
+    return data?.data ?? data;
+  },
+
+  updateReviewProgram: async (caseId: string, reviewId: string, dto: ReviewProgramDto) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/review-program/${reviewId}`, dto);
+    return data?.data ?? data;
+  },
+
+  deleteReviewProgram: async (caseId: string, reviewId: string) => {
+    await apiClient.delete(`/prosthetics/cases/${caseId}/review-program/${reviewId}`);
   },
 
   addConsumable: async (id: string, dto: Record<string, unknown>) => {
@@ -399,13 +425,18 @@ export const clinicProstheticsApi = {
     return data?.data ?? data;
   },
 
-  submitFinalEvaluation: async (id: string, dto: Record<string, unknown>) => {
+  getFinalEvaluation: async (id: string) => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${id}/final-evaluation`);
+    return data?.data ?? data;
+  },
+
+  submitFinalEvaluation: async (id: string, dto: FinalEvaluationDto) => {
     const { data } = await apiClient.post(`/prosthetics/cases/${id}/final-evaluation`, dto);
     return data?.data ?? data;
   },
 
-  signFinalEvaluation: async (id: string, signatureBase64: string) => {
-    const { data } = await apiClient.post(`/prosthetics/cases/${id}/final-evaluation/director-sign`, { signatureBase64 });
+  signFinalEvaluation: async (id: string, dto: DirectorSignDto) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${id}/final-evaluation/director-sign`, dto);
     return data?.data ?? data;
   },
 
@@ -469,4 +500,403 @@ export const clinicProstheticsApi = {
     });
     return data?.data ?? data;
   },
+
+  deleteAttachment: async (id: string, attachmentId: string): Promise<void> => {
+    await apiClient.delete(`/prosthetics/cases/${id}/attachments/${attachmentId}`);
+  },
+
+  downloadAttachment: async (id: string, attachmentId: string): Promise<Blob> => {
+    const response = await apiClient.get(
+      `/prosthetics/cases/${id}/attachments/${attachmentId}/download`,
+      { responseType: "blob" },
+    );
+    return response.data;
+  },
+
+  submitAnkleDisarticulation: async (id: string, dto: AnkleDisarticulationDto) => {
+    const response = await apiClient.post(
+      `/prosthetics/cases/${id}/assessment-ankle-disarticulation`,
+      dto,
+    );
+    return response.data;
+  },
+
+  submitKneeDisarticulation: async (id: string, dto: KneeDisarticulationDto) => {
+    const response = await apiClient.post(
+      `/prosthetics/cases/${id}/assessment-knee-disarticulation`,
+      dto,
+    );
+    return response.data;
+  },
+
+  submitTransradial: async (id: string, dto: TransradialDto) => {
+    const response = await apiClient.post(
+      `/prosthetics/cases/${id}/assessment-transradial`,
+      dto,
+    );
+    return response.data;
+  },
+
+  submitTranshumeral: async (id: string, dto: TranshumeralDto) => {
+    const response = await apiClient.post(
+      `/prosthetics/cases/${id}/assessment-transhumeral`,
+      dto,
+    );
+    return response.data;
+  },
+
+  submitElbowDisarticulation: async (id: string, dto: ElbowDisarticulationDto) => {
+    const response = await apiClient.post(
+      `/prosthetics/cases/${id}/assessment-elbow-disarticulation`,
+      dto,
+    );
+    return response.data;
+  },
+
+  // ── Employee signatures ─────────────────────────────────────────────────────
+  getEmployeeSignature: async (employeeId: string): Promise<{ hasSignature: boolean; signatureUrl: string | null }> => {
+    const { data } = await apiClient.get(`/employees/${employeeId}/signature`);
+    return data?.data ?? data;
+  },
+
+  uploadEmployeeSignature: async (employeeId: string, file: File): Promise<{ signatureUrl: string }> => {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await apiClient.post(`/employees/${employeeId}/signature`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data?.data ?? data;
+  },
+
+  uploadSignatureFile: async (file: File): Promise<{ url: string }> => {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await apiClient.post(`/uploads/signatures`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    const d = data?.data ?? data;
+    return { url: d?.url ?? d?.signatureUrl ?? d?.path ?? "" };
+  },
+
+
+  submitHemipelvectomy: async (id: string, dto: HemipelvectomyDto) => {
+    const response = await apiClient.post(
+      `/prosthetics/cases/${id}/assessment-hemipelvectomy`,
+      dto,
+    );
+    return response.data;
+  },
+
+  submitTranstibial: async (id: string, dto: TranstibialDto) => {
+    const response = await apiClient.post(
+      `/prosthetics/cases/${id}/assessment-transtibial`,
+      dto,
+    );
+    return response.data;
+  },
+
+  submitTransfemoral: async (id: string, dto: TransfemoralDto) => {
+    const response = await apiClient.post(
+      `/prosthetics/cases/${id}/assessment-transfemoral`,
+      dto,
+    );
+    return response.data;
+  },
+
+  // ── Pro-015 Balance Assessment ───────────────────────────────────────────────
+  getBalanceAssessments: async (caseId: string): Promise<any[]> => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${caseId}/balance-assessment`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+  addBalanceAssessment: async (caseId: string, dto: BalanceAssessmentDto) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/balance-assessment`, dto);
+    return data?.data ?? data;
+  },
+  updateBalanceAssessment: async (caseId: string, formId: string, dto: BalanceAssessmentDto) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/balance-assessment/${formId}`, dto);
+    return data?.data ?? data;
+  },
+  deleteBalanceAssessment: async (caseId: string, formId: string) => {
+    await apiClient.delete(`/prosthetics/cases/${caseId}/balance-assessment/${formId}`);
+  },
+
+  // ── Pro-019 Prosthetic Delivery ──────────────────────────────────────────────
+  getProstheticDelivery: async (caseId: string) => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${caseId}/prosthetic-delivery`);
+    return data?.data ?? data ?? null;
+  },
+  saveProstheticDelivery: async (caseId: string, dto: ProstheticDeliveryDto) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/prosthetic-delivery`, dto);
+    return data?.data ?? data;
+  },
+  addDeliveryItem: async (caseId: string, dto: DeliveryItemDto) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/prosthetic-delivery/items`, dto);
+    return data?.data ?? data;
+  },
+  updateDeliveryItem: async (caseId: string, itemId: string, dto: DeliveryItemDto) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/prosthetic-delivery/items/${itemId}`, dto);
+    return data?.data ?? data;
+  },
+  deleteDeliveryItem: async (caseId: string, itemId: string) => {
+    await apiClient.delete(`/prosthetics/cases/${caseId}/prosthetic-delivery/items/${itemId}`);
+  },
+
+  // ── Pro-016 Gait Analysis ─────────────────────────────────────────────────────
+  getGaitAnalysisForms: async (caseId: string): Promise<any[]> => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${caseId}/gait-analysis-forms`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+  addGaitAnalysisForm: async (caseId: string, dto: GaitAnalysisFormDto) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/gait-analysis-forms`, dto);
+    return data?.data ?? data;
+  },
+  updateGaitAnalysisForm: async (caseId: string, formId: string, dto: GaitAnalysisFormDto) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/gait-analysis-forms/${formId}`, dto);
+    return data?.data ?? data;
+  },
+  deleteGaitAnalysisForm: async (caseId: string, formId: string) => {
+    await apiClient.delete(`/prosthetics/cases/${caseId}/gait-analysis-forms/${formId}`);
+  },
 };
+
+export interface AnkleDisarticulationDto {
+  side: "RIGHT" | "LEFT";
+  notes?: string;
+  footMeasurement?: string;
+  soundLimb?: Record<string, string>;
+  affectedLimb?: Record<string, string>;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
+}
+
+export interface KneeDisarticulationDto {
+  side: "RIGHT" | "LEFT";
+  notes?: string;
+  footMeasurement?: string;
+  soundLimb?: Record<string, string>;
+  affectedLimb?: Record<string, string>;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
+}
+
+export interface TransradialDto {
+  side: "RIGHT" | "LEFT";
+  notes?: string;
+  soundLimb?: Record<string, string>;
+  affectedLimb?: Record<string, string>;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
+}
+
+export interface TranshumeralDto {
+  side: "RIGHT" | "LEFT";
+  notes?: string;
+  soundLimb?: Record<string, string>;
+  affectedLimb?: Record<string, string>;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
+}
+
+export interface ElbowDisarticulationDto {
+  side: "RIGHT" | "LEFT";
+  notes?: string;
+  soundLimb?: Record<string, string>;
+  affectedLimb?: Record<string, string>;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
+}
+
+export interface TreatmentProgramDto {
+  description?: string;
+  sessionStartTime?: string;
+  sessionEndTime?: string;
+  technicianId?: string;
+  technicianSignatureUrl?: string;
+  managerSignatureUrl?: string;
+  notes?: string;
+}
+
+export interface TreatmentProgramSessionDto {
+  sessionDate?: string;
+  sessionTime?: string;
+  sessionStartTime?: string;
+  sessionEndTime?: string;
+  description?: string;
+  technicianId?: string;
+  technicianSignatureUrl?: string;
+  managerSignatureUrl?: string;
+  notes?: string;
+}
+
+export interface ReviewProgramDto {
+  sessionDate?: string;
+  sessionTime?: string;
+  description?: string;
+  technicianId?: string;
+  sessionStartTime?: string;
+  sessionEndTime?: string;
+  signatureUrl?: string;
+  notes?: string;
+}
+
+export interface BalanceResultItem { key: string; result: string; }
+export interface ExerciseProgramItem { exercise: string; position: string; dosage: string; support: string; notes?: string; selected?: boolean; }
+export interface BalanceAssessmentDto {
+  assessmentDate?: string;
+  previousProsthesis?: boolean;
+  assistiveDevice?: string;
+  staticBalance?: BalanceResultItem[];
+  dynamicTasks?: BalanceResultItem[];
+  dynamicActivities?: BalanceResultItem[];
+  historyOfFalls?: boolean;
+  nearFalls?: boolean;
+  fearOfFalling?: boolean;
+  fallRiskLevel?: string;
+  overallBalanceLevel?: string;
+  limitingFactors?: string[];
+  exerciseProgram?: ExerciseProgramItem[];
+  programProgression?: string[];
+  followUpWeeks?: number;
+  expectedOutcomes?: string[];
+  physiotherapistId?: string;
+  physiotherapistSignatureUrl?: string;
+  committeeHeadId?: string;
+  committeeHeadSignatureUrl?: string;
+  followUpDate?: string;
+  notes?: string;
+}
+
+export interface ProstheticDeliveryDto {
+  inspectionDate?: string;
+  prosthetistId?: string;
+  physiotherapistId?: string;
+  ceoId?: string;
+  ceoSignatureUrl?: string;
+  signatureDate?: string;
+}
+
+export interface DeliveryItemDto {
+  deliveredProduct?: string;
+  partCode?: string;
+  quantity?: number;
+  company?: string;
+  notes?: string;
+}
+
+export interface GaitPhaseDto { deviations?: string[]; possibleCause?: string; notes?: string; }
+export interface RehabPlanDto { strengthening?: string[]; balanceTrain?: string[]; gaitTrain?: string[]; }
+export interface GaitAnalysisFormDto {
+  sessionDate?: string;
+  suspensionSystem?: string[];
+  socketBearing?: string;
+  kneeJointType?: string;
+  footType?: string;
+  patientComplaints?: string[];
+  painIntensity?: number;
+  alignmentCheck?: string;
+  hasRomLimitations?: boolean;
+  hasHipFlexionContracture?: boolean;
+  hasKneeFlexionContracture?: boolean;
+  weakHipAbductors?: boolean;
+  weakHipExtensors?: boolean;
+  weakTrunkMuscles?: boolean;
+  otherWeakness?: string;
+  trunkStability?: string;
+  abdominalControl?: string;
+  pelvicControl?: string;
+  sittingBalance?: string;
+  standingBalance?: string;
+  assistiveDevice?: string;
+  speedMs?: number;
+  cadence?: number;
+  stepLengthProsCm?: number;
+  stepLengthSoundCm?: number;
+  stancePercProsthetic?: number;
+  stancePercSound?: number;
+  symmetry?: string;
+  initialContact?: GaitPhaseDto;
+  loadingResponse?: GaitPhaseDto;
+  midStance?: GaitPhaseDto;
+  terminalStance?: GaitPhaseDto;
+  preSwing?: GaitPhaseDto;
+  swingPhase?: GaitPhaseDto;
+  gaitNotes?: string;
+  prostheticIssues?: string[];
+  mainProblem?: string;
+  likelyCauses?: string[];
+  recommendations?: string[];
+  rehabPlan?: RehabPlanDto;
+  rehabNotes?: string;
+  examinerProsthetistId?: string;
+  prosthetistSignatureUrl?: string;
+  examinerPhysiotherapistId?: string;
+  physiotherapistSignatureUrl?: string;
+  notes?: string;
+}
+
+export interface FinalEvaluationDto {
+  supervisorId?: string;
+  residualLimbCondition?: string;
+  suspensionSystemUsed?: string;
+  socksDelivered?: number;
+  linersDelivered?: number;
+  fittingDate?: string;
+  generalNotes?: string;
+  physioOpinion?: string;
+  departmentHeadOpinion?: string;
+  prosthetistOpinion?: string;
+  prosthetistSupervisorOpinion?: string;
+  committeeHeadOpinion?: string;
+  expertOpinion?: string;
+  readyForDelivery?: boolean;
+  needsFollowUp?: boolean;
+  followUpPlan?: string;
+  medicalDirectorNotes?: string;
+}
+
+export interface DirectorSignDto {
+  signatureBase64: string;
+  medicalDirectorNotes?: string;
+  managerNotes?: string;
+  patientFileComplete?: boolean;
+}
+
+export interface HemipelvectomyDto {
+  side: "RIGHT" | "LEFT";
+  notes?: string;
+  footMeasurement?: string;
+  soundLimb?: Record<string, string>;
+  affectedLimb?: Record<string, string>;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
+}
+
+export interface TranstibialDto {
+  side: "RIGHT" | "LEFT";
+  notes?: string;
+  footMeasurement?: string;
+  soundLimb?: Record<string, string>;
+  affectedLimb?: Record<string, string>;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
+}
+
+export interface TransfemoralDto {
+  side: "RIGHT" | "LEFT";
+  notes?: string;
+  footMeasurement?: string;
+  soundLimb?: Record<string, string>;
+  affectedLimb?: Record<string, string>;
+  examinerProsthetistIds?: string[];
+  examinerPhysioIds?: string[];
+  examinerSupervisorIds?: string[];
+}

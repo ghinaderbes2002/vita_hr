@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
   ArrowRight, User, Clock, Trash2, Plus, Download, Loader2,
-  CheckCircle2, ChevronDown,
+  CheckCircle2, ChevronDown, Check, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -33,21 +35,54 @@ import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import {
   useProstheticsCase, useUpdateProstheticsCase, useUpdateProstheticsStatus,
   useSubmitAssessmentUpper, useSubmitAssessmentLower,
   useSubmitCommitteeOpinion, useSubmitCommitteeDecision, useSignCommitteeDecision,
   useCaseComponents, useAddCaseComponent, useDeleteCaseComponent,
-  useSubmitGaitAnalysis, useSubmitBalanceAssessment,
+  useSubmitGaitAnalysis,
   useAddConsumable, useSubmitFinalEvaluation, useSignFinalEvaluation,
   useSubmitDelivery, useSignDelivery,
   useProstheticsFollowUps, useAddProstheticsFollowUp,
   useProstheticsTimeline, useDownloadProstheticsPdf,
-  useProstheticsAttachments, useUploadProstheticsAttachment,
+  useProstheticsAttachments, useUploadProstheticsAttachment, useDeleteProstheticsAttachment,
+  useSubmitAnkleDisarticulation,
+  useSubmitKneeDisarticulation,
+  useSubmitTransfemoral,
+  useSubmitTranstibial,
+  useSubmitHemipelvectomy,
+  useSubmitElbowDisarticulation,
+  useSubmitTranshumeral,
+  useSubmitTransradial,
+  useTreatmentPrograms,
+  useCreateTreatmentProgram,
+  useUpdateTreatmentProgram,
+  useDeleteTreatmentProgram,
+  useReviewPrograms,
+  useCreateReviewProgram,
+  useUpdateReviewProgram,
+  useDeleteReviewProgram,
+  useProstheticDelivery,
+  useSaveProstheticDelivery,
+  useAddDeliveryItem,
+  useUpdateDeliveryItem,
+  useDeleteDeliveryItem,
+  useBalanceAssessments,
+  useAddBalanceAssessment,
+  useUpdateBalanceAssessment,
+  useDeleteBalanceAssessment,
+  useGaitAnalysisForms,
+  useAddGaitAnalysisForm,
+  useUpdateGaitAnalysisForm,
+  useDeleteGaitAnalysisForm,
+  useFinalEvaluation,
 } from "@/lib/hooks/use-clinic-prosthetics";
 import {
+  clinicProstheticsApi,
   ProstheticsStatus, ProstheticsCase,
   AmputationType, AmputationSide, AmputationCause, KLevel, CommitteeDecision, ProstheticType,
+  AnkleDisarticulationDto, KneeDisarticulationDto, TransfemoralDto, TranstibialDto, HemipelvectomyDto, ElbowDisarticulationDto, TranshumeralDto, TransradialDto, TreatmentProgramDto, ProstheticDeliveryDto, DeliveryItemDto, FinalEvaluationDto,
 } from "@/lib/api/clinic-prosthetics";
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
@@ -99,6 +134,2627 @@ function PatientPhotoViewer({ patientId, docId }: { patientId: string; docId: st
   }, [patientId, docId]);
   if (!src) return <span className="opacity-40 text-xs">جاري التحميل...</span>;
   return <img src={src} alt="الصورة الشخصية" className="h-full w-full object-cover" />;
+}
+
+// ─── Attachment card (authenticated fetch → object URL) ───────────────────────
+function AttachmentCard({
+  caseId, att, onDelete, deleteDisabled,
+}: {
+  caseId: string;
+  att: { id: string; fileName: string; fileSize?: number; mimeType?: string };
+  onDelete: () => void;
+  deleteDisabled?: boolean;
+}) {
+  const isImage = att.mimeType?.startsWith("image/");
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let url: string;
+    clinicProstheticsApi.downloadAttachment(caseId, att.id)
+      .then((blob) => { url = URL.createObjectURL(blob); setObjectUrl(url); })
+      .catch(() => {});
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [caseId, att.id]);
+
+  const handleDownload = () => {
+    if (!objectUrl) return;
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = att.fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  return (
+    <div className="group relative rounded-lg border overflow-hidden hover:border-primary transition-colors">
+      <button type="button" onClick={handleDownload} className="block w-full text-right">
+        {isImage ? (
+          objectUrl
+            ? <img src={objectUrl} alt={att.fileName} className="w-full h-32 object-cover bg-muted" />
+            : <div className="w-full h-32 bg-muted flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+        ) : (
+          <div className="w-full h-32 bg-muted flex flex-col items-center justify-center gap-1">
+            <span className="text-2xl font-mono font-bold text-muted-foreground">
+              {att.fileName.split(".").pop()?.toUpperCase() ?? "—"}
+            </span>
+            <Download className="h-4 w-4 text-muted-foreground" />
+          </div>
+        )}
+        <div className="p-2 border-t bg-background">
+          <p className="text-xs font-medium truncate">{att.fileName}</p>
+          {att.fileSize && <p className="text-xs text-muted-foreground">{(att.fileSize / 1024).toFixed(0)} KB</p>}
+        </div>
+      </button>
+      <button
+        onClick={onDelete}
+        disabled={deleteDisabled}
+        className="absolute top-1 left-1 h-6 w-6 rounded bg-destructive/80 hover:bg-destructive flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+      >
+        <Trash2 className="h-3 w-3 text-white" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Treatment program card (inline form — Pro-004) ────────────────────────────
+function TreatmentProgramCard({
+  caseId, program, idx, staffList, currentUser,
+}: {
+  caseId: string;
+  program: any;
+  idx: number;
+  staffList: any[];
+  currentUser: any;
+}) {
+  const updateProgram = useUpdateTreatmentProgram();
+  const deleteProgram = useDeleteTreatmentProgram();
+  const [editing, setEditing] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [form, setForm] = useState({
+    sessionDate: program.sessionDate ? new Date(program.sessionDate).toISOString().slice(0, 10) : "",
+    sessionTime: program.sessionTime ?? "",
+    technicianId: program.technicianId ?? "",
+    description: program.description ?? "",
+    sessionStartTime: program.sessionStartTime ?? "",
+    sessionEndTime: program.sessionEndTime ?? "",
+    notes: program.notes ?? "",
+    technicianSignatureUrl: program.technicianSignatureUrl ?? "",
+    managerSignatureUrl: program.managerSignatureUrl ?? "",
+  });
+  const [sigUploadFor, setSigUploadFor] = useState<"technician" | "manager" | null>(null);
+  const sigFileRef = useRef<HTMLInputElement>(null);
+
+  const handleSignatureClick = async (role: "technician" | "manager") => {
+    const empId = role === "technician" ? form.technicianId : currentUser?.employeeId;
+    if (!empId) { toast.error(role === "technician" ? "أدخل رقم المعالج أولاً" : "لم يُعثر على بيانات المستخدم"); return; }
+    try {
+      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
+      if (sig.hasSignature && sig.signatureUrl) {
+        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
+        if (role === "technician") setForm((f) => ({ ...f, technicianSignatureUrl: url }));
+        else setForm((f) => ({ ...f, managerSignatureUrl: url }));
+      } else {
+        setSigUploadFor(role);
+        setTimeout(() => sigFileRef.current?.click(), 50);
+      }
+    } catch { toast.error("فشل جلب بيانات التوقيع"); }
+  };
+
+  const handleSignatureFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !sigUploadFor) return;
+    const empId = sigUploadFor === "technician" ? form.technicianId : currentUser?.employeeId;
+    if (!empId) return;
+    try {
+      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
+      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
+      if (sigUploadFor === "technician") setForm((f) => ({ ...f, technicianSignatureUrl: url }));
+      else setForm((f) => ({ ...f, managerSignatureUrl: url }));
+      toast.success("تم رفع التوقيع");
+    } catch { toast.error("فشل رفع التوقيع"); }
+    setSigUploadFor(null);
+    e.target.value = "";
+  };
+
+  const handleSave = async () => {
+    await updateProgram.mutateAsync({
+      caseId,
+      programId: program.id,
+      dto: {
+        sessionDate: form.sessionDate ? new Date(form.sessionDate).toISOString() : undefined,
+        sessionTime: form.sessionTime || undefined,
+        description: form.description || undefined,
+        sessionStartTime: form.sessionStartTime || undefined,
+        sessionEndTime: form.sessionEndTime || undefined,
+        technicianId: form.technicianId || undefined,
+        technicianSignatureUrl: form.technicianSignatureUrl || undefined,
+        managerSignatureUrl: form.managerSignatureUrl || undefined,
+        notes: form.notes || undefined,
+      },
+    });
+    setEditing(false);
+  };
+
+  const technicianName = staffList.find((e) => e.id === form.technicianId);
+  const displayDate = form.sessionDate ? new Date(form.sessionDate).toLocaleDateString("en-GB") : null;
+
+  return (
+    <div className="rounded-lg border p-3 space-y-2">
+      <div className="flex justify-between items-start">
+        <div className="flex gap-2 items-center flex-wrap">
+          <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{idx + 1}</Badge>
+          {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
+          {form.sessionTime && <span className="text-xs text-muted-foreground">{form.sessionTime}</span>}
+        </div>
+        <div className="flex gap-1.5">
+          <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
+            {editing ? "إغلاق" : "تعديل"}
+          </Button>
+          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setConfirmDel(true)}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={confirmDel} onOpenChange={setConfirmDel}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogDescription>هل تريد حذف هذه الجلسة؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+            <Button variant="outline" onClick={() => setConfirmDel(false)}>لا</Button>
+            <Button variant="destructive" disabled={deleteProgram.isPending}
+              onClick={() => { deleteProgram.mutate({ caseId, programId: program.id }); setConfirmDel(false); }}>
+              {deleteProgram.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {!editing && (
+        <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
+          {form.description && <p><span className="font-medium text-foreground">الشرح: </span>{form.description}</p>}
+          {technicianName && <p><span className="font-medium text-foreground">المعالج: </span>{technicianName.firstNameAr} {technicianName.lastNameAr}</p>}
+          {(form.sessionStartTime || form.sessionEndTime) && (
+            <p><span className="font-medium text-foreground">الوقت: </span>{form.sessionStartTime || "—"} — {form.sessionEndTime || "—"}</p>
+          )}
+          {form.notes && <p><span className="font-medium text-foreground">ملاحظات: </span>{form.notes}</p>}
+          {(form.technicianSignatureUrl || form.managerSignatureUrl) && (
+            <div className="flex gap-3 pt-1">
+              {form.technicianSignatureUrl && (
+                <div className="text-center">
+                  <img src={form.technicianSignatureUrl} alt="التوقيع" className="h-10 object-contain border rounded bg-white" />
+                  <p className="text-[10px] mt-0.5">التوقيع</p>
+                </div>
+              )}
+              {form.managerSignatureUrl && (
+                <div className="text-center">
+                  <img src={form.managerSignatureUrl} alt="توقيع مدير القسم" className="h-10 object-contain border rounded bg-white" />
+                  <p className="text-[10px] mt-0.5">توقيع مدير القسم</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {editing && (
+        <div className="space-y-3 pt-2 border-t">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">تاريخ الجلسة</Label>
+              <Input type="date" value={form.sessionDate} onChange={(e) => setForm((f) => ({ ...f, sessionDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت الجلسة</Label>
+              <Input type="time" value={form.sessionTime} onChange={(e) => setForm((f) => ({ ...f, sessionTime: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">الشرح / الوصف</Label>
+            <Textarea rows={2} placeholder="وصف الجلسة..." value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="resize-none" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">اسم المعالج</Label>
+            <Select value={form.technicianId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, technicianId: v === "none" ? "" : v, technicianSignatureUrl: "" }))}>
+              <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— غير محدد —</SelectItem>
+                {staffList.map((emp: any) => (
+                  <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت دخول الجلسة</Label>
+              <Input type="time" value={form.sessionStartTime} onChange={(e) => setForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت الخروج من الجلسة</Label>
+              <Input type="time" value={form.sessionEndTime} onChange={(e) => setForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">ملاحظات</Label>
+            <Textarea rows={2} placeholder="ملاحظات إضافية..." value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="text-xs font-semibold">التوقيع</p>
+              {form.technicianSignatureUrl ? (
+                <div className="relative">
+                  <img src={form.technicianSignatureUrl} alt="التوقيع" className="h-16 w-full object-contain border rounded bg-white" />
+                  <button onClick={() => setForm((f) => ({ ...f, technicianSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                </div>
+              ) : (
+                <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleSignatureClick("technician")} disabled={!form.technicianId}>
+                  {form.technicianId ? "جلب / رفع التوقيع" : "اختر المعالج أولاً"}
+                </Button>
+              )}
+            </div>
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="text-xs font-semibold">توقيع مدير القسم</p>
+              {form.managerSignatureUrl ? (
+                <div className="relative">
+                  <img src={form.managerSignatureUrl} alt="توقيع مدير القسم" className="h-16 w-full object-contain border rounded bg-white" />
+                  <button onClick={() => setForm((f) => ({ ...f, managerSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                </div>
+              ) : (
+                <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleSignatureClick("manager")}>
+                  جلب / رفع التوقيع
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleSave} disabled={updateProgram.isPending} className="flex-1 gap-1">
+              {updateProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+              حفظ
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+          </div>
+
+          <input ref={sigFileRef} type="file" accept="image/*" className="hidden" onChange={handleSignatureFileChange} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Treatment programs section (Pro-004) ─────────────────────────────────────
+function TreatmentProgramsSection({
+  caseId, staffList, currentUser,
+}: {
+  caseId: string;
+  staffList: any[];
+  currentUser: any;
+}) {
+  const { data: programs = [], isLoading } = useTreatmentPrograms(caseId);
+  const createProgram = useCreateTreatmentProgram();
+  const [showForm, setShowForm] = useState(false);
+  const [newForm, setNewForm] = useState({
+    sessionDate: new Date().toISOString().slice(0, 10),
+    sessionTime: "",
+    description: "",
+    technicianId: "",
+    sessionStartTime: "",
+    sessionEndTime: "",
+    notes: "",
+    technicianSignatureUrl: "",
+    managerSignatureUrl: "",
+  });
+  const [newSigUploadFor, setNewSigUploadFor] = useState<"technician" | "manager" | null>(null);
+  const newSigFileRef = useRef<HTMLInputElement>(null);
+
+  const handleNewSignatureClick = async (role: "technician" | "manager") => {
+    const empId = role === "technician" ? newForm.technicianId : currentUser?.employeeId;
+    if (!empId) { toast.error(role === "technician" ? "أدخل رقم المعالج أولاً" : "لم يُعثر على بيانات المستخدم"); return; }
+    try {
+      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
+      if (sig.hasSignature && sig.signatureUrl) {
+        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
+        if (role === "technician") setNewForm((f) => ({ ...f, technicianSignatureUrl: url }));
+        else setNewForm((f) => ({ ...f, managerSignatureUrl: url }));
+      } else {
+        setNewSigUploadFor(role);
+        setTimeout(() => newSigFileRef.current?.click(), 50);
+      }
+    } catch { toast.error("فشل جلب بيانات التوقيع"); }
+  };
+
+  const handleNewSignatureFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !newSigUploadFor) return;
+    const empId = newSigUploadFor === "technician" ? newForm.technicianId : currentUser?.employeeId;
+    if (!empId) return;
+    try {
+      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
+      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
+      if (newSigUploadFor === "technician") setNewForm((f) => ({ ...f, technicianSignatureUrl: url }));
+      else setNewForm((f) => ({ ...f, managerSignatureUrl: url }));
+      toast.success("تم رفع التوقيع");
+    } catch { toast.error("فشل رفع التوقيع"); }
+    setNewSigUploadFor(null);
+    e.target.value = "";
+  };
+
+  const handleAdd = async () => {
+    if (!newForm.sessionDate) return;
+    await createProgram.mutateAsync({
+      caseId,
+      dto: {
+        sessionDate: new Date(newForm.sessionDate).toISOString(),
+        sessionTime: newForm.sessionTime || undefined,
+        description: newForm.description || undefined,
+        technicianId: newForm.technicianId || undefined,
+        sessionStartTime: newForm.sessionStartTime || undefined,
+        sessionEndTime: newForm.sessionEndTime || undefined,
+        notes: newForm.notes || undefined,
+        technicianSignatureUrl: newForm.technicianSignatureUrl || undefined,
+        managerSignatureUrl: newForm.managerSignatureUrl || undefined,
+      },
+    });
+    setNewForm({ sessionDate: new Date().toISOString().slice(0, 10), sessionTime: "", description: "", technicianId: "", sessionStartTime: "", sessionEndTime: "", notes: "", technicianSignatureUrl: "", managerSignatureUrl: "" });
+    setShowForm(false);
+  };
+
+  return (
+    <Section
+      title={`برنامج المتابعة${programs.length > 0 ? ` (${programs.length})` : ""}`}
+      action={
+        <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
+          <Plus className="h-3.5 w-3.5" />
+          {showForm ? "إغلاق" : "إضافة جلسة"}
+        </Button>
+      }
+    >
+      {showForm && (
+        <div className="rounded-lg border border-dashed p-3 space-y-3 mb-3 bg-muted/30">
+          <p className="text-sm font-medium">جلسة جديدة</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">تاريخ الجلسة *</Label>
+              <Input type="date" value={newForm.sessionDate} onChange={(e) => setNewForm((f) => ({ ...f, sessionDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت الجلسة</Label>
+              <Input type="time" value={newForm.sessionTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionTime: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">الشرح / الوصف</Label>
+              <Textarea rows={2} className="resize-none" placeholder="وصف الجلسة..." value={newForm.description} onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">اسم المعالج</Label>
+              <Select value={newForm.technicianId || "none"} onValueChange={(v) => setNewForm((f) => ({ ...f, technicianId: v === "none" ? "" : v }))}>
+                <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— غير محدد —</SelectItem>
+                  {staffList.map((emp: any) => (
+                    <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت دخول الجلسة</Label>
+              <Input type="time" value={newForm.sessionStartTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت الخروج من الجلسة</Label>
+              <Input type="time" value={newForm.sessionEndTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">ملاحظات</Label>
+              <Textarea rows={2} className="resize-none" placeholder="ملاحظات الجلسة..." value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
+            </div>
+            <div className="col-span-2 grid grid-cols-2 gap-3">
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-xs font-semibold">التوقيع</p>
+                {newForm.technicianSignatureUrl ? (
+                  <div className="relative">
+                    <img src={newForm.technicianSignatureUrl} alt="التوقيع" className="h-16 w-full object-contain border rounded bg-white" />
+                    <button onClick={() => setNewForm((f) => ({ ...f, technicianSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                  </div>
+                ) : (
+                  <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleNewSignatureClick("technician")} disabled={!newForm.technicianId}>
+                    {newForm.technicianId ? "جلب / رفع التوقيع" : "اختر المعالج أولاً"}
+                  </Button>
+                )}
+              </div>
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-xs font-semibold">توقيع مدير القسم</p>
+                {newForm.managerSignatureUrl ? (
+                  <div className="relative">
+                    <img src={newForm.managerSignatureUrl} alt="توقيع مدير القسم" className="h-16 w-full object-contain border rounded bg-white" />
+                    <button onClick={() => setNewForm((f) => ({ ...f, managerSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                  </div>
+                ) : (
+                  <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleNewSignatureClick("manager")}>
+                    جلب / رفع التوقيع
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          <input ref={newSigFileRef} type="file" accept="image/*" className="hidden" onChange={handleNewSignatureFileChange} />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleAdd} disabled={!newForm.sessionDate || createProgram.isPending} className="gap-1">
+              {createProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+              إضافة
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : programs.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">لا توجد جلسات مسجّلة</p>
+      ) : (
+        <div className="space-y-3">
+          {programs.map((program: any, idx: number) => (
+            <TreatmentProgramCard
+              key={program.id ?? idx}
+              caseId={caseId}
+              program={program}
+              idx={idx}
+              staffList={staffList}
+              currentUser={currentUser}
+            />
+          ))}
+        </div>
+      )}
+    </Section>
+  );
+}
+
+// ─── Review Program card & section ────────────────────────────────────────────
+function ReviewProgramCard({
+  caseId, review, idx, staffList, currentUser,
+}: {
+  caseId: string;
+  review: any;
+  idx: number;
+  staffList: any[];
+  currentUser: any;
+}) {
+  const updateReview = useUpdateReviewProgram();
+  const deleteReview = useDeleteReviewProgram();
+  const [editing, setEditing] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [form, setForm] = useState({
+    sessionDate: review.sessionDate ? new Date(review.sessionDate).toISOString().slice(0, 10) : "",
+    sessionTime: review.sessionTime ?? "",
+    description: review.description ?? "",
+    technicianId: review.technicianId ?? "",
+    sessionStartTime: review.sessionStartTime ?? "",
+    sessionEndTime: review.sessionEndTime ?? "",
+    signatureUrl: review.signatureUrl ?? "",
+    notes: review.notes ?? "",
+  });
+  const [sigUploadFor, setSigUploadFor] = useState(false);
+  const sigFileRef = useRef<HTMLInputElement>(null);
+
+  const handleSignatureClick = async () => {
+    const empId = form.technicianId;
+    if (!empId) { toast.error("أدخل اسم المعالج أولاً"); return; }
+    try {
+      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
+      if (sig.hasSignature && sig.signatureUrl) {
+        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
+        setForm((f) => ({ ...f, signatureUrl: url }));
+      } else {
+        setSigUploadFor(true);
+        setTimeout(() => sigFileRef.current?.click(), 50);
+      }
+    } catch { toast.error("فشل جلب بيانات التوقيع"); }
+  };
+
+  const handleSignatureFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !sigUploadFor) return;
+    const empId = form.technicianId;
+    if (!empId) return;
+    try {
+      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
+      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
+      setForm((f) => ({ ...f, signatureUrl: url }));
+      toast.success("تم رفع التوقيع");
+    } catch { toast.error("فشل رفع التوقيع"); }
+    setSigUploadFor(false);
+    e.target.value = "";
+  };
+
+  const handleSave = async () => {
+    await updateReview.mutateAsync({
+      caseId,
+      reviewId: review.id,
+      dto: {
+        sessionDate: form.sessionDate ? new Date(form.sessionDate).toISOString() : undefined,
+        sessionTime: form.sessionTime || undefined,
+        description: form.description || undefined,
+        technicianId: form.technicianId || undefined,
+        sessionStartTime: form.sessionStartTime || undefined,
+        sessionEndTime: form.sessionEndTime || undefined,
+        signatureUrl: form.signatureUrl || undefined,
+        notes: form.notes || undefined,
+      },
+    });
+    setEditing(false);
+  };
+
+  const technicianName = staffList.find((e) => e.id === form.technicianId);
+  const displayDate = form.sessionDate ? new Date(form.sessionDate).toLocaleDateString("en-GB") : null;
+
+  return (
+    <div className="rounded-lg border p-3 space-y-2">
+      <div className="flex justify-between items-start">
+        <div className="flex gap-2 items-center flex-wrap">
+          <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{idx + 1}</Badge>
+          {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
+          {form.sessionTime && <span className="text-xs text-muted-foreground">{form.sessionTime}</span>}
+        </div>
+        <div className="flex gap-1.5">
+          <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
+            {editing ? "إغلاق" : "تعديل"}
+          </Button>
+          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setConfirmDel(true)}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={confirmDel} onOpenChange={setConfirmDel}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogDescription>هل تريد حذف هذه الزيارة؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+            <Button variant="outline" onClick={() => setConfirmDel(false)}>لا</Button>
+            <Button variant="destructive" disabled={deleteReview.isPending}
+              onClick={() => { deleteReview.mutate({ caseId, reviewId: review.id }); setConfirmDel(false); }}>
+              {deleteReview.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {!editing && (
+        <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
+          {form.description && <p><span className="font-medium text-foreground">الشرح: </span>{form.description}</p>}
+          {technicianName && <p><span className="font-medium text-foreground">المعالج: </span>{technicianName.firstNameAr} {technicianName.lastNameAr}</p>}
+          {(form.sessionStartTime || form.sessionEndTime) && (
+            <p><span className="font-medium text-foreground">الوقت: </span>{form.sessionStartTime || "—"} — {form.sessionEndTime || "—"}</p>
+          )}
+          {form.notes && <p><span className="font-medium text-foreground">ملاحظات: </span>{form.notes}</p>}
+          {form.signatureUrl && (
+            <div className="pt-1">
+              <img src={form.signatureUrl} alt="التوقيع" className="h-10 object-contain border rounded bg-white" />
+              <p className="text-[10px] mt-0.5">التوقيع</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {editing && (
+        <div className="space-y-3 pt-2 border-t">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">تاريخ الزيارة</Label>
+              <Input type="date" value={form.sessionDate} onChange={(e) => setForm((f) => ({ ...f, sessionDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">الوقت</Label>
+              <Input type="time" value={form.sessionTime} onChange={(e) => setForm((f) => ({ ...f, sessionTime: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">الشرح / الوصف</Label>
+            <Textarea rows={2} placeholder="وصف الزيارة..." value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="resize-none" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">اسم المعالج</Label>
+            <Select value={form.technicianId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, technicianId: v === "none" ? "" : v, signatureUrl: "" }))}>
+              <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— غير محدد —</SelectItem>
+                {staffList.map((emp: any) => (
+                  <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت الدخول</Label>
+              <Input type="time" value={form.sessionStartTime} onChange={(e) => setForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت الخروج</Label>
+              <Input type="time" value={form.sessionEndTime} onChange={(e) => setForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">ملاحظات</Label>
+            <Textarea rows={2} placeholder="ملاحظات..." value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
+          </div>
+
+          <div className="rounded-lg border p-3 space-y-2">
+            <p className="text-xs font-semibold">التوقيع</p>
+            {form.signatureUrl ? (
+              <div className="relative">
+                <img src={form.signatureUrl} alt="التوقيع" className="h-16 w-full object-contain border rounded bg-white" />
+                <button onClick={() => setForm((f) => ({ ...f, signatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+              </div>
+            ) : (
+              <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={handleSignatureClick} disabled={!form.technicianId}>
+                {form.technicianId ? "جلب / رفع التوقيع" : "اختر المعالج أولاً"}
+              </Button>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleSave} disabled={updateReview.isPending} className="flex-1 gap-1">
+              {updateReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+              حفظ
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+          </div>
+
+          <input ref={sigFileRef} type="file" accept="image/*" className="hidden" onChange={handleSignatureFileChange} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReviewProgramsSection({
+  caseId, staffList, currentUser,
+}: {
+  caseId: string;
+  staffList: any[];
+  currentUser: any;
+}) {
+  const { data: reviews = [], isLoading } = useReviewPrograms(caseId);
+  const createReview = useCreateReviewProgram();
+  const [showForm, setShowForm] = useState(false);
+  const [newForm, setNewForm] = useState({
+    sessionDate: new Date().toISOString().slice(0, 10),
+    sessionTime: "",
+    description: "",
+    technicianId: "",
+    sessionStartTime: "",
+    sessionEndTime: "",
+    notes: "",
+  });
+
+  const handleAdd = async () => {
+    if (!newForm.sessionDate) return;
+    await createReview.mutateAsync({
+      caseId,
+      dto: {
+        sessionDate: new Date(newForm.sessionDate).toISOString(),
+        sessionTime: newForm.sessionTime || undefined,
+        description: newForm.description || undefined,
+        technicianId: newForm.technicianId || undefined,
+        sessionStartTime: newForm.sessionStartTime || undefined,
+        sessionEndTime: newForm.sessionEndTime || undefined,
+        notes: newForm.notes || undefined,
+      },
+    });
+    setNewForm({ sessionDate: new Date().toISOString().slice(0, 10), sessionTime: "", description: "", technicianId: "", sessionStartTime: "", sessionEndTime: "", notes: "" });
+    setShowForm(false);
+  };
+
+  return (
+    <Section
+      title={`برنامج المراجعة${reviews.length > 0 ? ` (${reviews.length})` : ""}`}
+      action={
+        <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
+          <Plus className="h-3.5 w-3.5" />
+          {showForm ? "إغلاق" : "إضافة زيارة"}
+        </Button>
+      }
+    >
+      {showForm && (
+        <div className="rounded-lg border border-dashed p-3 space-y-3 mb-3 bg-muted/30">
+          <p className="text-sm font-medium">زيارة مراجعة جديدة</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">تاريخ الزيارة *</Label>
+              <Input type="date" value={newForm.sessionDate} onChange={(e) => setNewForm((f) => ({ ...f, sessionDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">الوقت</Label>
+              <Input type="time" value={newForm.sessionTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionTime: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">الشرح / الوصف</Label>
+              <Textarea rows={2} className="resize-none" placeholder="وصف الزيارة..." value={newForm.description} onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">اسم المعالج</Label>
+              <Select value={newForm.technicianId || "none"} onValueChange={(v) => setNewForm((f) => ({ ...f, technicianId: v === "none" ? "" : v }))}>
+                <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— غير محدد —</SelectItem>
+                  {staffList.map((emp: any) => (
+                    <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت الدخول</Label>
+              <Input type="time" value={newForm.sessionStartTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">وقت الخروج</Label>
+              <Input type="time" value={newForm.sessionEndTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">ملاحظات</Label>
+              <Textarea rows={2} className="resize-none" placeholder="ملاحظات..." value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleAdd} disabled={!newForm.sessionDate || createReview.isPending} className="gap-1">
+              {createReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+              إضافة
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : reviews.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">لا توجد زيارات مراجعة مسجّلة</p>
+      ) : (
+        <div className="space-y-3">
+          {reviews.map((review: any, idx: number) => (
+            <ReviewProgramCard
+              key={review.id ?? idx}
+              caseId={caseId}
+              review={review}
+              idx={idx}
+              staffList={staffList}
+              currentUser={currentUser}
+            />
+          ))}
+        </div>
+      )}
+    </Section>
+  );
+}
+
+// ─── Gait Analysis (Pro-016) ──────────────────────────────────────────────────
+
+const SUSPENSION_OPTS = [
+  { v: "PIN", l: "Pin" }, { v: "PASSIVE_VACUUM", l: "Passive vacuum" }, { v: "ACTIVE_VACUUM", l: "Active vacuum" },
+  { v: "DVS", l: "DVS" }, { v: "SOFT_SOCKET", l: "Soft socket" }, { v: "BELT_STRAP", l: "belt/strap" }, { v: "OTHER", l: "other" },
+];
+const SOCKET_BEARING_OPTS = [
+  { v: "PTB", l: "التحميل على وتر الرصفة " },
+  { v: "TSB", l: "تحميل كامل على سطح الجذع " },
+  { v: "MAS", l: "سوكيت تشريحي عند الكاحل " },
+  { v: "ISCHIAL_CONTAINMENT", l: "التحميل على عظم الاسك " },
+  { v: "OTHER", l: "أخر " },
+];
+const KNEE_JOINT_OPTS = [
+  { v: "MKP", l: "MKP" }, { v: "MONOCENTRIC", l: "monocentric" }, { v: "POLYCENTRIC", l: "polycentric" },
+  { v: "HYDRAULIC", l: "hydraulic" }, { v: "MECHANICAL", l: "mechanical" }, { v: "OTHER", l: "other" },
+];
+const FOOT_TYPE_OPTS = [
+  { v: "DYNAMIC", l: "dynamic" }, { v: "HYDRAULIC", l: "hydraulic" }, { v: "SACH", l: "SACH" },
+  { v: "CARBON", l: "Carbon" }, { v: "SINGLE_AXIS", l: "single-axis" }, { v: "MULTI_AXIS", l: "multi-axis" }, { v: "OTHER", l: "other" },
+];
+const COMPLAINT_OPTS = [
+  { v: "RAPID_FATIGUE", l: "تعب سريع " }, { v: "FALL_NEAR_FALL", l: "تعثّر " },
+  { v: "DIFFICULTY_STAIRS", l: "صعوبة استخدام الدرج " }, { v: "FOOT_DRAG", l: "جر القدم " },
+  { v: "KNEE_INSTABILITY", l: "عدم ثبات بالركبة " }, { v: "SOCKET_PAIN", l: "ألم بالسوكيت " },
+  { v: "RESIDUAL_LIMB_PAIN", l: "ألم بالجذمور " }, { v: "NONE", l: "لا يوجد " },
+];
+const GFP_OPTS = [{ v: "GOOD", l: "جيد" }, { v: "FAIR", l: "متوسط" }, { v: "POOR", l: "ضعيف" }];
+const SITTING_BAL_OPTS = [{ v: "INDEPENDENT", l: "مستقل" }, { v: "ASSISTED", l: "بمساعدة" }, { v: "UNSTABLE", l: "غير مستقر" }];
+const STANDING_BAL_OPTS = [{ v: "STABLE", l: "مستقر" }, { v: "ASSISTED", l: "بمساعدة" }, { v: "UNSTABLE", l: "غير مستقر" }];
+const GAIT_DEVICE_OPTS = [{ v: "NONE", l: "لا يوجد" }, { v: "CANE", l: "عصا" }, { v: "CRUTCHES", l: "عكاز" }, { v: "WALKER", l: "مشاية" }];
+const SYMMETRY_OPTS_G = [{ v: "GOOD", l: "جيد" }, { v: "FAIR", l: "متوسط" }, { v: "POOR", l: "ضعيف" }, { v: "NONE", l: "لا يوجد" }];
+
+const GAIT_PHASES = [
+  { key: "initialContact", label: "بداية ملامسة الأرض", extraField: "notes" as const, deviations: [
+    { v: "FLAT_FOOT", l: "ملامسة كاملة للقدم" }, { v: "TOE_CONTACT", l: "ملامسة الأصابع أولاً" },
+    { v: "FOOT_SLAP", l: "سقوط القدم" }, { v: "UNSTABLE_KNEE", l: "عدم ثبات الركبة" },
+    { v: "WIDE_BASE", l: "قاعدة مشي واسعة" }, { v: "TRUNK_LEAN", l: "ميل الجذع" },
+    { v: "LATERAL_HEEL_WHIP", l: "ميلان الكعب للخارج" }, { v: "MEDIAL_HEEL_WHIP", l: "ميلان الكعب للداخل" },
+  ]},
+  { key: "loadingResponse", label: "استجابة التحميل", extraField: "cause" as const, deviations: [
+    { v: "EXCESSIVE_KNEE_FLEXION", l: "انثناء زائد للركبة" }, { v: "KNEE_HYPEREXTENSION", l: "فرط بسط الركبة" },
+    { v: "SOCKET_ROTATION", l: "دوران السوكت" }, { v: "LATERAL_TRUNK_BEND", l: "ميل جانبي للجذع" },
+    { v: "PAIN_AVOIDANCE", l: "تجنب الألم" }, { v: "VARUS_MOMENT", l: "انحراف للداخل" }, { v: "VALGUS_MOMENT", l: "انحراف للخارج" },
+  ]},
+  { key: "midStance", label: "منتصف الارتكاز", extraField: "cause" as const, deviations: [
+    { v: "ABNORMAL_GAIT_PATTERN", l: "نمط مشي غير طبيعي" }, { v: "LATERAL_TRUNK_LEAN", l: "ميل جانبي للجذع" },
+    { v: "SHORT_STANCE_TIME", l: "وقت ارتكاز قصير على الطرف الصناعي" }, { v: "UNEQUAL_STEP_LENGTH", l: "عدم تساوي طول الخطوة" },
+    { v: "BODY_RISE_SOUND", l: "رفع الجسم على الطرف السليم" },
+  ]},
+  { key: "terminalStance", label: "نهاية الارتكاز / الدفع", extraField: "cause" as const, deviations: [
+    { v: "REDUCED_PUSH_OFF", l: "ضعف الدفع" }, { v: "EARLY_HEEL_RISE", l: "رفع الكعب مبكراً" },
+    { v: "LATE_HEEL", l: "رفع الكعب متأخراً" }, { v: "KNEE_INSTABILITY", l: "عدم ثبات الركبة" },
+  ]},
+  { key: "preSwing", label: "قبل التأرجح", extraField: "cause" as const, deviations: [
+    { v: "HIP_HIKING", l: "رفع الحوض" }, { v: "CIRCUMDUCTION", l: "دوران جانبي للطرف" },
+    { v: "EXCESSIVE_PELVIC_ROTATION", l: "دوران زائد للحوض" }, { v: "DELAYED_TOE_OFF", l: "تأخر رفع الأصابع" },
+  ]},
+  { key: "swingPhase", label: "مرحلة التأرجح", extraField: "notes" as const, deviations: [
+    { v: "TOE_DRAG", l: "جر الأصابع" }, { v: "CIRCUMDUCTION", l: "دوران جانبي" }, { v: "HIP_HIKING", l: "رفع الحوض" },
+    { v: "TERMINAL_IMPACT", l: "اصطدام نهاية التأرجح" }, { v: "LACK_KNEE_FLEXION", l: "نقص انثناء الركبة" }, { v: "EXCESS_KNEE_FLEXION", l: "انثناء زائد للركبة" },
+  ]},
+] as const;
+
+const PROSTHETIC_ISSUE_OPTS = [
+  { v: "PISTONING", l: "حركة عمودية داخل السوكت" },
+  { v: "LOOSE_SUSPENSION", l: "تعليق ضعيف" },
+  { v: "TOO_MANY_SOCKS", l: "الحاجة إلى جوارب كثيرة" },
+  { v: "LEG_TOO_LONG", l: "الطرف طويل" },
+  { v: "LEG_TOO_SHORT", l: "الطرف قصير" },
+  { v: "FOOT_TOO_STIFF", l: "القدم قاسية" },
+  { v: "FOOT_TOO_SOFT", l: "القدم طرية" },
+  { v: "INCORRECT_KNEE_SETTINGS", l: "إعدادات الركبة غير مناسبة" },
+];
+const LIKELY_CAUSE_OPTS = [
+  { v: "ALIGNMENT", l: "ضبط" }, { v: "SOCKET", l: "سوكت" }, { v: "SUSPENSION", l: "تعليق" },
+  { v: "COMPONENT_SELECTION", l: "اختيار المكونات" }, { v: "MUSCLE_WEAKNESS", l: "ضعف عضلي" },
+  { v: "PAIN", l: "ألم" }, { v: "LEARNED_GAIT_PATTERN", l: "نمط مكتسب" }, { v: "BALANCE", l: "توازن" },
+];
+const RECOMMENDATION_OPTS = [
+  { v: "ALIGNMENT_ADJUSTMENT", l: "تعديل الضبط" },
+  { v: "SOCKET_MODIFICATION", l: "تعديل / تبديل السوكت" },
+  { v: "IMPROVE_SUSPENSION", l: "تحسين التعليق" },
+  { v: "CHANGE_FOOT", l: "تغيير القدم" },
+  { v: "ADJUST_KNEE_SETTINGS", l: "تعديل إعدادات الركبة" },
+  { v: "ADD_SHOCK_ABSORBER", l: "إضافة ممتص صدمات / تخميد" },
+];
+const REHAB_PLAN_OPTS = [
+  { v: "STRENGTHENING", l: "تقوية (مبعدات الورك / الجذع) | Strengthening (Hip abductors / Core)" },
+  { v: "BALANCE_TRAINING", l: "تدريب توازن | Balance training" },
+  { v: "GAIT_STEP_SYMMETRY", l: "تدريب مشي (تماثل الخطوات) | Gait training (step symmetry)" },
+  { v: "STAIRS_SLOPES", l: "تدريب درج ومنحدرات | Stairs & slopes training" },
+  { v: "COMMUNITY_AMBULATION", l: "تدريب خارج المنزل | Community ambulation" },
+];
+
+const INITIAL_GAIT_FORM = {
+  sessionDate: "",
+  suspensionSystem: [] as string[],
+  socketBearing: "", kneeJointType: "", footType: "",
+  patientComplaints: [] as string[], painIntensity: "" as string | number,
+  alignmentCheck: "", hasRomLimitations: null as boolean | null,
+  hasHipFlexionContracture: null as boolean | null, hasKneeFlexionContracture: null as boolean | null,
+  weakHipAbductors: null as boolean | null, weakHipExtensors: null as boolean | null,
+  weakTrunkMuscles: null as boolean | null, otherWeakness: "",
+  trunkStability: "", abdominalControl: "", pelvicControl: "", sittingBalance: "", standingBalance: "",
+  assistiveDevice: "", speedMs: "", cadence: "", stepLengthProsCm: "", stepLengthSoundCm: "",
+  stancePercProsthetic: "", stancePercSound: "", symmetry: "",
+  phases: {} as Record<string, { deviations: string[]; possibleCause: string; notes: string }>,
+  gaitNotes: "",
+  prostheticIssues: [] as string[],
+  mainProblem: "", likelyCauses: [] as string[], recommendations: [] as string[],
+  rehabPlanItems: [] as string[], rehabNotes: "",
+  examinerProsthetistId: "", prosthetistSignatureUrl: "",
+  examinerPhysiotherapistId: "", physiotherapistSignatureUrl: "",
+  notes: "",
+};
+type GaitForm = typeof INITIAL_GAIT_FORM;
+
+function gaitFormFromData(d: any): GaitForm {
+  const phases: Record<string, { deviations: string[]; possibleCause: string; notes: string }> = {};
+  ["initialContact","loadingResponse","midStance","terminalStance","preSwing","swingPhase"].forEach((k) => {
+    phases[k] = { deviations: d[k]?.deviations ?? [], possibleCause: d[k]?.possibleCause ?? "", notes: d[k]?.notes ?? "" };
+  });
+  return {
+    sessionDate: d.sessionDate?.slice(0,10) ?? "",
+    suspensionSystem: d.suspensionSystem ?? [],
+    socketBearing: d.socketBearing ?? "", kneeJointType: d.kneeJointType ?? "", footType: d.footType ?? "",
+    patientComplaints: d.patientComplaints ?? [], painIntensity: d.painIntensity?.toString() ?? "",
+    alignmentCheck: d.alignmentCheck ?? "", hasRomLimitations: d.hasRomLimitations ?? null,
+    hasHipFlexionContracture: d.hasHipFlexionContracture ?? null, hasKneeFlexionContracture: d.hasKneeFlexionContracture ?? null,
+    weakHipAbductors: d.weakHipAbductors ?? null, weakHipExtensors: d.weakHipExtensors ?? null,
+    weakTrunkMuscles: d.weakTrunkMuscles ?? null, otherWeakness: d.otherWeakness ?? "",
+    trunkStability: d.trunkStability ?? "", abdominalControl: d.abdominalControl ?? "",
+    pelvicControl: d.pelvicControl ?? "", sittingBalance: d.sittingBalance ?? "", standingBalance: d.standingBalance ?? "",
+    assistiveDevice: d.assistiveDevice ?? "", speedMs: d.speedMs?.toString() ?? "", cadence: d.cadence?.toString() ?? "",
+    stepLengthProsCm: d.stepLengthProsCm?.toString() ?? "", stepLengthSoundCm: d.stepLengthSoundCm?.toString() ?? "",
+    stancePercProsthetic: d.stancePercProsthetic?.toString() ?? "", stancePercSound: d.stancePercSound?.toString() ?? "",
+    symmetry: d.symmetry ?? "", phases, gaitNotes: d.gaitNotes ?? "",
+    prostheticIssues: d.prostheticIssues ?? [],
+    mainProblem: d.mainProblem ?? "", likelyCauses: d.likelyCauses ?? [], recommendations: d.recommendations ?? [],
+    rehabPlanItems: [
+      ...(d.rehabPlan?.strengthening ?? []),
+      ...(d.rehabPlan?.balanceTrain ?? []),
+      ...(d.rehabPlan?.gaitTrain ?? []),
+    ], rehabNotes: d.rehabNotes ?? "",
+    examinerProsthetistId: d.examinerProsthetistId ?? "", prosthetistSignatureUrl: d.prosthetistSignatureUrl ?? "",
+    examinerPhysiotherapistId: d.examinerPhysiotherapistId ?? "", physiotherapistSignatureUrl: d.physiotherapistSignatureUrl ?? "",
+    notes: d.notes ?? "",
+  };
+}
+
+function gaitFormToDto(f: GaitForm) {
+  const phaseDto = (k: string) => ({
+    deviations: f.phases[k]?.deviations?.length ? f.phases[k].deviations : undefined,
+    possibleCause: f.phases[k]?.possibleCause || undefined,
+    notes: f.phases[k]?.notes || undefined,
+  });
+  return {
+    sessionDate: f.sessionDate || undefined,
+    suspensionSystem: f.suspensionSystem.length ? f.suspensionSystem : undefined,
+    socketBearing: f.socketBearing || undefined, kneeJointType: f.kneeJointType || undefined, footType: f.footType || undefined,
+    patientComplaints: f.patientComplaints.length ? f.patientComplaints : undefined,
+    painIntensity: f.painIntensity !== "" ? Number(f.painIntensity) : undefined,
+    alignmentCheck: f.alignmentCheck || undefined,
+    hasRomLimitations: f.hasRomLimitations ?? undefined,
+    hasHipFlexionContracture: f.hasHipFlexionContracture ?? undefined,
+    hasKneeFlexionContracture: f.hasKneeFlexionContracture ?? undefined,
+    weakHipAbductors: f.weakHipAbductors ?? undefined, weakHipExtensors: f.weakHipExtensors ?? undefined,
+    weakTrunkMuscles: f.weakTrunkMuscles ?? undefined, otherWeakness: f.otherWeakness || undefined,
+    trunkStability: f.trunkStability || undefined, abdominalControl: f.abdominalControl || undefined,
+    pelvicControl: f.pelvicControl || undefined, sittingBalance: f.sittingBalance || undefined, standingBalance: f.standingBalance || undefined,
+    assistiveDevice: f.assistiveDevice || undefined,
+    speedMs: f.speedMs !== "" ? Number(f.speedMs) : undefined,
+    cadence: f.cadence !== "" ? Number(f.cadence) : undefined,
+    stepLengthProsCm: f.stepLengthProsCm !== "" ? Number(f.stepLengthProsCm) : undefined,
+    stepLengthSoundCm: f.stepLengthSoundCm !== "" ? Number(f.stepLengthSoundCm) : undefined,
+    stancePercProsthetic: f.stancePercProsthetic !== "" ? Number(f.stancePercProsthetic) : undefined,
+    stancePercSound: f.stancePercSound !== "" ? Number(f.stancePercSound) : undefined,
+    symmetry: f.symmetry || undefined,
+    initialContact: phaseDto("initialContact"), loadingResponse: phaseDto("loadingResponse"),
+    midStance: phaseDto("midStance"), terminalStance: phaseDto("terminalStance"),
+    preSwing: phaseDto("preSwing"), swingPhase: phaseDto("swingPhase"),
+    gaitNotes: f.gaitNotes || undefined,
+    prostheticIssues: f.prostheticIssues.length ? f.prostheticIssues : undefined,
+    mainProblem: f.mainProblem || undefined, likelyCauses: f.likelyCauses.length ? f.likelyCauses : undefined,
+    recommendations: f.recommendations.length ? f.recommendations : undefined,
+    rehabPlan: f.rehabPlanItems.length ? { gaitTrain: f.rehabPlanItems } : undefined,
+    rehabNotes: f.rehabNotes || undefined,
+    examinerProsthetistId: f.examinerProsthetistId || undefined, prosthetistSignatureUrl: f.prosthetistSignatureUrl || undefined,
+    examinerPhysiotherapistId: f.examinerPhysiotherapistId || undefined, physiotherapistSignatureUrl: f.physiotherapistSignatureUrl || undefined,
+    notes: f.notes || undefined,
+  };
+}
+
+function GfpButtons({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex gap-1">
+      {GFP_OPTS.map((o) => (
+        <button key={o.v} type="button" onClick={() => onChange(value === o.v ? "" : o.v)}
+          className={`flex-1 py-1 rounded border text-xs font-medium transition-colors ${value === o.v ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}
+        >{o.l}</button>
+      ))}
+    </div>
+  );
+}
+
+function YesNoButtons({ value, onChange }: { value: boolean | null; onChange: (v: boolean | null) => void }) {
+  return (
+    <div className="flex gap-1">
+      {([true, false] as const).map((v) => (
+        <button key={String(v)} type="button" onClick={() => onChange(value === v ? null : v)}
+          className={`flex-1 py-1 rounded border text-xs font-medium transition-colors ${value === v ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}
+        >{v ? "نعم" : "لا"}</button>
+      ))}
+    </div>
+  );
+}
+
+function GaitAnalysisCard({
+  caseId, staffList, session, idx, onCancel,
+}: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void }) {
+  const isNew = !session;
+  const [editing, setEditing] = useState(isNew);
+  const [form, setForm] = useState<GaitForm>(() => session ? gaitFormFromData(session) : { ...INITIAL_GAIT_FORM, phases: {} });
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
+  const prostoSigRef = useRef<HTMLInputElement>(null);
+  const physioSigRef2 = useRef<HTMLInputElement>(null);
+  const addMut = useAddGaitAnalysisForm();
+  const updateMut = useUpdateGaitAnalysisForm();
+  const deleteMut = useDeleteGaitAnalysisForm();
+
+  const toggleMulti = (field: keyof GaitForm, v: string) =>
+    setForm((f) => {
+      const arr = (f[field] as string[]);
+      return { ...f, [field]: arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v] };
+    });
+
+  const togglePhaseDeviation = (phase: string, v: string) =>
+    setForm((f) => {
+      const cur = f.phases[phase] ?? { deviations: [], possibleCause: "", notes: "" };
+      const devs = cur.deviations.includes(v) ? cur.deviations.filter((x) => x !== v) : [...cur.deviations, v];
+      return { ...f, phases: { ...f.phases, [phase]: { ...cur, deviations: devs } } };
+    });
+
+  const setPhaseText = (phase: string, field: "possibleCause" | "notes", val: string) =>
+    setForm((f) => {
+      const cur = f.phases[phase] ?? { deviations: [], possibleCause: "", notes: "" };
+      return { ...f, phases: { ...f.phases, [phase]: { ...cur, [field]: val } } };
+    });
+
+  const handleSigFile = async (e: React.ChangeEvent<HTMLInputElement>, role: "prosto" | "physio2") => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const empId = role === "prosto" ? form.examinerProsthetistId : form.examinerPhysiotherapistId;
+    if (!empId) return;
+    try {
+      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
+      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
+      if (role === "prosto") setForm((f) => ({ ...f, prosthetistSignatureUrl: url }));
+      else setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
+      toast.success("تم رفع التوقيع");
+    } catch { toast.error("فشل رفع التوقيع"); }
+    e.target.value = "";
+  };
+
+  const handleSigClick = async (role: "prosto" | "physio2") => {
+    const empId = role === "prosto" ? form.examinerProsthetistId : form.examinerPhysiotherapistId;
+    if (!empId) { toast.error("اختر الموظف أولاً"); return; }
+    try {
+      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
+      if (sig.hasSignature && sig.signatureUrl) {
+        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
+        if (role === "prosto") setForm((f) => ({ ...f, prosthetistSignatureUrl: url }));
+        else setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
+      } else {
+        setTimeout(() => (role === "prosto" ? prostoSigRef : physioSigRef2).current?.click(), 50);
+      }
+    } catch { toast.error("فشل جلب التوقيع"); }
+  };
+
+  const handleSave = async () => {
+    const dto = gaitFormToDto(form);
+    if (isNew) { await addMut.mutateAsync({ caseId, dto }); onCancel?.(); }
+    else { await updateMut.mutateAsync({ caseId, formId: session.id, dto }); setEditing(false); }
+  };
+  const isSaving = addMut.isPending || updateMut.isPending;
+
+  // Collapsed card
+  if (!isNew && !editing) {
+    return (
+      <>
+        <div className="rounded-lg border p-3 space-y-1 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setEditing(true)}>
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2 items-center flex-wrap">
+              <Badge variant="secondary" className="font-bold">#{(idx ?? 0) + 1}</Badge>
+              {session.sessionDate && <span className="text-sm">{new Date(session.sessionDate).toLocaleDateString("en-GB")}</span>}
+              {session.symmetry && <Badge variant="outline" className="text-xs">{SYMMETRY_OPTS_G.find((o) => o.v === session.symmetry)?.l}</Badge>}
+              {session.assistiveDevice && session.assistiveDevice !== "NONE" && (
+                <Badge className="text-xs bg-blue-100 text-blue-800">{GAIT_DEVICE_OPTS.find((o) => o.v === session.assistiveDevice)?.l}</Badge>
+              )}
+            </div>
+            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+              <Button size="sm" variant="outline" onClick={() => setEditing(true)}>تعديل</Button>
+              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setConfirmDel(true)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          {session.mainProblem && <p className="text-xs text-muted-foreground">{session.mainProblem}</p>}
+        </div>
+
+        <Dialog open={confirmDel} onOpenChange={setConfirmDel}>
+          <DialogContent className="max-w-sm" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>تأكيد الحذف</DialogTitle>
+              <DialogDescription>هل تريد حذف هذه الجلسة؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+              <Button variant="outline" onClick={() => setConfirmDel(false)}>لا</Button>
+              <Button variant="destructive" disabled={deleteMut.isPending}
+                onClick={() => { deleteMut.mutate({ caseId, formId: session.id }); setConfirmDel(false); }}>
+                {deleteMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border p-4 space-y-4">
+      {!isNew && (
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-semibold">تعديل الجلسة #{(idx ?? 0) + 1}</p>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>إغلاق</Button>
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+        <TabsList className="w-full grid grid-cols-5 h-auto">
+          <TabsTrigger value="basic" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">تفاصيل الطرف الصناعي</TabsTrigger>
+          <TabsTrigger value="phases" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">أخطاء المشي</TabsTrigger>
+          <TabsTrigger value="diagnosis" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">التشخيص</TabsTrigger>
+          <TabsTrigger value="rehab" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">خطة العلاج</TabsTrigger>
+          <TabsTrigger value="signatures" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">التوقيعات</TabsTrigger>
+        </TabsList>
+
+        {/* ── Tab 1: تفاصيل الطرف الصناعي ── */}
+        <TabsContent value="basic" className="mt-4 space-y-0">
+          {/* Session date */}
+          <div className="mb-3 space-y-1.5">
+            <Label className="text-xs">تاريخ الجلسة</Label>
+            <Input type="date" value={form.sessionDate} onChange={(e) => setForm((f) => ({ ...f, sessionDate: e.target.value }))} />
+          </div>
+
+          {/* Paper-style table */}
+          <div className="rounded-lg overflow-hidden border text-sm">
+
+            {/* نظام التعليق */}
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">نظام التعليق</div>
+              <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
+                {SUSPENSION_OPTS.map((o) => (
+                  <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={form.suspensionSystem.includes(o.v)} onChange={() => toggleMulti("suspensionSystem", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <span className="text-xs">{o.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* التحميل على السوكيت */}
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">التحميل على السوكيت</div>
+              <div className="px-3 py-2.5 space-y-1.5">
+                {SOCKET_BEARING_OPTS.map((o) => (
+                  <label key={o.v} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.socketBearing === o.v}
+                      onChange={() => setForm((f) => ({ ...f, socketBearing: f.socketBearing === o.v ? "" : o.v }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <span className="text-xs">{o.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* نوع مفصل الركبة */}
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">نوع مفصل الركبة</div>
+              <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
+                {KNEE_JOINT_OPTS.map((o) => (
+                  <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={form.kneeJointType === o.v}
+                      onChange={() => setForm((f) => ({ ...f, kneeJointType: f.kneeJointType === o.v ? "" : o.v }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <span className="text-xs">{o.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* نوع مفصل القدم */}
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">نوع مفصل القدم</div>
+              <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
+                {FOOT_TYPE_OPTS.map((o) => (
+                  <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={form.footType === o.v}
+                      onChange={() => setForm((f) => ({ ...f, footType: f.footType === o.v ? "" : o.v }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <span className="text-xs">{o.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* شكاوى المريض */}
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">شكاوى المريض</div>
+              <div className="px-3 py-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {COMPLAINT_OPTS.map((o) => (
+                  <label key={o.v} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.patientComplaints.includes(o.v)} onChange={() => toggleMulti("patientComplaints", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <span className="text-xs">{o.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* شدة الألم */}
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">شدة الألم</div>
+              <div className="px-3 py-2.5 flex gap-3 items-center flex-wrap">
+                {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                  <label key={n} className="flex flex-col items-center gap-0.5 cursor-pointer">
+                    <input type="checkbox" checked={Number(form.painIntensity) === n}
+                      onChange={() => setForm((f) => ({ ...f, painIntensity: Number(f.painIntensity) === n ? "" : n }))}
+                      className="w-[17px] h-[17px] accent-orange-500 rounded-sm" />
+                    <span className="text-[10px] text-muted-foreground">{n}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* فحص الضبط + المدى الحركي */}
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">فحص الضبط</div>
+              <div className="px-3 py-2.5 flex gap-4">
+                {[{ v: "GOOD", l: "جيد" }, { v: "NEEDS_ADJUSTMENT", l: "يحتاج تعديل" }].map((o) => (
+                  <label key={o.v} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.alignmentCheck === o.v}
+                      onChange={() => setForm((f) => ({ ...f, alignmentCheck: f.alignmentCheck === o.v ? "" : o.v }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                    <span className="text-xs">{o.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">المدى الحركي</div>
+              <div className="px-3 py-2.5 flex gap-4">
+                {([true, false] as const).map((v) => (
+                  <label key={String(v)} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.hasRomLimitations === v}
+                      onChange={() => setForm((f) => ({ ...f, hasRomLimitations: f.hasRomLimitations === v ? null : v }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                    <span className="text-xs">{v ? "نعم" : "لا"}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">ملاحظات</div>
+              <div className="px-3 py-1.5">
+                <Input value={form.otherWeakness} onChange={(e) => setForm((f) => ({ ...f, otherWeakness: e.target.value }))} placeholder="..." className="h-7 text-xs border-0 shadow-none px-0 focus-visible:ring-0" />
+              </div>
+            </div>
+
+            {/* فحص الجذمور */}
+            <div className="border-b mt-4">
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground">فحص الجذمور</div>
+              <div className="px-3 py-2.5 space-y-2">
+                <p className="text-[11px] text-foreground font-semibold">تيبس/قصر:</p>
+                <div className="flex gap-4 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!form.hasHipFlexionContracture}
+                      onChange={() => setForm((f) => ({ ...f, hasHipFlexionContracture: f.hasHipFlexionContracture ? null : true }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                    <span className="text-xs">قصر عطف الورك</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!form.hasKneeFlexionContracture}
+                      onChange={() => setForm((f) => ({ ...f, hasKneeFlexionContracture: f.hasKneeFlexionContracture ? null : true }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                    <span className="text-xs">قصر عطف الركبة</span>
+                  </label>
+                </div>
+                <p className="text-[11px] text-foreground font-semibold">ضعف عضلي:</p>
+                <div className="flex gap-4 flex-wrap items-center">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!form.weakHipAbductors}
+                      onChange={() => setForm((f) => ({ ...f, weakHipAbductors: f.weakHipAbductors ? null : true }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                    <span className="text-xs">تبعيد</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!form.weakHipExtensors}
+                      onChange={() => setForm((f) => ({ ...f, weakHipExtensors: f.weakHipExtensors ? null : true }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                    <span className="text-xs">بسط</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!form.weakTrunkMuscles}
+                      onChange={() => setForm((f) => ({ ...f, weakTrunkMuscles: f.weakTrunkMuscles ? null : true }))}
+                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                    <span className="text-xs">عضلات الجذع</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={!!form.otherWeakness}
+                        onChange={() => setForm((f) => ({ ...f, otherWeakness: f.otherWeakness ? "" : " " }))}
+                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      <span className="text-xs">أخرى:</span>
+                    </label>
+                    {!!form.otherWeakness && (
+                      <Input value={form.otherWeakness.trim()} onChange={(e) => setForm((f) => ({ ...f, otherWeakness: e.target.value }))}
+                        className="h-6 text-xs w-28 px-2" placeholder="..." />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Core Assessment */}
+            <div className="border-b mt-4">
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground">التقييم الأساسي</div>
+              {([
+                ["trunkStability", "ثبات الجذع "],
+                ["abdominalControl", "التحكم البطني "],
+                ["pelvicControl", "التحكم الحوضي "],
+              ] as const).map(([fld, lbl]) => (
+                <div key={fld} className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
+                  <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{lbl}</div>
+                  <div className="px-3 py-2.5 flex gap-4">
+                    {GFP_OPTS.map((o) => (
+                      <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={form[fld] === o.v}
+                          onChange={() => setForm((f) => ({ ...f, [fld]: f[fld] === o.v ? "" : o.v }))}
+                          className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                        <span className="text-xs">{o.l}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Balance */}
+            <div className="mt-4">
+              <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b border-t">
+                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">التوازن أثناء الجلوس</div>
+                <div className="px-3 py-2.5 flex gap-4">
+                  {[{ v: "INDEPENDENT", l: "مستقل" }, { v: "ASSISTED", l: "بمساعدة" }].map((o) => (
+                    <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" checked={form.sittingBalance === o.v}
+                        onChange={() => setForm((f) => ({ ...f, sittingBalance: f.sittingBalance === o.v ? "" : o.v }))}
+                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      <span className="text-xs">{o.l}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse">
+                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">التوازن أثناء الوقوف</div>
+                <div className="px-3 py-2.5 flex gap-4">
+                  {[{ v: "STABLE", l: "مستقر" }, { v: "UNSTABLE", l: "غير مستقر" }].map((o) => (
+                    <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" checked={form.standingBalance === o.v}
+                        onChange={() => setForm((f) => ({ ...f, standingBalance: f.standingBalance === o.v ? "" : o.v }))}
+                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      <span className="text-xs">{o.l}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Gait Assessment */}
+            <div className="mt-4">
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground border-t">تقييم المشي</div>
+
+              {/* التماثل */}
+              <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
+                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">التماثل</div>
+                <div className="px-3 py-2.5 flex gap-4">
+                  {[{ v: "GOOD", l: "جيد" }, { v: "FAIR", l: "متوسط" }, { v: "POOR", l: "ضعيف" }].map((o) => (
+                    <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" checked={form.symmetry === o.v}
+                        onChange={() => setForm((f) => ({ ...f, symmetry: f.symmetry === o.v ? "" : o.v }))}
+                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      <span className="text-xs">{o.l}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* وسيلة المساعدة */}
+              <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
+                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">الوسيلة المساعدة</div>
+                <div className="px-3 py-2.5 flex gap-4 flex-wrap">
+                  {GAIT_DEVICE_OPTS.map((o) => (
+                    <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" checked={form.assistiveDevice === o.v}
+                        onChange={() => setForm((f) => ({ ...f, assistiveDevice: f.assistiveDevice === o.v ? "" : o.v }))}
+                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      <span className="text-xs">{o.l}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Spatiotemporal Parameters */}
+              <div className="border-t px-3 py-2">
+                <p className="text-[11px] text-foreground font-semibold mb-2">قياسات المشي</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs w-44 shrink-0">السرعة</span>
+                    <Input type="number" step="0.01" value={form.speedMs} onChange={(e) => setForm((f) => ({ ...f, speedMs: e.target.value }))} className="h-7 text-xs w-20" />
+                    <span className="text-xs text-muted-foreground shrink-0">m/s</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs w-44 shrink-0">عدد الخطوات/دقيقة</span>
+                    <Input type="number" value={form.cadence} onChange={(e) => setForm((f) => ({ ...f, cadence: e.target.value }))} className="h-7 text-xs w-20" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs w-44 shrink-0">طول الخطوة — صناعي</span>
+                    <Input type="number" value={form.stepLengthProsCm} onChange={(e) => setForm((f) => ({ ...f, stepLengthProsCm: e.target.value }))} className="h-7 text-xs w-20" />
+                    <span className="text-xs text-muted-foreground shrink-0">cm</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs w-44 shrink-0">طول الخطوة — سليم</span>
+                    <Input type="number" value={form.stepLengthSoundCm} onChange={(e) => setForm((f) => ({ ...f, stepLengthSoundCm: e.target.value }))} className="h-7 text-xs w-20" />
+                    <span className="text-xs text-muted-foreground shrink-0">cm</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs w-44 shrink-0">نسبة الارتكاز — صناعي</span>
+                    <Input type="number" value={form.stancePercProsthetic} onChange={(e) => setForm((f) => ({ ...f, stancePercProsthetic: e.target.value }))} className="h-7 text-xs w-20" />
+                    <span className="text-xs text-muted-foreground shrink-0">%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs w-44 shrink-0">نسبة الارتكاز — سليم</span>
+                    <Input type="number" value={form.stancePercSound} onChange={(e) => setForm((f) => ({ ...f, stancePercSound: e.target.value }))} className="h-7 text-xs w-20" />
+                    <span className="text-xs text-muted-foreground shrink-0">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </TabsContent>
+
+        {/* ── Tab 2: أخطاء المشي ── */}
+        <TabsContent value="phases" className="mt-4 space-y-4">
+          {GAIT_PHASES.map((phase) => (
+            <div key={phase.key} className="rounded-lg border overflow-hidden">
+              <div className="bg-muted/40 px-3 py-2 text-sm font-semibold flex items-center gap-2"><span>•</span>{phase.label}</div>
+              <div className="p-3 space-y-2">
+                <div className="grid grid-cols-2 gap-1">
+                  {phase.deviations.map((d) => (
+                    <label key={d.v} className="flex items-center gap-2 cursor-pointer py-0.5">
+                      <input type="checkbox"
+                        checked={form.phases[phase.key]?.deviations?.includes(d.v) ?? false}
+                        onChange={() => togglePhaseDeviation(phase.key, d.v)}
+                        className="w-[17px] h-[17px] accent-orange-500 rounded-sm shrink-0"
+                      />
+                      <span className="text-xs">{d.l}</span>
+                    </label>
+                  ))}
+                </div>
+                {phase.extraField === "cause" && (
+                  <Input value={form.phases[phase.key]?.possibleCause ?? ""} onChange={(e) => setPhaseText(phase.key, "possibleCause", e.target.value)}
+                    placeholder="السبب المحتمل..." className="h-7 text-xs" />
+                )}
+                {phase.extraField === "notes" && (
+                  <Input value={form.phases[phase.key]?.notes ?? ""} onChange={(e) => setPhaseText(phase.key, "notes", e.target.value)}
+                    placeholder="ملاحظات..." className="h-7 text-xs" />
+                )}
+              </div>
+            </div>
+          ))}
+        </TabsContent>
+
+        {/* ── Tab 3: التشخيص ── */}
+        <TabsContent value="diagnosis" className="mt-4 space-y-0">
+          <div className="rounded-lg overflow-hidden border text-sm">
+
+            {/* مشاكل خاصة بالطرف */}
+            <div>
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>مشاكل خاصة بالطرف</div>
+              <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {PROSTHETIC_ISSUE_OPTS.map((o) => (
+                  <label key={o.v} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.prostheticIssues.includes(o.v)} onChange={() => toggleMulti("prostheticIssues", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <span className="text-xs">{o.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* الاستنتاج السريري */}
+            <div className="border-t">
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>الاستنتاج السريري</div>
+              <div className="px-3 py-3 space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">المشكلة الأساسية</Label>
+                  <Textarea rows={2} value={form.mainProblem} onChange={(e) => setForm((f) => ({ ...f, mainProblem: e.target.value }))} className="resize-none text-xs" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">السبب المرجح</Label>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                    {LIKELY_CAUSE_OPTS.map((o) => (
+                      <label key={o.v} className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.likelyCauses.includes(o.v)} onChange={() => toggleMulti("likelyCauses", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                        <span className="text-xs">{o.l}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* التوصيات */}
+            <div className="border-t">
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>التوصيات</div>
+              <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {RECOMMENDATION_OPTS.map((o) => (
+                  <label key={o.v} className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.recommendations.includes(o.v)} onChange={() => toggleMulti("recommendations", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <span className="text-xs">{o.l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+        </TabsContent>
+
+        {/* ── Tab 4: خطة العلاج ── */}
+        <TabsContent value="rehab" className="mt-4 space-y-0">
+          <div className="rounded-lg overflow-hidden border text-sm">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>خطة العلاج</div>
+            <div className="px-3 py-3 space-y-2">
+              {REHAB_PLAN_OPTS.map((o) => (
+                <label key={o.v} className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.rehabPlanItems.includes(o.v)} onChange={() => toggleMulti("rehabPlanItems", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                  <span className="text-xs">{o.l}</span>
+                </label>
+              ))}
+            </div>
+            <div className="border-t px-3 py-3 space-y-1.5">
+              <Label className="text-xs font-medium">ملاحظات | Notes</Label>
+              <Textarea rows={2} value={form.rehabNotes} onChange={(e) => setForm((f) => ({ ...f, rehabNotes: e.target.value }))} className="resize-none text-xs" />
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Tab 5: التوقيعات ── */}
+        <TabsContent value="signatures" className="mt-4 space-y-5">
+          <div className="grid grid-cols-2 gap-4">
+            {([
+              ["prosto","اسم فني الأطراف الصناعية ","examinerProsthetistId","prosthetistSignatureUrl"],
+              ["physio2","المعالج الفيزيائي","examinerPhysiotherapistId","physiotherapistSignatureUrl"],
+            ] as const).map(([role,lbl,idField,sigField]) => (
+              <div key={role} className="space-y-2 rounded-lg border p-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">{lbl}</Label>
+                  <Select value={(form as any)[idField] || "none"} onValueChange={(v) => setForm((f) => ({ ...f, [idField]: v === "none" ? "" : v, [sigField]: "" }))}>
+                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      {staffList.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">التوقيع</Label>
+                  <div className="rounded border min-h-[64px] flex items-center justify-center bg-white/50 p-2">
+                    {(form as any)[sigField] ? (
+                      <div className="relative inline-block">
+                        <img src={(form as any)[sigField]} alt="توقيع" className="h-14 object-contain" />
+                        <button onClick={() => setForm((f) => ({ ...f, [sigField]: "" }))} className="absolute -top-1 -left-1 bg-destructive text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">✕</button>
+                      </div>
+                    ) : (
+                      <Button type="button" size="sm" variant="outline" className="text-xs w-full" onClick={() => handleSigClick(role)} disabled={!(form as any)[idField]}>
+                        {(form as any)[idField] ? "جلب / رفع التوقيع" : "اختر أولاً"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <input ref={prostoSigRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleSigFile(e, "prosto")} />
+          <input ref={physioSigRef2} type="file" accept="image/*" className="hidden" onChange={(e) => handleSigFile(e, "physio2")} />
+          <div className="space-y-1.5">
+            <Label className="text-xs">ملاحظات عامة</Label>
+            <Textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none text-xs" placeholder="ملاحظات إضافية..." />
+          </div>
+        </TabsContent>
+
+      </Tabs>
+
+      <div className="flex gap-2 pt-2 border-t">
+        <Button onClick={handleSave} disabled={isSaving} className="flex-1 gap-1">
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {isNew ? "إضافة الجلسة" : "حفظ التعديلات"}
+        </Button>
+        <Button variant="outline" onClick={() => isNew ? onCancel?.() : setEditing(false)}>إلغاء</Button>
+      </div>
+    </div>
+  );
+}
+
+function GaitAnalysisSection({ caseId, staffList }: { caseId: string; staffList: any[] }) {
+  const { data: sessions = [], isLoading } = useGaitAnalysisForms(caseId);
+  const [showAdd, setShowAdd] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  return (
+    <Section
+      title={`تحليل المشي — Pro-016${sessions.length > 0 ? ` (${sessions.length})` : ""}`}
+      action={
+        <Button size="sm" variant={showAdd ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowAdd((v) => !v)}>
+          <Plus className="h-3.5 w-3.5" />
+          {showAdd ? "إغلاق" : "إضافة جلسة"}
+        </Button>
+      }
+    >
+      {showAdd && (
+        <div className="mb-4 border rounded-lg p-1">
+          <GaitAnalysisCard key={formKey} caseId={caseId} staffList={staffList}
+            onCancel={() => { setShowAdd(false); setFormKey((k) => k + 1); }} />
+        </div>
+      )}
+      {isLoading ? (
+        <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : sessions.length === 0 && !showAdd ? (
+        <p className="text-sm text-muted-foreground text-center py-4">لا توجد جلسات تحليل مشي مسجّلة</p>
+      ) : (
+        <div className="space-y-3">
+          {sessions.map((s: any, i: number) => (
+            <GaitAnalysisCard key={s.id} caseId={caseId} staffList={staffList} session={s} idx={i} />
+          ))}
+        </div>
+      )}
+    </Section>
+  );
+}
+
+// ─── Balance Assessment (Pro-015) ─────────────────────────────────────────────
+
+const STATIC_BALANCE_KEYS = [
+  { key: "standing_feet_together", label: "الوقوف والقدمان متلاصقتان" },
+  { key: "narrow_base_standing", label: "الوقوف بقاعدة ضيقة" },
+  { key: "prosthetic_side", label: "الوقوف على الطرف الصناعي" },
+  { key: "sound_side", label: "الوقوف على الطرف السليم" },
+  { key: "eyes_closed", label: "الوقوف مع إغماض العينين" },
+];
+const STATIC_BALANCE_OPTS = [{ value: "INDEPENDENT", label: "مستقل" }, { value: "ASSISTED", label: "بمساعدة" }, { value: "UNABLE", label: "غير قادر" }];
+
+const DYNAMIC_TASK_KEYS = [
+  { key: "weight_shifting", label: "نقل الوزن (أمامي/خلفي ـ جانبي)" },
+  { key: "reaching_outside_bos", label: "الوصول خارج قاعدة الارتكاز" },
+  { key: "turning", label: "الالتفاف (360°/180°)" },
+  { key: "stepping_forward_back", label: "الخطو للأمام / للخلف" },
+  { key: "obstacle_negotiation", label: "تجاوز العوائق" },
+];
+const DYNAMIC_TASK_OPTS = [{ value: "GOOD", label: "جيد" }, { value: "FAIR", label: "متوسط" }, { value: "POOR", label: "ضعيف" }];
+
+const DYNAMIC_ACTIVITY_KEYS = [
+  { key: "sit_to_stand", label: "الجلوس إلى الوقوف" },
+  { key: "stand_to_sit", label: "الوقوف إلى الجلوس" },
+  { key: "gait_initiation", label: "بدء المشي" },
+  { key: "stair_negotiation", label: "صعود ونزول الدرج" },
+  { key: "uneven_surface_walking", label: "المشي على أسطح غير مستوية" },
+];
+const DYNAMIC_ACTIVITY_OPTS = [{ value: "INDEPENDENT", label: "مستقل" }, { value: "WITH_DIFFICULTY", label: "بصعوبة" }, { value: "UNABLE", label: "غير قادر" }];
+
+const LIMITING_FACTOR_OPTS = [
+  { value: "PROSTHETIC_CONTROL", label: "التحكم بالطرف الصناعي" },
+  { value: "MUSCLE_WEAKNESS", label: "ضعف العضلات" },
+  { value: "CORE_INSTABILITY", label: "عدم استقرار الجذع" },
+  { value: "FEAR_OF_FALLING", label: "الخوف من السقوط" },
+  { value: "ALIGNMENT_FIT_ISSUES", label: "مشاكل المحاذاة والملاءمة" },
+];
+const PROGRAM_PROGRESSION_OPTS = [
+  { value: "REDUCE_HAND_SUPPORT", label: "تقليل دعم اليدين" },
+  { value: "INCREASE_DURATION", label: "زيادة المدة" },
+  { value: "INCREASE_REPS", label: "زيادة التكرار" },
+  { value: "INCREASE_DIFFICULTY", label: "زيادة الصعوبة" },
+  { value: "ADD_DUAL_TASKS", label: "إضافة مهام مزدوجة" },
+  { value: "HOME_EXERCISE_PROGRAM", label: "برنامج تمارين منزلية" },
+  { value: "NOT_PRESCRIBED", label: "لم يوصف" },
+  { value: "PRESCRIBED_WITH_SAFETY", label: "وصف وتم شرح السلامة للمريض" },
+];
+const EXPECTED_OUTCOME_OPTS = [
+  { value: "IMPROVE_WEIGHT", label: "تحسين الوزن" },
+  { value: "REDUCED_FALL_RISK", label: "تقليل خطر السقوط" },
+  { value: "IMPROVED_CONFIDENCE", label: "زيادة الثقة" },
+];
+const DEFAULT_EXERCISE_PROGRAM = [
+  { exercise: "نقل الوزن", position: "وقوف", dosage: "10-15 reps", support: "None support", notes: "", selected: false },
+  { exercise: "توازن وقوف ثابت", position: "وقوف", dosage: "30-60 sec", support: "None support", notes: "", selected: false },
+  { exercise: "الوقوف على الطرف السليم", position: "وقوف", dosage: "20-30 sec", support: "Yes No", notes: "", selected: false },
+  { exercise: "تمارين الوصول", position: "وقوف", dosage: "10 reps", support: "None support", notes: "", selected: false },
+  { exercise: "نقر القدم (أمام/جانب)", position: "وقوف", dosage: "10 reps", support: "Bars", notes: "", selected: false },
+  { exercise: "قرفصاء خفيفة", position: "وقوف", dosage: "10 reps", support: "Yes No", notes: "", selected: false },
+  { exercise: "المشي بالمكان", position: "وقوف", dosage: "30-60 sec", support: "Support", notes: "", selected: false },
+  { exercise: "تجاوز عوائق", position: "مشي", dosage: "5-10 trials", support: "Supervised", notes: "", selected: false },
+  { exercise: "تدريب الجلوس والوقوف", position: "كرسي", dosage: "10 reps", support: "Yes No", notes: "", selected: false },
+  { exercise: "وقوف متعاقب (إن كان آمناً)", position: "وقوف", dosage: "20-30 sec", support: "Support", notes: "", selected: false },
+];
+
+const INITIAL_BALANCE_FORM = {
+  assessmentDate: "", previousProsthesis: null as boolean | null, assistiveDevice: "",
+  staticBalance: {} as Record<string, string>, dynamicTasks: {} as Record<string, string>, dynamicActivities: {} as Record<string, string>,
+  historyOfFalls: null as boolean | null, nearFalls: null as boolean | null, fearOfFalling: null as boolean | null,
+  fallRiskLevel: "", overallBalanceLevel: "", limitingFactors: [] as string[],
+  exerciseProgram: DEFAULT_EXERCISE_PROGRAM.map((e) => ({ ...e })),
+  programProgression: [] as string[], followUpWeeks: "", expectedOutcomes: [] as string[],
+  physiotherapistId: "", physiotherapistSignatureUrl: "", physiotherapistSignatureDate: "",
+  committeeHeadId: "", committeeHeadSignatureUrl: "", committeeHeadSignatureDate: "",
+  followUpDate: "", notes: "",
+};
+type BalanceForm = typeof INITIAL_BALANCE_FORM;
+
+function balanceFormFromData(data: any): BalanceForm {
+  const staticBalance: Record<string, string> = {};
+  (data.staticBalance ?? []).forEach((item: any) => { staticBalance[item.key] = item.result; });
+  const dynamicTasks: Record<string, string> = {};
+  (data.dynamicTasks ?? []).forEach((item: any) => { dynamicTasks[item.key] = item.result; });
+  const dynamicActivities: Record<string, string> = {};
+  (data.dynamicActivities ?? []).forEach((item: any) => { dynamicActivities[item.key] = item.result; });
+  return {
+    assessmentDate: data.assessmentDate?.slice(0, 10) ?? "",
+    previousProsthesis: data.previousProsthesis ?? null,
+    assistiveDevice: data.assistiveDevice ?? "",
+    staticBalance, dynamicTasks, dynamicActivities,
+    historyOfFalls: data.historyOfFalls ?? null,
+    nearFalls: data.nearFalls ?? null,
+    fearOfFalling: data.fearOfFalling ?? null,
+    fallRiskLevel: data.fallRiskLevel ?? "",
+    overallBalanceLevel: data.overallBalanceLevel ?? "",
+    limitingFactors: data.limitingFactors ?? [],
+    exerciseProgram: data.exerciseProgram?.length ? data.exerciseProgram : DEFAULT_EXERCISE_PROGRAM.map((e) => ({ ...e })),
+    programProgression: data.programProgression ?? [],
+    followUpWeeks: data.followUpWeeks?.toString() ?? "",
+    expectedOutcomes: data.expectedOutcomes ?? [],
+    physiotherapistId: data.physiotherapistId ?? "",
+    physiotherapistSignatureUrl: data.physiotherapistSignatureUrl ?? "",
+    physiotherapistSignatureDate: data.physiotherapistSignatureDate?.slice(0, 10) ?? "",
+    committeeHeadId: data.committeeHeadId ?? "",
+    committeeHeadSignatureUrl: data.committeeHeadSignatureUrl ?? "",
+    committeeHeadSignatureDate: data.committeeHeadSignatureDate?.slice(0, 10) ?? "",
+    followUpDate: data.followUpDate?.slice(0, 10) ?? "",
+    notes: data.notes ?? "",
+  };
+}
+
+function balanceFormToDto(form: BalanceForm) {
+  return {
+    assessmentDate: form.assessmentDate || undefined,
+    previousProsthesis: form.previousProsthesis ?? undefined,
+    assistiveDevice: form.assistiveDevice || undefined,
+    staticBalance: Object.entries(form.staticBalance).filter(([, v]) => v).map(([key, result]) => ({ key, result })),
+    dynamicTasks: Object.entries(form.dynamicTasks).filter(([, v]) => v).map(([key, result]) => ({ key, result })),
+    dynamicActivities: Object.entries(form.dynamicActivities).filter(([, v]) => v).map(([key, result]) => ({ key, result })),
+    historyOfFalls: form.historyOfFalls ?? undefined,
+    nearFalls: form.nearFalls ?? undefined,
+    fearOfFalling: form.fearOfFalling ?? undefined,
+    fallRiskLevel: form.fallRiskLevel || undefined,
+    overallBalanceLevel: form.overallBalanceLevel || undefined,
+    limitingFactors: form.limitingFactors.length ? form.limitingFactors : undefined,
+    exerciseProgram: form.exerciseProgram,
+    programProgression: form.programProgression.length ? form.programProgression : undefined,
+    followUpWeeks: form.followUpWeeks ? Number(form.followUpWeeks) : undefined,
+    expectedOutcomes: form.expectedOutcomes.length ? form.expectedOutcomes : undefined,
+    physiotherapistId: form.physiotherapistId || undefined,
+    physiotherapistSignatureUrl: form.physiotherapistSignatureUrl || undefined,
+    physiotherapistSignatureDate: form.physiotherapistSignatureDate || undefined,
+    committeeHeadId: form.committeeHeadId || undefined,
+    committeeHeadSignatureUrl: form.committeeHeadSignatureUrl || undefined,
+    committeeHeadSignatureDate: form.committeeHeadSignatureDate || undefined,
+    followUpDate: form.followUpDate || undefined,
+    notes: form.notes || undefined,
+  };
+}
+
+function BalanceAssessmentCard({
+  caseId, staffList, session, idx, onCancel,
+}: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void }) {
+  const isNew = !session;
+  const [editing, setEditing] = useState(isNew);
+  const [form, setForm] = useState<BalanceForm>(() =>
+    session ? balanceFormFromData(session) : { ...INITIAL_BALANCE_FORM, exerciseProgram: DEFAULT_EXERCISE_PROGRAM.map((e) => ({ ...e })) }
+  );
+  const [confirmDel, setConfirmDel] = useState(false);
+  const physioSigRef = useRef<HTMLInputElement>(null);
+  const committeeSigRef = useRef<HTMLInputElement>(null);
+  const [sigUploadFor, setSigUploadFor] = useState<"physio" | "committee" | null>(null);
+  const addMut = useAddBalanceAssessment();
+  const updateMut = useUpdateBalanceAssessment();
+  const deleteMut = useDeleteBalanceAssessment();
+
+  const handleSigClick = async (role: "physio" | "committee") => {
+    const empId = role === "physio" ? form.physiotherapistId : form.committeeHeadId;
+    if (!empId) { toast.error(role === "physio" ? "اختر المعالج الفيزيائي أولاً" : "اختر رئيس اللجنة أولاً"); return; }
+    try {
+      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
+      if (sig.hasSignature && sig.signatureUrl) {
+        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
+        if (role === "physio") setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
+        else setForm((f) => ({ ...f, committeeHeadSignatureUrl: url }));
+      } else {
+        setSigUploadFor(role);
+        setTimeout(() => (role === "physio" ? physioSigRef : committeeSigRef).current?.click(), 50);
+      }
+    } catch { toast.error("فشل جلب التوقيع"); }
+  };
+
+  const handleSigFile = async (e: React.ChangeEvent<HTMLInputElement>, role: "physio" | "committee") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const empId = role === "physio" ? form.physiotherapistId : form.committeeHeadId;
+    if (!empId) return;
+    try {
+      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
+      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
+      if (role === "physio") setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
+      else setForm((f) => ({ ...f, committeeHeadSignatureUrl: url }));
+      toast.success("تم رفع التوقيع");
+    } catch { toast.error("فشل رفع التوقيع"); }
+    setSigUploadFor(null);
+    e.target.value = "";
+  };
+
+  const handleSave = async () => {
+    const dto = balanceFormToDto(form);
+    if (isNew) { await addMut.mutateAsync({ caseId, dto }); onCancel?.(); }
+    else { await updateMut.mutateAsync({ caseId, formId: session.id, dto }); setEditing(false); }
+  };
+
+  const isSaving = addMut.isPending || updateMut.isPending;
+
+  // Collapsed card for existing sessions
+  if (!isNew && !editing) {
+    return (
+      <div className="rounded-lg border p-3 space-y-1">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2 items-center flex-wrap">
+            <Badge variant="secondary" className="font-bold">#{(idx ?? 0) + 1}</Badge>
+            {session.assessmentDate && <span className="text-sm">{new Date(session.assessmentDate).toLocaleDateString("en-GB")}</span>}
+            {session.overallBalanceLevel && <Badge variant="outline" className="text-xs">{session.overallBalanceLevel === "GOOD" ? "جيد" : session.overallBalanceLevel === "FAIR" ? "مقبول" : "ضعيف"}</Badge>}
+            {session.fallRiskLevel && (
+              <Badge className={`text-xs ${session.fallRiskLevel === "HIGH" ? "bg-red-100 text-red-800" : session.fallRiskLevel === "MODERATE" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"}`}>
+                {session.fallRiskLevel === "HIGH" ? "خطر عالي" : session.fallRiskLevel === "MODERATE" ? "خطر متوسط" : "خطر منخفض"}
+              </Badge>
+            )}
+          </div>
+          <div className="flex gap-1 items-center">
+            <Button size="sm" variant="outline" onClick={() => setEditing(true)}>تعديل</Button>
+            {confirmDel ? (
+              <>
+                <Button size="sm" variant="destructive" onClick={() => deleteMut.mutate({ caseId, formId: session.id })} disabled={deleteMut.isPending}>
+                  {deleteMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "تأكيد الحذف"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setConfirmDel(false)}>إلغاء</Button>
+              </>
+            ) : (
+              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setConfirmDel(true)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+        {session.notes && <p className="text-xs text-muted-foreground">{session.notes}</p>}
+      </div>
+    );
+  }
+
+  // Full form
+  const setArr = (field: "staticBalance" | "dynamicTasks" | "dynamicActivities", key: string, val: string) =>
+    setForm((f) => ({ ...f, [field]: { ...f[field], [key]: f[field][key] === val ? "" : val } }));
+
+  const toggleArr = (field: "limitingFactors" | "programProgression" | "expectedOutcomes", val: string, checked: boolean) =>
+    setForm((f) => ({ ...f, [field]: checked ? [...f[field], val] : f[field].filter((v) => v !== val) }));
+
+  return (
+    <div className="rounded-lg border p-4 space-y-5">
+      {!isNew && (
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-semibold">
+            تعديل التقييم #{(idx ?? 0) + 1}
+          </p>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+            إغلاق
+          </Button>
+        </div>
+      )}
+
+      {/* Basic Info */}
+      <div className="space-y-3">
+        <p className="text-[12px] font-semibold text-foreground">
+          بيانات أساسية
+        </p>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">تاريخ التقييم</Label>
+            <Input
+              type="date"
+              value={form.assessmentDate}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, assessmentDate: e.target.value }))
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">هل استخدم طرف صناعي سابق</Label>
+            <div className="flex gap-4">
+              {(
+                [
+                  ["true", "نعم"],
+                  ["false", "لا"],
+                ] as const
+              ).map(([val, label]) => (
+                <label
+                  key={val}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.previousProsthesis === (val === "true")}
+                    onChange={() =>
+                      setForm((f) => ({
+                        ...f,
+                        previousProsthesis:
+                          f.previousProsthesis === (val === "true")
+                            ? null
+                            : val === "true",
+                      }))
+                    }
+                    className="w-[15px] h-[15px] accent-orange-500 rounded-sm"
+                  />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">وسيلة مساعدة</Label>
+            <div className="flex gap-4 flex-wrap">
+              {(
+                [
+                  ["NONE", "لا يوجد"],
+                  ["CANE", "عصا"],
+                  ["CRUTCHES", "عكاز"],
+                  ["WALKER", "مشاية"],
+                ] as const
+              ).map(([val, label]) => (
+                <label
+                  key={val}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.assistiveDevice === val}
+                    onChange={() =>
+                      setForm((f) => ({
+                        ...f,
+                        assistiveDevice: f.assistiveDevice === val ? "" : val,
+                      }))
+                    }
+                    className="w-[15px] h-[15px] accent-orange-500 rounded-sm"
+                  />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Static Balance */}
+      <div className="space-y-2">
+        <p className="text-[12px] font-semibold text-foreground">
+          تقييم التوازن الثابت
+        </p>
+        <div className="rounded-lg overflow-hidden border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#2563eb] text-white">
+                <th className="text-right py-2.5 px-3 font-medium">الاختبار</th>
+                <th className="py-2.5 px-3 font-medium text-center w-20">
+                  مستقل
+                </th>
+                <th className="py-2.5 px-3 font-medium text-center w-20">
+                  بمساعدة
+                </th>
+                <th className="py-2.5 px-3 font-medium text-center w-20">
+                  غير قادر
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {STATIC_BALANCE_KEYS.map(({ key, label }, i) => (
+                <tr
+                  key={key}
+                  className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                >
+                  <td className="py-2.5 px-3 text-sm">{label}</td>
+                  {STATIC_BALANCE_OPTS.map((o) => (
+                    <td key={o.value} className="py-2.5 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={form.staticBalance[key] === o.value}
+                        onChange={() => setArr("staticBalance", key, o.value)}
+                        className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Dynamic Balance */}
+      <div className="space-y-2">
+        <p className="text-[12px] font-semibold text-foreground">
+          تقييم التوازن الديناميكي
+        </p>
+        <div className="rounded-lg overflow-hidden border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#2563eb] text-white">
+                <th className="text-right py-2.5 px-3 font-medium">المهمة</th>
+                <th className="py-2.5 px-3 font-medium text-center w-16">
+                  جيد
+                </th>
+                <th className="py-2.5 px-3 font-medium text-center w-16">
+                  متوسط
+                </th>
+                <th className="py-2.5 px-3 font-medium text-center w-16">
+                  ضعيف
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {DYNAMIC_TASK_KEYS.map(({ key, label }, i) => (
+                <tr
+                  key={key}
+                  className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                >
+                  <td className="py-2.5 px-3 text-sm">{label}</td>
+                  {DYNAMIC_TASK_OPTS.map((o) => (
+                    <td key={o.value} className="py-2.5 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={form.dynamicTasks[key] === o.value}
+                        onChange={() => setArr("dynamicTasks", key, o.value)}
+                        className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Dynamic Activities */}
+      <div className="space-y-2">
+        <p className="text-[12px] font-semibold text-foreground">
+          تقييم الأنشطة الديناميكية
+        </p>
+        <div className="rounded-lg overflow-hidden border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#2563eb] text-white">
+                <th className="text-right py-2.5 px-3 font-medium">النشاط</th>
+                <th className="py-2.5 px-3 font-medium text-center w-20">
+                  مستقل
+                </th>
+                <th className="py-2.5 px-3 font-medium text-center w-20">
+                  بصعوبة
+                </th>
+                <th className="py-2.5 px-3 font-medium text-center w-20">
+                  غير قادر
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {DYNAMIC_ACTIVITY_KEYS.map(({ key, label }, i) => (
+                <tr
+                  key={key}
+                  className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                >
+                  <td className="py-2.5 px-3 text-sm">{label}</td>
+                  {DYNAMIC_ACTIVITY_OPTS.map((o) => (
+                    <td key={o.value} className="py-2.5 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={form.dynamicActivities[key] === o.value}
+                        onChange={() =>
+                          setArr("dynamicActivities", key, o.value)
+                        }
+                        className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Fall Risk */}
+      <div className="space-y-3">
+        <p className="text-[12px] font-semibold text-foreground">
+          تقييم خطر السقوط
+        </p>
+        <div className="rounded-lg overflow-hidden border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#2563eb] text-white">
+                <th className="text-right py-2.5 px-3 font-medium">البند</th>
+                <th className="py-2.5 px-3 font-medium text-center w-24">
+                  <span className="flex items-center justify-center gap-1.5">
+                    <span className="w-4 h-4 rounded-sm border border-white inline-block" />
+                    نعم
+                  </span>
+                </th>
+                <th className="py-2.5 px-3 font-medium text-center w-24">
+                  <span className="flex items-center justify-center gap-1.5">
+                    <span className="w-4 h-4 rounded-sm border border-white inline-block" />
+                    لا
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {(
+                [
+                  ["historyOfFalls", "تاريخ سقوط سابق"],
+                  ["nearFalls", "شبه سقوط"],
+                  ["fearOfFalling", "خوف من السقوط"],
+                ] as const
+              ).map(([fld, lbl], i) => (
+                <tr
+                  key={fld}
+                  className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                >
+                  <td className="py-2.5 px-3 text-sm">{lbl}</td>
+                  <td className="py-2.5 px-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={(form as any)[fld] === true}
+                      onChange={() =>
+                        setForm((f) => ({
+                          ...f,
+                          [fld]: (f as any)[fld] === true ? null : true,
+                        }))
+                      }
+                      className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                    />
+                  </td>
+                  <td className="py-2.5 px-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={(form as any)[fld] === false}
+                      onChange={() =>
+                        setForm((f) => ({
+                          ...f,
+                          [fld]: (f as any)[fld] === false ? null : false,
+                        }))
+                      }
+                      className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                    />
+                  </td>
+                </tr>
+              ))}
+              <tr className="bg-muted/30 border-t">
+                <td className="py-2.5 px-3 text-sm font-medium">مستوى خطر السقوط</td>
+                <td colSpan={2} className="py-2.5 px-3">
+                  <div className="flex gap-4">
+                    {[{ value: "LOW", label: "منخفض" }, { value: "MODERATE", label: "متوسط" }, { value: "HIGH", label: "عالي" }].map((o) => (
+                      <label key={o.value} className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.fallRiskLevel === o.value}
+                          onChange={() => setForm((f) => ({ ...f, fallRiskLevel: f.fallRiskLevel === o.value ? "" : o.value }))}
+                          className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                        <span className="text-sm">{o.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Overall + Limiting Factors */}
+      <div className="space-y-3">
+        <p className="text-[12px] font-semibold text-foreground">
+          {" "}
+          خلاصة التوازن والانطباع السريري
+        </p>
+        <div className="space-y-1.5">
+          <Label className="text-xs">مستوى التوازن العام</Label>
+          <div className="flex gap-4">
+            {[
+              { value: "GOOD", label: "جيد" },
+              { value: "FAIR", label: "مقبول" },
+              { value: "POOR", label: "ضعيف" },
+            ].map((o) => (
+              <label key={o.value} className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.overallBalanceLevel === o.value}
+                  onChange={() => setForm((f) => ({ ...f, overallBalanceLevel: f.overallBalanceLevel === o.value ? "" : o.value }))}
+                  className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                <span className="text-sm">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">العوامل المؤثرة الرئيسية</Label>
+          <div className="space-y-1">
+            {LIMITING_FACTOR_OPTS.map((o) => (
+              <label
+                key={o.value}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  className="rounded"
+                  checked={form.limitingFactors.includes(o.value)}
+                  onChange={(e) =>
+                    toggleArr("limitingFactors", o.value, e.target.checked)
+                  }
+                />
+                <span className="text-xs">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Exercise Program */}
+      <div className="space-y-2">
+        <p className="text-[12px] font-semibold text-foreground">
+          برنامج تمارين التوازن
+        </p>
+        <div className="rounded-lg overflow-hidden border overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#2563eb] text-white">
+                <th className="py-2.5 px-3 font-medium text-center w-10">✓</th>
+                <th className="text-right py-2.5 px-3 font-medium min-w-[140px]">
+                  التمرين
+                </th>
+                <th className="text-right py-2.5 px-3 font-medium min-w-[60px]">
+                  الوضعية
+                </th>
+                <th className="text-right py-2.5 px-3 font-medium min-w-[90px]">
+                  الجرعة
+                </th>
+                <th className="text-right py-2.5 px-3 font-medium min-w-[100px]">
+                  الدعم
+                </th>
+                <th className="text-right py-2.5 px-3 font-medium min-w-[110px]">
+                  ملاحظات
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {form.exerciseProgram.map((ex, i) => (
+                <tr
+                  key={i}
+                  className={
+                    ex.selected
+                      ? "bg-orange-50"
+                      : i % 2 === 0
+                        ? "bg-background"
+                        : "bg-muted/30"
+                  }
+                >
+                  <td className="py-2.5 px-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={!!ex.selected}
+                      onChange={() => {
+                        const ep = [...form.exerciseProgram];
+                        ep[i] = { ...ep[i], selected: !ep[i].selected };
+                        setForm((f) => ({ ...f, exerciseProgram: ep }));
+                      }}
+                      className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                    />
+                  </td>
+                  <td className="py-2.5 px-3 text-sm font-medium">
+                    {ex.exercise}
+                  </td>
+                  <td className="py-2.5 px-3 text-sm text-muted-foreground">
+                    {ex.position}
+                  </td>
+                  <td className="py-2.5 px-3 text-sm text-muted-foreground">
+                    {ex.dosage}
+                  </td>
+                  <td className="py-2.5 px-3 text-sm text-muted-foreground">
+                    {ex.support}
+                  </td>
+                  <td className="py-1.5 px-2">
+                    <Input
+                      value={ex.notes ?? ""}
+                      onChange={(e) => {
+                        const ep = [...form.exerciseProgram];
+                        ep[i] = { ...ep[i], notes: e.target.value };
+                        setForm((f) => ({ ...f, exerciseProgram: ep }));
+                      }}
+                      className="h-7 text-xs px-2"
+                      placeholder="ملاحظات..."
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Program Development Plan */}
+      <div className="space-y-3">
+        <p className="text-[12px] font-semibold text-foreground">
+          خطة تطوير البرنامج
+        </p>
+        <div className="rounded-lg border divide-y">
+          {PROGRAM_PROGRESSION_OPTS.map((o) => (
+            <label
+              key={o.value}
+              className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={form.programProgression.includes(o.value)}
+                onChange={(e) =>
+                  toggleArr("programProgression", o.value, e.target.checked)
+                }
+                className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500 shrink-0"
+              />
+              <span className="text-sm">{o.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Follow-up + Outcomes + Signatures */}
+      <div className="space-y-4">
+        <p className="text-[12px] font-semibold text-foreground">
+          المراجعة والمتابعة
+        </p>
+
+        {/* Review weeks */}
+        <div className="flex items-center gap-2">
+          <Label className="text-sm shrink-0">المراجعة بعد</Label>
+          <Input
+            type="number"
+            min={1}
+            placeholder="4"
+            value={form.followUpWeeks}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, followUpWeeks: e.target.value }))
+            }
+            className="w-24 text-center"
+          />
+          <Label className="text-sm shrink-0">أسابيع</Label>
+        </div>
+
+        {/* Expected Goals */}
+        <div className="space-y-2">
+          <Label className="text-xs">الهدف المتوقع</Label>
+          <div className="rounded-lg border divide-y">
+            {EXPECTED_OUTCOME_OPTS.map((o) => (
+              <label
+                key={o.value}
+                className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={form.expectedOutcomes.includes(o.value)}
+                  onChange={(e) =>
+                    toggleArr("expectedOutcomes", o.value, e.target.checked)
+                  }
+                  className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500 shrink-0"
+                />
+                <span className="text-sm">{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Signatures */}
+        <div className="grid grid-cols-2 gap-4">
+          {(
+            [
+              [
+                "committee",
+                "رئيس لجنة التقييم",
+                "committeeHeadId",
+                "committeeHeadSignatureUrl",
+                "committeeHeadSignatureDate",
+              ],
+              [
+                "physio",
+                "المعالج الفيزيائي",
+                "physiotherapistId",
+                "physiotherapistSignatureUrl",
+                "physiotherapistSignatureDate",
+              ],
+            ] as const
+          ).map(([role, lbl, idField, sigField, dateField]) => (
+            <div key={role} className="space-y-2 rounded-lg border p-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">{lbl}</Label>
+                <Select
+                  value={(form as any)[idField] || "none"}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      [idField]: v === "none" ? "" : v,
+                      [sigField]: "",
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— غير محدد —</SelectItem>
+                    {staffList.map((e: any) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.firstNameAr} {e.lastNameAr}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">التوقيع</Label>
+                <div className="rounded border min-h-[64px] flex items-center justify-center bg-white/50 p-2">
+                  {(form as any)[sigField] ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={(form as any)[sigField]}
+                        alt="توقيع"
+                        className="h-14 object-contain"
+                      />
+                      <button
+                        onClick={() =>
+                          setForm((f) => ({ ...f, [sigField]: "" }))
+                        }
+                        className="absolute -top-1 -left-1 bg-destructive text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="text-xs w-full"
+                      onClick={() => handleSigClick(role)}
+                      disabled={!(form as any)[idField]}
+                    >
+                      {(form as any)[idField]
+                        ? "جلب / رفع التوقيع"
+                        : "اختر أولاً"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">التاريخ</Label>
+                <Input
+                  type="date"
+                  value={(form as any)[dateField]}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, [dateField]: e.target.value }))
+                  }
+                  className="text-xs"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <input
+          ref={physioSigRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleSigFile(e, "physio")}
+        />
+        <input
+          ref={committeeSigRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleSigFile(e, "committee")}
+        />
+      </div>
+
+      <Separator />
+
+      {/* Notes */}
+      <div className="space-y-1.5">
+        <Label className="text-xs">ملاحظات</Label>
+        <Textarea
+          rows={3}
+          placeholder="ملاحظات إضافية..."
+          value={form.notes}
+          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+          className="resize-none"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="flex-1 gap-1"
+        >
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4" />
+          )}
+          {isNew ? "إضافة التقييم" : "حفظ التعديلات"}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => (isNew ? onCancel?.() : setEditing(false))}
+        >
+          إلغاء
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function BalanceAssessmentSection({ caseId, staffList }: { caseId: string; staffList: any[] }) {
+  const { data: sessions = [], isLoading } = useBalanceAssessments(caseId);
+  const [showAdd, setShowAdd] = useState(false);
+  return (
+    <Section
+      title={`تقييمات التوازن — Pro-015${sessions.length > 0 ? ` (${sessions.length})` : ""}`}
+      action={
+        <Button size="sm" variant={showAdd ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowAdd((v) => !v)}>
+          <Plus className="h-3.5 w-3.5" />
+          {showAdd ? "إغلاق" : "إضافة تقييم"}
+        </Button>
+      }
+    >
+      {showAdd && (
+        <div className="mb-4 border rounded-lg p-1">
+          <BalanceAssessmentCard caseId={caseId} staffList={staffList} onCancel={() => setShowAdd(false)} />
+        </div>
+      )}
+      {isLoading ? (
+        <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : sessions.length === 0 && !showAdd ? (
+        <p className="text-sm text-muted-foreground text-center py-4">لا توجد تقييمات توازن مسجّلة</p>
+      ) : (
+        <div className="space-y-3">
+          {sessions.map((s: any, i: number) => (
+            <BalanceAssessmentCard key={s.id} caseId={caseId} staffList={staffList} session={s} idx={i} />
+          ))}
+        </div>
+      )}
+    </Section>
+  );
 }
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
@@ -160,7 +2816,7 @@ function PfGrader({ value, onChange }: { value: number | null; onChange: (n: num
 function PfRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3 py-2 border-b border-border/30 last:border-0">
-      <span className="text-sm text-muted-foreground shrink-0 w-52 pt-0.5 leading-tight">{label}</span>
+      <span className="text-sm font-medium shrink-0 w-52 pt-0.5 leading-tight">{label}</span>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 flex-1">{children}</div>
     </div>
   );
@@ -202,9 +2858,10 @@ export default function ProstheticsCasePage() {
   const signDecision = useSignCommitteeDecision();
   const addComponent = useAddCaseComponent();
   const deleteComponent = useDeleteCaseComponent();
+  const [confirmDelComp, setConfirmDelComp] = useState<string | null>(null);
   const submitGait = useSubmitGaitAnalysis();
-  const submitBalance = useSubmitBalanceAssessment();
   const addConsumable = useAddConsumable();
+  const { data: finalEvalData } = useFinalEvaluation(id);
   const submitFinalEval = useSubmitFinalEvaluation();
   const signFinalEval = useSignFinalEvaluation();
   const submitDelivery = useSubmitDelivery();
@@ -212,7 +2869,22 @@ export default function ProstheticsCasePage() {
   const addFollowUp = useAddProstheticsFollowUp();
   const downloadPdf = useDownloadProstheticsPdf();
   const uploadAttachment = useUploadProstheticsAttachment();
+  const deleteAttachment = useDeleteProstheticsAttachment();
   const attachFileRef = useRef<HTMLInputElement>(null);
+  const submitAnkleMeasurement = useSubmitAnkleDisarticulation();
+  const submitKneeMeasurement = useSubmitKneeDisarticulation();
+  const submitTransfemoralMeasurement = useSubmitTransfemoral();
+  const submitTranstibialMeasurement = useSubmitTranstibial();
+  const submitHemipelvectomyMeasurement = useSubmitHemipelvectomy();
+  const submitElbowMeasurement = useSubmitElbowDisarticulation();
+  const submitTranshumeralMeasurement = useSubmitTranshumeral();
+  const submitTransradialMeasurement = useSubmitTransradial();
+  const { data: deliveryData19 } = useProstheticDelivery(id);
+  const saveProsDelivery = useSaveProstheticDelivery();
+  const addDelivItem = useAddDeliveryItem();
+  const updateDelivItem = useUpdateDeliveryItem();
+  const deleteDelivItem = useDeleteDeliveryItem();
+  const currentUser = useAuthStore((s) => s.user);
 
   // ── Local form state ──
   const [intakeForm, setIntakeForm] = useState({
@@ -338,6 +3010,9 @@ export default function ProstheticsCasePage() {
   const [prosthesisTypeForm, setProsthesisTypeForm] = useState("" as ProstheticType | "");
   const [signOpen, setSignOpen] = useState(false);
   const [signRole, setSignRole] = useState<"DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST">("DOCTOR");
+  const [committeeSigUrls, setCommitteeSigUrls] = useState<Record<string, string>>({});
+  const [committeeSigLoading, setCommitteeSigLoading] = useState<Record<string, boolean>>({});
+  const committeeSigRefs = { DOCTOR: useRef<HTMLInputElement>(null), PROSTHETIST: useRef<HTMLInputElement>(null), PHYSIOTHERAPIST: useRef<HTMLInputElement>(null) };
   const [compShared, setCompShared] = useState({
     sourceLocation: "WAREHOUSE" as "WAREHOUSE" | "SUPPLIER",
     supplier: "OTTOBOCK" as "OTTOBOCK" | "OTHER",
@@ -350,19 +3025,89 @@ export default function ProstheticsCasePage() {
   const [balanceForm, setBalanceForm] = useState({ overallLevel: "", fallRisk: "LOW" as "LOW" | "MODERATE" | "HIGH", notes: "" });
   const [consumableForm, setConsumableForm] = useState({ name: "", quantity: "1", unit: "", notes: "" });
   const [consumables, setConsumables] = useState<Array<{ name: string; quantity: string; unit: string; notes: string }>>([]);
-  const [finalEvalForm, setFinalEvalForm] = useState({ functionalOutcome: "", patientSatisfaction: "", notes: "" });
+  const INITIAL_FINAL_EVAL: FinalEvaluationDto & { managerNotes: string; patientFileComplete: boolean; managerId: string; managerSignatureUrl: string } = {
+    supervisorId: "", residualLimbCondition: "", suspensionSystemUsed: "",
+    socksDelivered: undefined, linersDelivered: undefined, fittingDate: "",
+    generalNotes: "",
+    physioOpinion: "", departmentHeadOpinion: "", prosthetistOpinion: "",
+    prosthetistSupervisorOpinion: "", committeeHeadOpinion: "", expertOpinion: "",
+    readyForDelivery: false, needsFollowUp: false, followUpPlan: "",
+    medicalDirectorNotes: "",
+    managerNotes: "", patientFileComplete: false,
+    managerId: "", managerSignatureUrl: "",
+  };
+  const [finalEvalForm, setFinalEvalForm] = useState({ ...INITIAL_FINAL_EVAL });
+  useEffect(() => {
+    if (finalEvalData) {
+      setFinalEvalForm((prev) => ({ ...INITIAL_FINAL_EVAL, ...finalEvalData }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalEvalData]);
   const [finalSignOpen, setFinalSignOpen] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({ deliveryDate: new Date().toISOString().slice(0, 10), notes: "" });
   const [deliverySignOpen, setDeliverySignOpen] = useState(false);
+
+  // ── Pro-019 state ─────────────────────────────────────────────────────────
+  const [proDeliveryHeader, setProDeliveryHeader] = useState({ inspectionDate: "", prosthetistId: "", physiotherapistId: "", ceoId: "", ceoSignatureUrl: "", signatureDate: "" });
+  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [newItemForm, setNewItemForm] = useState({ inventoryItemId: "", deliveredProduct: "", partCode: "", quantity: "", company: "", notes: "" });
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemForm, setEditingItemForm] = useState({ inventoryItemId: "", deliveredProduct: "", partCode: "", quantity: "", company: "", notes: "" });
+  const [confirmDelItem, setConfirmDelItem] = useState<string | null>(null);
+  const ceoSigRef = useRef<HTMLInputElement>(null);
+  const finalEvalManagerSigRef = useRef<HTMLInputElement>(null);
   const [patientEditMode, setPatientEditMode] = useState(false);
   const [patientEditForm, setPatientEditForm] = useState({ firstName: "", lastName: "", dateOfBirth: "", phone: "", heightCm: "", weightKg: "" });
   const [followUpForm, setFollowUpForm] = useState({ date: new Date().toISOString().slice(0, 10), notes: "", kLevel: null as KLevel | null, painLevel: "" });
   const [staffForm, setStaffForm] = useState({
-    prosthetistId: "",
-    physiotherapistId: "",
-    supervisingDoctorId: "",
-    workshopSupervisorId: "",
+    prosthetistIds: [] as string[],
+    physiotherapistIds: [] as string[],
+    supervisingDoctorIds: [] as string[],
   });
+  const [openStaffKey, setOpenStaffKey] = useState<string | null>(null);
+
+  // ── Measurement sheet state ──
+  type MeasureSheetType = "ankle_disarticulation" | "knee_disarticulation" | "above_knee" | "below_knee" | "hemipelvectomy" | "elbow_disarticulation" | "transhumeral" | "transradial";
+  const [measureSheetType, setMeasureSheetType] = useState<MeasureSheetType | null>(null);
+  const [ankleForm, setAnkleForm] = useState<{
+    side: "RIGHT" | "LEFT"; notes: string; footMeasurement: string;
+    soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
+  }>({ side: "RIGHT", notes: "", footMeasurement: "", soundLimb: {}, affectedLimb: {} });
+
+  const [kneeForm, setKneeForm] = useState<{
+    side: "RIGHT" | "LEFT"; notes: string; footMeasurement: string;
+    soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
+  }>({ side: "RIGHT", notes: "", footMeasurement: "", soundLimb: {}, affectedLimb: {} });
+
+  const [transradialForm, setTransradialForm] = useState<{
+    side: "RIGHT" | "LEFT"; notes: string;
+    soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
+  }>({ side: "RIGHT", notes: "", soundLimb: {}, affectedLimb: {} });
+
+  const [transhumeralForm, setTranshumeralForm] = useState<{
+    side: "RIGHT" | "LEFT"; notes: string;
+    soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
+  }>({ side: "RIGHT", notes: "", soundLimb: {}, affectedLimb: {} });
+
+  const [elbowForm, setElbowForm] = useState<{
+    side: "RIGHT" | "LEFT"; notes: string;
+    soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
+  }>({ side: "RIGHT", notes: "", soundLimb: {}, affectedLimb: {} });
+
+  const [hemipelvectomyForm, setHemipelvectomyForm] = useState<{
+    side: "RIGHT" | "LEFT"; notes: string; footMeasurement: string;
+    soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
+  }>({ side: "RIGHT", notes: "", footMeasurement: "", soundLimb: {}, affectedLimb: {} });
+
+  const [transtibialForm, setTranstibialForm] = useState<{
+    side: "RIGHT" | "LEFT"; notes: string; footMeasurement: string;
+    soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
+  }>({ side: "RIGHT", notes: "", footMeasurement: "", soundLimb: {}, affectedLimb: {} });
+
+  const [transfemoralForm, setTransfemoralForm] = useState<{
+    side: "RIGHT" | "LEFT"; notes: string; footMeasurement: string;
+    soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
+  }>({ side: "RIGHT", notes: "", footMeasurement: "", soundLimb: {}, affectedLimb: {} });
 
   const { data: inventoryData } = useInventoryItems();
   const inventoryItems = Array.isArray(inventoryData) ? inventoryData : (inventoryData as any)?.items ?? [];
@@ -371,6 +3116,19 @@ export default function ProstheticsCasePage() {
   const staffList: any[] = Array.isArray(staffData)
     ? staffData
     : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
+
+  // sync Pro-019 header from server
+  useEffect(() => {
+    if (!deliveryData19) return;
+    setProDeliveryHeader({
+      inspectionDate: (deliveryData19 as any)?.inspectionDate?.slice(0, 10) ?? "",
+      prosthetistId: (deliveryData19 as any)?.prosthetistId ?? "",
+      physiotherapistId: (deliveryData19 as any)?.physiotherapistId ?? "",
+      ceoId: (deliveryData19 as any)?.ceoId ?? "",
+      ceoSignatureUrl: (deliveryData19 as any)?.ceoSignatureUrl ?? "",
+      signatureDate: (deliveryData19 as any)?.signatureDate?.slice(0, 10) ?? "",
+    });
+  }, [deliveryData19]);
 
   // يمنع إعادة تهيئة الفورم مباشرة بعد الحفظ
   const justSavedRef = useRef(false);
@@ -414,10 +3172,9 @@ export default function ProstheticsCasePage() {
       revisionDetails: caseData.revisionDetails ?? "",
     });
     setStaffForm({
-      prosthetistId: caseData.prosthetistId ?? caseData.assignedProsthetistId ?? "",
-      physiotherapistId: caseData.physiotherapistId ?? "",
-      supervisingDoctorId: caseData.supervisingDoctorId ?? "",
-      workshopSupervisorId: caseData.workshopSupervisorId ?? "",
+      prosthetistIds: caseData.prosthetistId ? [caseData.prosthetistId] : caseData.assignedProsthetistId ? [caseData.assignedProsthetistId] : [],
+      physiotherapistIds: caseData.physiotherapistId ? [caseData.physiotherapistId] : [],
+      supervisingDoctorIds: caseData.supervisingDoctorId ? [caseData.supervisingDoctorId] : [],
     });
   }, [caseData?.updatedAt]);
 
@@ -502,13 +3259,14 @@ export default function ProstheticsCasePage() {
     await updateCase.mutateAsync({
       id,
       dto: {
-        prosthetistId: staffForm.prosthetistId || undefined,
-        physiotherapistId: staffForm.physiotherapistId || undefined,
-        supervisingDoctorId: staffForm.supervisingDoctorId || undefined,
-        workshopSupervisorId: staffForm.workshopSupervisorId || undefined,
+        prosthetistIds: staffForm.prosthetistIds.length ? staffForm.prosthetistIds : undefined,
+        physiotherapistIds: staffForm.physiotherapistIds.length ? staffForm.physiotherapistIds : undefined,
+        supervisingDoctorIds: staffForm.supervisingDoctorIds.length ? staffForm.supervisingDoctorIds : undefined,
       } as any,
     });
   };
+  const toggleStaffMember = (key: keyof typeof staffForm, empId: string) =>
+    setStaffForm((f) => ({ ...f, [key]: (f[key] as string[]).includes(empId) ? (f[key] as string[]).filter((x) => x !== empId) : [...(f[key] as string[]), empId] }));
 
   const handleSaveIntakeAndAdvance = async () => {
     justSavedRef.current = true;
@@ -625,6 +3383,11 @@ export default function ProstheticsCasePage() {
     }
   };
 
+  const handleSaveUpperAll = async () => {
+    await handleSaveStaff();
+    await handleSubmitUpperAssessment();
+  };
+
   const handleSubmitLowerAssessment = async () => {
     await handleSaveGeneralAssessment();
     if (lowerAssessForm.amputationSide === "BILATERAL") {
@@ -649,6 +3412,13 @@ export default function ProstheticsCasePage() {
     await submitOpinion.mutateAsync({ id, dto: { role, opinion } });
   };
 
+  const handleSaveCommitteeAll = async () => {
+    if (prosthetistOpinion.trim()) await submitOpinion.mutateAsync({ id, dto: { role: "PROSTHETIST", opinion: prosthetistOpinion } });
+    if (physioOpinion.trim()) await submitOpinion.mutateAsync({ id, dto: { role: "PHYSIOTHERAPIST", opinion: physioOpinion } });
+    if (doctorOpinion.trim()) await submitOpinion.mutateAsync({ id, dto: { role: "DOCTOR", opinion: doctorOpinion } });
+    if (decisionForm.finalSummary.trim()) await handleSubmitDecision();
+  };
+
   const handleSubmitDecision = async () => {
     if (prosthesisTypeForm) {
       await updateCase.mutateAsync({ id, dto: { prosthesisType: prosthesisTypeForm as ProstheticType } });
@@ -660,7 +3430,24 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSign = async (base64: string) => {
-    await signDecision.mutateAsync({ id, role: signRole, signatureBase64: base64 });
+    await signDecision.mutateAsync({ id, role: signRole, signatureUrl: base64 });
+  };
+
+  const handleCommitteeSigFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    role: "DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCommitteeSigLoading((prev) => ({ ...prev, [role]: true }));
+    try {
+      const res = await clinicProstheticsApi.uploadSignatureFile(file);
+      const url = res.url.startsWith("http") ? res.url : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.url}`;
+      setCommitteeSigUrls((prev) => ({ ...prev, [role]: url }));
+      await signDecision.mutateAsync({ id, role, signatureUrl: url });
+    } catch { toast.error("فشل رفع التوقيع"); }
+    finally { setCommitteeSigLoading((prev) => ({ ...prev, [role]: false })); }
+    e.target.value = "";
   };
 
   const handleAddComponents = async () => {
@@ -703,9 +3490,6 @@ export default function ProstheticsCasePage() {
     await updateStatus.mutateAsync({ id, status: "DELIVERED" });
   };
 
-  const handleSubmitBalance = async () => {
-    await submitBalance.mutateAsync({ id, dto: { overallBalance: balanceForm.overallLevel, fallRisk: balanceForm.fallRisk, notes: balanceForm.notes || undefined } });
-  };
 
   const handleAddConsumable = () => {
     if (!consumableForm.name.trim()) return;
@@ -721,12 +3505,80 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSubmitFinalEval = async () => {
-    await submitFinalEval.mutateAsync({ id, dto: { functionalOutcome: finalEvalForm.functionalOutcome || undefined, patientSatisfaction: finalEvalForm.patientSatisfaction || undefined, notes: finalEvalForm.notes || undefined } });
+    const { managerNotes, patientFileComplete, ...dto } = finalEvalForm;
+    await submitFinalEval.mutateAsync({ id, dto: {
+      ...dto,
+      supervisorId: dto.supervisorId || undefined,
+      fittingDate: dto.fittingDate || undefined,
+      socksDelivered: dto.socksDelivered ?? undefined,
+      linersDelivered: dto.linersDelivered ?? undefined,
+    }});
   };
 
   const handleSignFinalEval = async (sig: string) => {
-    await signFinalEval.mutateAsync({ id, signature: sig });
+    await signFinalEval.mutateAsync({ id, dto: {
+      signatureBase64: sig,
+      medicalDirectorNotes: finalEvalForm.medicalDirectorNotes || undefined,
+      managerNotes: finalEvalForm.managerNotes || undefined,
+      patientFileComplete: finalEvalForm.patientFileComplete || undefined,
+    }});
     await updateStatus.mutateAsync({ id, status: "DELIVERED" });
+  };
+
+  const handleCeoSignatureClick = async () => {
+    const empId = proDeliveryHeader.ceoId;
+    if (!empId) { toast.error("اختر المدير التنفيذي أولاً"); return; }
+    try {
+      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
+      if (sig.hasSignature && sig.signatureUrl) {
+        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
+        setProDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: url }));
+      } else {
+        setTimeout(() => ceoSigRef.current?.click(), 50);
+      }
+    } catch { toast.error("فشل جلب بيانات التوقيع"); }
+  };
+
+  const handleCeoSigFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const empId = proDeliveryHeader.ceoId;
+    if (!empId) return;
+    try {
+      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
+      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
+      setProDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: url }));
+      toast.success("تم رفع التوقيع");
+    } catch { toast.error("فشل رفع التوقيع"); }
+    e.target.value = "";
+  };
+
+  const handleFinalEvalManagerSigClick = async () => {
+    const empId = finalEvalForm.managerId;
+    if (!empId) { toast.error("اختر المدير أولاً"); return; }
+    try {
+      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
+      if (sig.hasSignature && sig.signatureUrl) {
+        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
+        setFinalEvalForm((f) => ({ ...f, managerSignatureUrl: url }));
+      } else {
+        setTimeout(() => finalEvalManagerSigRef.current?.click(), 50);
+      }
+    } catch { toast.error("فشل جلب التوقيع"); }
+  };
+
+  const handleFinalEvalManagerSigFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const empId = finalEvalForm.managerId;
+    if (!empId) return;
+    try {
+      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
+      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
+      setFinalEvalForm((f) => ({ ...f, managerSignatureUrl: url }));
+      toast.success("تم رفع التوقيع");
+    } catch { toast.error("فشل رفع التوقيع"); }
+    e.target.value = "";
   };
 
   const handleSubmitDelivery = async () => {
@@ -778,7 +3630,7 @@ export default function ProstheticsCasePage() {
               {[
                 { label: "أخصائي أطراف", obj: c.prosthetist },
                 { label: "أخصائي علاج فيزيائي", obj: c.physiotherapist },
-                { label: "الطبيب المشرف", obj: c.supervisingDoctor },
+                { label: "اسم المشرف", obj: c.supervisingDoctor },
                 { label: "مشرف الورشة", obj: c.workshopSupervisor },
               ].filter((s) => s.obj).map((s) => (
                 <span key={s.label} className="text-xs text-muted-foreground">
@@ -816,82 +3668,19 @@ export default function ProstheticsCasePage() {
           <TabsTrigger value="assessment" className="text-sm py-1.5">معلومات التقييم</TabsTrigger>
           <TabsTrigger value="committee_review" className="text-sm py-1.5">اللجنة</TabsTrigger>
           <TabsTrigger value="fitting" className="text-sm py-1.5">التركيب</TabsTrigger>
-          <TabsTrigger value="gait_analysis" className="text-sm py-1.5">تحليل المشي</TabsTrigger>
-          <TabsTrigger value="balance_assessment" className="text-sm py-1.5">التوازن</TabsTrigger>
-          <TabsTrigger value="consumables" className="text-sm py-1.5">المستهلكات</TabsTrigger>
-          <TabsTrigger value="final_evaluation" className="text-sm py-1.5">التقييم النهائي</TabsTrigger>
+          <TabsTrigger value="measurement_sheet" className="text-sm py-1.5">ورق القياس</TabsTrigger>
+          <TabsTrigger value="treatment_program" className="text-sm py-1.5">المتابعة</TabsTrigger>
           <TabsTrigger value="delivered" className="text-sm py-1.5">التسليم</TabsTrigger>
-          <TabsTrigger value="follow_up" className="text-sm py-1.5">المتابعة</TabsTrigger>
+          <TabsTrigger value="gait_analysis" className="text-sm py-1.5">تحليل المشي</TabsTrigger>
+          {ampTypes.includes("LOWER") && <TabsTrigger value="balance_assessment" className="text-sm py-1.5">التوازن</TabsTrigger>}
+          <TabsTrigger value="final_evaluation" className="text-sm py-1.5">التقييم النهائي</TabsTrigger>
           <TabsTrigger value="timeline" className="text-sm py-1.5">السجل الزمني</TabsTrigger>
-          <TabsTrigger value="attachments" className="text-sm py-1.5">المرفقات {attachments.length > 0 && `(${attachments.length})`}</TabsTrigger>
         </TabsList>
 
         {/* ── INTAKE ──────────────────────────────────────────────────────── */}
         <TabsContent value="intake" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
 
-          {/* ── فريق العمل ── */}
-          <Section
-            title="فريق العمل المعالج"
-            action={
-              <Button size="sm" onClick={handleSaveStaff} disabled={updateCase.isPending}>
-                {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : null}
-                حفظ
-              </Button>
-            }
-          >
-            <div className="grid grid-cols-2 gap-4">
-              {([
-                { key: "prosthetistId",      label: "فني الأطراف الصناعية" },
-                { key: "physiotherapistId",  label: "المعالج الفيزيائي" },
-                { key: "supervisingDoctorId","label": "الطبيب المشرف" },
-                { key: "workshopSupervisorId","label": "مشرف الورشة" },
-              ] as { key: keyof typeof staffForm; label: string }[]).map(({ key, label }) => (
-                <div key={key} className="space-y-1.5">
-                  <Label>{label}</Label>
-                  <Select
-                    value={staffForm[key] || "none"}
-                    onValueChange={(v) => setStaffForm((f) => ({ ...f, [key]: v === "none" ? "" : v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— غير محدد —</SelectItem>
-                      {staffList.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.id}>
-                          {emp.firstNameAr} {emp.lastNameAr}
-                          {emp.jobTitle?.nameAr ? ` — ${emp.jobTitle.nameAr}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {/* عرض الاسم المحفوظ من السيرفر */}
-                  {key === "prosthetistId" && c.prosthetist && (
-                    <p className="text-xs text-muted-foreground">
-                      محفوظ: {c.prosthetist.firstNameAr} {c.prosthetist.lastNameAr}
-                    </p>
-                  )}
-                  {key === "physiotherapistId" && c.physiotherapist && (
-                    <p className="text-xs text-muted-foreground">
-                      محفوظ: {c.physiotherapist.firstNameAr} {c.physiotherapist.lastNameAr}
-                    </p>
-                  )}
-                  {key === "supervisingDoctorId" && c.supervisingDoctor && (
-                    <p className="text-xs text-muted-foreground">
-                      محفوظ: {c.supervisingDoctor.firstNameAr} {c.supervisingDoctor.lastNameAr}
-                    </p>
-                  )}
-                  {key === "workshopSupervisorId" && c.workshopSupervisor && (
-                    <p className="text-xs text-muted-foreground">
-                      محفوظ: {c.workshopSupervisor.firstNameAr} {c.workshopSupervisor.lastNameAr}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Section>
-
-          <div className="mt-4">
+          <div>
           <Section title="بيانات الاستقبال">
             <div className="space-y-5">
 
@@ -1217,36 +4006,36 @@ export default function ProstheticsCasePage() {
                 ) : (
                   <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
                     <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">رقم المريض</p>
-                      <p className="font-medium">{patientFull?.patientNumber ?? c.patient?.patientNumber ?? "—"}</p>
+                      <p className="text-xs font-medium">رقم المريض</p>
+                      <p className="text-muted-foreground">{patientFull?.patientNumber ?? c.patient?.patientNumber ?? "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">اسم المريض</p>
-                      <p className="font-medium">{patientFull ? `${patientFull.firstName} ${patientFull.lastName}` : patientName}</p>
+                      <p className="text-xs font-medium">اسم المريض</p>
+                      <p className="text-muted-foreground">{patientFull ? `${patientFull.firstName} ${patientFull.lastName}` : patientName}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">تاريخ الميلاد</p>
-                      <p className="font-medium">{patientFull?.dateOfBirth ? patientFull.dateOfBirth.slice(0, 10) : "—"}</p>
+                      <p className="text-xs font-medium">تاريخ الميلاد</p>
+                      <p className="text-muted-foreground">{patientFull?.dateOfBirth ? patientFull.dateOfBirth.slice(0, 10) : "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">الهاتف</p>
-                      <p className="font-medium">{patientFull?.phone ?? "—"}</p>
+                      <p className="text-xs font-medium">الهاتف</p>
+                      <p className="text-muted-foreground">{patientFull?.phone ?? "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">مستوى البتر</p>
-                      <p className="font-medium">{c.amputationLevel ?? "—"}</p>
+                      <p className="text-xs font-medium">مستوى البتر</p>
+                      <p className="text-muted-foreground">{c.amputationLevel ?? "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">الطول</p>
-                      <p className="font-medium">{patientFull?.heightCm ? `${patientFull.heightCm} cm` : "—"}</p>
+                      <p className="text-xs font-medium">الطول</p>
+                      <p className="text-muted-foreground">{patientFull?.heightCm ? `${patientFull.heightCm} cm` : "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">الوزن</p>
-                      <p className="font-medium">{patientFull?.weightKg ? `${patientFull.weightKg} kg` : "—"}</p>
+                      <p className="text-xs font-medium">الوزن</p>
+                      <p className="text-muted-foreground">{patientFull?.weightKg ? `${patientFull.weightKg} kg` : "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">مؤشر كتلة الجسم</p>
-                      <p className="font-medium">{patientFull?.bmi ? patientFull.bmi.toFixed(1) : "—"}</p>
+                      <p className="text-xs font-medium">مؤشر كتلة الجسم</p>
+                      <p className="text-muted-foreground">{patientFull?.bmi ? patientFull.bmi.toFixed(1) : "—"}</p>
                     </div>
                   </div>
                 )}
@@ -1271,6 +4060,73 @@ export default function ProstheticsCasePage() {
 
         {/* ── ASSESSMENT ──────────────────────────────────────────────────── */}
         <TabsContent value="assessment" className="mt-4 space-y-4" dir="rtl">
+
+          {/* ── فريق العمل المعالج ── */}
+          {openStaffKey && <div className="fixed inset-0 z-40" onClick={() => setOpenStaffKey(null)} />}
+          <Section title="فريق العمل المعالج">
+            <div className="grid grid-cols-3 gap-4">
+              {([
+                { key: "prosthetistIds" as const,     label: "فني الأطراف الصناعية" },
+                { key: "physiotherapistIds" as const, label: "المعالج الفيزيائي" },
+                { key: "supervisingDoctorIds" as const,"label":"اسم المشرف" },
+              ]).map(({ key, label }) => {
+                const selected = staffForm[key];
+                const isOpen = openStaffKey === key;
+                return (
+                  <div key={key} className="space-y-1.5">
+                    <Label>{label}</Label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm hover:bg-muted/40 transition-colors"
+                        onClick={(e) => { e.stopPropagation(); setOpenStaffKey(isOpen ? null : key); }}
+                      >
+                        <span className="text-muted-foreground">
+                          {selected.length === 0 ? "اختر..." : `${selected.length} محدد`}
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </button>
+                      {selected.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {selected.map((empId) => {
+                            const emp = staffList.find((e) => e.id === empId);
+                            return emp ? (
+                              <span key={empId} className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-800 text-xs px-2 py-0.5">
+                                {emp.firstNameAr} {emp.lastNameAr}
+                                <button type="button" onClick={() => toggleStaffMember(key, empId)} className="hover:text-orange-600">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+                      {isOpen && (
+                        <div className="absolute z-50 top-full mt-1 w-full min-w-48 rounded-md border bg-background shadow-lg overflow-hidden">
+                          <div className="max-h-52 overflow-y-auto p-1">
+                            {staffList.map((emp) => (
+                              <div
+                                key={emp.id}
+                                className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-muted"
+                                onClick={(e) => { e.stopPropagation(); toggleStaffMember(key, emp.id); }}
+                              >
+                                <div className={`h-4 w-4 shrink-0 rounded border flex items-center justify-center ${selected.includes(emp.id) ? "bg-orange-500 border-orange-500" : "border-input"}`}>
+                                  {selected.includes(emp.id) && <Check className="h-3 w-3 text-white" />}
+                                </div>
+                                <span>{emp.firstNameAr} {emp.lastNameAr}</span>
+                                {emp.jobTitle?.nameAr && <span className="text-muted-foreground text-xs">— {emp.jobTitle.nameAr}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+
           {/* ─── Upper Assessment ───────────────────────────────────────────── */}
           {(() => {
             if (!ampTypes.includes("UPPER")) return null;
@@ -1282,7 +4138,8 @@ export default function ProstheticsCasePage() {
 
             const renderSideBlock = (
               sf: ReturnType<typeof emptyUpperForm>,
-              setSf: React.Dispatch<React.SetStateAction<ReturnType<typeof emptyUpperForm>>>
+              setSf: React.Dispatch<React.SetStateAction<ReturnType<typeof emptyUpperForm>>>,
+              showShared = false
             ) => {
               const setS = (patch: Partial<ReturnType<typeof emptyUpperForm>>) => setSf((prev) => ({ ...prev, ...patch }));
               const togS = (arr: string[], val: string) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
@@ -1298,9 +4155,25 @@ export default function ProstheticsCasePage() {
                       <PfSq key={val} checked={sf.residualLimbShape === val} label={lbl} onClick={() => setS({ residualLimbShape: val })} />
                     ))}
                   </PfRow>
-                  <PfRow label="ملاحظة حول مستوى البتر">
-                    <Input className="h-7 text-sm w-80" value={sf.amputationLevelNote} onChange={(e) => setS({ amputationLevelNote: e.target.value })} />
-                  </PfRow>
+                  {showShared && <>
+                    <PfRow label="ملاحظة حول مستوى البتر">
+                      <Textarea rows={2} className="text-sm w-full" value={sf.amputationLevelNote} onChange={(e) => setS({ amputationLevelNote: e.target.value })} />
+                    </PfRow>
+                    <PfRow label="تاريخ البتر">
+                      <Input type="date" className="h-7 text-sm w-48" value={g.amputationDate} onChange={(e) => setG({ amputationDate: e.target.value })} />
+                    </PfRow>
+                    <PfRow label="سبب البتر">
+                      {[["WAR_INJURY","إصابة حرب"],["TRAFFIC_ACCIDENT","حادث سير"],["DIABETES","مضاعفات سكري"],["VASCULAR_DISEASE","مرض وعائي"],["CONGENITAL","خلقي"],["INFECTION","عدوى"],["TUMOR","ورم"],["WORK_INJURY","إصابة عمل"],["OTHER","أخرى"]].map(([val, lbl]) => (
+                        <PfSq key={val} checked={g.amputationCause === val} label={lbl} onClick={() => setG({ amputationCause: val })} />
+                      ))}
+                      {g.amputationCause === "OTHER" && (
+                        <Input className="h-7 text-sm w-52 mt-1" placeholder="حدد السبب..." value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
+                      )}
+                    </PfRow>
+                    <PfRow label="القصة السريرية">
+                      <Textarea rows={2} className="text-sm w-full" value={g.clinicalHistory} onChange={(e) => setG({ clinicalHistory: e.target.value })} />
+                    </PfRow>
+                  </>}
                   <PfDivider label="الألم والحساسية" />
                   <PfRow label="شدة الألم / الألم والحساسية">
                     <div className="flex items-center gap-3">
@@ -1364,16 +4237,37 @@ export default function ProstheticsCasePage() {
                       </div>
                     </div>
                   </PfRow>
-                  <PfRow label="تغليقات">
-                    <Input className="h-7 text-sm w-80" value={sf.closureNotes} onChange={(e) => setS({ closureNotes: e.target.value })} />
+                  <PfRow label="تعليقات">
+                    <Textarea rows={2} className="text-sm w-full" value={sf.closureNotes} onChange={(e) => setS({ closureNotes: e.target.value })} />
                   </PfRow>
                   <PfDivider label="الحالة العامة" />
                   <PfRow label="حالة الصحة العامة">
-                    <Input className="h-7 text-sm w-80" value={sf.generalHealthNotes} onChange={(e) => setS({ generalHealthNotes: e.target.value })} />
+                    <Textarea rows={2} className="text-sm w-full" value={sf.generalHealthNotes} onChange={(e) => setS({ generalHealthNotes: e.target.value })} />
                   </PfRow>
                   <PfRow label="حالة الأطراف الأخرى">
-                    <Input className="h-7 text-sm w-80" value={sf.otherLimbCondition} onChange={(e) => setS({ otherLimbCondition: e.target.value })} />
+                    <Textarea rows={2} className="text-sm w-full" value={sf.otherLimbCondition} onChange={(e) => setS({ otherLimbCondition: e.target.value })} />
                   </PfRow>
+                  {showShared && <>
+                    <PfRow label="هل يستخدم المريض طرفاً صناعياً حالياً؟">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">لا</span>
+                        <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
+                        <span className="text-sm text-muted-foreground">نعم</span>
+                      </div>
+                    </PfRow>
+                    {g.currentlyUsingProsthesis === false && (
+                      <PfRow label="هل استخدم الطرف الصناعي سابقاً؟">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">لا</span>
+                          <Switch checked={g.previouslyUsedProsthesis === true} onCheckedChange={(v) => setG({ previouslyUsedProsthesis: v })} />
+                          <span className="text-sm text-muted-foreground">نعم</span>
+                        </div>
+                        {g.previouslyUsedProsthesis === true && (
+                          <Input className="h-7 text-sm w-64 mt-1" placeholder="تحديد نظام الطرف الصناعي..." value={g.previousProsthesisSystemDetail} onChange={(e) => setG({ previousProsthesisSystemDetail: e.target.value })} />
+                        )}
+                      </PfRow>
+                    )}
+                  </>}
                   <PfRow label="هل يستطيع الحفاظ على توازنه على جانب واحد فقط؟">
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">لا</span>
@@ -1410,64 +4304,22 @@ export default function ProstheticsCasePage() {
                   <PfRow label="جانب البتر">
                     <PfSq checked={f.amputationSide === "RIGHT"} label="يمين" onClick={() => set({ amputationSide: "RIGHT" })} />
                     <PfSq checked={f.amputationSide === "LEFT"} label="يسار" onClick={() => set({ amputationSide: "LEFT" })} />
-                    <PfSq checked={f.amputationSide === "BILATERAL"} label="ثنائي" onClick={() => set({ amputationSide: "BILATERAL" })} />
-                  </PfRow>
-
-                  {/* معلومات مشتركة */}
-                  <PfRow label="تاريخ البتر">
-                    <Input type="date" className="h-7 text-sm w-48" value={g.amputationDate} onChange={(e) => setG({ amputationDate: e.target.value })} />
-                  </PfRow>
-                  <PfRow label="سبب البتر">
-                    {[["WAR_INJURY","إصابة حرب"],["TRAFFIC_ACCIDENT","حادث سير"],["DIABETES","مضاعفات سكري"],["VASCULAR_DISEASE","مرض وعائي"],["CONGENITAL","خلقي"],["INFECTION","عدوى"],["TUMOR","ورم"],["WORK_INJURY","إصابة عمل"],["OTHER","أخرى"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={g.amputationCause === val} label={lbl} onClick={() => setG({ amputationCause: val })} />
-                    ))}
-                    {g.amputationCause === "OTHER" && (
-                      <Input className="h-7 text-sm w-52 mt-1" placeholder="حدد السبب..." value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
-                    )}
-                  </PfRow>
-                  <PfRow label="القصة السريرية">
-                    <Textarea rows={2} className="text-sm w-full" value={g.clinicalHistory} onChange={(e) => setG({ clinicalHistory: e.target.value })} />
+                    <PfSq checked={f.amputationSide === "BILATERAL"} label="ثنائي الاطراف" onClick={() => set({ amputationSide: "BILATERAL" })} />
                   </PfRow>
 
                   {/* أسئلة خاصة بالجانب — تُعرض مرتين عند الثنائي */}
                   {isBilateral ? (
                     <>
                       <PfDivider label="يمين" />
-                      {renderSideBlock(upperAssessForm, setUpperAssessForm)}
+                      {renderSideBlock(upperAssessForm, setUpperAssessForm, true)}
                       <PfDivider label="يسار" />
                       {renderSideBlock(upperAssessFormLeft, setUpperAssessFormLeft)}
                     </>
                   ) : (
-                    renderSideBlock(upperAssessForm, setUpperAssessForm)
+                    renderSideBlock(upperAssessForm, setUpperAssessForm, true)
                   )}
 
-                  {/* معلومات مشتركة — الطرف الصناعي */}
-                  <PfRow label="هل يستخدم المريض طرفاً صناعياً حالياً؟">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">لا</span>
-                      <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
-                      <span className="text-sm text-muted-foreground">نعم</span>
-                    </div>
-                  </PfRow>
-                  {g.currentlyUsingProsthesis === false && (
-                    <PfRow label="هل استخدم الطرف الصناعي سابقاً؟">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">لا</span>
-                        <Switch checked={g.previouslyUsedProsthesis === true} onCheckedChange={(v) => setG({ previouslyUsedProsthesis: v })} />
-                        <span className="text-sm text-muted-foreground">نعم</span>
-                      </div>
-                      {g.previouslyUsedProsthesis === true && (
-                        <Input className="h-7 text-sm w-64 mt-1" placeholder="تحديد نظام الطرف الصناعي..." value={g.previousProsthesisSystemDetail} onChange={(e) => setG({ previousProsthesisSystemDetail: e.target.value })} />
-                      )}
-                    </PfRow>
-                  )}
 
-                  <div className="pt-3">
-                    <Button onClick={handleSubmitUpperAssessment} disabled={submitAssessmentUpper.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                      {submitAssessmentUpper.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                      حفظ تقييم الطرف العلوي
-                    </Button>
-                  </div>
                 </div>
               </Section>
             );
@@ -1504,9 +4356,9 @@ export default function ProstheticsCasePage() {
                     <Textarea rows={2} className="text-sm w-full" value={f.msNotes} onChange={(e) => set({ msNotes: e.target.value })} />
                   </PfRow>
                   <div className="pt-3">
-                    <Button onClick={handleSubmitUpperAssessment} disabled={submitAssessmentUpper.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                      {submitAssessmentUpper.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                      حفظ تقييم قوة العضلات
+                    <Button onClick={handleSaveUpperAll} disabled={updateCase.isPending || submitAssessmentUpper.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                      {(updateCase.isPending || submitAssessmentUpper.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                      حفظ تقييم الطرف العلوي
                     </Button>
                   </div>
                 </div>
@@ -1525,25 +4377,30 @@ export default function ProstheticsCasePage() {
 
             const renderSideBlock = (
               sf: ReturnType<typeof emptyLowerForm>,
-              setSf: React.Dispatch<React.SetStateAction<ReturnType<typeof emptyLowerForm>>>
+              setSf: React.Dispatch<React.SetStateAction<ReturnType<typeof emptyLowerForm>>>,
+              showTopFields = false
             ) => {
               const setS = (patch: Partial<ReturnType<typeof emptyLowerForm>>) => setSf((prev) => ({ ...prev, ...patch }));
               const togS = (arr: string[], val: string) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
               return (
                 <>
-                  <PfRow label="ما هو طول الجذمور في البتر فوق الركبة وتحت الركبة">
-                    {[["LONG","طويل"],["MEDIUM","وسط"],["SHORT","قصير"],["VERY_SHORT","قصير جداً"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.residualLimbLength === val} label={lbl} onClick={() => setS({ residualLimbLength: val })} />
-                    ))}
-                  </PfRow>
-                  <PfRow label="شكل الطرف المتبقي">
-                    {[["BONY","عظمي"],["SOFT","لين"],["NORMAL","طبيعي"],["CONICAL_BONY","عظمي مخروطي"],["CONICAL_SOFT","لين مخروطي"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.residualLimbShape === val} label={lbl} onClick={() => setS({ residualLimbShape: val })} />
-                    ))}
-                  </PfRow>
-                  <PfRow label="ملاحظة حول مستوى البتر">
-                    <Input className="h-7 text-sm w-80" value={sf.amputationLevelNote} onChange={(e) => setS({ amputationLevelNote: e.target.value })} />
-                  </PfRow>
+                  {showTopFields && (
+                    <>
+                      <PfRow label="ما هو طول الجذمور في البتر فوق الركبة وتحت الركبة">
+                        {[["LONG","طويل"],["MEDIUM","وسط"],["SHORT","قصير"],["VERY_SHORT","قصير جداً"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={sf.residualLimbLength === val} label={lbl} onClick={() => setS({ residualLimbLength: val })} />
+                        ))}
+                      </PfRow>
+                      <PfRow label="شكل الطرف المتبقي">
+                        {[["BONY","عظمي"],["SOFT","لين"],["NORMAL","طبيعي"],["CONICAL_BONY","عظمي مخروطي"],["CONICAL_SOFT","لين مخروطي"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={sf.residualLimbShape === val} label={lbl} onClick={() => setS({ residualLimbShape: val })} />
+                        ))}
+                      </PfRow>
+                      <PfRow label="ملاحظة حول مستوى البتر">
+                        <Textarea rows={3} className="text-sm w-full resize-none" value={sf.amputationLevelNote} onChange={(e) => setS({ amputationLevelNote: e.target.value })} />
+                      </PfRow>
+                    </>
+                  )}
                   <PfRow label="الألم والحساسية">
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">غير موجود</span>
@@ -1624,11 +4481,30 @@ export default function ProstheticsCasePage() {
                     ))}
                   </PfRow>
                   <PfRow label="حالة الصحة العامة">
-                    <Input className="h-7 text-sm w-80" value={sf.generalHealthNotes} onChange={(e) => setS({ generalHealthNotes: e.target.value })} />
+                    <Textarea rows={3} className="text-sm w-full resize-none" value={sf.generalHealthNotes} onChange={(e) => setS({ generalHealthNotes: e.target.value })} />
                   </PfRow>
                   <PfRow label="حالة الأطراف الأخرى">
-                    <Input className="h-7 text-sm w-80" value={sf.otherLimbCondition} onChange={(e) => setS({ otherLimbCondition: e.target.value })} />
+                    <Textarea rows={3} className="text-sm w-full resize-none" value={sf.otherLimbCondition} onChange={(e) => setS({ otherLimbCondition: e.target.value })} />
                   </PfRow>
+                  <PfRow label="هل يستخدم المريض طرفاً صناعياً حالياً">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">لا</span>
+                      <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
+                      <span className="text-sm text-muted-foreground">نعم</span>
+                    </div>
+                  </PfRow>
+                  {g.currentlyUsingProsthesis === false && (
+                    <PfRow label="إذا كانت الإجابة لا هل استخدمه سابقاً">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">لا</span>
+                        <Switch checked={g.previouslyUsedProsthesis === true} onCheckedChange={(v) => setG({ previouslyUsedProsthesis: v })} />
+                        <span className="text-sm text-muted-foreground">نعم</span>
+                      </div>
+                      {g.previouslyUsedProsthesis === true && (
+                        <Input className="h-7 text-sm w-64 mt-1" placeholder="يرجى تحديد نظام الطرف الصناعي..." value={g.previousProsthesisSystemDetail} onChange={(e) => setG({ previousProsthesisSystemDetail: e.target.value })} />
+                      )}
+                    </PfRow>
+                  )}
                   <PfRow label="هل يستخدم وسائل مساعدة في عملية التنقل">
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">لا</span>
@@ -1677,6 +4553,24 @@ export default function ProstheticsCasePage() {
                     <PfSq checked={f.amputationSide === "BILATERAL"} label="ثنائي الأطراف" onClick={() => set({ amputationSide: "BILATERAL" })} />
                   </PfRow>
 
+                  {!isBilateral && (
+                    <>
+                      <PfRow label="ما هو طول الجذمور في البتر فوق الركبة وتحت الركبة">
+                        {[["LONG","طويل"],["MEDIUM","وسط"],["SHORT","قصير"],["VERY_SHORT","قصير جداً"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={f.residualLimbLength === val} label={lbl} onClick={() => set({ residualLimbLength: val })} />
+                        ))}
+                      </PfRow>
+                      <PfRow label="شكل الطرف المتبقي">
+                        {[["BONY","عظمي"],["SOFT","لين"],["NORMAL","طبيعي"],["CONICAL_BONY","عظمي مخروطي"],["CONICAL_SOFT","لين مخروطي"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={f.residualLimbShape === val} label={lbl} onClick={() => set({ residualLimbShape: val })} />
+                        ))}
+                      </PfRow>
+                      <PfRow label="ملاحظة حول مستوى البتر">
+                        <Textarea rows={3} className="text-sm w-full resize-none" value={f.amputationLevelNote} onChange={(e) => set({ amputationLevelNote: e.target.value })} />
+                      </PfRow>
+                    </>
+                  )}
+
                   <PfRow label="تاريخ البتر">
                     <Input type="date" className="h-7 text-sm w-44" value={g.amputationDate} onChange={(e) => setG({ amputationDate: e.target.value })} />
                   </PfRow>
@@ -1695,32 +4589,12 @@ export default function ProstheticsCasePage() {
                   {isBilateral ? (
                     <>
                       <PfDivider label="يمين" />
-                      {renderSideBlock(lowerAssessForm, setLowerAssessForm)}
+                      {renderSideBlock(lowerAssessForm, setLowerAssessForm, true)}
                       <PfDivider label="يسار" />
-                      {renderSideBlock(lowerAssessFormLeft, setLowerAssessFormLeft)}
+                      {renderSideBlock(lowerAssessFormLeft, setLowerAssessFormLeft, true)}
                     </>
                   ) : (
-                    renderSideBlock(lowerAssessForm, setLowerAssessForm)
-                  )}
-
-                  <PfRow label="هل يستخدم المريض طرفاً صناعياً">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">لا</span>
-                      <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
-                      <span className="text-sm text-muted-foreground">نعم</span>
-                    </div>
-                  </PfRow>
-                  {g.currentlyUsingProsthesis === false && (
-                    <PfRow label="إذا كانت الإجابة لا هل استخدمه سابقاً">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">لا</span>
-                        <Switch checked={g.previouslyUsedProsthesis === true} onCheckedChange={(v) => setG({ previouslyUsedProsthesis: v })} />
-                        <span className="text-sm text-muted-foreground">نعم</span>
-                      </div>
-                      {g.previouslyUsedProsthesis === true && (
-                        <Input className="h-7 text-sm w-64 mt-1" placeholder="يرجى تحديد نظام الطرف الصناعي..." value={g.previousProsthesisSystemDetail} onChange={(e) => setG({ previousProsthesisSystemDetail: e.target.value })} />
-                      )}
-                    </PfRow>
+                    renderSideBlock(lowerAssessForm, setLowerAssessForm, false)
                   )}
 
                   <div className="pt-3">
@@ -1787,47 +4661,90 @@ export default function ProstheticsCasePage() {
               إرسال التقييم للجنة
             </Button>
           )}
+          {/* ── صور البتر ── */}
+          <Section
+            title={`صور البتر${attachments.length > 0 ? ` (${attachments.length})` : ""}`}
+            action={
+              <>
+                <Button size="sm" variant="outline" onClick={() => attachFileRef.current?.click()} disabled={uploadAttachment.isPending}>
+                  {uploadAttachment.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Plus className="h-4 w-4 ml-1" />}
+                  رفع صورة
+                </Button>
+                <input
+                  ref={attachFileRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadAttachment.mutate({ id, file });
+                    e.target.value = "";
+                  }}
+                />
+              </>
+            }
+          >
+            {attachments.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">لا توجد صور مرفقة</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {attachments.map((att) => (
+                  <AttachmentCard
+                    key={att.id}
+                    caseId={id}
+                    att={att}
+                    onDelete={() => deleteAttachment.mutate({ id, attachmentId: att.id })}
+                    deleteDisabled={deleteAttachment.isPending}
+                  />
+                ))}
+              </div>
+            )}
+          </Section>
         </TabsContent>
 
         {/* ── COMMITTEE ───────────────────────────────────────────────────── */}
         <TabsContent value="committee_review" className="mt-4 space-y-4" dir={isRtl ? "rtl" : "ltr"}>
 
-          {/* آراء أعضاء اللجنة */}
-          <Section title="آراء أعضاء اللجنة">
+          {/* أعضاء لجنة القبول وتقييماتهم */}
+          <Section title="أعضاء لجنة القبول وتقييماتهم">
             <div className="space-y-5 divide-y divide-border/40">
 
               {/* فني الأطراف الصناعية */}
               <div className="space-y-2 pt-2 first:pt-0">
                 <Label className="font-semibold">تقييم فني الأطراف الصناعية</Label>
                 <Textarea rows={3} value={prosthetistOpinion} onChange={(e) => setProsthetistOpinion(e.target.value)} placeholder="رأي فني الأطراف الصناعية..." />
-                {c.status === "COMMITTEE_REVIEW" && (
-                  <Button size="sm" variant="outline" onClick={() => handleSubmitOpinion("PROSTHETIST", prosthetistOpinion)} disabled={!prosthetistOpinion.trim() || submitOpinion.isPending}>
-                    حفظ رأي الفني
-                  </Button>
-                )}
               </div>
 
               {/* المعالج الفيزيائي */}
               <div className="space-y-2 pt-4">
                 <Label className="font-semibold">تقييم المعالج الفيزيائي</Label>
                 <Textarea rows={3} value={physioOpinion} onChange={(e) => setPhysioOpinion(e.target.value)} placeholder="رأي المعالج الفيزيائي..." />
-                {c.status === "COMMITTEE_REVIEW" && (
-                  <Button size="sm" variant="outline" onClick={() => handleSubmitOpinion("PHYSIOTHERAPIST", physioOpinion)} disabled={!physioOpinion.trim() || submitOpinion.isPending}>
-                    حفظ رأي المعالج
-                  </Button>
-                )}
               </div>
 
               {/* الطبيب المختص */}
               <div className="space-y-2 pt-4">
                 <Label className="font-semibold">رأي الطبيب المختص</Label>
                 <Textarea rows={3} value={doctorOpinion} onChange={(e) => setDoctorOpinion(e.target.value)} placeholder="رأي الطبيب المختص..." />
-                {c.status === "COMMITTEE_REVIEW" && (
-                  <Button size="sm" variant="outline" onClick={() => handleSubmitOpinion("DOCTOR", doctorOpinion)} disabled={!doctorOpinion.trim() || submitOpinion.isPending}>
-                    حفظ رأي الطبيب
-                  </Button>
-                )}
               </div>
+
+              {/* الخلاصة */}
+              <div className="space-y-2 pt-4">
+                <Label className="font-semibold">الخلاصة <span className="text-destructive">*</span></Label>
+                <Textarea rows={3} value={decisionForm.finalSummary} onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))} placeholder="الخلاصة النهائية للجنة..." />
+              </div>
+
+              {c.status === "COMMITTEE_REVIEW" && (
+                <div className="pt-4">
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={handleSaveCommitteeAll}
+                    disabled={submitOpinion.isPending}
+                  >
+                    {submitOpinion.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+                    حفظ الآراء
+                  </Button>
+                </div>
+              )}
             </div>
           </Section>
 
@@ -1836,50 +4753,64 @@ export default function ProstheticsCasePage() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label>نوع الطرف الصناعي المراد تطبيقه</Label>
-                <Select value={prosthesisTypeForm} onValueChange={(v) => setProsthesisTypeForm(v as ProstheticType)}>
-                  <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(PROSTHETIC_TYPE_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>الخلاصة <span className="text-destructive">*</span></Label>
-                <Textarea rows={2} value={decisionForm.finalSummary} onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))} />
+                <Input value={prosthesisTypeForm} onChange={(e) => setProsthesisTypeForm(e.target.value as ProstheticType)} placeholder="نوع الطرف الصناعي..." />
               </div>
               {(c.status === "COMMITTEE_REVIEW" || c.status === "COMMITTEE_APPROVED") && (
-                <Button variant="outline" onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full">
-                  حفظ القرار
-                </Button>
+                <>
+                  <div className="pt-2">
+                    <p className="text-sm font-semibold mb-2">التوقيعات</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(([
+                        { role: "DOCTOR" as const, label: "توقيع الطبيب" },
+                        { role: "PROSTHETIST" as const, label: "توقيع فني الأطراف" },
+                        { role: "PHYSIOTHERAPIST" as const, label: "توقيع المعالج الفيزيائي" },
+                      ])).map(({ role, label }) => (
+                        <ActionGuard key={role} permission={PERMISSIONS.CLINIC_PROSTHETICS.COMMITTEE_SIGN}>
+                          <div className="space-y-1.5">
+                            <input
+                              ref={committeeSigRefs[role]}
+                              type="file" accept="image/*" className="hidden"
+                              onChange={(e) => handleCommitteeSigFileChange(e, role)}
+                            />
+                            {committeeSigUrls[role] ? (
+                              <div className="rounded border p-2 space-y-1.5 text-center">
+                                <img src={committeeSigUrls[role]} alt={label} className="h-14 w-full object-contain border rounded bg-white" />
+                                <p className="text-[11px] text-muted-foreground">{label}</p>
+                                <button
+                                  type="button"
+                                  className="text-xs text-destructive hover:underline"
+                                  onClick={() => setCommitteeSigUrls((prev) => { const n = { ...prev }; delete n[role]; return n; })}
+                                >
+                                  إزالة
+                                </button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                className="w-full flex-col h-auto py-3 gap-1"
+                                disabled={committeeSigLoading[role]}
+                                onClick={() => committeeSigRefs[role].current?.click()}
+                              >
+                                {committeeSigLoading[role]
+                                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                                  : <span className="text-sm font-medium">{label}</span>
+                                }
+                                {!committeeSigLoading[role] && <span className="text-xs text-muted-foreground">رفع صورة</span>}
+                              </Button>
+                            )}
+                          </div>
+                        </ActionGuard>
+                      ))}
+                    </div>
+                  </div>
+                  <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                    {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ القرار
+                  </Button>
+                </>
               )}
             </div>
           </Section>
-
-          {/* التوقيعات */}
-          {(c.status === "COMMITTEE_REVIEW" || c.status === "COMMITTEE_APPROVED") && (
-            <Section title="التوقيعات">
-              <div className="grid grid-cols-3 gap-3">
-                <ActionGuard permission={PERMISSIONS.CLINIC_PROSTHETICS.COMMITTEE_SIGN}>
-                  <Button variant="outline" className="w-full flex-col h-auto py-3 gap-1" onClick={() => { setSignRole("DOCTOR"); setSignOpen(true); }}>
-                    <span className="text-sm font-medium">توقيع الطبيب</span>
-                    <span className="text-xs text-muted-foreground">DOCTOR</span>
-                  </Button>
-                </ActionGuard>
-                <ActionGuard permission={PERMISSIONS.CLINIC_PROSTHETICS.COMMITTEE_SIGN}>
-                  <Button variant="outline" className="w-full flex-col h-auto py-3 gap-1" onClick={() => { setSignRole("PROSTHETIST"); setSignOpen(true); }}>
-                    <span className="text-sm font-medium">توقيع فني الأطراف</span>
-                    <span className="text-xs text-muted-foreground">PROSTHETIST</span>
-                  </Button>
-                </ActionGuard>
-                <ActionGuard permission={PERMISSIONS.CLINIC_PROSTHETICS.COMMITTEE_SIGN}>
-                  <Button variant="outline" className="w-full flex-col h-auto py-3 gap-1" onClick={() => { setSignRole("PHYSIOTHERAPIST"); setSignOpen(true); }}>
-                    <span className="text-sm font-medium">توقيع المعالج الفيزيائي</span>
-                    <span className="text-xs text-muted-foreground">PHYSIOTHERAPIST</span>
-                  </Button>
-                </ActionGuard>
-              </div>
-            </Section>
-          )}
         </TabsContent>
 
         {/* ── FITTING ─────────────────────────────────────────────────────── */}
@@ -2026,7 +4957,7 @@ export default function ProstheticsCasePage() {
                                 : "—"}
                             </td>
                             <td className="p-2">
-                              <button onClick={() => deleteComponent.mutate({ id, compId: comp.id })} className="text-destructive hover:opacity-70">
+                              <button onClick={() => setConfirmDelComp(comp.id)} className="text-destructive hover:opacity-70">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </td>
@@ -2037,6 +4968,22 @@ export default function ProstheticsCasePage() {
                   </div>
                 </div>
               )}
+
+              <Dialog open={!!confirmDelComp} onOpenChange={(open) => { if (!open) setConfirmDelComp(null); }}>
+                <DialogContent className="max-w-sm" dir="rtl">
+                  <DialogHeader>
+                    <DialogTitle>تأكيد الحذف</DialogTitle>
+                    <DialogDescription>هل تريد حذف هذا الجزء؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+                    <Button variant="outline" onClick={() => setConfirmDelComp(null)}>لا</Button>
+                    <Button variant="destructive" disabled={deleteComponent.isPending}
+                      onClick={() => { if (confirmDelComp) { deleteComponent.mutate({ id, compId: confirmDelComp }); setConfirmDelComp(null); } }}>
+                      {deleteComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {/* الطرف مكتمل */}
               <div className="border-t pt-4 space-y-3">
@@ -2061,281 +5008,1147 @@ export default function ProstheticsCasePage() {
           </Section>
         </TabsContent>
 
-        {/* ── GAIT ANALYSIS ───────────────────────────────────────────────── */}
-        <TabsContent value="gait_analysis" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section title="تحليل المشي">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>الاستنتاج السريري</Label>
-                <Textarea rows={3} value={gaitForm.clinicalConclusion} onChange={(e) => setGaitForm((f) => ({ ...f, clinicalConclusion: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>التوصيات</Label>
-                <Textarea rows={2} value={gaitForm.recommendations} onChange={(e) => setGaitForm((f) => ({ ...f, recommendations: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>خطة العلاج</Label>
-                <Textarea rows={2} value={gaitForm.treatmentPlan} onChange={(e) => setGaitForm((f) => ({ ...f, treatmentPlan: e.target.value }))} />
-              </div>
-              {c.status === "GAIT_ANALYSIS" && (
-                <Button onClick={handleSubmitGait} disabled={submitGait.isPending || updateStatus.isPending} className="w-full">
-                  {submitGait.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                  حفظ والانتقال للتقييم النهائي
-                </Button>
-              )}
-            </div>
-          </Section>
-        </TabsContent>
+        {/* ── MEASUREMENT SHEET ───────────────────────────────────────────── */}
+        <TabsContent value="measurement_sheet" className="mt-4 space-y-4" dir="rtl">
+          {/* Type selector */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {([
+              { key: "ankle_disarticulation", label: "عبر الكاحل" },
+              { key: "below_knee", label: "تحت الركبة" },
+              { key: "knee_disarticulation", label: "عبر الركبة" },
+              { key: "above_knee", label: "فوق الركبة" },
+              { key: "hemipelvectomy", label: "عبر الحوض" },
+              { key: "elbow_disarticulation", label: "عبر المرفق" },
+              { key: "transhumeral", label: "فوق المرفق" },
+              { key: "transradial", label: "تحت المرفق" },
+            ] as { key: MeasureSheetType; label: string }[]).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setMeasureSheetType(key === measureSheetType ? null : key)}
+                className={`rounded-lg border-2 py-4 text-sm font-semibold transition-colors ${
+                  measureSheetType === key
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
-        {/* ── BALANCE ASSESSMENT ──────────────────────────────────────────── */}
-        <TabsContent value="balance_assessment" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section title="تقييم التوازن">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>المستوى العام للتوازن</Label>
-                <select
-                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
-                  value={balanceForm.overallLevel}
-                  onChange={(e) => setBalanceForm((f) => ({ ...f, overallLevel: e.target.value }))}
-                >
-                  <option value="">اختر</option>
-                  <option value="INDEPENDENT">مستقل</option>
-                  <option value="NEEDS_ASSISTANCE">يحتاج مساعدة</option>
-                  <option value="DEPENDENT">يعتمد على الغير</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>مستوى خطر السقوط</Label>
-                <div className="flex gap-3">
-                  {(["LOW", "MODERATE", "HIGH"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setBalanceForm((f) => ({ ...f, fallRisk: r }))}
-                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                        balanceForm.fallRisk === r
-                          ? r === "LOW" ? "bg-green-100 border-green-500 text-green-800"
-                            : r === "MODERATE" ? "bg-yellow-100 border-yellow-500 text-yellow-800"
-                            : "bg-red-100 border-red-500 text-red-800"
-                          : "bg-background hover:bg-muted"
-                      }`}
+          {/* Ankle disarticulation form */}
+          {measureSheetType === "ankle_disarticulation" && (
+            <Section title="ورق قياس — عبر الكاحل">
+              <div className="space-y-5">
+                {/* Side + foot measurement + notes */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الجهة *</Label>
+                    <Select
+                      value={ankleForm.side}
+                      onValueChange={(v) => setAnkleForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}
                     >
-                      {r === "LOW" ? "منخفض" : r === "MODERATE" ? "متوسط" : "عالي"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>ملاحظات</Label>
-                <Textarea rows={3} value={balanceForm.notes} onChange={(e) => setBalanceForm((f) => ({ ...f, notes: e.target.value }))} />
-              </div>
-              <Button onClick={handleSubmitBalance} disabled={!balanceForm.overallLevel || submitBalance.isPending} className="w-full">
-                {submitBalance.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                حفظ تقييم التوازن
-              </Button>
-            </div>
-          </Section>
-        </TabsContent>
-
-        {/* ── CONSUMABLES ─────────────────────────────────────────────────── */}
-        <TabsContent value="consumables" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section title="المستهلكات">
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>اسم المادة <span className="text-destructive">*</span></Label>
-                  <Input value={consumableForm.name} onChange={(e) => setConsumableForm((f) => ({ ...f, name: e.target.value }))} placeholder="قطن، ضمادة..." />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>الكمية</Label>
-                  <Input type="number" min={1} value={consumableForm.quantity} onChange={(e) => setConsumableForm((f) => ({ ...f, quantity: e.target.value }))} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>الوحدة</Label>
-                  <Input value={consumableForm.unit} onChange={(e) => setConsumableForm((f) => ({ ...f, unit: e.target.value }))} placeholder="قطعة، رول، مل..." />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>ملاحظات</Label>
-                  <Input value={consumableForm.notes} onChange={(e) => setConsumableForm((f) => ({ ...f, notes: e.target.value }))} />
-                </div>
-              </div>
-              <Button variant="outline" onClick={handleAddConsumable} disabled={!consumableForm.name.trim()} className="w-full gap-2">
-                <Plus className="h-4 w-4" /> إضافة للقائمة
-              </Button>
-              {consumables.length > 0 && (
-                <>
-                  <div className="rounded-lg border text-sm">
-                    <table className="w-full">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-right p-2 font-medium">المادة</th>
-                          <th className="text-right p-2 font-medium">الكمية</th>
-                          <th className="text-right p-2 font-medium">الوحدة</th>
-                          <th className="p-2" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {consumables.map((item, i) => (
-                          <tr key={i} className="border-t">
-                            <td className="p-2 font-medium">{item.name}</td>
-                            <td className="p-2">{item.quantity}</td>
-                            <td className="p-2 text-muted-foreground">{item.unit || "—"}</td>
-                            <td className="p-2">
-                              <button onClick={() => setConsumables((prev) => prev.filter((_, j) => j !== i))} className="text-destructive">
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RIGHT">اليمين</SelectItem>
+                        <SelectItem value="LEFT">اليسار</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Button onClick={handleSaveConsumables} disabled={addConsumable.isPending} className="w-full">
-                    {addConsumable.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                    حفظ المستهلكات
-                  </Button>
-                </>
-              )}
-            </div>
-          </Section>
-        </TabsContent>
-
-        {/* ── FINAL EVALUATION ────────────────────────────────────────────── */}
-        <TabsContent value="final_evaluation" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section title="التقييم النهائي">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>النتيجة الوظيفية</Label>
-                <select
-                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
-                  value={finalEvalForm.functionalOutcome}
-                  onChange={(e) => setFinalEvalForm((f) => ({ ...f, functionalOutcome: e.target.value }))}
-                >
-                  <option value="">اختر</option>
-                  <option value="EXCELLENT">ممتاز</option>
-                  <option value="GOOD">جيد</option>
-                  <option value="FAIR">مقبول</option>
-                  <option value="POOR">ضعيف</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>رضا المريض</Label>
-                <select
-                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
-                  value={finalEvalForm.patientSatisfaction}
-                  onChange={(e) => setFinalEvalForm((f) => ({ ...f, patientSatisfaction: e.target.value }))}
-                >
-                  <option value="">اختر</option>
-                  <option value="VERY_SATISFIED">راضٍ جداً</option>
-                  <option value="SATISFIED">راضٍ</option>
-                  <option value="NEUTRAL">محايد</option>
-                  <option value="DISSATISFIED">غير راضٍ</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>ملاحظات التقييم النهائي</Label>
-                <Textarea rows={3} value={finalEvalForm.notes} onChange={(e) => setFinalEvalForm((f) => ({ ...f, notes: e.target.value }))} />
-              </div>
-              {c.status === "FINAL_EVALUATION" && (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleSubmitFinalEval} disabled={submitFinalEval.isPending} className="flex-1">
-                    حفظ التقييم
-                  </Button>
-                  <ActionGuard permission={PERMISSIONS.CLINIC_PROSTHETICS.DELIVERY_APPROVE}>
-                    <Button onClick={() => setFinalSignOpen(true)} className="flex-1">
-                      توقيع المدير والانتقال للتسليم
-                    </Button>
-                  </ActionGuard>
-                </div>
-              )}
-            </div>
-          </Section>
-        </TabsContent>
-
-        {/* ── DELIVERED ───────────────────────────────────────────────────── */}
-        <TabsContent value="delivered" className="mt-4 space-y-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section title="تفاصيل التسليم">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>تاريخ التسليم</Label>
-                <Input
-                  type="date"
-                  value={deliveryForm.deliveryDate}
-                  onChange={(e) => setDeliveryForm((f) => ({ ...f, deliveryDate: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>ملاحظات التسليم</Label>
-                <Textarea rows={2} value={deliveryForm.notes} onChange={(e) => setDeliveryForm((f) => ({ ...f, notes: e.target.value }))} />
-              </div>
-              {c.status === "DELIVERED" && (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleSubmitDelivery} disabled={submitDelivery.isPending} className="flex-1">
-                    حفظ بيانات التسليم
-                  </Button>
-                  <Button onClick={() => setDeliverySignOpen(true)} className="flex-1">
-                    توقيع المريض وإنهاء الحالة
-                  </Button>
-                </div>
-              )}
-              {c.deliveryDate && (
-                <div className="rounded-lg border bg-green-50 p-4 flex items-center gap-3">
-                  <CheckCircle2 className="h-8 w-8 text-green-500 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-green-800">تم تسليم الطرف الصناعي</p>
-                    <p className="text-sm text-green-700">{new Date(c.deliveryDate).toLocaleDateString("ar")}</p>
+                  <div className="space-y-1.5">
+                    <Label>قياس القدم</Label>
+                    <Input
+                      placeholder="مثال: 26cm"
+                      value={ankleForm.footMeasurement}
+                      onChange={(e) => setAnkleForm((f) => ({ ...f, footMeasurement: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ملاحظات</Label>
+                    <Input
+                      placeholder="ملاحظات عامة..."
+                      value={ankleForm.notes}
+                      onChange={(e) => setAnkleForm((f) => ({ ...f, notes: e.target.value }))}
+                    />
                   </div>
                 </div>
-              )}
-            </div>
-          </Section>
-        </TabsContent>
 
-        {/* ── FOLLOW UP ───────────────────────────────────────────────────── */}
-        <TabsContent value="follow_up" className="mt-4 space-y-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section title="إضافة متابعة">
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>التاريخ</Label>
-                  <Input type="date" value={followUpForm.date} onChange={(e) => setFollowUpForm((f) => ({ ...f, date: e.target.value }))} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>شدة الألم (0-10)</Label>
-                  <Input type="number" min={0} max={10} value={followUpForm.painLevel} onChange={(e) => setFollowUpForm((f) => ({ ...f, painLevel: e.target.value }))} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>مستوى K الحالي</Label>
-                <KLevelSelector value={followUpForm.kLevel} onChange={(v) => setFollowUpForm((f) => ({ ...f, kLevel: v }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>ملاحظات <span className="text-destructive">*</span></Label>
-                <Textarea rows={2} value={followUpForm.notes} onChange={(e) => setFollowUpForm((f) => ({ ...f, notes: e.target.value }))} />
-              </div>
-              <Button onClick={handleAddFollowUp} disabled={!followUpForm.notes.trim() || addFollowUp.isPending} className="w-full gap-2">
-                <Plus className="h-4 w-4" /> إضافة متابعة
-              </Button>
-            </div>
-          </Section>
-          {followUps.length > 0 && (
-            <Section title={`سجل المتابعات (${followUps.length})`}>
-              <div className="space-y-3">
-                {followUps.map((fu) => (
-                  <div key={fu.id} className="rounded-lg border p-3 space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">{new Date(fu.date).toLocaleDateString("ar")}</span>
-                      <div className="flex gap-3 text-muted-foreground">
-                        {fu.kLevel && <span>K: {fu.kLevel}</span>}
-                        {fu.painLevel != null && <span>ألم: {fu.painLevel}/10</span>}
-                      </div>
+                {/* Measurements grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Affected limb — 19 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–19)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                            {k}
+                          </span>
+                          <Input
+                            className="h-8 text-sm"
+                            placeholder="cm"
+                            value={ankleForm.affectedLimb[k] ?? ""}
+                            onChange={(e) =>
+                              setAnkleForm((f) => ({
+                                ...f,
+                                affectedLimb: { ...f.affectedLimb, [k]: e.target.value },
+                              }))
+                            }
+                          />
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-sm text-muted-foreground">{fu.notes}</p>
                   </div>
-                ))}
+
+                  {/* Sound limb — 5 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                    <div className="grid grid-cols-1 gap-2 max-w-xs">
+                      {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                            {k}
+                          </span>
+                          <Input
+                            className="h-8 text-sm"
+                            placeholder="cm"
+                            value={ankleForm.soundLimb[k] ?? ""}
+                            onChange={(e) =>
+                              setAnkleForm((f) => ({
+                                ...f,
+                                soundLimb: { ...f.soundLimb, [k]: e.target.value },
+                              }))
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save */}
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      const dto: AnkleDisarticulationDto = {
+                        side: ankleForm.side,
+                        notes: ankleForm.notes || undefined,
+                        footMeasurement: ankleForm.footMeasurement || undefined,
+                        soundLimb: Object.keys(ankleForm.soundLimb).length ? ankleForm.soundLimb : undefined,
+                        affectedLimb: Object.keys(ankleForm.affectedLimb).length ? ankleForm.affectedLimb : undefined,
+                      };
+                      await submitAnkleMeasurement.mutateAsync({ id, dto });
+                    }}
+                    disabled={submitAnkleMeasurement.isPending}
+                  >
+                    {submitAnkleMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ ورق القياس
+                  </Button>
+                </div>
               </div>
             </Section>
           )}
+
+          {/* Knee disarticulation form */}
+          {measureSheetType === "knee_disarticulation" && (
+            <Section title="ورق قياس — عبر الركبة">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الجهة *</Label>
+                    <Select value={kneeForm.side} onValueChange={(v) => setKneeForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RIGHT">اليمين</SelectItem>
+                        <SelectItem value="LEFT">اليسار</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>قياس القدم</Label>
+                    <Input placeholder="مثال: 26cm" value={kneeForm.footMeasurement} onChange={(e) => setKneeForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ملاحظات</Label>
+                    <Input placeholder="ملاحظات عامة..." value={kneeForm.notes} onChange={(e) => setKneeForm((f) => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Affected limb — 12 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–12)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={kneeForm.affectedLimb[k] ?? ""}
+                            onChange={(e) => setKneeForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sound limb — 5 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                    <div className="grid grid-cols-1 gap-2 max-w-xs">
+                      {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={kneeForm.soundLimb[k] ?? ""}
+                            onChange={(e) => setKneeForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      const dto: KneeDisarticulationDto = {
+                        side: kneeForm.side,
+                        notes: kneeForm.notes || undefined,
+                        footMeasurement: kneeForm.footMeasurement || undefined,
+                        soundLimb: Object.keys(kneeForm.soundLimb).length ? kneeForm.soundLimb : undefined,
+                        affectedLimb: Object.keys(kneeForm.affectedLimb).length ? kneeForm.affectedLimb : undefined,
+                      };
+                      await submitKneeMeasurement.mutateAsync({ id, dto });
+                    }}
+                    disabled={submitKneeMeasurement.isPending}
+                  >
+                    {submitKneeMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ ورق القياس
+                  </Button>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {/* Transfemoral (above knee) form */}
+          {measureSheetType === "above_knee" && (
+            <Section title="ورق قياس — فوق الركبة">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الجهة *</Label>
+                    <Select value={transfemoralForm.side} onValueChange={(v) => setTransfemoralForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RIGHT">اليمين</SelectItem>
+                        <SelectItem value="LEFT">اليسار</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>قياس القدم</Label>
+                    <Input placeholder="مثال: 27cm" value={transfemoralForm.footMeasurement} onChange={(e) => setTransfemoralForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ملاحظات</Label>
+                    <Input placeholder="ملاحظات عامة..." value={transfemoralForm.notes} onChange={(e) => setTransfemoralForm((f) => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Affected limb — 12 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–12)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={transfemoralForm.affectedLimb[k] ?? ""}
+                            onChange={(e) => setTransfemoralForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sound limb — 11 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–11)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 11 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={transfemoralForm.soundLimb[k] ?? ""}
+                            onChange={(e) => setTransfemoralForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      const dto: TransfemoralDto = {
+                        side: transfemoralForm.side,
+                        notes: transfemoralForm.notes || undefined,
+                        footMeasurement: transfemoralForm.footMeasurement || undefined,
+                        soundLimb: Object.keys(transfemoralForm.soundLimb).length ? transfemoralForm.soundLimb : undefined,
+                        affectedLimb: Object.keys(transfemoralForm.affectedLimb).length ? transfemoralForm.affectedLimb : undefined,
+                      };
+                      await submitTransfemoralMeasurement.mutateAsync({ id, dto });
+                    }}
+                    disabled={submitTransfemoralMeasurement.isPending}
+                  >
+                    {submitTransfemoralMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ ورق القياس
+                  </Button>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {/* Transtibial (below knee) form */}
+          {measureSheetType === "below_knee" && (
+            <Section title="ورق قياس — تحت الركبة">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الجهة *</Label>
+                    <Select value={transtibialForm.side} onValueChange={(v) => setTranstibialForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RIGHT">اليمين</SelectItem>
+                        <SelectItem value="LEFT">اليسار</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>قياس القدم</Label>
+                    <Input placeholder="مثال: 26cm" value={transtibialForm.footMeasurement} onChange={(e) => setTranstibialForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ملاحظات</Label>
+                    <Input placeholder="ملاحظات عامة..." value={transtibialForm.notes} onChange={(e) => setTranstibialForm((f) => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Affected limb — 19 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–19)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={transtibialForm.affectedLimb[k] ?? ""}
+                            onChange={(e) => setTranstibialForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sound limb — 5 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                    <div className="grid grid-cols-1 gap-2 max-w-xs">
+                      {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={transtibialForm.soundLimb[k] ?? ""}
+                            onChange={(e) => setTranstibialForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      const dto: TranstibialDto = {
+                        side: transtibialForm.side,
+                        notes: transtibialForm.notes || undefined,
+                        footMeasurement: transtibialForm.footMeasurement || undefined,
+                        soundLimb: Object.keys(transtibialForm.soundLimb).length ? transtibialForm.soundLimb : undefined,
+                        affectedLimb: Object.keys(transtibialForm.affectedLimb).length ? transtibialForm.affectedLimb : undefined,
+                      };
+                      await submitTranstibialMeasurement.mutateAsync({ id, dto });
+                    }}
+                    disabled={submitTranstibialMeasurement.isPending}
+                  >
+                    {submitTranstibialMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ ورق القياس
+                  </Button>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {/* Transradial (below elbow) form */}
+          {measureSheetType === "transradial" && (
+            <Section title="ورق قياس — تحت المرفق">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الجهة *</Label>
+                    <Select value={transradialForm.side} onValueChange={(v) => setTransradialForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RIGHT">اليمين</SelectItem>
+                        <SelectItem value="LEFT">اليسار</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ملاحظات</Label>
+                    <Input placeholder="ملاحظات عامة..." value={transradialForm.notes} onChange={(e) => setTransradialForm((f) => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Sound limb — 7 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–7)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 7 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={transradialForm.soundLimb[k] ?? ""}
+                            onChange={(e) => setTransradialForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Affected limb — 10 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–10)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={transradialForm.affectedLimb[k] ?? ""}
+                            onChange={(e) => setTransradialForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      const dto: TransradialDto = {
+                        side: transradialForm.side,
+                        notes: transradialForm.notes || undefined,
+                        soundLimb: Object.keys(transradialForm.soundLimb).length ? transradialForm.soundLimb : undefined,
+                        affectedLimb: Object.keys(transradialForm.affectedLimb).length ? transradialForm.affectedLimb : undefined,
+                      };
+                      await submitTransradialMeasurement.mutateAsync({ id, dto });
+                    }}
+                    disabled={submitTransradialMeasurement.isPending}
+                  >
+                    {submitTransradialMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ ورق القياس
+                  </Button>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {/* Transhumeral (above elbow) form */}
+          {measureSheetType === "transhumeral" && (
+            <Section title="ورق قياس — فوق المرفق">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الجهة *</Label>
+                    <Select value={transhumeralForm.side} onValueChange={(v) => setTranshumeralForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RIGHT">اليمين</SelectItem>
+                        <SelectItem value="LEFT">اليسار</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ملاحظات</Label>
+                    <Input placeholder="ملاحظات عامة..." value={transhumeralForm.notes} onChange={(e) => setTranshumeralForm((f) => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Sound limb — 10 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–10)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={transhumeralForm.soundLimb[k] ?? ""}
+                            onChange={(e) => setTranshumeralForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Affected limb — 6 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–6)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 6 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={transhumeralForm.affectedLimb[k] ?? ""}
+                            onChange={(e) => setTranshumeralForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      const dto: TranshumeralDto = {
+                        side: transhumeralForm.side,
+                        notes: transhumeralForm.notes || undefined,
+                        soundLimb: Object.keys(transhumeralForm.soundLimb).length ? transhumeralForm.soundLimb : undefined,
+                        affectedLimb: Object.keys(transhumeralForm.affectedLimb).length ? transhumeralForm.affectedLimb : undefined,
+                      };
+                      await submitTranshumeralMeasurement.mutateAsync({ id, dto });
+                    }}
+                    disabled={submitTranshumeralMeasurement.isPending}
+                  >
+                    {submitTranshumeralMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ ورق القياس
+                  </Button>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {/* Elbow disarticulation form */}
+          {measureSheetType === "elbow_disarticulation" && (
+            <Section title="ورق قياس — عبر المرفق">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الجهة *</Label>
+                    <Select value={elbowForm.side} onValueChange={(v) => setElbowForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RIGHT">اليمين</SelectItem>
+                        <SelectItem value="LEFT">اليسار</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ملاحظات</Label>
+                    <Input placeholder="ملاحظات عامة..." value={elbowForm.notes} onChange={(e) => setElbowForm((f) => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Sound limb — 12 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–12)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={elbowForm.soundLimb[k] ?? ""}
+                            onChange={(e) => setElbowForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Affected limb — 9 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–9)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 9 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={elbowForm.affectedLimb[k] ?? ""}
+                            onChange={(e) => setElbowForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      const dto: ElbowDisarticulationDto = {
+                        side: elbowForm.side,
+                        notes: elbowForm.notes || undefined,
+                        soundLimb: Object.keys(elbowForm.soundLimb).length ? elbowForm.soundLimb : undefined,
+                        affectedLimb: Object.keys(elbowForm.affectedLimb).length ? elbowForm.affectedLimb : undefined,
+                      };
+                      await submitElbowMeasurement.mutateAsync({ id, dto });
+                    }}
+                    disabled={submitElbowMeasurement.isPending}
+                  >
+                    {submitElbowMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ ورق القياس
+                  </Button>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {/* Hemipelvectomy (through pelvis) form */}
+          {measureSheetType === "hemipelvectomy" && (
+            <Section title="ورق قياس — عبر الحوض">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الجهة *</Label>
+                    <Select value={hemipelvectomyForm.side} onValueChange={(v) => setHemipelvectomyForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RIGHT">اليمين</SelectItem>
+                        <SelectItem value="LEFT">اليسار</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>قياس القدم</Label>
+                    <Input placeholder="مثال: 27cm" value={hemipelvectomyForm.footMeasurement} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ملاحظات</Label>
+                    <Input placeholder="ملاحظات عامة..." value={hemipelvectomyForm.notes} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Sound limb — 15 fields */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–15)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: 15 }, (_, i) => String(i + 1)).map((k) => (
+                        <div key={k} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                          <Input className="h-8 text-sm" placeholder="cm"
+                            value={hemipelvectomyForm.soundLimb[k] ?? ""}
+                            onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Affected limb — 1 field only */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب</p>
+                    <div className="flex items-center gap-2 max-w-xs">
+                      <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                      <Input className="h-8 text-sm" placeholder="cm"
+                        value={hemipelvectomyForm.affectedLimb["1"] ?? ""}
+                        onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, affectedLimb: { "1": e.target.value } }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      const dto: HemipelvectomyDto = {
+                        side: hemipelvectomyForm.side,
+                        notes: hemipelvectomyForm.notes || undefined,
+                        footMeasurement: hemipelvectomyForm.footMeasurement || undefined,
+                        soundLimb: Object.keys(hemipelvectomyForm.soundLimb).length ? hemipelvectomyForm.soundLimb : undefined,
+                        affectedLimb: hemipelvectomyForm.affectedLimb["1"] ? hemipelvectomyForm.affectedLimb : undefined,
+                      };
+                      await submitHemipelvectomyMeasurement.mutateAsync({ id, dto });
+                    }}
+                    disabled={submitHemipelvectomyMeasurement.isPending}
+                  >
+                    {submitHemipelvectomyMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ ورق القياس
+                  </Button>
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {!measureSheetType && (
+            <div className="rounded-lg border border-dashed flex items-center justify-center py-16">
+              <p className="text-muted-foreground text-sm">اختر نوع البتر لعرض ورق القياس المناسب</p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── TREATMENT PROGRAM ───────────────────────────────────────────── */}
+        <TabsContent value="treatment_program" className="mt-4 space-y-4" dir="rtl">
+          <TreatmentProgramsSection
+            caseId={id}
+            staffList={staffList}
+            currentUser={currentUser}
+          />
+          <ReviewProgramsSection
+            caseId={id}
+            staffList={staffList}
+            currentUser={currentUser}
+          />
+        </TabsContent>
+
+        {/* ── GAIT ANALYSIS ───────────────────────────────────────────────── */}
+        <TabsContent value="gait_analysis" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
+          <GaitAnalysisSection caseId={id} staffList={staffList} />
+        </TabsContent>
+
+        {/* ── BALANCE ASSESSMENT ──────────────────────────────────────────── */}
+        {ampTypes.includes("LOWER") && (
+          <TabsContent value="balance_assessment" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
+            <BalanceAssessmentSection caseId={id} staffList={staffList} />
+          </TabsContent>
+        )}
+
+        {/* ── FINAL EVALUATION (Pro-018) ───────────────────────────────── */}
+        <TabsContent value="final_evaluation" className="mt-4 space-y-4" dir="rtl">
+
+          {/* ── قسم 1: المعلومات الطبية ── */}
+          <Section title="المعلومات الطبية حول الطرف الصناعي">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">حالة الجذمور</Label>
+                <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.residualLimbCondition ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, residualLimbCondition: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">نظام التعليق</Label>
+                <Input value={finalEvalForm.suspensionSystemUsed ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, suspensionSystemUsed: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">عدد الجوارب / اللاينر (السيليكون) التي تم تسليمها</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground shrink-0">جوارب</span>
+                    <Input type="number" min={0} value={finalEvalForm.socksDelivered ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, socksDelivered: e.target.value === "" ? undefined : Number(e.target.value) }))} className="h-8 text-xs" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground shrink-0">لاينر</span>
+                    <Input type="number" min={0} value={finalEvalForm.linersDelivered ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, linersDelivered: e.target.value === "" ? undefined : Number(e.target.value) }))} className="h-8 text-xs" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">تاريخ التركيب</Label>
+                <Input type="date" value={finalEvalForm.fittingDate ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, fittingDate: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">ملاحظات عامة</Label>
+                <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.generalNotes ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, generalNotes: e.target.value }))} />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── قسم 2: الرأي النهائي للجنة ── */}
+          <Section title="الرأي النهائي للجنة">
+            <div className="space-y-3">
+              {([
+                ["physioOpinion",               "رأي المعالج الفيزيائي"],
+                ["departmentHeadOpinion",        "رأي رئيس القسم"],
+                ["prosthetistOpinion",           "رأي فني الأطراف الصناعية"],
+                ["prosthetistSupervisorOpinion", "رأي مسؤول فني الأطراف الصناعية"],
+                ["committeeHeadOpinion",         "رأي رئيس اللجنة"],
+                ["expertOpinion",                "رأي الخبير (إن وجد)"],
+              ] as const).map(([fld, lbl]) => (
+                <div key={fld} className="space-y-1.5">
+                  <Label className="text-xs">{lbl}</Label>
+                  <Textarea rows={2} className="resize-none text-xs" value={(finalEvalForm as any)[fld] ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, [fld]: e.target.value }))} />
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* ── قسم 3: اعتماد المدير الطبي ── */}
+          <Section title="اعتماد المدير الطبي">
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed border rounded-lg px-3 py-2.5 bg-muted/30">
+                بعد مراجعة التقييمات أعلاه، أقر بأن الطرف الصناعي جاهز للتسليم ولا يوجد مانع طبي أو فني من خروج المريض.
+              </p>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={!!finalEvalForm.readyForDelivery}
+                    onChange={() => setFinalEvalForm((f) => ({ ...f, readyForDelivery: true, needsFollowUp: false }))}
+                    className="w-[16px] h-[16px] accent-orange-500 rounded-sm" />
+                  <span className="text-sm">معتمد للتسليم</span>
+                </label>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={!!finalEvalForm.needsFollowUp}
+                    onChange={() => setFinalEvalForm((f) => ({ ...f, needsFollowUp: true, readyForDelivery: false }))}
+                    className="w-[16px] h-[16px] accent-orange-500 rounded-sm" />
+                  <span className="text-sm">يحتاج متابعة / تعديل قبل التسليم</span>
+                </label>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">خطة المتابعة (إن وجدت)</Label>
+                <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.followUpPlan ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, followUpPlan: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">يوجد ملحق</Label>
+                <Input className="text-xs" value={(finalEvalForm as any).attachment ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, attachment: e.target.value }))} placeholder="وصف الملحق إن وجد..." />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">ملاحظات عامة</Label>
+                <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.medicalDirectorNotes ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, medicalDirectorNotes: e.target.value }))} />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── قسم 4: تدقيق المدير ── */}
+          <Section title="تدقيق المدير">
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">ملاحظات عامة</Label>
+                <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.managerNotes} onChange={(e) => setFinalEvalForm((f) => ({ ...f, managerNotes: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">اضبارة المريض</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={finalEvalForm.patientFileComplete === true}
+                      onChange={() => setFinalEvalForm((f) => ({ ...f, patientFileComplete: true }))}
+                      className="w-[16px] h-[16px] accent-orange-500 rounded-sm" />
+                    <span className="text-sm">مكتملة</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={finalEvalForm.patientFileComplete === false}
+                      onChange={() => setFinalEvalForm((f) => ({ ...f, patientFileComplete: false }))}
+                      className="w-[16px] h-[16px] accent-orange-500 rounded-sm" />
+                    <span className="text-sm">غير مكتملة</span>
+                  </label>
+                </div>
+              </div>
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-xs font-semibold">توقيع المدير</p>
+                <Select value={finalEvalForm.managerId || "none"}
+                  onValueChange={(v) => setFinalEvalForm((f) => ({ ...f, managerId: v === "none" ? "" : v, managerSignatureUrl: "" }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="اختر المدير" /></SelectTrigger>
+                  <SelectContent>
+                    {staffList.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.fullName ?? s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {finalEvalForm.managerSignatureUrl ? (
+                  <div className="relative">
+                    <img src={finalEvalForm.managerSignatureUrl} alt="توقيع المدير" className="h-16 w-full object-contain border rounded bg-white" />
+                    <button onClick={() => setFinalEvalForm((f) => ({ ...f, managerSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                  </div>
+                ) : (
+                  <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={handleFinalEvalManagerSigClick} disabled={!finalEvalForm.managerId}>
+                    {finalEvalForm.managerId ? "جلب / رفع التوقيع" : "اختر المدير أولاً"}
+                  </Button>
+                )}
+                <input ref={finalEvalManagerSigRef} type="file" accept="image/*" className="hidden" onChange={handleFinalEvalManagerSigFileChange} />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── الأزرار ── */}
+          <div className="flex gap-2">
+            <Button onClick={handleSubmitFinalEval} disabled={submitFinalEval.isPending} className="flex-1 gap-2">
+              {submitFinalEval.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              حفظ التقييم
+            </Button>
+          </div>
+        </TabsContent>
+
+        {/* ── DELIVERED (Pro-019) ──────────────────────────────────────────── */}
+        <TabsContent value="delivered" className="mt-4 space-y-4" dir="rtl">
+
+          <Section
+            title="بيانات تسليم الطرف الصناعي — Pro-019"
+            action={
+              <Button size="sm" variant={showAddItemForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowAddItemForm((v) => !v)}>
+                <Plus className="h-3.5 w-3.5" />
+                {showAddItemForm ? "إغلاق" : "إضافة قطعة"}
+              </Button>
+            }
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5 col-span-2">
+                  <Label className="text-xs">تاريخ الخروج</Label>
+                  <Input type="date" value={proDeliveryHeader.inspectionDate} onChange={(e) => setProDeliveryHeader((f) => ({ ...f, inspectionDate: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">الفني — الأطراف الصناعية</Label>
+                  <Select value={proDeliveryHeader.prosthetistId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, prosthetistId: v === "none" ? "" : v }))}>
+                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      {staffList.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">المعالج الفيزيائي</Label>
+                  <Select value={proDeliveryHeader.physiotherapistId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, physiotherapistId: v === "none" ? "" : v }))}>
+                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      {staffList.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* ── القطع المُسلَّمة (فوق المدير التنفيذي) ── */}
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">
+                  القطع المُسلَّمة{(deliveryData19 as any)?.items?.length ? ` (${(deliveryData19 as any).items.length})` : ""}
+                </p>
+
+                {/* Add item form */}
+                {showAddItemForm && (
+                  <div className="rounded-lg border border-dashed p-3 space-y-3 bg-muted/30">
+                    <p className="text-sm font-medium">قطعة جديدة</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5 col-span-2">
+                        <Label className="text-xs">اسم المنتج المُسلَّم *</Label>
+                        <Select
+                          value={newItemForm.inventoryItemId || "none"}
+                          onValueChange={(v) => {
+                            if (v === "none") {
+                              setNewItemForm((f) => ({ ...f, inventoryItemId: "", deliveredProduct: "", partCode: "" }));
+                            } else {
+                              const item = inventoryItems.find((it: any) => it.id === v);
+                              setNewItemForm((f) => ({ ...f, inventoryItemId: v, deliveredProduct: item?.name ?? "", partCode: item?.code ?? "" }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger><SelectValue placeholder="اختر من المخزون..." /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">— اختر من المخزون —</SelectItem>
+                            {inventoryItems.map((item: any) => (
+                              <SelectItem key={item.id} value={item.id}>{item.name}{item.code ? ` — ${item.code}` : ""}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">رمز القطعة</Label>
+                        <Input placeholder="Part Code" value={newItemForm.partCode} onChange={(e) => setNewItemForm((f) => ({ ...f, partCode: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">الكمية</Label>
+                        <Input type="number" min={1} placeholder="1" value={newItemForm.quantity} onChange={(e) => setNewItemForm((f) => ({ ...f, quantity: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5 col-span-2">
+                        <Label className="text-xs">الشركة</Label>
+                        <Input placeholder="اسم الشركة..." value={newItemForm.company} onChange={(e) => setNewItemForm((f) => ({ ...f, company: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5 col-span-2">
+                        <Label className="text-xs">ملاحظات</Label>
+                        <Textarea rows={2} className="resize-none" placeholder="ملاحظات..." value={newItemForm.notes} onChange={(e) => setNewItemForm((f) => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" disabled={!newItemForm.deliveredProduct || addDelivItem.isPending} className="gap-1"
+                        onClick={async () => {
+                          await addDelivItem.mutateAsync({ caseId: id, dto: { deliveredProduct: newItemForm.deliveredProduct, partCode: newItemForm.partCode || undefined, quantity: newItemForm.quantity ? Number(newItemForm.quantity) : undefined, company: newItemForm.company || undefined, notes: newItemForm.notes || undefined } });
+                          setNewItemForm({ inventoryItemId: "", deliveredProduct: "", partCode: "", quantity: "", company: "", notes: "" });
+                          setShowAddItemForm(false);
+                        }}
+                      >
+                        {addDelivItem.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                        إضافة
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setShowAddItemForm(false)}>إلغاء</Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Items table */}
+                {!(deliveryData19 as any)?.items?.length ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">لا توجد قطع مُضافة</p>
+                ) : (
+                  <>
+                    <div className="rounded-lg border overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-right p-2 font-medium">الاسم</th>
+                            <th className="text-right p-2 font-medium">الرمز</th>
+                            <th className="text-right p-2 font-medium">الكمية</th>
+                            <th className="text-right p-2 font-medium">الشركة</th>
+                            <th className="p-2" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(deliveryData19 as any).items.map((item: any) => (
+                            editingItemId === item.id ? (
+                              <tr key={item.id} className="border-t">
+                                <td colSpan={5} className="p-3">
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="space-y-1.5 col-span-2">
+                                        <Label className="text-xs">اسم المنتج *</Label>
+                                        <Select
+                                          value={editingItemForm.inventoryItemId || "none"}
+                                          onValueChange={(v) => {
+                                            if (v === "none") {
+                                              setEditingItemForm((f) => ({ ...f, inventoryItemId: "", deliveredProduct: "", partCode: "" }));
+                                            } else {
+                                              const inv = inventoryItems.find((it: any) => it.id === v);
+                                              setEditingItemForm((f) => ({ ...f, inventoryItemId: v, deliveredProduct: inv?.name ?? "", partCode: inv?.code ?? "" }));
+                                            }
+                                          }}
+                                        >
+                                          <SelectTrigger><SelectValue placeholder={editingItemForm.deliveredProduct || "اختر من المخزون..."} /></SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="none">— اختر من المخزون —</SelectItem>
+                                            {inventoryItems.map((invItem: any) => (
+                                              <SelectItem key={invItem.id} value={invItem.id}>{invItem.name}{invItem.code ? ` — ${invItem.code}` : ""}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <Label className="text-xs">رمز القطعة</Label>
+                                        <Input value={editingItemForm.partCode} onChange={(e) => setEditingItemForm((f) => ({ ...f, partCode: e.target.value }))} />
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <Label className="text-xs">الكمية</Label>
+                                        <Input type="number" min={1} value={editingItemForm.quantity} onChange={(e) => setEditingItemForm((f) => ({ ...f, quantity: e.target.value }))} />
+                                      </div>
+                                      <div className="space-y-1.5 col-span-2">
+                                        <Label className="text-xs">الشركة</Label>
+                                        <Input value={editingItemForm.company} onChange={(e) => setEditingItemForm((f) => ({ ...f, company: e.target.value }))} />
+                                      </div>
+                                      <div className="space-y-1.5 col-span-2">
+                                        <Label className="text-xs">ملاحظات</Label>
+                                        <Textarea rows={2} className="resize-none" value={editingItemForm.notes} onChange={(e) => setEditingItemForm((f) => ({ ...f, notes: e.target.value }))} />
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button size="sm" disabled={!editingItemForm.deliveredProduct || updateDelivItem.isPending} className="gap-1"
+                                        onClick={async () => {
+                                          await updateDelivItem.mutateAsync({ caseId: id, itemId: item.id, dto: { deliveredProduct: editingItemForm.deliveredProduct, partCode: editingItemForm.partCode || undefined, quantity: editingItemForm.quantity ? Number(editingItemForm.quantity) : undefined, company: editingItemForm.company || undefined, notes: editingItemForm.notes || undefined } });
+                                          setEditingItemId(null);
+                                        }}
+                                      >
+                                        {updateDelivItem.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                                        حفظ
+                                      </Button>
+                                      <Button size="sm" variant="outline" onClick={() => setEditingItemId(null)}>إلغاء</Button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            ) : (
+                              <tr key={item.id} className="border-t hover:bg-muted/30">
+                                <td className="p-2 font-medium">{item.deliveredProduct ?? "—"}</td>
+                                <td className="p-2 font-mono text-xs text-muted-foreground">{item.partCode ?? "—"}</td>
+                                <td className="p-2 text-muted-foreground">{item.quantity ?? "—"}</td>
+                                <td className="p-2 text-muted-foreground">{item.company ?? "—"}</td>
+                                <td className="p-2">
+                                  <div className="flex gap-1 justify-end">
+                                    <button className="p-1 text-muted-foreground hover:text-foreground"
+                                      onClick={() => { setEditingItemId(item.id); setEditingItemForm({ inventoryItemId: "", deliveredProduct: item.deliveredProduct ?? "", partCode: item.partCode ?? "", quantity: item.quantity?.toString() ?? "", company: item.company ?? "", notes: item.notes ?? "" }); }}>
+                                      <Plus className="h-3.5 w-3.5 rotate-45" />
+                                    </button>
+                                    <button className="p-1 text-destructive hover:opacity-70" onClick={() => setConfirmDelItem(item.id)}>
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <Dialog open={!!confirmDelItem} onOpenChange={(open) => { if (!open) setConfirmDelItem(null); }}>
+                      <DialogContent className="max-w-sm" dir="rtl">
+                        <DialogHeader>
+                          <DialogTitle>تأكيد الحذف</DialogTitle>
+                          <DialogDescription>هل تريد حذف هذه القطعة؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+                          <Button variant="outline" onClick={() => setConfirmDelItem(null)}>لا</Button>
+                          <Button variant="destructive" disabled={deleteDelivItem.isPending}
+                            onClick={() => { if (confirmDelItem) { deleteDelivItem.mutate({ caseId: id, itemId: confirmDelItem }); setConfirmDelItem(null); } }}>
+                            {deleteDelivItem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+              </div>
+
+              <div className="space-y-1.5 col-span-2">
+                <Label className="text-xs">المدير التنفيذي (CEO)</Label>
+                <Select value={proDeliveryHeader.ceoId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, ceoId: v === "none" ? "" : v, ceoSignatureUrl: "" }))}>
+                  <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— غير محدد —</SelectItem>
+                    {staffList.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* CEO Signature */}
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-xs font-semibold">توقيع المدير التنفيذي</p>
+                {proDeliveryHeader.ceoSignatureUrl ? (
+                  <div className="relative inline-block">
+                    <img src={proDeliveryHeader.ceoSignatureUrl} alt="توقيع CEO" className="h-20 object-contain border rounded bg-white" />
+                    <button onClick={() => setProDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                  </div>
+                ) : (
+                  <Button type="button" size="sm" variant="outline" onClick={handleCeoSignatureClick} disabled={!proDeliveryHeader.ceoId}>
+                    {proDeliveryHeader.ceoId ? "جلب / رفع التوقيع" : "اختر المدير التنفيذي أولاً"}
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">التاريخ</Label>
+                <Input type="date" value={proDeliveryHeader.signatureDate} onChange={(e) => setProDeliveryHeader((f) => ({ ...f, signatureDate: e.target.value }))} />
+              </div>
+
+              <input ref={ceoSigRef} type="file" accept="image/*" className="hidden" onChange={handleCeoSigFileChange} />
+
+              <Button
+                onClick={() => saveProsDelivery.mutateAsync({ caseId: id, dto: { inspectionDate: proDeliveryHeader.inspectionDate || undefined, prosthetistId: proDeliveryHeader.prosthetistId || undefined, physiotherapistId: proDeliveryHeader.physiotherapistId || undefined, ceoId: proDeliveryHeader.ceoId || undefined, ceoSignatureUrl: proDeliveryHeader.ceoSignatureUrl || undefined, signatureDate: proDeliveryHeader.signatureDate || undefined } })}
+                disabled={saveProsDelivery.isPending}
+                className="w-full gap-2"
+              >
+                {saveProsDelivery.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                حفظ بيانات التسليم
+              </Button>
+            </div>
+          </Section>
         </TabsContent>
 
         {/* ── TIMELINE ────────────────────────────────────────────────────── */}
@@ -2365,58 +6178,6 @@ export default function ProstheticsCasePage() {
         </TabsContent>
 
         {/* ── ATTACHMENTS ──────────────────────────────────────────────── */}
-        <TabsContent value="attachments" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section
-            title="المرفقات"
-            action={
-              <>
-                <Button size="sm" variant="outline" onClick={() => attachFileRef.current?.click()} disabled={uploadAttachment.isPending}>
-                  {uploadAttachment.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Plus className="h-4 w-4 ml-1" />}
-                  رفع ملف
-                </Button>
-                <input
-                  ref={attachFileRef}
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) uploadAttachment.mutate({ id, file });
-                    e.target.value = "";
-                  }}
-                />
-              </>
-            }
-          >
-            {attachments.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">لا توجد مرفقات</p>
-            ) : (
-              <div className="divide-y">
-                {attachments.map((att) => (
-                  <div key={att.id} className="flex items-center justify-between py-3 gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-8 w-8 shrink-0 rounded bg-muted flex items-center justify-center text-xs font-mono text-muted-foreground">
-                        {att.fileName.split(".").pop()?.toUpperCase() ?? "—"}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{att.fileName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {att.caption && <span className="ml-2">{att.caption}</span>}
-                          {att.fileSize && <span>{(att.fileSize / 1024).toFixed(0)} KB</span>}
-                          {" · "}{new Date(att.uploadedAt).toLocaleDateString("ar")}
-                        </p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="ghost" asChild>
-                      <a href={`${process.env.NEXT_PUBLIC_API_URL ?? ""}/prosthetics/cases/${id}/attachments/${att.id}`} target="_blank" rel="noopener noreferrer">
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-        </TabsContent>
       </Tabs>
 
       {/* Signature dialog for committee sign */}

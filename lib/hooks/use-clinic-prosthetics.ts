@@ -10,6 +10,23 @@ import {
   AddComponentDto,
   GaitAnalysisDto,
   ProstheticsCaseListParams,
+  AnkleDisarticulationDto,
+  KneeDisarticulationDto,
+  TransfemoralDto,
+  TranstibialDto,
+  HemipelvectomyDto,
+  ElbowDisarticulationDto,
+  TranshumeralDto,
+  TransradialDto,
+  TreatmentProgramDto,
+  TreatmentProgramSessionDto,
+  ReviewProgramDto,
+  ProstheticDeliveryDto,
+  DeliveryItemDto,
+  BalanceAssessmentDto,
+  GaitAnalysisFormDto,
+  FinalEvaluationDto,
+  DirectorSignDto,
 } from "@/lib/api/clinic-prosthetics";
 import { toast } from "sonner";
 
@@ -130,8 +147,8 @@ export function useSubmitCommitteeDecision() {
 export function useSignCommitteeDecision() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, role, signatureBase64 }: { id: string; role: "DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST"; signatureBase64: string }) =>
-      clinicProstheticsApi.signCommitteeDecision(id, role, signatureBase64),
+    mutationFn: ({ id, role, signatureUrl }: { id: string; role: "DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST"; signatureUrl: string }) =>
+      clinicProstheticsApi.signCommitteeDecision(id, role, signatureUrl),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
       toast.success("تم التوقيع");
@@ -258,13 +275,23 @@ export function useAddConsumable() {
   });
 }
 
+export function useFinalEvaluation(caseId: string) {
+  return useQuery({
+    queryKey: ["clinic-prosthetics-final-eval", caseId],
+    queryFn: () => clinicProstheticsApi.getFinalEvaluation(caseId),
+    enabled: !!caseId,
+    retry: false,
+  });
+}
+
 export function useSubmitFinalEvaluation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, dto }: { id: string; dto: Record<string, unknown> }) =>
+    mutationFn: ({ id, dto }: { id: string; dto: FinalEvaluationDto }) =>
       clinicProstheticsApi.submitFinalEvaluation(id, dto),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-final-eval", id] });
       toast.success("تم حفظ التقييم النهائي");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
@@ -274,10 +301,11 @@ export function useSubmitFinalEvaluation() {
 export function useSignFinalEvaluation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, signature }: { id: string; signature: string }) =>
-      clinicProstheticsApi.signFinalEvaluation(id, signature),
+    mutationFn: ({ id, dto }: { id: string; dto: DirectorSignDto }) =>
+      clinicProstheticsApi.signFinalEvaluation(id, dto),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-final-eval", id] });
       toast.success("تم توقيع التقييم النهائي");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التوقيع"),
@@ -328,5 +356,375 @@ export function useUploadProstheticsAttachment() {
       toast.success("تم رفع الملف");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل رفع الملف"),
+  });
+}
+
+export function useDeleteProstheticsAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, attachmentId }: { id: string; attachmentId: string }) =>
+      clinicProstheticsApi.deleteAttachment(id, attachmentId),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-attachments", id] });
+      toast.success("تم حذف الملف");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حذف الملف"),
+  });
+}
+
+export function useSubmitAnkleDisarticulation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: AnkleDisarticulationDto }) =>
+      clinicProstheticsApi.submitAnkleDisarticulation(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ ورق القياس");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useSubmitKneeDisarticulation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: KneeDisarticulationDto }) =>
+      clinicProstheticsApi.submitKneeDisarticulation(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ ورق القياس");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useTreatmentPrograms(caseId: string) {
+  return useQuery({
+    queryKey: ["treatment-programs", caseId],
+    queryFn: () => clinicProstheticsApi.getTreatmentPrograms(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useCreateTreatmentProgram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, dto }: { caseId: string; dto: TreatmentProgramSessionDto }) =>
+      clinicProstheticsApi.createTreatmentProgram(caseId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["treatment-programs", caseId] });
+      toast.success("تمت إضافة الجلسة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة الجلسة"),
+  });
+}
+
+export function useUpdateTreatmentProgram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, programId, dto }: { caseId: string; programId: string; dto: TreatmentProgramSessionDto }) =>
+      clinicProstheticsApi.updateTreatmentProgram(caseId, programId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["treatment-programs", caseId] });
+      toast.success("تم حفظ الجلسة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useDeleteTreatmentProgram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, programId }: { caseId: string; programId: string }) =>
+      clinicProstheticsApi.deleteTreatmentProgram(caseId, programId),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["treatment-programs", caseId] });
+      toast.success("تم حذف الجلسة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
+  });
+}
+
+export function useReviewPrograms(caseId: string) {
+  return useQuery({
+    queryKey: ["review-programs", caseId],
+    queryFn: () => clinicProstheticsApi.getReviewPrograms(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useCreateReviewProgram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, dto }: { caseId: string; dto: ReviewProgramDto }) =>
+      clinicProstheticsApi.createReviewProgram(caseId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["review-programs", caseId] });
+      toast.success("تمت إضافة زيارة المراجعة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة الزيارة"),
+  });
+}
+
+export function useUpdateReviewProgram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, reviewId, dto }: { caseId: string; reviewId: string; dto: ReviewProgramDto }) =>
+      clinicProstheticsApi.updateReviewProgram(caseId, reviewId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["review-programs", caseId] });
+      toast.success("تم حفظ الزيارة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useDeleteReviewProgram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, reviewId }: { caseId: string; reviewId: string }) =>
+      clinicProstheticsApi.deleteReviewProgram(caseId, reviewId),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["review-programs", caseId] });
+      toast.success("تم حذف الزيارة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
+  });
+}
+
+export function useSubmitTransradial() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: TransradialDto }) =>
+      clinicProstheticsApi.submitTransradial(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ ورق القياس");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useSubmitTranshumeral() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: TranshumeralDto }) =>
+      clinicProstheticsApi.submitTranshumeral(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ ورق القياس");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useSubmitElbowDisarticulation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: ElbowDisarticulationDto }) =>
+      clinicProstheticsApi.submitElbowDisarticulation(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ ورق القياس");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useSubmitHemipelvectomy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: HemipelvectomyDto }) =>
+      clinicProstheticsApi.submitHemipelvectomy(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ ورق القياس");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useSubmitTranstibial() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: TranstibialDto }) =>
+      clinicProstheticsApi.submitTranstibial(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ ورق القياس");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useSubmitTransfemoral() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: TransfemoralDto }) =>
+      clinicProstheticsApi.submitTransfemoral(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      toast.success("تم حفظ ورق القياس");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+// ── Pro-015 Balance Assessment ───────────────────────────────────────────────
+
+export function useBalanceAssessments(caseId: string) {
+  return useQuery({
+    queryKey: ["balance-assessments", caseId],
+    queryFn: () => clinicProstheticsApi.getBalanceAssessments(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useAddBalanceAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, dto }: { caseId: string; dto: BalanceAssessmentDto }) =>
+      clinicProstheticsApi.addBalanceAssessment(caseId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["balance-assessments", caseId] });
+      toast.success("تمت إضافة تقييم التوازن");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الإضافة"),
+  });
+}
+
+export function useUpdateBalanceAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, formId, dto }: { caseId: string; formId: string; dto: BalanceAssessmentDto }) =>
+      clinicProstheticsApi.updateBalanceAssessment(caseId, formId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["balance-assessments", caseId] });
+      toast.success("تم تحديث تقييم التوازن");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحديث"),
+  });
+}
+
+export function useDeleteBalanceAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, formId }: { caseId: string; formId: string }) =>
+      clinicProstheticsApi.deleteBalanceAssessment(caseId, formId),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["balance-assessments", caseId] });
+      toast.success("تم حذف التقييم");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
+  });
+}
+
+// ── Pro-019 Prosthetic Delivery ──────────────────────────────────────────────
+
+export function useProstheticDelivery(caseId: string) {
+  return useQuery({
+    queryKey: ["prosthetic-delivery", caseId],
+    queryFn: () => clinicProstheticsApi.getProstheticDelivery(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useSaveProstheticDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, dto }: { caseId: string; dto: ProstheticDeliveryDto }) =>
+      clinicProstheticsApi.saveProstheticDelivery(caseId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["prosthetic-delivery", caseId] });
+      toast.success("تم حفظ بيانات التسليم");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useAddDeliveryItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, dto }: { caseId: string; dto: DeliveryItemDto }) =>
+      clinicProstheticsApi.addDeliveryItem(caseId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["prosthetic-delivery", caseId] });
+      toast.success("تمت إضافة القطعة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الإضافة"),
+  });
+}
+
+export function useUpdateDeliveryItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, itemId, dto }: { caseId: string; itemId: string; dto: DeliveryItemDto }) =>
+      clinicProstheticsApi.updateDeliveryItem(caseId, itemId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["prosthetic-delivery", caseId] });
+      toast.success("تم تحديث القطعة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحديث"),
+  });
+}
+
+export function useDeleteDeliveryItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, itemId }: { caseId: string; itemId: string }) =>
+      clinicProstheticsApi.deleteDeliveryItem(caseId, itemId),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["prosthetic-delivery", caseId] });
+      toast.success("تم حذف القطعة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
+  });
+}
+
+// ── Pro-016 Gait Analysis ──────────────────────────────────────────────────────
+export function useGaitAnalysisForms(caseId: string) {
+  return useQuery({
+    queryKey: ["gait-analysis-forms", caseId],
+    queryFn: () => clinicProstheticsApi.getGaitAnalysisForms(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useAddGaitAnalysisForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, dto }: { caseId: string; dto: GaitAnalysisFormDto }) =>
+      clinicProstheticsApi.addGaitAnalysisForm(caseId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["gait-analysis-forms", caseId] });
+      toast.success("تمت إضافة جلسة تحليل المشي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الإضافة"),
+  });
+}
+
+export function useUpdateGaitAnalysisForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, formId, dto }: { caseId: string; formId: string; dto: GaitAnalysisFormDto }) =>
+      clinicProstheticsApi.updateGaitAnalysisForm(caseId, formId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["gait-analysis-forms", caseId] });
+      toast.success("تم حفظ التعديلات");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحديث"),
+  });
+}
+
+export function useDeleteGaitAnalysisForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, formId }: { caseId: string; formId: string }) =>
+      clinicProstheticsApi.deleteGaitAnalysisForm(caseId, formId),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["gait-analysis-forms", caseId] });
+      toast.success("تم حذف جلسة تحليل المشي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
   });
 }
