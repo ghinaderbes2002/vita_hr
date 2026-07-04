@@ -1912,25 +1912,36 @@ const INITIAL_BALANCE_FORM = {
 };
 type BalanceForm = typeof INITIAL_BALANCE_FORM;
 
+function parseBalanceRecord(raw: any): Record<string, string> {
+  if (!raw) return {};
+  if (Array.isArray(raw)) {
+    const r: Record<string, string> = {};
+    raw.forEach((item: any) => { if (item?.key) r[item.key] = item.result ?? ""; });
+    return r;
+  }
+  return raw as Record<string, string>;
+}
+function parseExerciseProgram(raw: any): any[] {
+  if (!raw) return DEFAULT_EXERCISE_PROGRAM.map((e) => ({ ...e }));
+  if (Array.isArray(raw)) return raw;
+  return Object.values(raw);
+}
+
 function balanceFormFromData(data: any): BalanceForm {
-  const staticBalance: Record<string, string> = {};
-  (data.staticBalance ?? []).forEach((item: any) => { staticBalance[item.key] = item.result; });
-  const dynamicTasks: Record<string, string> = {};
-  (data.dynamicTasks ?? []).forEach((item: any) => { dynamicTasks[item.key] = item.result; });
-  const dynamicActivities: Record<string, string> = {};
-  (data.dynamicActivities ?? []).forEach((item: any) => { dynamicActivities[item.key] = item.result; });
   return {
     assessmentDate: data.assessmentDate?.slice(0, 10) ?? "",
     previousProsthesis: data.previousProsthesis ?? null,
     assistiveDevice: data.assistiveDevice ?? "",
-    staticBalance, dynamicTasks, dynamicActivities,
+    staticBalance: parseBalanceRecord(data.staticBalance),
+    dynamicTasks: parseBalanceRecord(data.dynamicTasks),
+    dynamicActivities: parseBalanceRecord(data.dynamicActivities),
     historyOfFalls: data.historyOfFalls ?? null,
     nearFalls: data.nearFalls ?? null,
     fearOfFalling: data.fearOfFalling ?? null,
     fallRiskLevel: data.fallRiskLevel ?? "",
     overallBalanceLevel: data.overallBalanceLevel ?? "",
     limitingFactors: data.limitingFactors ?? [],
-    exerciseProgram: (data.exerciseProgram?.length ? data.exerciseProgram : DEFAULT_EXERCISE_PROGRAM).map((e: any) => ({
+    exerciseProgram: parseExerciseProgram(data.exerciseProgram).map((e: any) => ({
       ...e,
       support: (() => {
         const s = (e.support ?? "").toLowerCase().trim();
@@ -1959,16 +1970,16 @@ function balanceFormToDto(form: BalanceForm) {
     assessmentDate: form.assessmentDate || undefined,
     previousProsthesis: form.previousProsthesis ?? undefined,
     assistiveDevice: form.assistiveDevice || undefined,
-    staticBalance: Object.entries(form.staticBalance).filter(([, v]) => v).map(([key, result]) => ({ key, result })),
-    dynamicTasks: Object.entries(form.dynamicTasks).filter(([, v]) => v).map(([key, result]) => ({ key, result })),
-    dynamicActivities: Object.entries(form.dynamicActivities).filter(([, v]) => v).map(([key, result]) => ({ key, result })),
+    staticBalance: Object.keys(form.staticBalance).length > 0 ? form.staticBalance : undefined,
+    dynamicTasks: Object.keys(form.dynamicTasks).length > 0 ? form.dynamicTasks : undefined,
+    dynamicActivities: Object.keys(form.dynamicActivities).length > 0 ? form.dynamicActivities : undefined,
     historyOfFalls: form.historyOfFalls ?? undefined,
     nearFalls: form.nearFalls ?? undefined,
     fearOfFalling: form.fearOfFalling ?? undefined,
     fallRiskLevel: form.fallRiskLevel || undefined,
     overallBalanceLevel: form.overallBalanceLevel || undefined,
     limitingFactors: form.limitingFactors.length ? form.limitingFactors : undefined,
-    exerciseProgram: form.exerciseProgram,
+    exerciseProgram: form.exerciseProgram.length > 0 ? Object.fromEntries(form.exerciseProgram.map((e, i) => [String(i), e])) : undefined,
     programProgression: form.programProgression.length ? form.programProgression : undefined,
     followUpWeeks: form.followUpWeeks ? Number(form.followUpWeeks) : undefined,
     expectedOutcomes: form.expectedOutcomes.length ? form.expectedOutcomes : undefined,
