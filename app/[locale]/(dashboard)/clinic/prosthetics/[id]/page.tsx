@@ -1748,7 +1748,10 @@ function GaitAnalysisCard({
                     <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— غير محدد —</SelectItem>
-                      {staffList.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                      {(role === "prosto"
+                        ? staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("الأطراف الصناعية")))
+                        : staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("العلاج الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
+                      ).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
