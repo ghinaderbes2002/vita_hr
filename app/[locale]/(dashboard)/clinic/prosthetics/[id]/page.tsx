@@ -367,7 +367,11 @@ function TreatmentProgramCard({
               <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">— غير محدد —</SelectItem>
-                {staffList.map((emp: any) => (
+                {staffList.filter((e: any) => {
+                  if (e.employmentStatus !== "ACTIVE") return false;
+                  const dep = e.department?.nameAr ?? "";
+                  return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية") || dep.includes("العلاج الفيزيائي") || dep.includes("الادارة الطبية") || dep.includes("الإدارة الطبية");
+                }).map((emp: any) => (
                   <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
                 ))}
               </SelectContent>
@@ -543,7 +547,11 @@ function TreatmentProgramsSection({
                 <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">— غير محدد —</SelectItem>
-                  {staffList.map((emp: any) => (
+                  {staffList.filter((e: any) => {
+                    if (e.employmentStatus !== "ACTIVE") return false;
+                    const dep = e.department?.nameAr ?? "";
+                    return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية") || dep.includes("العلاج الفيزيائي") || dep.includes("الادارة الطبية") || dep.includes("الإدارة الطبية");
+                  }).map((emp: any) => (
                     <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
                   ))}
                 </SelectContent>
@@ -777,7 +785,11 @@ function ReviewProgramCard({
               <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">— غير محدد —</SelectItem>
-                {staffList.map((emp: any) => (
+                {staffList.filter((e: any) => {
+                  if (e.employmentStatus !== "ACTIVE") return false;
+                  const dep = e.department?.nameAr ?? "";
+                  return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية") || dep.includes("العلاج الفيزيائي") || dep.includes("الادارة الطبية") || dep.includes("الإدارة الطبية");
+                }).map((emp: any) => (
                   <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
                 ))}
               </SelectContent>
@@ -899,7 +911,11 @@ function ReviewProgramsSection({
                 <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">— غير محدد —</SelectItem>
-                  {staffList.map((emp: any) => (
+                  {staffList.filter((e: any) => {
+                    if (e.employmentStatus !== "ACTIVE") return false;
+                    const dep = e.department?.nameAr ?? "";
+                    return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية") || dep.includes("العلاج الفيزيائي") || dep.includes("الادارة الطبية") || dep.includes("الإدارة الطبية");
+                  }).map((emp: any) => (
                     <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
                   ))}
                 </SelectContent>
@@ -1861,17 +1877,23 @@ const EXPECTED_OUTCOME_OPTS = [
   { value: "REDUCED_FALL_RISK", label: "تقليل خطر السقوط" },
   { value: "IMPROVED_CONFIDENCE", label: "زيادة الثقة" },
 ];
+const SUPPORT_OPTS = [
+  { value: "NONE", label: "لا يوجد" },
+  { value: "BARS", label: "قضبان" },
+  { value: "SUPPORT", label: "بدعم" },
+  { value: "SUPERVISED", label: "إشراف" },
+];
 const DEFAULT_EXERCISE_PROGRAM = [
-  { exercise: "نقل الوزن", position: "وقوف", dosage: "10-15 reps", support: "None support", notes: "", selected: false },
-  { exercise: "توازن وقوف ثابت", position: "وقوف", dosage: "30-60 sec", support: "None support", notes: "", selected: false },
-  { exercise: "الوقوف على الطرف السليم", position: "وقوف", dosage: "20-30 sec", support: "Yes No", notes: "", selected: false },
-  { exercise: "تمارين الوصول", position: "وقوف", dosage: "10 reps", support: "None support", notes: "", selected: false },
-  { exercise: "نقر القدم (أمام/جانب)", position: "وقوف", dosage: "10 reps", support: "Bars", notes: "", selected: false },
-  { exercise: "قرفصاء خفيفة", position: "وقوف", dosage: "10 reps", support: "Yes No", notes: "", selected: false },
-  { exercise: "المشي بالمكان", position: "وقوف", dosage: "30-60 sec", support: "Support", notes: "", selected: false },
-  { exercise: "تجاوز عوائق", position: "مشي", dosage: "5-10 trials", support: "Supervised", notes: "", selected: false },
-  { exercise: "تدريب الجلوس والوقوف", position: "كرسي", dosage: "10 reps", support: "Yes No", notes: "", selected: false },
-  { exercise: "وقوف متعاقب (إن كان آمناً)", position: "وقوف", dosage: "20-30 sec", support: "Support", notes: "", selected: false },
+  { exercise: "نقل الوزن", position: "وقوف", dosage: "10-15 reps", support: "NONE", notes: "", selected: false },
+  { exercise: "توازن وقوف ثابت", position: "وقوف", dosage: "30-60 sec", support: "NONE", notes: "", selected: false },
+  { exercise: "الوقوف على الطرف السليم", position: "وقوف", dosage: "20-30 sec", support: "NONE", notes: "", selected: false },
+  { exercise: "تمارين الوصول", position: "وقوف", dosage: "10 reps", support: "NONE", notes: "", selected: false },
+  { exercise: "نقر القدم (أمام/جانب)", position: "وقوف", dosage: "10 reps", support: "BARS", notes: "", selected: false },
+  { exercise: "قرفصاء خفيفة", position: "وقوف", dosage: "10 reps", support: "NONE", notes: "", selected: false },
+  { exercise: "المشي بالمكان", position: "وقوف", dosage: "30-60 sec", support: "SUPPORT", notes: "", selected: false },
+  { exercise: "تجاوز عوائق", position: "مشي", dosage: "5-10 trials", support: "SUPERVISED", notes: "", selected: false },
+  { exercise: "تدريب الجلوس والوقوف", position: "كرسي", dosage: "10 reps", support: "NONE", notes: "", selected: false },
+  { exercise: "وقوف متعاقب (إن كان آمناً)", position: "وقوف", dosage: "20-30 sec", support: "SUPPORT", notes: "", selected: false },
 ];
 
 const INITIAL_BALANCE_FORM = {
@@ -2479,8 +2501,21 @@ function BalanceAssessmentCard({
                   <td className="py-2.5 px-3 text-sm text-muted-foreground">
                     {ex.dosage}
                   </td>
-                  <td className="py-2.5 px-3 text-sm text-muted-foreground">
-                    {ex.support}
+                  <td className="py-2 px-3">
+                    <div className="flex flex-col gap-1">
+                      {SUPPORT_OPTS.map((o) => (
+                        <label key={o.value} className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={ex.support === o.value}
+                            onChange={() => {
+                              const ep = [...form.exerciseProgram];
+                              ep[i] = { ...ep[i], support: ex.support === o.value ? "" : o.value };
+                              setForm((f) => ({ ...f, exerciseProgram: ep }));
+                            }}
+                            className="w-[13px] h-[13px] accent-orange-500 rounded-sm" />
+                          <span className="text-xs">{o.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </td>
                   <td className="py-1.5 px-2">
                     <Input
@@ -2613,7 +2648,10 @@ function BalanceAssessmentCard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— غير محدد —</SelectItem>
-                    {staffList.map((e: any) => (
+                    {(role === "physio"
+                      ? staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
+                      : staffList
+                    ).map((e: any) => (
                       <SelectItem key={e.id} value={e.id}>
                         {e.firstNameAr} {e.lastNameAr}
                       </SelectItem>
@@ -3209,7 +3247,15 @@ export default function ProstheticsCasePage() {
     const hpp = intakeForm.hasPreviousProsthesis ?? c.hasPreviousProsthesis ?? false;
     const hrs = intakeForm.hasRevisionSurgery ?? c.hasRevisionSurgery ?? false;
     return {
-      amputationType: (intakeForm.amputationType || c.amputationType || undefined) as AmputationType | undefined,
+      amputationType: (() => {
+        const raw = intakeForm.amputationType || c.amputationType;
+        if (!raw) return undefined;
+        const s = String(raw).toUpperCase();
+        if (s === "BOTH") return ["UPPER", "LOWER"] as any;
+        if (s === "UPPER" || s === "LOWER") return [s] as any;
+        if (Array.isArray(raw)) return raw as any;
+        return undefined;
+      })(),
       amputationSide: (intakeForm.amputationSide || c.amputationSide || undefined) as AmputationSide | undefined,
       amputationLevel: intakeForm.amputationLevel || c.amputationLevel || undefined,
       amputationDate: intakeForm.amputationDate || (c.dateOfAmputation ? c.dateOfAmputation.slice(0, 10) : undefined),
@@ -4104,7 +4150,12 @@ export default function ProstheticsCasePage() {
                       {isOpen && (
                         <div className="absolute z-50 top-full mt-1 w-full min-w-48 rounded-md border bg-background shadow-lg overflow-hidden">
                           <div className="max-h-52 overflow-y-auto p-1">
-                            {staffList.map((emp) => (
+                            {(key === "physiotherapistIds"
+                              ? staffList.filter((e) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
+                              : key === "prosthetistIds"
+                              ? staffList.filter((e) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الأطراف الصناعية") || e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("طب الأقدام") || e.department?.nameAr?.includes("طب الاقدام")))
+                              : staffList
+                            ).map((emp) => (
                               <div
                                 key={emp.id}
                                 className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-muted"
@@ -5904,7 +5955,7 @@ export default function ProstheticsCasePage() {
                     <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— غير محدد —</SelectItem>
-                      {staffList.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                      {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("الأطراف الصناعية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -5914,7 +5965,7 @@ export default function ProstheticsCasePage() {
                     <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— غير محدد —</SelectItem>
-                      {staffList.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                      {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("العلاج الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -6112,7 +6163,7 @@ export default function ProstheticsCasePage() {
                   <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— غير محدد —</SelectItem>
-                    {staffList.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                    {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الادارة التنفيذية") || e.department?.nameAr?.includes("الإدارة التنفيذية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
