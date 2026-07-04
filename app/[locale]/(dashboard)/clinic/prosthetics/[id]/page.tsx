@@ -1930,7 +1930,16 @@ function balanceFormFromData(data: any): BalanceForm {
     fallRiskLevel: data.fallRiskLevel ?? "",
     overallBalanceLevel: data.overallBalanceLevel ?? "",
     limitingFactors: data.limitingFactors ?? [],
-    exerciseProgram: data.exerciseProgram?.length ? data.exerciseProgram : DEFAULT_EXERCISE_PROGRAM.map((e) => ({ ...e })),
+    exerciseProgram: (data.exerciseProgram?.length ? data.exerciseProgram : DEFAULT_EXERCISE_PROGRAM).map((e: any) => ({
+      ...e,
+      support: (() => {
+        const s = (e.support ?? "").toLowerCase().trim();
+        if (s === "bars") return "BARS";
+        if (s === "support") return "SUPPORT";
+        if (s === "supervised") return "SUPERVISED";
+        return "NONE";
+      })(),
+    })),
     programProgression: data.programProgression ?? [],
     followUpWeeks: data.followUpWeeks?.toString() ?? "",
     expectedOutcomes: data.expectedOutcomes ?? [],
