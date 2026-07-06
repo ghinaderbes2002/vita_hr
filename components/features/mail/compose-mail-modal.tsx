@@ -261,15 +261,15 @@ export function ComposeMailModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-4 w-4" />
             {forwardMessageId ? t("forwardMessageTitle") : replyAllMessageId ? t("replyAllMessageTitle") : replyToMessageId ? t("replyMessageTitle") : t("newMessageTitle")}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 pt-1">
+        <div className="space-y-4 pt-1 overflow-y-auto flex-1 px-1">
           {/* Recipients — hidden for reply-all (backend builds them automatically) */}
           {!replyAllMessageId && (
             <>
@@ -424,7 +424,7 @@ export function ComposeMailModal({
                   ref={bodyRef}
                   contentEditable
                   suppressContentEditableWarning
-                  className="min-h-[80px] rounded-md border px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto empty:before:content-['اكتب_رسالتك_هنا...'] empty:before:text-muted-foreground"
+                  className="min-h-[80px] max-h-60 rounded-md border px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto empty:before:content-['اكتب_رسالتك_هنا...'] empty:before:text-muted-foreground"
                   dir="auto"
                 />
                 {/* Forwarded message (read-only) */}
@@ -458,7 +458,7 @@ export function ComposeMailModal({
                   ref={bodyRef}
                   contentEditable
                   suppressContentEditableWarning
-                  className="min-h-[168px] rounded-t-none border border-t-0 px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto"
+                  className="min-h-[168px] max-h-60 rounded-t-none border border-t-0 px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto"
                   dir="auto"
                 />
               </>

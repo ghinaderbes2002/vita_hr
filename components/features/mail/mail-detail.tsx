@@ -547,14 +547,14 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
 
       {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-4 w-4" />
               {t("editMessageTitle")}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 overflow-y-auto flex-1 px-1">
             <div className="space-y-1.5">
               <Label>{t("subject")}</Label>
               <Input value={editSubject} onChange={(e) => setEditSubject(e.target.value)} />
