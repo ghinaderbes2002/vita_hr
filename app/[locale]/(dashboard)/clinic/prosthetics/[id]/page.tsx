@@ -3089,7 +3089,6 @@ export default function ProstheticsCasePage() {
   const [physioOpinion, setPhysioOpinion] = useState("");
   const [doctorOpinion, setDoctorOpinion] = useState("");
   const [decisionForm, setDecisionForm] = useState({ finalSummary: "" });
-  const [prosthesisTypeForm, setProsthesisTypeForm] = useState("" as ProstheticType | "");
   const [committeeSuitForm, setCommitteeSuitForm] = useState({
     prosthesisSuitable: null as boolean | null,
     proposedProsthesisType: "",
@@ -3554,7 +3553,6 @@ export default function ProstheticsCasePage() {
 
   const handleSubmitDecision = async () => {
     const suitDto: Record<string, any> = {};
-    if (prosthesisTypeForm) suitDto.prosthesisType = prosthesisTypeForm as ProstheticType;
     if (committeeSuitForm.prosthesisSuitable !== null) {
       suitDto.prosthesisSuitable = committeeSuitForm.prosthesisSuitable;
       suitDto.proposedProsthesisType = committeeSuitForm.prosthesisSuitable
