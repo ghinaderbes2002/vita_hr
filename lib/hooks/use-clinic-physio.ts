@@ -348,6 +348,15 @@ export function useDownloadPhysioPdf() {
   });
 }
 
+export function useCaseEmergencyAlerts(caseId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["physio-emergency-case", caseId],
+    queryFn: () => clinicPhysioApi.getCaseAlerts(caseId),
+    staleTime: 30_000,
+    enabled: enabled && !!caseId,
+  });
+}
+
 export function useMyEmergencyAlerts(enabled = true) {
   return useQuery({
     queryKey: ["physio-emergency-my"],
@@ -370,8 +379,8 @@ export function useSendEmergencyAlert() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ caseId, note }: { caseId: string; note?: string }) => clinicPhysioApi.sendEmergencyAlert(caseId, note),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["physio-emergency-my"] });
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["physio-emergency-case", caseId] });
       toast.success("تم إرسال التنبيه الطارئ");
     },
     onError: () => toast.error("فشل إرسال التنبيه"),

@@ -65,7 +65,7 @@ import {
   useDownloadFinalSummaryPdf,
   usePhysioTimeline,
   useSendEmergencyAlert,
-  useMyEmergencyAlerts,
+  useCaseEmergencyAlerts,
   useIncomingEmergencyAlerts,
   useRespondToAlert,
 } from "@/lib/hooks/use-clinic-physio";
@@ -240,7 +240,7 @@ export default function PhysioCasePage() {
   const { data: caseData, isLoading } = usePhysioCase(id);
   const { data: sessions = [] } = usePhysioSessions(id);
   const { data: timeline = [] } = usePhysioTimeline(id);
-  const { data: myAlerts = [] } = useMyEmergencyAlerts(canSendAlert);
+  const { data: myAlerts = [] } = useCaseEmergencyAlerts(id, canSendAlert);
   const { data: incomingAlerts = [] } = useIncomingEmergencyAlerts(!canSendAlert);
   const sendAlert = useSendEmergencyAlert();
   const respondAlert = useRespondToAlert();

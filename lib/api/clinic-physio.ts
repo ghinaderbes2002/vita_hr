@@ -622,6 +622,12 @@ export const clinicPhysioApi = {
     return Array.isArray(d) ? d : d?.items ?? [];
   },
 
+  getCaseAlerts: async (caseId: string): Promise<EmergencyAlert[]> => {
+    const { data } = await apiClient.get(`/physio/emergency/case/${caseId}`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
   getAlertById: async (alertId: string): Promise<EmergencyAlert> => {
     const { data } = await apiClient.get(`/physio/emergency/${alertId}`);
     return data?.data ?? data;
