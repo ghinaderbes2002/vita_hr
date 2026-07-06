@@ -100,12 +100,12 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="sm:max-w-lg" dir="rtl">
+      <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]" dir="rtl">
         <DialogHeader>
           <DialogTitle>نقل / تحويل الموظف</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
+        <div className="space-y-4 py-1 overflow-y-auto flex-1 px-1">
           {/* Department */}
           <div className="space-y-1.5">
             <Label>القسم الجديد</Label>
