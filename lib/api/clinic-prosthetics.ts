@@ -90,6 +90,8 @@ export interface ProstheticsCase {
   lowerAssessment?: AssessmentResult[];
   prosthesisCompleted?: boolean | null;
   prosthesisType?: ProstheticType | null;
+  prosthesisSuitable?: boolean | null;
+  proposedProsthesisType?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -130,6 +132,8 @@ export interface CreateProstheticsCaseDto {
   clinicalHistory?: string;
   prosthesisType?: ProstheticType;
   prosthesisCompleted?: boolean;
+  prosthesisSuitable?: boolean;
+  proposedProsthesisType?: string | null;
   notes?: string;
 }
 
@@ -194,12 +198,11 @@ export interface AssessmentLowerDto {
   canBalanceOneSide?: boolean;
   jointsRangeOfMotion?: JointsROMVal;
   activityLevel?: KLevel;
-  romData?: {
-    ankle?: { dorsiflexion?: boolean; plantarFlexion?: boolean; inversion?: boolean; eversion?: boolean };
-    knee?: { flexion?: boolean; extension?: boolean };
-    hip?: { flexion?: boolean; extension?: boolean; abduction?: boolean; adduction?: boolean; internalRotation?: boolean };
-  };
+  romData?: Record<string, { selected: boolean; grade?: string }>;
   muscleMotionNotes?: string;
+  neuromaPresent?: boolean;
+  usesProstheticLimb?: boolean;
+  prostheticLimbType?: string;
   examinerProsthetistIds?: string[];
   examinerPhysioIds?: string[];
   examinerSupervisorIds?: string[];

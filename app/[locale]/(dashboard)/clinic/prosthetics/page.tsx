@@ -132,7 +132,11 @@ export default function ProstheticsListPage() {
                   <TableCell><CaseStatusBadge status={c.status} /></TableCell>
                   <TableCell>
                     {c.amputationType
-                      ? <Badge variant="secondary" className="text-xs">{tCommon(`amputationType.${c.amputationType}`)}</Badge>
+                      ? <Badge variant="secondary" className="text-xs">
+                          {(Array.isArray(c.amputationType) ? c.amputationType : [c.amputationType])
+                            .map((t: string) => tCommon(`amputationType.${t}`))
+                            .join(" + ")}
+                        </Badge>
                       : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-sm">

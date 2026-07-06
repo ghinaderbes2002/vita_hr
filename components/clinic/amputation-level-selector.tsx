@@ -20,9 +20,8 @@ const LOWER_LEVELS = [
 
 interface AmputationLevelSelectorProps {
   type?: string | null;
-  value?: string | null;
-  onChange?: (level: string) => void;
-  onTypeChange?: (type: "UPPER" | "LOWER") => void;
+  values?: string[];
+  onChange?: (levels: string[]) => void;
   disabled?: boolean;
 }
 
@@ -56,52 +55,54 @@ function CheckItem({
   );
 }
 
-export function AmputationLevelSelector({ type, value, onChange, onTypeChange, disabled }: AmputationLevelSelectorProps) {
-  const upperVals = new Set(UPPER_LEVELS.map((l) => l.value));
-  const lowerVals = new Set(LOWER_LEVELS.map((l) => l.value));
+export function AmputationLevelSelector({ type, values = [], onChange, disabled }: AmputationLevelSelectorProps) {
+  const t = (type ?? "").toUpperCase();
+  const showUpper = !t || t === "UPPER" || t === "BOTH";
+  const showLower = !t || t === "LOWER" || t === "BOTH";
 
-  const handleSelect = (level: string, sectionType: "UPPER" | "LOWER") => {
-    onChange?.(level);
-    if (onTypeChange && type?.toUpperCase() !== sectionType) {
-      onTypeChange(sectionType);
-    }
+  const toggle = (level: string) => {
+    const next = values.includes(level)
+      ? values.filter((v) => v !== level)
+      : [...values, level];
+    onChange?.(next);
   };
 
   return (
     <div className="space-y-3">
-      {/* طرف علوي */}
-      <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-muted-foreground">طرف علوي</p>
-        <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-6">
-          {UPPER_LEVELS.map((l) => (
-            <CheckItem
-              key={l.value}
-              labelAr={l.labelAr}
-              labelCode={l.labelCode}
-              selected={value === l.value}
-              onClick={() => handleSelect(l.value, "UPPER")}
-              disabled={disabled}
-            />
-          ))}
+      {showUpper && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground">طرف علوي</p>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-6">
+            {UPPER_LEVELS.map((l) => (
+              <CheckItem
+                key={l.value}
+                labelAr={l.labelAr}
+                labelCode={l.labelCode}
+                selected={values.includes(l.value)}
+                onClick={() => toggle(l.value)}
+                disabled={disabled}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* طرف سفلي */}
-      <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-muted-foreground">طرف سفلي</p>
-        <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-6">
-          {LOWER_LEVELS.map((l) => (
-            <CheckItem
-              key={l.value}
-              labelAr={l.labelAr}
-              labelCode={l.labelCode}
-              selected={value === l.value}
-              onClick={() => handleSelect(l.value, "LOWER")}
-              disabled={disabled}
-            />
-          ))}
+      )}
+      {showLower && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground">طرف سفلي</p>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-6">
+            {LOWER_LEVELS.map((l) => (
+              <CheckItem
+                key={l.value}
+                labelAr={l.labelAr}
+                labelCode={l.labelCode}
+                selected={values.includes(l.value)}
+                onClick={() => toggle(l.value)}
+                disabled={disabled}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

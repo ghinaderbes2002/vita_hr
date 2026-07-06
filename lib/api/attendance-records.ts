@@ -196,7 +196,7 @@ return response.data;
     return Array.isArray(d) ? d : [];
   },
 
-  updateInterpretation: async (logId: string, data: { interpretedAs: InterpretedType }): Promise<RawStamp> => {
+  updateInterpretation: async (logId: string, data: { interpretedAs: InterpretedType; deviceId?: string }): Promise<RawStamp> => {
     const response = await apiClient.patch(`/attendance-records/raw-stamps/${logId}/interpretation`, data);
     return response.data?.data ?? response.data;
   },
@@ -215,7 +215,7 @@ return response.data;
     return response.data?.data ?? response.data;
   },
 
-  addManualStamp: async (recordId: string, data: { timestamp: string; interpretedAs: InterpretedType }): Promise<RawStamp> => {
+  addManualStamp: async (recordId: string, data: { timestamp: string; interpretedAs: InterpretedType; deviceId?: string }): Promise<RawStamp> => {
     const response = await apiClient.post(`/attendance-records/${recordId}/add-manual-stamp`, data);
     return response.data?.data ?? response.data;
   },

@@ -137,10 +137,11 @@ export function useRawStamps(recordId: string) {
 export function useUpdateStampInterpretation(recordId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ logId, interpretedAs }: { logId: string; interpretedAs: InterpretedType }) =>
-      attendanceRecordsApi.updateInterpretation(logId, { interpretedAs }),
+    mutationFn: ({ logId, interpretedAs, deviceId }: { logId: string; interpretedAs: InterpretedType; deviceId?: string }) =>
+      attendanceRecordsApi.updateInterpretation(logId, { interpretedAs, ...(deviceId ? { deviceId } : {}) }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId] });
+      queryClient.refetchQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
       toast.success("تم تحديث التفسير");
     },
     onError: () => toast.error("فشل تحديث التفسير"),
@@ -152,7 +153,8 @@ export function useDeleteStamp(recordId: string) {
   return useMutation({
     mutationFn: (logId: string) => attendanceRecordsApi.deleteStamp(logId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId] });
+      queryClient.refetchQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
       toast.success("تم حذف البصمة");
     },
     onError: () => toast.error("فشل حذف البصمة"),
@@ -188,10 +190,11 @@ export function useApproveRecord(recordId: string) {
 export function useAddManualStamp(recordId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { timestamp: string; interpretedAs: InterpretedType }) =>
+    mutationFn: (data: { timestamp: string; interpretedAs: InterpretedType; deviceId?: string }) =>
       attendanceRecordsApi.addManualStamp(recordId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-records", recordId] });
+      queryClient.refetchQueries({ queryKey: ["attendance-records", recordId, "raw-stamps"] });
       toast.success("تمت إضافة البصمة اليدوية");
     },
     onError: () => toast.error("فشلت إضافة البصمة"),

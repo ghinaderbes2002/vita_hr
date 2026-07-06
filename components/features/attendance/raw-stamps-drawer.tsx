@@ -73,10 +73,16 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
 
   const [editStamp, setEditStamp]       = useState<RawStamp | null>(null);
   const [editInterp, setEditInterp]     = useState<InterpretedType>("CLOCK_IN");
+  const [editDeviceId, setEditDeviceId] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<RawStamp | null>(null);
   const [addOpen, setAddOpen]           = useState(false);
   const [newTimestamp, setNewTimestamp] = useState("");
   const [newInterp, setNewInterp]       = useState<InterpretedType>("CLOCK_IN");
+  const [newDeviceId, setNewDeviceId]   = useState("");
+  const activeDevices: BiometricDevice[] = useMemo(
+    () => (Array.isArray(devicesData) ? (devicesData as BiometricDevice[]).filter((d) => d.isActive) : []),
+    [devicesData]
+  );
 
   const punchStatus = (record as any)?.punchSequenceStatus ?? "NEEDS_REVIEW";
   const statusCfg   = PUNCH_STATUS_CFG[punchStatus] ?? PUNCH_STATUS_CFG.NEEDS_REVIEW;
@@ -88,8 +94,9 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
 
   const handleEditSave = async () => {
     if (!editStamp) return;
-    await updateInterp.mutateAsync({ logId: editStamp.id, interpretedAs: editInterp });
+    await updateInterp.mutateAsync({ logId: editStamp.id, interpretedAs: editInterp, ...(editDeviceId ? { deviceId: editDeviceId } : {}) });
     setEditStamp(null);
+    setEditDeviceId("");
   };
 
   const handleDelete = async () => {
@@ -100,10 +107,15 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
 
   const handleAddManual = async () => {
     if (!newTimestamp) return;
-    await addManual.mutateAsync({ timestamp: new Date(newTimestamp).toISOString(), interpretedAs: newInterp });
+    await addManual.mutateAsync({
+      timestamp: new Date(newTimestamp).toISOString(),
+      interpretedAs: newInterp,
+      ...(newDeviceId ? { deviceId: newDeviceId } : {}),
+    });
     setAddOpen(false);
     setNewTimestamp("");
     setNewInterp("CLOCK_IN");
+    setNewDeviceId("");
   };
 
   const isLoading = recordLoading || stampsLoading;
@@ -190,7 +202,7 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
                               size="icon"
                               variant="ghost"
                               className="h-7 w-7"
-                              onClick={() => { setEditStamp(stamp); setEditInterp(stamp.interpretedAs ?? "CLOCK_IN"); }}
+                              onClick={() => { setEditStamp(stamp); setEditInterp(stamp.interpretedAs ?? "CLOCK_IN"); setEditDeviceId(""); }}
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -283,6 +295,18 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>الجهاز <span className="text-muted-foreground text-xs">(اختياري)</span></Label>
+              <Select value={editDeviceId || "__auto__"} onValueChange={(v) => setEditDeviceId(v === "__auto__" ? "" : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__auto__">— بدون تغيير —</SelectItem>
+                  {activeDevices.map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>{d.nameAr ?? d.name ?? d.serialNumber}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditStamp(null)}>إلغاء</Button>
@@ -329,6 +353,18 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
                 <SelectContent>
                   {(Object.keys(INTERPRETATION_LABELS) as InterpretedType[]).map((k) => (
                     <SelectItem key={k} value={k}>{INTERPRETATION_LABELS[k]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>الجهاز <span className="text-muted-foreground text-xs">(اختياري)</span></Label>
+              <Select value={newDeviceId || "__auto__"} onValueChange={(v) => setNewDeviceId(v === "__auto__" ? "" : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__auto__">— تلقائي (أول جهاز نشط) —</SelectItem>
+                  {activeDevices.map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>{d.nameAr ?? d.name ?? d.serialNumber}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

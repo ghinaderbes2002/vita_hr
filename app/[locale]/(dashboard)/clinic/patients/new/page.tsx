@@ -6,8 +6,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ChevronRight, ChevronLeft, Check, AlertCircle, Upload, X, FileText, Loader2, Plus } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, AlertCircle, Upload, X, FileText, Loader2, Plus, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,6 +98,7 @@ export default function NewPatientPage() {
   const [pendingDocs, setPendingDocs] = useState<{ id: string; file: File; type: DocumentType }[]>([]);
   const [docType, setDocType] = useState<DocumentType>("OTHER");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const createPatient = useCreateClinicPatient();
   const { data: rawCities = [] } = useClinicCities();
@@ -506,15 +508,38 @@ export default function NewPatientPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button
-                    type="button"
-                    className="gap-2 h-9"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Plus className="h-4 w-4" />
-                    رفع ملف
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" className="gap-2 h-9">
+                        <Plus className="h-4 w-4" />
+                        رفع ملف
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => cameraInputRef.current?.click()}>
+                        <Camera className="h-4 w-4 ml-2" />
+                        التقاط من الكاميرا
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                        <Plus className="h-4 w-4 ml-2" />
+                        اختيار من الملفات
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setPendingDocs((prev) => [...prev, { id: `${Date.now()}-${Math.random()}`, file, type: docType }]);
+                    e.target.value = "";
+                  }}
+                />
                 <input
                   ref={fileInputRef}
                   type="file"
