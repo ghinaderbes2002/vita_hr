@@ -90,11 +90,11 @@ const S = StyleSheet.create({
   thSerial: { flex: 2,   fontSize: 8, color: "#ffffff", fontWeight: "bold" },
   thDate:   { flex: 1.5, fontSize: 8, color: "#ffffff", fontWeight: "bold", textAlign: "center" },
   thStatus: { flex: 1.5, fontSize: 8, color: "#ffffff", fontWeight: "bold", textAlign: "center" },
-  tdNum:    { width: 24, fontSize: 8.5, color: MUTED,  textAlign: "center" },
+  tdNum:    { width: 24, fontSize: 8.5, color: MUTED,  textAlign: "center", fontFamily: "Courier" as any },
   tdName:   { flex: 3,   fontSize: 8.5, color: TEXT },
   tdCat:    { flex: 1.5, fontSize: 8.5, color: MUTED },
   tdSerial: { flex: 2,   fontSize: 8,   color: MUTED, fontFamily: "Courier" as any },
-  tdDate:   { flex: 1.5, fontSize: 8.5, color: MUTED, textAlign: "center" },
+  tdDate:   { flex: 1.5, fontSize: 8.5, color: MUTED, textAlign: "center", direction: "ltr" as any },
   tdStatus: { flex: 1.5, fontSize: 8.5, textAlign: "center" },
   statusWith:     { color: "#0f6624" },
   statusReturned: { color: "#6b7280" },
@@ -164,13 +164,7 @@ function ar(s: string): string {
     if (!f) { out.push(cs[i]); continue; }
     const p = base(i, -1);
     const n = base(i,  1);
-    if (c === 0x0644 && _LA[n]) {
-      const pj = !!(p && _AF[p] && !_NJL.has(p));
-      out.push(_LA[n][pj ? 1 : 0]);
-      i++;
-      while (i + 1 < cs.length && _CMB.has(cs[i + 1].codePointAt(0) ?? 0)) out.push(cs[++i]);
-      continue;
-    }
+    // lam-alef ligature disabled — individual shaped forms render more reliably
     const pj = !!(p && _AF[p] && !_NJL.has(p));
     const nj = !_NJL.has(c) && !!(n && _AF[n]);
     out.push(f[pj && nj ? 3 : pj ? 1 : nj ? 2 : 0] || cs[i]);
@@ -195,8 +189,49 @@ const STATUS_STYLE: Record<string, any> = {
 
 function fmtDate(d?: string | null) {
   if (!d) return "—";
-  try { return new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "2-digit", day: "2-digit" }); }
-  catch { return d.slice(0, 10); }
+  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : d.slice(0, 10);
+}
+
+const hasAr = (s: string) => /[؀-ۿ]/.test(s);
+
+// Split mixed Arabic/Latin text into script runs so each run can be laid out
+// in its own inline Text — @react-pdf/renderer has no bidi engine, so a single
+// Text node containing both scripts renders with overlapping glyphs.
+function splitRuns(s: string): { text: string; ar: boolean }[] {
+  const runs: { text: string; ar: boolean }[] = [];
+  let cur = "";
+  let curAr = false;
+  for (const ch of s) {
+    const isAr = /[؀-ۿ]/.test(ch);
+    if (cur && !/\s/.test(ch) && isAr !== curAr) {
+      runs.push({ text: cur, ar: curAr });
+      cur = ch;
+      curAr = isAr;
+    } else {
+      if (!cur) curAr = isAr;
+      cur += ch;
+    }
+  }
+  if (cur) runs.push({ text: cur, ar: curAr });
+  return runs;
+}
+
+function MixedText({ text, style }: { text: string; style?: any }) {
+  if (!text) return null;
+  if (!hasAr(text)) return <Text style={[style, { direction: "ltr" as any }]}>{text}</Text>;
+  const runs = splitRuns(text);
+  if (runs.length <= 1) return <Text style={style}>{ar(text)}</Text>;
+  const { flex, ...runStyle } = (Array.isArray(style) ? Object.assign({}, ...style) : style) ?? {};
+  return (
+    <View style={{ flex, flexDirection: "row-reverse", flexWrap: "wrap" }}>
+      {runs.map((r, idx) => (
+        <Text key={idx} style={[runStyle, !r.ar && { direction: "ltr" as any }]}>
+          {r.ar ? ar(r.text) : r.text}
+        </Text>
+      ))}
+    </View>
+  );
 }
 
 // ── PDF Document ──────────────────────────────────────────────────────────────
@@ -266,9 +301,9 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
         {data.custodies.map((c, i) => (
           <View key={c.id} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]} wrap={false}>
             <Text style={S.tdNum}>{i + 1}</Text>
-            <View style={{ flex: 3 }}>
-              <Text style={S.tdName}>{ar(c.name)}</Text>
-              {c.description && <Text style={{ fontSize: 7.5, color: MUTED }}>{ar(c.description)}</Text>}
+            <View style={{ flex: 3, flexDirection: "column" }}>
+              <MixedText style={S.tdName} text={c.name} />
+              {c.description && <MixedText style={{ fontSize: 7.5, color: MUTED }} text={c.description} />}
             </View>
             <Text style={S.tdCat}>{ar(CAT_LABEL[c.category] ?? c.category)}</Text>
             <Text style={S.tdSerial}>{c.serialNumber ?? "—"}</Text>

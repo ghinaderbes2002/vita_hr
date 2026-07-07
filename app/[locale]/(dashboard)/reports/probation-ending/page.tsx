@@ -106,18 +106,19 @@ export default function ProbationEndingPage() {
           ) : (
             <div className="divide-y">
               {/* Header */}
-              <div className="grid grid-cols-7 gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/40">
+              <div className="grid grid-cols-8 gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/40">
                 <span>الرقم الوظيفي</span>
                 <span className="col-span-2">الاسم</span>
                 <span>القسم</span>
                 <span>تاريخ التوظيف</span>
                 <span>تاريخ الانتهاء</span>
                 <span>الأيام المتبقية</span>
+                <span>حالة التقييم</span>
               </div>
               {items.map((item: any) => (
                 <div
                   key={item.id}
-                  className={`grid grid-cols-7 gap-2 px-4 py-3 items-center border-r-4 ${rowColor(item.daysRemaining)}`}
+                  className={`grid grid-cols-8 gap-2 px-4 py-3 items-center border-r-4 ${rowColor(item.daysRemaining)}`}
                 >
                   <span className="text-xs font-mono text-muted-foreground">{item.employeeNumber}</span>
                   <div className="col-span-2 flex items-center gap-2">
@@ -142,6 +143,11 @@ export default function ProbationEndingPage() {
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Button>
                   </div>
+                  {item.hasEvaluation ? (
+                    <Badge variant="outline" className="border-green-300 text-green-700 w-fit">قيد التقييم</Badge>
+                  ) : (
+                    <Badge variant="outline" className="border-red-300 text-red-700 w-fit">بحاجة لتقييم</Badge>
+                  )}
                 </div>
               ))}
             </div>

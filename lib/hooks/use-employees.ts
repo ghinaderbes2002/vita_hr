@@ -130,6 +130,26 @@ export function useDeleteEmployee() {
   });
 }
 
+export function useExportEmployees() {
+  return useMutation({
+    mutationFn: employeesApi.exportAll,
+    onSuccess: ({ blob, filename }) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير ملف الموظفين بنجاح");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشل تصدير ملف الموظفين");
+    },
+  });
+}
+
 export function useSubordinates(managerId: string) {
   return useQuery({
     queryKey: ["subordinates", managerId],
@@ -214,7 +234,20 @@ export function useTransferEmployee() {
       toast.success("تم تنفيذ النقل بنجاح");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.response?.data?.error?.message || "فشل تنفيذ النقل");
+      const code = error.response?.data?.error?.code;
+      if (code === "NO_CHANGES") {
+        toast.error("لا يوجد أي تغيير لتنفيذه");
+        return;
+      }
+      if (code === "SALARY_OUT_OF_RANGE") {
+        const d = error.response?.data?.error?.details?.[0];
+        const msg = d
+          ? `الراتب خارج نطاق الدرجة (الحد الأدنى: ${d.min}، الحد الأقصى: ${d.max})`
+          : error.response?.data?.error?.message;
+        toast.error(msg);
+        return;
+      }
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || "فشل تنفيذ النقل");
     },
   });
 }

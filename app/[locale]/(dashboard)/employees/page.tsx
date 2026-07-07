@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network, UserCheck, BellOff, PowerOff, Power } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Link, Filter, List, Network, UserCheck, BellOff, PowerOff, Power, FileSpreadsheet, Loader2 } from "lucide-react";
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users } from "lucide-react";
-import { useEmployees, useDeleteEmployee, useEmployeesByDepartment, useUpdateEmployee } from "@/lib/hooks/use-employees";
+import { useEmployees, useDeleteEmployee, useEmployeesByDepartment, useUpdateEmployee, useExportEmployees } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { LinkUserDialog } from "@/components/features/employees/link-user-dialog";
@@ -64,6 +64,7 @@ export default function EmployeesPage() {
   const { data: departmentsData } = useDepartments({ limit: 500 });
   const deleteEmployee = useDeleteEmployee();
   const updateEmployee = useUpdateEmployee();
+  const exportEmployees = useExportEmployees();
 
   const departments = (departmentsData as any)?.data?.items || [];
 
@@ -143,6 +144,17 @@ export default function EmployeesPage() {
               <UserCheck className="h-4 w-4" />
               المرؤوسين
             </Button>
+            <ActionGuard permission={PERMISSIONS.EMPLOYEES.EXPORT}>
+              <Button
+                variant="outline"
+                onClick={() => exportEmployees.mutate()}
+                disabled={exportEmployees.isPending}
+                className="flex items-center gap-1.5"
+              >
+                {exportEmployees.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+                تصدير Excel
+              </Button>
+            </ActionGuard>
             {/* View toggle — شجرة معلقة مؤقتاً */}
             <ActionGuard permission={PERMISSIONS.EMPLOYEES.CREATE}>
               <Button onClick={() => { setSelectedEmployee(null); setDialogOpen(true); }}>

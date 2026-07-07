@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { getTokenExpiryTime, isTokenExpiringSoon } from "@/lib/utils/jwt";
+import { AUTH_ERROR_CODES } from "@/lib/permissions/error-codes";
 
 // Fallback: Auto refresh token every 4 minutes (240000ms)
 // This is used when we can't determine the token expiry time
@@ -44,9 +46,19 @@ export function useAutoRefreshToken() {
         // the effect re-runs automatically when accessToken changes,
         // which schedules the next refresh — calling it here too would
         // create duplicate timers.
-      } catch (error) {
-        // Silent failure — user stays logged in with the current token.
+      } catch (error: any) {
+        // Silent failure by default — user stays logged in with the current token.
         // The axios interceptor will handle logout if an actual API call fails.
+        // Exception: account deactivation should force an immediate logout rather
+        // than waiting for the next real API call.
+        if (error?.response?.data?.code === AUTH_ERROR_CODES.ACCOUNT_INACTIVE) {
+          toast.error(error.response.data.message || "الحساب غير نشط. يرجى التواصل مع المسؤول.");
+          useAuthStore.getState().logout();
+          if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+            const currentLocale = window.location.pathname.split("/")[1] || "ar";
+            window.location.href = `/${currentLocale}/login`;
+          }
+        }
       } finally {
         isRefreshingRef.current = false;
       }

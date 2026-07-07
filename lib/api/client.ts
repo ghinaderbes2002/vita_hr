@@ -139,6 +139,10 @@ apiClient.interceptors.response.use(
 
         if (isDefinitiveAuthFailure) {
           console.error('❌ Token refresh failed — session expired, logging out');
+          const refreshErrorCode = refreshError?.response?.data?.code;
+          if (refreshErrorCode === AUTH_ERROR_CODES.ACCOUNT_INACTIVE) {
+            toast.error(refreshError?.response?.data?.message || "الحساب غير نشط. يرجى التواصل مع المسؤول.");
+          }
           useAuthStore.getState().logout();
           if (typeof window !== "undefined" && !window.location.pathname.includes('/login')) {
             const currentLocale = window.location.pathname.split('/')[1] || 'ar';

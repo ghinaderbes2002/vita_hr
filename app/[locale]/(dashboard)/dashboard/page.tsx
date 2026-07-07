@@ -369,6 +369,12 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
                   <div>
                     <p className="font-medium">{emp.fullNameAr ?? `${emp.firstNameAr ?? ""} ${emp.lastNameAr ?? ""}`.trim()}</p>
                     <p className="text-xs text-muted-foreground">{emp.employeeNumber}</p>
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] mt-1 ${emp.hasEvaluation ? "border-green-300 text-green-700" : "border-red-300 text-red-700"}`}
+                    >
+                      {emp.hasEvaluation ? "قيد التقييم" : "بحاجة لتقييم"}
+                    </Badge>
                   </div>
                   <div className="text-left">
                     <Badge variant="outline" className={`text-xs ${emp.daysRemaining <= 7 ? "border-red-300 text-red-700" : emp.daysRemaining <= 14 ? "border-amber-300 text-amber-700" : "border-blue-300 text-blue-700"}`}>

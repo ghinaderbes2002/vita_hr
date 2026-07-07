@@ -214,7 +214,7 @@ export default function CustodiesPage() {
                     className="cursor-pointer bg-muted/40 hover:bg-muted/60"
                     onClick={() => toggleEmployee(group.empKey)}
                   >
-                    <TableCell colSpan={3}>
+                    <TableCell colSpan={4}>
                       <div className="flex items-center gap-2 font-medium">
                         {isExpanded
                           ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -223,15 +223,18 @@ export default function CustodiesPage() {
                         {deptName && <span className="text-xs text-muted-foreground font-normal">— {deptName}</span>}
                       </div>
                     </TableCell>
-                    <TableCell colSpan={4}>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">{group.items.length} {t("custodies.custodyUnit")}</Badge>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{group.items.length} {t("custodies.custodyUnit")}</Badge>
+                    </TableCell>
+                    <TableCell />
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1">
                         {group.items.some((c) => c.status === "WITH_EMPLOYEE" || c.status === "RETURNED") && (
                           <ActionGuard permission={PERMISSIONS.CUSTODIES.UPDATE}>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                              className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setBulkTransferGroup({ custodies: group.items, empName });
@@ -245,7 +248,7 @@ export default function CustodiesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                          className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                           disabled={printingGroup === group.empKey}
                           onClick={(e) => {
                             e.stopPropagation();

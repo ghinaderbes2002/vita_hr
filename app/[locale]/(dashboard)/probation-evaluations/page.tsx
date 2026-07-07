@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, ClipboardCheck, Clock } from "lucide-react";
+import { Plus, ClipboardCheck, Clock, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +32,7 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ProbationStatus, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { CriteriaSettingsDialog } from "@/components/features/probation-evaluations/criteria-settings-dialog";
 
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                    "bg-gray-100 text-gray-600",
@@ -53,6 +54,7 @@ export default function ProbationEvaluationsPage() {
   const { user } = useAuthStore();
   const [tab, setTab] = useState<"all" | "pending">("pending");
   const [createOpen, setCreateOpen] = useState(false);
+  const [criteriaSettingsOpen, setCriteriaSettingsOpen] = useState(false);
   const [form, setForm] = useState<{
     employeeId: string;
     hireDate: string;
@@ -116,12 +118,20 @@ export default function ProbationEvaluationsPage() {
         description={t("description")}
         count={evals.length}
         actions={
-          <ActionGuard permission={PERMISSIONS.PROBATION.SUBMIT}>
-            <Button onClick={() => setCreateOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              {t("newEvaluation")}
-            </Button>
-          </ActionGuard>
+          <div className="flex items-center gap-2">
+            {(isAdmin() || hasPermission(PERMISSIONS.PROBATION.HR_REVIEW)) && (
+              <Button variant="outline" onClick={() => setCriteriaSettingsOpen(true)} className="gap-2">
+                <Settings className="h-4 w-4" />
+                إعدادات الأسئلة
+              </Button>
+            )}
+            <ActionGuard permission={PERMISSIONS.PROBATION.SUBMIT}>
+              <Button onClick={() => setCreateOpen(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                {t("newEvaluation")}
+              </Button>
+            </ActionGuard>
+          </div>
         }
       />
 
@@ -270,6 +280,8 @@ export default function ProbationEvaluationsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CriteriaSettingsDialog open={criteriaSettingsOpen} onOpenChange={setCriteriaSettingsOpen} />
     </div>
   );
 }

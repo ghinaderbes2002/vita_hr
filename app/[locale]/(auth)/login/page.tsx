@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { AUTH_ERROR_CODES } from "@/lib/permissions/error-codes";
 
 const schema = z.object({
   username: z.string().min(1, "مطلوب"),
@@ -47,11 +48,14 @@ export default function LoginPage() {
       router.push(`/${locale}/dashboard`);
     } catch (error: any) {
       let errorMessage = "خطأ في تسجيل الدخول";
+      const errorCode = error.response?.data?.code || error.response?.data?.error?.code;
 
       if (error.code === "ECONNABORTED" || error.code === "ERR_NETWORK") {
         errorMessage = "لا يمكن الاتصال بالخادم - تحقق من الاتصال بالإنترنت";
       } else if (error.response?.status === 429) {
         errorMessage = "محاولات كثيرة. انتظر دقيقة قبل المحاولة مرة أخرى.";
+      } else if (errorCode === AUTH_ERROR_CODES.ACCOUNT_INACTIVE) {
+        errorMessage = error.response?.data?.message || "الحساب غير نشط. يرجى التواصل مع المسؤول.";
       } else if (error.response?.status === 401) {
         errorMessage = "اسم المستخدم أو كلمة المرور غير صحيحة";
       } else if (error.response?.data?.message) {
