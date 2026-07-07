@@ -164,15 +164,15 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
             <Text style={[S.empCardNameValue, { textAlign: "center" }]}>{data.employeeName}</Text>
           </View>
           {data.employeeNumber && (
-            <View style={S.empCardItem}>
-              <Text style={S.empCardLabel}>الرقم الوظيفي</Text>
-              <Text style={S.empCardValue}>{data.employeeNumber}</Text>
+            <View style={[S.empCardItem, { alignItems: "center" }]}>
+              <Text style={[S.empCardLabel, { textAlign: "center" }]}>الرقم الوظيفي</Text>
+              <Text style={[S.empCardNameValue, { textAlign: "center" }]}>{data.employeeNumber}</Text>
             </View>
           )}
           {data.department && (
-            <View style={S.empCardItem}>
-              <Text style={S.empCardLabel}>القسم</Text>
-              <Text style={S.empCardValue}>{data.department}</Text>
+            <View style={[S.empCardItem, { alignItems: "center" }]}>
+              <Text style={[S.empCardLabel, { textAlign: "center" }]}>القسم</Text>
+              <Text style={[S.empCardNameValue, { textAlign: "center" }]}>{data.department}</Text>
             </View>
           )}
           <View style={S.empCardItem}>
