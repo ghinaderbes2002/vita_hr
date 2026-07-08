@@ -5621,7 +5621,7 @@ export default function ProstheticsCasePage() {
                   <input
                     type="checkbox"
                     checked={c.prosthesisCompleted ?? false}
-                    onChange={() => { if (!c.prosthesisCompleted) updateCase.mutateAsync({ id, dto: { prosthesisCompleted: true } }); }}
+                    onChange={() => updateCase.mutateAsync({ id, dto: { prosthesisCompleted: !c.prosthesisCompleted } })}
                     className="h-4 w-4 accent-primary"
                     disabled={updateCase.isPending}
                   />

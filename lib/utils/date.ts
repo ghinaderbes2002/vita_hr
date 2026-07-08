@@ -23,11 +23,11 @@ export function formatDate(utcString?: string | null, pattern = "dd/MM/yyyy"): s
   }
 }
 
+// "H:MM" (e.g. "8:15") — plain digits/colon avoid the bidi glyph-reordering
+// glitch that mixing Arabic letters (س/د) with numbers causes in RTL layout.
 export function formatDuration(minutes?: number | null): string {
   if (minutes == null) return "—";
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m}د`;
-  if (m === 0) return `${h}س`;
-  return `${h}س ${m}د`;
+  return `${h}:${m.toString().padStart(2, "0")}`;
 }
