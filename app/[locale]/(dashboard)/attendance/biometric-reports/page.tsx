@@ -32,6 +32,7 @@ import { useDepartments } from "@/lib/hooks/use-departments";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { LatenessReport, AbsenceReport, TempExitReport, MonthlyPayrollReport, EmployeeCardReport } from "@/lib/api/attendance-reports";
 import { TopAbsenceItem, OvertimeItem, downloadCsv } from "@/lib/api/reports";
+import { formatTime } from "@/lib/utils/date";
 
 type TabKey = "lateness" | "absences" | "temp-exits" | "monthly-payroll" | "employee-card" | "top-absences" | "overtime";
 
