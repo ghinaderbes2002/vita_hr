@@ -151,7 +151,7 @@ export default function NeedsReviewPage() {
                 return (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium text-sm">
-                      {format(new Date(record.date), "dd/MM/yyyy")}
+                      {formatDate(record.date)}
                     </TableCell>
                     <TableCell className="text-sm">
                       <div>{empName}</div>
@@ -160,14 +160,10 @@ export default function NeedsReviewPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {record.clockInTime
-                        ? format(new Date(record.clockInTime), "HH:mm")
-                        : "—"}
+                      {formatTime(record.clockInTime)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {record.clockOutTime
-                        ? format(new Date(record.clockOutTime), "HH:mm")
-                        : "—"}
+                      {formatTime(record.clockOutTime)}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`text-xs ${statusCfg.className}`}>
