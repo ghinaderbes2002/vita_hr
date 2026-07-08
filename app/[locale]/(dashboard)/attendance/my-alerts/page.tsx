@@ -26,8 +26,7 @@ import { AlertStatusBadge } from "@/components/features/attendance/alert-status-
 import { AlertTypeBadge } from "@/components/features/attendance/alert-type-badge";
 import { AttendanceAlert, AlertStatus } from "@/lib/api/attendance-alerts";
 import { JustificationType } from "@/lib/api/attendance-justifications";
-import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { formatDate } from "@/lib/utils/date";
 
 const JUSTIFIABLE_TYPES = ["LATE", "ABSENT", "EARLY_LEAVE", "MISSING_CLOCK_OUT"];
 
