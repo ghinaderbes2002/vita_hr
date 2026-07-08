@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { useDailyReport, useMonthlyReport, useSummaryReport, useBreaksReport } from "@/lib/hooks/use-attendance-reports";
 import { useDepartments } from "@/lib/hooks/use-departments";
+import { formatTime } from "@/lib/utils/date";
 
 const today = new Date().toISOString().split("T")[0];
 const currentYear = new Date().getFullYear();
