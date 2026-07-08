@@ -78,8 +78,10 @@ export default function InventoryPage() {
     ? items.filter((i) => !i.categoryId)
     : items;
 
-  // Part requests — items created by technicians via the "طلب قطعة" flow
-  const requestedItems = items.filter((i) => !!i.requestedByUserId);
+  // Part requests — any item carrying a review status (backend defaults every
+  // item created without an explicit status to PENDING, regardless of who
+  // created it or whether requestedByUserId ends up populated)
+  const requestedItems = items.filter((i) => !!i.status);
   const pendingRequests = requestedItems.filter((i) => i.status === "PENDING");
 
   const handleReviewStatus = (item: InventoryItem, status: ItemRequestStatus) => {
