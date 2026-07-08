@@ -73,10 +73,6 @@ export default function JustificationsPage() {
   const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
 
-  const formatDate = (d: string) => {
-    try { return format(new Date(d), "dd/MM/yyyy", { locale: dateLocale }); }
-    catch { return d; }
-  };
 
   const openReview = (item: AttendanceJustification, type: "manager" | "hr", dec: "APPROVE" | "REJECT") => {
     setSelectedItem(item);
