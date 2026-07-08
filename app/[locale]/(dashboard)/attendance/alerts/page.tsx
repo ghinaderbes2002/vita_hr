@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import {
   Search,
   MoreHorizontal,
@@ -70,7 +70,6 @@ import {
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { Pagination } from "@/components/shared/pagination";
 import { format } from "date-fns";
-import { ar, enUS, tr } from "date-fns/locale";
 import { formatDate } from "@/lib/utils/date";
 
 const ALERT_TYPE_VALUES: AlertType[] = [
@@ -85,8 +84,6 @@ const ALERT_SEVERITY_VALUES: AlertSeverity[] = ["LOW", "MEDIUM", "HIGH"];
 
 export default function AttendanceAlertsPage() {
   const t = useTranslations();
-  const locale = useLocale();
-  const dateLocale = locale === "ar" ? ar : locale === "tr" ? tr : enUS;
   const { user } = useAuthStore();
   const isDirectManager = (user as any)?.roles?.some((r: any) =>
     ["DIRECT_MANAGER", "مدير مباشر"].includes(
