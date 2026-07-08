@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,8 +26,7 @@ import {
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { AttendanceJustification, JustificationStatus } from "@/lib/api/attendance-justifications";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { format } from "date-fns";
-import { ar, enUS, tr } from "date-fns/locale";
+import { formatDate } from "@/lib/utils/date";
 
 const STATUS_CLASSES: Record<string, string> = {
   PENDING_MANAGER: "bg-yellow-100 text-yellow-800",
@@ -42,8 +41,6 @@ const toCamelCase = (s: string) =>
 
 export default function JustificationsPage() {
   const t = useTranslations();
-  const locale = useLocale();
-  const dateLocale = locale === "ar" ? ar : locale === "tr" ? tr : enUS;
   const { user } = useAuthStore();
   const { hasPermission } = usePermissions();
 
