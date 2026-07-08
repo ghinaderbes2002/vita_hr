@@ -167,6 +167,7 @@ const navigation: NavItem[] = [
         title: "nav.custodies",
         icon: Package,
         hiddenForRoles: ["DIRECT_MANAGER", "QS", "IT", "تقنية المعلومات", "CFO"],
+        showForRoles: ["LO", "مسؤول لوجستي", "Logistics Officer"],
         children: [
           { title: "nav.allCustodies", href: "/custodies", icon: Package, permission: "custodies:read" },
         ],
@@ -366,12 +367,13 @@ export function Sidebar() {
 
   // التحقق recursive — يشتغل على أي عمق من التداخل
   const hasSectionPermission = (item: NavItem): boolean => {
+    // إذا العنصر مجبر على الظهور لدور معين، نظهره — حتى لو المستخدم عنده كمان
+    // دور تاني مدرج بـ hiddenForRoles (شخص ممكن يكون عنده أكتر من دور)
+    if (item.showForRoles && item.showForRoles.some((role) => hasRole(role))) return true;
     // إذا العنصر مخفي لدور معين، نخفيه (ما عدا الأدمن)
     if (item.hiddenForRoles && !isAdmin()) {
       if (item.hiddenForRoles.some((role) => hasRole(role))) return false;
     }
-    // إذا العنصر مجبر على الظهور لدور معين، نظهره
-    if (item.showForRoles && item.showForRoles.some((role) => hasRole(role))) return true;
     // الأدمن يتجاوز كل قيود المسمى الوظيفي
     if (item.showForJobTitleCodes && isAdmin()) return true;
     // إذا كود المسمى الوظيفي مطابق، نظهره
