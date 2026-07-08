@@ -49,10 +49,6 @@ export default function MyJustificationsPage() {
   const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
 
-  const formatDate = (d: string) => {
-    try { return format(new Date(d), "dd/MM/yyyy", { locale: ar }); }
-    catch { return d; }
-  };
 
   return (
     <div className="space-y-6">
