@@ -59,10 +59,6 @@ export default function MyAlertsPage() {
   const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
 
-  const formatDate = (dateString: string) => {
-    try { return format(new Date(dateString), "dd/MM/yyyy", { locale: ar }); }
-    catch { return dateString; }
-  };
 
   const openJustify = (alert: AttendanceAlert) => {
     setSelectedAlert(alert);
