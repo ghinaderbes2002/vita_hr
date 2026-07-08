@@ -105,11 +105,10 @@ const S = StyleSheet.create({
   statusReturned: { color: "#6b7280" },
   statusDamaged:  { color: "#b45309" },
   statusLost:     { color: "#dc2626" },
-  signatureRow: {
-    marginTop: 28,
-    flexDirection: "row-reverse",
-  },
   signatureBox: {
+    position: "absolute",
+    bottom: 40,
+    left: 28,
     width: 180,
     alignItems: "center",
   },
@@ -229,11 +228,9 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
         ))}
 
         {/* ── Employee signature ── */}
-        <View style={S.signatureRow}>
-          <View style={S.signatureBox}>
-            <Text style={S.signatureLabel}>توقيع الموظف</Text>
-            <View style={S.signatureLine} />
-          </View>
+        <View style={S.signatureBox}>
+          <Text style={S.signatureLabel}>توقيع الموظف</Text>
+          <View style={S.signatureLine} />
         </View>
 
         {/* ── Footer ── */}
