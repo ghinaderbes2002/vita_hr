@@ -132,10 +132,10 @@ function DailyReport({ departments }: { departments: any[] }) {
                     {rec.employee ? `${rec.employee.firstNameAr} ${rec.employee.lastNameAr}` : "—"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {rec.clockInTime ? new Date(rec.clockInTime).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {formatTime(rec.clockInTime)}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {rec.clockOutTime ? new Date(rec.clockOutTime).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {formatTime(rec.clockOutTime)}
                   </TableCell>
                   <TableCell>{rec.workedMinutes ? minutesToHours(rec.workedMinutes) : "—"}</TableCell>
                   <TableCell>{rec.lateMinutes ?? 0} د</TableCell>
