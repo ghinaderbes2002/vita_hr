@@ -2926,6 +2926,14 @@ function PfDivider({ label }: { label: string }) {
   );
 }
 
+// amputationLevel comes back from the backend as either a "/"-joined string
+// or (for some records) an already-split array — normalize to string[].
+function toAmputationLevels(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  if (typeof raw === "string") return raw.split("/").filter(Boolean);
+  return [];
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ProstheticsCasePage() {
@@ -3237,9 +3245,7 @@ export default function ProstheticsCasePage() {
         return String(raw).toUpperCase() === "BOTH" ? "BOTH" : raw;
       })(),
       amputationSide: caseData.amputationSide ?? "",
-      amputationLevels: caseData.amputationLevel
-        ? caseData.amputationLevel.split("/").filter(Boolean)
-        : [],
+      amputationLevels: toAmputationLevels(caseData.amputationLevel),
       amputationYear: caseData.dateOfAmputation ? caseData.dateOfAmputation.slice(0, 4) : "",
       amputationMonth: caseData.dateOfAmputation && caseData.dateOfAmputation.length >= 7
         ? String(parseInt(caseData.dateOfAmputation.slice(5, 7)))
@@ -3989,7 +3995,7 @@ export default function ProstheticsCasePage() {
                 <Label>مستوى البتر</Label>
                 <AmputationLevelSelector
                   type={intakeForm.amputationType || (ampTypes.length === 2 ? "BOTH" : ampTypes[0] ?? "")}
-                  values={intakeForm.amputationLevels.length ? intakeForm.amputationLevels : (c.amputationLevel ? c.amputationLevel.split("/").filter(Boolean) : [])}
+                  values={intakeForm.amputationLevels.length ? intakeForm.amputationLevels : toAmputationLevels(c.amputationLevel)}
                   onChange={(v) => setIntakeForm((f) => ({ ...f, amputationLevels: v }))}
                 />
               </div>
@@ -4176,7 +4182,7 @@ export default function ProstheticsCasePage() {
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-xs font-medium">مستوى البتر</p>
-                      <p className="text-muted-foreground">{c.amputationLevel ?? "—"}</p>
+                      <p className="text-muted-foreground">{toAmputationLevels(c.amputationLevel).join(" / ") || "—"}</p>
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-xs font-medium">الطول</p>
