@@ -11,8 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
 import { useMyJustifications } from "@/lib/hooks/use-attendance-justifications";
 import { AttendanceJustification } from "@/lib/api/attendance-justifications";
-import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { formatDate } from "@/lib/utils/date";
 
 const STATUS_CLASS: Record<string, string> = {
   PENDING_MANAGER: "bg-yellow-100 text-yellow-800",
