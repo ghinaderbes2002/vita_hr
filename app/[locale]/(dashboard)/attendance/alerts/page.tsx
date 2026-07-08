@@ -71,6 +71,7 @@ import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { Pagination } from "@/components/shared/pagination";
 import { format } from "date-fns";
 import { ar, enUS, tr } from "date-fns/locale";
+import { formatDate } from "@/lib/utils/date";
 
 const ALERT_TYPE_VALUES: AlertType[] = [
   "LATE",
@@ -211,13 +212,6 @@ export default function AttendanceAlertsPage() {
     resetCreateForm();
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy", { locale: dateLocale });
-    } catch {
-      return dateString;
-    }
-  };
 
   const renderTable = (tableAlerts: AttendanceAlert[]) => (
     <div className="rounded-md border">
