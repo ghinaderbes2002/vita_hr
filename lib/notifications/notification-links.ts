@@ -67,6 +67,11 @@ export function resolveNotificationLink(notif: Notification): string | null {
     case "TARDINESS_COMPENSATION_DUE":  return "/attendance/my-attendance";
     case "TARDINESS_DEDUCTION_PENDING": return "/payroll";
 
+    case "INVENTORY_REQUEST":
+      return d.itemId ? `/clinic/inventory/${d.itemId}` : "/clinic/inventory?tab=requests";
+    case "INVENTORY_REQUEST_UPDATE":
+      return d.itemId ? `/clinic/inventory/${d.itemId}` : "/clinic/inventory";
+
     case "BIRTHDAY":                    return null;
     default:                            return null;
   }

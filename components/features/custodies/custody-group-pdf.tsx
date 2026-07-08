@@ -105,6 +105,21 @@ const S = StyleSheet.create({
   statusReturned: { color: "#6b7280" },
   statusDamaged:  { color: "#b45309" },
   statusLost:     { color: "#dc2626" },
+  signatureRow: {
+    marginTop: 28,
+    flexDirection: "row-reverse",
+  },
+  signatureBox: {
+    width: 180,
+    alignItems: "center",
+  },
+  signatureLabel: { fontSize: 9, color: TEXT, fontWeight: "bold" },
+  signatureLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: TEXT,
+    width: "100%",
+    marginTop: 28,
+  },
 });
 
 // ── Label maps ────────────────────────────────────────────────────────────────
@@ -212,6 +227,14 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
             <Text style={[S.tdStatus, STATUS_STYLE[c.status] ?? {}]}>{STATUS_LABEL[c.status] ?? c.status}</Text>
           </View>
         ))}
+
+        {/* ── Employee signature ── */}
+        <View style={S.signatureRow}>
+          <View style={S.signatureBox}>
+            <Text style={S.signatureLabel}>توقيع الموظف</Text>
+            <View style={S.signatureLine} />
+          </View>
+        </View>
 
         {/* ── Footer ── */}
         <View style={S.pageFooter} fixed>

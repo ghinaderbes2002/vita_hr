@@ -56,6 +56,7 @@ export default function InventoryItemPage() {
             {item.isLowStock && <Badge className="bg-orange-100 text-orange-800 border-orange-200" variant="outline">مخزون منخفض</Badge>}
           </div>
           <p className="text-muted-foreground font-mono text-sm">{item.code}</p>
+          {item.companyName && <p className="text-sm text-muted-foreground mt-0.5">{item.companyName}</p>}
           {item.description && <p className="text-sm text-muted-foreground mt-1">{item.description}</p>}
         </div>
       </div>

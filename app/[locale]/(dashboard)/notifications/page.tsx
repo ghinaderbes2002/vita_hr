@@ -56,6 +56,8 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   TARDINESS_BALANCE_USED:         { icon: Clock,         color: "text-amber-600",  bg: "bg-amber-100",  label: "رصيد تأخير" },
   TARDINESS_BALANCE_DEPLETED:     { icon: AlertTriangle, color: "text-red-600",    bg: "bg-red-100",    label: "نفاد رصيد التأخير" },
   TARDINESS_DEDUCTION_PENDING:    { icon: AlertTriangle, color: "text-orange-600", bg: "bg-orange-100", label: "خصم تأخير معلق" },
+  INVENTORY_REQUEST:              { icon: Briefcase,     color: "text-indigo-600", bg: "bg-indigo-100", label: "طلب قطعة جديد" },
+  INVENTORY_REQUEST_UPDATE:       { icon: CheckCircle2,  color: "text-green-600",  bg: "bg-green-100",  label: "تحديث طلب قطعة" },
   GENERAL:                        { icon: Info,          color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },
 };
 

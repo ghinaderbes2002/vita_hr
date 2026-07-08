@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
   ArrowRight, User, Clock, Trash2, Plus, Download, Loader2,
-  CheckCircle2, ChevronDown, Check, X, Camera,
+  CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,12 +21,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { KLevelSelector } from "@/components/clinic/k-level-selector";
 import { AmputationLevelSelector } from "@/components/clinic/amputation-level-selector";
+import { InventoryItemCombobox } from "@/components/clinic/inventory-item-combobox";
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -83,12 +85,22 @@ import {
   ProstheticsStatus, ProstheticsCase,
   AmputationType, AmputationSide, AmputationCause, KLevel, CommitteeDecision, ProstheticType,
   AnkleDisarticulationDto, KneeDisarticulationDto, TransfemoralDto, TranstibialDto, HemipelvectomyDto, ElbowDisarticulationDto, TranshumeralDto, TransradialDto, TreatmentProgramDto, ProstheticDeliveryDto, DeliveryItemDto, FinalEvaluationDto,
+  MeasurementAssessment,
 } from "@/lib/api/clinic-prosthetics";
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
 const TYPE_LABEL: Record<string, string> = { UPPER: "طرف علوي", LOWER: "طرف سفلي" };
 const SIDE_LABEL: Record<string, string> = { RIGHT: "أيمن", LEFT: "أيسر", BILATERAL: "ثنائي" };
+const REQUEST_STATUS_LABEL: Record<string, string> = {
+  PENDING: "معلق", APPROVED: "معتمد", DONE: "تم", NOT_AVAILABLE: "لا يوجد",
+};
+const REQUEST_STATUS_BADGE: Record<string, string> = {
+  PENDING: "border-amber-300 bg-amber-50 text-amber-700",
+  APPROVED: "border-blue-300 bg-blue-50 text-blue-700",
+  DONE: "border-green-300 bg-green-50 text-green-700",
+  NOT_AVAILABLE: "border-red-300 bg-red-50 text-red-700",
+};
 const DECISION_LABEL: Record<CommitteeDecision, string> = {
   APPROVED: "مقبول", NEEDS_ADJUSTMENT: "يحتاج تعديل", REJECTED: "مرفوض",
 };
@@ -2934,6 +2946,78 @@ function toAmputationLevels(raw: unknown): string[] {
   return [];
 }
 
+// History of past measurement-sheet submissions for one amputation type.
+// The backend appends a new record on every POST and returns them newest-first.
+function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  if (records.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      {records.map((r) => {
+        const expanded = expandedId === r.id;
+        const affectedEntries = Object.entries(r.affectedLimb ?? {});
+        const soundEntries = Object.entries(r.soundLimb ?? {});
+        const hasDetails = affectedEntries.length > 0 || soundEntries.length > 0 || !!r.notes;
+        return (
+          <div key={r.id} className="rounded-lg border overflow-hidden">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between gap-3 p-3 text-sm hover:bg-muted/40 text-right"
+              onClick={() => hasDetails && setExpandedId(expanded ? null : r.id)}
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline">{SIDE_LABEL[r.side] ?? r.side}</Badge>
+                <span className="text-muted-foreground">
+                  {new Date(r.examinedAt).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}
+                </span>
+                {r.footMeasurement && <span className="text-xs text-muted-foreground">قياس القدم: {r.footMeasurement}</span>}
+              </div>
+              {hasDetails && (expanded ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />)}
+            </button>
+            {expanded && (
+              <div className="border-t p-3 space-y-3 bg-muted/20">
+                {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
+                {(affectedEntries.length > 0 || soundEntries.length > 0) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    {affectedEntries.length > 0 && (
+                      <div>
+                        <p className="font-semibold mb-1">الطرف المصاب</p>
+                        <div className="grid grid-cols-2 gap-1">
+                          {affectedEntries.map(([k, v]) => (
+                            <div key={k} className="flex justify-between border-b py-0.5">
+                              <span className="text-muted-foreground">{k}</span>
+                              <span className="font-mono">{v}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {soundEntries.length > 0 && (
+                      <div>
+                        <p className="font-semibold mb-1">الطرف السليم</p>
+                        <div className="grid grid-cols-2 gap-1">
+                          {soundEntries.map(([k, v]) => (
+                            <div key={k} className="flex justify-between border-b py-0.5">
+                              <span className="text-muted-foreground">{k}</span>
+                              <span className="font-mono">{v}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ProstheticsCasePage() {
@@ -3161,7 +3245,11 @@ export default function ProstheticsCasePage() {
 
   // ── Measurement sheet state ──
   type MeasureSheetType = "ankle_disarticulation" | "knee_disarticulation" | "above_knee" | "below_knee" | "hemipelvectomy" | "elbow_disarticulation" | "transhumeral" | "transradial";
-  const [measureSheetType, setMeasureSheetType] = useState<MeasureSheetType | null>(null);
+  const [measureSheetType, setMeasureSheetType] = useState<MeasureSheetType[]>([]);
+  // Explicitly-opened "add new measurement" forms — a type's form is shown
+  // by default only when it has no history yet; otherwise the user opens it
+  // via the "+ إضافة قياس جديد" button once they want to add another record.
+  const [measureAddOpen, setMeasureAddOpen] = useState<Partial<Record<MeasureSheetType, boolean>>>({});
   const [ankleForm, setAnkleForm] = useState<{
     side: "RIGHT" | "LEFT"; notes: string; footMeasurement: string;
     soundLimb: Record<string, string>; affectedLimb: Record<string, string>;
@@ -3287,6 +3375,16 @@ export default function ProstheticsCasePage() {
   }
 
   const c = caseData;
+
+  // Measurement sheet history per amputation type — newest-first, per backend
+  const transtibialRecords: MeasurementAssessment[] = c.transtibialAssessment ?? [];
+  const transfemoralRecords: MeasurementAssessment[] = c.transfemoralAssessment ?? [];
+  const ankleDisarticulationRecords: MeasurementAssessment[] = c.ankleDisarticulationAssessment ?? [];
+  const kneeDisarticulationRecords: MeasurementAssessment[] = c.kneeDisarticulationAssessment ?? [];
+  const hemipelvectomyRecords: MeasurementAssessment[] = c.hemipelvectomyAssessment ?? [];
+  const elbowDisarticulationRecords: MeasurementAssessment[] = c.elbowDisarticulationAssessment ?? [];
+  const transhumeralRecords: MeasurementAssessment[] = c.transhumeralAssessment ?? [];
+  const transradialRecords: MeasurementAssessment[] = c.transradialAssessment ?? [];
 
   // Normalise amputationType (backend may return array OR legacy string)
   const getAmpTypes = (): string[] => {
@@ -5334,7 +5432,7 @@ export default function ProstheticsCasePage() {
 
               {/* موقع أجزاء الطرف الصناعي */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">موقع أجزاء الطرف الصناعي / Location of Prosthetic Parts</p>
+                <p className="text-sm font-semibold">موقع أجزاء الطرف الصناعي </p>
                 <div className="flex gap-6">
                   {(["WAREHOUSE", "SUPPLIER"] as const).map((val) => (
                     <label key={val} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -5353,7 +5451,7 @@ export default function ProstheticsCasePage() {
 
               {/* الشركة */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">الشركة / COMPANY</p>
+                <p className="text-sm font-semibold">الشركة </p>
                 <div className="flex flex-wrap items-center gap-5">
                   <label className="flex items-center gap-2 cursor-pointer text-sm">
                     <input
@@ -5388,7 +5486,7 @@ export default function ProstheticsCasePage() {
 
               {/* جدول الأجزاء */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">اجزاء ومكونات الطرف الصناعي مع الكود / Prosthesis component's name and codes</p>
+                <p className="text-sm font-semibold">اجزاء ومكونات الطرف الصناعي مع الكود</p>
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="bg-muted/60">
@@ -5404,22 +5502,12 @@ export default function ProstheticsCasePage() {
                         <tr key={i}>
                           <td className="border border-border px-2 py-0.5 text-center text-muted-foreground text-xs">{i + 1}</td>
                           <td className="border border-border p-0.5">
-                            <Select
+                            <InventoryItemCombobox
+                              items={inventoryItems}
                               value={row.inventoryItemId}
-                              onValueChange={(v) => setCompRows((prev) => prev.map((r, j) => j === i ? { inventoryItemId: v } : r))}
-                            >
-                              <SelectTrigger className="h-7 border-0 shadow-none text-sm focus:ring-0 bg-transparent">
-                                <SelectValue placeholder="اختر من المخزون..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {inventoryItems.map((item: any) => (
-                                  <SelectItem key={item.id} value={item.id}>
-                                    {item.name}
-                                    {item.code ? ` — ${item.code}` : ""}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              onChange={(v) => setCompRows((prev) => prev.map((r, j) => j === i ? { inventoryItemId: v } : r))}
+                              className="h-7 border-0 shadow-none text-sm bg-transparent"
+                            />
                           </td>
                           <td className="border border-border px-3 py-1.5 text-sm font-mono text-muted-foreground">
                             {selectedItem?.code ?? ""}
@@ -5452,17 +5540,44 @@ export default function ProstheticsCasePage() {
                           <th className="text-right p-2 font-medium">القطعة</th>
                           <th className="text-right p-2 font-medium">الشركة</th>
                           <th className="text-right p-2 font-medium">المصدر</th>
+                          <th className="text-right p-2 font-medium">تاريخ الإضافة</th>
+                          <th className="text-right p-2 font-medium">حالة الطلب</th>
                           <th className="text-right p-2 font-medium">المخزون</th>
                           <th className="p-2" />
                         </tr>
                       </thead>
                       <tbody>
-                        {components.map((comp) => (
+                        {components.map((comp) => {
+                          const invItem = inventoryItems.find((it: any) => it.id === comp.inventoryItemId);
+                          return (
                           <tr key={comp.id} className="border-t">
                             <td className="p-2 font-mono text-xs">{comp.partCode ?? comp.code ?? "—"}</td>
                             <td className="p-2">{comp.partName ?? comp.name ?? "—"}</td>
                             <td className="p-2 text-muted-foreground">{comp.supplier ?? "—"}</td>
                             <td className="p-2 text-muted-foreground">{(comp.sourceLocation ?? comp.source) === "WAREHOUSE" ? "مستودع" : "مورد"}</td>
+                            <td className="p-2 text-muted-foreground text-xs">
+                              {comp.addedAt ? new Date(comp.addedAt).toLocaleDateString("en-GB") : "—"}
+                            </td>
+                            <td className="p-2">
+                              {!invItem?.status ? (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              ) : invItem.notes ? (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button type="button">
+                                      <Badge variant="outline" className={`text-xs cursor-pointer ${REQUEST_STATUS_BADGE[invItem.status]}`}>
+                                        {REQUEST_STATUS_LABEL[invItem.status]}
+                                      </Badge>
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-64 text-sm">{invItem.notes}</PopoverContent>
+                                </Popover>
+                              ) : (
+                                <Badge variant="outline" className={`text-xs ${REQUEST_STATUS_BADGE[invItem.status]}`}>
+                                  {REQUEST_STATUS_LABEL[invItem.status]}
+                                </Badge>
+                              )}
+                            </td>
                             <td className="p-2">
                               {comp.matchedInInventory === false
                                 ? <span className="text-xs text-orange-600 font-medium">غير موجود بالمخزون</span>
@@ -5476,7 +5591,8 @@ export default function ProstheticsCasePage() {
                               </button>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -5509,7 +5625,7 @@ export default function ProstheticsCasePage() {
                     className="h-4 w-4 accent-primary"
                     disabled={updateCase.isPending}
                   />
-                  <span className="text-sm font-medium">الطرف مكتمل / prosthetic completed</span>
+                  <span className="text-sm font-medium">الطرف مكتمل </span>
                 </label>
                 {c.status === "FITTING" && (
                   <Button onClick={handleAdvanceToGait} disabled={updateStatus.isPending} className="w-full">
@@ -5539,9 +5655,9 @@ export default function ProstheticsCasePage() {
               <button
                 key={key}
                 type="button"
-                onClick={() => setMeasureSheetType(key === measureSheetType ? null : key)}
+                onClick={() => setMeasureSheetType((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key])}
                 className={`rounded-lg border-2 py-4 text-sm font-semibold transition-colors ${
-                  measureSheetType === key
+                  measureSheetType.includes(key)
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
                 }`}
@@ -5552,667 +5668,819 @@ export default function ProstheticsCasePage() {
           </div>
 
           {/* Ankle disarticulation form */}
-          {measureSheetType === "ankle_disarticulation" && (
+          {measureSheetType.includes("ankle_disarticulation") && (
             <Section title="ورق قياس — عبر الكاحل">
               <div className="space-y-5">
-                {/* Side + foot measurement + notes */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>الجهة *</Label>
-                    <Select
-                      value={ankleForm.side}
-                      onValueChange={(v) => setAnkleForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}
+                <MeasurementHistoryList records={ankleDisarticulationRecords} />
+
+                {(ankleDisarticulationRecords.length === 0 || measureAddOpen.ankle_disarticulation) && (
+                  <div className="space-y-5">
+                    {/* Side + foot measurement + notes */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>الجهة *</Label>
+                        <Select
+                          value={ankleForm.side}
+                          onValueChange={(v) => setAnkleForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIGHT">اليمين</SelectItem>
+                            <SelectItem value="LEFT">اليسار</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>قياس القدم</Label>
+                        <Input
+                          placeholder="مثال: 26cm"
+                          value={ankleForm.footMeasurement}
+                          onChange={(e) => setAnkleForm((f) => ({ ...f, footMeasurement: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ملاحظات</Label>
+                        <Input
+                          placeholder="ملاحظات عامة..."
+                          value={ankleForm.notes}
+                          onChange={(e) => setAnkleForm((f) => ({ ...f, notes: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Measurements grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Affected limb — 19 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–19)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                                {k}
+                              </span>
+                              <Input
+                                className="h-8 text-sm"
+                                placeholder="cm"
+                                value={ankleForm.affectedLimb[k] ?? ""}
+                                onChange={(e) =>
+                                  setAnkleForm((f) => ({
+                                    ...f,
+                                    affectedLimb: { ...f.affectedLimb, [k]: e.target.value },
+                                  }))
+                                }
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Sound limb — 5 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                        <div className="grid grid-cols-1 gap-2 max-w-xs">
+                          {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                                {k}
+                              </span>
+                              <Input
+                                className="h-8 text-sm"
+                                placeholder="cm"
+                                value={ankleForm.soundLimb[k] ?? ""}
+                                onChange={(e) =>
+                                  setAnkleForm((f) => ({
+                                    ...f,
+                                    soundLimb: { ...f.soundLimb, [k]: e.target.value },
+                                  }))
+                                }
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Save */}
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={async () => {
+                          const dto: AnkleDisarticulationDto = {
+                            side: ankleForm.side,
+                            notes: ankleForm.notes || undefined,
+                            footMeasurement: ankleForm.footMeasurement || undefined,
+                            soundLimb: Object.keys(ankleForm.soundLimb).length ? ankleForm.soundLimb : undefined,
+                            affectedLimb: Object.keys(ankleForm.affectedLimb).length ? ankleForm.affectedLimb : undefined,
+                          };
+                          await submitAnkleMeasurement.mutateAsync({ id, dto });
+                          setMeasureAddOpen((s) => ({ ...s, ankle_disarticulation: false }));
+                        }}
+                        disabled={submitAnkleMeasurement.isPending}
+                      >
+                        {submitAnkleMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ ورق القياس
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {ankleDisarticulationRecords.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setMeasureAddOpen((s) => ({ ...s, ankle_disarticulation: !s.ankle_disarticulation }))}
                     >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RIGHT">اليمين</SelectItem>
-                        <SelectItem value="LEFT">اليسار</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      {measureAddOpen.ankle_disarticulation ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {measureAddOpen.ankle_disarticulation ? "إلغاء" : "إضافة قياس جديد"}
+                    </Button>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>قياس القدم</Label>
-                    <Input
-                      placeholder="مثال: 26cm"
-                      value={ankleForm.footMeasurement}
-                      onChange={(e) => setAnkleForm((f) => ({ ...f, footMeasurement: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ملاحظات</Label>
-                    <Input
-                      placeholder="ملاحظات عامة..."
-                      value={ankleForm.notes}
-                      onChange={(e) => setAnkleForm((f) => ({ ...f, notes: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                {/* Measurements grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Affected limb — 19 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–19)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
-                            {k}
-                          </span>
-                          <Input
-                            className="h-8 text-sm"
-                            placeholder="cm"
-                            value={ankleForm.affectedLimb[k] ?? ""}
-                            onChange={(e) =>
-                              setAnkleForm((f) => ({
-                                ...f,
-                                affectedLimb: { ...f.affectedLimb, [k]: e.target.value },
-                              }))
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Sound limb — 5 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
-                    <div className="grid grid-cols-1 gap-2 max-w-xs">
-                      {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
-                            {k}
-                          </span>
-                          <Input
-                            className="h-8 text-sm"
-                            placeholder="cm"
-                            value={ankleForm.soundLimb[k] ?? ""}
-                            onChange={(e) =>
-                              setAnkleForm((f) => ({
-                                ...f,
-                                soundLimb: { ...f.soundLimb, [k]: e.target.value },
-                              }))
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Save */}
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={async () => {
-                      const dto: AnkleDisarticulationDto = {
-                        side: ankleForm.side,
-                        notes: ankleForm.notes || undefined,
-                        footMeasurement: ankleForm.footMeasurement || undefined,
-                        soundLimb: Object.keys(ankleForm.soundLimb).length ? ankleForm.soundLimb : undefined,
-                        affectedLimb: Object.keys(ankleForm.affectedLimb).length ? ankleForm.affectedLimb : undefined,
-                      };
-                      await submitAnkleMeasurement.mutateAsync({ id, dto });
-                    }}
-                    disabled={submitAnkleMeasurement.isPending}
-                  >
-                    {submitAnkleMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ ورق القياس
-                  </Button>
-                </div>
+                )}
               </div>
             </Section>
           )}
 
           {/* Knee disarticulation form */}
-          {measureSheetType === "knee_disarticulation" && (
+          {measureSheetType.includes("knee_disarticulation") && (
             <Section title="ورق قياس — عبر الركبة">
               <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>الجهة *</Label>
-                    <Select value={kneeForm.side} onValueChange={(v) => setKneeForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RIGHT">اليمين</SelectItem>
-                        <SelectItem value="LEFT">اليسار</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>قياس القدم</Label>
-                    <Input placeholder="مثال: 26cm" value={kneeForm.footMeasurement} onChange={(e) => setKneeForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ملاحظات</Label>
-                    <Input placeholder="ملاحظات عامة..." value={kneeForm.notes} onChange={(e) => setKneeForm((f) => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                </div>
+                <MeasurementHistoryList records={kneeDisarticulationRecords} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Affected limb — 12 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–12)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={kneeForm.affectedLimb[k] ?? ""}
-                            onChange={(e) => setKneeForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                          />
+                {(kneeDisarticulationRecords.length === 0 || measureAddOpen.knee_disarticulation) && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>الجهة *</Label>
+                        <Select value={kneeForm.side} onValueChange={(v) => setKneeForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIGHT">اليمين</SelectItem>
+                            <SelectItem value="LEFT">اليسار</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>قياس القدم</Label>
+                        <Input placeholder="مثال: 26cm" value={kneeForm.footMeasurement} onChange={(e) => setKneeForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ملاحظات</Label>
+                        <Input placeholder="ملاحظات عامة..." value={kneeForm.notes} onChange={(e) => setKneeForm((f) => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Affected limb — 12 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–12)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={kneeForm.affectedLimb[k] ?? ""}
+                                onChange={(e) => setKneeForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Sound limb — 5 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                        <div className="grid grid-cols-1 gap-2 max-w-xs">
+                          {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={kneeForm.soundLimb[k] ?? ""}
+                                onChange={(e) => setKneeForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={async () => {
+                          const dto: KneeDisarticulationDto = {
+                            side: kneeForm.side,
+                            notes: kneeForm.notes || undefined,
+                            footMeasurement: kneeForm.footMeasurement || undefined,
+                            soundLimb: Object.keys(kneeForm.soundLimb).length ? kneeForm.soundLimb : undefined,
+                            affectedLimb: Object.keys(kneeForm.affectedLimb).length ? kneeForm.affectedLimb : undefined,
+                          };
+                          await submitKneeMeasurement.mutateAsync({ id, dto });
+                          setMeasureAddOpen((s) => ({ ...s, knee_disarticulation: false }));
+                        }}
+                        disabled={submitKneeMeasurement.isPending}
+                      >
+                        {submitKneeMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ ورق القياس
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Sound limb — 5 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
-                    <div className="grid grid-cols-1 gap-2 max-w-xs">
-                      {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={kneeForm.soundLimb[k] ?? ""}
-                            onChange={(e) => setKneeForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                {kneeDisarticulationRecords.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setMeasureAddOpen((s) => ({ ...s, knee_disarticulation: !s.knee_disarticulation }))}
+                    >
+                      {measureAddOpen.knee_disarticulation ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {measureAddOpen.knee_disarticulation ? "إلغاء" : "إضافة قياس جديد"}
+                    </Button>
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={async () => {
-                      const dto: KneeDisarticulationDto = {
-                        side: kneeForm.side,
-                        notes: kneeForm.notes || undefined,
-                        footMeasurement: kneeForm.footMeasurement || undefined,
-                        soundLimb: Object.keys(kneeForm.soundLimb).length ? kneeForm.soundLimb : undefined,
-                        affectedLimb: Object.keys(kneeForm.affectedLimb).length ? kneeForm.affectedLimb : undefined,
-                      };
-                      await submitKneeMeasurement.mutateAsync({ id, dto });
-                    }}
-                    disabled={submitKneeMeasurement.isPending}
-                  >
-                    {submitKneeMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ ورق القياس
-                  </Button>
-                </div>
+                )}
               </div>
             </Section>
           )}
 
           {/* Transfemoral (above knee) form */}
-          {measureSheetType === "above_knee" && (
+          {measureSheetType.includes("above_knee") && (
             <Section title="ورق قياس — فوق الركبة">
               <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>الجهة *</Label>
-                    <Select value={transfemoralForm.side} onValueChange={(v) => setTransfemoralForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RIGHT">اليمين</SelectItem>
-                        <SelectItem value="LEFT">اليسار</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>قياس القدم</Label>
-                    <Input placeholder="مثال: 27cm" value={transfemoralForm.footMeasurement} onChange={(e) => setTransfemoralForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ملاحظات</Label>
-                    <Input placeholder="ملاحظات عامة..." value={transfemoralForm.notes} onChange={(e) => setTransfemoralForm((f) => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                </div>
+                <MeasurementHistoryList records={transfemoralRecords} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Affected limb — 12 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–12)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={transfemoralForm.affectedLimb[k] ?? ""}
-                            onChange={(e) => setTransfemoralForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                          />
+                {(transfemoralRecords.length === 0 || measureAddOpen.above_knee) && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>الجهة *</Label>
+                        <Select value={transfemoralForm.side} onValueChange={(v) => setTransfemoralForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIGHT">اليمين</SelectItem>
+                            <SelectItem value="LEFT">اليسار</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>قياس القدم</Label>
+                        <Input placeholder="مثال: 27cm" value={transfemoralForm.footMeasurement} onChange={(e) => setTransfemoralForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ملاحظات</Label>
+                        <Input placeholder="ملاحظات عامة..." value={transfemoralForm.notes} onChange={(e) => setTransfemoralForm((f) => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Affected limb — 12 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–12)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={transfemoralForm.affectedLimb[k] ?? ""}
+                                onChange={(e) => setTransfemoralForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Sound limb — 11 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–11)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 11 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={transfemoralForm.soundLimb[k] ?? ""}
+                                onChange={(e) => setTransfemoralForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={async () => {
+                          const dto: TransfemoralDto = {
+                            side: transfemoralForm.side,
+                            notes: transfemoralForm.notes || undefined,
+                            footMeasurement: transfemoralForm.footMeasurement || undefined,
+                            soundLimb: Object.keys(transfemoralForm.soundLimb).length ? transfemoralForm.soundLimb : undefined,
+                            affectedLimb: Object.keys(transfemoralForm.affectedLimb).length ? transfemoralForm.affectedLimb : undefined,
+                          };
+                          await submitTransfemoralMeasurement.mutateAsync({ id, dto });
+                          setMeasureAddOpen((s) => ({ ...s, above_knee: false }));
+                        }}
+                        disabled={submitTransfemoralMeasurement.isPending}
+                      >
+                        {submitTransfemoralMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ ورق القياس
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Sound limb — 11 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–11)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 11 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={transfemoralForm.soundLimb[k] ?? ""}
-                            onChange={(e) => setTransfemoralForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                {transfemoralRecords.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setMeasureAddOpen((s) => ({ ...s, above_knee: !s.above_knee }))}
+                    >
+                      {measureAddOpen.above_knee ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {measureAddOpen.above_knee ? "إلغاء" : "إضافة قياس جديد"}
+                    </Button>
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={async () => {
-                      const dto: TransfemoralDto = {
-                        side: transfemoralForm.side,
-                        notes: transfemoralForm.notes || undefined,
-                        footMeasurement: transfemoralForm.footMeasurement || undefined,
-                        soundLimb: Object.keys(transfemoralForm.soundLimb).length ? transfemoralForm.soundLimb : undefined,
-                        affectedLimb: Object.keys(transfemoralForm.affectedLimb).length ? transfemoralForm.affectedLimb : undefined,
-                      };
-                      await submitTransfemoralMeasurement.mutateAsync({ id, dto });
-                    }}
-                    disabled={submitTransfemoralMeasurement.isPending}
-                  >
-                    {submitTransfemoralMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ ورق القياس
-                  </Button>
-                </div>
+                )}
               </div>
             </Section>
           )}
 
           {/* Transtibial (below knee) form */}
-          {measureSheetType === "below_knee" && (
+          {measureSheetType.includes("below_knee") && (
             <Section title="ورق قياس — تحت الركبة">
               <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>الجهة *</Label>
-                    <Select value={transtibialForm.side} onValueChange={(v) => setTranstibialForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RIGHT">اليمين</SelectItem>
-                        <SelectItem value="LEFT">اليسار</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>قياس القدم</Label>
-                    <Input placeholder="مثال: 26cm" value={transtibialForm.footMeasurement} onChange={(e) => setTranstibialForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ملاحظات</Label>
-                    <Input placeholder="ملاحظات عامة..." value={transtibialForm.notes} onChange={(e) => setTranstibialForm((f) => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                </div>
+                <MeasurementHistoryList records={transtibialRecords} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Affected limb — 19 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–19)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={transtibialForm.affectedLimb[k] ?? ""}
-                            onChange={(e) => setTranstibialForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                          />
+                {(transtibialRecords.length === 0 || measureAddOpen.below_knee) && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>الجهة *</Label>
+                        <Select value={transtibialForm.side} onValueChange={(v) => setTranstibialForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIGHT">اليمين</SelectItem>
+                            <SelectItem value="LEFT">اليسار</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>قياس القدم</Label>
+                        <Input placeholder="مثال: 26cm" value={transtibialForm.footMeasurement} onChange={(e) => setTranstibialForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ملاحظات</Label>
+                        <Input placeholder="ملاحظات عامة..." value={transtibialForm.notes} onChange={(e) => setTranstibialForm((f) => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Affected limb — 19 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–19)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={transtibialForm.affectedLimb[k] ?? ""}
+                                onChange={(e) => setTranstibialForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Sound limb — 5 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                        <div className="grid grid-cols-1 gap-2 max-w-xs">
+                          {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={transtibialForm.soundLimb[k] ?? ""}
+                                onChange={(e) => setTranstibialForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={async () => {
+                          const dto: TranstibialDto = {
+                            side: transtibialForm.side,
+                            notes: transtibialForm.notes || undefined,
+                            footMeasurement: transtibialForm.footMeasurement || undefined,
+                            soundLimb: Object.keys(transtibialForm.soundLimb).length ? transtibialForm.soundLimb : undefined,
+                            affectedLimb: Object.keys(transtibialForm.affectedLimb).length ? transtibialForm.affectedLimb : undefined,
+                          };
+                          await submitTranstibialMeasurement.mutateAsync({ id, dto });
+                          setMeasureAddOpen((s) => ({ ...s, below_knee: false }));
+                        }}
+                        disabled={submitTranstibialMeasurement.isPending}
+                      >
+                        {submitTranstibialMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ ورق القياس
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Sound limb — 5 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
-                    <div className="grid grid-cols-1 gap-2 max-w-xs">
-                      {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={transtibialForm.soundLimb[k] ?? ""}
-                            onChange={(e) => setTranstibialForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                {transtibialRecords.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setMeasureAddOpen((s) => ({ ...s, below_knee: !s.below_knee }))}
+                    >
+                      {measureAddOpen.below_knee ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {measureAddOpen.below_knee ? "إلغاء" : "إضافة قياس جديد"}
+                    </Button>
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={async () => {
-                      const dto: TranstibialDto = {
-                        side: transtibialForm.side,
-                        notes: transtibialForm.notes || undefined,
-                        footMeasurement: transtibialForm.footMeasurement || undefined,
-                        soundLimb: Object.keys(transtibialForm.soundLimb).length ? transtibialForm.soundLimb : undefined,
-                        affectedLimb: Object.keys(transtibialForm.affectedLimb).length ? transtibialForm.affectedLimb : undefined,
-                      };
-                      await submitTranstibialMeasurement.mutateAsync({ id, dto });
-                    }}
-                    disabled={submitTranstibialMeasurement.isPending}
-                  >
-                    {submitTranstibialMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ ورق القياس
-                  </Button>
-                </div>
+                )}
               </div>
             </Section>
           )}
 
           {/* Transradial (below elbow) form */}
-          {measureSheetType === "transradial" && (
+          {measureSheetType.includes("transradial") && (
             <Section title="ورق قياس — تحت المرفق">
               <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>الجهة *</Label>
-                    <Select value={transradialForm.side} onValueChange={(v) => setTransradialForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RIGHT">اليمين</SelectItem>
-                        <SelectItem value="LEFT">اليسار</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ملاحظات</Label>
-                    <Input placeholder="ملاحظات عامة..." value={transradialForm.notes} onChange={(e) => setTransradialForm((f) => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                </div>
+                <MeasurementHistoryList records={transradialRecords} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Sound limb — 7 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–7)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 7 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={transradialForm.soundLimb[k] ?? ""}
-                            onChange={(e) => setTransradialForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                          />
+                {(transradialRecords.length === 0 || measureAddOpen.transradial) && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>الجهة *</Label>
+                        <Select value={transradialForm.side} onValueChange={(v) => setTransradialForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIGHT">اليمين</SelectItem>
+                            <SelectItem value="LEFT">اليسار</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ملاحظات</Label>
+                        <Input placeholder="ملاحظات عامة..." value={transradialForm.notes} onChange={(e) => setTransradialForm((f) => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Sound limb — 7 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–7)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 7 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={transradialForm.soundLimb[k] ?? ""}
+                                onChange={(e) => setTransradialForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Affected limb — 10 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–10)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={transradialForm.affectedLimb[k] ?? ""}
+                                onChange={(e) => setTransradialForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={async () => {
+                          const dto: TransradialDto = {
+                            side: transradialForm.side,
+                            notes: transradialForm.notes || undefined,
+                            soundLimb: Object.keys(transradialForm.soundLimb).length ? transradialForm.soundLimb : undefined,
+                            affectedLimb: Object.keys(transradialForm.affectedLimb).length ? transradialForm.affectedLimb : undefined,
+                          };
+                          await submitTransradialMeasurement.mutateAsync({ id, dto });
+                          setMeasureAddOpen((s) => ({ ...s, transradial: false }));
+                        }}
+                        disabled={submitTransradialMeasurement.isPending}
+                      >
+                        {submitTransradialMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ ورق القياس
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Affected limb — 10 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–10)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={transradialForm.affectedLimb[k] ?? ""}
-                            onChange={(e) => setTransradialForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                {transradialRecords.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setMeasureAddOpen((s) => ({ ...s, transradial: !s.transradial }))}
+                    >
+                      {measureAddOpen.transradial ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {measureAddOpen.transradial ? "إلغاء" : "إضافة قياس جديد"}
+                    </Button>
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={async () => {
-                      const dto: TransradialDto = {
-                        side: transradialForm.side,
-                        notes: transradialForm.notes || undefined,
-                        soundLimb: Object.keys(transradialForm.soundLimb).length ? transradialForm.soundLimb : undefined,
-                        affectedLimb: Object.keys(transradialForm.affectedLimb).length ? transradialForm.affectedLimb : undefined,
-                      };
-                      await submitTransradialMeasurement.mutateAsync({ id, dto });
-                    }}
-                    disabled={submitTransradialMeasurement.isPending}
-                  >
-                    {submitTransradialMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ ورق القياس
-                  </Button>
-                </div>
+                )}
               </div>
             </Section>
           )}
 
           {/* Transhumeral (above elbow) form */}
-          {measureSheetType === "transhumeral" && (
+          {measureSheetType.includes("transhumeral") && (
             <Section title="ورق قياس — فوق المرفق">
               <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>الجهة *</Label>
-                    <Select value={transhumeralForm.side} onValueChange={(v) => setTranshumeralForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RIGHT">اليمين</SelectItem>
-                        <SelectItem value="LEFT">اليسار</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ملاحظات</Label>
-                    <Input placeholder="ملاحظات عامة..." value={transhumeralForm.notes} onChange={(e) => setTranshumeralForm((f) => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                </div>
+                <MeasurementHistoryList records={transhumeralRecords} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Sound limb — 10 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–10)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={transhumeralForm.soundLimb[k] ?? ""}
-                            onChange={(e) => setTranshumeralForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                          />
+                {(transhumeralRecords.length === 0 || measureAddOpen.transhumeral) && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>الجهة *</Label>
+                        <Select value={transhumeralForm.side} onValueChange={(v) => setTranshumeralForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIGHT">اليمين</SelectItem>
+                            <SelectItem value="LEFT">اليسار</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ملاحظات</Label>
+                        <Input placeholder="ملاحظات عامة..." value={transhumeralForm.notes} onChange={(e) => setTranshumeralForm((f) => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Sound limb — 10 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–10)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={transhumeralForm.soundLimb[k] ?? ""}
+                                onChange={(e) => setTranshumeralForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Affected limb — 6 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–6)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 6 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={transhumeralForm.affectedLimb[k] ?? ""}
+                                onChange={(e) => setTranshumeralForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={async () => {
+                          const dto: TranshumeralDto = {
+                            side: transhumeralForm.side,
+                            notes: transhumeralForm.notes || undefined,
+                            soundLimb: Object.keys(transhumeralForm.soundLimb).length ? transhumeralForm.soundLimb : undefined,
+                            affectedLimb: Object.keys(transhumeralForm.affectedLimb).length ? transhumeralForm.affectedLimb : undefined,
+                          };
+                          await submitTranshumeralMeasurement.mutateAsync({ id, dto });
+                          setMeasureAddOpen((s) => ({ ...s, transhumeral: false }));
+                        }}
+                        disabled={submitTranshumeralMeasurement.isPending}
+                      >
+                        {submitTranshumeralMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ ورق القياس
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Affected limb — 6 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–6)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 6 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={transhumeralForm.affectedLimb[k] ?? ""}
-                            onChange={(e) => setTranshumeralForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                {transhumeralRecords.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setMeasureAddOpen((s) => ({ ...s, transhumeral: !s.transhumeral }))}
+                    >
+                      {measureAddOpen.transhumeral ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {measureAddOpen.transhumeral ? "إلغاء" : "إضافة قياس جديد"}
+                    </Button>
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={async () => {
-                      const dto: TranshumeralDto = {
-                        side: transhumeralForm.side,
-                        notes: transhumeralForm.notes || undefined,
-                        soundLimb: Object.keys(transhumeralForm.soundLimb).length ? transhumeralForm.soundLimb : undefined,
-                        affectedLimb: Object.keys(transhumeralForm.affectedLimb).length ? transhumeralForm.affectedLimb : undefined,
-                      };
-                      await submitTranshumeralMeasurement.mutateAsync({ id, dto });
-                    }}
-                    disabled={submitTranshumeralMeasurement.isPending}
-                  >
-                    {submitTranshumeralMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ ورق القياس
-                  </Button>
-                </div>
+                )}
               </div>
             </Section>
           )}
 
           {/* Elbow disarticulation form */}
-          {measureSheetType === "elbow_disarticulation" && (
+          {measureSheetType.includes("elbow_disarticulation") && (
             <Section title="ورق قياس — عبر المرفق">
               <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>الجهة *</Label>
-                    <Select value={elbowForm.side} onValueChange={(v) => setElbowForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RIGHT">اليمين</SelectItem>
-                        <SelectItem value="LEFT">اليسار</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ملاحظات</Label>
-                    <Input placeholder="ملاحظات عامة..." value={elbowForm.notes} onChange={(e) => setElbowForm((f) => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                </div>
+                <MeasurementHistoryList records={elbowDisarticulationRecords} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Sound limb — 12 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–12)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={elbowForm.soundLimb[k] ?? ""}
-                            onChange={(e) => setElbowForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                          />
+                {(elbowDisarticulationRecords.length === 0 || measureAddOpen.elbow_disarticulation) && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>الجهة *</Label>
+                        <Select value={elbowForm.side} onValueChange={(v) => setElbowForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIGHT">اليمين</SelectItem>
+                            <SelectItem value="LEFT">اليسار</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ملاحظات</Label>
+                        <Input placeholder="ملاحظات عامة..." value={elbowForm.notes} onChange={(e) => setElbowForm((f) => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Sound limb — 12 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–12)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={elbowForm.soundLimb[k] ?? ""}
+                                onChange={(e) => setElbowForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Affected limb — 9 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–9)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 9 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={elbowForm.affectedLimb[k] ?? ""}
+                                onChange={(e) => setElbowForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={async () => {
+                          const dto: ElbowDisarticulationDto = {
+                            side: elbowForm.side,
+                            notes: elbowForm.notes || undefined,
+                            soundLimb: Object.keys(elbowForm.soundLimb).length ? elbowForm.soundLimb : undefined,
+                            affectedLimb: Object.keys(elbowForm.affectedLimb).length ? elbowForm.affectedLimb : undefined,
+                          };
+                          await submitElbowMeasurement.mutateAsync({ id, dto });
+                          setMeasureAddOpen((s) => ({ ...s, elbow_disarticulation: false }));
+                        }}
+                        disabled={submitElbowMeasurement.isPending}
+                      >
+                        {submitElbowMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ ورق القياس
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Affected limb — 9 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–9)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 9 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={elbowForm.affectedLimb[k] ?? ""}
-                            onChange={(e) => setElbowForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                {elbowDisarticulationRecords.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setMeasureAddOpen((s) => ({ ...s, elbow_disarticulation: !s.elbow_disarticulation }))}
+                    >
+                      {measureAddOpen.elbow_disarticulation ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {measureAddOpen.elbow_disarticulation ? "إلغاء" : "إضافة قياس جديد"}
+                    </Button>
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={async () => {
-                      const dto: ElbowDisarticulationDto = {
-                        side: elbowForm.side,
-                        notes: elbowForm.notes || undefined,
-                        soundLimb: Object.keys(elbowForm.soundLimb).length ? elbowForm.soundLimb : undefined,
-                        affectedLimb: Object.keys(elbowForm.affectedLimb).length ? elbowForm.affectedLimb : undefined,
-                      };
-                      await submitElbowMeasurement.mutateAsync({ id, dto });
-                    }}
-                    disabled={submitElbowMeasurement.isPending}
-                  >
-                    {submitElbowMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ ورق القياس
-                  </Button>
-                </div>
+                )}
               </div>
             </Section>
           )}
 
           {/* Hemipelvectomy (through pelvis) form */}
-          {measureSheetType === "hemipelvectomy" && (
+          {measureSheetType.includes("hemipelvectomy") && (
             <Section title="ورق قياس — عبر الحوض">
               <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>الجهة *</Label>
-                    <Select value={hemipelvectomyForm.side} onValueChange={(v) => setHemipelvectomyForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RIGHT">اليمين</SelectItem>
-                        <SelectItem value="LEFT">اليسار</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>قياس القدم</Label>
-                    <Input placeholder="مثال: 27cm" value={hemipelvectomyForm.footMeasurement} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ملاحظات</Label>
-                    <Input placeholder="ملاحظات عامة..." value={hemipelvectomyForm.notes} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                </div>
+                <MeasurementHistoryList records={hemipelvectomyRecords} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Sound limb — 15 fields */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–15)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: 15 }, (_, i) => String(i + 1)).map((k) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                {(hemipelvectomyRecords.length === 0 || measureAddOpen.hemipelvectomy) && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>الجهة *</Label>
+                        <Select value={hemipelvectomyForm.side} onValueChange={(v) => setHemipelvectomyForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIGHT">اليمين</SelectItem>
+                            <SelectItem value="LEFT">اليسار</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>قياس القدم</Label>
+                        <Input placeholder="مثال: 27cm" value={hemipelvectomyForm.footMeasurement} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>ملاحظات</Label>
+                        <Input placeholder="ملاحظات عامة..." value={hemipelvectomyForm.notes} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Sound limb — 15 fields */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–15)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Array.from({ length: 15 }, (_, i) => String(i + 1)).map((k) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
+                              <Input className="h-8 text-sm" placeholder="cm"
+                                value={hemipelvectomyForm.soundLimb[k] ?? ""}
+                                onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Affected limb — 1 field only */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب</p>
+                        <div className="flex items-center gap-2 max-w-xs">
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">1</span>
                           <Input className="h-8 text-sm" placeholder="cm"
-                            value={hemipelvectomyForm.soundLimb[k] ?? ""}
-                            onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
+                            value={hemipelvectomyForm.affectedLimb["1"] ?? ""}
+                            onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, affectedLimb: { "1": e.target.value } }))}
                           />
                         </div>
-                      ))}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        onClick={async () => {
+                          const dto: HemipelvectomyDto = {
+                            side: hemipelvectomyForm.side,
+                            notes: hemipelvectomyForm.notes || undefined,
+                            footMeasurement: hemipelvectomyForm.footMeasurement || undefined,
+                            soundLimb: Object.keys(hemipelvectomyForm.soundLimb).length ? hemipelvectomyForm.soundLimb : undefined,
+                            affectedLimb: hemipelvectomyForm.affectedLimb["1"] ? hemipelvectomyForm.affectedLimb : undefined,
+                          };
+                          await submitHemipelvectomyMeasurement.mutateAsync({ id, dto });
+                          setMeasureAddOpen((s) => ({ ...s, hemipelvectomy: false }));
+                        }}
+                        disabled={submitHemipelvectomyMeasurement.isPending}
+                      >
+                        {submitHemipelvectomyMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ ورق القياس
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Affected limb — 1 field only */}
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب</p>
-                    <div className="flex items-center gap-2 max-w-xs">
-                      <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">1</span>
-                      <Input className="h-8 text-sm" placeholder="cm"
-                        value={hemipelvectomyForm.affectedLimb["1"] ?? ""}
-                        onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, affectedLimb: { "1": e.target.value } }))}
-                      />
-                    </div>
+                {hemipelvectomyRecords.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setMeasureAddOpen((s) => ({ ...s, hemipelvectomy: !s.hemipelvectomy }))}
+                    >
+                      {measureAddOpen.hemipelvectomy ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {measureAddOpen.hemipelvectomy ? "إلغاء" : "إضافة قياس جديد"}
+                    </Button>
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={async () => {
-                      const dto: HemipelvectomyDto = {
-                        side: hemipelvectomyForm.side,
-                        notes: hemipelvectomyForm.notes || undefined,
-                        footMeasurement: hemipelvectomyForm.footMeasurement || undefined,
-                        soundLimb: Object.keys(hemipelvectomyForm.soundLimb).length ? hemipelvectomyForm.soundLimb : undefined,
-                        affectedLimb: hemipelvectomyForm.affectedLimb["1"] ? hemipelvectomyForm.affectedLimb : undefined,
-                      };
-                      await submitHemipelvectomyMeasurement.mutateAsync({ id, dto });
-                    }}
-                    disabled={submitHemipelvectomyMeasurement.isPending}
-                  >
-                    {submitHemipelvectomyMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ ورق القياس
-                  </Button>
-                </div>
+                )}
               </div>
             </Section>
           )}
 
-          {!measureSheetType && (
+          {measureSheetType.length === 0 && (
             <div className="rounded-lg border border-dashed flex items-center justify-center py-16">
               <p className="text-muted-foreground text-sm">اختر نوع البتر لعرض ورق القياس المناسب</p>
             </div>
@@ -6447,25 +6715,18 @@ export default function ProstheticsCasePage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5 col-span-2">
                         <Label className="text-xs">اسم المنتج المُسلَّم *</Label>
-                        <Select
-                          value={newItemForm.inventoryItemId || "none"}
-                          onValueChange={(v) => {
-                            if (v === "none") {
+                        <InventoryItemCombobox
+                          items={inventoryItems}
+                          value={newItemForm.inventoryItemId}
+                          onChange={(v) => {
+                            if (!v) {
                               setNewItemForm((f) => ({ ...f, inventoryItemId: "", deliveredProduct: "", partCode: "" }));
                             } else {
                               const item = inventoryItems.find((it: any) => it.id === v);
                               setNewItemForm((f) => ({ ...f, inventoryItemId: v, deliveredProduct: item?.name ?? "", partCode: item?.code ?? "" }));
                             }
                           }}
-                        >
-                          <SelectTrigger><SelectValue placeholder="اختر من المخزون..." /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">— اختر من المخزون —</SelectItem>
-                            {inventoryItems.map((item: any) => (
-                              <SelectItem key={item.id} value={item.id}>{item.name}{item.code ? ` — ${item.code}` : ""}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">رمز القطعة</Label>
@@ -6525,25 +6786,19 @@ export default function ProstheticsCasePage() {
                                     <div className="grid grid-cols-2 gap-3">
                                       <div className="space-y-1.5 col-span-2">
                                         <Label className="text-xs">اسم المنتج *</Label>
-                                        <Select
-                                          value={editingItemForm.inventoryItemId || "none"}
-                                          onValueChange={(v) => {
-                                            if (v === "none") {
+                                        <InventoryItemCombobox
+                                          items={inventoryItems}
+                                          value={editingItemForm.inventoryItemId}
+                                          onChange={(v) => {
+                                            if (!v) {
                                               setEditingItemForm((f) => ({ ...f, inventoryItemId: "", deliveredProduct: "", partCode: "" }));
                                             } else {
                                               const inv = inventoryItems.find((it: any) => it.id === v);
                                               setEditingItemForm((f) => ({ ...f, inventoryItemId: v, deliveredProduct: inv?.name ?? "", partCode: inv?.code ?? "" }));
                                             }
                                           }}
-                                        >
-                                          <SelectTrigger><SelectValue placeholder={editingItemForm.deliveredProduct || "اختر من المخزون..."} /></SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="none">— اختر من المخزون —</SelectItem>
-                                            {inventoryItems.map((invItem: any) => (
-                                              <SelectItem key={invItem.id} value={invItem.id}>{invItem.name}{invItem.code ? ` — ${invItem.code}` : ""}</SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
+                                          placeholder={editingItemForm.deliveredProduct || "اختر من المخزون..."}
+                                        />
                                       </div>
                                       <div className="space-y-1.5">
                                         <Label className="text-xs">رمز القطعة</Label>

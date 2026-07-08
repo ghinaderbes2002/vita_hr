@@ -38,7 +38,10 @@ export type NotificationType =
   | "ONBOARDING_TASK"
   | "OFFBOARDING_TASK"
   | "MONTHLY_PAYROLL_READY"
-  | "GENERAL";
+  | "GENERAL"
+  // إشعارات المخزون الطبي
+  | "INVENTORY_REQUEST"
+  | "INVENTORY_REQUEST_UPDATE";
 
 export interface Notification {
   id: string;

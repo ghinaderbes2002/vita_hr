@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 
 export type ItemType = "COMPONENT" | "CONSUMABLE";
 export type TransactionType = "RECEIVE" | "ISSUE" | "ADJUST" | "RETURN";
+export type ItemRequestStatus = "PENDING" | "APPROVED" | "DONE" | "NOT_AVAILABLE";
 
 export interface InventoryCategory {
   id: string;
@@ -22,6 +23,7 @@ export interface InventoryItem {
   code: string;
   name: string;
   nameAr?: string | null;
+  companyName?: string | null;
   type: ItemType | null;
   categoryId?: string | null;
   category?: InventoryCategory | null;
@@ -35,6 +37,10 @@ export interface InventoryItem {
   description?: string | null;
   isActive?: boolean;
   isLowStock?: boolean;
+  // Part-request workflow — set when the item was created as a technician request
+  status?: ItemRequestStatus | null;
+  notes?: string | null;
+  requestedByUserId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +71,7 @@ export interface InventoryTransaction {
 export interface CreateItemDto {
   code: string;
   name: string;
+  companyName?: string;
   type?: ItemType;
   currentStock?: number;
   categoryId?: string;
@@ -74,6 +81,14 @@ export interface CreateItemDto {
   unit?: string;
   imageUrl?: string;
   description?: string;
+  status?: ItemRequestStatus;
+  notes?: string;
+}
+
+export interface ImportExcelResult {
+  created: number;
+  skipped: number;
+  errors: string[];
 }
 
 export interface InventoryListParams {
@@ -142,6 +157,21 @@ export const clinicInventoryApi = {
   getItemByCode: async (code: string): Promise<InventoryItem> => {
     const { data } = await apiClient.get(`/inventory/items/by-code/${code}`);
     return normalizeItem(data?.data ?? data);
+  },
+
+  // Soft delete — sets isActive: false, item stops appearing in listItems()
+  deleteItem: async (id: string): Promise<{ deleted: boolean }> => {
+    const { data } = await apiClient.delete(`/inventory/items/${id}`);
+    return data?.data ?? data;
+  },
+
+  importExcel: async (file: File): Promise<ImportExcelResult> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await apiClient.post("/inventory/items/import-excel", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data?.data ?? data;
   },
 
   addTransaction: async (id: string, dto: { type: TransactionType; quantity: number; notes?: string; caseId?: string }): Promise<InventoryTransaction> => {

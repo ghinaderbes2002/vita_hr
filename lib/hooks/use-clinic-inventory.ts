@@ -61,7 +61,7 @@ export function useCreateInventoryItem() {
     mutationFn: (dto: CreateItemDto) => clinicInventoryApi.createItem(dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
-      toast.success("تمت إضافة القطعة");
+      toast.success("تم إرسال طلب الصنف — بانتظار موافقة المسؤول");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الإضافة"),
   });
@@ -78,6 +78,36 @@ export function useUpdateInventoryItem() {
       toast.success("تم تحديث القطعة");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحديث"),
+  });
+}
+
+export function useDeleteInventoryItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => clinicInventoryApi.deleteItem(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
+      qc.invalidateQueries({ queryKey: ["clinic-inventory-low-stock"] });
+      toast.success("تم حذف الصنف");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حذف الصنف"),
+  });
+}
+
+export function useImportInventoryExcel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => clinicInventoryApi.importExcel(file),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
+      qc.invalidateQueries({ queryKey: ["clinic-inventory-low-stock"] });
+      if (result.skipped > 0) {
+        toast.warning(`تم استيراد ${result.created} صنف، وتخطي ${result.skipped}`);
+      } else {
+        toast.success(`تم استيراد ${result.created} صنف بنجاح`);
+      }
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل استيراد الملف"),
   });
 }
 

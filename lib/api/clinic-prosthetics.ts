@@ -88,6 +88,15 @@ export interface ProstheticsCase {
   notes?: string | null;
   upperAssessment?: AssessmentResult[];
   lowerAssessment?: AssessmentResult[];
+  // Measurement sheets — each POST appends a new record, returned newest-first
+  transtibialAssessment?: MeasurementAssessment[];
+  transfemoralAssessment?: MeasurementAssessment[];
+  ankleDisarticulationAssessment?: MeasurementAssessment[];
+  kneeDisarticulationAssessment?: MeasurementAssessment[];
+  hemipelvectomyAssessment?: MeasurementAssessment[];
+  elbowDisarticulationAssessment?: MeasurementAssessment[];
+  transhumeralAssessment?: MeasurementAssessment[];
+  transradialAssessment?: MeasurementAssessment[];
   prosthesisCompleted?: boolean | null;
   prosthesisType?: ProstheticType | null;
   prosthesisSuitable?: boolean | null;
@@ -103,6 +112,16 @@ export interface AssessmentResult {
   residualLimbLength?: string | null;
   residualLimbShape?: string | null;
   [key: string]: any;
+}
+
+export interface MeasurementAssessment {
+  id: string;
+  examinedAt: string;
+  side: "RIGHT" | "LEFT";
+  notes?: string | null;
+  footMeasurement?: string | null;
+  soundLimb?: Record<string, string> | null;
+  affectedLimb?: Record<string, string> | null;
 }
 
 export interface CreateProstheticsCaseDto {
@@ -227,6 +246,8 @@ export interface CaseComponent {
   sourceLocation?: string | null;
   reason?: string | null;
   matchedInInventory?: boolean;
+  addedAt?: string;
+  addedBy?: string | null;
   // legacy fields (kept for backward compat with old saved data)
   inventoryItemId?: string | null;
   source?: ComponentSource;

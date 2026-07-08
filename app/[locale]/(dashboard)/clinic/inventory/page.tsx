@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { Plus, Search, AlertTriangle, Package, Eye, ArrowUpDown } from "lucide-react";
+import { Plus, Search, AlertTriangle, Package, Eye, ArrowUpDown, Pencil, Trash2, Upload, Loader2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -21,11 +21,14 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
-  useInventoryItems, useLowStockAlerts, useInventoryCategories,
-  useCreateInventoryItem, useAddInventoryTransaction, useInventoryTransactions,
+  useInventoryItems, useLowStockAlerts,
+  useAddInventoryTransaction, useInventoryTransactions,
+  useDeleteInventoryItem, useImportInventoryExcel, useUpdateInventoryItem,
 } from "@/lib/hooks/use-clinic-inventory";
-import { InventoryItem, ItemType, TransactionType, CreateItemDto } from "@/lib/api/clinic-inventory";
+import { ImportExcelResult, InventoryItem, ItemRequestStatus, ItemType, TransactionType } from "@/lib/api/clinic-inventory";
+import { InventoryItemFormDialog } from "@/components/clinic/inventory-item-form-dialog";
 
 const TYPE_LABEL: Record<ItemType, string> = { COMPONENT: "قطعة", CONSUMABLE: "مستهلك" };
 const TX_LABEL: Record<TransactionType, string> = {
@@ -33,6 +36,15 @@ const TX_LABEL: Record<TransactionType, string> = {
 };
 const TX_COLOR: Record<TransactionType, string> = {
   RECEIVE: "text-green-600", ISSUE: "text-red-600", ADJUST: "text-blue-600", RETURN: "text-orange-600",
+};
+const REQUEST_STATUS_LABEL: Record<ItemRequestStatus, string> = {
+  PENDING: "معلق", APPROVED: "معتمد", DONE: "تم", NOT_AVAILABLE: "لا يوجد",
+};
+const REQUEST_STATUS_BADGE: Record<ItemRequestStatus, string> = {
+  PENDING: "border-amber-300 bg-amber-50 text-amber-700",
+  APPROVED: "border-blue-300 bg-blue-50 text-blue-700",
+  DONE: "border-green-300 bg-green-50 text-green-700",
+  NOT_AVAILABLE: "border-red-300 bg-red-50 text-red-700",
 };
 
 export default function InventoryPage() {
@@ -42,33 +54,37 @@ export default function InventoryPage() {
   const [typeFilter, setTypeFilter] = useState<ItemType | "all">("all");
   const [incompleteOnly, setIncompleteOnly] = useState(false);
   const [newItemOpen, setNewItemOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
+  const [importResult, setImportResult] = useState<ImportExcelResult | null>(null);
   const [txDialogItem, setTxDialogItem] = useState<InventoryItem | null>(null);
-  const [newItemForm, setNewItemForm] = useState<Partial<CreateItemDto>>({
-    code: "", name: "", unit: "قطعة",
-  });
   const [txForm, setTxForm] = useState({ type: "RECEIVE" as TransactionType, quantity: "1", notes: "" });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: items = [], isLoading } = useInventoryItems({
     search: search || undefined,
     type: typeFilter !== "all" ? typeFilter : undefined,
   });
   const { data: lowStock = [] } = useLowStockAlerts();
-  const { data: categories = [] } = useInventoryCategories();
   const { data: transactions = [] } = useInventoryTransactions();
 
-  const createItem = useCreateInventoryItem();
   const addTx = useAddInventoryTransaction();
-
-  const handleCreateItem = async () => {
-    if (!newItemForm.code || !newItemForm.name) return;
-    await createItem.mutateAsync(newItemForm as CreateItemDto);
-    setNewItemOpen(false);
-    setNewItemForm({ code: "", name: "", unit: "قطعة" });
-  };
+  const deleteItem = useDeleteInventoryItem();
+  const importExcel = useImportInventoryExcel();
+  const updateItem = useUpdateInventoryItem();
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
   const displayedItems = incompleteOnly
     ? items.filter((i) => !i.categoryId)
     : items;
+
+  // Part requests — items created by technicians via the "طلب قطعة" flow
+  const requestedItems = items.filter((i) => !!i.requestedByUserId);
+  const pendingRequests = requestedItems.filter((i) => i.status === "PENDING");
+
+  const handleReviewStatus = (item: InventoryItem, status: ItemRequestStatus) => {
+    updateItem.mutate({ id: item.id, dto: { status, notes: reviewNotes[item.id] ?? item.notes ?? undefined } });
+  };
 
   const handleAddTx = async () => {
     if (!txDialogItem || !txForm.quantity) return;
@@ -82,6 +98,15 @@ export default function InventoryPage() {
     setTxForm({ type: "RECEIVE", quantity: "1", notes: "" });
   };
 
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    importExcel.mutate(file, {
+      onSuccess: (result) => { if (result.errors.length > 0) setImportResult(result); },
+    });
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -89,10 +114,17 @@ export default function InventoryPage() {
         description="إدارة قطع الأطراف الصناعية والمستهلكات"
         actions={
           <ActionGuard permission={PERMISSIONS.CLINIC_INVENTORY.MANAGE}>
-            <Button onClick={() => setNewItemOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              إضافة صنف
-            </Button>
+            <div className="flex items-center gap-2">
+              <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportFile} />
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importExcel.isPending} className="gap-2">
+                {importExcel.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                استيراد Excel
+              </Button>
+              <Button onClick={() => setNewItemOpen(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                إضافة صنف
+              </Button>
+            </div>
           </ActionGuard>
         }
       />
@@ -148,6 +180,10 @@ export default function InventoryPage() {
       <Tabs defaultValue="items">
         <TabsList>
           <TabsTrigger value="items">الأصناف</TabsTrigger>
+          <TabsTrigger value="requests">
+            طلبات القطع
+            {pendingRequests.length > 0 && <Badge className="mr-1.5 h-4 text-xs">{pendingRequests.length}</Badge>}
+          </TabsTrigger>
           <TabsTrigger value="transactions">حركات المخزون</TabsTrigger>
           <TabsTrigger value="low-stock">
             تنبيهات المخزون
@@ -191,11 +227,13 @@ export default function InventoryPage() {
                   <TableRow>
                     <TableHead>الكود</TableHead>
                     <TableHead>الصنف</TableHead>
+                    <TableHead>الشركة</TableHead>
                     <TableHead>النوع</TableHead>
                     <TableHead>التصنيف</TableHead>
                     <TableHead>المخزون</TableHead>
                     <TableHead>الحد الأدنى</TableHead>
                     <TableHead>السعر</TableHead>
+                    <TableHead>حالة الطلب</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -203,12 +241,12 @@ export default function InventoryPage() {
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        {Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
+                        {Array.from({ length: 10 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
                       </TableRow>
                     ))
                   ) : displayedItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8}>
+                      <TableCell colSpan={10}>
                         <EmptyState icon={<Package className="h-8 w-8 text-muted-foreground" />}
                           title={incompleteOnly ? "لا توجد أصناف بيانات ناقصة" : "لا توجد أصناف"}
                           description={incompleteOnly ? "جميع الأصناف مكتملة البيانات" : "أضف أول صنف للمخزون"} />
@@ -222,6 +260,7 @@ export default function InventoryPage() {
                           {item.name}
                           {item.description && <p className="text-xs text-muted-foreground truncate max-w-40">{item.description}</p>}
                         </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{item.companyName ?? "—"}</TableCell>
                         <TableCell>
                           {item.type ? <Badge variant="outline" className="text-xs">{TYPE_LABEL[item.type]}</Badge> : <span className="text-muted-foreground text-xs">—</span>}
                         </TableCell>
@@ -236,6 +275,13 @@ export default function InventoryPage() {
                         <TableCell className="text-sm">{item.minStockLevel}</TableCell>
                         <TableCell className="text-sm">{item.unitPrice != null && item.unitPrice > 0 ? `$${item.unitPrice.toLocaleString("en-US")}` : "—"}</TableCell>
                         <TableCell>
+                          {item.status ? (
+                            <Badge variant="outline" className={`text-xs ${REQUEST_STATUS_BADGE[item.status]}`}>
+                              {REQUEST_STATUS_LABEL[item.status]}
+                            </Badge>
+                          ) : <span className="text-muted-foreground text-xs">—</span>}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7"
                               onClick={() => router.push(`/${locale}/clinic/inventory/${item.id}`)}>
@@ -247,6 +293,16 @@ export default function InventoryPage() {
                                 <ArrowUpDown className="h-3.5 w-3.5" />
                               </Button>
                             </ActionGuard>
+                            <ActionGuard permission={PERMISSIONS.CLINIC_INVENTORY.MANAGE}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7"
+                                onClick={() => setEditingItem(item)}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                                onClick={() => setDeleteTarget(item)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </ActionGuard>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -256,6 +312,57 @@ export default function InventoryPage() {
               </Table>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Part requests tab */}
+        <TabsContent value="requests" className="mt-4">
+          {requestedItems.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground space-y-2">
+              <ClipboardList className="h-8 w-8 mx-auto opacity-40" />
+              <p className="font-medium">لا توجد طلبات قطع حالياً</p>
+              <p className="text-sm max-w-sm mx-auto">تظهر هنا طلبات القطع التي يرسلها الفنيون عند عدم توفر صنف بالمخزون</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {[...requestedItems]
+                .sort((a, b) => (a.status === "PENDING" ? 0 : 1) - (b.status === "PENDING" ? 0 : 1))
+                .map((item) => (
+                  <Card key={item.id}>
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                          <p className="font-semibold">{item.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{item.code}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {new Date(item.createdAt).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}
+                          </p>
+                        </div>
+                        {item.status && (
+                          <Badge variant="outline" className={`text-xs ${REQUEST_STATUS_BADGE[item.status]}`}>
+                            {REQUEST_STATUS_LABEL[item.status]}
+                          </Badge>
+                        )}
+                      </div>
+                      <ActionGuard permission={PERMISSIONS.CLINIC_INVENTORY.MANAGE}>
+                        <div className="grid gap-2 sm:grid-cols-[1fr_auto] items-start">
+                          <Textarea
+                            rows={2}
+                            placeholder="ملاحظة للفني (اختياري)..."
+                            value={reviewNotes[item.id] ?? item.notes ?? ""}
+                            onChange={(e) => setReviewNotes((s) => ({ ...s, [item.id]: e.target.value }))}
+                          />
+                          <div className="flex sm:flex-col gap-1.5">
+                            <Button size="sm" disabled={updateItem.isPending} onClick={() => handleReviewStatus(item, "APPROVED")}>اعتماد</Button>
+                            <Button size="sm" variant="outline" disabled={updateItem.isPending} onClick={() => handleReviewStatus(item, "DONE")}>تم</Button>
+                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" disabled={updateItem.isPending} onClick={() => handleReviewStatus(item, "NOT_AVAILABLE")}>لا يوجد</Button>
+                          </div>
+                        </div>
+                      </ActionGuard>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Transactions tab */}
@@ -334,64 +441,42 @@ export default function InventoryPage() {
       </Tabs>
 
       {/* New item dialog */}
-      <Dialog open={newItemOpen} onOpenChange={setNewItemOpen}>
+      <InventoryItemFormDialog open={newItemOpen} onOpenChange={setNewItemOpen} />
+
+      {/* Edit item dialog */}
+      <InventoryItemFormDialog open={!!editingItem} onOpenChange={(o) => !o && setEditingItem(null)} item={editingItem} />
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title={`حذف "${deleteTarget?.name ?? ""}"؟`}
+        description="سيتم إخفاء الصنف من المخزون، ويمكن استرجاعه لاحقاً عبر استيراد نفس الكود من ملف Excel."
+        variant="destructive"
+        onConfirm={() => { if (deleteTarget) deleteItem.mutate(deleteTarget.id); setDeleteTarget(null); }}
+      />
+
+      {/* Excel import errors */}
+      <Dialog open={!!importResult} onOpenChange={(o) => !o && setImportResult(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>إضافة صنف جديد</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>الكود <span className="text-destructive">*</span></Label>
-                <Input value={newItemForm.code ?? ""} onChange={(e) => setNewItemForm((f) => ({ ...f, code: e.target.value }))} placeholder="PRO-001" className="font-mono" />
+          <DialogHeader>
+            <DialogTitle>نتيجة الاستيراد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm">
+              تم استيراد <span className="font-bold text-green-600">{importResult?.created}</span> صنف،
+              وتخطي <span className="font-bold text-destructive">{importResult?.skipped}</span>.
+            </p>
+            {importResult?.errors && importResult.errors.length > 0 && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-1 max-h-60 overflow-y-auto">
+                {importResult.errors.map((err, i) => (
+                  <p key={i} className="text-xs text-destructive">{err}</p>
+                ))}
               </div>
-              <div className="space-y-1.5">
-                <Label>النوع</Label>
-                <Select value={newItemForm.type ?? ""} onValueChange={(v) => setNewItemForm((f) => ({ ...f, type: v ? v as ItemType : undefined }))}>
-                  <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="COMPONENT">قطعة</SelectItem>
-                    <SelectItem value="CONSUMABLE">مستهلك</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>الاسم <span className="text-destructive">*</span></Label>
-              <Input value={newItemForm.name ?? ""} onChange={(e) => setNewItemForm((f) => ({ ...f, name: e.target.value }))} />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label>الكمية الابتدائية</Label>
-                <Input type="number" min={0} value={newItemForm.currentStock ?? ""} placeholder="0" onChange={(e) => setNewItemForm((f) => ({ ...f, currentStock: parseInt(e.target.value) || 0 }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>الحد الأدنى</Label>
-                <Input type="number" min={0} value={newItemForm.minStockLevel ?? ""} placeholder="اختياري" onChange={(e) => setNewItemForm((f) => ({ ...f, minStockLevel: parseInt(e.target.value) || 0 }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>الوحدة</Label>
-                <Input value={newItemForm.unit ?? ""} onChange={(e) => setNewItemForm((f) => ({ ...f, unit: e.target.value }))} placeholder="قطعة، متر..." />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>التصنيف</Label>
-              <Select value={newItemForm.categoryId ?? ""} onValueChange={(v) => setNewItemForm((f) => ({ ...f, categoryId: v === "none" ? undefined : v }))}>
-                <SelectTrigger><SelectValue placeholder="اختر تصنيفاً" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">بدون تصنيف</SelectItem>
-                  {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>وصف</Label>
-              <Textarea rows={2} value={newItemForm.description ?? ""} onChange={(e) => setNewItemForm((f) => ({ ...f, description: e.target.value }))} />
-            </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewItemOpen(false)}>إلغاء</Button>
-            <Button onClick={handleCreateItem} disabled={!newItemForm.code || !newItemForm.name || createItem.isPending}>
-              {createItem.isPending ? "جاري الحفظ..." : "إضافة"}
-            </Button>
+            <Button onClick={() => setImportResult(null)}>حسناً</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
