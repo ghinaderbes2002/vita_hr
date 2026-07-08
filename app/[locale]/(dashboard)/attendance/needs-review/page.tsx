@@ -17,8 +17,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { useNeedsReview } from "@/lib/hooks/use-attendance-records";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { RawStampsDrawer } from "@/components/features/attendance/raw-stamps-drawer";
-import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { formatDate, formatTime } from "@/lib/utils/date";
 
 const PUNCH_STATUS_LABELS: Record<string, { label: string; className: string }> = {
   NEEDS_REVIEW: { label: "بحاجة مراجعة", className: "bg-amber-50 text-amber-700 border-amber-300" },
