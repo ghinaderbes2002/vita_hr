@@ -48,11 +48,6 @@ const TAB_ICONS: Record<TabKey, any> = {
 
 const TAB_KEYS: TabKey[] = ["lateness", "absences", "temp-exits", "monthly-payroll", "employee-card", "top-absences", "overtime"];
 
-function formatTime(iso?: string) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-}
-
 function formatMinutes(mins: number) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
