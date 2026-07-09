@@ -5548,7 +5548,16 @@ export default function ProstheticsCasePage() {
                       </thead>
                       <tbody>
                         {components.map((comp) => {
-                          const invItem = inventoryItems.find((it: any) => it.id === comp.inventoryItemId);
+                          // Link the component to its inventory item by id when
+                          // available, otherwise by partCode (GET /components
+                          // often omits inventoryItemId). Prefer a match that
+                          // carries a request status so it actually shows.
+                          const compCode = comp.partCode ?? comp.code;
+                          const invMatches = inventoryItems.filter((it: any) =>
+                            (comp.inventoryItemId && it.id === comp.inventoryItemId) ||
+                            (compCode && it.code === compCode)
+                          );
+                          const invItem = invMatches.find((it: any) => it.status) ?? invMatches[0];
                           return (
                           <tr key={comp.id} className="border-t">
                             <td className="p-2 font-mono text-xs">{comp.partCode ?? comp.code ?? "—"}</td>

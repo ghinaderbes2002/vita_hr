@@ -105,6 +105,18 @@ const S = StyleSheet.create({
   statusReturned: { color: "#6b7280" },
   statusDamaged:  { color: "#b45309" },
   statusLost:     { color: "#dc2626" },
+  acknowledgmentBox: {
+    position: "absolute",
+    bottom: 95,
+    left: 28,
+    right: 28,
+  },
+  acknowledgmentText: {
+    fontSize: 8,
+    color: TEXT,
+    lineHeight: 1.6,
+    textAlign: "right",
+  },
   signatureBox: {
     position: "absolute",
     bottom: 40,
@@ -120,6 +132,25 @@ const S = StyleSheet.create({
     marginTop: 28,
   },
 });
+
+// Arabic-style guillemets («»), not straight ASCII quotes — real glyphs with
+// well-defined bracket pairing, so they render on the correct side without
+// needing an invisible bidi-control character.
+//
+// Split into short clauses rendered as separate <Text> elements instead of
+// one long paragraph string: @react-pdf/textkit's RTL line-reordering
+// (reorderLine, running in a WASM yoga-layout module in the browser) has a
+// known crash — "Cannot read properties of undefined (reading 'id')" — on
+// long RTL paragraphs that wrap across multiple lines. Keeping each Text's
+// content short avoids the code path that triggers it. See
+// https://github.com/diegomura/react-pdf/issues/3050 and
+// https://github.com/diegomura/react-pdf/issues/3292
+const ACKNOWLEDGMENT_LINES = [
+  "«أقرّ أنا الموقّع أدناه بأنني استلمت المواد المبيّنة في هذا النموذج وهي بحالة سليمة،",
+  "وأتحمل المسؤولية الكاملة عن المحافظة عليها واستخدامها وفق الأنظمة والتعليمات المعتمدة.",
+  "كما أقرّ بتحمّل مسؤولية أي تلف أو فقدان أو سوء استخدام قد يلحق بهذه المواد طوال فترة وجودها في عهدتي،",
+  "وألتزم بإعادتها عند الطلب بحالة جيدة قدر الإمكان، مع علمي بخضوعي للإجراءات الإدارية أو المالية المترتبة في حال الإخلال بما ورد أعلاه.»",
+];
 
 // ── Label maps ────────────────────────────────────────────────────────────────
 const CAT_LABEL: Record<string, string> = {
@@ -140,6 +171,58 @@ function fmtDate(d?: string | null) {
   if (!d) return "—";
   const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? `${m[3]}/${m[2]}/${m[1]}` : d.slice(0, 10);
+}
+
+// ── Mixed Arabic/Latin text ──────────────────────────────────────────────────
+// @react-pdf/textkit's RTL reordering (reorderLine, running in a WASM
+// yoga-layout module in the browser) crashes with "Cannot read properties of
+// undefined (reading 'id')" on some Arabic+Latin mixed strings — its glyph
+// index bookkeeping breaks once a run contains ligature-formed glyphs (which
+// virtually all connected Arabic text does) AND the line actually needs bidi
+// reordering (only triggered when a line mixes RTL and LTR runs). Item names
+// like "طابعة BROTHER لون اسود" hit exactly that combination.
+// See https://github.com/diegomura/react-pdf/issues/3050 and
+// https://github.com/diegomura/react-pdf/issues/3292 (open, unfixed upstream).
+//
+// Splitting mixed text into separate same-direction <Text> runs keeps each
+// one single-direction, so reorderLine's "no bidi reordering needed" early
+// exit applies to every run and the buggy code path never executes.
+const hasAr = (s: string) => /[؀-ۿ]/.test(s);
+
+function splitRuns(s: string): { text: string; ar: boolean }[] {
+  const runs: { text: string; ar: boolean }[] = [];
+  let cur = "";
+  let curAr = false;
+  for (const ch of s) {
+    const isAr = hasAr(ch);
+    if (cur && !/\s/.test(ch) && isAr !== curAr) {
+      runs.push({ text: cur, ar: curAr });
+      cur = ch;
+      curAr = isAr;
+    } else {
+      if (!cur) curAr = isAr;
+      cur += ch;
+    }
+  }
+  if (cur) runs.push({ text: cur, ar: curAr });
+  return runs;
+}
+
+function MixedText({ text, style }: { text: string; style?: any }) {
+  if (!text) return null;
+  if (!hasAr(text)) return <Text style={[style, { direction: "ltr" as any }]}>{text}</Text>;
+  const runs = splitRuns(text);
+  if (runs.length <= 1) return <Text style={style}>{text}</Text>;
+  const { flex, ...runStyle } = (Array.isArray(style) ? Object.assign({}, ...style) : style) ?? {};
+  return (
+    <View style={{ flex, flexDirection: "row-reverse", flexWrap: "wrap" }}>
+      {runs.map((r, idx) => (
+        <Text key={idx} style={[runStyle, !r.ar && { direction: "ltr" as any }]}>
+          {r.text}
+        </Text>
+      ))}
+    </View>
+  );
 }
 
 // ── PDF Document ──────────────────────────────────────────────────────────────
@@ -174,19 +257,31 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
         {/* ── Employee card ── */}
         <View style={S.empCard}>
           <View style={[S.empCardItem, { alignItems: "center" }]}>
-            <Text style={[S.empCardLabel, { textAlign: "center" }]}>اسم الموظف</Text>
-            <Text style={[S.empCardNameValue, { textAlign: "center" }]}>{data.employeeName}</Text>
+            <Text style={[S.empCardLabel, { textAlign: "center" }]}>
+              اسم الموظف
+            </Text>
+            <Text style={[S.empCardNameValue, { textAlign: "center" }]}>
+              {data.employeeName}
+            </Text>
           </View>
           {data.employeeNumber && (
             <View style={[S.empCardItem, { alignItems: "center" }]}>
-              <Text style={[S.empCardLabel, { textAlign: "center" }]}>الرقم الوظيفي</Text>
-              <Text style={[S.empCardNameValue, { textAlign: "center" }]}>{data.employeeNumber}</Text>
+              <Text style={[S.empCardLabel, { textAlign: "center" }]}>
+                الرقم الوظيفي
+              </Text>
+              <Text style={[S.empCardNameValue, { textAlign: "center" }]}>
+                {data.employeeNumber}
+              </Text>
             </View>
           )}
           {data.department && (
             <View style={[S.empCardItem, { alignItems: "center" }]}>
-              <Text style={[S.empCardLabel, { textAlign: "center" }]}>القسم</Text>
-              <Text style={[S.empCardNameValue, { textAlign: "center" }]}>{data.department}</Text>
+              <Text style={[S.empCardLabel, { textAlign: "center" }]}>
+                القسم
+              </Text>
+              <Text style={[S.empCardNameValue, { textAlign: "center" }]}>
+                {data.department}
+              </Text>
             </View>
           )}
           <View style={S.empCardItem}>
@@ -196,14 +291,18 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
           {[
             { label: "مع الموظف", val: counts.with, color: "#0f6624" },
             { label: "تم إرجاعها", val: counts.returned, color: "#6b7280" },
-            { label: "تالفة",      val: counts.damaged,  color: "#b45309" },
-            { label: "مفقودة",    val: counts.lost,     color: "#dc2626" },
-          ].filter((x) => x.val > 0).map((x) => (
-            <View key={x.label} style={S.empCardItem}>
-              <Text style={S.empCardLabel}>{x.label}</Text>
-              <Text style={[S.empCardValue, { color: x.color }]}>{x.val}</Text>
-            </View>
-          ))}
+            { label: "تالفة", val: counts.damaged, color: "#b45309" },
+            { label: "مفقودة", val: counts.lost, color: "#dc2626" },
+          ]
+            .filter((x) => x.val > 0)
+            .map((x) => (
+              <View key={x.label} style={S.empCardItem}>
+                <Text style={S.empCardLabel}>{x.label}</Text>
+                <Text style={[S.empCardValue, { color: x.color }]}>
+                  {x.val}
+                </Text>
+              </View>
+            ))}
         </View>
 
         {/* ── Table ── */}
@@ -217,26 +316,49 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
         </View>
 
         {data.custodies.map((c, i) => (
-          <View key={c.id} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]} wrap={false}>
+          <View
+            key={c.id}
+            style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]}
+            wrap={false}
+          >
             <Text style={S.tdNum}>{i + 1}</Text>
-            <Text style={S.tdName}>{c.name}{c.description ? ` (${c.description})` : ""}</Text>
+            <MixedText
+              style={S.tdName}
+              text={`${c.name}${c.description ? ` (${c.description})` : ""}`}
+            />
             <Text style={S.tdCat}>{CAT_LABEL[c.category] ?? c.category}</Text>
             <Text style={S.tdSerial}>{c.serialNumber ?? "—"}</Text>
             <Text style={S.tdDate}>{fmtDate(c.assignedDate)}</Text>
-            <Text style={[S.tdStatus, STATUS_STYLE[c.status] ?? {}]}>{STATUS_LABEL[c.status] ?? c.status}</Text>
+            <Text style={[S.tdStatus, STATUS_STYLE[c.status] ?? {}]}>
+              {STATUS_LABEL[c.status] ?? c.status}
+            </Text>
           </View>
         ))}
 
+        {/* ── Acknowledgment ── */}
+        <View style={S.acknowledgmentBox}>
+          {ACKNOWLEDGMENT_LINES.map((line, i) => (
+            <Text key={i} style={S.acknowledgmentText}>{line}</Text>
+          ))}
+        </View>
+
         {/* ── Employee signature ── */}
         <View style={S.signatureBox}>
-          <Text style={S.signatureLabel}>توقيع الموظف</Text>
+          <Text style={[S.signatureLabel, { fontWeight: "normal" }]}>
+            توقيع الموظف
+          </Text>
           <View style={S.signatureLine} />
         </View>
 
         {/* ── Footer ── */}
         <View style={S.pageFooter} fixed>
           <Text style={S.pageFooterText}>سجل العهد الوظيفية — Vita HR</Text>
-          <Text style={S.pageFooterText} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+          <Text
+            style={S.pageFooterText}
+            render={({ pageNumber, totalPages }) =>
+              `${pageNumber} / ${totalPages}`
+            }
+          />
         </View>
       </Page>
     </Document>
@@ -264,9 +386,8 @@ export async function downloadCustodyGroupPdf(
     fontsRegistered = true;
   }
 
-  const printDate = new Date().toLocaleDateString("ar-SA", {
-    year: "numeric", month: "long", day: "numeric",
-  });
+  const now = new Date();
+  const printDate = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
 
   const blob = await pdf(
     <CustodyPdfDoc data={{

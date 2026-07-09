@@ -106,6 +106,7 @@ export function InventoryItemCombobox({
         open={addItemOpen}
         onOpenChange={setAddItemOpen}
         initialCode={search}
+        isRequest
         onCreated={(item) => { onChange(item.id); setSearch(""); }}
       />
     </>

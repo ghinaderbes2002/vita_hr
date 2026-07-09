@@ -59,9 +59,9 @@ export function useCreateInventoryItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (dto: CreateItemDto) => clinicInventoryApi.createItem(dto),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
-      toast.success("تم إرسال طلب الصنف — بانتظار موافقة المسؤول");
+      toast.success(variables.isRequest ? "تم إرسال طلب الصنف — بانتظار موافقة المسؤول" : "تمت إضافة الصنف");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الإضافة"),
   });

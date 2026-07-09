@@ -83,6 +83,10 @@ export interface CreateItemDto {
   description?: string;
   status?: ItemRequestStatus;
   notes?: string;
+  // Marks the item as a technician-submitted part request (status starts
+  // PENDING, no stock impact until an admin approves it). Omit entirely for
+  // a normal admin-added catalog item (status stays null).
+  isRequest?: boolean;
 }
 
 export interface ImportExcelResult {

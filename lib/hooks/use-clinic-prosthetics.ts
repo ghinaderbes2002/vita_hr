@@ -172,12 +172,14 @@ export function useAddCaseComponent() {
       clinicProstheticsApi.addComponent(id, dto),
     onSuccess: (data: any, { id }) => {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-components", id] });
-      if (data?.matchedInInventory === false) {
-        toast.warning("تم الحفظ — الكود غير موجود بالمخزون، لن يتم خصم أي كمية");
-      } else {
-        qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
-        toast.success("تمت إضافة القطعة وخُصمت من المخزون تلقائياً");
-      }
+      qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
+      // Stock is never deducted automatically here — an admin reviews the
+      // request and deducts it manually when approving.
+      toast.success(
+        data?.matchedInInventory === false
+          ? "تم الحفظ — الكود غير موجود بالمخزون، بانتظار مراجعة المسؤول"
+          : "تمت إضافة القطعة — بانتظار مراجعة المسؤول لخصمها من المخزون"
+      );
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة القطعة"),
   });

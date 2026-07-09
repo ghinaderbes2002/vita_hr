@@ -16,6 +16,10 @@ interface InventoryItemFormDialogProps {
   initialCode?: string;
   item?: InventoryItem | null;
   onCreated?: (item: InventoryItem) => void;
+  // True when this create is a technician "part request" (missing-item flow
+  // from a case's inventory picker) rather than an admin adding a catalog
+  // item directly — sent to the backend so it starts status: PENDING.
+  isRequest?: boolean;
 }
 
 const emptyForm = (code = ""): Partial<CreateItemDto> => ({ code, name: "", unit: "قطعة" });
@@ -34,7 +38,7 @@ const formFromItem = (item: InventoryItem): Partial<CreateItemDto> => ({
 
 // Shared "add/edit inventory item" form — used by the main inventory page,
 // inline from item pickers (e.g. when a search finds no match), and edit mode.
-export function InventoryItemFormDialog({ open, onOpenChange, initialCode, item, onCreated }: InventoryItemFormDialogProps) {
+export function InventoryItemFormDialog({ open, onOpenChange, initialCode, item, onCreated, isRequest }: InventoryItemFormDialogProps) {
   const { data: categories = [] } = useInventoryCategories();
   const createItem = useCreateInventoryItem();
   const updateItem = useUpdateInventoryItem();
@@ -58,7 +62,7 @@ export function InventoryItemFormDialog({ open, onOpenChange, initialCode, item,
       await updateItem.mutateAsync({ id: item.id, dto: form });
       onOpenChange(false);
     } else {
-      const created = await createItem.mutateAsync(form as CreateItemDto);
+      const created = await createItem.mutateAsync({ ...form, isRequest } as CreateItemDto);
       onOpenChange(false);
       onCreated?.(created);
     }
@@ -67,7 +71,9 @@ export function InventoryItemFormDialog({ open, onOpenChange, initialCode, item,
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>{isEdit ? "تعديل الصنف" : "إضافة صنف جديد"}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "تعديل الصنف" : isRequest ? "طلب صنف جديد" : "إضافة صنف جديد"}</DialogTitle>
+        </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -125,7 +131,7 @@ export function InventoryItemFormDialog({ open, onOpenChange, initialCode, item,
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
           <Button onClick={handleSave} disabled={!form.code || !form.name || isPending}>
-            {isPending ? "جاري الحفظ..." : isEdit ? "حفظ التعديلات" : "إضافة"}
+            {isPending ? "جاري الحفظ..." : isEdit ? "حفظ التعديلات" : isRequest ? "إرسال الطلب" : "إضافة"}
           </Button>
         </DialogFooter>
       </DialogContent>

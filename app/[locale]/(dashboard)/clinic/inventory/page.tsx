@@ -74,15 +74,16 @@ export default function InventoryPage() {
   const updateItem = useUpdateInventoryItem();
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
-  const displayedItems = incompleteOnly
-    ? items.filter((i) => !i.categoryId)
-    : items;
-
-  // Part requests — any item carrying a review status (backend defaults every
-  // item created without an explicit status to PENDING, regardless of who
-  // created it or whether requestedByUserId ends up populated)
-  const requestedItems = items.filter((i) => !!i.status);
+  // Normal catalog items (status: null, admin-added) vs. technician part
+  // requests (status set — PENDING/APPROVED/DONE/NOT_AVAILABLE) are two
+  // permanently separate lists, shown in separate tabs.
+  const catalogItems = items.filter((i) => i.status == null);
+  const requestedItems = items.filter((i) => i.status != null);
   const pendingRequests = requestedItems.filter((i) => i.status === "PENDING");
+
+  const displayedItems = incompleteOnly
+    ? catalogItems.filter((i) => !i.categoryId)
+    : catalogItems;
 
   const handleReviewStatus = (item: InventoryItem, status: ItemRequestStatus) => {
     updateItem.mutate({ id: item.id, dto: { status, notes: reviewNotes[item.id] ?? item.notes ?? undefined } });
@@ -235,7 +236,6 @@ export default function InventoryPage() {
                     <TableHead>المخزون</TableHead>
                     <TableHead>الحد الأدنى</TableHead>
                     <TableHead>السعر</TableHead>
-                    <TableHead>حالة الطلب</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -243,12 +243,12 @@ export default function InventoryPage() {
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        {Array.from({ length: 10 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
+                        {Array.from({ length: 9 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
                       </TableRow>
                     ))
                   ) : displayedItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10}>
+                      <TableCell colSpan={9}>
                         <EmptyState icon={<Package className="h-8 w-8 text-muted-foreground" />}
                           title={incompleteOnly ? "لا توجد أصناف بيانات ناقصة" : "لا توجد أصناف"}
                           description={incompleteOnly ? "جميع الأصناف مكتملة البيانات" : "أضف أول صنف للمخزون"} />
@@ -276,13 +276,6 @@ export default function InventoryPage() {
                         </TableCell>
                         <TableCell className="text-sm">{item.minStockLevel}</TableCell>
                         <TableCell className="text-sm">{item.unitPrice != null && item.unitPrice > 0 ? `$${item.unitPrice.toLocaleString("en-US")}` : "—"}</TableCell>
-                        <TableCell>
-                          {item.status ? (
-                            <Badge variant="outline" className={`text-xs ${REQUEST_STATUS_BADGE[item.status]}`}>
-                              {REQUEST_STATUS_LABEL[item.status]}
-                            </Badge>
-                          ) : <span className="text-muted-foreground text-xs">—</span>}
-                        </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7"
