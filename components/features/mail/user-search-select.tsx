@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useEmployeesBasicList, useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { useEmployees, useEmployeesBasicList, useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useAllUsers } from "@/lib/hooks/use-users";
 import {
@@ -21,6 +22,21 @@ import {
 interface UserOption {
   id: string;
   label: string;
+}
+
+// Senior-management job titles excluded from bulk "select all" so a mass email
+// doesn't automatically reach them — they can still be added individually.
+// Matched (case-insensitive) against a job title's code (most stable) or name.
+const SELECT_ALL_EXCLUDED_TITLES = new Set([
+  "vtx-jtl-000003", "المدير التنفيذي", "ceo",         // CEO
+  "vtx-jtl-000002", "المدير العام", "general manager", // General Manager
+]);
+
+function isExcludedTitle(jobTitle: any): boolean {
+  const candidates = [jobTitle?.nameAr, jobTitle?.nameEn, jobTitle?.titleAr, jobTitle?.code]
+    .filter(Boolean)
+    .map((s: string) => s.trim().toLowerCase());
+  return candidates.some((c) => SELECT_ALL_EXCLUDED_TITLES.has(c));
 }
 
 interface Props {
@@ -52,6 +68,38 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
     }
     return map;
   }, [allUsersData]);
+
+  // The basic list has no job title, so pull the full list once (this system's
+  // employee count is small) to know each employee's job title. limit is 500 —
+  // the backend rejects larger values with 400, and 500 covers all employees.
+  const { data: fullEmployeesData } = useEmployees({ limit: 500 });
+  const { data: jobTitlesData } = useJobTitles({ limit: 500 });
+
+  // The employees list returns jobTitleId (a UUID) rather than the nested job
+  // title object, so resolve the excluded titles to their IDs via the job
+  // titles list, then match employees by jobTitleId.
+  const excludedJobTitleIds = useMemo(() => {
+    const set = new Set<string>();
+    const titles = (jobTitlesData as any)?.data?.items ?? (jobTitlesData as any)?.data ?? [];
+    for (const jt of titles) {
+      if (jt?.id && isExcludedTitle(jt)) set.add(jt.id);
+    }
+    return set;
+  }, [jobTitlesData]);
+
+  // Employee IDs whose job title is senior management — excluded from bulk
+  // "select all" (still individually selectable).
+  const excludedEmployeeIds = useMemo(() => {
+    const set = new Set<string>();
+    const emps = (fullEmployeesData as any)?.data?.items ?? (fullEmployeesData as any)?.data ?? [];
+    for (const e of emps) {
+      if (!e.id) continue;
+      if ((e.jobTitleId && excludedJobTitleIds.has(e.jobTitleId)) || isExcludedTitle(e.jobTitle)) {
+        set.add(e.id);
+      }
+    }
+    return set;
+  }, [fullEmployeesData, excludedJobTitleIds]);
   const { data: deptData2, isLoading: deptLoading } = useEmployeesByDepartment(
     selectedDeptId !== "__all__" ? selectedDeptId : ""
   );
@@ -87,7 +135,9 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
     .filter((e) => value.includes(e.id) || value.includes(e.userId))
     .map((e) => ({ id: e.id, userId: e.userId as string | undefined, label: `${e.firstNameAr} ${e.lastNameAr}` }));
 
-  const allVisibleSelected = options.length > 0 && options.every((o) => value.includes(o.id));
+  // Options that "select all" acts on — excludes senior management.
+  const bulkOptions = options.filter((o) => !excludedEmployeeIds.has(o.id));
+  const allVisibleSelected = bulkOptions.length > 0 && bulkOptions.every((o) => value.includes(o.id));
 
   const toggle = (id: string) => {
     if (value.includes(id)) {
@@ -99,10 +149,12 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
 
   const toggleSelectAll = () => {
     if (allVisibleSelected) {
+      // Clear every visible recipient (including any manually-added executive).
       const visibleIds = new Set(options.map((o) => o.id));
       onChange(value.filter((v) => !visibleIds.has(v)));
     } else {
-      const newIds = options.filter((o) => !value.includes(o.id)).map((o) => o.id);
+      // Add only non-executive recipients.
+      const newIds = bulkOptions.filter((o) => !value.includes(o.id)).map((o) => o.id);
       onChange([...value, ...newIds]);
     }
   };
