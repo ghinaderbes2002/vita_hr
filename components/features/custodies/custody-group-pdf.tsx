@@ -208,14 +208,22 @@ function splitRuns(s: string): { text: string; ar: boolean }[] {
   return runs;
 }
 
-function MixedText({ text, style }: { text: string; style?: any }) {
-  if (!text) return null;
-  if (!hasAr(text)) return <Text style={[style, { direction: "ltr" as any }]}>{text}</Text>;
-  const runs = splitRuns(text);
-  if (runs.length <= 1) return <Text style={style}>{text}</Text>;
-  const { flex, ...runStyle } = (Array.isArray(style) ? Object.assign({}, ...style) : style) ?? {};
+function MixedText({ text, style }: { text?: string | null; style?: any }) {
+  const str = text == null ? "" : String(text);
+  if (!str) return <Text style={style}>—</Text>;
+  // Pure Latin (or no Arabic at all): a single LTR Text is safe.
+  if (!hasAr(str)) return <Text style={[style, { direction: "ltr" as any }]}>{str}</Text>;
+  const runs = splitRuns(str);
+  // Pure Arabic (single run): single RTL Text needs no bidi reordering — safe.
+  if (runs.length <= 1) return <Text style={style}>{str}</Text>;
+  // Genuinely mixed: render each script run as its own single-direction Text
+  // inside a flex row so no single Text triggers the buggy bidi reordering.
+  const merged = (Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : style) ?? {};
+  const { flex, textAlign, ...runStyle } = merged;
+  const justifyContent =
+    textAlign === "center" ? "center" : textAlign === "left" ? "flex-start" : "flex-end";
   return (
-    <View style={{ flex, flexDirection: "row-reverse", flexWrap: "wrap" }}>
+    <View style={{ flex, flexDirection: "row-reverse", flexWrap: "wrap", justifyContent }}>
       {runs.map((r, idx) => (
         <Text key={idx} style={[runStyle, !r.ar && { direction: "ltr" as any }]}>
           {r.text}
@@ -260,18 +268,14 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
             <Text style={[S.empCardLabel, { textAlign: "center" }]}>
               اسم الموظف
             </Text>
-            <Text style={[S.empCardNameValue, { textAlign: "center" }]}>
-              {data.employeeName}
-            </Text>
+            <MixedText style={[S.empCardNameValue, { textAlign: "center" }]} text={data.employeeName} />
           </View>
           {data.employeeNumber && (
             <View style={[S.empCardItem, { alignItems: "center" }]}>
               <Text style={[S.empCardLabel, { textAlign: "center" }]}>
                 الرقم الوظيفي
               </Text>
-              <Text style={[S.empCardNameValue, { textAlign: "center" }]}>
-                {data.employeeNumber}
-              </Text>
+              <MixedText style={[S.empCardNameValue, { textAlign: "center" }]} text={data.employeeNumber} />
             </View>
           )}
           {data.department && (
@@ -279,9 +283,7 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
               <Text style={[S.empCardLabel, { textAlign: "center" }]}>
                 القسم
               </Text>
-              <Text style={[S.empCardNameValue, { textAlign: "center" }]}>
-                {data.department}
-              </Text>
+              <MixedText style={[S.empCardNameValue, { textAlign: "center" }]} text={data.department} />
             </View>
           )}
           <View style={S.empCardItem}>
@@ -326,8 +328,8 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
               style={S.tdName}
               text={`${c.name}${c.description ? ` (${c.description})` : ""}`}
             />
-            <Text style={S.tdCat}>{CAT_LABEL[c.category] ?? c.category}</Text>
-            <Text style={S.tdSerial}>{c.serialNumber ?? "—"}</Text>
+            <MixedText style={S.tdCat} text={CAT_LABEL[c.category] ?? c.category} />
+            <MixedText style={S.tdSerial} text={c.serialNumber ?? "—"} />
             <Text style={S.tdDate}>{fmtDate(c.assignedDate)}</Text>
             <Text style={[S.tdStatus, STATUS_STYLE[c.status] ?? {}]}>
               {STATUS_LABEL[c.status] ?? c.status}

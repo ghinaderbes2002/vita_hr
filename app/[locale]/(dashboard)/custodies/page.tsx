@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, ArrowLeftRight, Printer } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, ArrowLeftRight, Printer, FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ import { ReturnCustodyDialog } from "@/components/features/custodies/return-cust
 import { BulkTransferDialog } from "@/components/features/custodies/bulk-transfer-dialog";
 import { TransferCustodyDialog } from "@/components/features/custodies/transfer-custody-dialog";
 import { downloadCustodyGroupPdf } from "@/components/features/custodies/custody-group-pdf";
+import { downloadExcel } from "@/lib/utils/excel";
 import { Custody, CustodyStatus } from "@/types";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -103,6 +104,26 @@ export default function CustodiesPage() {
     });
   };
 
+  const handleExportExcel = () => {
+    const rows = grouped.flatMap((group) => {
+      const empName = group.employee
+        ? `${group.employee.firstNameAr} ${group.employee.lastNameAr}`
+        : "—";
+      return group.items.map((c) => ({
+        "الموظف": empName,
+        "الرقم الوظيفي": group.employee?.employeeNumber ?? "—",
+        "القسم": group.employee?.department?.nameAr ?? "—",
+        "اسم الأصل": c.name ?? "",
+        "الوصف": c.description ?? "",
+        "الفئة": t(`custodies.categories.${c.category}`),
+        "الرقم التسلسلي": c.serialNumber ?? "—",
+        "تاريخ التسليم": c.assignedDate ? format(new Date(c.assignedDate), "yyyy/MM/dd") : "—",
+        "الحالة": t(`custodies.statuses.${c.status}`),
+      }));
+    });
+    downloadExcel(rows, `عهد-الموظفين-${format(new Date(), "yyyy-MM-dd")}`, { sheetName: "العهد", rtl: true });
+  };
+
   const handleEdit = (c: Custody) => { setSelected(c); setDialogOpen(true); };
   const handleReturn = (c: Custody) => { setSelected(c); setReturnDialogOpen(true); };
   const handleDelete = (c: Custody) => { setSelected(c); setDeleteDialogOpen(true); };
@@ -126,12 +147,23 @@ export default function CustodiesPage() {
         description={t("custodies.description")}
         count={!isLoading ? custodies.length : undefined}
         actions={
-          <ActionGuard permission={PERMISSIONS.CUSTODIES.CREATE}>
-            <Button onClick={() => { setSelected(null); setDialogOpen(true); }}>
-              <Plus className="h-4 w-4 ml-2" />
-              {t("custodies.addCustody")}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={isLoading || custodies.length === 0}
+              className="gap-1.5"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              تصدير Excel
             </Button>
-          </ActionGuard>
+            <ActionGuard permission={PERMISSIONS.CUSTODIES.CREATE}>
+              <Button onClick={() => { setSelected(null); setDialogOpen(true); }}>
+                <Plus className="h-4 w-4 ml-2" />
+                {t("custodies.addCustody")}
+              </Button>
+            </ActionGuard>
+          </div>
         }
       />
 

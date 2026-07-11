@@ -25,7 +25,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
   useInventoryItems, useLowStockAlerts,
   useAddInventoryTransaction, useInventoryTransactions,
-  useDeleteInventoryItem, useImportInventoryExcel, useUpdateInventoryItem,
+  useDeleteInventoryItem, useImportInventoryExcel, useReviewItemRequest,
 } from "@/lib/hooks/use-clinic-inventory";
 import { ImportExcelResult, InventoryItem, ItemRequestStatus, ItemType, TransactionType } from "@/lib/api/clinic-inventory";
 import { InventoryItemFormDialog } from "@/components/clinic/inventory-item-form-dialog";
@@ -71,7 +71,7 @@ export default function InventoryPage() {
   const addTx = useAddInventoryTransaction();
   const deleteItem = useDeleteInventoryItem();
   const importExcel = useImportInventoryExcel();
-  const updateItem = useUpdateInventoryItem();
+  const reviewRequest = useReviewItemRequest();
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
   // Normal catalog items (status: null, admin-added) vs. technician part
@@ -86,7 +86,7 @@ export default function InventoryPage() {
     : catalogItems;
 
   const handleReviewStatus = (item: InventoryItem, status: ItemRequestStatus) => {
-    updateItem.mutate({ id: item.id, dto: { status, notes: reviewNotes[item.id] ?? item.notes ?? undefined } });
+    reviewRequest.mutate({ id: item.id, status, notes: reviewNotes[item.id] ?? item.notes ?? undefined });
   };
 
   const handleAddTx = async () => {
@@ -154,19 +154,19 @@ export default function InventoryPage() {
         <Card>
           <CardContent className="pt-4 pb-3">
             <p className="text-sm text-muted-foreground mb-1">إجمالي الأصناف</p>
-            <p className="text-2xl font-bold">{items.length}</p>
+            <p className="text-2xl font-bold">{catalogItems.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
             <p className="text-sm text-muted-foreground mb-1">قطع أطراف</p>
-            <p className="text-2xl font-bold">{items.filter((i) => i.type === "COMPONENT").length}</p>
+            <p className="text-2xl font-bold">{catalogItems.filter((i) => i.type === "COMPONENT").length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
             <p className="text-sm text-muted-foreground mb-1">مستهلكات</p>
-            <p className="text-2xl font-bold">{items.filter((i) => i.type === "CONSUMABLE").length}</p>
+            <p className="text-2xl font-bold">{catalogItems.filter((i) => i.type === "CONSUMABLE").length}</p>
           </CardContent>
         </Card>
         <Card>
@@ -180,7 +180,7 @@ export default function InventoryPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="items">
+      <Tabs defaultValue="items" dir="rtl">
         <TabsList>
           <TabsTrigger value="items">الأصناف</TabsTrigger>
           <TabsTrigger value="requests">
@@ -225,7 +225,7 @@ export default function InventoryPage() {
             </div>
 
             <div className="rounded-md border">
-              <Table>
+              <Table dir="rtl">
                 <TableHeader>
                   <TableRow>
                     <TableHead>الكود</TableHead>
@@ -329,7 +329,7 @@ export default function InventoryPage() {
                           <p className="font-semibold">{item.name}</p>
                           <p className="text-xs text-muted-foreground font-mono">{item.code}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {new Date(item.createdAt).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}
+                            {new Date(item.createdAt).toLocaleString("ar-SA-u-nu-latn", { dateStyle: "medium", timeStyle: "short" })}
                           </p>
                         </div>
                         {item.status && (
@@ -347,9 +347,8 @@ export default function InventoryPage() {
                             onChange={(e) => setReviewNotes((s) => ({ ...s, [item.id]: e.target.value }))}
                           />
                           <div className="flex sm:flex-col gap-1.5">
-                            <Button size="sm" disabled={updateItem.isPending} onClick={() => handleReviewStatus(item, "APPROVED")}>اعتماد</Button>
-                            <Button size="sm" variant="outline" disabled={updateItem.isPending} onClick={() => handleReviewStatus(item, "DONE")}>تم</Button>
-                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" disabled={updateItem.isPending} onClick={() => handleReviewStatus(item, "NOT_AVAILABLE")}>لا يوجد</Button>
+                            <Button size="sm" disabled={reviewRequest.isPending} onClick={() => handleReviewStatus(item, "APPROVED")}>اعتماد</Button>
+                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" disabled={reviewRequest.isPending} onClick={() => handleReviewStatus(item, "NOT_AVAILABLE")}>لا يوجد</Button>
                           </div>
                         </div>
                       </ActionGuard>
@@ -363,7 +362,7 @@ export default function InventoryPage() {
         {/* Transactions tab */}
         <TabsContent value="transactions" className="mt-4">
           <div className="rounded-md border">
-            <Table>
+            <Table dir="rtl">
               <TableHeader>
                 <TableRow>
                   <TableHead>الصنف</TableHead>
@@ -391,7 +390,7 @@ export default function InventoryPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{tx.notes ?? "—"}</TableCell>
                       <TableCell className="text-sm">{tx.performedByName ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString("ar")}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString("ar-SA-u-nu-latn")}</TableCell>
                     </TableRow>
                   ))
                 )}

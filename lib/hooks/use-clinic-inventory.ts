@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { clinicInventoryApi, CreateItemDto, InventoryListParams, TransactionType } from "@/lib/api/clinic-inventory";
+import { clinicInventoryApi, CreateItemDto, InventoryListParams, ItemRequestStatus, TransactionType } from "@/lib/api/clinic-inventory";
 import { toast } from "sonner";
 
 export function useInventoryCategories() {
@@ -78,6 +78,20 @@ export function useUpdateInventoryItem() {
       toast.success("تم تحديث القطعة");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحديث"),
+  });
+}
+
+export function useReviewItemRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, notes }: { id: string; status: ItemRequestStatus; notes?: string }) =>
+      clinicInventoryApi.reviewRequest(id, { status, notes }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
+      qc.invalidateQueries({ queryKey: ["clinic-inventory-low-stock"] });
+      toast.success("تم تحديث حالة الطلب");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تحديث الطلب"),
   });
 }
 

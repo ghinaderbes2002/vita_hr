@@ -1066,11 +1066,11 @@ const RECOMMENDATION_OPTS = [
   { v: "ADD_SHOCK_ABSORBER", l: "إضافة ممتص صدمات / تخميد" },
 ];
 const REHAB_PLAN_OPTS = [
-  { v: "STRENGTHENING", l: "تقوية (مبعدات الورك / الجذع) | Strengthening (Hip abductors / Core)" },
-  { v: "BALANCE_TRAINING", l: "تدريب توازن | Balance training" },
-  { v: "GAIT_STEP_SYMMETRY", l: "تدريب مشي (تماثل الخطوات) | Gait training (step symmetry)" },
-  { v: "STAIRS_SLOPES", l: "تدريب درج ومنحدرات | Stairs & slopes training" },
-  { v: "COMMUNITY_AMBULATION", l: "تدريب خارج المنزل | Community ambulation" },
+  { v: "STRENGTHENING", l: "تقوية (مبعدات الورك / الجذع) " },
+  { v: "BALANCE_TRAINING", l: "تدريب توازن " },
+  { v: "GAIT_STEP_SYMMETRY", l: "تدريب مشي (تماثل الخطوات) " },
+  { v: "STAIRS_SLOPES", l: "تدريب درج ومنحدرات " },
+  { v: "COMMUNITY_AMBULATION", l: "تدريب خارج المنزل " },
 ];
 
 const INITIAL_GAIT_FORM = {
@@ -5548,16 +5548,22 @@ export default function ProstheticsCasePage() {
                       </thead>
                       <tbody>
                         {components.map((comp) => {
-                          // Link the component to its inventory item by id when
-                          // available, otherwise by partCode (GET /components
-                          // often omits inventoryItemId). Prefer a match that
-                          // carries a request status so it actually shows.
+                          // When a component is added for an existing part, the
+                          // backend creates a PENDING request record linked back
+                          // via linkedInventoryItemId. Find that request first
+                          // (it carries the status the admin reviews); fall back
+                          // to matching by id/partCode.
                           const compCode = comp.partCode ?? comp.code;
-                          const invMatches = inventoryItems.filter((it: any) =>
+                          const request = inventoryItems.find((it: any) =>
+                            it.status != null && (
+                              (comp.inventoryItemId && it.linkedInventoryItemId === comp.inventoryItemId) ||
+                              (compCode && it.code === compCode)
+                            )
+                          );
+                          const invItem = request ?? inventoryItems.find((it: any) =>
                             (comp.inventoryItemId && it.id === comp.inventoryItemId) ||
                             (compCode && it.code === compCode)
                           );
-                          const invItem = invMatches.find((it: any) => it.status) ?? invMatches[0];
                           return (
                           <tr key={comp.id} className="border-t">
                             <td className="p-2 font-mono text-xs">{comp.partCode ?? comp.code ?? "—"}</td>

@@ -41,6 +41,9 @@ export interface InventoryItem {
   status?: ItemRequestStatus | null;
   notes?: string | null;
   requestedByUserId?: string | null;
+  // Set when the request is for a part that already exists in the catalog —
+  // points to the original inventory item the deduction happens against.
+  linkedInventoryItemId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -150,6 +153,15 @@ export const clinicInventoryApi = {
       ...(code != null ? { partCode: code } : {}),
       ...(unitPrice != null ? { unitCostUsd: unitPrice } : {}),
     });
+    return normalizeItem(data?.data ?? data);
+  },
+
+  // Admin review of a technician part request. Only the request status and an
+  // optional note are sent; APPROVED triggers the backend to deduct 1 from the
+  // linked original item and notify the requesting technician.
+  // Uses PUT — the deployed backend has no PATCH route here (PATCH → 404).
+  reviewRequest: async (id: string, dto: { status: ItemRequestStatus; notes?: string }): Promise<InventoryItem> => {
+    const { data } = await apiClient.put(`/inventory/items/${id}`, dto);
     return normalizeItem(data?.data ?? data);
   },
 
