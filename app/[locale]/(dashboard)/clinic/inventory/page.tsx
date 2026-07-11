@@ -346,10 +346,17 @@ export default function InventoryPage() {
                             value={reviewNotes[item.id] ?? item.notes ?? ""}
                             onChange={(e) => setReviewNotes((s) => ({ ...s, [item.id]: e.target.value }))}
                           />
-                          <div className="flex sm:flex-col gap-1.5">
-                            <Button size="sm" disabled={reviewRequest.isPending} onClick={() => handleReviewStatus(item, "APPROVED")}>اعتماد</Button>
-                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" disabled={reviewRequest.isPending} onClick={() => handleReviewStatus(item, "NOT_AVAILABLE")}>لا يوجد</Button>
-                          </div>
+                          {(() => {
+                            // Only disable the buttons of the card whose request
+                            // is actually being submitted — not every card.
+                            const busy = reviewRequest.isPending && reviewRequest.variables?.id === item.id;
+                            return (
+                              <div className="flex sm:flex-col gap-1.5">
+                                <Button size="sm" disabled={busy} onClick={() => handleReviewStatus(item, "APPROVED")}>اعتماد</Button>
+                                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => handleReviewStatus(item, "NOT_AVAILABLE")}>لا يوجد</Button>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </ActionGuard>
                     </CardContent>

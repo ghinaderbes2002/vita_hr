@@ -129,7 +129,7 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("jobTitles.editTitle") : t("jobTitles.addTitle")}

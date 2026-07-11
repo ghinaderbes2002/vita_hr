@@ -3292,6 +3292,12 @@ export default function ProstheticsCasePage() {
 
   const { data: inventoryData } = useInventoryItems();
   const inventoryItems = Array.isArray(inventoryData) ? inventoryData : (inventoryData as any)?.items ?? [];
+  // GET /inventory/items returns both real catalog items (status: null) and
+  // part-request records (status set — one per requested component, sharing
+  // the catalog item's code). The picker must offer only real catalog items,
+  // otherwise the same code appears once per request. The full list is kept
+  // for resolving a component's linked request status elsewhere.
+  const catalogInventoryItems = inventoryItems.filter((it: any) => it.status == null);
 
   const { data: staffData } = useEmployeesBasicList();
   const staffList: any[] = Array.isArray(staffData)
@@ -5503,7 +5509,7 @@ export default function ProstheticsCasePage() {
                           <td className="border border-border px-2 py-0.5 text-center text-muted-foreground text-xs">{i + 1}</td>
                           <td className="border border-border p-0.5">
                             <InventoryItemCombobox
-                              items={inventoryItems}
+                              items={catalogInventoryItems}
                               value={row.inventoryItemId}
                               onChange={(v) => setCompRows((prev) => prev.map((r, j) => j === i ? { inventoryItemId: v } : r))}
                               className="h-7 border-0 shadow-none text-sm bg-transparent"
@@ -6731,7 +6737,7 @@ export default function ProstheticsCasePage() {
                       <div className="space-y-1.5 col-span-2">
                         <Label className="text-xs">اسم المنتج المُسلَّم *</Label>
                         <InventoryItemCombobox
-                          items={inventoryItems}
+                          items={catalogInventoryItems}
                           value={newItemForm.inventoryItemId}
                           onChange={(v) => {
                             if (!v) {
@@ -6802,7 +6808,7 @@ export default function ProstheticsCasePage() {
                                       <div className="space-y-1.5 col-span-2">
                                         <Label className="text-xs">اسم المنتج *</Label>
                                         <InventoryItemCombobox
-                                          items={inventoryItems}
+                                          items={catalogInventoryItems}
                                           value={editingItemForm.inventoryItemId}
                                           onChange={(v) => {
                                             if (!v) {
