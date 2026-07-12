@@ -26,6 +26,7 @@ import {
   useInventoryItems, useLowStockAlerts,
   useAddInventoryTransaction, useInventoryTransactions,
   useDeleteInventoryItem, useImportInventoryExcel, useReviewItemRequest,
+  isItemNotInInventoryError,
 } from "@/lib/hooks/use-clinic-inventory";
 import { ImportExcelResult, InventoryItem, ItemRequestStatus, ItemType, TransactionType } from "@/lib/api/clinic-inventory";
 import { InventoryItemFormDialog } from "@/components/clinic/inventory-item-form-dialog";
@@ -73,6 +74,9 @@ export default function InventoryPage() {
   const importExcel = useImportInventoryExcel();
   const reviewRequest = useReviewItemRequest();
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  // Request whose part isn't in the catalog yet — approving it opens the
+  // "add new item" dialog (prefilled) so the admin can add it, then re-approve.
+  const [addItemForRequest, setAddItemForRequest] = useState<InventoryItem | null>(null);
 
   // Normal catalog items (status: null, admin-added) vs. technician part
   // requests (status set — PENDING/APPROVED/DONE/NOT_AVAILABLE) are two
@@ -85,8 +89,16 @@ export default function InventoryPage() {
     ? catalogItems.filter((i) => !i.categoryId)
     : catalogItems;
 
-  const handleReviewStatus = (item: InventoryItem, status: ItemRequestStatus) => {
-    reviewRequest.mutate({ id: item.id, status, notes: reviewNotes[item.id] ?? item.notes ?? undefined });
+  const handleReviewStatus = async (item: InventoryItem, status: ItemRequestStatus) => {
+    try {
+      await reviewRequest.mutateAsync({ id: item.id, status, notes: reviewNotes[item.id] ?? item.notes ?? undefined });
+    } catch (e) {
+      // Part not in the catalog yet → open the prefilled "add new item" dialog
+      // instead of just failing. Other errors are already toasted by the hook.
+      if (status === "APPROVED" && isItemNotInInventoryError(e)) {
+        setAddItemForRequest(item);
+      }
+    }
   };
 
   const handleAddTx = async () => {
@@ -446,6 +458,16 @@ export default function InventoryPage() {
 
       {/* Edit item dialog */}
       <InventoryItemFormDialog open={!!editingItem} onOpenChange={(o) => !o && setEditingItem(null)} item={editingItem} />
+
+      {/* Add-to-catalog dialog for a request whose part isn't in inventory yet.
+          Prefilled with the request's code/name; after it's added, the admin
+          re-approves and the backend matches it by partCode. */}
+      <InventoryItemFormDialog
+        open={!!addItemForRequest}
+        onOpenChange={(o) => !o && setAddItemForRequest(null)}
+        initialCode={addItemForRequest?.code ?? ""}
+        initialName={addItemForRequest?.name ?? ""}
+      />
 
       {/* Delete confirmation */}
       <ConfirmDialog

@@ -28,7 +28,9 @@ import { AttendanceAlert, AlertStatus } from "@/lib/api/attendance-alerts";
 import { JustificationType } from "@/lib/api/attendance-justifications";
 import { formatDate } from "@/lib/utils/date";
 
-const JUSTIFIABLE_TYPES = ["LATE", "ABSENT", "EARLY_LEAVE", "MISSING_CLOCK_OUT"];
+// Only these alert types accept a justification per the backend rules —
+// MISSING_CLOCK_OUT and CONSECUTIVE_ABSENCE do not.
+const JUSTIFIABLE_TYPES = ["LATE", "EARLY_LEAVE", "ABSENT"];
 
 export default function MyAlertsPage() {
   const t = useTranslations();

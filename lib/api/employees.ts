@@ -18,6 +18,11 @@ export interface SalaryChangeDto {
   eventType?: "SALARY_CHANGE" | "PROMOTION";
   effectiveDate: string;
   note?: string;
+  /**
+   * Optional. When provided, the employee's allowances are fully replaced by this list.
+   * Omit to leave allowances unchanged; send [] to delete all allowances.
+   */
+  allowances?: { type: string; amount: number }[];
 }
 
 export interface DossierEvent {

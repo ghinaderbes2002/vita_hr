@@ -14,6 +14,7 @@ interface InventoryItemFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialCode?: string;
+  initialName?: string;
   item?: InventoryItem | null;
   onCreated?: (item: InventoryItem) => void;
   // True when this create is a technician "part request" (missing-item flow
@@ -22,7 +23,7 @@ interface InventoryItemFormDialogProps {
   isRequest?: boolean;
 }
 
-const emptyForm = (code = ""): Partial<CreateItemDto> => ({ code, name: "", unit: "قطعة" });
+const emptyForm = (code = "", name = ""): Partial<CreateItemDto> => ({ code, name, unit: "قطعة" });
 
 const formFromItem = (item: InventoryItem): Partial<CreateItemDto> => ({
   code: item.code,
@@ -38,12 +39,12 @@ const formFromItem = (item: InventoryItem): Partial<CreateItemDto> => ({
 
 // Shared "add/edit inventory item" form — used by the main inventory page,
 // inline from item pickers (e.g. when a search finds no match), and edit mode.
-export function InventoryItemFormDialog({ open, onOpenChange, initialCode, item, onCreated, isRequest }: InventoryItemFormDialogProps) {
+export function InventoryItemFormDialog({ open, onOpenChange, initialCode, initialName, item, onCreated, isRequest }: InventoryItemFormDialogProps) {
   const { data: categories = [] } = useInventoryCategories();
   const createItem = useCreateInventoryItem();
   const updateItem = useUpdateInventoryItem();
   const isEdit = !!item;
-  const [form, setForm] = useState<Partial<CreateItemDto>>(() => item ? formFromItem(item) : emptyForm(initialCode));
+  const [form, setForm] = useState<Partial<CreateItemDto>>(() => item ? formFromItem(item) : emptyForm(initialCode, initialName));
 
   // Reset the form when the dialog transitions to open — done during render
   // (React's documented pattern for "adjusting state on prop change")
@@ -51,7 +52,7 @@ export function InventoryItemFormDialog({ open, onOpenChange, initialCode, item,
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (open) setForm(item ? formFromItem(item) : emptyForm(initialCode));
+    if (open) setForm(item ? formFromItem(item) : emptyForm(initialCode, initialName));
   }
 
   const isPending = createItem.isPending || updateItem.isPending;

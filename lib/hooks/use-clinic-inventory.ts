@@ -81,6 +81,15 @@ export function useUpdateInventoryItem() {
   });
 }
 
+// True when APPROVED was rejected because the requested part has no matching
+// inventory item yet — the admin must add it to the catalog first. Callers use
+// this to open the "add new item" dialog instead of showing an error toast.
+export function isItemNotInInventoryError(e: any): boolean {
+  const code = e?.response?.data?.code;
+  const msg: string = e?.response?.data?.message ?? "";
+  return code === "ITEM_NOT_IN_INVENTORY" || code === "ITEM_NOT_FOUND" || /غير موجود في المخزون/.test(msg);
+}
+
 export function useReviewItemRequest() {
   const qc = useQueryClient();
   return useMutation({
@@ -91,7 +100,19 @@ export function useReviewItemRequest() {
       qc.invalidateQueries({ queryKey: ["clinic-inventory-low-stock"] });
       toast.success("تم تحديث حالة الطلب");
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تحديث الطلب"),
+    onError: (e: any) => {
+      // Backend rejects APPROVED when stock is zero / item missing (400).
+      // Guide the admin to pick «لا يوجد» (NOT_AVAILABLE) instead of just echoing the raw message.
+      if (e?.response?.data?.code === "INSUFFICIENT_STOCK") {
+        toast.error("لا يمكن اعتماد الطلب — المخزون غير كافٍ. يرجى اختيار «لا يوجد» بدلاً من الاعتماد.", {
+          duration: 6000,
+        });
+        return;
+      }
+      // "Item not in inventory" also opens the add-item dialog at the call
+      // site; we still show the backend message here so both appear together.
+      toast.error(e?.response?.data?.message || "فشل تحديث الطلب");
+    },
   });
 }
 

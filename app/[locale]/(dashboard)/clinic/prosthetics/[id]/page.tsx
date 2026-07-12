@@ -101,6 +101,10 @@ const REQUEST_STATUS_BADGE: Record<string, string> = {
   DONE: "border-green-300 bg-green-50 text-green-700",
   NOT_AVAILABLE: "border-red-300 bg-red-50 text-red-700",
 };
+const SOURCE_LOCATION_LABEL: Record<string, string> = {
+  WAREHOUSE: "مستودع", EXTERNAL: "خارجي", PATIENT_OWNED: "ملك المريض", OTHER: "أخرى",
+  SUPPLIER: "مورد", // legacy value from old saved data
+};
 const DECISION_LABEL: Record<CommitteeDecision, string> = {
   APPROVED: "مقبول", NEEDS_ADJUSTMENT: "يحتاج تعديل", REJECTED: "مرفوض",
 };
@@ -3191,12 +3195,18 @@ export default function ProstheticsCasePage() {
   const [committeeSigLoading, setCommitteeSigLoading] = useState<Record<string, boolean>>({});
   const committeeSigRefs = { DOCTOR: useRef<HTMLInputElement>(null), PROSTHETIST: useRef<HTMLInputElement>(null), PHYSIOTHERAPIST: useRef<HTMLInputElement>(null) };
   const [compShared, setCompShared] = useState({
-    sourceLocation: "WAREHOUSE" as "WAREHOUSE" | "SUPPLIER",
+    sourceLocation: "WAREHOUSE" as "WAREHOUSE" | "EXTERNAL" | "PATIENT_OWNED" | "OTHER",
     supplier: "OTTOBOCK" as "OTTOBOCK" | "OTHER",
     supplierOther: "",
   });
   const [compRows, setCompRows] = useState<Array<{ inventoryItemId: string }>>(
     Array.from({ length: 10 }, () => ({ inventoryItemId: "" }))
+  );
+  // Scenario 2 — a free-text part not in the inventory catalog, entered via the
+  // "add new item" dialog inside the combobox. Submitted without an
+  // inventoryItemId; the backend saves it unlinked and notifies the admin.
+  const [customPartDialog, setCustomPartDialog] = useState<{ open: boolean; name: string; code: string }>(
+    { open: false, name: "", code: "" }
   );
   const [gaitForm, setGaitForm] = useState({ clinicalConclusion: "", recommendations: "", treatmentPlan: "" });
   const [balanceForm, setBalanceForm] = useState({ overallLevel: "", fallRisk: "LOW" as "LOW" | "MODERATE" | "HIGH", notes: "" });
@@ -3699,24 +3709,45 @@ export default function ProstheticsCasePage() {
     e.target.value = "";
   };
 
+  const supplierValue = () =>
+    compShared.supplier === "OTTOBOCK" ? "OTTOBOCK" : compShared.supplierOther.trim() || undefined;
+
   const handleAddComponents = async () => {
     const filled = compRows.filter((r) => r.inventoryItemId);
     if (!filled.length) return;
-    const supplierValue = compShared.supplier === "OTTOBOCK" ? "OTTOBOCK" : compShared.supplierOther.trim() || undefined;
+    // Scenario 1 — parts picked from the inventory catalog.
     for (const row of filled) {
       const item = inventoryItems.find((it: any) => it.id === row.inventoryItemId);
       if (!item) continue;
       await addComponent.mutateAsync({
         id,
         dto: {
+          inventoryItemId: item.id,
           partCode: item.code ?? item.partCode ?? "",
           partName: item.name ?? "",
-          supplier: supplierValue,
+          supplier: supplierValue(),
           sourceLocation: compShared.sourceLocation,
         },
       });
     }
     setCompRows(Array.from({ length: 10 }, () => ({ inventoryItemId: "" })));
+  };
+
+  // Scenario 2 — save a free-text part entered in the "add new item" dialog.
+  const handleAddCustomPart = async () => {
+    const name = customPartDialog.name.trim();
+    const code = customPartDialog.code.trim();
+    if (!name || !code) return;
+    await addComponent.mutateAsync({
+      id,
+      dto: {
+        partCode: code,
+        partName: name,
+        supplier: supplierValue(),
+        sourceLocation: compShared.sourceLocation,
+      },
+    });
+    setCustomPartDialog({ open: false, name: "", code: "" });
   };
 
   const handleAdvanceToGait = async () => {
@@ -5440,7 +5471,7 @@ export default function ProstheticsCasePage() {
               <div className="space-y-2">
                 <p className="text-sm font-semibold">موقع أجزاء الطرف الصناعي </p>
                 <div className="flex gap-6">
-                  {(["WAREHOUSE", "SUPPLIER"] as const).map((val) => (
+                  {(["WAREHOUSE", "EXTERNAL"] as const).map((val) => (
                     <label key={val} className="flex items-center gap-2 cursor-pointer text-sm">
                       <input
                         type="radio"
@@ -5449,7 +5480,7 @@ export default function ProstheticsCasePage() {
                         onChange={() => setCompShared((s) => ({ ...s, sourceLocation: val }))}
                         className="accent-primary"
                       />
-                      {val === "WAREHOUSE" ? "المستودع — warehouse" : "الموزّد — supplier"}
+                      {val === "WAREHOUSE" ? "المستودع — warehouse" : "خارجي — external"}
                     </label>
                   ))}
                 </div>
@@ -5512,6 +5543,7 @@ export default function ProstheticsCasePage() {
                               items={catalogInventoryItems}
                               value={row.inventoryItemId}
                               onChange={(v) => setCompRows((prev) => prev.map((r, j) => j === i ? { inventoryItemId: v } : r))}
+                              onAddCustom={(search) => setCustomPartDialog({ open: true, name: "", code: search })}
                               className="h-7 border-0 shadow-none text-sm bg-transparent"
                             />
                           </td>
@@ -5554,56 +5586,63 @@ export default function ProstheticsCasePage() {
                       </thead>
                       <tbody>
                         {components.map((comp) => {
-                          // When a component is added for an existing part, the
-                          // backend creates a PENDING request record linked back
-                          // via linkedInventoryItemId. Find that request first
-                          // (it carries the status the admin reviews); fall back
-                          // to matching by id/partCode.
+                          // The backend returns the linked inventory part-request
+                          // inline as comp.inventoryRequest (status + notes). Prefer
+                          // it; only fall back to matching against the inventory
+                          // list for old data saved before the field existed
+                          // (inventoryRequest === undefined).
                           const compCode = comp.partCode ?? comp.code;
-                          const request = inventoryItems.find((it: any) =>
-                            it.status != null && (
-                              (comp.inventoryItemId && it.linkedInventoryItemId === comp.inventoryItemId) ||
-                              (compCode && it.code === compCode)
-                            )
-                          );
-                          const invItem = request ?? inventoryItems.find((it: any) =>
-                            (comp.inventoryItemId && it.id === comp.inventoryItemId) ||
-                            (compCode && it.code === compCode)
-                          );
+                          const legacyReq = comp.inventoryRequest === undefined
+                            ? inventoryItems.find((it: any) =>
+                                it.status != null && (
+                                  (comp.inventoryItemId && it.linkedInventoryItemId === comp.inventoryItemId) ||
+                                  (compCode && it.code === compCode)
+                                ))
+                            : null;
+                          const reqStatus = comp.inventoryRequest?.status ?? legacyReq?.status ?? null;
+                          const reqNotes = comp.inventoryRequest?.notes ?? legacyReq?.notes ?? null;
+                          const matched = comp.matchedInInventory
+                            ?? (comp.inventoryRequest === undefined
+                                ? (legacyReq ? true : undefined)
+                                : comp.inventoryRequest !== null);
                           return (
                           <tr key={comp.id} className="border-t">
                             <td className="p-2 font-mono text-xs">{comp.partCode ?? comp.code ?? "—"}</td>
                             <td className="p-2">{comp.partName ?? comp.name ?? "—"}</td>
                             <td className="p-2 text-muted-foreground">{comp.supplier ?? "—"}</td>
-                            <td className="p-2 text-muted-foreground">{(comp.sourceLocation ?? comp.source) === "WAREHOUSE" ? "مستودع" : "مورد"}</td>
+                            <td className="p-2 text-muted-foreground">{SOURCE_LOCATION_LABEL[(comp.sourceLocation ?? comp.source) as string] ?? "—"}</td>
                             <td className="p-2 text-muted-foreground text-xs">
                               {comp.addedAt ? new Date(comp.addedAt).toLocaleDateString("en-GB") : "—"}
                             </td>
                             <td className="p-2">
-                              {!invItem?.status ? (
+                              {!reqStatus ? (
                                 <span className="text-muted-foreground text-xs">—</span>
-                              ) : invItem.notes ? (
+                              ) : reqNotes ? (
                                 <Popover>
                                   <PopoverTrigger asChild>
                                     <button type="button">
-                                      <Badge variant="outline" className={`text-xs cursor-pointer ${REQUEST_STATUS_BADGE[invItem.status]}`}>
-                                        {REQUEST_STATUS_LABEL[invItem.status]}
+                                      <Badge variant="outline" className={`text-xs cursor-pointer ${REQUEST_STATUS_BADGE[reqStatus]}`}>
+                                        {REQUEST_STATUS_LABEL[reqStatus]}
                                       </Badge>
                                     </button>
                                   </PopoverTrigger>
-                                  <PopoverContent className="w-64 text-sm">{invItem.notes}</PopoverContent>
+                                  <PopoverContent className="w-64 text-sm">{reqNotes}</PopoverContent>
                                 </Popover>
                               ) : (
-                                <Badge variant="outline" className={`text-xs ${REQUEST_STATUS_BADGE[invItem.status]}`}>
-                                  {REQUEST_STATUS_LABEL[invItem.status]}
+                                <Badge variant="outline" className={`text-xs ${REQUEST_STATUS_BADGE[reqStatus]}`}>
+                                  {REQUEST_STATUS_LABEL[reqStatus]}
                                 </Badge>
                               )}
                             </td>
                             <td className="p-2">
-                              {comp.matchedInInventory === false
-                                ? <span className="text-xs text-orange-600 font-medium">غير موجود بالمخزون</span>
-                                : comp.matchedInInventory === true
+                              {reqStatus === "APPROVED" || reqStatus === "DONE"
                                 ? <span className="text-xs text-green-600 font-medium">خُصم</span>
+                                : reqStatus === "PENDING"
+                                ? <span className="text-xs text-amber-600 font-medium">معلق</span>
+                                : reqStatus === "NOT_AVAILABLE"
+                                ? <span className="text-xs text-red-600 font-medium">لم يُخصم</span>
+                                : matched === false
+                                ? <span className="text-xs text-orange-600 font-medium">غير موجود بالمخزون</span>
                                 : "—"}
                             </td>
                             <td className="p-2">
@@ -5619,6 +5658,44 @@ export default function ProstheticsCasePage() {
                   </div>
                 </div>
               )}
+
+              {/* إضافة قطعة غير مسجّلة بالمخزون (سيناريو 2) */}
+              <Dialog open={customPartDialog.open} onOpenChange={(open) => setCustomPartDialog((s) => ({ ...s, open }))}>
+                <DialogContent className="max-w-sm" dir="rtl">
+                  <DialogHeader>
+                    <DialogTitle>إضافة قطعة غير مسجّلة بالمخزون</DialogTitle>
+                    <DialogDescription>تُحفظ بدون ربط بالمخزون ويصل إشعار لمسؤول المخزون لإضافتها.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-1">
+                    <div className="space-y-1.5">
+                      <Label>اسم القطعة *</Label>
+                      <Input
+                        value={customPartDialog.name}
+                        onChange={(e) => setCustomPartDialog((s) => ({ ...s, name: e.target.value }))}
+                        placeholder="اسم القطعة..."
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>الكود *</Label>
+                      <Input
+                        value={customPartDialog.code}
+                        onChange={(e) => setCustomPartDialog((s) => ({ ...s, code: e.target.value }))}
+                        placeholder="الكود..."
+                        className="font-mono"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+                    <Button variant="outline" onClick={() => setCustomPartDialog({ open: false, name: "", code: "" })}>إلغاء</Button>
+                    <Button
+                      onClick={handleAddCustomPart}
+                      disabled={addComponent.isPending || !customPartDialog.name.trim() || !customPartDialog.code.trim()}
+                    >
+                      {addComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إضافة"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <Dialog open={!!confirmDelComp} onOpenChange={(open) => { if (!open) setConfirmDelComp(null); }}>
                 <DialogContent className="max-w-sm" dir="rtl">

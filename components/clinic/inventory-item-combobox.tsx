@@ -23,6 +23,10 @@ interface InventoryItemComboboxProps {
   onChange: (id: string) => void;
   placeholder?: string;
   className?: string;
+  // When provided, the "add new item" button hands the current search text to
+  // this callback (e.g. to open a free-text part dialog) instead of opening the
+  // default "create inventory item" form.
+  onAddCustom?: (search: string) => void;
 }
 
 // Searchable replacement for a plain <Select> when the option list is long —
@@ -33,6 +37,7 @@ export function InventoryItemCombobox({
   onChange,
   placeholder = "اختر من المخزون...",
   className,
+  onAddCustom,
 }: InventoryItemComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -73,7 +78,11 @@ export function InventoryItemCombobox({
                     size="sm"
                     variant="outline"
                     className="gap-1.5"
-                    onClick={() => { setOpen(false); setAddItemOpen(true); }}
+                    onClick={() => {
+                      setOpen(false);
+                      if (onAddCustom) onAddCustom(search);
+                      else setAddItemOpen(true);
+                    }}
                   >
                     <Plus className="h-3.5 w-3.5" />
                     إضافة صنف جديد

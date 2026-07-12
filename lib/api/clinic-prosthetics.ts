@@ -246,10 +246,19 @@ export interface CaseComponent {
   sourceLocation?: string | null;
   reason?: string | null;
   matchedInInventory?: boolean;
+  // Inventory part-request the backend creates/links for this component and
+  // returns inline with GET /components. null → the component was saved without
+  // a matching inventory item (scenario 2); undefined → old data from before the
+  // backend embedded the request.
+  inventoryRequest?: {
+    requestId: string;
+    status: "PENDING" | "APPROVED" | "NOT_AVAILABLE" | "DONE";
+    notes: string | null;
+  } | null;
   addedAt?: string;
   addedBy?: string | null;
-  // legacy fields (kept for backward compat with old saved data)
   inventoryItemId?: string | null;
+  // legacy fields (kept for backward compat with old saved data)
   source?: ComponentSource;
   code?: string | null;
   name?: string | null;
@@ -258,10 +267,13 @@ export interface CaseComponent {
 }
 
 export interface AddComponentDto {
+  // Send when the part maps to an existing inventory item (scenario 1). Omit for
+  // a free-text part (scenario 2) — the backend auto-matches by partCode.
+  inventoryItemId?: string;
   partCode: string;
   partName: string;
   supplier?: string;
-  sourceLocation?: "WAREHOUSE" | "SUPPLIER";
+  sourceLocation?: "WAREHOUSE" | "EXTERNAL" | "PATIENT_OWNED" | "OTHER";
   reason?: string;
 }
 
