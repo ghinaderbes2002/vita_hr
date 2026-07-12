@@ -109,8 +109,22 @@ export default function InventoryPage() {
   }, [focusRequestId, activeTab, requestedItems.length]);
 
   const handleReviewStatus = async (item: InventoryItem, status: ItemRequestStatus) => {
+    // The backend requires an explicit linkedInventoryItemId to approve+deduct;
+    // it does NOT auto-match by partCode. If the request isn't linked yet, look
+    // for a catalog item with the same code (e.g. one the admin just added) and
+    // link it in the same request.
+    let linkedInventoryItemId: string | undefined;
+    if (status === "APPROVED" && !item.linkedInventoryItemId) {
+      const match = catalogItems.find((c) => c.code && c.code === item.code);
+      linkedInventoryItemId = match?.id;
+    }
     try {
-      await reviewRequest.mutateAsync({ id: item.id, status, notes: reviewNotes[item.id] ?? item.notes ?? undefined });
+      await reviewRequest.mutateAsync({
+        id: item.id,
+        status,
+        notes: reviewNotes[item.id] ?? item.notes ?? undefined,
+        linkedInventoryItemId,
+      });
     } catch (e) {
       // Part not in the catalog yet → open the prefilled "add new item" dialog
       // instead of just failing. Other errors are already toasted by the hook.
