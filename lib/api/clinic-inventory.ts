@@ -156,11 +156,16 @@ export const clinicInventoryApi = {
     return normalizeItem(data?.data ?? data);
   },
 
-  // Admin review of a technician part request. Only the request status and an
-  // optional note are sent; APPROVED triggers the backend to deduct 1 from the
-  // linked original item and notify the requesting technician.
+  // Admin review of a technician part request. APPROVED triggers the backend to
+  // deduct 1 from the linked original item and notify the requesting technician.
+  // When the part wasn't in the catalog, pass linkedInventoryItemId (the id of
+  // the newly-added item) alongside status: "APPROVED" to link + approve +
+  // deduct in the same request.
   // Uses PUT — the deployed backend has no PATCH route here (PATCH → 404).
-  reviewRequest: async (id: string, dto: { status: ItemRequestStatus; notes?: string }): Promise<InventoryItem> => {
+  reviewRequest: async (
+    id: string,
+    dto: { status: ItemRequestStatus; notes?: string; linkedInventoryItemId?: string },
+  ): Promise<InventoryItem> => {
     const { data } = await apiClient.put(`/inventory/items/${id}`, dto);
     return normalizeItem(data?.data ?? data);
   },

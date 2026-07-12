@@ -93,8 +93,8 @@ export function isItemNotInInventoryError(e: any): boolean {
 export function useReviewItemRequest() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, notes }: { id: string; status: ItemRequestStatus; notes?: string }) =>
-      clinicInventoryApi.reviewRequest(id, { status, notes }),
+    mutationFn: ({ id, status, notes, linkedInventoryItemId }: { id: string; status: ItemRequestStatus; notes?: string; linkedInventoryItemId?: string }) =>
+      clinicInventoryApi.reviewRequest(id, { status, notes, linkedInventoryItemId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clinic-inventory-items"] });
       qc.invalidateQueries({ queryKey: ["clinic-inventory-low-stock"] });

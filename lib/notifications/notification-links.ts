@@ -67,8 +67,14 @@ export function resolveNotificationLink(notif: Notification): string | null {
     case "TARDINESS_COMPENSATION_DUE":  return "/attendance/my-attendance";
     case "TARDINESS_DEDUCTION_PENDING": return "/payroll";
 
-    case "INVENTORY_REQUEST":
-      return d.itemId ? `/clinic/inventory/${d.itemId}` : "/clinic/inventory?tab=requests";
+    case "INVENTORY_REQUEST": {
+      // The request review UI (approve / not-available) lives in the requests
+      // tab; open it and focus the specific request card by id.
+      const reqId = d.requestId ?? d.itemId;
+      return reqId
+        ? `/clinic/inventory?tab=requests&requestId=${reqId}`
+        : "/clinic/inventory?tab=requests";
+    }
     case "INVENTORY_REQUEST_UPDATE":
       return d.itemId ? `/clinic/inventory/${d.itemId}` : "/clinic/inventory";
 

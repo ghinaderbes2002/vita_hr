@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import { Plus, Search, AlertTriangle, Package, Eye, ArrowUpDown, Pencil, Trash2, Upload, Loader2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,11 @@ const REQUEST_STATUS_BADGE: Record<ItemRequestStatus, string> = {
 export default function InventoryPage() {
   const router = useRouter();
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  // Deep-link from an INVENTORY_REQUEST notification: open the requests tab and
+  // focus the request card whose id matches ?requestId.
+  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") ?? "items");
+  const focusRequestId = searchParams.get("requestId");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<ItemType | "all">("all");
   const [incompleteOnly, setIncompleteOnly] = useState(false);
@@ -88,6 +93,20 @@ export default function InventoryPage() {
   const displayedItems = incompleteOnly
     ? catalogItems.filter((i) => !i.categoryId)
     : catalogItems;
+
+  // Keep the active tab in sync with ?tab when navigating here (e.g. from a
+  // notification) even if the page is already mounted.
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) setActiveTab(tab);
+  }, [searchParams]);
+
+  // Scroll the focused request card into view once the requests tab is showing
+  // and the list has loaded.
+  useEffect(() => {
+    if (!focusRequestId || activeTab !== "requests") return;
+    document.getElementById(`request-${focusRequestId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusRequestId, activeTab, requestedItems.length]);
 
   const handleReviewStatus = async (item: InventoryItem, status: ItemRequestStatus) => {
     try {
@@ -192,7 +211,7 @@ export default function InventoryPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="items" dir="rtl">
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
         <TabsList>
           <TabsTrigger value="items">الأصناف</TabsTrigger>
           <TabsTrigger value="requests">
@@ -334,7 +353,11 @@ export default function InventoryPage() {
               {[...requestedItems]
                 .sort((a, b) => (a.status === "PENDING" ? 0 : 1) - (b.status === "PENDING" ? 0 : 1))
                 .map((item) => (
-                  <Card key={item.id}>
+                  <Card
+                    key={item.id}
+                    id={`request-${item.id}`}
+                    className={item.id === focusRequestId ? "ring-2 ring-primary ring-offset-2 transition-shadow" : undefined}
+                  >
                     <CardContent className="pt-4 space-y-3">
                       <div className="flex items-start justify-between gap-3 flex-wrap">
                         <div>
@@ -460,13 +483,25 @@ export default function InventoryPage() {
       <InventoryItemFormDialog open={!!editingItem} onOpenChange={(o) => !o && setEditingItem(null)} item={editingItem} />
 
       {/* Add-to-catalog dialog for a request whose part isn't in inventory yet.
-          Prefilled with the request's code/name; after it's added, the admin
-          re-approves and the backend matches it by partCode. */}
+          Prefilled with the request's code/name; once the item is added we link
+          it to the request and approve it in one PUT (backend deducts stock). */}
       <InventoryItemFormDialog
         open={!!addItemForRequest}
         onOpenChange={(o) => !o && setAddItemForRequest(null)}
         initialCode={addItemForRequest?.code ?? ""}
         initialName={addItemForRequest?.name ?? ""}
+        onCreated={(created) => {
+          const req = addItemForRequest;
+          setAddItemForRequest(null);
+          if (req) {
+            reviewRequest.mutate({
+              id: req.id,
+              status: "APPROVED",
+              linkedInventoryItemId: created.id,
+              notes: reviewNotes[req.id] ?? req.notes ?? undefined,
+            });
+          }
+        }}
       />
 
       {/* Delete confirmation */}
