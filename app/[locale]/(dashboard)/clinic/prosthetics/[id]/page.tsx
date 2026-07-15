@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowRight, User, Clock, Trash2, Plus, Download, Loader2,
   CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera, Archive, Bell, Reply,
@@ -3410,6 +3410,7 @@ export default function ProstheticsCasePage() {
   const searchParams = useSearchParams();
   const locale = useLocale();
   const isRtl = locale === "ar";
+  const t = useTranslations("clinic.prosthetics.case");
 
   const { data: caseData, isLoading } = useProstheticsCase(id);
   const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
@@ -3832,8 +3833,6 @@ export default function ProstheticsCasePage() {
   // hydrated from these same records.
   const upperSaved = (c.upperAssessment ?? []).length > 0;
   const lowerSaved = (c.lowerAssessment ?? []).length > 0;
-  // The committee decision is saved once — the case then carries committeeDecision.
-  const committeeSaved = !!c.committeeDecision;
 
   // Measurement sheet history per amputation type — newest-first, per backend
   const transtibialRecords: MeasurementAssessment[] = c.transtibialAssessment ?? [];
@@ -5948,12 +5947,10 @@ export default function ProstheticsCasePage() {
                       ))}
                     </div>
                   </div>
-                  {!committeeSaved && (
-                    <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                      {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                      حفظ القرار
-                    </Button>
-                  )}
+                  <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                    {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                    حفظ القرار
+                  </Button>
                 </>
               )}
             </div>
