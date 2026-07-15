@@ -91,7 +91,7 @@ import {
   ProstheticsStatus, ProstheticsCase,
   AmputationType, AmputationSide, AmputationCause, KLevel, CommitteeDecision, ProstheticType,
   AnkleDisarticulationDto, KneeDisarticulationDto, TransfemoralDto, TranstibialDto, HemipelvectomyDto, ElbowDisarticulationDto, TranshumeralDto, TransradialDto, TreatmentProgramDto, ProstheticDeliveryDto, DeliveryItemDto, FinalEvaluationDto,
-  MeasurementAssessment,
+  MeasurementAssessment, AssessmentResult,
 } from "@/lib/api/clinic-prosthetics";
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
@@ -3234,6 +3234,36 @@ function Section({ title, children, action }: { title: string; children: React.R
   );
 }
 
+// Badge for sections the backend has frozen — mirrors the balance-assessment card.
+function SavedBadge() {
+  return (
+    <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
+      <CheckCircle2 className="h-3 w-3" />
+      محفوظ — للقراءة فقط
+    </Badge>
+  );
+}
+
+// Merge a saved assessment record onto an empty form shape. Form keys and DTO
+// keys are 1:1 (see buildUpperDto/buildLowerDto), so a key-wise copy is enough;
+// keys the record omits keep their empty-form default.
+function hydrateAssessForm<T extends Record<string, any>>(empty: T, rec?: Record<string, any>): T {
+  if (!rec) return empty;
+  const out: any = { ...empty };
+  for (const key of Object.keys(empty)) {
+    const val = rec[key];
+    if (val !== undefined && val !== null) out[key] = val;
+  }
+  return out;
+}
+
+// Newest saved record per side. The backend upserts one row per (case, side) —
+// AssessmentResult carries no timestamp, unlike the MeasurementAssessment
+// history — so last-wins is a no-op there, and stays right if it ever appends.
+function recordForSide(recs: AssessmentResult[], side: "RIGHT" | "LEFT") {
+  return recs.reduce<AssessmentResult | undefined>((acc, r) => (r.side === side ? r : acc), undefined);
+}
+
 // ─── Paper-form helpers ───────────────────────────────────────────────────────
 
 function PfSq({ checked, label, onClick }: { checked: boolean; label: string; onClick: () => void }) {
@@ -3753,6 +3783,39 @@ export default function ProstheticsCasePage() {
       prosthesisSuitable: caseData.prosthesisSuitable ?? null,
       proposedProsthesisType: caseData.proposedProsthesisType ?? "",
     });
+
+    // Assessment forms — without this a saved case reopens blank, and the
+    // read-only lock below would freeze empty fields. `amputationSide` is not
+    // stored on the record; it is implied by which sides came back.
+    const upperRecs = caseData.upperAssessment ?? [];
+    if (upperRecs.length) {
+      const sides = new Set(upperRecs.map((r) => r.side));
+      const ampSide = sides.has("RIGHT") && sides.has("LEFT") ? "BILATERAL" : upperRecs[0].side;
+      const right = recordForSide(upperRecs, "RIGHT");
+      const left = recordForSide(upperRecs, "LEFT");
+      setUpperAssessForm({
+        ...hydrateAssessForm(emptyUpperForm(), ampSide === "LEFT" ? left : right ?? upperRecs[0]),
+        amputationSide: ampSide,
+      });
+      if (ampSide === "BILATERAL") {
+        setUpperAssessFormLeft({ ...hydrateAssessForm(emptyUpperForm(), left), amputationSide: ampSide });
+      }
+    }
+
+    const lowerRecs = caseData.lowerAssessment ?? [];
+    if (lowerRecs.length) {
+      const sides = new Set(lowerRecs.map((r) => r.side));
+      const ampSide = sides.has("RIGHT") && sides.has("LEFT") ? "BILATERAL" : lowerRecs[0].side;
+      const right = recordForSide(lowerRecs, "RIGHT");
+      const left = recordForSide(lowerRecs, "LEFT");
+      setLowerAssessForm({
+        ...hydrateAssessForm(emptyLowerForm(), ampSide === "LEFT" ? left : right ?? lowerRecs[0]),
+        amputationSide: ampSide,
+      });
+      if (ampSide === "BILATERAL") {
+        setLowerAssessFormLeft({ ...hydrateAssessForm(emptyLowerForm(), left), amputationSide: ampSide });
+      }
+    }
   }, [caseData?.updatedAt]);
 
   if (isLoading) {
@@ -3764,6 +3827,13 @@ export default function ProstheticsCasePage() {
   }
 
   const c = caseData;
+
+  // Once an assessment is saved it renders read-only — the form above is
+  // hydrated from these same records.
+  const upperSaved = (c.upperAssessment ?? []).length > 0;
+  const lowerSaved = (c.lowerAssessment ?? []).length > 0;
+  // The committee decision is saved once — the case then carries committeeDecision.
+  const committeeSaved = !!c.committeeDecision;
 
   // Measurement sheet history per amputation type — newest-first, per backend
   const transtibialRecords: MeasurementAssessment[] = c.transtibialAssessment ?? [];
@@ -3785,6 +3855,11 @@ export default function ProstheticsCasePage() {
     return s ? [s] : [];
   };
   const ampTypes = getAmpTypes();
+
+  // The staff section persists only through the upper save button
+  // (handleSaveUpperAll → handleSaveStaff), so freeze it once that button is
+  // gone; leaving it live would accept edits that never reach the server.
+  const staffLocked = ampTypes.includes("UPPER") ? upperSaved : lowerSaved;
 
   const patientName = patientFull
     ? `${patientFull.firstName} ${patientFull.lastName}`
@@ -4764,7 +4839,8 @@ export default function ProstheticsCasePage() {
 
           {/* ── فريق العمل المعالج ── */}
           {openStaffKey && <div className="fixed inset-0 z-40" onClick={() => setOpenStaffKey(null)} />}
-          <Section title="فريق العمل المعالج">
+          <Section title="فريق العمل المعالج" action={staffLocked ? <SavedBadge /> : undefined}>
+            <fieldset disabled={staffLocked} className="contents">
             <div className="grid grid-cols-3 gap-4">
               {([
                 { key: "prosthetistIds" as const,     label: "فني الأطراف الصناعية" },
@@ -4831,6 +4907,7 @@ export default function ProstheticsCasePage() {
                 );
               })}
             </div>
+            </fieldset>
           </Section>
 
           {/* ─── Upper Assessment ───────────────────────────────────────────── */}
@@ -5032,7 +5109,8 @@ export default function ProstheticsCasePage() {
             };
 
             return (
-              <Section title="تقييم الطرف العلوي">
+              <Section title="تقييم الطرف العلوي" action={upperSaved ? <SavedBadge /> : undefined}>
+                <fieldset disabled={upperSaved} className="contents">
                 <div className="divide-y divide-border/30">
 
                   {/* جانب البتر */}
@@ -5060,6 +5138,7 @@ export default function ProstheticsCasePage() {
 
 
                 </div>
+                </fieldset>
               </Section>
             );
           })()}
@@ -5072,7 +5151,8 @@ export default function ProstheticsCasePage() {
             const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
             const groups = [...new Set(UPPER_ROM_MOVES.map((m) => m.group))];
             return (
-              <Section title="تقييم قوة حركة العضلات">
+              <Section title="تقييم قوة حركة العضلات" action={upperSaved ? <SavedBadge /> : undefined}>
+                <fieldset disabled={upperSaved} className="contents">
                 <div className="divide-y divide-border/30">
                   {groups.map((group) => (
                     <PfRow key={group} label={group}>
@@ -5104,13 +5184,16 @@ export default function ProstheticsCasePage() {
                       </div>
                     </PfRow>
                   ))}
-                  <div className="pt-3">
-                    <Button onClick={handleSaveUpperAll} disabled={updateCase.isPending || submitAssessmentUpper.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                      {(updateCase.isPending || submitAssessmentUpper.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                      حفظ تقييم الطرف العلوي
-                    </Button>
-                  </div>
+                  {!upperSaved && (
+                    <div className="pt-3">
+                      <Button onClick={handleSaveUpperAll} disabled={updateCase.isPending || submitAssessmentUpper.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                        {(updateCase.isPending || submitAssessmentUpper.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ تقييم الطرف العلوي
+                      </Button>
+                    </div>
+                  )}
                 </div>
+                </fieldset>
               </Section>
             );
           })()}
@@ -5522,7 +5605,8 @@ export default function ProstheticsCasePage() {
             };
 
             return (
-              <Section title="تقييم الطرف السفلي">
+              <Section title="تقييم الطرف السفلي" action={lowerSaved ? <SavedBadge /> : undefined}>
+                <fieldset disabled={lowerSaved} className="contents">
                 <div className="divide-y divide-border/30">
 
                   <PfRow label="جانب البتر">
@@ -5600,6 +5684,7 @@ export default function ProstheticsCasePage() {
                   )}
 
                 </div>
+                </fieldset>
               </Section>
             );
           })()}
@@ -5612,7 +5697,8 @@ export default function ProstheticsCasePage() {
             const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
             const groups = [...new Set(LOWER_ROM_MOVES.map((m) => m.group))];
             return (
-              <Section title="تقييم قوة حركة العضلات">
+              <Section title="تقييم قوة حركة العضلات" action={lowerSaved ? <SavedBadge /> : undefined}>
+                <fieldset disabled={lowerSaved} className="contents">
                 <div className="divide-y divide-border/30">
                   {groups.map((group) => (
                     <PfRow key={group} label={group}>
@@ -5647,13 +5733,16 @@ export default function ProstheticsCasePage() {
                   <PfRow label="ملاحظات">
                     <Textarea rows={2} className="text-sm w-full" value={f.muscleMotionNotes} onChange={(e) => set({ muscleMotionNotes: e.target.value })} />
                   </PfRow>
-                  <div className="pt-3">
-                    <Button onClick={handleSubmitLowerAssessment} disabled={submitAssessmentLower.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                      {submitAssessmentLower.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                      حفظ تقييم الطرف السفلي
-                    </Button>
-                  </div>
+                  {!lowerSaved && (
+                    <div className="pt-3">
+                      <Button onClick={handleSubmitLowerAssessment} disabled={submitAssessmentLower.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                        {submitAssessmentLower.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                        حفظ تقييم الطرف السفلي
+                      </Button>
+                    </div>
+                  )}
                 </div>
+                </fieldset>
               </Section>
             );
           })()}
@@ -5859,10 +5948,12 @@ export default function ProstheticsCasePage() {
                       ))}
                     </div>
                   </div>
-                  <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                    {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ القرار
-                  </Button>
+                  {!committeeSaved && (
+                    <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                      {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                      حفظ القرار
+                    </Button>
+                  )}
                 </>
               )}
             </div>
