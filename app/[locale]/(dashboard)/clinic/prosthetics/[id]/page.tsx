@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
   ArrowRight, User, Clock, Trash2, Plus, Download, Loader2,
-  CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera,
+  CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera, Archive, Bell, Reply,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ import { InventoryItemCombobox } from "@/components/clinic/inventory-item-combob
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
@@ -60,24 +61,29 @@ import {
   useTreatmentPrograms,
   useCreateTreatmentProgram,
   useUpdateTreatmentProgram,
-  useDeleteTreatmentProgram,
+  useArchiveTreatmentProgram,
+  useCaseAlerts,
+  useSendCaseAlert,
+  useRespondToAlert,
   useReviewPrograms,
   useCreateReviewProgram,
   useUpdateReviewProgram,
   useDeleteReviewProgram,
   useProstheticDelivery,
   useSaveProstheticDelivery,
-  useAddDeliveryItem,
-  useUpdateDeliveryItem,
-  useDeleteDeliveryItem,
+  useFinalDelivery,
+  useCreateFinalDelivery,
+  useUpdateFinalDelivery,
   useBalanceAssessments,
   useAddBalanceAssessment,
   useUpdateBalanceAssessment,
-  useDeleteBalanceAssessment,
+  useSaveBalanceAssessmentForm,
+  useArchiveBalanceAssessment,
   useGaitAnalysisForms,
   useAddGaitAnalysisForm,
   useUpdateGaitAnalysisForm,
-  useDeleteGaitAnalysisForm,
+  useSaveGaitAnalysisForm,
+  useArchiveGaitAnalysisForm,
   useFinalEvaluation,
 } from "@/lib/hooks/use-clinic-prosthetics";
 import {
@@ -226,9 +232,23 @@ function TreatmentProgramCard({
   currentUser: any;
 }) {
   const updateProgram = useUpdateTreatmentProgram();
-  const deleteProgram = useDeleteTreatmentProgram();
+  const archiveProgram = useArchiveTreatmentProgram();
   const [editing, setEditing] = useState(false);
-  const [confirmDel, setConfirmDel] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveNotes, setArchiveNotes] = useState("");
+  const isArchived = !!program.archivedAt;
+  // Auto-created sessions (from a confirmed appointment) carry only date + time.
+  // Show the edit button only while those "rest" fields are still empty — once
+  // the technician fills any of them, the session is considered complete.
+  const hasOtherData = !!(
+    program.technicianId ||
+    program.description ||
+    program.sessionStartTime ||
+    program.sessionEndTime ||
+    program.notes ||
+    program.technicianSignatureUrl ||
+    program.managerSignatureUrl
+  );
   const [form, setForm] = useState({
     sessionDate: program.sessionDate ? new Date(program.sessionDate).toISOString().slice(0, 10) : "",
     sessionTime: program.sessionTime ?? "",
@@ -305,28 +325,61 @@ function TreatmentProgramCard({
           {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
           {form.sessionTime && <span className="text-xs text-muted-foreground">{form.sessionTime}</span>}
         </div>
-        <div className="flex gap-1.5">
-          <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
-            {editing ? "إغلاق" : "تعديل"}
-          </Button>
-          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => setConfirmDel(true)}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
+        <div className="flex gap-1.5 items-center flex-wrap justify-end">
+          {isArchived && (
+            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
+              <Archive className="h-3 w-3" />
+              مؤرشف
+            </Badge>
+          )}
+          {!hasOtherData && (
+            <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
+              {editing ? "إغلاق" : "تعديل"}
+            </Button>
+          )}
+          {!isArchived && (
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => { setArchiveNotes(""); setArchiveOpen(true); }}>
+              <Archive className="h-3.5 w-3.5" />
+              أرشفة
+            </Button>
+          )}
         </div>
       </div>
 
-      <Dialog open={confirmDel} onOpenChange={setConfirmDel}>
+      {isArchived && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-0.5">
+          <p className="flex items-center gap-1 font-medium">
+            <Archive className="h-3 w-3" />
+            أُرشِفت{program.archivedAt ? ` بتاريخ ${new Date(program.archivedAt).toLocaleDateString("en-GB")}` : ""}
+          </p>
+          {program.archiveNotes && (
+            <p><span className="font-medium">ملاحظة الأرشفة: </span>{program.archiveNotes}</p>
+          )}
+        </div>
+      )}
+
+      <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
-            <DialogDescription>هل تريد حذف هذه الجلسة؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+            <DialogTitle>أرشفة الجلسة</DialogTitle>
+            <DialogDescription>سيتم إغلاق الجلسة. يمكنك إضافة ملاحظة اختيارية.</DialogDescription>
           </DialogHeader>
+          <Textarea
+            rows={3}
+            placeholder="ملاحظة اختيارية..."
+            value={archiveNotes}
+            onChange={(e) => setArchiveNotes(e.target.value)}
+          />
           <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-            <Button variant="outline" onClick={() => setConfirmDel(false)}>لا</Button>
-            <Button variant="destructive" disabled={deleteProgram.isPending}
-              onClick={() => { deleteProgram.mutate({ caseId, programId: program.id }); setConfirmDel(false); }}>
-              {deleteProgram.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+            <Button variant="outline" onClick={() => setArchiveOpen(false)}>إلغاء</Button>
+            <Button
+              disabled={archiveProgram.isPending}
+              onClick={async () => {
+                await archiveProgram.mutateAsync({ caseId, programId: program.id, notes: archiveNotes.trim() || undefined });
+                setArchiveOpen(false);
+              }}
+            >
+              {archiveProgram.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "أرشفة"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -464,6 +517,15 @@ function TreatmentProgramsSection({
 }) {
   const { data: programs = [], isLoading } = useTreatmentPrograms(caseId);
   const createProgram = useCreateTreatmentProgram();
+  // Case-level alerts (whole follow-up program). A case can have several.
+  const { data: alerts = [] } = useCaseAlerts(caseId);
+  const sendAlert = useSendCaseAlert();
+  const respondAlert = useRespondToAlert();
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertNote, setAlertNote] = useState("");
+  const [respondFor, setRespondFor] = useState<string | null>(null);
+  const [respondNote, setRespondNote] = useState("");
+  const pendingAlerts = alerts.filter((a) => !a.respondedAt).length;
   const [showForm, setShowForm] = useState(false);
   const [newForm, setNewForm] = useState({
     sessionDate: new Date().toISOString().slice(0, 10),
@@ -535,12 +597,122 @@ function TreatmentProgramsSection({
     <Section
       title={`برنامج المتابعة${programs.length > 0 ? ` (${programs.length})` : ""}`}
       action={
-        <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
-          <Plus className="h-3.5 w-3.5" />
-          {showForm ? "إغلاق" : "إضافة جلسة"}
-        </Button>
+        <div className="flex gap-1.5 items-center flex-wrap justify-end">
+          {pendingAlerts > 0 && (
+            <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-700 text-xs gap-1">
+              <Bell className="h-3 w-3" />
+              {pendingAlerts} بانتظار الرد
+            </Badge>
+          )}
+          <Button size="sm" variant="outline" className="gap-1 text-xs border-orange-300 text-orange-700 hover:bg-orange-50"
+            onClick={() => { setAlertNote(""); setAlertOpen(true); }}>
+            <Bell className="h-3.5 w-3.5" />
+            تنبيه رئيس القسم
+          </Button>
+          <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
+            <Plus className="h-3.5 w-3.5" />
+            {showForm ? "إغلاق" : "إضافة جلسة"}
+          </Button>
+        </div>
       }
     >
+      {alerts.length > 0 && (
+        <div className="space-y-2 mb-3">
+          {alerts.map((a) => (
+            <div key={a.id} className="rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-900 space-y-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-0.5">
+                  <p className="flex items-center gap-1 font-medium">
+                    <Bell className="h-3 w-3" />
+                    تنبيه رئيس القسم{a.sentAt ? ` — ${new Date(a.sentAt).toLocaleString("en-GB")}` : ""}
+                  </p>
+                  {a.note && <p><span className="font-medium">ملاحظة الفني: </span>{a.note}</p>}
+                </div>
+                {!a.respondedAt && (
+                  <Button size="sm" variant="outline" className="gap-1 text-xs border-blue-300 text-blue-700 hover:bg-blue-50 shrink-0"
+                    onClick={() => { setRespondNote(""); setRespondFor(a.id); }}>
+                    <Reply className="h-3.5 w-3.5" />
+                    رد
+                  </Button>
+                )}
+              </div>
+              {a.respondedAt && (
+                <div className="space-y-0.5 border-t border-orange-200 pt-1">
+                  <p className="flex items-center gap-1 font-medium text-blue-800">
+                    <Reply className="h-3 w-3" />
+                    رد رئيس القسم{a.respondedAt ? ` — ${new Date(a.respondedAt).toLocaleString("en-GB")}` : ""}
+                  </p>
+                  {a.responseNote && <p className="text-blue-900"><span className="font-medium">الرد: </span>{a.responseNote}</p>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تنبيه رئيس القسم</DialogTitle>
+            <DialogDescription>سيتم إرسال إشعار لرئيس القسم مع ملاحظتك حول برنامج المتابعة.</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={3}
+            placeholder="اكتب ملاحظتك لرئيس القسم..."
+            value={alertNote}
+            onChange={(e) => setAlertNote(e.target.value)}
+          />
+          <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+            <Button variant="outline" onClick={() => setAlertOpen(false)}>إلغاء</Button>
+            <Button
+              disabled={sendAlert.isPending || !alertNote.trim()}
+              onClick={async () => {
+                await sendAlert.mutateAsync({ caseId, note: alertNote.trim() });
+                setAlertOpen(false);
+              }}
+            >
+              {sendAlert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إرسال التنبيه"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!respondFor} onOpenChange={(o) => { if (!o) setRespondFor(null); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>رد رئيس القسم</DialogTitle>
+            <DialogDescription>سيتم إرسال إشعار للفني الذي أرسل التنبيه مع ردّك.</DialogDescription>
+          </DialogHeader>
+          {(() => {
+            const target = alerts.find((a) => a.id === respondFor);
+            return target?.note ? (
+              <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">ملاحظة الفني: </span>{target.note}
+              </p>
+            ) : null;
+          })()}
+          <Textarea
+            rows={3}
+            placeholder="اكتب ردّك للفني..."
+            value={respondNote}
+            onChange={(e) => setRespondNote(e.target.value)}
+          />
+          <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+            <Button variant="outline" onClick={() => setRespondFor(null)}>إلغاء</Button>
+            <Button
+              disabled={respondAlert.isPending || !respondNote.trim()}
+              onClick={async () => {
+                if (!respondFor) return;
+                await respondAlert.mutateAsync({ caseId, alertId: respondFor, note: respondNote.trim() });
+                setRespondFor(null);
+              }}
+            >
+              {respondAlert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إرسال الرد"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {showForm && (
         <div className="rounded-lg border border-dashed p-3 space-y-3 mb-3 bg-muted/30">
           <p className="text-sm font-medium">جلسة جديدة</p>
@@ -1095,8 +1267,11 @@ const INITIAL_GAIT_FORM = {
   mainProblem: "", likelyCauses: [] as string[], recommendations: [] as string[],
   rehabPlanItems: [] as string[], rehabNotes: "",
   examinerProsthetistId: "", prosthetistSignatureUrl: "",
-  examinerPhysiotherapistId: "", physiotherapistSignatureUrl: "",
   notes: "",
+  // Optional free-text notes (diagnosis/recommendations + "other" answers).
+  recommendationsNotes: "", mainProblemNotes: "",
+  patientComplaintsOtherNotes: "", suspensionSystemOtherNotes: "",
+  prostheticIssuesOtherNotes: "", likelyCausesOtherNotes: "",
 };
 type GaitForm = typeof INITIAL_GAIT_FORM;
 
@@ -1128,8 +1303,10 @@ function gaitFormFromData(d: any): GaitForm {
       ...(d.rehabPlan?.gaitTrain ?? []),
     ], rehabNotes: d.rehabNotes ?? "",
     examinerProsthetistId: d.examinerProsthetistId ?? "", prosthetistSignatureUrl: d.prosthetistSignatureUrl ?? "",
-    examinerPhysiotherapistId: d.examinerPhysiotherapistId ?? "", physiotherapistSignatureUrl: d.physiotherapistSignatureUrl ?? "",
     notes: d.notes ?? "",
+    recommendationsNotes: d.recommendationsNotes ?? "", mainProblemNotes: d.mainProblemNotes ?? "",
+    patientComplaintsOtherNotes: d.patientComplaintsOtherNotes ?? "", suspensionSystemOtherNotes: d.suspensionSystemOtherNotes ?? "",
+    prostheticIssuesOtherNotes: d.prostheticIssuesOtherNotes ?? "", likelyCausesOtherNotes: d.likelyCausesOtherNotes ?? "",
   };
 }
 
@@ -1171,8 +1348,13 @@ function gaitFormToDto(f: GaitForm) {
     rehabPlan: f.rehabPlanItems.length ? { gaitTrain: f.rehabPlanItems } : undefined,
     rehabNotes: f.rehabNotes || undefined,
     examinerProsthetistId: f.examinerProsthetistId || undefined, prosthetistSignatureUrl: f.prosthetistSignatureUrl || undefined,
-    examinerPhysiotherapistId: f.examinerPhysiotherapistId || undefined, physiotherapistSignatureUrl: f.physiotherapistSignatureUrl || undefined,
     notes: f.notes || undefined,
+    recommendationsNotes: f.recommendationsNotes || undefined,
+    mainProblemNotes: f.mainProblemNotes || undefined,
+    patientComplaintsOtherNotes: f.patientComplaintsOtherNotes || undefined,
+    suspensionSystemOtherNotes: f.suspensionSystemOtherNotes || undefined,
+    prostheticIssuesOtherNotes: f.prostheticIssuesOtherNotes || undefined,
+    likelyCausesOtherNotes: f.likelyCausesOtherNotes || undefined,
   };
 }
 
@@ -1206,13 +1388,17 @@ function GaitAnalysisCard({
   const isNew = !session;
   const [editing, setEditing] = useState(isNew);
   const [form, setForm] = useState<GaitForm>(() => session ? gaitFormFromData(session) : { ...INITIAL_GAIT_FORM, phases: {} });
-  const [confirmDel, setConfirmDel] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
   const prostoSigRef = useRef<HTMLInputElement>(null);
-  const physioSigRef2 = useRef<HTMLInputElement>(null);
   const addMut = useAddGaitAnalysisForm();
   const updateMut = useUpdateGaitAnalysisForm();
-  const deleteMut = useDeleteGaitAnalysisForm();
+  const saveMut = useSaveGaitAnalysisForm();
+  const archiveMut = useArchiveGaitAnalysisForm();
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+  // Frozen after POST /save — the backend rejects any further PATCH (400).
+  const isSaved = !!session?.isSaved;
+  const isArchived = !!session?.archivedAt;
 
   const toggleMulti = (field: keyof GaitForm, v: string) =>
     setForm((f) => {
@@ -1233,47 +1419,50 @@ function GaitAnalysisCard({
       return { ...f, phases: { ...f.phases, [phase]: { ...cur, [field]: val } } };
     });
 
-  const handleSigFile = async (e: React.ChangeEvent<HTMLInputElement>, role: "prosto" | "physio2") => {
+  const handleSigFile = async (e: React.ChangeEvent<HTMLInputElement>, _role: "prosto") => {
     const file = e.target.files?.[0]; if (!file) return;
-    const empId = role === "prosto" ? form.examinerProsthetistId : form.examinerPhysiotherapistId;
+    const empId = form.examinerProsthetistId;
     if (!empId) return;
     try {
       const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
       const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
-      if (role === "prosto") setForm((f) => ({ ...f, prosthetistSignatureUrl: url }));
-      else setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
+      setForm((f) => ({ ...f, prosthetistSignatureUrl: url }));
       toast.success("تم رفع التوقيع");
     } catch { toast.error("فشل رفع التوقيع"); }
     e.target.value = "";
   };
 
-  const handleSigClick = async (role: "prosto" | "physio2") => {
-    const empId = role === "prosto" ? form.examinerProsthetistId : form.examinerPhysiotherapistId;
+  const handleSigClick = async (_role: "prosto") => {
+    const empId = form.examinerProsthetistId;
     if (!empId) { toast.error("اختر الموظف أولاً"); return; }
     try {
       const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
       if (sig.hasSignature && sig.signatureUrl) {
         const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
-        if (role === "prosto") setForm((f) => ({ ...f, prosthetistSignatureUrl: url }));
-        else setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
+        setForm((f) => ({ ...f, prosthetistSignatureUrl: url }));
       } else {
-        setTimeout(() => (role === "prosto" ? prostoSigRef : physioSigRef2).current?.click(), 50);
+        setTimeout(() => prostoSigRef.current?.click(), 50);
       }
     } catch { toast.error("فشل جلب التوقيع"); }
   };
 
   const handleSave = async () => {
     const dto = gaitFormToDto(form);
-    if (isNew) { await addMut.mutateAsync({ caseId, dto }); onCancel?.(); }
-    else { await updateMut.mutateAsync({ caseId, formId: session.id, dto }); setEditing(false); }
+    if (isNew) { await addMut.mutateAsync({ caseId, dto }); onCancel?.(); return; }
+    // Existing session: persist the edits, then freeze the form (PATCH is
+    // rejected afterwards) — a single "حفظ نهائي" action.
+    await updateMut.mutateAsync({ caseId, formId: session.id, dto });
+    await saveMut.mutateAsync({ caseId, formId: session.id });
+    setEditing(false);
   };
-  const isSaving = addMut.isPending || updateMut.isPending;
+  const isSaving = addMut.isPending || updateMut.isPending || saveMut.isPending;
 
   // Collapsed card
   if (!isNew && !editing) {
     return (
       <>
-        <div className="rounded-lg border p-3 space-y-1 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setEditing(true)}>
+        <div className="rounded-lg border p-3 space-y-1 transition-colors cursor-pointer hover:bg-muted/30"
+          onClick={() => setEditing(true)}>
           <div className="flex justify-between items-center">
             <div className="flex gap-2 items-center flex-wrap">
               <Badge variant="secondary" className="font-bold">#{(idx ?? 0) + 1}</Badge>
@@ -1282,32 +1471,61 @@ function GaitAnalysisCard({
               {session.assistiveDevice && session.assistiveDevice !== "NONE" && (
                 <Badge className="text-xs bg-blue-100 text-blue-800">{GAIT_DEVICE_OPTS.find((o) => o.v === session.assistiveDevice)?.l}</Badge>
               )}
+              {isSaved && (
+                <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  محفوظ
+                </Badge>
+              )}
+              {isArchived && (
+                <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
+                  <Archive className="h-3 w-3" />
+                  مؤرشف
+                </Badge>
+              )}
             </div>
-            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-              <Button size="sm" variant="outline" onClick={() => setEditing(true)}>تعديل</Button>
-              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setConfirmDel(true)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+            <div className="flex gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
+              {!isArchived && (
+                <Button size="sm" variant="outline" className="gap-1"
+                  onClick={() => { setArchiveReason(""); setArchiveOpen(true); }}>
+                  <Archive className="h-3.5 w-3.5" />
+                  أرشفة
+                </Button>
+              )}
             </div>
           </div>
           {session.mainProblem && <p className="text-xs text-muted-foreground">{session.mainProblem}</p>}
+          {isArchived && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-800 space-y-0.5">
+              <p className="flex items-center gap-1 font-medium">
+                <Archive className="h-3 w-3" />
+                أُرشِف{session.archivedAt ? ` بتاريخ ${new Date(session.archivedAt).toLocaleDateString("en-GB")}` : ""}
+              </p>
+              {session.archiveNotes && <p><span className="font-medium">السبب: </span>{session.archiveNotes}</p>}
+            </div>
+          )}
         </div>
 
-        <Dialog open={confirmDel} onOpenChange={setConfirmDel}>
+        <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
           <DialogContent className="max-w-sm" dir="rtl">
             <DialogHeader>
-              <DialogTitle>تأكيد الحذف</DialogTitle>
-              <DialogDescription>هل تريد حذف هذه الجلسة؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+              <DialogTitle>أرشفة النموذج</DialogTitle>
+              <DialogDescription>اذكر سبب الأرشفة.</DialogDescription>
             </DialogHeader>
+            <Textarea rows={3} placeholder="سبب الأرشفة..." value={archiveReason} onChange={(e) => setArchiveReason(e.target.value)} />
             <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-              <Button variant="outline" onClick={() => setConfirmDel(false)}>لا</Button>
-              <Button variant="destructive" disabled={deleteMut.isPending}
-                onClick={() => { deleteMut.mutate({ caseId, formId: session.id }); setConfirmDel(false); }}>
-                {deleteMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+              <Button variant="outline" onClick={() => setArchiveOpen(false)}>إلغاء</Button>
+              <Button disabled={archiveMut.isPending || !archiveReason.trim()}
+                onClick={async () => {
+                  await archiveMut.mutateAsync({ caseId, formId: session.id, reason: archiveReason.trim() });
+                  setArchiveOpen(false);
+                }}>
+                {archiveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "أرشفة"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
       </>
     );
   }
@@ -1316,11 +1534,21 @@ function GaitAnalysisCard({
     <div className="rounded-lg border p-4 space-y-4">
       {!isNew && (
         <div className="flex justify-between items-center">
-          <p className="text-sm font-semibold">تعديل الجلسة #{(idx ?? 0) + 1}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold">{isSaved ? "تفاصيل" : "تعديل"} الجلسة #{(idx ?? 0) + 1}</p>
+            {isSaved && (
+              <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                محفوظ — للقراءة فقط
+              </Badge>
+            )}
+          </div>
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>إغلاق</Button>
         </div>
       )}
 
+      {/* Saved forms are frozen server-side (PATCH → 400) — render read-only. */}
+      <fieldset disabled={isSaved} className="contents">
       <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
         <TabsList className="w-full grid grid-cols-5 h-auto">
           <TabsTrigger value="basic" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">تفاصيل الطرف الصناعي</TabsTrigger>
@@ -1347,10 +1575,20 @@ function GaitAnalysisCard({
               <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {SUSPENSION_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" checked={form.suspensionSystem.includes(o.v)} onChange={() => toggleMulti("suspensionSystem", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    {/* Single-select: picking one clears the rest (still sent as an array). */}
+                    <input type="checkbox" checked={form.suspensionSystem.includes(o.v)}
+                      onChange={() => setForm((f) => {
+                        const next = f.suspensionSystem.includes(o.v) ? [] : [o.v];
+                        return { ...f, suspensionSystem: next, suspensionSystemOtherNotes: next.includes("OTHER") ? f.suspensionSystemOtherNotes : "" };
+                      })}
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                     <span className="text-xs">{o.l}</span>
                   </label>
                 ))}
+                {form.suspensionSystem.includes("OTHER") && (
+                  <Input value={form.suspensionSystemOtherNotes} onChange={(e) => setForm((f) => ({ ...f, suspensionSystemOtherNotes: e.target.value }))}
+                    placeholder="تفاصيل نظام التعليق الآخر (اختياري)..." className="h-7 text-xs mt-1 w-full" />
+                )}
               </div>
             </div>
 
@@ -1362,7 +1600,7 @@ function GaitAnalysisCard({
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.socketBearing === o.v}
                       onChange={() => setForm((f) => ({ ...f, socketBearing: f.socketBearing === o.v ? "" : o.v }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                     <span className="text-xs">{o.l}</span>
                   </label>
                 ))}
@@ -1377,7 +1615,7 @@ function GaitAnalysisCard({
                   <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                     <input type="checkbox" checked={form.kneeJointType === o.v}
                       onChange={() => setForm((f) => ({ ...f, kneeJointType: f.kneeJointType === o.v ? "" : o.v }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                     <span className="text-xs">{o.l}</span>
                   </label>
                 ))}
@@ -1392,7 +1630,7 @@ function GaitAnalysisCard({
                   <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                     <input type="checkbox" checked={form.footType === o.v}
                       onChange={() => setForm((f) => ({ ...f, footType: f.footType === o.v ? "" : o.v }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                     <span className="text-xs">{o.l}</span>
                   </label>
                 ))}
@@ -1405,10 +1643,12 @@ function GaitAnalysisCard({
               <div className="px-3 py-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {COMPLAINT_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.patientComplaints.includes(o.v)} onChange={() => toggleMulti("patientComplaints", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <input type="checkbox" checked={form.patientComplaints.includes(o.v)} onChange={() => toggleMulti("patientComplaints", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                     <span className="text-xs">{o.l}</span>
                   </label>
                 ))}
+                <Input value={form.patientComplaintsOtherNotes} onChange={(e) => setForm((f) => ({ ...f, patientComplaintsOtherNotes: e.target.value }))}
+                  placeholder="تفاصيل شكوى أخرى (اختياري)..." className="h-7 text-xs mt-1 col-span-2" />
               </div>
             </div>
 
@@ -1420,7 +1660,7 @@ function GaitAnalysisCard({
                   <label key={n} className="flex flex-col items-center gap-0.5 cursor-pointer">
                     <input type="checkbox" checked={Number(form.painIntensity) === n}
                       onChange={() => setForm((f) => ({ ...f, painIntensity: Number(f.painIntensity) === n ? "" : n }))}
-                      className="w-[17px] h-[17px] accent-orange-500 rounded-sm" />
+                      className="w-[17px] h-[17px] checkbox-orange rounded-sm" />
                     <span className="text-[10px] text-muted-foreground">{n}</span>
                   </label>
                 ))}
@@ -1435,7 +1675,7 @@ function GaitAnalysisCard({
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.alignmentCheck === o.v}
                       onChange={() => setForm((f) => ({ ...f, alignmentCheck: f.alignmentCheck === o.v ? "" : o.v }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                     <span className="text-xs">{o.l}</span>
                   </label>
                 ))}
@@ -1448,7 +1688,7 @@ function GaitAnalysisCard({
                   <label key={String(v)} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.hasRomLimitations === v}
                       onChange={() => setForm((f) => ({ ...f, hasRomLimitations: f.hasRomLimitations === v ? null : v }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                     <span className="text-xs">{v ? "نعم" : "لا"}</span>
                   </label>
                 ))}
@@ -1470,13 +1710,13 @@ function GaitAnalysisCard({
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.hasHipFlexionContracture}
                       onChange={() => setForm((f) => ({ ...f, hasHipFlexionContracture: f.hasHipFlexionContracture ? null : true }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                     <span className="text-xs">قصر عطف الورك</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.hasKneeFlexionContracture}
                       onChange={() => setForm((f) => ({ ...f, hasKneeFlexionContracture: f.hasKneeFlexionContracture ? null : true }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                     <span className="text-xs">قصر عطف الركبة</span>
                   </label>
                 </div>
@@ -1485,26 +1725,26 @@ function GaitAnalysisCard({
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.weakHipAbductors}
                       onChange={() => setForm((f) => ({ ...f, weakHipAbductors: f.weakHipAbductors ? null : true }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                     <span className="text-xs">تبعيد</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.weakHipExtensors}
                       onChange={() => setForm((f) => ({ ...f, weakHipExtensors: f.weakHipExtensors ? null : true }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                     <span className="text-xs">بسط</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.weakTrunkMuscles}
                       onChange={() => setForm((f) => ({ ...f, weakTrunkMuscles: f.weakTrunkMuscles ? null : true }))}
-                      className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                      className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                     <span className="text-xs">عضلات الجذع</span>
                   </label>
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={!!form.otherWeakness}
                         onChange={() => setForm((f) => ({ ...f, otherWeakness: f.otherWeakness ? "" : " " }))}
-                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                        className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                       <span className="text-xs">أخرى:</span>
                     </label>
                     {!!form.otherWeakness && (
@@ -1531,7 +1771,7 @@ function GaitAnalysisCard({
                       <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                         <input type="checkbox" checked={form[fld] === o.v}
                           onChange={() => setForm((f) => ({ ...f, [fld]: f[fld] === o.v ? "" : o.v }))}
-                          className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                          className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                         <span className="text-xs">{o.l}</span>
                       </label>
                     ))}
@@ -1549,7 +1789,7 @@ function GaitAnalysisCard({
                     <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" checked={form.sittingBalance === o.v}
                         onChange={() => setForm((f) => ({ ...f, sittingBalance: f.sittingBalance === o.v ? "" : o.v }))}
-                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                        className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                       <span className="text-xs">{o.l}</span>
                     </label>
                   ))}
@@ -1562,7 +1802,7 @@ function GaitAnalysisCard({
                     <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" checked={form.standingBalance === o.v}
                         onChange={() => setForm((f) => ({ ...f, standingBalance: f.standingBalance === o.v ? "" : o.v }))}
-                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                        className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                       <span className="text-xs">{o.l}</span>
                     </label>
                   ))}
@@ -1582,7 +1822,7 @@ function GaitAnalysisCard({
                     <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" checked={form.symmetry === o.v}
                         onChange={() => setForm((f) => ({ ...f, symmetry: f.symmetry === o.v ? "" : o.v }))}
-                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                        className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                       <span className="text-xs">{o.l}</span>
                     </label>
                   ))}
@@ -1597,7 +1837,7 @@ function GaitAnalysisCard({
                     <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" checked={form.assistiveDevice === o.v}
                         onChange={() => setForm((f) => ({ ...f, assistiveDevice: f.assistiveDevice === o.v ? "" : o.v }))}
-                        className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                        className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                       <span className="text-xs">{o.l}</span>
                     </label>
                   ))}
@@ -1656,7 +1896,7 @@ function GaitAnalysisCard({
                       <input type="checkbox"
                         checked={form.phases[phase.key]?.deviations?.includes(d.v) ?? false}
                         onChange={() => togglePhaseDeviation(phase.key, d.v)}
-                        className="w-[17px] h-[17px] accent-orange-500 rounded-sm shrink-0"
+                        className="w-[17px] h-[17px] checkbox-orange rounded-sm shrink-0"
                       />
                       <span className="text-xs">{d.l}</span>
                     </label>
@@ -1685,10 +1925,14 @@ function GaitAnalysisCard({
               <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {PROSTHETIC_ISSUE_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.prostheticIssues.includes(o.v)} onChange={() => toggleMulti("prostheticIssues", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <input type="checkbox" checked={form.prostheticIssues.includes(o.v)} onChange={() => toggleMulti("prostheticIssues", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                     <span className="text-xs">{o.l}</span>
                   </label>
                 ))}
+              </div>
+              <div className="px-3 pb-3 space-y-1.5">
+                <Label className="text-xs font-medium">تفاصيل مشكلة أخرى (اختياري)</Label>
+                <Textarea rows={2} value={form.prostheticIssuesOtherNotes} onChange={(e) => setForm((f) => ({ ...f, prostheticIssuesOtherNotes: e.target.value }))} className="resize-none text-xs" placeholder="تفاصيل إضافية..." />
               </div>
             </div>
 
@@ -1701,15 +1945,23 @@ function GaitAnalysisCard({
                   <Textarea rows={2} value={form.mainProblem} onChange={(e) => setForm((f) => ({ ...f, mainProblem: e.target.value }))} className="resize-none text-xs" />
                 </div>
                 <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">ملاحظات التشخيص (اختياري)</Label>
+                  <Textarea rows={2} value={form.mainProblemNotes} onChange={(e) => setForm((f) => ({ ...f, mainProblemNotes: e.target.value }))} className="resize-none text-xs" placeholder="ملاحظات إضافية على التشخيص..." />
+                </div>
+                <div className="space-y-1.5">
                   <Label className="text-xs font-medium">السبب المرجح</Label>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     {LIKELY_CAUSE_OPTS.map((o) => (
                       <label key={o.v} className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={form.likelyCauses.includes(o.v)} onChange={() => toggleMulti("likelyCauses", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                        <input type="checkbox" checked={form.likelyCauses.includes(o.v)} onChange={() => toggleMulti("likelyCauses", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                         <span className="text-xs">{o.l}</span>
                       </label>
                     ))}
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">تفاصيل سبب آخر (اختياري)</Label>
+                  <Textarea rows={2} value={form.likelyCausesOtherNotes} onChange={(e) => setForm((f) => ({ ...f, likelyCausesOtherNotes: e.target.value }))} className="resize-none text-xs" placeholder="تفاصيل إضافية..." />
                 </div>
               </div>
             </div>
@@ -1720,10 +1972,14 @@ function GaitAnalysisCard({
               <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {RECOMMENDATION_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.recommendations.includes(o.v)} onChange={() => toggleMulti("recommendations", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                    <input type="checkbox" checked={form.recommendations.includes(o.v)} onChange={() => toggleMulti("recommendations", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                     <span className="text-xs">{o.l}</span>
                   </label>
                 ))}
+              </div>
+              <div className="px-3 pb-3 space-y-1.5">
+                <Label className="text-xs font-medium">ملاحظات التوصيات (اختياري)</Label>
+                <Textarea rows={2} value={form.recommendationsNotes} onChange={(e) => setForm((f) => ({ ...f, recommendationsNotes: e.target.value }))} className="resize-none text-xs" placeholder="ملاحظات إضافية على التوصيات..." />
               </div>
             </div>
 
@@ -1738,7 +1994,7 @@ function GaitAnalysisCard({
             <div className="px-3 py-3 space-y-2">
               {REHAB_PLAN_OPTS.map((o) => (
                 <label key={o.v} className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.rehabPlanItems.includes(o.v)} onChange={() => toggleMulti("rehabPlanItems", o.v)} className="w-[15px] h-[15px] accent-orange-500 rounded-sm shrink-0" />
+                  <input type="checkbox" checked={form.rehabPlanItems.includes(o.v)} onChange={() => toggleMulti("rehabPlanItems", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
                   <span className="text-xs">{o.l}</span>
                 </label>
               ))}
@@ -1755,7 +2011,6 @@ function GaitAnalysisCard({
           <div className="grid grid-cols-2 gap-4">
             {([
               ["prosto","اسم فني الأطراف الصناعية ","examinerProsthetistId","prosthetistSignatureUrl"],
-              ["physio2","المعالج الفيزيائي","examinerPhysiotherapistId","physiotherapistSignatureUrl"],
             ] as const).map(([role,lbl,idField,sigField]) => (
               <div key={role} className="space-y-2 rounded-lg border p-3">
                 <div className="space-y-1.5">
@@ -1790,7 +2045,6 @@ function GaitAnalysisCard({
             ))}
           </div>
           <input ref={prostoSigRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleSigFile(e, "prosto")} />
-          <input ref={physioSigRef2} type="file" accept="image/*" className="hidden" onChange={(e) => handleSigFile(e, "physio2")} />
           <div className="space-y-1.5">
             <Label className="text-xs">ملاحظات عامة</Label>
             <Textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none text-xs" placeholder="ملاحظات إضافية..." />
@@ -1798,14 +2052,17 @@ function GaitAnalysisCard({
         </TabsContent>
 
       </Tabs>
+      </fieldset>
 
-      <div className="flex gap-2 pt-2 border-t">
-        <Button onClick={handleSave} disabled={isSaving} className="flex-1 gap-1">
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          {isNew ? "إضافة الجلسة" : "حفظ التعديلات"}
-        </Button>
-        <Button variant="outline" onClick={() => isNew ? onCancel?.() : setEditing(false)}>إلغاء</Button>
-      </div>
+      {!isSaved && (
+        <div className="flex gap-2 pt-2 border-t">
+          <Button onClick={handleSave} disabled={isSaving} className="flex-1 gap-1">
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {isNew ? "إضافة الجلسة" : "حفظ نهائي"}
+          </Button>
+          <Button variant="outline" onClick={() => isNew ? onCancel?.() : setEditing(false)}>إلغاء</Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1959,6 +2216,8 @@ const INITIAL_BALANCE_FORM = {
   physiotherapistId: "", physiotherapistSignatureUrl: "", physiotherapistSignatureDate: "",
   committeeHeadId: "", committeeHeadSignatureUrl: "", committeeHeadSignatureDate: "",
   followUpDate: "", notes: "",
+  // Optional free-text details for the conditional / "other" answers.
+  previousProsthesisNotes: "", fallRiskNotes: "", limitingFactorsOtherNotes: "",
 };
 type BalanceForm = typeof INITIAL_BALANCE_FORM;
 
@@ -2012,6 +2271,9 @@ function balanceFormFromData(data: any): BalanceForm {
     committeeHeadSignatureDate: data.committeeHeadSignatureDate?.slice(0, 10) ?? "",
     followUpDate: data.followUpDate?.slice(0, 10) ?? "",
     notes: data.notes ?? "",
+    previousProsthesisNotes: data.previousProsthesisNotes ?? "",
+    fallRiskNotes: data.fallRiskNotes ?? "",
+    limitingFactorsOtherNotes: data.limitingFactorsOtherNotes ?? "",
   };
 }
 
@@ -2041,6 +2303,9 @@ function balanceFormToDto(form: BalanceForm) {
     committeeHeadSignatureDate: form.committeeHeadSignatureDate || undefined,
     followUpDate: form.followUpDate || undefined,
     notes: form.notes || undefined,
+    previousProsthesisNotes: form.previousProsthesisNotes || undefined,
+    fallRiskNotes: form.fallRiskNotes || undefined,
+    limitingFactorsOtherNotes: form.limitingFactorsOtherNotes || undefined,
   };
 }
 
@@ -2052,13 +2317,18 @@ function BalanceAssessmentCard({
   const [form, setForm] = useState<BalanceForm>(() =>
     session ? balanceFormFromData(session) : { ...INITIAL_BALANCE_FORM, exerciseProgram: DEFAULT_EXERCISE_PROGRAM.map((e) => ({ ...e })) }
   );
-  const [confirmDel, setConfirmDel] = useState(false);
   const physioSigRef = useRef<HTMLInputElement>(null);
   const committeeSigRef = useRef<HTMLInputElement>(null);
   const [sigUploadFor, setSigUploadFor] = useState<"physio" | "committee" | null>(null);
   const addMut = useAddBalanceAssessment();
   const updateMut = useUpdateBalanceAssessment();
-  const deleteMut = useDeleteBalanceAssessment();
+  const saveMut = useSaveBalanceAssessmentForm();
+  const archiveMut = useArchiveBalanceAssessment();
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+  // Frozen after POST /save — the backend rejects any further PATCH (400).
+  const isSaved = !!session?.isSaved;
+  const isArchived = !!session?.archivedAt;
 
   const handleSigClick = async (role: "physio" | "committee") => {
     const empId = role === "physio" ? form.physiotherapistId : form.committeeHeadId;
@@ -2094,16 +2364,21 @@ function BalanceAssessmentCard({
 
   const handleSave = async () => {
     const dto = balanceFormToDto(form);
-    if (isNew) { await addMut.mutateAsync({ caseId, dto }); onCancel?.(); }
-    else { await updateMut.mutateAsync({ caseId, formId: session.id, dto }); setEditing(false); }
+    if (isNew) { await addMut.mutateAsync({ caseId, dto }); onCancel?.(); return; }
+    // Existing form: persist the edits, then freeze it (PATCH is rejected
+    // afterwards) — a single "حفظ نهائي" action.
+    await updateMut.mutateAsync({ caseId, formId: session.id, dto });
+    await saveMut.mutateAsync({ caseId, formId: session.id });
+    setEditing(false);
   };
 
-  const isSaving = addMut.isPending || updateMut.isPending;
+  const isSaving = addMut.isPending || updateMut.isPending || saveMut.isPending;
 
   // Collapsed card for existing sessions
   if (!isNew && !editing) {
     return (
-      <div className="rounded-lg border p-3 space-y-1">
+      <div className="rounded-lg border p-3 space-y-1 transition-colors cursor-pointer hover:bg-muted/30"
+        onClick={() => setEditing(true)}>
         <div className="flex justify-between items-center">
           <div className="flex gap-2 items-center flex-wrap">
             <Badge variant="secondary" className="font-bold">#{(idx ?? 0) + 1}</Badge>
@@ -2114,24 +2389,59 @@ function BalanceAssessmentCard({
                 {session.fallRiskLevel === "HIGH" ? "خطر عالي" : session.fallRiskLevel === "MODERATE" ? "خطر متوسط" : "خطر منخفض"}
               </Badge>
             )}
+            {isSaved && (
+              <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                محفوظ
+              </Badge>
+            )}
+            {isArchived && (
+              <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
+                <Archive className="h-3 w-3" />
+                مؤرشف
+              </Badge>
+            )}
           </div>
-          <div className="flex gap-1 items-center">
-            <Button size="sm" variant="outline" onClick={() => setEditing(true)}>تعديل</Button>
-            {confirmDel ? (
-              <>
-                <Button size="sm" variant="destructive" onClick={() => deleteMut.mutate({ caseId, formId: session.id })} disabled={deleteMut.isPending}>
-                  {deleteMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "تأكيد الحذف"}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setConfirmDel(false)}>إلغاء</Button>
-              </>
-            ) : (
-              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setConfirmDel(true)}>
-                <Trash2 className="h-3.5 w-3.5" />
+          <div className="flex gap-1 items-center flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
+            {!isArchived && (
+              <Button size="sm" variant="outline" className="gap-1"
+                onClick={() => { setArchiveReason(""); setArchiveOpen(true); }}>
+                <Archive className="h-3.5 w-3.5" />
+                أرشفة
               </Button>
             )}
           </div>
         </div>
         {session.notes && <p className="text-xs text-muted-foreground">{session.notes}</p>}
+        {isArchived && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-800 space-y-0.5">
+            <p className="flex items-center gap-1 font-medium">
+              <Archive className="h-3 w-3" />
+              أُرشِف{session.archivedAt ? ` بتاريخ ${new Date(session.archivedAt).toLocaleDateString("en-GB")}` : ""}
+            </p>
+            {session.archiveNotes && <p><span className="font-medium">السبب: </span>{session.archiveNotes}</p>}
+          </div>
+        )}
+
+        <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+          <DialogContent className="max-w-sm" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>أرشفة النموذج</DialogTitle>
+              <DialogDescription>اذكر سبب الأرشفة.</DialogDescription>
+            </DialogHeader>
+            <Textarea rows={3} placeholder="سبب الأرشفة..." value={archiveReason} onChange={(e) => setArchiveReason(e.target.value)} />
+            <DialogFooter className="flex gap-2 justify-end sm:justify-end">
+              <Button variant="outline" onClick={() => setArchiveOpen(false)}>إلغاء</Button>
+              <Button disabled={archiveMut.isPending || !archiveReason.trim()}
+                onClick={async () => {
+                  await archiveMut.mutateAsync({ caseId, formId: session.id, reason: archiveReason.trim() });
+                  setArchiveOpen(false);
+                }}>
+                {archiveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "أرشفة"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -2147,14 +2457,25 @@ function BalanceAssessmentCard({
     <div className="rounded-lg border p-4 space-y-5">
       {!isNew && (
         <div className="flex justify-between items-center">
-          <p className="text-sm font-semibold">
-            تعديل التقييم #{(idx ?? 0) + 1}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold">
+              {isSaved ? "تفاصيل" : "تعديل"} التقييم #{(idx ?? 0) + 1}
+            </p>
+            {isSaved && (
+              <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                محفوظ — للقراءة فقط
+              </Badge>
+            )}
+          </div>
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
             إغلاق
           </Button>
         </div>
       )}
+
+      {/* Saved forms are frozen server-side (PATCH → 400) — render read-only. */}
+      <fieldset disabled={isSaved} className="contents">
 
       {/* Basic Info */}
       <div className="space-y-3">
@@ -2197,12 +2518,20 @@ function BalanceAssessmentCard({
                             : val === "true",
                       }))
                     }
-                    className="w-[15px] h-[15px] accent-orange-500 rounded-sm"
+                    className="w-[15px] h-[15px] checkbox-orange rounded-sm"
                   />
                   <span className="text-sm">{label}</span>
                 </label>
               ))}
             </div>
+            {form.previousProsthesis === true && (
+              <div className="space-y-1.5 pt-2">
+                <Label className="text-xs">تفاصيل الطرف السابق (اختياري)</Label>
+                <Textarea rows={2} className="resize-none text-xs" placeholder="تفاصيل الطرف الصناعي السابق..."
+                  value={form.previousProsthesisNotes}
+                  onChange={(e) => setForm((f) => ({ ...f, previousProsthesisNotes: e.target.value }))} />
+              </div>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">وسيلة مساعدة</Label>
@@ -2228,7 +2557,7 @@ function BalanceAssessmentCard({
                         assistiveDevice: f.assistiveDevice === val ? "" : val,
                       }))
                     }
-                    className="w-[15px] h-[15px] accent-orange-500 rounded-sm"
+                    className="w-[15px] h-[15px] checkbox-orange rounded-sm"
                   />
                   <span className="text-sm">{label}</span>
                 </label>
@@ -2274,7 +2603,7 @@ function BalanceAssessmentCard({
                         type="checkbox"
                         checked={form.staticBalance[key] === o.value}
                         onChange={() => setArr("staticBalance", key, o.value)}
-                        className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                        className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange"
                       />
                     </td>
                   ))}
@@ -2319,7 +2648,7 @@ function BalanceAssessmentCard({
                         type="checkbox"
                         checked={form.dynamicTasks[key] === o.value}
                         onChange={() => setArr("dynamicTasks", key, o.value)}
-                        className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                        className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange"
                       />
                     </td>
                   ))}
@@ -2366,7 +2695,7 @@ function BalanceAssessmentCard({
                         onChange={() =>
                           setArr("dynamicActivities", key, o.value)
                         }
-                        className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                        className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange"
                       />
                     </td>
                   ))}
@@ -2415,7 +2744,18 @@ function BalanceAssessmentCard({
                   key={fld}
                   className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
                 >
-                  <td className="py-2.5 px-3 text-sm">{lbl}</td>
+                  <td className="py-2.5 px-3 text-sm">
+                    {lbl}
+                    {/* Fall details — only for "تاريخ سقوط سابق" when answered نعم */}
+                    {fld === "historyOfFalls" && form.historyOfFalls === true && (
+                      <Input
+                        className="mt-2 h-8 text-xs"
+                        placeholder="تاريخ السقوط"
+                        value={form.fallRiskNotes}
+                        onChange={(e) => setForm((f) => ({ ...f, fallRiskNotes: e.target.value }))}
+                      />
+                    )}
+                  </td>
                   <td className="py-2.5 px-3 text-center">
                     <input
                       type="checkbox"
@@ -2426,7 +2766,7 @@ function BalanceAssessmentCard({
                           [fld]: (f as any)[fld] === true ? null : true,
                         }))
                       }
-                      className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                      className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange"
                     />
                   </td>
                   <td className="py-2.5 px-3 text-center">
@@ -2439,7 +2779,7 @@ function BalanceAssessmentCard({
                           [fld]: (f as any)[fld] === false ? null : false,
                         }))
                       }
-                      className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                      className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange"
                     />
                   </td>
                 </tr>
@@ -2452,7 +2792,7 @@ function BalanceAssessmentCard({
                       <label key={o.value} className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={form.fallRiskLevel === o.value}
                           onChange={() => setForm((f) => ({ ...f, fallRiskLevel: f.fallRiskLevel === o.value ? "" : o.value }))}
-                          className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                          className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                         <span className="text-sm">{o.label}</span>
                       </label>
                     ))}
@@ -2483,7 +2823,7 @@ function BalanceAssessmentCard({
               <label key={o.value} className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.overallBalanceLevel === o.value}
                   onChange={() => setForm((f) => ({ ...f, overallBalanceLevel: f.overallBalanceLevel === o.value ? "" : o.value }))}
-                  className="w-[15px] h-[15px] accent-orange-500 rounded-sm" />
+                  className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
                 <span className="text-sm">{o.label}</span>
               </label>
             ))}
@@ -2499,7 +2839,7 @@ function BalanceAssessmentCard({
               >
                 <input
                   type="checkbox"
-                  className="rounded"
+                  className="w-[15px] h-[15px] rounded-sm shrink-0 checkbox-orange"
                   checked={form.limitingFactors.includes(o.value)}
                   onChange={(e) =>
                     toggleArr("limitingFactors", o.value, e.target.checked)
@@ -2508,6 +2848,12 @@ function BalanceAssessmentCard({
                 <span className="text-xs">{o.label}</span>
               </label>
             ))}
+          </div>
+          <div className="space-y-1.5 pt-2">
+            <Label className="text-xs">تفاصيل أخرى (اختياري)</Label>
+            <Textarea rows={2} className="resize-none text-xs" placeholder="تفاصيل العوامل الأخرى..."
+              value={form.limitingFactorsOtherNotes}
+              onChange={(e) => setForm((f) => ({ ...f, limitingFactorsOtherNotes: e.target.value }))} />
           </div>
         </div>
       </div>
@@ -2562,7 +2908,7 @@ function BalanceAssessmentCard({
                         ep[i] = { ...ep[i], selected: !ep[i].selected };
                         setForm((f) => ({ ...f, exerciseProgram: ep }));
                       }}
-                      className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500"
+                      className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange"
                     />
                   </td>
                   <td className="py-2.5 px-3 text-sm font-medium">
@@ -2584,7 +2930,7 @@ function BalanceAssessmentCard({
                               ep[i] = { ...ep[i], support: ex.support === o.value ? "" : o.value };
                               setForm((f) => ({ ...f, exerciseProgram: ep }));
                             }}
-                            className="w-[13px] h-[13px] accent-orange-500 rounded-sm" />
+                            className="w-[13px] h-[13px] checkbox-orange rounded-sm" />
                           <span className="text-xs">{o.label}</span>
                         </label>
                       ))}
@@ -2628,7 +2974,7 @@ function BalanceAssessmentCard({
                 onChange={(e) =>
                   toggleArr("programProgression", o.value, e.target.checked)
                 }
-                className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500 shrink-0"
+                className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange shrink-0"
               />
               <span className="text-sm">{o.label}</span>
             </label>
@@ -2675,7 +3021,7 @@ function BalanceAssessmentCard({
                   onChange={(e) =>
                     toggleArr("expectedOutcomes", o.value, e.target.checked)
                   }
-                  className="w-[18px] h-[18px] rounded-sm cursor-pointer accent-orange-500 shrink-0"
+                  className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange shrink-0"
                 />
                 <span className="text-sm">{o.label}</span>
               </label>
@@ -2811,26 +3157,30 @@ function BalanceAssessmentCard({
         />
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex-1 gap-1"
-        >
-          {isSaving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" />
-          )}
-          {isNew ? "إضافة التقييم" : "حفظ التعديلات"}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => (isNew ? onCancel?.() : setEditing(false))}
-        >
-          إلغاء
-        </Button>
-      </div>
+      </fieldset>
+
+      {!isSaved && (
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 gap-1"
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            {isNew ? "إضافة التقييم" : "حفظ نهائي"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => (isNew ? onCancel?.() : setEditing(false))}
+          >
+            إلغاء
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -3027,6 +3377,7 @@ function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] 
 export default function ProstheticsCasePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const isRtl = locale === "ar";
 
@@ -3072,10 +3423,10 @@ export default function ProstheticsCasePage() {
   const submitTranshumeralMeasurement = useSubmitTranshumeral();
   const submitTransradialMeasurement = useSubmitTransradial();
   const { data: deliveryData19 } = useProstheticDelivery(id);
+  const { data: finalDelivery } = useFinalDelivery(id);
+  const createFinalDelivery = useCreateFinalDelivery();
+  const updateFinalDelivery = useUpdateFinalDelivery();
   const saveProsDelivery = useSaveProstheticDelivery();
-  const addDelivItem = useAddDeliveryItem();
-  const updateDelivItem = useUpdateDeliveryItem();
-  const deleteDelivItem = useDeleteDeliveryItem();
   const currentUser = useAuthStore((s) => s.user);
 
   // ── Local form state ──
@@ -3235,13 +3586,21 @@ export default function ProstheticsCasePage() {
   const [deliverySignOpen, setDeliverySignOpen] = useState(false);
 
   // ── Pro-019 state ─────────────────────────────────────────────────────────
-  const [proDeliveryHeader, setProDeliveryHeader] = useState({ inspectionDate: "", prosthetistId: "", physiotherapistId: "", ceoId: "", ceoSignatureUrl: "", signatureDate: "" });
-  const [showAddItemForm, setShowAddItemForm] = useState(false);
-  const [newItemForm, setNewItemForm] = useState({ inventoryItemId: "", deliveredProduct: "", partCode: "", quantity: "", company: "", notes: "" });
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingItemForm, setEditingItemForm] = useState({ inventoryItemId: "", deliveredProduct: "", partCode: "", quantity: "", company: "", notes: "" });
-  const [confirmDelItem, setConfirmDelItem] = useState<string | null>(null);
-  const ceoSigRef = useRef<HTMLInputElement>(null);
+  const [proDeliveryHeader, setProDeliveryHeader] = useState({ inspectionDate: "", prosthetistId: "", physiotherapistId: "", medicalDirectorId: "", medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "", signatureDate: "" });
+  // Final delivery is an independent record; its header is edited via PATCH.
+  // It is signed by the CEO (the trial delivery is signed by the medical director).
+  const [finalDeliveryHeader, setFinalDeliveryHeader] = useState({ inspectionDate: "", prosthetistId: "", physiotherapistId: "", ceoId: "", ceoSignatureUrl: "", signatureDate: "" });
+  const finalCeoSigRef = useRef<HTMLInputElement>(null);
+  // Controlled value for the workflow-stage tabs. null → follow the status-based
+  // default; set it to jump to a tab programmatically (e.g. the delivery tab's
+  // "إضافة قطعة" button sends the user to the fitting tab to add components).
+  const [stageTab, setStageTab] = useState<string | null>(() => searchParams.get("tab"));
+  // Honor ?tab= (e.g. from a CASE_ALERT notification) even if already mounted.
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) setStageTab(tab);
+  }, [searchParams]);
+  const medicalDirectorSigRef = useRef<HTMLInputElement>(null);
   const finalEvalManagerSigRef = useRef<HTMLInputElement>(null);
   const [patientEditMode, setPatientEditMode] = useState(false);
   const [patientEditForm, setPatientEditForm] = useState({ firstName: "", lastName: "", dateOfBirth: "", phone: "", heightCm: "", weightKg: "" });
@@ -3321,11 +3680,25 @@ export default function ProstheticsCasePage() {
       inspectionDate: (deliveryData19 as any)?.inspectionDate?.slice(0, 10) ?? "",
       prosthetistId: (deliveryData19 as any)?.prosthetistId ?? "",
       physiotherapistId: (deliveryData19 as any)?.physiotherapistId ?? "",
-      ceoId: (deliveryData19 as any)?.ceoId ?? "",
-      ceoSignatureUrl: (deliveryData19 as any)?.ceoSignatureUrl ?? "",
+      medicalDirectorId: (deliveryData19 as any)?.medicalDirectorId ?? "",
+      medicalDirectorSignatureUrl: (deliveryData19 as any)?.medicalDirectorSignatureUrl ?? "",
+      medicalDirectorSignedAt: (deliveryData19 as any)?.medicalDirectorSignedAt ?? "",
       signatureDate: (deliveryData19 as any)?.signatureDate?.slice(0, 10) ?? "",
     });
   }, [deliveryData19]);
+
+  useEffect(() => {
+    if (!finalDelivery) return;
+    const fd = finalDelivery as any;
+    setFinalDeliveryHeader({
+      inspectionDate: fd?.inspectionDate?.slice(0, 10) ?? "",
+      prosthetistId: fd?.prosthetistId ?? "",
+      physiotherapistId: fd?.physiotherapistId ?? "",
+      ceoId: fd?.ceoId ?? "",
+      ceoSignatureUrl: fd?.ceoSignatureUrl ?? "",
+      signatureDate: fd?.signatureDate?.slice(0, 10) ?? "",
+    });
+  }, [finalDelivery]);
 
   // يمنع إعادة تهيئة الفورم مباشرة بعد الحفظ
   const justSavedRef = useRef(false);
@@ -3805,29 +4178,58 @@ export default function ProstheticsCasePage() {
     await updateStatus.mutateAsync({ id, status: "DELIVERED" });
   };
 
-  const handleCeoSignatureClick = async () => {
-    const empId = proDeliveryHeader.ceoId;
+  const handleMedicalDirectorSignatureClick = async () => {
+    const empId = proDeliveryHeader.medicalDirectorId;
+    if (!empId) { toast.error("اختر المدير الطبي أولاً"); return; }
+    try {
+      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
+      if (sig.hasSignature && sig.signatureUrl) {
+        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
+        setProDeliveryHeader((f) => ({ ...f, medicalDirectorSignatureUrl: url, medicalDirectorSignedAt: new Date().toISOString() }));
+      } else {
+        setTimeout(() => medicalDirectorSigRef.current?.click(), 50);
+      }
+    } catch { toast.error("فشل جلب بيانات التوقيع"); }
+  };
+
+  const handleMedicalDirectorSigFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const empId = proDeliveryHeader.medicalDirectorId;
+    if (!empId) return;
+    try {
+      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
+      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
+      setProDeliveryHeader((f) => ({ ...f, medicalDirectorSignatureUrl: url, medicalDirectorSignedAt: new Date().toISOString() }));
+      toast.success("تم رفع التوقيع");
+    } catch { toast.error("فشل رفع التوقيع"); }
+    e.target.value = "";
+  };
+
+  // ── Final delivery: CEO signature ──
+  const handleFinalCeoSignatureClick = async () => {
+    const empId = finalDeliveryHeader.ceoId;
     if (!empId) { toast.error("اختر المدير التنفيذي أولاً"); return; }
     try {
       const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
       if (sig.hasSignature && sig.signatureUrl) {
         const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
-        setProDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: url }));
+        setFinalDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: url }));
       } else {
-        setTimeout(() => ceoSigRef.current?.click(), 50);
+        setTimeout(() => finalCeoSigRef.current?.click(), 50);
       }
     } catch { toast.error("فشل جلب بيانات التوقيع"); }
   };
 
-  const handleCeoSigFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFinalCeoSigFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const empId = proDeliveryHeader.ceoId;
+    const empId = finalDeliveryHeader.ceoId;
     if (!empId) return;
     try {
       const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
       const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
-      setProDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: url }));
+      setFinalDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: url }));
       toast.success("تم رفع التوقيع");
     } catch { toast.error("فشل رفع التوقيع"); }
     e.target.value = "";
@@ -3941,7 +4343,11 @@ export default function ProstheticsCasePage() {
       </div>
 
       {/* Tabs by workflow stage */}
-      <Tabs defaultValue={c.status === "CANCELLED" || c.status === "CLOSED" ? "timeline" : c.status.toLowerCase()} dir={isRtl ? "rtl" : "ltr"}>
+      <Tabs
+        value={stageTab ?? (c.status === "CANCELLED" || c.status === "CLOSED" ? "timeline" : c.status.toLowerCase())}
+        onValueChange={setStageTab}
+        dir={isRtl ? "rtl" : "ltr"}
+      >
         <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
           <TabsTrigger value="intake" className="text-sm py-1.5">الاستقبال</TabsTrigger>
           <TabsTrigger value="patient_info" className="text-sm py-1.5">معلومات المريض</TabsTrigger>
@@ -3950,10 +4356,11 @@ export default function ProstheticsCasePage() {
           <TabsTrigger value="fitting" className="text-sm py-1.5">التركيب</TabsTrigger>
           <TabsTrigger value="measurement_sheet" className="text-sm py-1.5">ورق القياس</TabsTrigger>
           <TabsTrigger value="treatment_program" className="text-sm py-1.5">المتابعة</TabsTrigger>
-          <TabsTrigger value="delivered" className="text-sm py-1.5">التسليم</TabsTrigger>
+          <TabsTrigger value="delivered" className="text-sm py-1.5">التسليم التجريبي</TabsTrigger>
           <TabsTrigger value="gait_analysis" className="text-sm py-1.5">تحليل المشي</TabsTrigger>
           {ampTypes.includes("LOWER") && <TabsTrigger value="balance_assessment" className="text-sm py-1.5">التوازن</TabsTrigger>}
           <TabsTrigger value="final_evaluation" className="text-sm py-1.5">التقييم النهائي</TabsTrigger>
+          <TabsTrigger value="final_delivery" className="text-sm py-1.5">التسليم النهائي</TabsTrigger>
           <TabsTrigger value="timeline" className="text-sm py-1.5">السجل الزمني</TabsTrigger>
         </TabsList>
 
@@ -4675,7 +5082,7 @@ export default function ProstheticsCasePage() {
                           return (
                             <div key={m.key} className="flex items-center gap-3 flex-wrap">
                               <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="w-[15px] h-[15px] accent-orange-500"
+                                <input type="checkbox" className="w-[15px] h-[15px] checkbox-orange"
                                   checked={entry.selected}
                                   onChange={() => setRom(m.key, { ...entry, selected: !entry.selected })}
                                 />
@@ -5215,7 +5622,7 @@ export default function ProstheticsCasePage() {
                           return (
                             <div key={m.key} className="flex items-center gap-3 flex-wrap">
                               <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="w-[15px] h-[15px] accent-orange-500"
+                                <input type="checkbox" className="w-[15px] h-[15px] checkbox-orange"
                                   checked={entry.selected}
                                   onChange={() => setRom(m.key, { ...entry, selected: !entry.selected })}
                                 />
@@ -5720,7 +6127,7 @@ export default function ProstheticsCasePage() {
                     type="checkbox"
                     checked={c.prosthesisCompleted ?? false}
                     onChange={() => updateCase.mutateAsync({ id, dto: { prosthesisCompleted: !c.prosthesisCompleted } })}
-                    className="h-4 w-4 accent-primary"
+                    className="h-4 w-4 rounded-sm shrink-0 checkbox-orange"
                     disabled={updateCase.isPending}
                   />
                   <span className="text-sm font-medium">الطرف مكتمل </span>
@@ -6678,13 +7085,13 @@ export default function ProstheticsCasePage() {
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input type="checkbox" checked={!!finalEvalForm.readyForDelivery}
                     onChange={() => setFinalEvalForm((f) => ({ ...f, readyForDelivery: true, needsFollowUp: false }))}
-                    className="w-[16px] h-[16px] accent-orange-500 rounded-sm" />
+                    className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
                   <span className="text-sm">معتمد للتسليم</span>
                 </label>
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input type="checkbox" checked={!!finalEvalForm.needsFollowUp}
                     onChange={() => setFinalEvalForm((f) => ({ ...f, needsFollowUp: true, readyForDelivery: false }))}
-                    className="w-[16px] h-[16px] accent-orange-500 rounded-sm" />
+                    className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
                   <span className="text-sm">يحتاج متابعة / تعديل قبل التسليم</span>
                 </label>
               </div>
@@ -6716,13 +7123,13 @@ export default function ProstheticsCasePage() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={finalEvalForm.patientFileComplete === true}
                       onChange={() => setFinalEvalForm((f) => ({ ...f, patientFileComplete: true }))}
-                      className="w-[16px] h-[16px] accent-orange-500 rounded-sm" />
+                      className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
                     <span className="text-sm">مكتملة</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={finalEvalForm.patientFileComplete === false}
                       onChange={() => setFinalEvalForm((f) => ({ ...f, patientFileComplete: false }))}
-                      className="w-[16px] h-[16px] accent-orange-500 rounded-sm" />
+                      className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
                     <span className="text-sm">غير مكتملة</span>
                   </label>
                 </div>
@@ -6766,9 +7173,9 @@ export default function ProstheticsCasePage() {
           <Section
             title="بيانات تسليم الطرف الصناعي — Pro-019"
             action={
-              <Button size="sm" variant={showAddItemForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowAddItemForm((v) => !v)}>
+              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setStageTab("fitting")}>
                 <Plus className="h-3.5 w-3.5" />
-                {showAddItemForm ? "إغلاق" : "إضافة قطعة"}
+                إضافة قطعة
               </Button>
             }
           >
@@ -6800,201 +7207,78 @@ export default function ProstheticsCasePage() {
                 </div>
               </div>
 
-              {/* ── القطع المُسلَّمة (فوق المدير التنفيذي) ── */}
+              {/* ── القطع المُسلَّمة — يزامنها الباك تلقائيًا من القطع المعتمدة بالمخزون (قراءة فقط) ── */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">
-                  القطع المُسلَّمة{(deliveryData19 as any)?.items?.length ? ` (${(deliveryData19 as any).items.length})` : ""}
-                </p>
-
-                {/* Add item form */}
-                {showAddItemForm && (
-                  <div className="rounded-lg border border-dashed p-3 space-y-3 bg-muted/30">
-                    <p className="text-sm font-medium">قطعة جديدة</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5 col-span-2">
-                        <Label className="text-xs">اسم المنتج المُسلَّم *</Label>
-                        <InventoryItemCombobox
-                          items={catalogInventoryItems}
-                          value={newItemForm.inventoryItemId}
-                          onChange={(v) => {
-                            if (!v) {
-                              setNewItemForm((f) => ({ ...f, inventoryItemId: "", deliveredProduct: "", partCode: "" }));
-                            } else {
-                              const item = inventoryItems.find((it: any) => it.id === v);
-                              setNewItemForm((f) => ({ ...f, inventoryItemId: v, deliveredProduct: item?.name ?? "", partCode: item?.code ?? "" }));
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">رمز القطعة</Label>
-                        <Input placeholder="Part Code" value={newItemForm.partCode} onChange={(e) => setNewItemForm((f) => ({ ...f, partCode: e.target.value }))} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">الكمية</Label>
-                        <Input type="number" min={1} placeholder="1" value={newItemForm.quantity} onChange={(e) => setNewItemForm((f) => ({ ...f, quantity: e.target.value }))} />
-                      </div>
-                      <div className="space-y-1.5 col-span-2">
-                        <Label className="text-xs">الشركة</Label>
-                        <Input placeholder="اسم الشركة..." value={newItemForm.company} onChange={(e) => setNewItemForm((f) => ({ ...f, company: e.target.value }))} />
-                      </div>
-                      <div className="space-y-1.5 col-span-2">
-                        <Label className="text-xs">ملاحظات</Label>
-                        <Textarea rows={2} className="resize-none" placeholder="ملاحظات..." value={newItemForm.notes} onChange={(e) => setNewItemForm((f) => ({ ...f, notes: e.target.value }))} />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" disabled={!newItemForm.deliveredProduct || addDelivItem.isPending} className="gap-1"
-                        onClick={async () => {
-                          await addDelivItem.mutateAsync({ caseId: id, dto: { deliveredProduct: newItemForm.deliveredProduct, partCode: newItemForm.partCode || undefined, quantity: newItemForm.quantity ? Number(newItemForm.quantity) : undefined, company: newItemForm.company || undefined, notes: newItemForm.notes || undefined } });
-                          setNewItemForm({ inventoryItemId: "", deliveredProduct: "", partCode: "", quantity: "", company: "", notes: "" });
-                          setShowAddItemForm(false);
-                        }}
-                      >
-                        {addDelivItem.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                        إضافة
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setShowAddItemForm(false)}>إلغاء</Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Items table */}
-                {!(deliveryData19 as any)?.items?.length ? (
-                  <p className="text-sm text-muted-foreground text-center py-2">لا توجد قطع مُضافة</p>
-                ) : (
-                  <>
-                    <div className="rounded-lg border overflow-hidden">
-                      <table className="w-full text-sm">
-                        <thead className="bg-muted/50">
-                          <tr>
-                            <th className="text-right p-2 font-medium">الاسم</th>
-                            <th className="text-right p-2 font-medium">الرمز</th>
-                            <th className="text-right p-2 font-medium">الكمية</th>
-                            <th className="text-right p-2 font-medium">الشركة</th>
-                            <th className="p-2" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(deliveryData19 as any).items.map((item: any) => (
-                            editingItemId === item.id ? (
-                              <tr key={item.id} className="border-t">
-                                <td colSpan={5} className="p-3">
-                                  <div className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
-                                      <div className="space-y-1.5 col-span-2">
-                                        <Label className="text-xs">اسم المنتج *</Label>
-                                        <InventoryItemCombobox
-                                          items={catalogInventoryItems}
-                                          value={editingItemForm.inventoryItemId}
-                                          onChange={(v) => {
-                                            if (!v) {
-                                              setEditingItemForm((f) => ({ ...f, inventoryItemId: "", deliveredProduct: "", partCode: "" }));
-                                            } else {
-                                              const inv = inventoryItems.find((it: any) => it.id === v);
-                                              setEditingItemForm((f) => ({ ...f, inventoryItemId: v, deliveredProduct: inv?.name ?? "", partCode: inv?.code ?? "" }));
-                                            }
-                                          }}
-                                          placeholder={editingItemForm.deliveredProduct || "اختر من المخزون..."}
-                                        />
-                                      </div>
-                                      <div className="space-y-1.5">
-                                        <Label className="text-xs">رمز القطعة</Label>
-                                        <Input value={editingItemForm.partCode} onChange={(e) => setEditingItemForm((f) => ({ ...f, partCode: e.target.value }))} />
-                                      </div>
-                                      <div className="space-y-1.5">
-                                        <Label className="text-xs">الكمية</Label>
-                                        <Input type="number" min={1} value={editingItemForm.quantity} onChange={(e) => setEditingItemForm((f) => ({ ...f, quantity: e.target.value }))} />
-                                      </div>
-                                      <div className="space-y-1.5 col-span-2">
-                                        <Label className="text-xs">الشركة</Label>
-                                        <Input value={editingItemForm.company} onChange={(e) => setEditingItemForm((f) => ({ ...f, company: e.target.value }))} />
-                                      </div>
-                                      <div className="space-y-1.5 col-span-2">
-                                        <Label className="text-xs">ملاحظات</Label>
-                                        <Textarea rows={2} className="resize-none" value={editingItemForm.notes} onChange={(e) => setEditingItemForm((f) => ({ ...f, notes: e.target.value }))} />
-                                      </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <Button size="sm" disabled={!editingItemForm.deliveredProduct || updateDelivItem.isPending} className="gap-1"
-                                        onClick={async () => {
-                                          await updateDelivItem.mutateAsync({ caseId: id, itemId: item.id, dto: { deliveredProduct: editingItemForm.deliveredProduct, partCode: editingItemForm.partCode || undefined, quantity: editingItemForm.quantity ? Number(editingItemForm.quantity) : undefined, company: editingItemForm.company || undefined, notes: editingItemForm.notes || undefined } });
-                                          setEditingItemId(null);
-                                        }}
-                                      >
-                                        {updateDelivItem.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                                        حفظ
-                                      </Button>
-                                      <Button size="sm" variant="outline" onClick={() => setEditingItemId(null)}>إلغاء</Button>
-                                    </div>
-                                  </div>
-                                </td>
+                {(() => {
+                  const items: any[] = (deliveryData19 as any)?.items ?? [];
+                  return (
+                    <>
+                      <p className="text-sm font-semibold">
+                        القطع المُسلَّمة{items.length ? ` (${items.length})` : ""}
+                      </p>
+                      <p className="text-xs text-muted-foreground">تُضاف تلقائيًا عند اعتماد القطعة في المخزون.</p>
+                      {items.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-2">لا توجد قطع بعد — تظهر هنا تلقائيًا بعد اعتماد قطع الحالة في المخزون.</p>
+                      ) : (
+                        <div className="rounded-lg border overflow-hidden">
+                          <table className="w-full text-sm">
+                            <thead className="bg-muted/50">
+                              <tr>
+                                <th className="text-right p-2 font-medium">الاسم</th>
+                                <th className="text-right p-2 font-medium">الرمز</th>
+                                <th className="text-right p-2 font-medium">الكمية</th>
+                                <th className="text-right p-2 font-medium">الشركة</th>
+                                <th className="text-right p-2 font-medium">المصدر</th>
+                                <th className="text-right p-2 font-medium">تاريخ الإضافة</th>
                               </tr>
-                            ) : (
-                              <tr key={item.id} className="border-t hover:bg-muted/30">
-                                <td className="p-2 font-medium">{item.deliveredProduct ?? "—"}</td>
-                                <td className="p-2 font-mono text-xs text-muted-foreground">{item.partCode ?? "—"}</td>
-                                <td className="p-2 text-muted-foreground">{item.quantity ?? "—"}</td>
-                                <td className="p-2 text-muted-foreground">{item.company ?? "—"}</td>
-                                <td className="p-2">
-                                  <div className="flex gap-1 justify-end">
-                                    <button className="p-1 text-muted-foreground hover:text-foreground"
-                                      onClick={() => { setEditingItemId(item.id); setEditingItemForm({ inventoryItemId: "", deliveredProduct: item.deliveredProduct ?? "", partCode: item.partCode ?? "", quantity: item.quantity?.toString() ?? "", company: item.company ?? "", notes: item.notes ?? "" }); }}>
-                                      <Plus className="h-3.5 w-3.5 rotate-45" />
-                                    </button>
-                                    <button className="p-1 text-destructive hover:opacity-70" onClick={() => setConfirmDelItem(item.id)}>
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            )
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <Dialog open={!!confirmDelItem} onOpenChange={(open) => { if (!open) setConfirmDelItem(null); }}>
-                      <DialogContent className="max-w-sm" dir="rtl">
-                        <DialogHeader>
-                          <DialogTitle>تأكيد الحذف</DialogTitle>
-                          <DialogDescription>هل تريد حذف هذه القطعة؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-                          <Button variant="outline" onClick={() => setConfirmDelItem(null)}>لا</Button>
-                          <Button variant="destructive" disabled={deleteDelivItem.isPending}
-                            onClick={() => { if (confirmDelItem) { deleteDelivItem.mutate({ caseId: id, itemId: confirmDelItem }); setConfirmDelItem(null); } }}>
-                            {deleteDelivItem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </>
-                )}
+                            </thead>
+                            <tbody>
+                              {items.map((item: any) => (
+                                <tr key={item.id} className="border-t">
+                                  <td className="p-2 font-medium">{item.deliveredProduct ?? "—"}</td>
+                                  <td className="p-2 font-mono text-xs text-muted-foreground">{item.partCode ?? "—"}</td>
+                                  <td className="p-2 text-muted-foreground">{item.quantity ?? "—"}</td>
+                                  <td className="p-2 text-muted-foreground">{item.company ?? "—"}</td>
+                                  <td className="p-2">
+                                    <Badge variant="outline" className={cn("text-xs", item.sourceComponentId ? "border-green-300 bg-green-50 text-green-700" : "border-muted-foreground/30")}>
+                                      {item.sourceComponentId ? "تلقائي" : "يدوي"}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-2 text-muted-foreground text-xs">{item.itemAddedDate ? new Date(item.itemAddedDate).toLocaleDateString("en-GB") : "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
+
               <div className="space-y-1.5 col-span-2">
-                <Label className="text-xs">المدير التنفيذي (CEO)</Label>
-                <Select value={proDeliveryHeader.ceoId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, ceoId: v === "none" ? "" : v, ceoSignatureUrl: "" }))}>
+                <Label className="text-xs">المدير الطبي</Label>
+                <Select value={proDeliveryHeader.medicalDirectorId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, medicalDirectorId: v === "none" ? "" : v, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))}>
                   <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— غير محدد —</SelectItem>
-                    {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الادارة التنفيذية") || e.department?.nameAr?.includes("الإدارة التنفيذية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                    {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الادارة الطبية") || e.department?.nameAr?.includes("الإدارة الطبية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* CEO Signature */}
+              {/* Medical director signature */}
               <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-semibold">توقيع المدير التنفيذي</p>
-                {proDeliveryHeader.ceoSignatureUrl ? (
+                <p className="text-xs font-semibold">توقيع المدير الطبي</p>
+                {proDeliveryHeader.medicalDirectorSignatureUrl ? (
                   <div className="relative inline-block">
-                    <img src={proDeliveryHeader.ceoSignatureUrl} alt="توقيع CEO" className="h-20 object-contain border rounded bg-white" />
-                    <button onClick={() => setProDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                    <img src={proDeliveryHeader.medicalDirectorSignatureUrl} alt="توقيع المدير الطبي" className="h-20 object-contain border rounded bg-white" />
+                    <button onClick={() => setProDeliveryHeader((f) => ({ ...f, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
                   </div>
                 ) : (
-                  <Button type="button" size="sm" variant="outline" onClick={handleCeoSignatureClick} disabled={!proDeliveryHeader.ceoId}>
-                    {proDeliveryHeader.ceoId ? "جلب / رفع التوقيع" : "اختر المدير التنفيذي أولاً"}
+                  <Button type="button" size="sm" variant="outline" onClick={handleMedicalDirectorSignatureClick} disabled={!proDeliveryHeader.medicalDirectorId}>
+                    {proDeliveryHeader.medicalDirectorId ? "جلب / رفع التوقيع" : "اختر المدير الطبي أولاً"}
                   </Button>
                 )}
               </div>
@@ -7004,10 +7288,10 @@ export default function ProstheticsCasePage() {
                 <Input type="date" value={proDeliveryHeader.signatureDate} onChange={(e) => setProDeliveryHeader((f) => ({ ...f, signatureDate: e.target.value }))} />
               </div>
 
-              <input ref={ceoSigRef} type="file" accept="image/*" className="hidden" onChange={handleCeoSigFileChange} />
+              <input ref={medicalDirectorSigRef} type="file" accept="image/*" className="hidden" onChange={handleMedicalDirectorSigFileChange} />
 
               <Button
-                onClick={() => saveProsDelivery.mutateAsync({ caseId: id, dto: { inspectionDate: proDeliveryHeader.inspectionDate || undefined, prosthetistId: proDeliveryHeader.prosthetistId || undefined, physiotherapistId: proDeliveryHeader.physiotherapistId || undefined, ceoId: proDeliveryHeader.ceoId || undefined, ceoSignatureUrl: proDeliveryHeader.ceoSignatureUrl || undefined, signatureDate: proDeliveryHeader.signatureDate || undefined } })}
+                onClick={() => saveProsDelivery.mutateAsync({ caseId: id, dto: { inspectionDate: proDeliveryHeader.inspectionDate || undefined, prosthetistId: proDeliveryHeader.prosthetistId || undefined, physiotherapistId: proDeliveryHeader.physiotherapistId || undefined, medicalDirectorId: proDeliveryHeader.medicalDirectorId || undefined, medicalDirectorSignatureUrl: proDeliveryHeader.medicalDirectorSignatureUrl || undefined, medicalDirectorSignedAt: proDeliveryHeader.medicalDirectorSignedAt || undefined, signatureDate: proDeliveryHeader.signatureDate || undefined } })}
                 disabled={saveProsDelivery.isPending}
                 className="w-full gap-2"
               >
@@ -7016,6 +7300,150 @@ export default function ProstheticsCasePage() {
               </Button>
             </div>
           </Section>
+        </TabsContent>
+
+        {/* ── FINAL DELIVERY (approved items only) ─────────────────────────── */}
+        <TabsContent value="final_delivery" className="mt-4 space-y-4" dir="rtl">
+          {/* Not created yet — GET returns null until POST /final-delivery. */}
+          {!finalDelivery ? (
+            <Section title="التسليم النهائي">
+              <div className="text-center py-10 space-y-3">
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  لم يُنشأ التسليم النهائي بعد. عند الإنشاء تُنسخ البيانات والقطع المعتمدة من «التسليم التجريبي» تلقائيًا — والنسخ يتم مرة واحدة فقط.
+                </p>
+                <Button
+                  onClick={() => createFinalDelivery.mutate({ caseId: id })}
+                  disabled={createFinalDelivery.isPending}
+                  className="gap-2"
+                >
+                  {createFinalDelivery.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  إنشاء التسليم النهائي
+                </Button>
+              </div>
+            </Section>
+          ) : (
+            <Section title="التسليم النهائي">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-xs">تاريخ الخروج</Label>
+                    <Input type="date" value={finalDeliveryHeader.inspectionDate}
+                      onChange={(e) => setFinalDeliveryHeader((f) => ({ ...f, inspectionDate: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">الفني — الأطراف الصناعية</Label>
+                    <Select value={finalDeliveryHeader.prosthetistId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, prosthetistId: v === "none" ? "" : v }))}>
+                      <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— غير محدد —</SelectItem>
+                        {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("الأطراف الصناعية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">المعالج الفيزيائي</Label>
+                    <Select value={finalDeliveryHeader.physiotherapistId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, physiotherapistId: v === "none" ? "" : v }))}>
+                      <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— غير محدد —</SelectItem>
+                        {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("العلاج الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* القطع — نُسخت عند الإنشاء (قراءة فقط) */}
+                <div className="space-y-2">
+                  {(() => {
+                    const items: any[] = (finalDelivery as any)?.items ?? [];
+                    return (
+                      <>
+                        <p className="text-sm font-semibold">القطع{items.length ? ` (${items.length})` : ""}</p>
+                        <p className="text-xs text-muted-foreground">نُسخت من القطع المعتمدة في «التسليم التجريبي» عند الإنشاء.</p>
+                        {items.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-2">لا توجد قطع.</p>
+                        ) : (
+                          <div className="rounded-lg border overflow-hidden">
+                            <table className="w-full text-sm">
+                              <thead className="bg-muted/50">
+                                <tr>
+                                  <th className="text-right p-2 font-medium">الاسم</th>
+                                  <th className="text-right p-2 font-medium">الرمز</th>
+                                  <th className="text-right p-2 font-medium">الكمية</th>
+                                  <th className="text-right p-2 font-medium">الشركة</th>
+                                  <th className="text-right p-2 font-medium">تاريخ الإضافة</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {items.map((item: any) => (
+                                  <tr key={item.id} className="border-t">
+                                    <td className="p-2 font-medium">{item.deliveredProduct ?? "—"}</td>
+                                    <td className="p-2 font-mono text-xs text-muted-foreground">{item.partCode ?? "—"}</td>
+                                    <td className="p-2 text-muted-foreground">{item.quantity ?? "—"}</td>
+                                    <td className="p-2 text-muted-foreground">{item.company ?? "—"}</td>
+                                    <td className="p-2 text-muted-foreground text-xs">{item.itemAddedDate ? new Date(item.itemAddedDate).toLocaleDateString("en-GB") : "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+
+                <div className="space-y-1.5 col-span-2">
+                  <Label className="text-xs">المدير التنفيذي (CEO)</Label>
+                  <Select value={finalDeliveryHeader.ceoId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, ceoId: v === "none" ? "" : v, ceoSignatureUrl: "" }))}>
+                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الادارة التنفيذية") || e.department?.nameAr?.includes("الإدارة التنفيذية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-xs font-semibold">توقيع المدير التنفيذي</p>
+                  {finalDeliveryHeader.ceoSignatureUrl ? (
+                    <div className="relative inline-block">
+                      <img src={finalDeliveryHeader.ceoSignatureUrl} alt="توقيع المدير التنفيذي" className="h-20 object-contain border rounded bg-white" />
+                      <button onClick={() => setFinalDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                    </div>
+                  ) : (
+                    <Button type="button" size="sm" variant="outline" onClick={handleFinalCeoSignatureClick} disabled={!finalDeliveryHeader.ceoId}>
+                      {finalDeliveryHeader.ceoId ? "جلب / رفع التوقيع" : "اختر المدير التنفيذي أولاً"}
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">التاريخ</Label>
+                  <Input type="date" value={finalDeliveryHeader.signatureDate}
+                    onChange={(e) => setFinalDeliveryHeader((f) => ({ ...f, signatureDate: e.target.value }))} />
+                </div>
+
+                <input ref={finalCeoSigRef} type="file" accept="image/*" className="hidden" onChange={handleFinalCeoSigFileChange} />
+
+                <Button
+                  onClick={() => updateFinalDelivery.mutateAsync({ caseId: id, dto: {
+                    inspectionDate: finalDeliveryHeader.inspectionDate || undefined,
+                    prosthetistId: finalDeliveryHeader.prosthetistId || undefined,
+                    physiotherapistId: finalDeliveryHeader.physiotherapistId || undefined,
+                    ceoId: finalDeliveryHeader.ceoId || undefined,
+                    ceoSignatureUrl: finalDeliveryHeader.ceoSignatureUrl || undefined,
+                    signatureDate: finalDeliveryHeader.signatureDate || undefined,
+                  } })}
+                  disabled={updateFinalDelivery.isPending}
+                  className="w-full gap-2"
+                >
+                  {updateFinalDelivery.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  حفظ التسليم النهائي
+                </Button>
+              </div>
+            </Section>
+          )}
         </TabsContent>
 
         {/* ── TIMELINE ────────────────────────────────────────────────────── */}

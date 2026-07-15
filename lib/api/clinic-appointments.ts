@@ -9,7 +9,7 @@ export interface Appointment {
   patientId: string;
   patient?: { id: string; firstName: string; lastName: string; patientNumber: string };
   caseId?: string | null;
-  caseType?: "prosthetics" | "physio" | null;
+  caseType?: "PROSTHETICS" | "PHYSIO" | "GENERAL" | null;
   practitionerId: string;
   practitionerRole?: PractitionerRole | null;
   practitioner?: { id: string; firstName: string; lastName: string };
@@ -31,7 +31,7 @@ export interface Appointment {
 export interface CreateAppointmentDto {
   patientId: string;
   caseId?: string;
-  caseType?: "prosthetics" | "physio";
+  caseType?: "PROSTHETICS" | "PHYSIO" | "GENERAL";
   practitionerId: string;
   practitionerRole: PractitionerRole;
   physiotherapistId?: string;

@@ -313,6 +313,33 @@
     @apply flex flex-wrap items-center gap-3 rounded-xl border bg-card px-4 py-3;
     box-shadow: 0 1px 3px oklch(0 0 0 / 0.05);
   }
+
+  /* ── Orange checkbox with a white tick ──
+     `accent-color` lets the browser pick the tick colour (black on a light
+     orange), so we draw our own instead. */
+  .checkbox-orange {
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    border: 1px solid var(--input);
+    border-radius: 0.125rem;
+    background-color: var(--background);
+    cursor: pointer;
+  }
+  .checkbox-orange:checked {
+    /* Literal orange-500 — don't rely on --color-orange-500, which Tailwind
+       only emits while some orange-500 utility is still in use. */
+    background-color: #f97316;
+    border-color: #f97316;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3.5 8.5l3 3 6-6'/></svg>");
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .checkbox-orange:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 }
 
 @media print {

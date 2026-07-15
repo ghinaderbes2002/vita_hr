@@ -22,6 +22,7 @@ import {
   TreatmentProgramSessionDto,
   ReviewProgramDto,
   ProstheticDeliveryDto,
+  FinalDeliveryDto,
   DeliveryItemDto,
   BalanceAssessmentDto,
   GaitAnalysisFormDto,
@@ -196,6 +197,7 @@ export function useDeleteCaseComponent() {
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
   });
 }
+
 
 export function useSubmitGaitAnalysis() {
   const qc = useQueryClient();
@@ -447,6 +449,61 @@ export function useDeleteTreatmentProgram() {
   });
 }
 
+export function useArchiveTreatmentProgram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, programId, notes }: { caseId: string; programId: string; notes?: string }) =>
+      clinicProstheticsApi.archiveTreatmentProgram(caseId, programId, notes),
+    onSuccess: (updated: any, { caseId, programId }) => {
+      // Patch the archived session in place instead of refetching the whole list.
+      qc.setQueryData(["treatment-programs", caseId], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((s: any) =>
+          s.id === programId
+            ? { ...s, archivedAt: updated?.archivedAt ?? new Date().toISOString(), archiveNotes: updated?.archiveNotes ?? s.archiveNotes }
+            : s,
+        );
+      });
+      toast.success("تمت أرشفة الجلسة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل أرشفة الجلسة"),
+  });
+}
+
+export function useCaseAlerts(caseId: string) {
+  return useQuery({
+    queryKey: ["case-alerts", caseId],
+    queryFn: () => clinicProstheticsApi.getCaseAlerts(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useSendCaseAlert() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, note }: { caseId: string; note: string }) =>
+      clinicProstheticsApi.sendCaseAlert(caseId, note),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["case-alerts", caseId] });
+      toast.success("تم إرسال التنبيه لرئيس القسم");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إرسال التنبيه"),
+  });
+}
+
+export function useRespondToAlert() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, alertId, note }: { caseId: string; alertId: string; note: string }) =>
+      clinicProstheticsApi.respondToAlert(caseId, alertId, note),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["case-alerts", caseId] });
+      toast.success("تم إرسال الرد للفني");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إرسال الرد"),
+  });
+}
+
 export function useReviewPrograms(caseId: string) {
   return useQuery({
     queryKey: ["review-programs", caseId],
@@ -621,6 +678,32 @@ export function useDeleteBalanceAssessment() {
   });
 }
 
+export function useSaveBalanceAssessmentForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, formId }: { caseId: string; formId: string }) =>
+      clinicProstheticsApi.saveBalanceAssessmentForm(caseId, formId),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["balance-assessments", caseId] });
+      toast.success("تم حفظ النموذج — لا يمكن تعديله بعد الآن");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useArchiveBalanceAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, formId, reason }: { caseId: string; formId: string; reason: string }) =>
+      clinicProstheticsApi.archiveBalanceAssessment(caseId, formId, reason),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["balance-assessments", caseId] });
+      toast.success("تمت أرشفة النموذج");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الأرشفة"),
+  });
+}
+
 // ── Pro-019 Prosthetic Delivery ──────────────────────────────────────────────
 
 export function useProstheticDelivery(caseId: string) {
@@ -683,6 +766,54 @@ export function useDeleteDeliveryItem() {
   });
 }
 
+export function useApproveDeliveryItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, itemId }: { caseId: string; itemId: string }) =>
+      clinicProstheticsApi.approveDeliveryItem(caseId, itemId),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["prosthetic-delivery", caseId] });
+      qc.invalidateQueries({ queryKey: ["final-delivery", caseId] });
+      toast.success("تم اعتماد القطعة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الاعتماد"),
+  });
+}
+
+export function useFinalDelivery(caseId: string) {
+  return useQuery({
+    queryKey: ["final-delivery", caseId],
+    queryFn: () => clinicProstheticsApi.getFinalDelivery(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useCreateFinalDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, dto }: { caseId: string; dto?: FinalDeliveryDto }) =>
+      clinicProstheticsApi.createFinalDelivery(caseId, dto ?? {}),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["final-delivery", caseId] });
+      toast.success("تم إنشاء التسليم النهائي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إنشاء التسليم النهائي"),
+  });
+}
+
+export function useUpdateFinalDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, dto }: { caseId: string; dto: FinalDeliveryDto }) =>
+      clinicProstheticsApi.updateFinalDelivery(caseId, dto),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["final-delivery", caseId] });
+      toast.success("تم حفظ التسليم النهائي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
 // ── Pro-016 Gait Analysis ──────────────────────────────────────────────────────
 export function useGaitAnalysisForms(caseId: string) {
   return useQuery({
@@ -728,5 +859,31 @@ export function useDeleteGaitAnalysisForm() {
       toast.success("تم حذف جلسة تحليل المشي");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
+  });
+}
+
+export function useSaveGaitAnalysisForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, formId }: { caseId: string; formId: string }) =>
+      clinicProstheticsApi.saveGaitAnalysisForm(caseId, formId),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["gait-analysis-forms", caseId] });
+      toast.success("تم حفظ النموذج — لا يمكن تعديله بعد الآن");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحفظ"),
+  });
+}
+
+export function useArchiveGaitAnalysisForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, formId, reason }: { caseId: string; formId: string; reason: string }) =>
+      clinicProstheticsApi.archiveGaitAnalysisForm(caseId, formId, reason),
+    onSuccess: (_, { caseId }) => {
+      qc.invalidateQueries({ queryKey: ["gait-analysis-forms", caseId] });
+      toast.success("تمت أرشفة النموذج");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الأرشفة"),
   });
 }

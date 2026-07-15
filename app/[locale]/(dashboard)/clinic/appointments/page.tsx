@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, Plus, Clock, X, Check, Loader2, UserRound, Search } from "lucide-react";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
 import { Appointment, AppointmentType, AppointmentStatus, PractitionerRole } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
+import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
 import { useMyEmployee, useEmployeesByDepartment } from "@/lib/hooks/use-employees";
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ export default function AppointmentsPage() {
   const [cancelTargetId, setCancelTargetId] = useState<string>("");
   const [cancelReason, setCancelReason] = useState("");
   const [newApptOpen, setNewApptOpen] = useState(false);
+  const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
   const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatientLabel, setSelectedPatientLabel] = useState("");
@@ -89,12 +91,22 @@ export default function AppointmentsPage() {
 
   const { data: calendarAppts = [], isLoading: calLoading } = useClinicCalendar(from, to);
   const { data: dayData, isLoading: dayLoading } = useClinicAppointments({ limit: 500, status: statusFilter !== "ALL" ? statusFilter : undefined });
-  const { data: patientsData } = useClinicPatients({ search: patientSearch, limit: 10 });
+  const { data: patientsData } = useClinicPatients({ search: patientSearch, limit: 50 });
   const createAppt = useCreateAppointment();
   const cancelAppt = useCancelAppointment();
   const updateStatus = useUpdateAppointmentStatus();
 
   const patientsList = patientsData?.items ?? [];
+
+  // Once a patient is picked, silently look up their prosthetics case and, if an
+  // active one exists, attach caseId + caseType to the appointment behind the
+  // scenes so confirming it auto-creates a session. Reception never sees this.
+  const { data: patientCases } = useProstheticsCasesByPatient(newForm.patientId);
+  // Newest active case (createdAt DESC) — the technician usually works on the
+  // patient's most recently opened case.
+  const activeProstheticsCase = (patientCases ?? [])
+    .filter((c) => c.status !== "CLOSED" && c.status !== "CANCELLED")
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
   const dayAppointments = dayData?.items ?? [];
 
@@ -131,6 +143,11 @@ export default function AppointmentsPage() {
       startTime: startISO,
       endTime: endISO,
       notes: newForm.notes || undefined,
+      // Auto-linked prosthetics case (hidden from reception). Omitted when the
+      // patient has no active case → no auto-session is created.
+      ...(activeProstheticsCase
+        ? { caseId: activeProstheticsCase.id, caseType: "PROSTHETICS" as const }
+        : {}),
     });
     setNewApptOpen(false);
     setSelectedDate(newForm.date);
@@ -245,7 +262,8 @@ export default function AppointmentsPage() {
                 {dayAppointments
                   .sort((a: Appointment, b: Appointment) => a.startTime.localeCompare(b.startTime))
                   .map((appt: Appointment) => (
-                    <div key={appt.id} className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors">
+                    <div key={appt.id} onClick={() => setDetailAppt(appt)}
+                      className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors cursor-pointer">
                       <div className="text-center min-w-14 shrink-0">
                         <p className="font-mono text-sm font-bold">
                           {appt.startTime?.length > 5 ? new Date(appt.startTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : appt.startTime}
@@ -273,7 +291,7 @@ export default function AppointmentsPage() {
                           </p>
                         )}
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                         {appt.status === "SCHEDULED" && (
                           <Button size="sm" variant="outline" className="h-7 text-xs"
                             onClick={() => updateStatus.mutate({ id: appt.id, status: "CONFIRMED" })}>
@@ -300,6 +318,49 @@ export default function AppointmentsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Appointment details dialog */}
+      <Dialog open={!!detailAppt} onOpenChange={(o) => { if (!o) setDetailAppt(null); }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الموعد</DialogTitle>
+          </DialogHeader>
+          {detailAppt && (() => {
+            const fmtT = (v?: string | null) => v ? (v.length > 5 ? new Date(v).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : v) : "—";
+            const dateStr = detailAppt.startTime && detailAppt.startTime.length > 5
+              ? new Date(detailAppt.startTime).toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+              : (detailAppt.date ?? "—");
+            const rows: [string, ReactNode][] = [
+              ["المريض", detailAppt.patient ? `${detailAppt.patient.firstName} ${detailAppt.patient.lastName}` : (detailAppt.patientName || "—")],
+              ["رقم المريض", detailAppt.patient?.patientNumber ?? "—"],
+              ["نوع الموعد", t(`types.${detailAppt.appointmentType}`)],
+              ["الحالة", <Badge key="s" className={cn("text-xs", STATUS_COLOR[detailAppt.status])} variant="outline">{t(`statuses.${detailAppt.status}`)}</Badge>],
+              ["التاريخ", dateStr],
+              ["الوقت", `${fmtT(detailAppt.startTime)} — ${fmtT(detailAppt.endTime)}`],
+              ["المدة", detailAppt.durationMinutes ? `${detailAppt.durationMinutes} دقيقة` : "—"],
+              ["الممارس", detailAppt.practitioner ? `${detailAppt.practitioner.firstName} ${detailAppt.practitioner.lastName}` : "—"],
+              ["ملاحظات", detailAppt.notes || "—"],
+            ];
+            if (detailAppt.status === "CANCELLED" && (detailAppt.cancelReason || detailAppt.cancelledReason)) {
+              rows.push(["سبب الإلغاء", detailAppt.cancelReason ?? detailAppt.cancelledReason ?? "—"]);
+            }
+            rows.push(["تاريخ الإنشاء", detailAppt.createdAt ? new Date(detailAppt.createdAt).toLocaleString("en-GB") : "—"]);
+            return (
+              <dl className="divide-y text-sm">
+                {rows.map(([label, value]) => (
+                  <div key={label} className="flex items-start justify-between gap-3 py-2">
+                    <dt className="text-muted-foreground shrink-0">{label}</dt>
+                    <dd className="font-medium text-left">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailAppt(null)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Cancel appointment dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={(o) => { if (!cancelAppt.isPending) setCancelDialogOpen(o); }}>

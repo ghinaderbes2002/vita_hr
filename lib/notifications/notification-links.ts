@@ -67,6 +67,12 @@ export function resolveNotificationLink(notif: Notification): string | null {
     case "TARDINESS_COMPENSATION_DUE":  return "/attendance/my-attendance";
     case "TARDINESS_DEDUCTION_PENDING": return "/payroll";
 
+    // Follow-up program alert (and the head's reply) → open the case on the
+    // follow-up tab where the alert thread lives.
+    case "CASE_ALERT":
+    case "CASE_ALERT_RESPONSE":
+      return d.caseId ? `/clinic/prosthetics/${d.caseId}?tab=treatment_program` : null;
+
     case "INVENTORY_REQUEST": {
       // The request review UI (approve / not-available) lives in the requests
       // tab; open it and focus the specific request card by id.

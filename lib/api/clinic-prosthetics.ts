@@ -237,6 +237,17 @@ export interface CommitteeDecisionDto {
   finalSummary: string;
 }
 
+// Follow-up program alert (case-level). A case can have several; the head
+// replies to each individually.
+export interface CaseAlert {
+  id: string;
+  note: string;
+  sentAt: string;
+  sentByUserId?: string | null;
+  responseNote?: string | null;
+  respondedAt?: string | null;
+}
+
 export interface CaseComponent {
   id: string;
   caseId: string;
@@ -395,6 +406,7 @@ export const clinicProstheticsApi = {
     await apiClient.delete(`/prosthetics/cases/${id}/components/${compId}`);
   },
 
+
   submitGaitAnalysis: async (id: string, dto: GaitAnalysisDto) => {
     const { data } = await apiClient.post(`/prosthetics/cases/${id}/gait-analysis`, dto);
     return data?.data ?? data;
@@ -433,6 +445,31 @@ export const clinicProstheticsApi = {
 
   deleteTreatmentProgram: async (caseId: string, programId: string) => {
     const { data } = await apiClient.delete(`/prosthetics/cases/${caseId}/treatment-programs/${programId}`);
+    return data?.data ?? data;
+  },
+
+  archiveTreatmentProgram: async (caseId: string, programId: string, notes?: string) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/treatment-programs/${programId}/archive`, { notes });
+    return data?.data ?? data;
+  },
+
+  // Technician raises an alert to the department head for the follow-up program.
+  // A case can have multiple alerts, each with its own id.
+  sendCaseAlert: async (caseId: string, note: string): Promise<CaseAlert> => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/alert`, { note });
+    return data?.data ?? data;
+  },
+
+  // All alerts for a case (newest handling done in the UI).
+  getCaseAlerts: async (caseId: string): Promise<CaseAlert[]> => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${caseId}/alerts`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  // Department head replies to a specific alert; notifies the technician.
+  respondToAlert: async (caseId: string, alertId: string, note: string): Promise<CaseAlert> => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/alerts/${alertId}/respond`, { note });
     return data?.data ?? data;
   },
 
@@ -656,6 +693,15 @@ export const clinicProstheticsApi = {
   deleteBalanceAssessment: async (caseId: string, formId: string) => {
     await apiClient.delete(`/prosthetics/cases/${caseId}/balance-assessment/${formId}`);
   },
+  // Freeze the form — afterwards any PATCH is rejected (400). Returns isSaved.
+  saveBalanceAssessmentForm: async (caseId: string, formId: string) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/balance-assessment/${formId}/save`);
+    return data?.data ?? data;
+  },
+  archiveBalanceAssessment: async (caseId: string, formId: string, reason: string) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/balance-assessment/${formId}/archive`, { reason });
+    return data?.data ?? data;
+  },
 
   // ── Pro-019 Prosthetic Delivery ──────────────────────────────────────────────
   getProstheticDelivery: async (caseId: string) => {
@@ -677,6 +723,28 @@ export const clinicProstheticsApi = {
   deleteDeliveryItem: async (caseId: string, itemId: string) => {
     await apiClient.delete(`/prosthetics/cases/${caseId}/prosthetic-delivery/items/${itemId}`);
   },
+  // Approve a delivery item → it then appears in the final delivery.
+  approveDeliveryItem: async (caseId: string, itemId: string) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/prosthetic-delivery/items/${itemId}/approve`);
+    return data?.data ?? data;
+  },
+  // ── Final delivery — a record independent from the trial delivery ──────────
+  // Returns null when it hasn't been created yet.
+  getFinalDelivery: async (caseId: string) => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${caseId}/final-delivery`);
+    return data?.data ?? data ?? null;
+  },
+  // Create once (400 if it already exists). Empty body → the backend copies the
+  // header from the trial delivery and its approved items.
+  createFinalDelivery: async (caseId: string, dto: FinalDeliveryDto = {}) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/final-delivery`, dto);
+    return data?.data ?? data;
+  },
+  // Patch only the fields you send.
+  updateFinalDelivery: async (caseId: string, dto: FinalDeliveryDto) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/final-delivery`, dto);
+    return data?.data ?? data;
+  },
 
   // ── Pro-016 Gait Analysis ─────────────────────────────────────────────────────
   getGaitAnalysisForms: async (caseId: string): Promise<any[]> => {
@@ -694,6 +762,15 @@ export const clinicProstheticsApi = {
   },
   deleteGaitAnalysisForm: async (caseId: string, formId: string) => {
     await apiClient.delete(`/prosthetics/cases/${caseId}/gait-analysis-forms/${formId}`);
+  },
+  // Freeze the form — afterwards any PATCH is rejected (400). Returns isSaved.
+  saveGaitAnalysisForm: async (caseId: string, formId: string) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/gait-analysis-forms/${formId}/save`);
+    return data?.data ?? data;
+  },
+  archiveGaitAnalysisForm: async (caseId: string, formId: string, reason: string) => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/gait-analysis-forms/${formId}/archive`, { reason });
+    return data?.data ?? data;
   },
 };
 
@@ -807,15 +884,34 @@ export interface BalanceAssessmentDto {
   committeeHeadSignatureUrl?: string;
   followUpDate?: string;
   notes?: string;
+  // Optional free-text details for the "other"/conditional answers.
+  previousProsthesisNotes?: string;
+  fallRiskNotes?: string;
+  limitingFactorsOtherNotes?: string;
 }
 
 export interface ProstheticDeliveryDto {
   inspectionDate?: string;
   prosthetistId?: string;
   physiotherapistId?: string;
+  medicalDirectorId?: string;
+  medicalDirectorSignatureUrl?: string;
+  medicalDirectorSignedAt?: string;
+  signatureDate?: string;
+}
+
+// Final delivery — every field optional; omitted ones are copied from the trial
+// delivery on create. Items are copied once at creation (approved ones only).
+export interface FinalDeliveryDto {
+  inspectionDate?: string;
+  prosthetistId?: string;
+  physiotherapistId?: string;
   ceoId?: string;
   ceoSignatureUrl?: string;
   signatureDate?: string;
+  medicalDirectorId?: string;
+  medicalDirectorSignatureUrl?: string;
+  medicalDirectorSignedAt?: string;
 }
 
 export interface DeliveryItemDto {
@@ -824,6 +920,7 @@ export interface DeliveryItemDto {
   quantity?: number;
   company?: string;
   notes?: string;
+  itemAddedDate?: string;
 }
 
 export interface GaitPhaseDto { deviations?: string[]; possibleCause?: string; notes?: string; }
@@ -875,6 +972,13 @@ export interface GaitAnalysisFormDto {
   examinerPhysiotherapistId?: string;
   physiotherapistSignatureUrl?: string;
   notes?: string;
+  // Optional free-text notes (diagnosis/recommendations + the "other" answers).
+  recommendationsNotes?: string;
+  mainProblemNotes?: string;
+  patientComplaintsOtherNotes?: string;
+  suspensionSystemOtherNotes?: string;
+  prostheticIssuesOtherNotes?: string;
+  likelyCausesOtherNotes?: string;
 }
 
 export interface FinalEvaluationDto {

@@ -41,7 +41,10 @@ export type NotificationType =
   | "GENERAL"
   // إشعارات المخزون الطبي
   | "INVENTORY_REQUEST"
-  | "INVENTORY_REQUEST_UPDATE";
+  | "INVENTORY_REQUEST_UPDATE"
+  // إشعارات الأطراف الصناعية
+  | "CASE_ALERT"
+  | "CASE_ALERT_RESPONSE";
 
 export interface Notification {
   id: string;
