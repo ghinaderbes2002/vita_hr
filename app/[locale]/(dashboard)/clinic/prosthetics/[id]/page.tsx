@@ -2155,36 +2155,43 @@ const EXPECTED_OUTCOME_OPTS = [
 ];
 const ROM_GRADES = ["1","1+","2","2+","3","3+","4","4+","5","5+"];
 const ARABIC_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+// Month names come from the shared payroll.months.* catalogue (1-indexed).
+const MONTH_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 type RomEntry = { selected: boolean; grade?: string };
 
-const UPPER_ROM_MOVES: { key: string; label: string; group: string; hasGrade: boolean }[] = [
-  { key: "عطف المرفق",   label: "العطف",          group: "المرفق", hasGrade: true  },
-  { key: "بسط المرفق",   label: "البسط",          group: "المرفق", hasGrade: true  },
-  { key: "الكب",         label: "الكب",           group: "المرفق", hasGrade: true  },
-  { key: "الاستلقاء",    label: "الاستلقاء",      group: "المرفق", hasGrade: true  },
-  { key: "عطف الكتف",   label: "العطف",          group: "الكتف",  hasGrade: true  },
-  { key: "بسط الكتف",   label: "البسط",          group: "الكتف",  hasGrade: true  },
-  { key: "التقريب",      label: "التقريب",        group: "الكتف",  hasGrade: true  },
-  { key: "التبعيد",      label: "التبعيد",        group: "الكتف",  hasGrade: true  },
-  { key: "دوران داخلي",  label: "دوران داخلي",   group: "الكتف",  hasGrade: false },
-  { key: "عطف الرسغ",   label: "العطف",          group: "الرسغ",  hasGrade: true  },
-  { key: "بسط الرسغ",   label: "البسط",          group: "الرسغ",  hasGrade: true  },
-  { key: "انحراف كعبري", label: "انحراف كعبري",   group: "الرسغ",  hasGrade: false },
-  { key: "انحراف زندي",  label: "انحراف زندي",    group: "الرسغ",  hasGrade: false },
+// `key` is the wire/DB identifier for romData (see buildUpperDto/buildLowerDto) —
+// it is Arabic on the server and MUST NOT be translated or every saved romData
+// entry stops matching. Only labelKey/groupKey feed the UI.
+type RomMove = { key: string; labelKey: string; groupKey: string; hasGrade: boolean };
+
+const UPPER_ROM_MOVES: RomMove[] = [
+  { key: "عطف المرفق",   labelKey: "flexion",          groupKey: "elbow",    hasGrade: true  },
+  { key: "بسط المرفق",   labelKey: "extension",        groupKey: "elbow",    hasGrade: true  },
+  { key: "الكب",         labelKey: "pronation",        groupKey: "elbow",    hasGrade: true  },
+  { key: "الاستلقاء",    labelKey: "supination",       groupKey: "elbow",    hasGrade: true  },
+  { key: "عطف الكتف",   labelKey: "flexion",          groupKey: "shoulder", hasGrade: true  },
+  { key: "بسط الكتف",   labelKey: "extension",        groupKey: "shoulder", hasGrade: true  },
+  { key: "التقريب",      labelKey: "adduction",        groupKey: "shoulder", hasGrade: true  },
+  { key: "التبعيد",      labelKey: "abduction",        groupKey: "shoulder", hasGrade: true  },
+  { key: "دوران داخلي",  labelKey: "internalRotation", groupKey: "shoulder", hasGrade: false },
+  { key: "عطف الرسغ",   labelKey: "flexion",          groupKey: "wrist",    hasGrade: true  },
+  { key: "بسط الرسغ",   labelKey: "extension",        groupKey: "wrist",    hasGrade: true  },
+  { key: "انحراف كعبري", labelKey: "radialDeviation",  groupKey: "wrist",    hasGrade: false },
+  { key: "انحراف زندي",  labelKey: "ulnarDeviation",   groupKey: "wrist",    hasGrade: false },
 ];
 
-const LOWER_ROM_MOVES: { key: string; label: string; group: string; hasGrade: boolean }[] = [
-  { key: "عطف ظهري",    label: "عطف ظهري",      group: "الكاحل", hasGrade: true  },
-  { key: "عطف أخمصي",   label: "عطف أخمصي",     group: "الكاحل", hasGrade: true  },
-  { key: "انقلاب داخلي", label: "انقلاب داخلي",  group: "الكاحل", hasGrade: false },
-  { key: "انقلاب خارجي", label: "انقلاب خارجي",  group: "الكاحل", hasGrade: false },
-  { key: "عطف الركبة",  label: "العطف",          group: "الركبة", hasGrade: true  },
-  { key: "بسط الركبة",  label: "البسط",          group: "الركبة", hasGrade: true  },
-  { key: "عطف الورك",   label: "العطف",          group: "الورك",  hasGrade: true  },
-  { key: "بسط الورك",   label: "البسط",          group: "الورك",  hasGrade: true  },
-  { key: "التقريب",      label: "التقريب",        group: "الورك",  hasGrade: true  },
-  { key: "التبعيد",      label: "التبعيد",        group: "الورك",  hasGrade: true  },
-  { key: "دوران داخلي",  label: "دوران داخلي",   group: "الورك",  hasGrade: false },
+const LOWER_ROM_MOVES: RomMove[] = [
+  { key: "عطف ظهري",    labelKey: "dorsiflexion",     groupKey: "ankle", hasGrade: true  },
+  { key: "عطف أخمصي",   labelKey: "plantarflexion",   groupKey: "ankle", hasGrade: true  },
+  { key: "انقلاب داخلي", labelKey: "inversion",        groupKey: "ankle", hasGrade: false },
+  { key: "انقلاب خارجي", labelKey: "eversion",         groupKey: "ankle", hasGrade: false },
+  { key: "عطف الركبة",  labelKey: "flexion",          groupKey: "knee",  hasGrade: true  },
+  { key: "بسط الركبة",  labelKey: "extension",        groupKey: "knee",  hasGrade: true  },
+  { key: "عطف الورك",   labelKey: "flexion",          groupKey: "hip",   hasGrade: true  },
+  { key: "بسط الورك",   labelKey: "extension",        groupKey: "hip",   hasGrade: true  },
+  { key: "التقريب",      labelKey: "adduction",        groupKey: "hip",   hasGrade: true  },
+  { key: "التبعيد",      labelKey: "abduction",        groupKey: "hip",   hasGrade: true  },
+  { key: "دوران داخلي",  labelKey: "internalRotation", groupKey: "hip",   hasGrade: false },
 ];
 
 const SUPPORT_OPTS = [
@@ -3236,10 +3243,11 @@ function Section({ title, children, action }: { title: string; children: React.R
 
 // Badge for sections the backend has frozen — mirrors the balance-assessment card.
 function SavedBadge() {
+  const t = useTranslations("clinic.prosthetics.case");
   return (
     <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
       <CheckCircle2 className="h-3 w-3" />
-      محفوظ — للقراءة فقط
+      {t("savedReadOnly")}
     </Badge>
   );
 }
@@ -3411,6 +3419,7 @@ export default function ProstheticsCasePage() {
   const locale = useLocale();
   const isRtl = locale === "ar";
   const t = useTranslations("clinic.prosthetics.case");
+  const tMonth = useTranslations("payroll.months");
 
   const { data: caseData, isLoading } = useProstheticsCase(id);
   const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
@@ -3775,10 +3784,13 @@ export default function ProstheticsCasePage() {
       hasRevisionSurgery: caseData.hasRevisionSurgery ?? null,
       revisionDetails: caseData.revisionDetails ?? "",
     });
+    // Saved via updateCase as arrays (prosthetistIds …); accept either the plural
+    // arrays or the legacy singular id the backend may echo back.
+    const cd = caseData as any;
     setStaffForm({
-      prosthetistIds: caseData.prosthetistId ? [caseData.prosthetistId] : caseData.assignedProsthetistId ? [caseData.assignedProsthetistId] : [],
-      physiotherapistIds: caseData.physiotherapistId ? [caseData.physiotherapistId] : [],
-      supervisingDoctorIds: caseData.supervisingDoctorId ? [caseData.supervisingDoctorId] : [],
+      prosthetistIds: cd.prosthetistIds ?? (caseData.prosthetistId ? [caseData.prosthetistId] : caseData.assignedProsthetistId ? [caseData.assignedProsthetistId] : []),
+      physiotherapistIds: cd.physiotherapistIds ?? (caseData.physiotherapistId ? [caseData.physiotherapistId] : []),
+      supervisingDoctorIds: cd.supervisingDoctorIds ?? (caseData.supervisingDoctorId ? [caseData.supervisingDoctorId] : []),
     });
     setCommitteeSuitForm({
       prosthesisSuitable: caseData.prosthesisSuitable ?? null,
@@ -3855,11 +3867,6 @@ export default function ProstheticsCasePage() {
   };
   const ampTypes = getAmpTypes();
 
-  // The staff section persists only through the upper save button
-  // (handleSaveUpperAll → handleSaveStaff), so freeze it once that button is
-  // gone; leaving it live would accept edits that never reach the server.
-  const staffLocked = ampTypes.includes("UPPER") ? upperSaved : lowerSaved;
-
   const patientName = patientFull
     ? `${patientFull.firstName} ${patientFull.lastName}`
     : c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—";
@@ -3873,16 +3880,20 @@ export default function ProstheticsCasePage() {
       amputationType: (() => {
         const raw = intakeForm.amputationType || c.amputationType;
         if (!raw) return undefined;
+        if (Array.isArray(raw)) return raw.map((x) => String(x).toUpperCase()) as any;
         const s = String(raw).toUpperCase();
         if (s === "BOTH") return ["UPPER", "LOWER"] as any;
         if (s === "UPPER" || s === "LOWER") return [s] as any;
-        if (Array.isArray(raw)) return raw as any;
         return undefined;
       })(),
       amputationSide: (intakeForm.amputationSide || c.amputationSide || undefined) as AmputationSide | undefined,
-      amputationLevel: intakeForm.amputationLevels.length
-        ? intakeForm.amputationLevels.join("/")
-        : c.amputationLevel || undefined,
+      // Backend expects an array of level codes (TT, KD, …), not a "/"-joined string.
+      amputationLevel: (() => {
+        const levels = intakeForm.amputationLevels.length
+          ? intakeForm.amputationLevels
+          : toAmputationLevels(c.amputationLevel);
+        return levels.length ? levels : undefined;
+      })(),
       amputationDate: (() => {
         const y = intakeForm.amputationYear;
         if (!y) return c.dateOfAmputation ? c.dateOfAmputation.slice(0, 10) : undefined;
@@ -3943,6 +3954,13 @@ export default function ProstheticsCasePage() {
   };
   const toggleStaffMember = (key: keyof typeof staffForm, empId: string) =>
     setStaffForm((f) => ({ ...f, [key]: (f[key] as string[]).includes(empId) ? (f[key] as string[]).filter((x) => x !== empId) : [...(f[key] as string[]), empId] }));
+
+  // Names of the staff chosen in the assessment tab — reused on the committee tab.
+  const staffNamesOf = (key: keyof typeof staffForm) =>
+    (staffForm[key] as string[])
+      .map((empId) => { const e = staffList.find((x) => x.id === empId); return e ? `${e.firstNameAr} ${e.lastNameAr}` : null; })
+      .filter(Boolean)
+      .join("، ");
 
   const handleSaveIntakeAndAdvance = async () => {
     justSavedRef.current = true;
@@ -4838,16 +4856,21 @@ export default function ProstheticsCasePage() {
 
           {/* ── فريق العمل المعالج ── */}
           {openStaffKey && <div className="fixed inset-0 z-40" onClick={() => setOpenStaffKey(null)} />}
-          <Section title="فريق العمل المعالج" action={staffLocked ? <SavedBadge /> : undefined}>
-            <fieldset disabled={staffLocked} className="contents">
+          <Section title={t("assess.staff.title")}>
+            {/* Staff is a case-level field (updateCase) with its own save button,
+                editable independently of the frozen assessment records. */}
             <div className="grid grid-cols-3 gap-4">
               {([
-                { key: "prosthetistIds" as const,     label: "فني الأطراف الصناعية" },
-                { key: "physiotherapistIds" as const, label: "المعالج الفيزيائي" },
-                { key: "supervisingDoctorIds" as const,"label":"اسم المشرف" },
+                { key: "prosthetistIds" as const,     label: t("assess.staff.prosthetist") },
+                { key: "physiotherapistIds" as const, label: t("assess.staff.physio") },
+                { key: "supervisingDoctorIds" as const, label: t("assess.staff.supervisor") },
               ]).map(({ key, label }) => {
                 const selected = staffForm[key];
                 const isOpen = openStaffKey === key;
+                const selectedNames = selected
+                  .map((empId) => { const e = staffList.find((x) => x.id === empId); return e ? `${e.firstNameAr} ${e.lastNameAr}` : null; })
+                  .filter(Boolean)
+                  .join("، ");
                 return (
                   <div key={key} className="space-y-1.5">
                     <Label>{label}</Label>
@@ -4857,26 +4880,11 @@ export default function ProstheticsCasePage() {
                         className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm hover:bg-muted/40 transition-colors"
                         onClick={(e) => { e.stopPropagation(); setOpenStaffKey(isOpen ? null : key); }}
                       >
-                        <span className="text-muted-foreground">
-                          {selected.length === 0 ? "اختر..." : `${selected.length} محدد`}
+                        <span className={selected.length === 0 ? "text-muted-foreground" : "text-foreground font-medium"}>
+                          {selected.length === 0 ? t("assess.staff.choose") : selectedNames}
                         </span>
                         <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                       </button>
-                      {selected.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {selected.map((empId) => {
-                            const emp = staffList.find((e) => e.id === empId);
-                            return emp ? (
-                              <span key={empId} className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-800 text-xs px-2 py-0.5">
-                                {emp.firstNameAr} {emp.lastNameAr}
-                                <button type="button" onClick={() => toggleStaffMember(key, empId)} className="hover:text-orange-600">
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </span>
-                            ) : null;
-                          })}
-                        </div>
-                      )}
                       {isOpen && (
                         <div className="absolute z-50 top-full mt-1 w-full min-w-48 rounded-md border bg-background shadow-lg overflow-hidden">
                           <div className="max-h-52 overflow-y-auto p-1">
@@ -4906,7 +4914,12 @@ export default function ProstheticsCasePage() {
                 );
               })}
             </div>
-            </fieldset>
+            <div className="pt-3">
+              <Button onClick={handleSaveStaff} disabled={updateCase.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                {t("assess.staff.save")}
+              </Button>
+            </div>
           </Section>
 
           {/* ─── Upper Assessment ───────────────────────────────────────────── */}
@@ -4927,25 +4940,25 @@ export default function ProstheticsCasePage() {
               const togS = (arr: string[], val: string) => arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
               return (
                 <>
-                  <PfRow label="في البتور عبر الساعد والعضد، كم طول الجذمور؟">
-                    {[["LONG","طويل"],["MEDIUM","وسط"],["SHORT","قصير"],["VERY_SHORT","قصير جداً"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.residualLimbLength === val} label={lbl} onClick={() => setS({ residualLimbLength: val })} />
+                  <PfRow label={t("assess.limbLengthUpper")}>
+                    {[["LONG","long"],["MEDIUM","medium"],["SHORT","short"],["VERY_SHORT","veryShort"]].map(([val, lbl]) => (
+                      <PfSq key={val} checked={sf.residualLimbLength === val} label={t(`assess.${lbl}`)} onClick={() => setS({ residualLimbLength: val })} />
                     ))}
                   </PfRow>
-                  <PfRow label="شكل الطرف المتبقي">
-                    {[["BONY","عظمي"],["SOFT","لين"],["NORMAL","طبيعي"],["CONICAL_BONY","عظمي مخروطي"],["CONICAL_SOFT","لين مخروطي"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.residualLimbShape === val} label={lbl} onClick={() => setS({ residualLimbShape: val })} />
+                  <PfRow label={t("assess.limbShape")}>
+                    {[["BONY","shapeCylindrical"],["SOFT","shapeSoft"],["NORMAL","skin.NORMAL"],["CONICAL_BONY","shapeBonyConical"],["CONICAL_SOFT","shapeSoftConical"]].map(([val, lbl]) => (
+                      <PfSq key={val} checked={sf.residualLimbShape === val} label={t(`assess.${lbl}`)} onClick={() => setS({ residualLimbShape: val })} />
                     ))}
                   </PfRow>
                   {showShared && <>
-                    <PfRow label="ملاحظة حول مستوى البتر">
+                    <PfRow label={t("assess.levelNote")}>
                       <Textarea rows={2} className="text-sm w-full" value={sf.amputationLevelNote} onChange={(e) => setS({ amputationLevelNote: e.target.value })} />
                     </PfRow>
-                    <PfRow label="تاريخ البتر">
+                    <PfRow label={t("assess.amputationDate")}>
                       <div className="flex gap-2 items-center">
                         <Input
                           type="number"
-                          placeholder="السنة *"
+                          placeholder={t("assess.year")}
                           min={1900} max={2100}
                           className="h-7 text-sm w-24"
                           value={g.amputationYear}
@@ -4953,151 +4966,151 @@ export default function ProstheticsCasePage() {
                         />
                         <Select value={g.amputationMonth} onValueChange={(v) => setG({ amputationMonth: v })}>
                           <SelectTrigger className="h-7 text-sm w-32">
-                            <SelectValue placeholder="الشهر" />
+                            <SelectValue placeholder={t("assess.month")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="0">— بدون شهر —</SelectItem>
-                            {ARABIC_MONTHS.map((mn, i) => (
-                              <SelectItem key={i + 1} value={String(i + 1)}>{mn}</SelectItem>
+                            <SelectItem value="0">{t("assess.noMonth")}</SelectItem>
+                            {MONTH_NUMBERS.map((i) => (
+                              <SelectItem key={i} value={String(i)}>{tMonth(String(i))}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                     </PfRow>
-                    <PfRow label="سبب البتر">
-                      {[["WAR_INJURY","إصابة حرب"],["TRAFFIC_ACCIDENT","حادث سير"],["DIABETES","مضاعفات سكري"],["VASCULAR_DISEASE","مرض وعائي"],["CONGENITAL","خلقي"],["INFECTION","عدوى"],["TUMOR","ورم"],["WORK_INJURY","إصابة عمل"],["OTHER","أخرى"]].map(([val, lbl]) => (
-                        <PfSq key={val} checked={g.amputationCause === val} label={lbl} onClick={() => setG({ amputationCause: val })} />
+                    <PfRow label={t("assess.amputationCause")}>
+                      {[["WAR_INJURY","cause.WAR"],["TRAFFIC_ACCIDENT","cause.TRAFFIC"],["DIABETES","cause.DIABETES_COMPLICATIONS"],["VASCULAR_DISEASE","cause.VASCULAR"],["CONGENITAL","cause.CONGENITAL"],["INFECTION","cause.INFECTION"],["TUMOR","cause.TUMOR"],["WORK_INJURY","cause.WORK"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
+                        <PfSq key={val} checked={g.amputationCause === val} label={t(`assess.${lbl}`)} onClick={() => setG({ amputationCause: val })} />
                       ))}
                       {g.amputationCause === "OTHER" && (
-                        <Input className="h-7 text-sm w-52 mt-1" placeholder="حدد السبب..." value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
+                        <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.causeOther")} value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
                       )}
                     </PfRow>
-                    <PfRow label="القصة السريرية">
+                    <PfRow label={t("assess.clinicalHistory")}>
                       <Textarea rows={2} className="text-sm w-full" value={g.clinicalHistory} onChange={(e) => setG({ clinicalHistory: e.target.value })} />
                     </PfRow>
                   </>}
-                  <PfDivider label="الألم والحساسية" />
-                  <PfRow label=" الألم والحساسية">
+                  <PfDivider label={t("assess.painSection")} />
+                  <PfRow label={t("assess.painSection")}>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">غير موجود</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
                       <Switch checked={sf.painPresent === true} onCheckedChange={(v) => setS({ painPresent: v })} />
-                      <span className="text-sm text-muted-foreground">موجود</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
                     </div>
                     {sf.painPresent && <PfNumPicker value={sf.painIntensity} onChange={(n) => setS({ painIntensity: n })} max={9} />}
                   </PfRow>
-                  <PfRow label="ألم وهمي">
+                  <PfRow label={t("assess.phantomPain")}>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">غير موجود</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
                       <Switch checked={sf.phantomPainPresent === true} onCheckedChange={(v) => setS({ phantomPainPresent: v })} />
-                      <span className="text-sm text-muted-foreground">موجود</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
                     </div>
                     {sf.phantomPainPresent && <PfNumPicker value={sf.phantomPainIntensity} onChange={(n) => setS({ phantomPainIntensity: n })} max={9} />}
                   </PfRow>
-                  <PfRow label="نوع الألم">
-                    {[["NUMBNESS","خدر"],["DULL_ACHE","ألم خفيف"],["HOT_BURNING","حارق"],["SHARP_STABBING","حاد"],["PINS","واخز"],["OTHER","أخر"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.painTypes.includes(val)} label={lbl} onClick={() => setS({ painTypes: togS(sf.painTypes, val) })} />
+                  <PfRow label={t("assess.painType")}>
+                    {[["NUMBNESS","pain.NUMBNESS"],["DULL_ACHE","pain.DULL_ACHE"],["HOT_BURNING","pain.HOT_BURNING"],["SHARP_STABBING","pain.SHARP_STABBING"],["PINS","pain.PINS"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
+                      <PfSq key={val} checked={sf.painTypes.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ painTypes: togS(sf.painTypes, val) })} />
                     ))}
                     {sf.painTypes.includes("OTHER") && (
-                      <Input className="h-7 text-sm w-52 mt-1" placeholder="حدد نوع الألم..." value={sf.painTypeOtherDetail} onChange={(e) => setS({ painTypeOtherDetail: e.target.value })} />
+                      <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.painTypeOther")} value={sf.painTypeOtherDetail} onChange={(e) => setS({ painTypeOtherDetail: e.target.value })} />
                     )}
                   </PfRow>
-                  <PfRow label="النوروم العصبي">
+                  <PfRow label={t("assess.neuroma")}>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">غير موجود</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.absent")}</span>
                       <Switch checked={sf.neuromaPresent === true} onCheckedChange={(v) => setS({ neuromaPresent: v })} />
-                      <span className="text-sm text-muted-foreground">موجود</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.present")}</span>
                     </div>
                   </PfRow>
-                  <PfRow label="وضع الجذمور">
-                    <PfSq checked={sf.neuromaPalpable === true} label="قابل للمس" onClick={() => setS({ neuromaPalpable: true })} />
-                    <PfSq checked={sf.neuromaPalpable === false} label="غير قابل للمس" onClick={() => setS({ neuromaPalpable: false })} />
+                  <PfRow label={t("assess.stumpPosition")}>
+                    <PfSq checked={sf.neuromaPalpable === true} label={t("assess.touchable")} onClick={() => setS({ neuromaPalpable: true })} />
+                    <PfSq checked={sf.neuromaPalpable === false} label={t("assess.notTouchable")} onClick={() => setS({ neuromaPalpable: false })} />
                   </PfRow>
-                  <PfRow label="ملاحظات">
+                  <PfRow label={t("assess.notes")}>
                     <Textarea rows={2} className="text-sm w-full" value={sf.skinNotes} onChange={(e) => setS({ skinNotes: e.target.value })} />
                   </PfRow>
-                  <PfDivider label="الجلد" />
-                  <PfRow label="المظهر العام">
-                    {[["NORMAL","طبيعي"],["PALE","شاحب"],["DRY","جاف"],["INFLAMED","ملتهب"],["PEELING","متقشر"],["OOZING","ناز"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.skinAppearance.includes(val)} label={lbl} onClick={() => setS({ skinAppearance: togS(sf.skinAppearance, val) })} />
+                  <PfDivider label={t("assess.skinSection")} />
+                  <PfRow label={t("assess.skinAppearance")}>
+                    {[["NORMAL","skin.NORMAL"],["PALE","skin.PALE"],["DRY","skin.DRY"],["INFLAMED","skin.INFLAMED"],["PEELING","skin.PEELING"],["OOZING","skin.OOZING"]].map(([val, lbl]) => (
+                      <PfSq key={val} checked={sf.skinAppearance.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ skinAppearance: togS(sf.skinAppearance, val) })} />
                     ))}
                   </PfRow>
-                  <PfRow label="لون البشرة">
-                    {[["NORMAL","طبيعي"],["PALE","شاحب"],["YELLOWISH","مصفر"],["ERYTHEMATOUS","محمر"],["CYANOTIC","مزرق"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.skinColor.includes(val)} label={lbl} onClick={() => setS({ skinColor: togS(sf.skinColor, val) })} />
+                  <PfRow label={t("assess.skinColor")}>
+                    {[["NORMAL","skin.NORMAL"],["PALE","skin.PALE"],["YELLOWISH","color.YELLOWISH"],["ERYTHEMATOUS","color.ERYTHEMATOUS"],["CYANOTIC","color.CYANOTIC"]].map(([val, lbl]) => (
+                      <PfSq key={val} checked={sf.skinColor.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ skinColor: togS(sf.skinColor, val) })} />
                     ))}
                   </PfRow>
-                  <PfRow label="درجة حرارة الجلد">
-                    {[["NORMAL","طبيعي"],["COLD","بارد"],["HOT","حار"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.skinTemperature === val} label={lbl} onClick={() => setS({ skinTemperature: val })} />
+                  <PfRow label={t("assess.skinTemp")}>
+                    {[["NORMAL","skin.NORMAL"],["COLD","temp.COLD"],["HOT","temp.HOT"]].map(([val, lbl]) => (
+                      <PfSq key={val} checked={sf.skinTemperature === val} label={t(`assess.${lbl}`)} onClick={() => setS({ skinTemperature: val })} />
                     ))}
                   </PfRow>
-                  <PfRow label="الطعوم الجلدية">
-                    <PfSq checked={sf.hasSkinGrafts} label="يوجد طعم جلدي" onClick={() => setS({ hasSkinGrafts: !sf.hasSkinGrafts })} />
+                  <PfRow label={t("assess.grafts")}>
+                    <PfSq checked={sf.hasSkinGrafts} label={t("assess.hasGraft")} onClick={() => setS({ hasSkinGrafts: !sf.hasSkinGrafts })} />
                     {sf.hasSkinGrafts && (
-                      <Input className="h-7 text-sm w-52" placeholder="منطقة الطعم..." value={sf.graftArea} onChange={(e) => setS({ graftArea: e.target.value })} />
+                      <Input className="h-7 text-sm w-52" placeholder={t("assess.graftArea")} value={sf.graftArea} onChange={(e) => setS({ graftArea: e.target.value })} />
                     )}
                   </PfRow>
-                  <PfRow label="حالة الندبة">
-                    {[["HEALED","ملتئمة"],["FLEXIBLE","مرنة"],["HEALED_WITH_PINS","ملتئمة مع ترس"],["OPEN","مفتوحة"],["DRY","جافة"],["INFLAMED","ملتهبة"],["OOZING","نازة"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={sf.scarCondition.includes(val)} label={lbl} onClick={() => setS({ scarCondition: togS(sf.scarCondition, val) })} />
+                  <PfRow label={t("assess.scarCondition")}>
+                    {[["HEALED","scar.HEALED"],["FLEXIBLE","scar.FLEXIBLE"],["HEALED_WITH_PINS","scar.HEALED_WITH_PINS"],["OPEN","scar.OPEN"],["DRY","scar.DRY"],["INFLAMED","scar.INFLAMED"],["OOZING","scar.OOZING"]].map(([val, lbl]) => (
+                      <PfSq key={val} checked={sf.scarCondition.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ scarCondition: togS(sf.scarCondition, val) })} />
                     ))}
                   </PfRow>
-                  <PfRow label="تعليقات">
+                  <PfRow label={t("assess.comments")}>
                     <Textarea rows={2} className="text-sm w-full" value={sf.closureNotes} onChange={(e) => setS({ closureNotes: e.target.value })} />
                   </PfRow>
-                  <PfDivider label="الحالة العامة" />
-                  <PfRow label="حالة الصحة العامة">
+                  <PfDivider label={t("assess.generalSection")} />
+                  <PfRow label={t("assess.generalHealth")}>
                     <Textarea rows={2} className="text-sm w-full" value={sf.generalHealthNotes} onChange={(e) => setS({ generalHealthNotes: e.target.value })} />
                   </PfRow>
-                  <PfRow label="حالة الأطراف الأخرى">
+                  <PfRow label={t("assess.otherLimb")}>
                     <Textarea rows={2} className="text-sm w-full" value={sf.otherLimbCondition} onChange={(e) => setS({ otherLimbCondition: e.target.value })} />
                   </PfRow>
                   {showShared && <>
-                    <PfRow label="هل يستخدم المريض طرفاً صناعياً حالياً؟">
+                    <PfRow label={t("assess.usesProsthesisNow")}>
                       <div className="flex flex-col gap-1.5 w-full">
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground">لا</span>
+                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
                           <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
-                          <span className="text-sm text-muted-foreground">نعم</span>
+                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                         </div>
                         {g.currentlyUsingProsthesis === true && (
-                          <Input className="h-7 text-sm w-64" placeholder="نوع الطرف الصناعي..." value={sf.prostheticLimbType} onChange={(e) => setS({ prostheticLimbType: e.target.value })} />
+                          <Input className="h-7 text-sm w-64" placeholder={t("assess.prosthesisType")} value={sf.prostheticLimbType} onChange={(e) => setS({ prostheticLimbType: e.target.value })} />
                         )}
                       </div>
                     </PfRow>
                     {g.currentlyUsingProsthesis === false && (
-                      <PfRow label="هل استخدم الطرف الصناعي سابقاً؟">
+                      <PfRow label={t("assess.usedProsthesisBefore")}>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground">لا</span>
+                          <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
                           <Switch checked={g.previouslyUsedProsthesis === true} onCheckedChange={(v) => setG({ previouslyUsedProsthesis: v })} />
-                          <span className="text-sm text-muted-foreground">نعم</span>
+                          <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                         </div>
                         {g.previouslyUsedProsthesis === true && (
-                          <Input className="h-7 text-sm w-64 mt-1" placeholder="تحديد نظام الطرف الصناعي..." value={g.previousProsthesisSystemDetail} onChange={(e) => setG({ previousProsthesisSystemDetail: e.target.value })} />
+                          <Input className="h-7 text-sm w-64 mt-1" placeholder={t("assess.prosthesisSystem")} value={g.previousProsthesisSystemDetail} onChange={(e) => setG({ previousProsthesisSystemDetail: e.target.value })} />
                         )}
                       </PfRow>
                     )}
                   </>}
-                  <PfRow label="هل يستطيع الحفاظ على توازنه على جانب واحد فقط؟">
+                  <PfRow label={t("assess.balanceOneSide")}>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">لا</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
                       <Switch checked={sf.canBalanceOneSide} onCheckedChange={(v) => setS({ canBalanceOneSide: v })} />
-                      <span className="text-sm text-muted-foreground">نعم</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                     </div>
                   </PfRow>
-                  <PfRow label="هل يستخدم المريض رباط ضاغط؟">
+                  <PfRow label={t("assess.compressionBandage")}>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">لا</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
                       <Switch checked={sf.usesCompressionBandage} onCheckedChange={(v) => setS({ usesCompressionBandage: v })} />
-                      <span className="text-sm text-muted-foreground">نعم</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                     </div>
                   </PfRow>
                   {showShared && <>
-                    <PfRow label="الحالة الطبيعية">
-                      <PfSq checked={sf.jointsRangeOfMotion === "ACTIVE"} label="نشط" onClick={() => setS({ jointsRangeOfMotion: "ACTIVE" })} />
-                      <PfSq checked={sf.jointsRangeOfMotion === "SEDENTARY"} label="خامل" onClick={() => setS({ jointsRangeOfMotion: "SEDENTARY" })} />
+                    <PfRow label={t("assess.normalState")}>
+                      <PfSq checked={sf.jointsRangeOfMotion === "ACTIVE"} label={t("assess.active")} onClick={() => setS({ jointsRangeOfMotion: "ACTIVE" })} />
+                      <PfSq checked={sf.jointsRangeOfMotion === "SEDENTARY"} label={t("assess.inactive")} onClick={() => setS({ jointsRangeOfMotion: "SEDENTARY" })} />
                     </PfRow>
-                    <PfRow label="مستوى النشاط">
+                    <PfRow label={t("assess.activityLevel")}>
                       {["K0","K1","K2","K3","K4"].map((k) => (
                         <PfSq key={k} checked={sf.activityLevel === k} label={k} onClick={() => setS({ activityLevel: k })} />
                       ))}
@@ -5108,26 +5121,26 @@ export default function ProstheticsCasePage() {
             };
 
             return (
-              <Section title="تقييم الطرف العلوي" action={upperSaved ? <SavedBadge /> : undefined}>
+              <Section title={t("assess.upperTitle")} action={upperSaved ? <SavedBadge /> : undefined}>
                 <fieldset disabled={upperSaved} className="contents">
                 <div className="divide-y divide-border/30">
 
                   {/* جانب البتر */}
-                  <PfRow label="جانب البتر">
-                    <PfSq checked={f.amputationSide === "RIGHT"} label="يمين" onClick={() => set({ amputationSide: "RIGHT" })} />
-                    <PfSq checked={f.amputationSide === "LEFT"} label="يسار" onClick={() => set({ amputationSide: "LEFT" })} />
-                    <PfSq checked={f.amputationSide === "BILATERAL"} label="ثنائي الاطراف" onClick={() => set({ amputationSide: "BILATERAL" })} />
+                  <PfRow label={t("assess.side")}>
+                    <PfSq checked={f.amputationSide === "RIGHT"} label={t("assess.right")} onClick={() => set({ amputationSide: "RIGHT" })} />
+                    <PfSq checked={f.amputationSide === "LEFT"} label={t("assess.left")} onClick={() => set({ amputationSide: "LEFT" })} />
+                    <PfSq checked={f.amputationSide === "BILATERAL"} label={t("assess.bilateral")} onClick={() => set({ amputationSide: "BILATERAL" })} />
                   </PfRow>
 
                   {/* أسئلة خاصة بالجانب — تُعرض مرتين عند الثنائي */}
                   {isBilateral ? (
                     <div className="grid grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
                       <div className="divide-y divide-border/30 border-l border-border/30 pl-4">
-                        <PfDivider label="يمين" />
+                        <PfDivider label={t("assess.right")} />
                         {renderSideBlock(upperAssessForm, setUpperAssessForm, true)}
                       </div>
                       <div className="divide-y divide-border/30">
-                        <PfDivider label="يسار" />
+                        <PfDivider label={t("assess.left")} />
                         {renderSideBlock(upperAssessFormLeft, setUpperAssessFormLeft)}
                       </div>
                     </div>
@@ -5148,15 +5161,15 @@ export default function ProstheticsCasePage() {
             const f = upperAssessForm;
             const set = (patch: Partial<typeof upperAssessForm>) => setUpperAssessForm((prev) => ({ ...prev, ...patch }));
             const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
-            const groups = [...new Set(UPPER_ROM_MOVES.map((m) => m.group))];
+            const groups = [...new Set(UPPER_ROM_MOVES.map((m) => m.groupKey))];
             return (
-              <Section title="تقييم قوة حركة العضلات" action={upperSaved ? <SavedBadge /> : undefined}>
+              <Section title={t("assess.muscleTitle")} action={upperSaved ? <SavedBadge /> : undefined}>
                 <fieldset disabled={upperSaved} className="contents">
                 <div className="divide-y divide-border/30">
                   {groups.map((group) => (
-                    <PfRow key={group} label={group}>
+                    <PfRow key={group} label={t(`assess.rom.${group}`)}>
                       <div className="flex flex-col gap-2 w-full">
-                        {UPPER_ROM_MOVES.filter((m) => m.group === group).map((m) => {
+                        {UPPER_ROM_MOVES.filter((m) => m.groupKey === group).map((m) => {
                           const entry = f.romData[m.key] ?? { selected: false };
                           return (
                             <div key={m.key} className="flex items-center gap-3 flex-wrap">
@@ -5165,7 +5178,7 @@ export default function ProstheticsCasePage() {
                                   checked={entry.selected}
                                   onChange={() => setRom(m.key, { ...entry, selected: !entry.selected })}
                                 />
-                                <span className="text-sm">{m.label}</span>
+                                <span className="text-sm">{t(`assess.rom.${m.labelKey}`)}</span>
                               </label>
                               {m.hasGrade && entry.selected && (
                                 <div className="flex gap-1 flex-wrap">
@@ -5187,7 +5200,7 @@ export default function ProstheticsCasePage() {
                     <div className="pt-3">
                       <Button onClick={handleSaveUpperAll} disabled={updateCase.isPending || submitAssessmentUpper.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                         {(updateCase.isPending || submitAssessmentUpper.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ تقييم الطرف العلوي
+                        {t("assess.saveUpper")}
                       </Button>
                     </div>
                   )}
@@ -5217,38 +5230,38 @@ export default function ProstheticsCasePage() {
                 <>
                   {showTopFields && (
                     <>
-                      <PfRow label="ما هو طول الجذمور في البتر فوق الركبة وتحت الركبة">
+                      <PfRow label={t("assess.limbLengthLower")}>
                         {[
-                          ["LONG", "طويل"],
-                          ["MEDIUM", "وسط"],
-                          ["SHORT", "قصير"],
-                          ["VERY_SHORT", "قصير جداً"],
+                          ["LONG", "long"],
+                          ["MEDIUM", "medium"],
+                          ["SHORT", "short"],
+                          ["VERY_SHORT", "veryShort"],
                         ].map(([val, lbl]) => (
                           <PfSq
                             key={val}
                             checked={sf.residualLimbLength === val}
-                            label={lbl}
+                            label={t(`assess.${lbl}`)}
                             onClick={() => setS({ residualLimbLength: val })}
                           />
                         ))}
                       </PfRow>
-                      <PfRow label="شكل الطرف المتبقي">
+                      <PfRow label={t("assess.limbShape")}>
                         {[
-                          ["BONY", "عظمي"],
-                          ["SOFT", "لين"],
-                          ["NORMAL", "طبيعي"],
-                          ["CONICAL_BONY", "عظمي مخروطي"],
-                          ["CONICAL_SOFT", "لين مخروطي"],
+                          ["BONY", "shapeCylindrical"],
+                          ["SOFT", "shapeSoft"],
+                          ["NORMAL", "skin.NORMAL"],
+                          ["CONICAL_BONY", "shapeBonyConical"],
+                          ["CONICAL_SOFT", "shapeSoftConical"],
                         ].map(([val, lbl]) => (
                           <PfSq
                             key={val}
                             checked={sf.residualLimbShape === val}
-                            label={lbl}
+                            label={t(`assess.${lbl}`)}
                             onClick={() => setS({ residualLimbShape: val })}
                           />
                         ))}
                       </PfRow>
-                      <PfRow label="ملاحظة حول مستوى البتر">
+                      <PfRow label={t("assess.levelNote")}>
                         <Textarea
                           rows={3}
                           className="text-sm w-full resize-none"
@@ -5260,24 +5273,24 @@ export default function ProstheticsCasePage() {
                       </PfRow>
                     </>
                   )}
-                  <PfRow label="الألم والحساسية">
+                  <PfRow label={t("assess.painSection")}>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">
-                        غير موجود
+                        {t("assess.absent")}
                       </span>
                       <Switch
                         checked={sf.painPresent === true}
                         onCheckedChange={(v) => setS({ painPresent: v })}
                       />
                       <span className="text-sm text-muted-foreground">
-                        موجود
+                        {t("assess.present")}
                       </span>
                     </div>
                     {sf.painPresent && (
                       <>
                         <Input
                           className="h-7 text-sm w-64 mt-1"
-                          placeholder="المنطقة..."
+                          placeholder={t("assess.painArea")}
                           value={sf.painArea}
                           onChange={(e) => setS({ painArea: e.target.value })}
                         />
@@ -5291,17 +5304,17 @@ export default function ProstheticsCasePage() {
                       </>
                     )}
                   </PfRow>
-                  <PfRow label="ألم وهمي">
+                  <PfRow label={t("assess.phantomPain")}>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">
-                        غير موجود
+                        {t("assess.absent")}
                       </span>
                       <Switch
                         checked={sf.phantomPainPresent === true}
                         onCheckedChange={(v) => setS({ phantomPainPresent: v })}
                       />
                       <span className="text-sm text-muted-foreground">
-                        موجود
+                        {t("assess.present")}
                       </span>
                     </div>
                     {sf.phantomPainPresent && (
@@ -5314,19 +5327,19 @@ export default function ProstheticsCasePage() {
                       </div>
                     )}
                   </PfRow>
-                  <PfRow label="نوع الألم">
+                  <PfRow label={t("assess.painType")}>
                     {[
-                      ["NUMBNESS", "خدر"],
-                      ["DULL_ACHE", "ألم خفيف"],
-                      ["HOT_BURNING", "حارق"],
-                      ["SHARP_STABBING", "حاد"],
-                      ["PINS", "واخز"],
-                      ["OTHER", "أخر"],
+                      ["NUMBNESS", "pain.NUMBNESS"],
+                      ["DULL_ACHE", "pain.DULL_ACHE"],
+                      ["HOT_BURNING", "pain.HOT_BURNING"],
+                      ["SHARP_STABBING", "pain.SHARP_STABBING"],
+                      ["PINS", "pain.PINS"],
+                      ["OTHER", "pain.OTHER"],
                     ].map(([val, lbl]) => (
                       <PfSq
                         key={val}
                         checked={sf.painTypes.includes(val)}
-                        label={lbl}
+                        label={t(`assess.${lbl}`)}
                         onClick={() =>
                           setS({ painTypes: togS(sf.painTypes, val) })
                         }
@@ -5335,7 +5348,7 @@ export default function ProstheticsCasePage() {
                     {sf.painTypes.includes("OTHER") && (
                       <Input
                         className="h-7 text-sm w-52 mt-1"
-                        placeholder="وصف..."
+                        placeholder={t("assess.describe")}
                         value={sf.painTypeOtherDetail}
                         onChange={(e) =>
                           setS({ painTypeOtherDetail: e.target.value })
@@ -5343,53 +5356,53 @@ export default function ProstheticsCasePage() {
                       />
                     )}
                   </PfRow>
-                  <PfRow label="النوروم العصبي">
+                  <PfRow label={t("assess.neuroma")}>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">
-                        غير موجود
+                        {t("assess.absent")}
                       </span>
                       <Switch
                         checked={sf.neuromaPalpable === true}
                         onCheckedChange={(v) => setS({ neuromaPalpable: v })}
                       />
                       <span className="text-sm text-muted-foreground">
-                        موجود
+                        {t("assess.present")}
                       </span>
                     </div>
                   </PfRow>
-                  <PfRow label="قابلية التحميل على الجذمور">
+                  <PfRow label={t("assess.loadTolerance")}>
                     {[
-                      ["PALPABLE", "قابل للمس"],
-                      ["WEIGHT_BEARING", "قابل لتحمل الوزن"],
-                      ["NON_WEIGHT_BEARING", "غير قابل لتحمل الوزن"],
-                      ["NOT_PALPABLE", "غير قابل للمس"],
+                      ["PALPABLE", "touchable"],
+                      ["WEIGHT_BEARING", "weightBearing"],
+                      ["NON_WEIGHT_BEARING", "notWeightBearing"],
+                      ["NOT_PALPABLE", "notTouchable"],
                     ].map(([val, lbl]) => (
                       <PfSq
                         key={val}
                         checked={sf.loadTolerance === val}
-                        label={lbl}
+                        label={t(`assess.${lbl}`)}
                         onClick={() => setS({ loadTolerance: val })}
                       />
                     ))}
                   </PfRow>
                   {sf.loadTolerance === "WEIGHT_BEARING" && (
-                    <PfRow label="إذا كان قابل لتحمل الوزن">
+                    <PfRow label={t("assess.ifWeightBearing")}>
                       {[
-                        ["FULL", "كامل"],
-                        ["HIGH", "مرتفع"],
-                        ["MEDIUM", "متوسط"],
-                        ["LOW", "منخفض"],
+                        ["FULL", "full"],
+                        ["HIGH", "high"],
+                        ["MEDIUM", "mediumLevel"],
+                        ["LOW", "low"],
                       ].map(([val, lbl]) => (
                         <PfSq
                           key={val}
                           checked={sf.weightBearingLevel === val}
-                          label={lbl}
+                          label={t(`assess.${lbl}`)}
                           onClick={() => setS({ weightBearingLevel: val })}
                         />
                       ))}
                     </PfRow>
                   )}
-                  <PfRow label="ملاحظات">
+                  <PfRow label={t("assess.notes")}>
                     <Textarea
                       rows={2}
                       className="text-sm w-full"
@@ -5397,93 +5410,93 @@ export default function ProstheticsCasePage() {
                       onChange={(e) => setS({ notes: e.target.value })}
                     />
                   </PfRow>
-                  <PfRow label="المظهر العام للجلد">
+                  <PfRow label={t("assess.skinAppearanceFull")}>
                     {[
-                      ["NORMAL", "طبيعي"],
-                      ["PALE", "شاحب"],
-                      ["DRY", "جاف"],
-                      ["INFLAMED", "ملتهب"],
-                      ["PEELING", "متقشر"],
-                      ["OOZING", "نازّ"],
+                      ["NORMAL", "skin.NORMAL"],
+                      ["PALE", "skin.PALE"],
+                      ["DRY", "skin.DRY"],
+                      ["INFLAMED", "skin.INFLAMED"],
+                      ["PEELING", "skin.PEELING"],
+                      ["OOZING", "skin.OOZING"],
                     ].map(([val, lbl]) => (
                       <PfSq
                         key={val}
                         checked={sf.skinAppearance.includes(val)}
-                        label={lbl}
+                        label={t(`assess.${lbl}`)}
                         onClick={() =>
                           setS({ skinAppearance: togS(sf.skinAppearance, val) })
                         }
                       />
                     ))}
                   </PfRow>
-                  <PfRow label="لون البشرة">
+                  <PfRow label={t("assess.skinColor")}>
                     {[
-                      ["NORMAL", "طبيعي"],
-                      ["PALE", "شاحب"],
-                      ["YELLOWISH", "مصفر"],
-                      ["ERYTHEMATOUS", "محمر"],
-                      ["CYANOTIC", "مزرق"],
+                      ["NORMAL", "skin.NORMAL"],
+                      ["PALE", "skin.PALE"],
+                      ["YELLOWISH", "color.YELLOWISH"],
+                      ["ERYTHEMATOUS", "color.ERYTHEMATOUS"],
+                      ["CYANOTIC", "color.CYANOTIC"],
                     ].map(([val, lbl]) => (
                       <PfSq
                         key={val}
                         checked={sf.skinColor.includes(val)}
-                        label={lbl}
+                        label={t(`assess.${lbl}`)}
                         onClick={() =>
                           setS({ skinColor: togS(sf.skinColor, val) })
                         }
                       />
                     ))}
                   </PfRow>
-                  <PfRow label="درجة حرارة الجسم">
+                  <PfRow label={t("assess.bodyTemp")}>
                     {[
-                      ["NORMAL", "طبيعي"],
-                      ["COLD", "بارد"],
-                      ["HOT", "حار"],
+                      ["NORMAL", "skin.NORMAL"],
+                      ["COLD", "temp.COLD"],
+                      ["HOT", "temp.HOT"],
                     ].map(([val, lbl]) => (
                       <PfSq
                         key={val}
                         checked={sf.skinTemperature === val}
-                        label={lbl}
+                        label={t(`assess.${lbl}`)}
                         onClick={() => setS({ skinTemperature: val })}
                       />
                     ))}
                   </PfRow>
-                  <PfRow label="الطعوم الجلدية">
+                  <PfRow label={t("assess.grafts")}>
                     <PfSq
                       checked={sf.hasSkinGrafts}
-                      label="يوجد طعم جلدي"
+                      label={t("assess.hasGraft")}
                       onClick={() => setS({ hasSkinGrafts: !sf.hasSkinGrafts })}
                     />
                     {sf.hasSkinGrafts && (
                       <Input
                         className="h-7 text-sm w-64 mt-1"
-                        placeholder="منطقة الطعم..."
+                        placeholder={t("assess.graftArea")}
                         value={sf.graftArea}
                         onChange={(e) => setS({ graftArea: e.target.value })}
                       />
                     )}
                   </PfRow>
-                  <PfRow label="حالة الندبة">
+                  <PfRow label={t("assess.scarCondition")}>
                     {[
-                      ["HEALED", "ملتئمة"],
-                      ["INFLAMED", "ملتهبة"],
-                      ["FLEXIBLE", "مرنة"],
-                      ["HEALED_WITH_PINS", "ملتئمة مع ترس"],
-                      ["DRY", "جافة"],
-                      ["OPEN", "مفتوحة"],
-                      ["OOZING", "نازّة"],
+                      ["HEALED", "scar.HEALED"],
+                      ["INFLAMED", "scar.INFLAMED"],
+                      ["FLEXIBLE", "scar.FLEXIBLE"],
+                      ["HEALED_WITH_PINS", "scar.HEALED_WITH_PINS"],
+                      ["DRY", "scar.DRY"],
+                      ["OPEN", "scar.OPEN"],
+                      ["OOZING", "scar.OOZING"],
                     ].map(([val, lbl]) => (
                       <PfSq
                         key={val}
                         checked={sf.scarCondition.includes(val)}
-                        label={lbl}
+                        label={t(`assess.${lbl}`)}
                         onClick={() =>
                           setS({ scarCondition: togS(sf.scarCondition, val) })
                         }
                       />
                     ))}
                   </PfRow>
-                  <PfRow label="حالة الصحة العامة">
+                  <PfRow label={t("assess.generalHealth")}>
                     <Textarea
                       rows={3}
                       className="text-sm w-full resize-none"
@@ -5493,7 +5506,7 @@ export default function ProstheticsCasePage() {
                       }
                     />
                   </PfRow>
-                  <PfRow label="حالة الأطراف الأخرى">
+                  <PfRow label={t("assess.otherLimb")}>
                     <Textarea
                       rows={3}
                       className="text-sm w-full resize-none"
@@ -5503,23 +5516,23 @@ export default function ProstheticsCasePage() {
                       }
                     />
                   </PfRow>
-                  <PfRow label="هل يستخدم المريض طرفاً صناعياً حالياً">
+                  <PfRow label={t("assess.usesProsthesisNow")}>
                     <div className="flex flex-col gap-1.5 w-full">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">لا</span>
+                        <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
                         <Switch checked={g.currentlyUsingProsthesis === true} onCheckedChange={(v) => setG({ currentlyUsingProsthesis: v })} />
-                        <span className="text-sm text-muted-foreground">نعم</span>
+                        <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                       </div>
                       {g.currentlyUsingProsthesis === true && (
-                        <Input className="h-7 text-sm w-64" placeholder="نوع الطرف الصناعي..." value={sf.prostheticLimbType} onChange={(e) => setS({ prostheticLimbType: e.target.value })} />
+                        <Input className="h-7 text-sm w-64" placeholder={t("assess.prosthesisType")} value={sf.prostheticLimbType} onChange={(e) => setS({ prostheticLimbType: e.target.value })} />
                       )}
                     </div>
                   </PfRow>
                   {g.currentlyUsingProsthesis === false && (
-                    <PfRow label="إذا كانت الإجابة لا هل استخدمه سابقاً">
+                    <PfRow label={t("assess.usedBeforeIfNo")}>
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-muted-foreground">
-                          لا
+                          {t("assess.no")}
                         </span>
                         <Switch
                           checked={g.previouslyUsedProsthesis === true}
@@ -5528,13 +5541,13 @@ export default function ProstheticsCasePage() {
                           }
                         />
                         <span className="text-sm text-muted-foreground">
-                          نعم
+                          {t("assess.yes")}
                         </span>
                       </div>
                       {g.previouslyUsedProsthesis === true && (
                         <Input
                           className="h-7 text-sm w-64 mt-1"
-                          placeholder="يرجى تحديد نظام الطرف الصناعي..."
+                          placeholder={t("assess.prosthesisSystemPlease")}
                           value={g.previousProsthesisSystemDetail}
                           onChange={(e) =>
                             setG({
@@ -5545,21 +5558,21 @@ export default function ProstheticsCasePage() {
                       )}
                     </PfRow>
                   )}
-                  <PfRow label="هل يستخدم وسائل مساعدة في عملية التنقل">
+                  <PfRow label={t("assess.assistiveDevices")}>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">لا</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
                       <Switch
                         checked={sf.usesAssistiveDevices === true}
                         onCheckedChange={(v) =>
                           setS({ usesAssistiveDevices: v })
                         }
                       />
-                      <span className="text-sm text-muted-foreground">نعم</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                     </div>
                     {sf.usesAssistiveDevices && (
                       <Input
                         className="h-7 text-sm w-64 mt-1"
-                        placeholder="نوع الوسيلة المساعدة..."
+                        placeholder={t("assess.assistiveType")}
                         value={sf.assistiveDeviceTypes}
                         onChange={(e) =>
                           setS({ assistiveDeviceTypes: e.target.value })
@@ -5567,33 +5580,33 @@ export default function ProstheticsCasePage() {
                       />
                     )}
                   </PfRow>
-                  <PfRow label="هل يمكنه صعود ونزول درج">
+                  <PfRow label={t("assess.stairs")}>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">لا</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
                       <Switch
                         checked={sf.canClimbStairs === true}
                         onCheckedChange={(v) => setS({ canClimbStairs: v })}
                       />
-                      <span className="text-sm text-muted-foreground">نعم</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                     </div>
                   </PfRow>
-                  <PfRow label="هل يستطيع الحفاظ على توازنه على جانب واحد فقط">
+                  <PfRow label={t("assess.balanceOneSide")}>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">لا</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
                       <Switch
                         checked={sf.canBalanceOneSide === true}
                         onCheckedChange={(v) => setS({ canBalanceOneSide: v })}
                       />
-                      <span className="text-sm text-muted-foreground">نعم</span>
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
                     </div>
                   </PfRow>
                   {!ampTypes.includes("UPPER") && <>
-                    <PfRow label="الحالة الطبيعية">
-                      {[["ACTIVE", "نشط"], ["SEDENTARY", "خامل"]].map(([val, lbl]) => (
-                        <PfSq key={val} checked={sf.jointsRangeOfMotion === val} label={lbl} onClick={() => setS({ jointsRangeOfMotion: val })} />
+                    <PfRow label={t("assess.normalState")}>
+                      {[["ACTIVE", "active"], ["SEDENTARY", "inactive"]].map(([val, lbl]) => (
+                        <PfSq key={val} checked={sf.jointsRangeOfMotion === val} label={t(`assess.${lbl}`)} onClick={() => setS({ jointsRangeOfMotion: val })} />
                       ))}
                     </PfRow>
-                    <PfRow label="مستوى النشاط">
+                    <PfRow label={t("assess.activityLevel")}>
                       {["K0", "K1", "K2", "K3", "K4"].map((k) => (
                         <PfSq key={k} checked={sf.activityLevel === k} label={k} onClick={() => setS({ activityLevel: k })} />
                       ))}
@@ -5604,39 +5617,39 @@ export default function ProstheticsCasePage() {
             };
 
             return (
-              <Section title="تقييم الطرف السفلي" action={lowerSaved ? <SavedBadge /> : undefined}>
+              <Section title={t("assess.lowerTitle")} action={lowerSaved ? <SavedBadge /> : undefined}>
                 <fieldset disabled={lowerSaved} className="contents">
                 <div className="divide-y divide-border/30">
 
-                  <PfRow label="جانب البتر">
-                    <PfSq checked={f.amputationSide === "RIGHT"} label="يمين" onClick={() => set({ amputationSide: "RIGHT" })} />
-                    <PfSq checked={f.amputationSide === "LEFT"} label="يسار" onClick={() => set({ amputationSide: "LEFT" })} />
-                    <PfSq checked={f.amputationSide === "BILATERAL"} label="ثنائي الأطراف" onClick={() => set({ amputationSide: "BILATERAL" })} />
+                  <PfRow label={t("assess.side")}>
+                    <PfSq checked={f.amputationSide === "RIGHT"} label={t("assess.right")} onClick={() => set({ amputationSide: "RIGHT" })} />
+                    <PfSq checked={f.amputationSide === "LEFT"} label={t("assess.left")} onClick={() => set({ amputationSide: "LEFT" })} />
+                    <PfSq checked={f.amputationSide === "BILATERAL"} label={t("assess.bilateral")} onClick={() => set({ amputationSide: "BILATERAL" })} />
                   </PfRow>
 
                   {!isBilateral && (
                     <>
-                      <PfRow label="ما هو طول الجذمور في البتر فوق الركبة وتحت الركبة">
-                        {[["LONG","طويل"],["MEDIUM","وسط"],["SHORT","قصير"],["VERY_SHORT","قصير جداً"]].map(([val, lbl]) => (
-                          <PfSq key={val} checked={f.residualLimbLength === val} label={lbl} onClick={() => set({ residualLimbLength: val })} />
+                      <PfRow label={t("assess.limbLengthLower")}>
+                        {[["LONG","long"],["MEDIUM","medium"],["SHORT","short"],["VERY_SHORT","veryShort"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={f.residualLimbLength === val} label={t(`assess.${lbl}`)} onClick={() => set({ residualLimbLength: val })} />
                         ))}
                       </PfRow>
-                      <PfRow label="شكل الطرف المتبقي">
-                        {[["BONY","عظمي"],["SOFT","لين"],["NORMAL","طبيعي"],["CONICAL_BONY","عظمي مخروطي"],["CONICAL_SOFT","لين مخروطي"]].map(([val, lbl]) => (
-                          <PfSq key={val} checked={f.residualLimbShape === val} label={lbl} onClick={() => set({ residualLimbShape: val })} />
+                      <PfRow label={t("assess.limbShape")}>
+                        {[["BONY","shapeCylindrical"],["SOFT","shapeSoft"],["NORMAL","skin.NORMAL"],["CONICAL_BONY","shapeBonyConical"],["CONICAL_SOFT","shapeSoftConical"]].map(([val, lbl]) => (
+                          <PfSq key={val} checked={f.residualLimbShape === val} label={t(`assess.${lbl}`)} onClick={() => set({ residualLimbShape: val })} />
                         ))}
                       </PfRow>
-                      <PfRow label="ملاحظة حول مستوى البتر">
+                      <PfRow label={t("assess.levelNote")}>
                         <Textarea rows={3} className="text-sm w-full resize-none" value={f.amputationLevelNote} onChange={(e) => set({ amputationLevelNote: e.target.value })} />
                       </PfRow>
                     </>
                   )}
 
-                  <PfRow label="تاريخ البتر">
+                  <PfRow label={t("assess.amputationDate")}>
                     <div className="flex gap-2 items-center">
                       <Input
                         type="number"
-                        placeholder="السنة *"
+                        placeholder={t("assess.year")}
                         min={1900} max={2100}
                         className="h-7 text-sm w-24"
                         value={g.amputationYear}
@@ -5644,37 +5657,37 @@ export default function ProstheticsCasePage() {
                       />
                       <Select value={g.amputationMonth} onValueChange={(v) => setG({ amputationMonth: v })}>
                         <SelectTrigger className="h-7 text-sm w-32">
-                          <SelectValue placeholder="الشهر" />
+                          <SelectValue placeholder={t("assess.month")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="0">— بدون شهر —</SelectItem>
-                          {ARABIC_MONTHS.map((mn, i) => (
-                            <SelectItem key={i + 1} value={String(i + 1)}>{mn}</SelectItem>
+                          <SelectItem value="0">{t("assess.noMonth")}</SelectItem>
+                          {MONTH_NUMBERS.map((i) => (
+                            <SelectItem key={i} value={String(i)}>{tMonth(String(i))}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                   </PfRow>
-                  <PfRow label="سبب البتر">
-                    {[["WAR_INJURY","إصابة حرب"],["TRAFFIC_ACCIDENT","حادث مرور"],["DIABETES","داء السكري"],["VASCULAR_DISEASE","مرض الأوعية"],["CONGENITAL","خلقي"],["INFECTION","عدوى"],["TUMOR","ورم"],["WORK_INJURY","إصابة عمل"],["OTHER","أخرى"]].map(([val, lbl]) => (
-                      <PfSq key={val} checked={g.amputationCause === val} label={lbl} onClick={() => setG({ amputationCause: val })} />
+                  <PfRow label={t("assess.amputationCause")}>
+                    {[["WAR_INJURY","cause.WAR"],["TRAFFIC_ACCIDENT","cause.TRAFFIC"],["DIABETES","cause.DIABETES"],["VASCULAR_DISEASE","cause.VASCULAR"],["CONGENITAL","cause.CONGENITAL"],["INFECTION","cause.INFECTION"],["TUMOR","cause.TUMOR"],["WORK_INJURY","cause.WORK"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
+                      <PfSq key={val} checked={g.amputationCause === val} label={t(`assess.${lbl}`)} onClick={() => setG({ amputationCause: val })} />
                     ))}
                     {g.amputationCause === "OTHER" && (
-                      <Input className="h-7 text-sm w-52 mt-1" placeholder="تحديد السبب..." value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
+                      <Input className="h-7 text-sm w-52 mt-1" placeholder={t("assess.causeSpecify")} value={g.amputationCauseOtherDetail} onChange={(e) => setG({ amputationCauseOtherDetail: e.target.value })} />
                     )}
                   </PfRow>
-                  <PfRow label="القصة السريرية">
+                  <PfRow label={t("assess.clinicalHistory")}>
                     <Textarea rows={2} className="text-sm w-full" value={g.clinicalHistory} onChange={(e) => setG({ clinicalHistory: e.target.value })} />
                   </PfRow>
 
                   {isBilateral ? (
                     <div className="grid grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
                       <div className="divide-y divide-border/30 border-l border-border/30 pl-4">
-                        <PfDivider label="يمين" />
+                        <PfDivider label={t("assess.right")} />
                         {renderSideBlock(lowerAssessForm, setLowerAssessForm, true)}
                       </div>
                       <div className="divide-y divide-border/30">
-                        <PfDivider label="يسار" />
+                        <PfDivider label={t("assess.left")} />
                         {renderSideBlock(lowerAssessFormLeft, setLowerAssessFormLeft, true)}
                       </div>
                     </div>
@@ -5694,15 +5707,15 @@ export default function ProstheticsCasePage() {
             const f = lowerAssessForm;
             const set = (patch: Partial<typeof lowerAssessForm>) => setLowerAssessForm((prev) => ({ ...prev, ...patch }));
             const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
-            const groups = [...new Set(LOWER_ROM_MOVES.map((m) => m.group))];
+            const groups = [...new Set(LOWER_ROM_MOVES.map((m) => m.groupKey))];
             return (
-              <Section title="تقييم قوة حركة العضلات" action={lowerSaved ? <SavedBadge /> : undefined}>
+              <Section title={t("assess.muscleTitle")} action={lowerSaved ? <SavedBadge /> : undefined}>
                 <fieldset disabled={lowerSaved} className="contents">
                 <div className="divide-y divide-border/30">
                   {groups.map((group) => (
-                    <PfRow key={group} label={group}>
+                    <PfRow key={group} label={t(`assess.rom.${group}`)}>
                       <div className="flex flex-col gap-2 w-full">
-                        {LOWER_ROM_MOVES.filter((m) => m.group === group).map((m) => {
+                        {LOWER_ROM_MOVES.filter((m) => m.groupKey === group).map((m) => {
                           const entry = f.romData[m.key] ?? { selected: false };
                           return (
                             <div key={m.key} className="flex items-center gap-3 flex-wrap">
@@ -5711,7 +5724,7 @@ export default function ProstheticsCasePage() {
                                   checked={entry.selected}
                                   onChange={() => setRom(m.key, { ...entry, selected: !entry.selected })}
                                 />
-                                <span className="text-sm">{m.label}</span>
+                                <span className="text-sm">{t(`assess.rom.${m.labelKey}`)}</span>
                               </label>
                               {m.hasGrade && entry.selected && (
                                 <div className="flex gap-1 flex-wrap">
@@ -5729,14 +5742,14 @@ export default function ProstheticsCasePage() {
                       </div>
                     </PfRow>
                   ))}
-                  <PfRow label="ملاحظات">
+                  <PfRow label={t("assess.notes")}>
                     <Textarea rows={2} className="text-sm w-full" value={f.muscleMotionNotes} onChange={(e) => set({ muscleMotionNotes: e.target.value })} />
                   </PfRow>
                   {!lowerSaved && (
                     <div className="pt-3">
                       <Button onClick={handleSubmitLowerAssessment} disabled={submitAssessmentLower.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                         {submitAssessmentLower.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ تقييم الطرف السفلي
+                        {t("assess.saveLower")}
                       </Button>
                     </div>
                   )}
@@ -5754,29 +5767,29 @@ export default function ProstheticsCasePage() {
               className="w-full"
             >
               {(submitAssessmentUpper.isPending || submitAssessmentLower.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-              إرسال التقييم للجنة
+              {t("assess.sendToCommittee")}
             </Button>
           )}
           {/* ── صور البتر ── */}
           <Section
-            title={`صور البتر${attachments.length > 0 ? ` (${attachments.length})` : ""}`}
+            title={attachments.length > 0 ? t("assess.attachmentsCount", { count: attachments.length }) : t("assess.attachments")}
             action={
               <>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button size="sm" variant="outline" disabled={uploadAttachment.isPending}>
                       {uploadAttachment.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Plus className="h-4 w-4 ml-1" />}
-                      رفع صورة
+                      {t("assess.uploadPhoto")}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => attachCameraRef.current?.click()}>
                       <Camera className="h-4 w-4 ml-2" />
-                      التقاط من الكاميرا
+                      {t("assess.fromCamera")}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => attachFileRef.current?.click()}>
                       <Plus className="h-4 w-4 ml-2" />
-                      اختيار من الملفات
+                      {t("assess.fromFiles")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -5807,7 +5820,7 @@ export default function ProstheticsCasePage() {
             }
           >
             {attachments.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">لا توجد صور مرفقة</p>
+              <p className="text-center py-8 text-muted-foreground text-sm">{t("assess.noAttachments")}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {attachments.map((att) => (
@@ -5828,31 +5841,40 @@ export default function ProstheticsCasePage() {
         <TabsContent value="committee_review" className="mt-4 space-y-4" dir={isRtl ? "rtl" : "ltr"}>
 
           {/* أعضاء لجنة القبول وتقييماتهم */}
-          <Section title="أعضاء لجنة القبول وتقييماتهم">
+          <Section title={t("committee.membersTitle")}>
             <div className="space-y-5 divide-y divide-border/40">
 
               {/* فني الأطراف الصناعية */}
               <div className="space-y-2 pt-2 first:pt-0">
-                <Label className="font-semibold">تقييم فني الأطراف الصناعية</Label>
-                <Textarea rows={3} value={prosthetistOpinion} onChange={(e) => setProsthetistOpinion(e.target.value)} placeholder="رأي فني الأطراف الصناعية..." />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="font-semibold">{t("committee.prosthetistOpinion")}</Label>
+                  {staffNamesOf("prosthetistIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("prosthetistIds")}</span>}
+                </div>
+                <Textarea rows={3} value={prosthetistOpinion} onChange={(e) => setProsthetistOpinion(e.target.value)} placeholder={t("committee.prosthetistOpinionPlaceholder")} />
               </div>
 
               {/* المعالج الفيزيائي */}
               <div className="space-y-2 pt-4">
-                <Label className="font-semibold">تقييم المعالج الفيزيائي</Label>
-                <Textarea rows={3} value={physioOpinion} onChange={(e) => setPhysioOpinion(e.target.value)} placeholder="رأي المعالج الفيزيائي..." />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="font-semibold">{t("committee.physioOpinion")}</Label>
+                  {staffNamesOf("physiotherapistIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("physiotherapistIds")}</span>}
+                </div>
+                <Textarea rows={3} value={physioOpinion} onChange={(e) => setPhysioOpinion(e.target.value)} placeholder={t("committee.physioOpinionPlaceholder")} />
               </div>
 
               {/* الطبيب المختص */}
               <div className="space-y-2 pt-4">
-                <Label className="font-semibold">رأي الطبيب المختص</Label>
-                <Textarea rows={3} value={doctorOpinion} onChange={(e) => setDoctorOpinion(e.target.value)} placeholder="رأي الطبيب المختص..." />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="font-semibold">{t("committee.doctorOpinion")}</Label>
+                  {staffNamesOf("supervisingDoctorIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("supervisingDoctorIds")}</span>}
+                </div>
+                <Textarea rows={3} value={doctorOpinion} onChange={(e) => setDoctorOpinion(e.target.value)} placeholder={t("committee.doctorOpinionPlaceholder")} />
               </div>
 
               {/* الخلاصة */}
               <div className="space-y-2 pt-4">
-                <Label className="font-semibold">الخلاصة <span className="text-destructive">*</span></Label>
-                <Textarea rows={3} value={decisionForm.finalSummary} onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))} placeholder="الخلاصة النهائية للجنة..." />
+                <Label className="font-semibold">{t("committee.summary")} <span className="text-destructive">*</span></Label>
+                <Textarea rows={3} value={decisionForm.finalSummary} onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))} placeholder={t("committee.summaryPlaceholder")} />
               </div>
 
               {c.status === "COMMITTEE_REVIEW" && (
@@ -5863,7 +5885,7 @@ export default function ProstheticsCasePage() {
                     disabled={submitOpinion.isPending}
                   >
                     {submitOpinion.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                    حفظ الآراء
+                    {t("committee.saveOpinions")}
                   </Button>
                 </div>
               )}
@@ -5871,14 +5893,14 @@ export default function ProstheticsCasePage() {
           </Section>
 
           {/* القرار النهائي */}
-          <Section title="القرار النهائي">
+          <Section title={t("committee.finalDecisionTitle")}>
             <div className="space-y-3">
               {/* هل المريض مناسب للطرف الصناعي؟ */}
               <div className="space-y-1.5">
-                <Label>هل المريض مناسب للطرف الصناعي؟</Label>
+                <Label>{t("committee.suitableQuestion")}</Label>
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">غير مناسب</span>
+                    <span className="text-sm text-muted-foreground">{t("committee.notSuitable")}</span>
                     <Switch
                       checked={committeeSuitForm.prosthesisSuitable === true}
                       onCheckedChange={(v) => setCommitteeSuitForm((f) => ({
@@ -5887,12 +5909,12 @@ export default function ProstheticsCasePage() {
                         proposedProsthesisType: v ? f.proposedProsthesisType : "",
                       }))}
                     />
-                    <span className="text-sm text-muted-foreground">مناسب</span>
+                    <span className="text-sm text-muted-foreground">{t("committee.suitable")}</span>
                   </div>
                   {committeeSuitForm.prosthesisSuitable === true && (
                     <Input
                       className="h-8 text-sm"
-                      placeholder="نوع الطرف الصناعي المقترح..."
+                      placeholder={t("committee.proposedTypePlaceholder")}
                       value={committeeSuitForm.proposedProsthesisType}
                       onChange={(e) => setCommitteeSuitForm((f) => ({ ...f, proposedProsthesisType: e.target.value }))}
                     />
@@ -5902,12 +5924,12 @@ export default function ProstheticsCasePage() {
               {(c.status === "COMMITTEE_REVIEW" || c.status === "COMMITTEE_APPROVED") && (
                 <>
                   <div className="pt-2">
-                    <p className="text-sm font-semibold mb-2">التوقيعات</p>
+                    <p className="text-sm font-semibold mb-2">{t("committee.signatures")}</p>
                     <div className="grid grid-cols-3 gap-3">
                       {(([
-                        { role: "DOCTOR" as const, label: "توقيع الطبيب" },
-                        { role: "PROSTHETIST" as const, label: "توقيع فني الأطراف" },
-                        { role: "PHYSIOTHERAPIST" as const, label: "توقيع المعالج الفيزيائي" },
+                        { role: "DOCTOR" as const, label: t("committee.signDoctor") },
+                        { role: "PROSTHETIST" as const, label: t("committee.signProsthetist") },
+                        { role: "PHYSIOTHERAPIST" as const, label: t("committee.signPhysio") },
                       ])).map(({ role, label }) => (
                         <ActionGuard key={role} permission={PERMISSIONS.CLINIC_PROSTHETICS.COMMITTEE_SIGN}>
                           <div className="space-y-1.5">
@@ -5925,7 +5947,7 @@ export default function ProstheticsCasePage() {
                                   className="text-xs text-destructive hover:underline"
                                   onClick={() => setCommitteeSigUrls((prev) => { const n = { ...prev }; delete n[role]; return n; })}
                                 >
-                                  إزالة
+                                  {t("committee.remove")}
                                 </button>
                               </div>
                             ) : (
@@ -5939,7 +5961,7 @@ export default function ProstheticsCasePage() {
                                   ? <Loader2 className="h-4 w-4 animate-spin" />
                                   : <span className="text-sm font-medium">{label}</span>
                                 }
-                                {!committeeSigLoading[role] && <span className="text-xs text-muted-foreground">رفع صورة</span>}
+                                {!committeeSigLoading[role] && <span className="text-xs text-muted-foreground">{t("committee.uploadImage")}</span>}
                               </Button>
                             )}
                           </div>
@@ -5949,7 +5971,7 @@ export default function ProstheticsCasePage() {
                   </div>
                   <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                     {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ القرار
+                    {t("committee.saveDecision")}
                   </Button>
                 </>
               )}

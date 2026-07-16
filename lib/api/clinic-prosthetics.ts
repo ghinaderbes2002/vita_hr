@@ -126,9 +126,10 @@ export interface MeasurementAssessment {
 
 export interface CreateProstheticsCaseDto {
   patientId: string;
-  amputationType?: AmputationType;
+  // Backend accepts a single value or an array for both of these.
+  amputationType?: AmputationType | AmputationType[];
   amputationSide?: AmputationSide;
-  amputationLevel?: string;
+  amputationLevel?: string | string[];
   amputationDate?: string;
   amputationCause?: AmputationCause | string;
   amputationCauseOtherDetail?: string;
@@ -740,10 +741,21 @@ export const clinicProstheticsApi = {
     const { data } = await apiClient.post(`/prosthetics/cases/${caseId}/final-delivery`, dto);
     return data?.data ?? data;
   },
-  // Patch only the fields you send.
+  // Patch only the fields you send. The record must be created first (POST);
+  // if it hasn't been (PATCH → 404), create it (an empty body copies the header
+  // and approved items from the trial delivery) and then apply the edits.
   updateFinalDelivery: async (caseId: string, dto: FinalDeliveryDto) => {
-    const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/final-delivery`, dto);
-    return data?.data ?? data;
+    const patch = async () => {
+      const { data } = await apiClient.patch(`/prosthetics/cases/${caseId}/final-delivery`, dto);
+      return data?.data ?? data;
+    };
+    try {
+      return await patch();
+    } catch (e: any) {
+      if (e?.response?.status !== 404) throw e;
+      await apiClient.post(`/prosthetics/cases/${caseId}/final-delivery`, {});
+      return await patch();
+    }
   },
 
   // ── Pro-016 Gait Analysis ─────────────────────────────────────────────────────

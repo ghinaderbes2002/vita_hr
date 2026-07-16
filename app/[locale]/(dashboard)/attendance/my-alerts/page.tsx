@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +32,17 @@ import { formatDate } from "@/lib/utils/date";
 // Only these alert types accept a justification per the backend rules —
 // MISSING_CLOCK_OUT and CONSECUTIVE_ABSENCE do not.
 const JUSTIFIABLE_TYPES = ["LATE", "EARLY_LEAVE", "ABSENT"];
+
+// The backend auto-rejects a justification submitted more than 7 days after the
+// alert was raised. Mirror that window so the employee gets a clear message.
+const JUSTIFY_WINDOW_DAYS = 7;
+const justifyWindowPassed = (alert: AttendanceAlert): boolean => {
+  const ref = alert.createdAt || alert.date;
+  if (!ref) return false;
+  const start = new Date(ref).getTime();
+  if (Number.isNaN(start)) return false;
+  return Date.now() > start + JUSTIFY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+};
 
 export default function MyAlertsPage() {
   const t = useTranslations();
@@ -63,6 +75,10 @@ export default function MyAlertsPage() {
 
 
   const openJustify = (alert: AttendanceAlert) => {
+    if (justifyWindowPassed(alert)) {
+      toast.error(t("attendance.justifyExpired"));
+      return;
+    }
     setSelectedAlert(alert);
     setJustType("SICK");
     setDescAr("");
