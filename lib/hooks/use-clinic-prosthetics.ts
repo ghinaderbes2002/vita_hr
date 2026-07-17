@@ -102,7 +102,13 @@ export function useSubmitAssessmentUpper() {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
       toast.success("تم حفظ التقييم");
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حفظ التقييم"),
+    // Re-saving the same case+side hits a unique constraint — already assessed,
+    // not a user-facing failure.
+    onError: (e: any) => {
+      const msg = e?.response?.data?.message || "";
+      if (e?.response?.status === 409 || /unique constraint/i.test(msg)) return;
+      toast.error(msg || "فشل حفظ التقييم");
+    },
   });
 }
 
@@ -115,7 +121,13 @@ export function useSubmitAssessmentLower() {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
       toast.success("تم حفظ التقييم");
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حفظ التقييم"),
+    // Re-saving the same case+side hits a unique constraint — already assessed,
+    // not a user-facing failure.
+    onError: (e: any) => {
+      const msg = e?.response?.data?.message || "";
+      if (e?.response?.status === 409 || /unique constraint/i.test(msg)) return;
+      toast.error(msg || "فشل حفظ التقييم");
+    },
   });
 }
 
@@ -128,7 +140,11 @@ export function useSubmitCommitteeOpinion() {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
       toast.success("تم إرسال رأيك");
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إرسال الرأي"),
+    // 409 = الرأي مُقدَّم مسبقاً — ليس فشلاً، فلا نُظهر خطأً (المُستدعي يتخطّاه).
+    onError: (e: any) => {
+      if (e?.response?.status === 409) return;
+      toast.error(e?.response?.data?.message || "فشل إرسال الرأي");
+    },
   });
 }
 

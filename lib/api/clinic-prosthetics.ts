@@ -83,6 +83,7 @@ export interface ProstheticsCase {
   supervisingDoctor?: StaffMember;
   workshopSupervisor?: StaffMember;
   committeeDecision?: CommitteeDecision | null;
+  committeeReview?: CommitteeReview | null;
   proposedProstheticType?: ProstheticType | null;
   deliveryDate?: string | null;
   notes?: string | null;
@@ -236,6 +237,23 @@ export interface CommitteeOpinionDto {
 export interface CommitteeDecisionDto {
   decision: CommitteeDecision;
   finalSummary: string;
+}
+
+// Submitted committee opinions/decision, echoed back on GET. A role's opinion is
+// "submitted" once its *ReviewedAt timestamp is set; the decision once decidedAt is.
+export interface CommitteeReview {
+  id?: string;
+  prosthetistOpinion?: string | null;
+  prosthetistReviewedAt?: string | null;
+  physiotherapistOpinion?: string | null;
+  physiotherapistReviewedAt?: string | null;
+  doctorOpinion?: string | null;
+  doctorReviewedAt?: string | null;
+  committeeHeadOpinion?: string | null;
+  expertOpinion?: string | null;
+  finalDecision?: CommitteeDecision | null;
+  finalSummary?: string | null;
+  decidedAt?: string | null;
 }
 
 // Follow-up program alert (case-level). A case can have several; the head

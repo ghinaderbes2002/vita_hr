@@ -3784,18 +3784,34 @@ export default function ProstheticsCasePage() {
       hasRevisionSurgery: caseData.hasRevisionSurgery ?? null,
       revisionDetails: caseData.revisionDetails ?? "",
     });
-    // Saved via updateCase as arrays (prosthetistIds …); accept either the plural
-    // arrays or the legacy singular id the backend may echo back.
+    // Saved via updateCase as arrays (prosthetistIds …). On reload the backend may
+    // echo the staff back in any of several shapes — plural id arrays, a single id,
+    // or a nested staff object carrying the id — so read whichever is present.
     const cd = caseData as any;
+    const asIds = (arr: any): string[] | null =>
+      Array.isArray(arr) ? arr.map((x) => (typeof x === "string" ? x : x?.id)).filter(Boolean) : null;
+    const firstId = (...vals: any[]): string[] => {
+      const v = vals.find((x) => typeof x === "string" && x);
+      return v ? [v] : [];
+    };
     setStaffForm({
-      prosthetistIds: cd.prosthetistIds ?? (caseData.prosthetistId ? [caseData.prosthetistId] : caseData.assignedProsthetistId ? [caseData.assignedProsthetistId] : []),
-      physiotherapistIds: cd.physiotherapistIds ?? (caseData.physiotherapistId ? [caseData.physiotherapistId] : []),
-      supervisingDoctorIds: cd.supervisingDoctorIds ?? (caseData.supervisingDoctorId ? [caseData.supervisingDoctorId] : []),
+      prosthetistIds: asIds(cd.prosthetistIds) ?? firstId(caseData.prosthetistId, caseData.assignedProsthetistId, cd.prosthetist?.id, cd.prosthetist?.employeeId),
+      physiotherapistIds: asIds(cd.physiotherapistIds) ?? firstId(caseData.physiotherapistId, cd.physiotherapist?.id, cd.physiotherapist?.employeeId),
+      supervisingDoctorIds: asIds(cd.supervisingDoctorIds) ?? firstId(caseData.supervisingDoctorId, cd.supervisingDoctor?.id, cd.supervisingDoctor?.employeeId),
     });
     setCommitteeSuitForm({
       prosthesisSuitable: caseData.prosthesisSuitable ?? null,
       proposedProsthesisType: caseData.proposedProsthesisType ?? "",
     });
+    // Committee opinions/decision persist server-side — rehydrate so a saved
+    // opinion shows its text (and renders read-only) on reopen.
+    const cr = caseData.committeeReview;
+    if (cr) {
+      setProsthetistOpinion(cr.prosthetistOpinion ?? "");
+      setPhysioOpinion(cr.physiotherapistOpinion ?? "");
+      setDoctorOpinion(cr.doctorOpinion ?? "");
+      if (cr.finalSummary) setDecisionForm({ finalSummary: cr.finalSummary });
+    }
 
     // Assessment forms — without this a saved case reopens blank, and the
     // read-only lock below would freeze empty fields. `amputationSide` is not
@@ -3845,6 +3861,15 @@ export default function ProstheticsCasePage() {
   // hydrated from these same records.
   const upperSaved = (c.upperAssessment ?? []).length > 0;
   const lowerSaved = (c.lowerAssessment ?? []).length > 0;
+
+  // A committee opinion can be submitted only once; once its *ReviewedAt is set it
+  // renders read-only (the backend rejects re-submission with 409).
+  const cr = c.committeeReview;
+  const prosthetistOpinionSaved = !!cr?.prosthetistReviewedAt;
+  const physioOpinionSaved = !!cr?.physiotherapistReviewedAt;
+  const doctorOpinionSaved = !!cr?.doctorReviewedAt;
+  const allOpinionsSaved = prosthetistOpinionSaved && physioOpinionSaved && doctorOpinionSaved;
+  const committeeDecided = !!cr?.decidedAt;
 
   // Measurement sheet history per amputation type — newest-first, per backend
   const transtibialRecords: MeasurementAssessment[] = c.transtibialAssessment ?? [];
@@ -3943,12 +3968,14 @@ export default function ProstheticsCasePage() {
 
   const handleSaveStaff = async () => {
     justSavedRef.current = true;
+    // The case stores one staff member per role in singular id fields
+    // (prosthetistId …) — send those, not the plural arrays the backend ignores.
     await updateCase.mutateAsync({
       id,
       dto: {
-        prosthetistIds: staffForm.prosthetistIds.length ? staffForm.prosthetistIds : undefined,
-        physiotherapistIds: staffForm.physiotherapistIds.length ? staffForm.physiotherapistIds : undefined,
-        supervisingDoctorIds: staffForm.supervisingDoctorIds.length ? staffForm.supervisingDoctorIds : undefined,
+        prosthetistId: staffForm.prosthetistIds[0] || null,
+        physiotherapistId: staffForm.physiotherapistIds[0] || null,
+        supervisingDoctorId: staffForm.supervisingDoctorIds[0] || null,
       } as any,
     });
   };
@@ -4116,11 +4143,23 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSubmitAssessmentAndAdvance = async () => {
+    // Only save an assessment that hasn't been saved yet; re-POSTing an existing
+    // case+side hits a unique constraint (500). Tolerate a duplicate either way so
+    // the case still advances to committee review.
+    const submitIfNew = async (saved: boolean, fn: () => Promise<unknown>) => {
+      if (saved) return;
+      try {
+        await fn();
+      } catch (e: any) {
+        const msg = e?.response?.data?.message || "";
+        if (e?.response?.status !== 409 && !/unique constraint/i.test(msg)) throw e;
+      }
+    };
     if (ampTypes.includes("UPPER")) {
-      await submitAssessmentUpper.mutateAsync({ id, dto: buildUpperDto() });
+      await submitIfNew(upperSaved, () => submitAssessmentUpper.mutateAsync({ id, dto: buildUpperDto() }));
     }
     if (ampTypes.includes("LOWER")) {
-      await submitAssessmentLower.mutateAsync({ id, dto: buildLowerDto() });
+      await submitIfNew(lowerSaved, () => submitAssessmentLower.mutateAsync({ id, dto: buildLowerDto() }));
     }
     await updateStatus.mutateAsync({ id, status: "COMMITTEE_REVIEW" });
   };
@@ -4130,9 +4169,19 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSaveCommitteeAll = async () => {
-    if (prosthetistOpinion.trim()) await submitOpinion.mutateAsync({ id, dto: { role: "PROSTHETIST", opinion: prosthetistOpinion } });
-    if (physioOpinion.trim()) await submitOpinion.mutateAsync({ id, dto: { role: "PHYSIOTHERAPIST", opinion: physioOpinion } });
-    if (doctorOpinion.trim()) await submitOpinion.mutateAsync({ id, dto: { role: "DOCTOR", opinion: doctorOpinion } });
+    // An opinion can be submitted only once; re-submitting returns 409. Skip any
+    // already-submitted role so the others (and the decision) still go through.
+    const submitIfNew = async (role: "PROSTHETIST" | "PHYSIOTHERAPIST" | "DOCTOR", opinion: string) => {
+      if (!opinion.trim()) return;
+      try {
+        await submitOpinion.mutateAsync({ id, dto: { role, opinion } });
+      } catch (e: any) {
+        if (e?.response?.status !== 409) throw e;
+      }
+    };
+    await submitIfNew("PROSTHETIST", prosthetistOpinion);
+    await submitIfNew("PHYSIOTHERAPIST", physioOpinion);
+    await submitIfNew("DOCTOR", doctorOpinion);
     if (decisionForm.finalSummary.trim()) await handleSubmitDecision();
   };
 
@@ -5849,8 +5898,9 @@ export default function ProstheticsCasePage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="font-semibold">{t("committee.prosthetistOpinion")}</Label>
                   {staffNamesOf("prosthetistIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("prosthetistIds")}</span>}
+                  {prosthetistOpinionSaved && <SavedBadge />}
                 </div>
-                <Textarea rows={3} value={prosthetistOpinion} onChange={(e) => setProsthetistOpinion(e.target.value)} placeholder={t("committee.prosthetistOpinionPlaceholder")} />
+                <Textarea rows={3} disabled={prosthetistOpinionSaved} value={prosthetistOpinion} onChange={(e) => setProsthetistOpinion(e.target.value)} placeholder={t("committee.prosthetistOpinionPlaceholder")} />
               </div>
 
               {/* المعالج الفيزيائي */}
@@ -5858,8 +5908,9 @@ export default function ProstheticsCasePage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="font-semibold">{t("committee.physioOpinion")}</Label>
                   {staffNamesOf("physiotherapistIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("physiotherapistIds")}</span>}
+                  {physioOpinionSaved && <SavedBadge />}
                 </div>
-                <Textarea rows={3} value={physioOpinion} onChange={(e) => setPhysioOpinion(e.target.value)} placeholder={t("committee.physioOpinionPlaceholder")} />
+                <Textarea rows={3} disabled={physioOpinionSaved} value={physioOpinion} onChange={(e) => setPhysioOpinion(e.target.value)} placeholder={t("committee.physioOpinionPlaceholder")} />
               </div>
 
               {/* الطبيب المختص */}
@@ -5867,17 +5918,21 @@ export default function ProstheticsCasePage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="font-semibold">{t("committee.doctorOpinion")}</Label>
                   {staffNamesOf("supervisingDoctorIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("supervisingDoctorIds")}</span>}
+                  {doctorOpinionSaved && <SavedBadge />}
                 </div>
-                <Textarea rows={3} value={doctorOpinion} onChange={(e) => setDoctorOpinion(e.target.value)} placeholder={t("committee.doctorOpinionPlaceholder")} />
+                <Textarea rows={3} disabled={doctorOpinionSaved} value={doctorOpinion} onChange={(e) => setDoctorOpinion(e.target.value)} placeholder={t("committee.doctorOpinionPlaceholder")} />
               </div>
 
               {/* الخلاصة */}
               <div className="space-y-2 pt-4">
-                <Label className="font-semibold">{t("committee.summary")} <span className="text-destructive">*</span></Label>
-                <Textarea rows={3} value={decisionForm.finalSummary} onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))} placeholder={t("committee.summaryPlaceholder")} />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="font-semibold">{t("committee.summary")} <span className="text-destructive">*</span></Label>
+                  {committeeDecided && <SavedBadge />}
+                </div>
+                <Textarea rows={3} disabled={committeeDecided} value={decisionForm.finalSummary} onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))} placeholder={t("committee.summaryPlaceholder")} />
               </div>
 
-              {c.status === "COMMITTEE_REVIEW" && (
+              {c.status === "COMMITTEE_REVIEW" && !allOpinionsSaved && (
                 <div className="pt-4">
                   <Button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
@@ -5902,6 +5957,7 @@ export default function ProstheticsCasePage() {
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">{t("committee.notSuitable")}</span>
                     <Switch
+                      disabled={committeeDecided}
                       checked={committeeSuitForm.prosthesisSuitable === true}
                       onCheckedChange={(v) => setCommitteeSuitForm((f) => ({
                         ...f,
@@ -5914,6 +5970,7 @@ export default function ProstheticsCasePage() {
                   {committeeSuitForm.prosthesisSuitable === true && (
                     <Input
                       className="h-8 text-sm"
+                      disabled={committeeDecided}
                       placeholder={t("committee.proposedTypePlaceholder")}
                       value={committeeSuitForm.proposedProsthesisType}
                       onChange={(e) => setCommitteeSuitForm((f) => ({ ...f, proposedProsthesisType: e.target.value }))}
@@ -5969,10 +6026,12 @@ export default function ProstheticsCasePage() {
                       ))}
                     </div>
                   </div>
-                  <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                    {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    {t("committee.saveDecision")}
-                  </Button>
+                  {!committeeDecided && (
+                    <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                      {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                      {t("committee.saveDecision")}
+                    </Button>
+                  )}
                 </>
               )}
             </div>
