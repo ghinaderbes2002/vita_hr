@@ -4926,7 +4926,7 @@ export default function ProstheticsCasePage() {
         {/* ── PATIENT INFO ─────────────────────────────────────────────────── */}
         <TabsContent value="patient_info" className="mt-4" dir="rtl">
           <Section
-            title="معلومات المريض"
+            title={t("patientInfo.title")}
             action={
               <Button
                 size="sm"
@@ -4946,7 +4946,7 @@ export default function ProstheticsCasePage() {
                   setPatientEditMode((v) => !v);
                 }}
               >
-                {patientEditMode ? "إلغاء" : "تعديل"}
+                {patientEditMode ? t("patientInfo.cancel") : t("patientInfo.edit")}
               </Button>
             }
           >
@@ -4956,58 +4956,58 @@ export default function ProstheticsCasePage() {
                 {patientEditMode ? (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-xs">الاسم الأول</Label>
+                      <Label className="text-xs">{t("patientInfo.firstName")}</Label>
                       <Input className="h-8 text-sm" value={patientEditForm.firstName} onChange={(e) => setPatientEditForm((f) => ({ ...f, firstName: e.target.value }))} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">الاسم الأخير</Label>
+                      <Label className="text-xs">{t("patientInfo.lastName")}</Label>
                       <Input className="h-8 text-sm" value={patientEditForm.lastName} onChange={(e) => setPatientEditForm((f) => ({ ...f, lastName: e.target.value }))} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">تاريخ الميلاد</Label>
+                      <Label className="text-xs">{t("patientInfo.dob")}</Label>
                       <Input type="date" className="h-8 text-sm" value={patientEditForm.dateOfBirth} onChange={(e) => setPatientEditForm((f) => ({ ...f, dateOfBirth: e.target.value }))} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">الطول (cm)</Label>
+                      <Label className="text-xs">{t("patientInfo.heightCm")}</Label>
                       <Input type="number" className="h-8 text-sm" value={patientEditForm.heightCm} onChange={(e) => setPatientEditForm((f) => ({ ...f, heightCm: e.target.value }))} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">الوزن (kg)</Label>
+                      <Label className="text-xs">{t("patientInfo.weightKg")}</Label>
                       <Input type="number" className="h-8 text-sm" value={patientEditForm.weightKg} onChange={(e) => setPatientEditForm((f) => ({ ...f, weightKg: e.target.value }))} />
                     </div>
                     <Button onClick={handleSavePatient} disabled={updatePatient.isPending} className="col-span-2 h-8">
                       {updatePatient.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-2" />}
-                      حفظ التعديلات
+                      {t("patientInfo.saveChanges")}
                     </Button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
                     <div className="space-y-0.5">
-                      <p className="text-xs font-medium">رقم المريض</p>
+                      <p className="text-xs font-medium">{t("patientInfo.patientNumber")}</p>
                       <p className="text-muted-foreground">{patientFull?.patientNumber ?? c.patient?.patientNumber ?? "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-medium">اسم المريض</p>
+                      <p className="text-xs font-medium">{t("patientInfo.patientName")}</p>
                       <p className="text-muted-foreground">{patientFull ? `${patientFull.firstName} ${patientFull.lastName}` : patientName}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-medium">تاريخ الميلاد</p>
+                      <p className="text-xs font-medium">{t("patientInfo.dob")}</p>
                       <p className="text-muted-foreground">{patientFull?.dateOfBirth ? patientFull.dateOfBirth.slice(0, 10) : "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-medium">مستوى البتر</p>
+                      <p className="text-xs font-medium">{t("patientInfo.amputationLevel")}</p>
                       <p className="text-muted-foreground">{toAmputationLevels(c.amputationLevel).join(" / ") || "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-medium">الطول</p>
+                      <p className="text-xs font-medium">{t("patientInfo.height")}</p>
                       <p className="text-muted-foreground">{patientFull?.heightCm ? `${patientFull.heightCm} cm` : "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-medium">الوزن</p>
+                      <p className="text-xs font-medium">{t("patientInfo.weight")}</p>
                       <p className="text-muted-foreground">{patientFull?.weightKg ? `${patientFull.weightKg} kg` : "—"}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-medium">مؤشر كتلة الجسم</p>
+                      <p className="text-xs font-medium">{t("patientInfo.bmi")}</p>
                       <p className="text-muted-foreground">{patientFull?.bmi ? patientFull.bmi.toFixed(1) : "—"}</p>
                     </div>
                   </div>
@@ -5022,7 +5022,7 @@ export default function ProstheticsCasePage() {
                     <div className="w-40 h-48 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-muted-foreground text-xs text-center bg-muted/20 overflow-hidden">
                       {photoDoc && caseData?.patientId
                         ? <PatientPhotoViewer patientId={caseData.patientId} docId={photoDoc.id} />
-                        : <span className="opacity-50">لا توجد صورة</span>}
+                        : <span className="opacity-50">{t("patientInfo.noPhoto")}</span>}
                     </div>
                   </div>
                 );

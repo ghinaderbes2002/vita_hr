@@ -2137,6 +2137,24 @@
     },
     "prosthetics": {
       "case": {
+      "patientInfo": {
+        "title": "Hasta Bilgileri",
+        "edit": "Düzenle",
+        "cancel": "İptal",
+        "firstName": "Ad",
+        "lastName": "Soyad",
+        "dob": "Doğum Tarihi",
+        "heightCm": "Boy (cm)",
+        "weightKg": "Kilo (kg)",
+        "saveChanges": "Değişiklikleri Kaydet",
+        "patientNumber": "Hasta No.",
+        "patientName": "Hasta Adı",
+        "amputationLevel": "Ampütasyon Seviyesi",
+        "height": "Boy",
+        "weight": "Kilo",
+        "bmi": "VKİ",
+        "noPhoto": "Fotoğraf yok"
+      },
       "measurement": {
         "selectType": {
           "ankle_disarticulation": "Ayak bileği dezartikülasyonu",

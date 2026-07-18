@@ -3179,6 +3179,24 @@
     },
     "prosthetics": {
       "case": {
+      "patientInfo": {
+        "title": "معلومات المريض",
+        "edit": "تعديل",
+        "cancel": "إلغاء",
+        "firstName": "الاسم الأول",
+        "lastName": "الاسم الأخير",
+        "dob": "تاريخ الميلاد",
+        "heightCm": "الطول (cm)",
+        "weightKg": "الوزن (kg)",
+        "saveChanges": "حفظ التعديلات",
+        "patientNumber": "رقم المريض",
+        "patientName": "اسم المريض",
+        "amputationLevel": "مستوى البتر",
+        "height": "الطول",
+        "weight": "الوزن",
+        "bmi": "مؤشر كتلة الجسم",
+        "noPhoto": "لا توجد صورة"
+      },
       "measurement": {
         "selectType": {
           "ankle_disarticulation": "عبر الكاحل",

@@ -3045,6 +3045,24 @@
     },
     "prosthetics": {
       "case": {
+      "patientInfo": {
+        "title": "Patient Information",
+        "edit": "Edit",
+        "cancel": "Cancel",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "dob": "Date of Birth",
+        "heightCm": "Height (cm)",
+        "weightKg": "Weight (kg)",
+        "saveChanges": "Save Changes",
+        "patientNumber": "Patient No.",
+        "patientName": "Patient Name",
+        "amputationLevel": "Amputation Level",
+        "height": "Height",
+        "weight": "Weight",
+        "bmi": "BMI",
+        "noPhoto": "No photo"
+      },
       "measurement": {
         "selectType": {
           "ankle_disarticulation": "Ankle disarticulation",
