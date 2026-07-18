@@ -30,7 +30,6 @@ import { KLevelSelector } from "@/components/clinic/k-level-selector";
 import { AmputationLevelSelector } from "@/components/clinic/amputation-level-selector";
 import { InventoryItemCombobox } from "@/components/clinic/inventory-item-combobox";
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
-import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
@@ -1383,12 +1382,13 @@ function YesNoButtons({ value, onChange }: { value: boolean | null; onChange: (v
 }
 
 function GaitAnalysisCard({
-  caseId, staffList, session, idx, onCancel,
-}: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void }) {
+  caseId, staffList, session, idx, onCancel, patient,
+}: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void; patient?: any }) {
   const isNew = !session;
   const [editing, setEditing] = useState(isNew);
   const [form, setForm] = useState<GaitForm>(() => session ? gaitFormFromData(session) : { ...INITIAL_GAIT_FORM, phases: {} });
   const [activeTab, setActiveTab] = useState("basic");
+  const [pdfExporting, setPdfExporting] = useState(false);
   const prostoSigRef = useRef<HTMLInputElement>(null);
   const addMut = useAddGaitAnalysisForm();
   const updateMut = useUpdateGaitAnalysisForm();
@@ -1457,6 +1457,37 @@ function GaitAnalysisCard({
   };
   const isSaving = addMut.isPending || updateMut.isPending || saveMut.isPending;
 
+  // ── PDF Export — same style/header/footer/colors as the physio full PDF ──────
+  const handleExportPdf = async () => {
+    if (pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const { downloadProstheticsGaitPdf } = await import("@/components/clinic/prosthetics-gait-pdf");
+      const pros = staffList.find((e: any) => e.id === form.examinerProsthetistId);
+      await downloadProstheticsGaitPdf({
+        patient: patient
+          ? {
+              firstName: patient.firstName,
+              lastName: patient.lastName,
+              patientNumber: patient.patientNumber,
+              dateOfBirth: patient.dateOfBirth,
+            }
+          : undefined,
+        caseId,
+        sessionNumber: (idx ?? 0) + 1,
+        prosthetistName: pros ? `${pros.firstNameAr ?? ""} ${pros.lastNameAr ?? ""}`.trim() : undefined,
+        form,
+      });
+      toast.success("تم تصدير PDF");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`فشل تصدير PDF: ${msg.slice(0, 120)}`);
+      console.error("[Gait PDF Export]", e);
+    } finally {
+      setPdfExporting(false);
+    }
+  };
+
   // Collapsed card
   if (!isNew && !editing) {
     return (
@@ -1485,6 +1516,10 @@ function GaitAnalysisCard({
               )}
             </div>
             <div className="flex gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
+              <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
+                {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                {pdfExporting ? "جاري..." : "تصدير PDF"}
+              </Button>
               {!isArchived && (
                 <Button size="sm" variant="outline" className="gap-1"
                   onClick={() => { setArchiveReason(""); setArchiveOpen(true); }}>
@@ -1543,7 +1578,13 @@ function GaitAnalysisCard({
               </Badge>
             )}
           </div>
-          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>إغلاق</Button>
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
+              {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {pdfExporting ? "جاري..." : "تصدير PDF"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>إغلاق</Button>
+          </div>
         </div>
       )}
 
@@ -2067,7 +2108,7 @@ function GaitAnalysisCard({
   );
 }
 
-function GaitAnalysisSection({ caseId, staffList }: { caseId: string; staffList: any[] }) {
+function GaitAnalysisSection({ caseId, staffList, patient }: { caseId: string; staffList: any[]; patient?: any }) {
   const { data: sessions = [], isLoading } = useGaitAnalysisForms(caseId);
   const [showAdd, setShowAdd] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -2083,7 +2124,7 @@ function GaitAnalysisSection({ caseId, staffList }: { caseId: string; staffList:
     >
       {showAdd && (
         <div className="mb-4 border rounded-lg p-1">
-          <GaitAnalysisCard key={formKey} caseId={caseId} staffList={staffList}
+          <GaitAnalysisCard key={formKey} caseId={caseId} staffList={staffList} patient={patient}
             onCancel={() => { setShowAdd(false); setFormKey((k) => k + 1); }} />
         </div>
       )}
@@ -2094,7 +2135,7 @@ function GaitAnalysisSection({ caseId, staffList }: { caseId: string; staffList:
       ) : (
         <div className="space-y-3">
           {sessions.map((s: any, i: number) => (
-            <GaitAnalysisCard key={s.id} caseId={caseId} staffList={staffList} session={s} idx={i} />
+            <GaitAnalysisCard key={s.id} caseId={caseId} staffList={staffList} session={s} idx={i} patient={patient} />
           ))}
         </div>
       )}
@@ -3441,6 +3482,7 @@ export default function ProstheticsCasePage() {
   const addComponent = useAddCaseComponent();
   const deleteComponent = useDeleteCaseComponent();
   const [confirmDelComp, setConfirmDelComp] = useState<string | null>(null);
+  const [casePdfExporting, setCasePdfExporting] = useState(false);
   const submitGait = useSubmitGaitAnalysis();
   const addConsumable = useAddConsumable();
   const { data: finalEvalData } = useFinalEvaluation(id);
@@ -3743,6 +3785,19 @@ export default function ProstheticsCasePage() {
   // يمنع إعادة تهيئة الفورم مباشرة بعد الحفظ
   const justSavedRef = useRef(false);
 
+  // A submitted committee opinion is read-only, so mirror the server text into the
+  // textarea whenever the review data arrives — independent of the justSaved guard
+  // below (which would otherwise skip it on a post-save refetch). Only submitted
+  // roles are written, so in-progress edits to un-submitted opinions are preserved.
+  useEffect(() => {
+    const cr = caseData?.committeeReview;
+    if (!cr) return;
+    if (cr.prosthetistReviewedAt) setProsthetistOpinion(cr.prosthetistOpinion ?? "");
+    if (cr.physiotherapistReviewedAt) setPhysioOpinion(cr.physiotherapistOpinion ?? "");
+    if (cr.doctorReviewedAt) setDoctorOpinion(cr.doctorOpinion ?? "");
+    if (cr.decidedAt && cr.finalSummary) setDecisionForm({ finalSummary: cr.finalSummary });
+  }, [caseData?.committeeReview]);
+
   // ملء الفورم من السيرفر عند أول تحميل أو عند العودة للصفحة
   useEffect(() => {
     if (!caseData) return;
@@ -3803,15 +3858,6 @@ export default function ProstheticsCasePage() {
       prosthesisSuitable: caseData.prosthesisSuitable ?? null,
       proposedProsthesisType: caseData.proposedProsthesisType ?? "",
     });
-    // Committee opinions/decision persist server-side — rehydrate so a saved
-    // opinion shows its text (and renders read-only) on reopen.
-    const cr = caseData.committeeReview;
-    if (cr) {
-      setProsthetistOpinion(cr.prosthetistOpinion ?? "");
-      setPhysioOpinion(cr.physiotherapistOpinion ?? "");
-      setDoctorOpinion(cr.doctorOpinion ?? "");
-      if (cr.finalSummary) setDecisionForm({ finalSummary: cr.finalSummary });
-    }
 
     // Assessment forms — without this a saved case reopens blank, and the
     // read-only lock below would freeze empty fields. `amputationSide` is not
@@ -3891,6 +3937,104 @@ export default function ProstheticsCasePage() {
     return s ? [s] : [];
   };
   const ampTypes = getAmpTypes();
+
+  // ── Full case report PDF (VitaSyr style — replaces the backend report) ────────
+  const resolveStaffName = (obj?: any, ...ids: (string | null | undefined)[]): string => {
+    if (obj && (obj.firstNameAr || obj.lastNameAr)) return `${obj.firstNameAr ?? ""} ${obj.lastNameAr ?? ""}`.trim();
+    for (const sid of ids) {
+      const e = staffList.find((x: any) => x.id === sid);
+      if (e) return `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim();
+    }
+    return "";
+  };
+
+  const handleExportCasePdf = async () => {
+    if (casePdfExporting) return;
+    setCasePdfExporting(true);
+    try {
+      const { downloadProstheticsCasePdf } = await import("@/components/clinic/prosthetics-case-pdf");
+      let gaitForms: any[] = [];
+      try { gaitForms = await clinicProstheticsApi.getGaitAnalysisForms(id); } catch { /* optional */ }
+
+      const mapAssess = (arr: any[] | undefined, region: string) =>
+        (arr ?? []).map((a: any) => ({
+          region, side: a.side,
+          residualLimbLength: a.residualLimbLength, residualLimbShape: a.residualLimbShape,
+          activityLevel: a.activityLevel, painPresent: a.painPresent, painIntensity: a.painIntensity,
+          examinedAt: a.examinedAt ?? a.createdAt ?? a.updatedAt ?? null,
+          notes: a.notes ?? a.generalHealthNotes ?? null,
+        }));
+
+      await downloadProstheticsCasePdf({
+        patient: {
+          firstName: patientFull?.firstName ?? c.patient?.firstName,
+          lastName: patientFull?.lastName ?? c.patient?.lastName,
+          patientNumber: patientFull?.patientNumber ?? c.patient?.patientNumber,
+          dateOfBirth: patientFull?.dateOfBirth,
+          gender: (patientFull as any)?.gender,
+          phone: patientFull?.phone,
+          heightCm: patientFull?.heightCm,
+          weightKg: patientFull?.weightKg,
+          bmi: patientFull?.bmi,
+        },
+        caseId: id,
+        status: c.status,
+        createdAt: c.createdAt,
+        amputation: {
+          types: ampTypes,
+          side: c.amputationSide,
+          level: Array.isArray(c.amputationLevel) ? c.amputationLevel.join("، ") : c.amputationLevel,
+          date: c.dateOfAmputation,
+          cause: c.causeOfAmputation ?? (c as any).amputationCause,
+          causeOther: c.amputationCauseOtherDetail,
+          count: c.numberOfAmputations,
+        },
+        currentlyUsingProsthesis: c.currentlyUsingProsthesis,
+        previouslyUsedProsthesis: c.previouslyUsedProsthesis,
+        previousProsthesisSystemDetail: c.previousProsthesisSystemDetail,
+        clinical: {
+          hasChronicDiseases: c.hasChronicDiseases, chronicDiseases: c.chronicDiseases,
+          hasPhysicalTherapy: c.hasPhysicalTherapy, physicalTherapyDetails: c.physicalTherapyDetails,
+          hasPreviousProsthesis: c.hasPreviousProsthesis, previousProsthesisDetails: c.previousProsthesisDetails,
+          previousProsthesisWhen: c.previousProsthesisWhen, previousProsthesisWhere: c.previousProsthesisWhere,
+          previousProsthesisType: c.previousProsthesisType,
+          hasRevisionSurgery: c.hasRevisionSurgery, revisionDetails: c.revisionDetails,
+        },
+        team: {
+          prosthetist: resolveStaffName(c.prosthetist, c.prosthetistId, c.assignedProsthetistId),
+          physiotherapist: resolveStaffName(c.physiotherapist, c.physiotherapistId),
+          supervisingDoctor: resolveStaffName(c.supervisingDoctor, c.supervisingDoctorId),
+          workshopSupervisor: resolveStaffName(c.workshopSupervisor, c.workshopSupervisorId),
+        },
+        assessments: [...mapAssess(c.upperAssessment, "طرف علوي"), ...mapAssess(c.lowerAssessment, "طرف سفلي")],
+        committee: cr ? {
+          prosthetistOpinion: cr.prosthetistOpinion, physiotherapistOpinion: cr.physiotherapistOpinion,
+          doctorOpinion: cr.doctorOpinion, committeeHeadOpinion: cr.committeeHeadOpinion,
+          expertOpinion: cr.expertOpinion, finalDecision: cr.finalDecision, finalSummary: cr.finalSummary,
+        } : null,
+        proposed: {
+          proposedProstheticType: c.proposedProstheticType, prosthesisType: c.prosthesisType,
+          prosthesisCompleted: c.prosthesisCompleted, prosthesisSuitable: c.prosthesisSuitable,
+          proposedProsthesisType: c.proposedProsthesisType,
+        },
+        components: (components ?? []).map((cp: any) => ({
+          partName: cp.partName ?? cp.name, partCode: cp.partCode ?? cp.code,
+          sourceLocation: cp.sourceLocation ?? cp.source, supplier: cp.supplier,
+          reason: cp.reason, requestStatus: cp.inventoryRequest?.status,
+        })),
+        gait: (gaitForms ?? []).map((g: any) => ({ sessionDate: g.sessionDate, mainProblem: g.mainProblem, symmetry: g.symmetry })),
+        finalEval: (finalEvalData as any) ?? null,
+        followUps: (followUps ?? []).map((f: any) => ({ date: f.date, notes: f.notes, kLevel: f.kLevel, painLevel: f.painLevel })),
+      });
+      toast.success("تم تصدير PDF");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`فشل تصدير PDF: ${msg.slice(0, 120)}`);
+      console.error("[Case PDF Export]", e);
+    } finally {
+      setCasePdfExporting(false);
+    }
+  };
 
   const patientName = patientFull
     ? `${patientFull.firstName} ${patientFull.lastName}`
@@ -4447,25 +4591,12 @@ export default function ProstheticsCasePage() {
             {c.amputationSide && <Badge variant="outline">{SIDE_LABEL[c.amputationSide]}</Badge>}
           </div>
           <StepIndicator status={c.status} />
-          {/* Staff team */}
-          {(c.prosthetist || c.physiotherapist || c.supervisingDoctor || c.workshopSupervisor) && (
-            <div className="flex flex-wrap gap-x-5 gap-y-1 mt-1">
-              {[
-                { label: "أخصائي أطراف", obj: c.prosthetist },
-                { label: "أخصائي علاج فيزيائي", obj: c.physiotherapist },
-                { label: "اسم المشرف", obj: c.supervisingDoctor },
-                { label: "مشرف الورشة", obj: c.workshopSupervisor },
-              ].filter((s) => s.obj).map((s) => (
-                <span key={s.label} className="text-xs text-muted-foreground">
-                  <span className="text-foreground font-medium">{s.obj!.firstNameAr} {s.obj!.lastNameAr}</span>
-                  {" · "}{s.obj!.jobTitleAr ?? s.label}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
         <div className="flex gap-2">
-          <PdfExportButton type="prosthetics-case" id={id} size="sm" />
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCasePdf} disabled={casePdfExporting}>
+            {casePdfExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {casePdfExporting ? "جاري التصدير..." : "تصدير PDF"}
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
@@ -4509,7 +4640,7 @@ export default function ProstheticsCasePage() {
         <TabsContent value="intake" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
 
           <div>
-          <Section title="بيانات الاستقبال">
+          <Section title={t("intake.title")}>
             <div className="space-y-5">
 
               {/* 1. هل يوجد أمراض مزمنة */}
@@ -4518,13 +4649,13 @@ export default function ProstheticsCasePage() {
                 return (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-base">هل يوجد أمراض مزمنة؟</Label>
+                      <Label className="text-base">{t("intake.hasChronic")}</Label>
                       <Switch checked={!!val} onCheckedChange={(v) => setIntakeForm((f) => ({ ...f, hasChronicDiseases: v, chronicDiseases: v ? f.chronicDiseases : "" }))} />
                     </div>
                     {val && (
                       <div className="space-y-1.5">
-                        <Label className="text-sm text-muted-foreground">اسم المرض</Label>
-                        <Input value={intakeForm.chronicDiseases || c.chronicDiseases || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, chronicDiseases: e.target.value }))} placeholder="اذكر اسم المرض..." />
+                        <Label className="text-sm text-muted-foreground">{t("intake.diseaseName")}</Label>
+                        <Input value={intakeForm.chronicDiseases || c.chronicDiseases || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, chronicDiseases: e.target.value }))} placeholder={t("intake.diseaseNamePlaceholder")} />
                       </div>
                     )}
                   </div>
@@ -4536,39 +4667,39 @@ export default function ProstheticsCasePage() {
               {/* 2. سبب الإصابة + تاريخ البتر */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>سبب الإصابة</Label>
+                  <Label>{t("intake.injuryCause")}</Label>
                   <Select
                     value={intakeForm.amputationCause || c.causeOfAmputation || ""}
                     onValueChange={(v) => setIntakeForm((f) => ({ ...f, amputationCause: v, amputationCauseOtherDetail: "" }))}
                   >
-                    <SelectTrigger><SelectValue placeholder="اختر السبب..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("intake.chooseCause")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="WAR_INJURY">إصابة حرب</SelectItem>
-                      <SelectItem value="TRAFFIC_ACCIDENT">حادث مرور</SelectItem>
-                      <SelectItem value="DIABETES">داء السكري</SelectItem>
-                      <SelectItem value="VASCULAR_DISEASE">مرض الأوعية الدموية</SelectItem>
-                      <SelectItem value="CONGENITAL">خلقي</SelectItem>
-                      <SelectItem value="INFECTION">عدوى</SelectItem>
-                      <SelectItem value="TUMOR">ورم</SelectItem>
-                      <SelectItem value="WORK_INJURY">إصابة عمل</SelectItem>
-                      <SelectItem value="OTHER">أخرى</SelectItem>
+                      <SelectItem value="WAR_INJURY">{t("intake.cause.WAR_INJURY")}</SelectItem>
+                      <SelectItem value="TRAFFIC_ACCIDENT">{t("intake.cause.TRAFFIC_ACCIDENT")}</SelectItem>
+                      <SelectItem value="DIABETES">{t("intake.cause.DIABETES")}</SelectItem>
+                      <SelectItem value="VASCULAR_DISEASE">{t("intake.cause.VASCULAR_DISEASE")}</SelectItem>
+                      <SelectItem value="CONGENITAL">{t("intake.cause.CONGENITAL")}</SelectItem>
+                      <SelectItem value="INFECTION">{t("intake.cause.INFECTION")}</SelectItem>
+                      <SelectItem value="TUMOR">{t("intake.cause.TUMOR")}</SelectItem>
+                      <SelectItem value="WORK_INJURY">{t("intake.cause.WORK_INJURY")}</SelectItem>
+                      <SelectItem value="OTHER">{t("intake.cause.OTHER")}</SelectItem>
                     </SelectContent>
                   </Select>
                   {(intakeForm.amputationCause || c.causeOfAmputation) === "OTHER" && (
                     <Input
                       className="mt-1"
-                      placeholder="يرجى التحديد..."
+                      placeholder={t("intake.pleaseSpecify")}
                       value={intakeForm.amputationCauseOtherDetail}
                       onChange={(e) => setIntakeForm((f) => ({ ...f, amputationCauseOtherDetail: e.target.value }))}
                     />
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label>تاريخ البتر</Label>
+                  <Label>{t("assess.amputationDate")}</Label>
                   <div className="flex gap-2">
                     <Input
                       type="number"
-                      placeholder="السنة *"
+                      placeholder={t("assess.year")}
                       min={1900} max={2100}
                       className="w-24"
                       value={intakeForm.amputationYear}
@@ -4579,12 +4710,12 @@ export default function ProstheticsCasePage() {
                       onValueChange={(v) => setIntakeForm((f) => ({ ...f, amputationMonth: v }))}
                     >
                       <SelectTrigger className="w-36">
-                        <SelectValue placeholder="الشهر (اختياري)" />
+                        <SelectValue placeholder={t("intake.monthOptional")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">— بدون شهر —</SelectItem>
-                        {ARABIC_MONTHS.map((mn, i) => (
-                          <SelectItem key={i + 1} value={String(i + 1)}>{mn}</SelectItem>
+                        <SelectItem value="0">{t("assess.noMonth")}</SelectItem>
+                        {MONTH_NUMBERS.map((i) => (
+                          <SelectItem key={i} value={String(i)}>{tMonth(String(i))}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -4594,7 +4725,7 @@ export default function ProstheticsCasePage() {
 
               {/* 3. عدد البتور */}
               <div className="space-y-1.5">
-                <Label>عدد البتور</Label>
+                <Label>{t("intake.amputationCount")}</Label>
                 <div className="flex gap-5">
                   {["1", "2", "3", "4"].map((n) => {
                     const cur = intakeForm.amputationCount || "1";
@@ -4619,9 +4750,9 @@ export default function ProstheticsCasePage() {
 
               {/* 4. جانب الاصابة */}
               <div className="space-y-1.5">
-                <Label>جانب الاصابة</Label>
+                <Label>{t("intake.injurySide")}</Label>
                 <div className="flex gap-5">
-                  {([["RIGHT", "يمين (R)"], ["LEFT", "يسار (L)"], ["BILATERAL", "ثنائي"]] as const).map(([val, label]) => {
+                  {([["RIGHT", t("intake.sideRight")], ["LEFT", t("intake.sideLeft")], ["BILATERAL", t("intake.sideBilateral")]] as const).map(([val, label]) => {
                     const cur = intakeForm.amputationSide || c.amputationSide || "";
                     const selected = cur === val;
                     return (
@@ -4644,9 +4775,9 @@ export default function ProstheticsCasePage() {
 
               {/* 5. نوع البتر */}
               <div className="space-y-1.5">
-                <Label>نوع البتر</Label>
+                <Label>{t("intake.amputationTypeLabel")}</Label>
                 <div className="flex gap-5">
-                  {([["UPPER", "طرف علوي"], ["LOWER", "طرف سفلي"]] as const).map(([val, label]) => {
+                  {([["UPPER", t("intake.typeUpper")], ["LOWER", t("intake.typeLower")]] as const).map(([val, label]) => {
                     const selected = ampTypes.includes(val);
                     return (
                       <button key={val} type="button"
@@ -4675,7 +4806,7 @@ export default function ProstheticsCasePage() {
 
               {/* 6. مستوى البتر */}
               <div className="space-y-1.5">
-                <Label>مستوى البتر</Label>
+                <Label>{t("intake.amputationLevel")}</Label>
                 <AmputationLevelSelector
                   type={intakeForm.amputationType || (ampTypes.length === 2 ? "BOTH" : ampTypes[0] ?? "")}
                   values={intakeForm.amputationLevels.length ? intakeForm.amputationLevels : toAmputationLevels(c.amputationLevel)}
@@ -4691,13 +4822,13 @@ export default function ProstheticsCasePage() {
                 return (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-base">هل خضع لجلسات علاج فيزيائي سابقاً؟</Label>
+                      <Label className="text-base">{t("intake.hadPhysio")}</Label>
                       <Switch checked={!!val} onCheckedChange={(v) => setIntakeForm((f) => ({ ...f, hasPhysicalTherapy: v, physicalTherapyDetails: v ? f.physicalTherapyDetails : "" }))} />
                     </div>
                     {val && (
                       <div className="space-y-1.5">
-                        <Label className="text-sm text-muted-foreground">التوضيح</Label>
-                        <Input value={intakeForm.physicalTherapyDetails || c.physicalTherapyDetails || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, physicalTherapyDetails: e.target.value }))} placeholder="تفاصيل جلسات العلاج..." />
+                        <Label className="text-sm text-muted-foreground">{t("intake.clarification")}</Label>
+                        <Input value={intakeForm.physicalTherapyDetails || c.physicalTherapyDetails || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, physicalTherapyDetails: e.target.value }))} placeholder={t("intake.physioDetailsPlaceholder")} />
                       </div>
                     )}
                   </div>
@@ -4710,27 +4841,27 @@ export default function ProstheticsCasePage() {
                 return (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-base">هل سبق له تركيب طرف صناعي؟</Label>
+                      <Label className="text-base">{t("intake.hadProsthesis")}</Label>
                       <Switch checked={!!val} onCheckedChange={(v) => setIntakeForm((f) => ({ ...f, hasPreviousProsthesis: v, previousProsthesisDetails: v ? f.previousProsthesisDetails : "", previousProsthesisWhen: v ? f.previousProsthesisWhen : "", previousProsthesisWhere: v ? f.previousProsthesisWhere : "", previousProsthesisType: v ? f.previousProsthesisType : "" }))} />
                     </div>
                     {val && (
                       <div className="space-y-2">
                         <div className="space-y-1.5">
-                          <Label className="text-sm text-muted-foreground">التوضيح</Label>
-                          <Input value={intakeForm.previousProsthesisDetails || c.previousProsthesisDetails || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisDetails: e.target.value }))} placeholder="تفاصيل الطرف السابق..." />
+                          <Label className="text-sm text-muted-foreground">{t("intake.clarification")}</Label>
+                          <Input value={intakeForm.previousProsthesisDetails || c.previousProsthesisDetails || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisDetails: e.target.value }))} placeholder={t("intake.prevProsthesisPlaceholder")} />
                         </div>
                         <div className="grid grid-cols-3 gap-3">
                           <div className="space-y-1.5">
-                            <Label className="text-sm text-muted-foreground">متى؟</Label>
-                            <Input value={intakeForm.previousProsthesisWhen || c.previousProsthesisWhen || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisWhen: e.target.value }))} placeholder="السنة أو التاريخ" />
+                            <Label className="text-sm text-muted-foreground">{t("intake.when")}</Label>
+                            <Input value={intakeForm.previousProsthesisWhen || c.previousProsthesisWhen || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisWhen: e.target.value }))} placeholder={t("intake.yearOrDate")} />
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-sm text-muted-foreground">أين؟</Label>
-                            <Input value={intakeForm.previousProsthesisWhere || c.previousProsthesisWhere || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisWhere: e.target.value }))} placeholder="المكان أو المركز" />
+                            <Label className="text-sm text-muted-foreground">{t("intake.where")}</Label>
+                            <Input value={intakeForm.previousProsthesisWhere || c.previousProsthesisWhere || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisWhere: e.target.value }))} placeholder={t("intake.placeOrCenter")} />
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-sm text-muted-foreground">نوع الطرف</Label>
-                            <Input value={intakeForm.previousProsthesisType || c.previousProsthesisType || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisType: e.target.value }))} placeholder="نوع الطرف الصناعي" />
+                            <Label className="text-sm text-muted-foreground">{t("intake.prosthesisTypeField")}</Label>
+                            <Input value={intakeForm.previousProsthesisType || c.previousProsthesisType || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisType: e.target.value }))} placeholder={t("intake.prosthesisTypePlaceholder")} />
                           </div>
                         </div>
                       </div>
@@ -4745,13 +4876,13 @@ export default function ProstheticsCasePage() {
                 return (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-base">هل سبق أن خضع لعملية تصحيح بتر؟</Label>
+                      <Label className="text-base">{t("intake.hadRevision")}</Label>
                       <Switch checked={!!val} onCheckedChange={(v) => setIntakeForm((f) => ({ ...f, hasRevisionSurgery: v, revisionDetails: v ? f.revisionDetails : "" }))} />
                     </div>
                     {val && (
                       <div className="space-y-1.5">
-                        <Label className="text-sm text-muted-foreground">التوضيح</Label>
-                        <Input value={intakeForm.revisionDetails || c.revisionDetails || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, revisionDetails: e.target.value }))} placeholder="تفاصيل عملية التصحيح..." />
+                        <Label className="text-sm text-muted-foreground">{t("intake.clarification")}</Label>
+                        <Input value={intakeForm.revisionDetails || c.revisionDetails || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, revisionDetails: e.target.value }))} placeholder={t("intake.revisionPlaceholder")} />
                       </div>
                     )}
                   </div>
@@ -4762,14 +4893,14 @@ export default function ProstheticsCasePage() {
 
               {/* تاريخ ووقت الموعد */}
               <div className="space-y-1.5">
-                <Label className="text-base">تاريخ ووقت الموعد</Label>
+                <Label className="text-base">{t("intake.appointmentDateTime")}</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">التاريخ</Label>
+                    <Label className="text-sm text-muted-foreground">{t("intake.date")}</Label>
                     <Input type="date" value={intakeForm.appointmentDate || (c as any).appointmentDate || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, appointmentDate: e.target.value }))} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">الوقت</Label>
+                    <Label className="text-sm text-muted-foreground">{t("intake.time")}</Label>
                     <Input type="time" value={intakeForm.appointmentTime || (c as any).appointmentTime || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, appointmentTime: e.target.value }))} />
                   </div>
                 </div>
@@ -4778,12 +4909,12 @@ export default function ProstheticsCasePage() {
               <div className="flex gap-3 pt-2">
                 <Button onClick={handleSaveIntake} disabled={updateCase.isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white">
                   {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                  حفظ
+                  {t("intake.save")}
                 </Button>
                 {c.status === "INTAKE" && (
                   <Button onClick={handleSaveIntakeAndAdvance} disabled={updateCase.isPending || updateStatus.isPending} className="flex-1">
                     {(updateCase.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                    حفظ والانتقال للتقييم
+                    {t("intake.saveAndAdvance")}
                   </Button>
                 )}
               </div>
@@ -6040,12 +6171,12 @@ export default function ProstheticsCasePage() {
 
         {/* ── FITTING ─────────────────────────────────────────────────────── */}
         <TabsContent value="fitting" className="mt-4 space-y-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section title="أجزاء ومكونات الطرف الصناعي">
+          <Section title={t("fitting.title")}>
             <div className="space-y-5">
 
               {/* موقع أجزاء الطرف الصناعي */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">موقع أجزاء الطرف الصناعي </p>
+                <p className="text-sm font-semibold">{t("fitting.partsLocation")}</p>
                 <div className="flex gap-6">
                   {(["WAREHOUSE", "EXTERNAL"] as const).map((val) => (
                     <label key={val} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -6056,7 +6187,7 @@ export default function ProstheticsCasePage() {
                         onChange={() => setCompShared((s) => ({ ...s, sourceLocation: val }))}
                         className="accent-primary"
                       />
-                      {val === "WAREHOUSE" ? "المستودع — warehouse" : "خارجي — external"}
+                      {val === "WAREHOUSE" ? t("fitting.warehouse") : t("fitting.external")}
                     </label>
                   ))}
                 </div>
@@ -6064,7 +6195,7 @@ export default function ProstheticsCasePage() {
 
               {/* الشركة */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">الشركة </p>
+                <p className="text-sm font-semibold">{t("fitting.company")}</p>
                 <div className="flex flex-wrap items-center gap-5">
                   <label className="flex items-center gap-2 cursor-pointer text-sm">
                     <input
@@ -6074,7 +6205,7 @@ export default function ProstheticsCasePage() {
                       onChange={() => setCompShared((s) => ({ ...s, supplier: "OTTOBOCK" }))}
                       className="accent-primary"
                     />
-                    أوتوبوك — OTTOBOCK
+                    OTTOBOCK
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer text-sm">
                     <input
@@ -6084,12 +6215,12 @@ export default function ProstheticsCasePage() {
                       onChange={() => setCompShared((s) => ({ ...s, supplier: "OTHER" }))}
                       className="accent-primary"
                     />
-                    أخر — Other
+                    {t("fitting.other")}
                   </label>
                   {compShared.supplier === "OTHER" && (
                     <Input
                       className="h-7 w-44 text-sm"
-                      placeholder="اسم الشركة..."
+                      placeholder={t("fitting.companyName")}
                       value={compShared.supplierOther}
                       onChange={(e) => setCompShared((s) => ({ ...s, supplierOther: e.target.value }))}
                     />
@@ -6099,13 +6230,13 @@ export default function ProstheticsCasePage() {
 
               {/* جدول الأجزاء */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">اجزاء ومكونات الطرف الصناعي مع الكود</p>
+                <p className="text-sm font-semibold">{t("fitting.partsWithCode")}</p>
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="bg-muted/60">
                       <th className="border border-border px-2 py-1.5 text-center w-9 font-medium">#</th>
-                      <th className="border border-border px-3 py-1.5 text-right font-medium">الاسم / name</th>
-                      <th className="border border-border px-3 py-1.5 text-right font-medium">الكود / Code</th>
+                      <th className="border border-border px-3 py-1.5 text-right font-medium">{t("fitting.name")}</th>
+                      <th className="border border-border px-3 py-1.5 text-right font-medium">{t("fitting.code")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -6139,24 +6270,24 @@ export default function ProstheticsCasePage() {
                 className="w-full gap-2"
               >
                 {addComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                حفظ الأجزاء
+                {t("fitting.saveParts")}
               </Button>
 
               {/* الأجزاء المضافة */}
               {components.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-muted-foreground">الأجزاء المضافة</p>
+                  <p className="text-sm font-semibold text-muted-foreground">{t("fitting.addedParts")}</p>
                   <div className="rounded-lg border">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50">
                         <tr>
-                          <th className="text-right p-2 font-medium">الكود</th>
-                          <th className="text-right p-2 font-medium">القطعة</th>
-                          <th className="text-right p-2 font-medium">الشركة</th>
-                          <th className="text-right p-2 font-medium">المصدر</th>
-                          <th className="text-right p-2 font-medium">تاريخ الإضافة</th>
-                          <th className="text-right p-2 font-medium">حالة الطلب</th>
-                          <th className="text-right p-2 font-medium">المخزون</th>
+                          <th className="text-right p-2 font-medium">{t("fitting.code")}</th>
+                          <th className="text-right p-2 font-medium">{t("fitting.part")}</th>
+                          <th className="text-right p-2 font-medium">{t("fitting.company")}</th>
+                          <th className="text-right p-2 font-medium">{t("fitting.source")}</th>
+                          <th className="text-right p-2 font-medium">{t("fitting.addedDate")}</th>
+                          <th className="text-right p-2 font-medium">{t("fitting.requestStatusCol")}</th>
+                          <th className="text-right p-2 font-medium">{t("fitting.inventory")}</th>
                           <th className="p-2" />
                         </tr>
                       </thead>
@@ -6186,7 +6317,7 @@ export default function ProstheticsCasePage() {
                             <td className="p-2 font-mono text-xs">{comp.partCode ?? comp.code ?? "—"}</td>
                             <td className="p-2">{comp.partName ?? comp.name ?? "—"}</td>
                             <td className="p-2 text-muted-foreground">{comp.supplier ?? "—"}</td>
-                            <td className="p-2 text-muted-foreground">{SOURCE_LOCATION_LABEL[(comp.sourceLocation ?? comp.source) as string] ?? "—"}</td>
+                            <td className="p-2 text-muted-foreground">{(() => { const k = (comp.sourceLocation ?? comp.source) as string; return k ? t(`fitting.srcLoc.${k}` as any, { defaultValue: k }) : "—"; })()}</td>
                             <td className="p-2 text-muted-foreground text-xs">
                               {comp.addedAt ? new Date(comp.addedAt).toLocaleDateString("en-GB") : "—"}
                             </td>
@@ -6198,7 +6329,7 @@ export default function ProstheticsCasePage() {
                                   <PopoverTrigger asChild>
                                     <button type="button">
                                       <Badge variant="outline" className={`text-xs cursor-pointer ${REQUEST_STATUS_BADGE[reqStatus]}`}>
-                                        {REQUEST_STATUS_LABEL[reqStatus]}
+                                        {t(`fitting.reqStatus.${reqStatus}` as any, { defaultValue: reqStatus })}
                                       </Badge>
                                     </button>
                                   </PopoverTrigger>
@@ -6206,19 +6337,19 @@ export default function ProstheticsCasePage() {
                                 </Popover>
                               ) : (
                                 <Badge variant="outline" className={`text-xs ${REQUEST_STATUS_BADGE[reqStatus]}`}>
-                                  {REQUEST_STATUS_LABEL[reqStatus]}
+                                  {t(`fitting.reqStatus.${reqStatus}` as any, { defaultValue: reqStatus })}
                                 </Badge>
                               )}
                             </td>
                             <td className="p-2">
                               {reqStatus === "APPROVED" || reqStatus === "DONE"
-                                ? <span className="text-xs text-green-600 font-medium">خُصم</span>
+                                ? <span className="text-xs text-green-600 font-medium">{t("fitting.deducted")}</span>
                                 : reqStatus === "PENDING"
-                                ? <span className="text-xs text-amber-600 font-medium">معلق</span>
+                                ? <span className="text-xs text-amber-600 font-medium">{t("fitting.pendingShort")}</span>
                                 : reqStatus === "NOT_AVAILABLE"
-                                ? <span className="text-xs text-red-600 font-medium">لم يُخصم</span>
+                                ? <span className="text-xs text-red-600 font-medium">{t("fitting.notDeducted")}</span>
                                 : matched === false
-                                ? <span className="text-xs text-orange-600 font-medium">غير موجود بالمخزون</span>
+                                ? <span className="text-xs text-orange-600 font-medium">{t("fitting.notInInventory")}</span>
                                 : "—"}
                             </td>
                             <td className="p-2">
@@ -6239,35 +6370,35 @@ export default function ProstheticsCasePage() {
               <Dialog open={customPartDialog.open} onOpenChange={(open) => setCustomPartDialog((s) => ({ ...s, open }))}>
                 <DialogContent className="max-w-sm" dir="rtl">
                   <DialogHeader>
-                    <DialogTitle>إضافة قطعة غير مسجّلة بالمخزون</DialogTitle>
-                    <DialogDescription>تُحفظ بدون ربط بالمخزون ويصل إشعار لمسؤول المخزون لإضافتها.</DialogDescription>
+                    <DialogTitle>{t("fitting.addCustomTitle")}</DialogTitle>
+                    <DialogDescription>{t("fitting.addCustomDesc")}</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-3 py-1">
                     <div className="space-y-1.5">
-                      <Label>اسم القطعة *</Label>
+                      <Label>{t("fitting.partName")}</Label>
                       <Input
                         value={customPartDialog.name}
                         onChange={(e) => setCustomPartDialog((s) => ({ ...s, name: e.target.value }))}
-                        placeholder="اسم القطعة..."
+                        placeholder={t("fitting.partNamePlaceholder")}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label>الكود *</Label>
+                      <Label>{t("fitting.codeRequired")}</Label>
                       <Input
                         value={customPartDialog.code}
                         onChange={(e) => setCustomPartDialog((s) => ({ ...s, code: e.target.value }))}
-                        placeholder="الكود..."
+                        placeholder={t("fitting.codePlaceholder")}
                         className="font-mono"
                       />
                     </div>
                   </div>
                   <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-                    <Button variant="outline" onClick={() => setCustomPartDialog({ open: false, name: "", code: "" })}>إلغاء</Button>
+                    <Button variant="outline" onClick={() => setCustomPartDialog({ open: false, name: "", code: "" })}>{t("fitting.cancel")}</Button>
                     <Button
                       onClick={handleAddCustomPart}
                       disabled={addComponent.isPending || !customPartDialog.name.trim() || !customPartDialog.code.trim()}
                     >
-                      {addComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إضافة"}
+                      {addComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("fitting.add")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -6276,14 +6407,14 @@ export default function ProstheticsCasePage() {
               <Dialog open={!!confirmDelComp} onOpenChange={(open) => { if (!open) setConfirmDelComp(null); }}>
                 <DialogContent className="max-w-sm" dir="rtl">
                   <DialogHeader>
-                    <DialogTitle>تأكيد الحذف</DialogTitle>
-                    <DialogDescription>هل تريد حذف هذا الجزء؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+                    <DialogTitle>{t("fitting.confirmDeleteTitle")}</DialogTitle>
+                    <DialogDescription>{t("fitting.confirmDeleteDesc")}</DialogDescription>
                   </DialogHeader>
                   <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-                    <Button variant="outline" onClick={() => setConfirmDelComp(null)}>لا</Button>
+                    <Button variant="outline" onClick={() => setConfirmDelComp(null)}>{t("fitting.no")}</Button>
                     <Button variant="destructive" disabled={deleteComponent.isPending}
                       onClick={() => { if (confirmDelComp) { deleteComponent.mutate({ id, compId: confirmDelComp }); setConfirmDelComp(null); } }}>
-                      {deleteComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+                      {deleteComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("fitting.yesDelete")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -6299,11 +6430,11 @@ export default function ProstheticsCasePage() {
                     className="h-4 w-4 rounded-sm shrink-0 checkbox-orange"
                     disabled={updateCase.isPending}
                   />
-                  <span className="text-sm font-medium">الطرف مكتمل </span>
+                  <span className="text-sm font-medium">{t("fitting.prosthesisComplete")}</span>
                 </label>
                 {c.status === "FITTING" && (
                   <Button onClick={handleAdvanceToGait} disabled={updateStatus.isPending} className="w-full">
-                    الانتقال لتحليل المشي
+                    {t("fitting.goToGait")}
                   </Button>
                 )}
               </div>
@@ -6316,16 +6447,7 @@ export default function ProstheticsCasePage() {
         <TabsContent value="measurement_sheet" className="mt-4 space-y-4" dir="rtl">
           {/* Type selector */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {([
-              { key: "ankle_disarticulation", label: "عبر الكاحل" },
-              { key: "below_knee", label: "تحت الركبة" },
-              { key: "knee_disarticulation", label: "عبر الركبة" },
-              { key: "above_knee", label: "فوق الركبة" },
-              { key: "hemipelvectomy", label: "عبر الحوض" },
-              { key: "elbow_disarticulation", label: "عبر المرفق" },
-              { key: "transhumeral", label: "فوق المرفق" },
-              { key: "transradial", label: "تحت المرفق" },
-            ] as { key: MeasureSheetType; label: string }[]).map(({ key, label }) => (
+            {(["ankle_disarticulation", "below_knee", "knee_disarticulation", "above_knee", "hemipelvectomy", "elbow_disarticulation", "transhumeral", "transradial"] as MeasureSheetType[]).map((key) => (
               <button
                 key={key}
                 type="button"
@@ -6336,14 +6458,14 @@ export default function ProstheticsCasePage() {
                     : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {label}
+                {t(`measurement.selectType.${key}`)}
               </button>
             ))}
           </div>
 
           {/* Ankle disarticulation form */}
           {measureSheetType.includes("ankle_disarticulation") && (
-            <Section title="ورق قياس — عبر الكاحل">
+            <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.ankle_disarticulation") })}>
               <div className="space-y-5">
                 <MeasurementHistoryList records={ankleDisarticulationRecords} />
 
@@ -6352,30 +6474,30 @@ export default function ProstheticsCasePage() {
                     {/* Side + foot measurement + notes */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-1.5">
-                        <Label>الجهة *</Label>
+                        <Label>{t("measurement.side")}</Label>
                         <Select
                           value={ankleForm.side}
                           onValueChange={(v) => setAnkleForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}
                         >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIGHT">اليمين</SelectItem>
-                            <SelectItem value="LEFT">اليسار</SelectItem>
+                            <SelectItem value="RIGHT">{t("measurement.right")}</SelectItem>
+                            <SelectItem value="LEFT">{t("measurement.left")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>قياس القدم</Label>
+                        <Label>{t("measurement.footMeasurement")}</Label>
                         <Input
-                          placeholder="مثال: 26cm"
+                          placeholder={t("measurement.egCm", { n: 26 })}
                           value={ankleForm.footMeasurement}
                           onChange={(e) => setAnkleForm((f) => ({ ...f, footMeasurement: e.target.value }))}
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ملاحظات</Label>
+                        <Label>{t("measurement.notes")}</Label>
                         <Input
-                          placeholder="ملاحظات عامة..."
+                          placeholder={t("measurement.notesPlaceholder")}
                           value={ankleForm.notes}
                           onChange={(e) => setAnkleForm((f) => ({ ...f, notes: e.target.value }))}
                         />
@@ -6386,7 +6508,7 @@ export default function ProstheticsCasePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Affected limb — 19 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–19)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–19" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6411,7 +6533,7 @@ export default function ProstheticsCasePage() {
 
                       {/* Sound limb — 5 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–5" })}</p>
                         <div className="grid grid-cols-1 gap-2 max-w-xs">
                           {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6452,7 +6574,7 @@ export default function ProstheticsCasePage() {
                         disabled={submitAnkleMeasurement.isPending}
                       >
                         {submitAnkleMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ ورق القياس
+                        {t("measurement.saveSheet")}
                       </Button>
                     </div>
                   </div>
@@ -6465,7 +6587,7 @@ export default function ProstheticsCasePage() {
                       onClick={() => setMeasureAddOpen((s) => ({ ...s, ankle_disarticulation: !s.ankle_disarticulation }))}
                     >
                       {measureAddOpen.ankle_disarticulation ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      {measureAddOpen.ankle_disarticulation ? "إلغاء" : "إضافة قياس جديد"}
+                      {measureAddOpen.ankle_disarticulation ? t("measurement.cancel") : t("measurement.addNew")}
                     </Button>
                   </div>
                 )}
@@ -6475,7 +6597,7 @@ export default function ProstheticsCasePage() {
 
           {/* Knee disarticulation form */}
           {measureSheetType.includes("knee_disarticulation") && (
-            <Section title="ورق قياس — عبر الركبة">
+            <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.knee_disarticulation") })}>
               <div className="space-y-5">
                 <MeasurementHistoryList records={kneeDisarticulationRecords} />
 
@@ -6483,29 +6605,29 @@ export default function ProstheticsCasePage() {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-1.5">
-                        <Label>الجهة *</Label>
+                        <Label>{t("measurement.side")}</Label>
                         <Select value={kneeForm.side} onValueChange={(v) => setKneeForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIGHT">اليمين</SelectItem>
-                            <SelectItem value="LEFT">اليسار</SelectItem>
+                            <SelectItem value="RIGHT">{t("measurement.right")}</SelectItem>
+                            <SelectItem value="LEFT">{t("measurement.left")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>قياس القدم</Label>
-                        <Input placeholder="مثال: 26cm" value={kneeForm.footMeasurement} onChange={(e) => setKneeForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                        <Label>{t("measurement.footMeasurement")}</Label>
+                        <Input placeholder={t("measurement.egCm", { n: 26 })} value={kneeForm.footMeasurement} onChange={(e) => setKneeForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ملاحظات</Label>
-                        <Input placeholder="ملاحظات عامة..." value={kneeForm.notes} onChange={(e) => setKneeForm((f) => ({ ...f, notes: e.target.value }))} />
+                        <Label>{t("measurement.notes")}</Label>
+                        <Input placeholder={t("measurement.notesPlaceholder")} value={kneeForm.notes} onChange={(e) => setKneeForm((f) => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Affected limb — 12 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–12)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–12" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6521,7 +6643,7 @@ export default function ProstheticsCasePage() {
 
                       {/* Sound limb — 5 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–5" })}</p>
                         <div className="grid grid-cols-1 gap-2 max-w-xs">
                           {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6552,7 +6674,7 @@ export default function ProstheticsCasePage() {
                         disabled={submitKneeMeasurement.isPending}
                       >
                         {submitKneeMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ ورق القياس
+                        {t("measurement.saveSheet")}
                       </Button>
                     </div>
                   </div>
@@ -6565,7 +6687,7 @@ export default function ProstheticsCasePage() {
                       onClick={() => setMeasureAddOpen((s) => ({ ...s, knee_disarticulation: !s.knee_disarticulation }))}
                     >
                       {measureAddOpen.knee_disarticulation ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      {measureAddOpen.knee_disarticulation ? "إلغاء" : "إضافة قياس جديد"}
+                      {measureAddOpen.knee_disarticulation ? t("measurement.cancel") : t("measurement.addNew")}
                     </Button>
                   </div>
                 )}
@@ -6575,7 +6697,7 @@ export default function ProstheticsCasePage() {
 
           {/* Transfemoral (above knee) form */}
           {measureSheetType.includes("above_knee") && (
-            <Section title="ورق قياس — فوق الركبة">
+            <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.above_knee") })}>
               <div className="space-y-5">
                 <MeasurementHistoryList records={transfemoralRecords} />
 
@@ -6583,29 +6705,29 @@ export default function ProstheticsCasePage() {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-1.5">
-                        <Label>الجهة *</Label>
+                        <Label>{t("measurement.side")}</Label>
                         <Select value={transfemoralForm.side} onValueChange={(v) => setTransfemoralForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIGHT">اليمين</SelectItem>
-                            <SelectItem value="LEFT">اليسار</SelectItem>
+                            <SelectItem value="RIGHT">{t("measurement.right")}</SelectItem>
+                            <SelectItem value="LEFT">{t("measurement.left")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>قياس القدم</Label>
-                        <Input placeholder="مثال: 27cm" value={transfemoralForm.footMeasurement} onChange={(e) => setTransfemoralForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                        <Label>{t("measurement.footMeasurement")}</Label>
+                        <Input placeholder={t("measurement.egCm", { n: 27 })} value={transfemoralForm.footMeasurement} onChange={(e) => setTransfemoralForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ملاحظات</Label>
-                        <Input placeholder="ملاحظات عامة..." value={transfemoralForm.notes} onChange={(e) => setTransfemoralForm((f) => ({ ...f, notes: e.target.value }))} />
+                        <Label>{t("measurement.notes")}</Label>
+                        <Input placeholder={t("measurement.notesPlaceholder")} value={transfemoralForm.notes} onChange={(e) => setTransfemoralForm((f) => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Affected limb — 12 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–12)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–12" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6621,7 +6743,7 @@ export default function ProstheticsCasePage() {
 
                       {/* Sound limb — 11 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–11)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–11" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 11 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6652,7 +6774,7 @@ export default function ProstheticsCasePage() {
                         disabled={submitTransfemoralMeasurement.isPending}
                       >
                         {submitTransfemoralMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ ورق القياس
+                        {t("measurement.saveSheet")}
                       </Button>
                     </div>
                   </div>
@@ -6665,7 +6787,7 @@ export default function ProstheticsCasePage() {
                       onClick={() => setMeasureAddOpen((s) => ({ ...s, above_knee: !s.above_knee }))}
                     >
                       {measureAddOpen.above_knee ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      {measureAddOpen.above_knee ? "إلغاء" : "إضافة قياس جديد"}
+                      {measureAddOpen.above_knee ? t("measurement.cancel") : t("measurement.addNew")}
                     </Button>
                   </div>
                 )}
@@ -6675,7 +6797,7 @@ export default function ProstheticsCasePage() {
 
           {/* Transtibial (below knee) form */}
           {measureSheetType.includes("below_knee") && (
-            <Section title="ورق قياس — تحت الركبة">
+            <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.below_knee") })}>
               <div className="space-y-5">
                 <MeasurementHistoryList records={transtibialRecords} />
 
@@ -6683,29 +6805,29 @@ export default function ProstheticsCasePage() {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-1.5">
-                        <Label>الجهة *</Label>
+                        <Label>{t("measurement.side")}</Label>
                         <Select value={transtibialForm.side} onValueChange={(v) => setTranstibialForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIGHT">اليمين</SelectItem>
-                            <SelectItem value="LEFT">اليسار</SelectItem>
+                            <SelectItem value="RIGHT">{t("measurement.right")}</SelectItem>
+                            <SelectItem value="LEFT">{t("measurement.left")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>قياس القدم</Label>
-                        <Input placeholder="مثال: 26cm" value={transtibialForm.footMeasurement} onChange={(e) => setTranstibialForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                        <Label>{t("measurement.footMeasurement")}</Label>
+                        <Input placeholder={t("measurement.egCm", { n: 26 })} value={transtibialForm.footMeasurement} onChange={(e) => setTranstibialForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ملاحظات</Label>
-                        <Input placeholder="ملاحظات عامة..." value={transtibialForm.notes} onChange={(e) => setTranstibialForm((f) => ({ ...f, notes: e.target.value }))} />
+                        <Label>{t("measurement.notes")}</Label>
+                        <Input placeholder={t("measurement.notesPlaceholder")} value={transtibialForm.notes} onChange={(e) => setTranstibialForm((f) => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Affected limb — 19 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–19)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–19" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6721,7 +6843,7 @@ export default function ProstheticsCasePage() {
 
                       {/* Sound limb — 5 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–5)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–5" })}</p>
                         <div className="grid grid-cols-1 gap-2 max-w-xs">
                           {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6752,7 +6874,7 @@ export default function ProstheticsCasePage() {
                         disabled={submitTranstibialMeasurement.isPending}
                       >
                         {submitTranstibialMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ ورق القياس
+                        {t("measurement.saveSheet")}
                       </Button>
                     </div>
                   </div>
@@ -6765,7 +6887,7 @@ export default function ProstheticsCasePage() {
                       onClick={() => setMeasureAddOpen((s) => ({ ...s, below_knee: !s.below_knee }))}
                     >
                       {measureAddOpen.below_knee ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      {measureAddOpen.below_knee ? "إلغاء" : "إضافة قياس جديد"}
+                      {measureAddOpen.below_knee ? t("measurement.cancel") : t("measurement.addNew")}
                     </Button>
                   </div>
                 )}
@@ -6775,7 +6897,7 @@ export default function ProstheticsCasePage() {
 
           {/* Transradial (below elbow) form */}
           {measureSheetType.includes("transradial") && (
-            <Section title="ورق قياس — تحت المرفق">
+            <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.transradial") })}>
               <div className="space-y-5">
                 <MeasurementHistoryList records={transradialRecords} />
 
@@ -6783,25 +6905,25 @@ export default function ProstheticsCasePage() {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>الجهة *</Label>
+                        <Label>{t("measurement.side")}</Label>
                         <Select value={transradialForm.side} onValueChange={(v) => setTransradialForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIGHT">اليمين</SelectItem>
-                            <SelectItem value="LEFT">اليسار</SelectItem>
+                            <SelectItem value="RIGHT">{t("measurement.right")}</SelectItem>
+                            <SelectItem value="LEFT">{t("measurement.left")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ملاحظات</Label>
-                        <Input placeholder="ملاحظات عامة..." value={transradialForm.notes} onChange={(e) => setTransradialForm((f) => ({ ...f, notes: e.target.value }))} />
+                        <Label>{t("measurement.notes")}</Label>
+                        <Input placeholder={t("measurement.notesPlaceholder")} value={transradialForm.notes} onChange={(e) => setTransradialForm((f) => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Sound limb — 7 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–7)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–7" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 7 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6817,7 +6939,7 @@ export default function ProstheticsCasePage() {
 
                       {/* Affected limb — 10 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–10)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–10" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6847,7 +6969,7 @@ export default function ProstheticsCasePage() {
                         disabled={submitTransradialMeasurement.isPending}
                       >
                         {submitTransradialMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ ورق القياس
+                        {t("measurement.saveSheet")}
                       </Button>
                     </div>
                   </div>
@@ -6860,7 +6982,7 @@ export default function ProstheticsCasePage() {
                       onClick={() => setMeasureAddOpen((s) => ({ ...s, transradial: !s.transradial }))}
                     >
                       {measureAddOpen.transradial ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      {measureAddOpen.transradial ? "إلغاء" : "إضافة قياس جديد"}
+                      {measureAddOpen.transradial ? t("measurement.cancel") : t("measurement.addNew")}
                     </Button>
                   </div>
                 )}
@@ -6870,7 +6992,7 @@ export default function ProstheticsCasePage() {
 
           {/* Transhumeral (above elbow) form */}
           {measureSheetType.includes("transhumeral") && (
-            <Section title="ورق قياس — فوق المرفق">
+            <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.transhumeral") })}>
               <div className="space-y-5">
                 <MeasurementHistoryList records={transhumeralRecords} />
 
@@ -6878,25 +7000,25 @@ export default function ProstheticsCasePage() {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>الجهة *</Label>
+                        <Label>{t("measurement.side")}</Label>
                         <Select value={transhumeralForm.side} onValueChange={(v) => setTranshumeralForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIGHT">اليمين</SelectItem>
-                            <SelectItem value="LEFT">اليسار</SelectItem>
+                            <SelectItem value="RIGHT">{t("measurement.right")}</SelectItem>
+                            <SelectItem value="LEFT">{t("measurement.left")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ملاحظات</Label>
-                        <Input placeholder="ملاحظات عامة..." value={transhumeralForm.notes} onChange={(e) => setTranshumeralForm((f) => ({ ...f, notes: e.target.value }))} />
+                        <Label>{t("measurement.notes")}</Label>
+                        <Input placeholder={t("measurement.notesPlaceholder")} value={transhumeralForm.notes} onChange={(e) => setTranshumeralForm((f) => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Sound limb — 10 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–10)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–10" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6912,7 +7034,7 @@ export default function ProstheticsCasePage() {
 
                       {/* Affected limb — 6 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–6)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–6" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 6 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -6942,7 +7064,7 @@ export default function ProstheticsCasePage() {
                         disabled={submitTranshumeralMeasurement.isPending}
                       >
                         {submitTranshumeralMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ ورق القياس
+                        {t("measurement.saveSheet")}
                       </Button>
                     </div>
                   </div>
@@ -6955,7 +7077,7 @@ export default function ProstheticsCasePage() {
                       onClick={() => setMeasureAddOpen((s) => ({ ...s, transhumeral: !s.transhumeral }))}
                     >
                       {measureAddOpen.transhumeral ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      {measureAddOpen.transhumeral ? "إلغاء" : "إضافة قياس جديد"}
+                      {measureAddOpen.transhumeral ? t("measurement.cancel") : t("measurement.addNew")}
                     </Button>
                   </div>
                 )}
@@ -6965,7 +7087,7 @@ export default function ProstheticsCasePage() {
 
           {/* Elbow disarticulation form */}
           {measureSheetType.includes("elbow_disarticulation") && (
-            <Section title="ورق قياس — عبر المرفق">
+            <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.elbow_disarticulation") })}>
               <div className="space-y-5">
                 <MeasurementHistoryList records={elbowDisarticulationRecords} />
 
@@ -6973,25 +7095,25 @@ export default function ProstheticsCasePage() {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>الجهة *</Label>
+                        <Label>{t("measurement.side")}</Label>
                         <Select value={elbowForm.side} onValueChange={(v) => setElbowForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIGHT">اليمين</SelectItem>
-                            <SelectItem value="LEFT">اليسار</SelectItem>
+                            <SelectItem value="RIGHT">{t("measurement.right")}</SelectItem>
+                            <SelectItem value="LEFT">{t("measurement.left")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ملاحظات</Label>
-                        <Input placeholder="ملاحظات عامة..." value={elbowForm.notes} onChange={(e) => setElbowForm((f) => ({ ...f, notes: e.target.value }))} />
+                        <Label>{t("measurement.notes")}</Label>
+                        <Input placeholder={t("measurement.notesPlaceholder")} value={elbowForm.notes} onChange={(e) => setElbowForm((f) => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Sound limb — 12 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–12)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–12" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -7007,7 +7129,7 @@ export default function ProstheticsCasePage() {
 
                       {/* Affected limb — 9 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب (1–9)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–9" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 9 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -7037,7 +7159,7 @@ export default function ProstheticsCasePage() {
                         disabled={submitElbowMeasurement.isPending}
                       >
                         {submitElbowMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ ورق القياس
+                        {t("measurement.saveSheet")}
                       </Button>
                     </div>
                   </div>
@@ -7050,7 +7172,7 @@ export default function ProstheticsCasePage() {
                       onClick={() => setMeasureAddOpen((s) => ({ ...s, elbow_disarticulation: !s.elbow_disarticulation }))}
                     >
                       {measureAddOpen.elbow_disarticulation ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      {measureAddOpen.elbow_disarticulation ? "إلغاء" : "إضافة قياس جديد"}
+                      {measureAddOpen.elbow_disarticulation ? t("measurement.cancel") : t("measurement.addNew")}
                     </Button>
                   </div>
                 )}
@@ -7060,7 +7182,7 @@ export default function ProstheticsCasePage() {
 
           {/* Hemipelvectomy (through pelvis) form */}
           {measureSheetType.includes("hemipelvectomy") && (
-            <Section title="ورق قياس — عبر الحوض">
+            <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.hemipelvectomy") })}>
               <div className="space-y-5">
                 <MeasurementHistoryList records={hemipelvectomyRecords} />
 
@@ -7068,29 +7190,29 @@ export default function ProstheticsCasePage() {
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-1.5">
-                        <Label>الجهة *</Label>
+                        <Label>{t("measurement.side")}</Label>
                         <Select value={hemipelvectomyForm.side} onValueChange={(v) => setHemipelvectomyForm((f) => ({ ...f, side: v as "RIGHT" | "LEFT" }))}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIGHT">اليمين</SelectItem>
-                            <SelectItem value="LEFT">اليسار</SelectItem>
+                            <SelectItem value="RIGHT">{t("measurement.right")}</SelectItem>
+                            <SelectItem value="LEFT">{t("measurement.left")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>قياس القدم</Label>
-                        <Input placeholder="مثال: 27cm" value={hemipelvectomyForm.footMeasurement} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
+                        <Label>{t("measurement.footMeasurement")}</Label>
+                        <Input placeholder={t("measurement.egCm", { n: 27 })} value={hemipelvectomyForm.footMeasurement} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, footMeasurement: e.target.value }))} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>ملاحظات</Label>
-                        <Input placeholder="ملاحظات عامة..." value={hemipelvectomyForm.notes} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, notes: e.target.value }))} />
+                        <Label>{t("measurement.notes")}</Label>
+                        <Input placeholder={t("measurement.notesPlaceholder")} value={hemipelvectomyForm.notes} onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Sound limb — 15 fields */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف السليم (1–15)</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–15" })}</p>
                         <div className="grid grid-cols-2 gap-2">
                           {Array.from({ length: 15 }, (_, i) => String(i + 1)).map((k) => (
                             <div key={k} className="flex items-center gap-2">
@@ -7106,7 +7228,7 @@ export default function ProstheticsCasePage() {
 
                       {/* Affected limb — 1 field only */}
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">الطرف المصاب</p>
+                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimb")}</p>
                         <div className="flex items-center gap-2 max-w-xs">
                           <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">1</span>
                           <Input className="h-8 text-sm" placeholder="cm"
@@ -7133,7 +7255,7 @@ export default function ProstheticsCasePage() {
                         disabled={submitHemipelvectomyMeasurement.isPending}
                       >
                         {submitHemipelvectomyMeasurement.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        حفظ ورق القياس
+                        {t("measurement.saveSheet")}
                       </Button>
                     </div>
                   </div>
@@ -7146,7 +7268,7 @@ export default function ProstheticsCasePage() {
                       onClick={() => setMeasureAddOpen((s) => ({ ...s, hemipelvectomy: !s.hemipelvectomy }))}
                     >
                       {measureAddOpen.hemipelvectomy ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                      {measureAddOpen.hemipelvectomy ? "إلغاء" : "إضافة قياس جديد"}
+                      {measureAddOpen.hemipelvectomy ? t("measurement.cancel") : t("measurement.addNew")}
                     </Button>
                   </div>
                 )}
@@ -7156,7 +7278,7 @@ export default function ProstheticsCasePage() {
 
           {measureSheetType.length === 0 && (
             <div className="rounded-lg border border-dashed flex items-center justify-center py-16">
-              <p className="text-muted-foreground text-sm">اختر نوع البتر لعرض ورق القياس المناسب</p>
+              <p className="text-muted-foreground text-sm">{t("measurement.selectTypePrompt")}</p>
             </div>
           )}
         </TabsContent>
@@ -7177,7 +7299,7 @@ export default function ProstheticsCasePage() {
 
         {/* ── GAIT ANALYSIS ───────────────────────────────────────────────── */}
         <TabsContent value="gait_analysis" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-          <GaitAnalysisSection caseId={id} staffList={staffList} />
+          <GaitAnalysisSection caseId={id} staffList={staffList} patient={patientFull ?? caseData?.patient} />
         </TabsContent>
 
         {/* ── BALANCE ASSESSMENT ──────────────────────────────────────────── */}
@@ -7191,53 +7313,53 @@ export default function ProstheticsCasePage() {
         <TabsContent value="final_evaluation" className="mt-4 space-y-4" dir="rtl">
 
           {/* ── قسم 1: المعلومات الطبية ── */}
-          <Section title="المعلومات الطبية حول الطرف الصناعي">
+          <Section title={t("finalEval.medicalInfoTitle")}>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs">حالة الجذمور</Label>
+                <Label className="text-xs">{t("finalEval.residualLimbCondition")}</Label>
                 <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.residualLimbCondition ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, residualLimbCondition: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">نظام التعليق</Label>
+                <Label className="text-xs">{t("finalEval.suspensionSystem")}</Label>
                 <Input value={finalEvalForm.suspensionSystemUsed ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, suspensionSystemUsed: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">عدد الجوارب / اللاينر (السيليكون) التي تم تسليمها</Label>
+                <Label className="text-xs">{t("finalEval.socksLinersCount")}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground shrink-0">جوارب</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{t("finalEval.socks")}</span>
                     <Input type="number" min={0} value={finalEvalForm.socksDelivered ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, socksDelivered: e.target.value === "" ? undefined : Number(e.target.value) }))} className="h-8 text-xs" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground shrink-0">لاينر</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{t("finalEval.liners")}</span>
                     <Input type="number" min={0} value={finalEvalForm.linersDelivered ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, linersDelivered: e.target.value === "" ? undefined : Number(e.target.value) }))} className="h-8 text-xs" />
                   </div>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">تاريخ التركيب</Label>
+                <Label className="text-xs">{t("finalEval.fittingDate")}</Label>
                 <Input type="date" value={finalEvalForm.fittingDate ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, fittingDate: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">ملاحظات عامة</Label>
+                <Label className="text-xs">{t("finalEval.generalNotes")}</Label>
                 <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.generalNotes ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, generalNotes: e.target.value }))} />
               </div>
             </div>
           </Section>
 
           {/* ── قسم 2: الرأي النهائي للجنة ── */}
-          <Section title="الرأي النهائي للجنة">
+          <Section title={t("finalEval.committeeFinalTitle")}>
             <div className="space-y-3">
               {([
-                ["physioOpinion",               "رأي المعالج الفيزيائي"],
-                ["departmentHeadOpinion",        "رأي رئيس القسم"],
-                ["prosthetistOpinion",           "رأي فني الأطراف الصناعية"],
-                ["prosthetistSupervisorOpinion", "رأي مسؤول فني الأطراف الصناعية"],
-                ["committeeHeadOpinion",         "رأي رئيس اللجنة"],
-                ["expertOpinion",                "رأي الخبير (إن وجد)"],
-              ] as const).map(([fld, lbl]) => (
+                "physioOpinion",
+                "departmentHeadOpinion",
+                "prosthetistOpinion",
+                "prosthetistSupervisorOpinion",
+                "committeeHeadOpinion",
+                "expertOpinion",
+              ] as const).map((fld) => (
                 <div key={fld} className="space-y-1.5">
-                  <Label className="text-xs">{lbl}</Label>
+                  <Label className="text-xs">{t(`finalEval.opinion.${fld}`)}</Label>
                   <Textarea rows={2} className="resize-none text-xs" value={(finalEvalForm as any)[fld] ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, [fld]: e.target.value }))} />
                 </div>
               ))}
@@ -7245,81 +7367,81 @@ export default function ProstheticsCasePage() {
           </Section>
 
           {/* ── قسم 3: اعتماد المدير الطبي ── */}
-          <Section title="اعتماد المدير الطبي">
+          <Section title={t("finalEval.directorApprovalTitle")}>
             <div className="space-y-4">
               <p className="text-xs text-muted-foreground leading-relaxed border rounded-lg px-3 py-2.5 bg-muted/30">
-                بعد مراجعة التقييمات أعلاه، أقر بأن الطرف الصناعي جاهز للتسليم ولا يوجد مانع طبي أو فني من خروج المريض.
+                {t("finalEval.approvalStatement")}
               </p>
               <div className="space-y-2">
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input type="checkbox" checked={!!finalEvalForm.readyForDelivery}
                     onChange={() => setFinalEvalForm((f) => ({ ...f, readyForDelivery: true, needsFollowUp: false }))}
                     className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
-                  <span className="text-sm">معتمد للتسليم</span>
+                  <span className="text-sm">{t("finalEval.approvedForDelivery")}</span>
                 </label>
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input type="checkbox" checked={!!finalEvalForm.needsFollowUp}
                     onChange={() => setFinalEvalForm((f) => ({ ...f, needsFollowUp: true, readyForDelivery: false }))}
                     className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
-                  <span className="text-sm">يحتاج متابعة / تعديل قبل التسليم</span>
+                  <span className="text-sm">{t("finalEval.needsFollowUp")}</span>
                 </label>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">خطة المتابعة (إن وجدت)</Label>
+                <Label className="text-xs">{t("finalEval.followUpPlan")}</Label>
                 <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.followUpPlan ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, followUpPlan: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">يوجد ملحق</Label>
-                <Input className="text-xs" value={(finalEvalForm as any).attachment ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, attachment: e.target.value }))} placeholder="وصف الملحق إن وجد..." />
+                <Label className="text-xs">{t("finalEval.hasAttachment")}</Label>
+                <Input className="text-xs" value={(finalEvalForm as any).attachment ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, attachment: e.target.value }))} placeholder={t("finalEval.attachmentPlaceholder")} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">ملاحظات عامة</Label>
+                <Label className="text-xs">{t("finalEval.generalNotes")}</Label>
                 <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.medicalDirectorNotes ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, medicalDirectorNotes: e.target.value }))} />
               </div>
             </div>
           </Section>
 
           {/* ── قسم 4: تدقيق المدير ── */}
-          <Section title="تدقيق المدير">
+          <Section title={t("finalEval.managerAuditTitle")}>
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">ملاحظات عامة</Label>
+                <Label className="text-xs">{t("finalEval.generalNotes")}</Label>
                 <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.managerNotes} onChange={(e) => setFinalEvalForm((f) => ({ ...f, managerNotes: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">اضبارة المريض</Label>
+                <Label className="text-xs">{t("finalEval.patientFile")}</Label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={finalEvalForm.patientFileComplete === true}
                       onChange={() => setFinalEvalForm((f) => ({ ...f, patientFileComplete: true }))}
                       className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
-                    <span className="text-sm">مكتملة</span>
+                    <span className="text-sm">{t("finalEval.complete")}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={finalEvalForm.patientFileComplete === false}
                       onChange={() => setFinalEvalForm((f) => ({ ...f, patientFileComplete: false }))}
                       className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
-                    <span className="text-sm">غير مكتملة</span>
+                    <span className="text-sm">{t("finalEval.incomplete")}</span>
                   </label>
                 </div>
               </div>
               <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-semibold">توقيع المدير</p>
+                <p className="text-xs font-semibold">{t("finalEval.managerSignature")}</p>
                 <Select value={finalEvalForm.managerId || "none"}
                   onValueChange={(v) => setFinalEvalForm((f) => ({ ...f, managerId: v === "none" ? "" : v, managerSignatureUrl: "" }))}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="اختر المدير" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t("finalEval.chooseManager")} /></SelectTrigger>
                   <SelectContent>
                     {staffList.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.fullName ?? s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 {finalEvalForm.managerSignatureUrl ? (
                   <div className="relative">
-                    <img src={finalEvalForm.managerSignatureUrl} alt="توقيع المدير" className="h-16 w-full object-contain border rounded bg-white" />
+                    <img src={finalEvalForm.managerSignatureUrl} alt={t("finalEval.managerSignature")} className="h-16 w-full object-contain border rounded bg-white" />
                     <button onClick={() => setFinalEvalForm((f) => ({ ...f, managerSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
                   </div>
                 ) : (
                   <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={handleFinalEvalManagerSigClick} disabled={!finalEvalForm.managerId}>
-                    {finalEvalForm.managerId ? "جلب / رفع التوقيع" : "اختر المدير أولاً"}
+                    {finalEvalForm.managerId ? t("finalEval.fetchUploadSignature") : t("finalEval.chooseManagerFirst")}
                   </Button>
                 )}
                 <input ref={finalEvalManagerSigRef} type="file" accept="image/*" className="hidden" onChange={handleFinalEvalManagerSigFileChange} />
@@ -7331,7 +7453,7 @@ export default function ProstheticsCasePage() {
           <div className="flex gap-2">
             <Button onClick={handleSubmitFinalEval} disabled={submitFinalEval.isPending} className="flex-1 gap-2">
               {submitFinalEval.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              حفظ التقييم
+              {t("finalEval.saveEval")}
             </Button>
           </div>
         </TabsContent>
@@ -7340,36 +7462,36 @@ export default function ProstheticsCasePage() {
         <TabsContent value="delivered" className="mt-4 space-y-4" dir="rtl">
 
           <Section
-            title="بيانات تسليم الطرف الصناعي — Pro-019"
+            title={t("delivered.title")}
             action={
               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setStageTab("fitting")}>
                 <Plus className="h-3.5 w-3.5" />
-                إضافة قطعة
+                {t("delivered.addPart")}
               </Button>
             }
           >
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5 col-span-2">
-                  <Label className="text-xs">تاريخ الخروج</Label>
+                  <Label className="text-xs">{t("delivered.dischargeDate")}</Label>
                   <Input type="date" value={proDeliveryHeader.inspectionDate} onChange={(e) => setProDeliveryHeader((f) => ({ ...f, inspectionDate: e.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">الفني — الأطراف الصناعية</Label>
+                  <Label className="text-xs">{t("delivered.prosthetist")}</Label>
                   <Select value={proDeliveryHeader.prosthetistId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, prosthetistId: v === "none" ? "" : v }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      <SelectItem value="none">{t("delivered.notSpecified")}</SelectItem>
                       {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("الأطراف الصناعية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">المعالج الفيزيائي</Label>
+                  <Label className="text-xs">{t("delivered.physiotherapist")}</Label>
                   <Select value={proDeliveryHeader.physiotherapistId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, physiotherapistId: v === "none" ? "" : v }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      <SelectItem value="none">{t("delivered.notSpecified")}</SelectItem>
                       {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("العلاج الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -7383,22 +7505,22 @@ export default function ProstheticsCasePage() {
                   return (
                     <>
                       <p className="text-sm font-semibold">
-                        القطع المُسلَّمة{items.length ? ` (${items.length})` : ""}
+                        {t("delivered.deliveredParts")}{items.length ? ` (${items.length})` : ""}
                       </p>
-                      <p className="text-xs text-muted-foreground">تُضاف تلقائيًا عند اعتماد القطعة في المخزون.</p>
+                      <p className="text-xs text-muted-foreground">{t("delivered.deliveredPartsAutoNote")}</p>
                       {items.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-2">لا توجد قطع بعد — تظهر هنا تلقائيًا بعد اعتماد قطع الحالة في المخزون.</p>
+                        <p className="text-sm text-muted-foreground text-center py-2">{t("delivered.noPartsYet")}</p>
                       ) : (
                         <div className="rounded-lg border overflow-hidden">
                           <table className="w-full text-sm">
                             <thead className="bg-muted/50">
                               <tr>
-                                <th className="text-right p-2 font-medium">الاسم</th>
-                                <th className="text-right p-2 font-medium">الرمز</th>
-                                <th className="text-right p-2 font-medium">الكمية</th>
-                                <th className="text-right p-2 font-medium">الشركة</th>
-                                <th className="text-right p-2 font-medium">المصدر</th>
-                                <th className="text-right p-2 font-medium">تاريخ الإضافة</th>
+                                <th className="text-right p-2 font-medium">{t("delivered.name")}</th>
+                                <th className="text-right p-2 font-medium">{t("delivered.symbol")}</th>
+                                <th className="text-right p-2 font-medium">{t("delivered.quantity")}</th>
+                                <th className="text-right p-2 font-medium">{t("delivered.company")}</th>
+                                <th className="text-right p-2 font-medium">{t("delivered.source")}</th>
+                                <th className="text-right p-2 font-medium">{t("delivered.addedDate")}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -7410,7 +7532,7 @@ export default function ProstheticsCasePage() {
                                   <td className="p-2 text-muted-foreground">{item.company ?? "—"}</td>
                                   <td className="p-2">
                                     <Badge variant="outline" className={cn("text-xs", item.sourceComponentId ? "border-green-300 bg-green-50 text-green-700" : "border-muted-foreground/30")}>
-                                      {item.sourceComponentId ? "تلقائي" : "يدوي"}
+                                      {item.sourceComponentId ? t("delivered.auto") : t("delivered.manual")}
                                     </Badge>
                                   </td>
                                   <td className="p-2 text-muted-foreground text-xs">{item.itemAddedDate ? new Date(item.itemAddedDate).toLocaleDateString("en-GB") : "—"}</td>
@@ -7427,11 +7549,11 @@ export default function ProstheticsCasePage() {
 
 
               <div className="space-y-1.5 col-span-2">
-                <Label className="text-xs">المدير الطبي</Label>
+                <Label className="text-xs">{t("delivered.medicalDirector")}</Label>
                 <Select value={proDeliveryHeader.medicalDirectorId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, medicalDirectorId: v === "none" ? "" : v, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))}>
-                  <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— غير محدد —</SelectItem>
+                    <SelectItem value="none">{t("delivered.notSpecified")}</SelectItem>
                     {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الادارة الطبية") || e.department?.nameAr?.includes("الإدارة الطبية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -7439,21 +7561,21 @@ export default function ProstheticsCasePage() {
 
               {/* Medical director signature */}
               <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-semibold">توقيع المدير الطبي</p>
+                <p className="text-xs font-semibold">{t("delivered.medicalDirectorSignature")}</p>
                 {proDeliveryHeader.medicalDirectorSignatureUrl ? (
                   <div className="relative inline-block">
-                    <img src={proDeliveryHeader.medicalDirectorSignatureUrl} alt="توقيع المدير الطبي" className="h-20 object-contain border rounded bg-white" />
+                    <img src={proDeliveryHeader.medicalDirectorSignatureUrl} alt={t("delivered.medicalDirectorSignature")} className="h-20 object-contain border rounded bg-white" />
                     <button onClick={() => setProDeliveryHeader((f) => ({ ...f, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
                   </div>
                 ) : (
                   <Button type="button" size="sm" variant="outline" onClick={handleMedicalDirectorSignatureClick} disabled={!proDeliveryHeader.medicalDirectorId}>
-                    {proDeliveryHeader.medicalDirectorId ? "جلب / رفع التوقيع" : "اختر المدير الطبي أولاً"}
+                    {proDeliveryHeader.medicalDirectorId ? t("delivered.fetchUploadSignature") : t("delivered.chooseMedicalDirectorFirst")}
                   </Button>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs">التاريخ</Label>
+                <Label className="text-xs">{t("delivered.date")}</Label>
                 <Input type="date" value={proDeliveryHeader.signatureDate} onChange={(e) => setProDeliveryHeader((f) => ({ ...f, signatureDate: e.target.value }))} />
               </div>
 
@@ -7465,7 +7587,7 @@ export default function ProstheticsCasePage() {
                 className="w-full gap-2"
               >
                 {saveProsDelivery.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                حفظ بيانات التسليم
+                {t("delivered.saveDelivery")}
               </Button>
             </div>
           </Section>
@@ -7475,10 +7597,10 @@ export default function ProstheticsCasePage() {
         <TabsContent value="final_delivery" className="mt-4 space-y-4" dir="rtl">
           {/* Not created yet — GET returns null until POST /final-delivery. */}
           {!finalDelivery ? (
-            <Section title="التسليم النهائي">
+            <Section title={t("finalDelivery.finalTitle")}>
               <div className="text-center py-10 space-y-3">
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  لم يُنشأ التسليم النهائي بعد. عند الإنشاء تُنسخ البيانات والقطع المعتمدة من «التسليم التجريبي» تلقائيًا — والنسخ يتم مرة واحدة فقط.
+                  {t("finalDelivery.notCreatedYet")}
                 </p>
                 <Button
                   onClick={() => createFinalDelivery.mutate({ caseId: id })}
@@ -7486,35 +7608,35 @@ export default function ProstheticsCasePage() {
                   className="gap-2"
                 >
                   {createFinalDelivery.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  إنشاء التسليم النهائي
+                  {t("finalDelivery.createFinal")}
                 </Button>
               </div>
             </Section>
           ) : (
-            <Section title="التسليم النهائي">
+            <Section title={t("finalDelivery.finalTitle")}>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5 col-span-2">
-                    <Label className="text-xs">تاريخ الخروج</Label>
+                    <Label className="text-xs">{t("delivered.dischargeDate")}</Label>
                     <Input type="date" value={finalDeliveryHeader.inspectionDate}
                       onChange={(e) => setFinalDeliveryHeader((f) => ({ ...f, inspectionDate: e.target.value }))} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">الفني — الأطراف الصناعية</Label>
+                    <Label className="text-xs">{t("delivered.prosthetist")}</Label>
                     <Select value={finalDeliveryHeader.prosthetistId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, prosthetistId: v === "none" ? "" : v }))}>
-                      <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">— غير محدد —</SelectItem>
+                        <SelectItem value="none">{t("delivered.notSpecified")}</SelectItem>
                         {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("الأطراف الصناعية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">المعالج الفيزيائي</Label>
+                    <Label className="text-xs">{t("delivered.physiotherapist")}</Label>
                     <Select value={finalDeliveryHeader.physiotherapistId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, physiotherapistId: v === "none" ? "" : v }))}>
-                      <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">— غير محدد —</SelectItem>
+                        <SelectItem value="none">{t("delivered.notSpecified")}</SelectItem>
                         {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("العلاج الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -7527,20 +7649,20 @@ export default function ProstheticsCasePage() {
                     const items: any[] = (finalDelivery as any)?.items ?? [];
                     return (
                       <>
-                        <p className="text-sm font-semibold">القطع{items.length ? ` (${items.length})` : ""}</p>
-                        <p className="text-xs text-muted-foreground">نُسخت من القطع المعتمدة في «التسليم التجريبي» عند الإنشاء.</p>
+                        <p className="text-sm font-semibold">{t("finalDelivery.parts")}{items.length ? ` (${items.length})` : ""}</p>
+                        <p className="text-xs text-muted-foreground">{t("finalDelivery.copiedNote")}</p>
                         {items.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-2">لا توجد قطع.</p>
+                          <p className="text-sm text-muted-foreground text-center py-2">{t("finalDelivery.noParts")}</p>
                         ) : (
                           <div className="rounded-lg border overflow-hidden">
                             <table className="w-full text-sm">
                               <thead className="bg-muted/50">
                                 <tr>
-                                  <th className="text-right p-2 font-medium">الاسم</th>
-                                  <th className="text-right p-2 font-medium">الرمز</th>
-                                  <th className="text-right p-2 font-medium">الكمية</th>
-                                  <th className="text-right p-2 font-medium">الشركة</th>
-                                  <th className="text-right p-2 font-medium">تاريخ الإضافة</th>
+                                  <th className="text-right p-2 font-medium">{t("delivered.name")}</th>
+                                  <th className="text-right p-2 font-medium">{t("delivered.symbol")}</th>
+                                  <th className="text-right p-2 font-medium">{t("delivered.quantity")}</th>
+                                  <th className="text-right p-2 font-medium">{t("delivered.company")}</th>
+                                  <th className="text-right p-2 font-medium">{t("delivered.addedDate")}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -7563,32 +7685,32 @@ export default function ProstheticsCasePage() {
                 </div>
 
                 <div className="space-y-1.5 col-span-2">
-                  <Label className="text-xs">المدير التنفيذي (CEO)</Label>
+                  <Label className="text-xs">{t("finalDelivery.ceo")}</Label>
                   <Select value={finalDeliveryHeader.ceoId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, ceoId: v === "none" ? "" : v, ceoSignatureUrl: "" }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      <SelectItem value="none">{t("delivered.notSpecified")}</SelectItem>
                       {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الادارة التنفيذية") || e.department?.nameAr?.includes("الإدارة التنفيذية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="rounded-lg border p-3 space-y-2">
-                  <p className="text-xs font-semibold">توقيع المدير التنفيذي</p>
+                  <p className="text-xs font-semibold">{t("finalDelivery.ceoSignature")}</p>
                   {finalDeliveryHeader.ceoSignatureUrl ? (
                     <div className="relative inline-block">
-                      <img src={finalDeliveryHeader.ceoSignatureUrl} alt="توقيع المدير التنفيذي" className="h-20 object-contain border rounded bg-white" />
+                      <img src={finalDeliveryHeader.ceoSignatureUrl} alt={t("finalDelivery.ceoSignature")} className="h-20 object-contain border rounded bg-white" />
                       <button onClick={() => setFinalDeliveryHeader((f) => ({ ...f, ceoSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
                     </div>
                   ) : (
                     <Button type="button" size="sm" variant="outline" onClick={handleFinalCeoSignatureClick} disabled={!finalDeliveryHeader.ceoId}>
-                      {finalDeliveryHeader.ceoId ? "جلب / رفع التوقيع" : "اختر المدير التنفيذي أولاً"}
+                      {finalDeliveryHeader.ceoId ? t("delivered.fetchUploadSignature") : t("finalDelivery.chooseCeoFirst")}
                     </Button>
                   )}
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs">التاريخ</Label>
+                  <Label className="text-xs">{t("delivered.date")}</Label>
                   <Input type="date" value={finalDeliveryHeader.signatureDate}
                     onChange={(e) => setFinalDeliveryHeader((f) => ({ ...f, signatureDate: e.target.value }))} />
                 </div>
@@ -7608,7 +7730,7 @@ export default function ProstheticsCasePage() {
                   className="w-full gap-2"
                 >
                   {updateFinalDelivery.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  حفظ التسليم النهائي
+                  {t("finalDelivery.saveFinal")}
                 </Button>
               </div>
             </Section>
