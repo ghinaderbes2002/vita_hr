@@ -1,7 +1,11 @@
 import { apiClient } from "./client";
 
 export type ItemType = "COMPONENT" | "CONSUMABLE";
-export type TransactionType = "RECEIVE" | "ISSUE" | "ADJUST" | "RETURN";
+// The API documents the past-tense spellings (and EXPIRED); older data and the
+// existing screens use the short ones, so both are accepted when reading.
+export type TransactionType =
+  | "RECEIVE" | "ISSUE" | "ADJUST" | "RETURN"
+  | "RECEIVED" | "ISSUED" | "ADJUSTED" | "RETURNED" | "EXPIRED";
 export type ItemRequestStatus = "PENDING" | "APPROVED" | "DONE" | "NOT_AVAILABLE";
 
 export interface InventoryCategory {

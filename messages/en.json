@@ -4032,7 +4032,8 @@
       "resources": {
         "title": "Resources Used",
         "components": "prosthetic components",
-        "consumables": "consumables"
+        "consumables": "consumables",
+        "issuedParts": "parts issued from the warehouse"
       },
       "donorCharts": {
         "byStatus": "Distribution by Status",

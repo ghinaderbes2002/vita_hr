@@ -31,12 +31,19 @@ import {
 import { ImportExcelResult, InventoryItem, ItemRequestStatus, ItemType, TransactionType } from "@/lib/api/clinic-inventory";
 import { InventoryItemFormDialog } from "@/components/clinic/inventory-item-form-dialog";
 
-const TYPE_LABEL: Record<ItemType, string> = { COMPONENT: "قطعة", CONSUMABLE: "مستهلك" };
+// Movement types that add to stock, in both spellings the API may use.
+const INCREASES_STOCK = new Set<TransactionType>(["RECEIVE", "RETURN", "ADJUST", "RECEIVED", "RETURNED", "ADJUSTED"]);
+
+// The API may send either the short or the past-tense spelling of a type.
 const TX_LABEL: Record<TransactionType, string> = {
   RECEIVE: "استلام", ISSUE: "صرف", ADJUST: "تسوية", RETURN: "إرجاع",
+  RECEIVED: "استلام", ISSUED: "صرف", ADJUSTED: "تسوية", RETURNED: "إرجاع",
+  EXPIRED: "منتهي الصلاحية",
 };
 const TX_COLOR: Record<TransactionType, string> = {
   RECEIVE: "text-green-600", ISSUE: "text-red-600", ADJUST: "text-blue-600", RETURN: "text-orange-600",
+  RECEIVED: "text-green-600", ISSUED: "text-red-600", ADJUSTED: "text-blue-600", RETURNED: "text-orange-600",
+  EXPIRED: "text-red-600",
 };
 const REQUEST_STATUS_LABEL: Record<ItemRequestStatus, string> = {
   PENDING: "معلق", APPROVED: "معتمد", DONE: "تم", NOT_AVAILABLE: "لا يوجد",
@@ -73,6 +80,11 @@ export default function InventoryPage() {
   });
   const { data: lowStock = [] } = useLowStockAlerts();
   const { data: transactions = [] } = useInventoryTransactions();
+  // Parts taken out of the warehouse: every approved part request writes an
+  // ISSUED movement, so summing their quantities gives what was deducted.
+  const issuedPartsCount = transactions
+    .filter((tx) => tx.type === "ISSUED" || tx.type === "ISSUE")
+    .reduce((sum, tx) => sum + (tx.quantity ?? 0), 0);
 
   const addTx = useAddInventoryTransaction();
   const deleteItem = useDeleteInventoryItem();
@@ -195,7 +207,7 @@ export default function InventoryPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4 pb-3">
             <p className="text-sm text-muted-foreground mb-1">إجمالي الأصناف</p>
@@ -204,14 +216,8 @@ export default function InventoryPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <p className="text-sm text-muted-foreground mb-1">قطع أطراف</p>
-            <p className="text-2xl font-bold">{catalogItems.filter((i) => i.type === "COMPONENT").length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3">
-            <p className="text-sm text-muted-foreground mb-1">مستهلكات</p>
-            <p className="text-2xl font-bold">{catalogItems.filter((i) => i.type === "CONSUMABLE").length}</p>
+            <p className="text-sm text-muted-foreground mb-1">قطع مخرجة من المستودع</p>
+            <p className="text-2xl font-bold">{issuedPartsCount}</p>
           </CardContent>
         </Card>
         <Card>
@@ -252,7 +258,6 @@ export default function InventoryPage() {
                 <SelectContent>
                   <SelectItem value="all">الكل</SelectItem>
                   <SelectItem value="COMPONENT">قطع</SelectItem>
-                  <SelectItem value="CONSUMABLE">مستهلكات</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -276,7 +281,6 @@ export default function InventoryPage() {
                     <TableHead>الكود</TableHead>
                     <TableHead>الصنف</TableHead>
                     <TableHead>الشركة</TableHead>
-                    <TableHead>النوع</TableHead>
                     <TableHead>التصنيف</TableHead>
                     <TableHead>المخزون</TableHead>
                     <TableHead>الحد الأدنى</TableHead>
@@ -293,7 +297,7 @@ export default function InventoryPage() {
                     ))
                   ) : displayedItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9}>
+                      <TableCell colSpan={8}>
                         <EmptyState icon={<Package className="h-8 w-8 text-muted-foreground" />}
                           title={incompleteOnly ? "لا توجد أصناف بيانات ناقصة" : "لا توجد أصناف"}
                           description={incompleteOnly ? "جميع الأصناف مكتملة البيانات" : "أضف أول صنف للمخزون"} />
@@ -308,9 +312,6 @@ export default function InventoryPage() {
                           {item.description && <p className="text-xs text-muted-foreground truncate max-w-40">{item.description}</p>}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{item.companyName ?? "—"}</TableCell>
-                        <TableCell>
-                          {item.type ? <Badge variant="outline" className="text-xs">{TYPE_LABEL[item.type]}</Badge> : <span className="text-muted-foreground text-xs">—</span>}
-                        </TableCell>
                         <TableCell className="text-sm">{item.category?.name ?? "—"}</TableCell>
                         <TableCell>
                           <span className={item.isLowStock ? "text-orange-600 font-bold" : "font-medium"}>
@@ -441,8 +442,8 @@ export default function InventoryPage() {
                       <TableCell>
                         <span className={`text-sm font-medium ${TX_COLOR[tx.type]}`}>{TX_LABEL[tx.type]}</span>
                       </TableCell>
-                      <TableCell className={`font-mono font-bold ${tx.type === "RECEIVE" || tx.type === "RETURN" ? "text-green-600" : "text-red-600"}`}>
-                        {tx.type === "RECEIVE" || tx.type === "RETURN" ? "+" : "-"}{tx.quantity}
+                      <TableCell className={`font-mono font-bold ${INCREASES_STOCK.has(tx.type) ? "text-green-600" : "text-red-600"}`}>
+                        {INCREASES_STOCK.has(tx.type) ? "+" : "-"}{tx.quantity}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{tx.notes ?? "—"}</TableCell>
                       <TableCell className="text-sm">{tx.performedByName ?? "—"}</TableCell>

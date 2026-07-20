@@ -4192,7 +4192,8 @@
       "resources": {
         "title": "الموارد المستخدمة",
         "components": "قطعة أطراف",
-        "consumables": "مستهلك"
+        "consumables": "مستهلك",
+        "issuedParts": "قطعة مخرجة من المستودع"
       },
       "donorCharts": {
         "byStatus": "توزيع حسب الحالة",

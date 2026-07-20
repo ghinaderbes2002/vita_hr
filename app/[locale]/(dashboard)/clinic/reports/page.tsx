@@ -15,7 +15,7 @@ import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
 import { usePhysioCases } from "@/lib/hooks/use-clinic-physio";
 import { PhysioCase } from "@/lib/api/clinic-physio";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
-import { useLowStockAlerts } from "@/lib/hooks/use-clinic-inventory";
+import { useLowStockAlerts, useInventoryTransactions } from "@/lib/hooks/use-clinic-inventory";
 
 function StatCard({
   icon: Icon,
@@ -79,6 +79,12 @@ export default function ClinicReportsPage() {
   const [to, setTo] = useState(today.toISOString().slice(0, 10));
 
   const { data: donorReport, isLoading: donorLoading } = useDonorReport({ from, to });
+  // Parts actually taken out of the warehouse in the same period: every approved
+  // part request writes an ISSUED transaction, so their quantities are the count.
+  const { data: inventoryTransactions = [] } = useInventoryTransactions({ from, to });
+  const issuedPartsCount = inventoryTransactions
+    .filter((tx) => tx.type === "ISSUED" || tx.type === "ISSUE")
+    .reduce((sum, tx) => sum + (tx.quantity ?? 0), 0);
   const downloadPdf = useDownloadDonorPdf();
 
   const { data: prostData } = useProstheticsCases({ limit: 999 });
@@ -218,7 +224,7 @@ export default function ClinicReportsPage() {
                 <CardContent className="pt-4 pb-3 space-y-1">
                   <p className="text-sm text-muted-foreground">{t("resources.title")}</p>
                   <p className="text-sm"><span className="font-bold">{donorReport.resources.totalComponentsUsed}</span> {t("resources.components")}</p>
-                  <p className="text-sm"><span className="font-bold">{donorReport.resources.totalConsumablesUsed}</span> {t("resources.consumables")}</p>
+                  <p className="text-sm"><span className="font-bold">{issuedPartsCount}</span> {t("resources.issuedParts")}</p>
                 </CardContent>
               </Card>
             </div>

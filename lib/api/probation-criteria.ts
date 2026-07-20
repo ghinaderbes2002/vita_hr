@@ -28,8 +28,10 @@ export interface CreateProbationCriteriaData {
 export type UpdateProbationCriteriaData = Partial<CreateProbationCriteriaData>;
 
 export const probationCriteriaApi = {
-  getAll: async (): Promise<ProbationCriteria[]> => {
-    const response = await apiClient.get("/probation/criteria");
+  // With employeeId → the questions that employee's evaluation will actually
+  // contain: the general ones plus the ones targeted at them.
+  getAll: async (params?: { employeeId?: string }): Promise<ProbationCriteria[]> => {
+    const response = await apiClient.get("/probation/criteria", { params });
     return response.data?.data || response.data;
   },
 

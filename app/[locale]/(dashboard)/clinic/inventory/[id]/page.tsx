@@ -10,11 +10,16 @@ import { useInventoryItem, useItemHistory } from "@/lib/hooks/use-clinic-invento
 import { TransactionType } from "@/lib/api/clinic-inventory";
 
 const TYPE_LABEL: Record<string, string> = { COMPONENT: "قطعة", CONSUMABLE: "مستهلك" };
+// The API may send either the short or the past-tense spelling of a type.
 const TX_LABEL: Record<TransactionType, string> = {
   RECEIVE: "استلام", ISSUE: "صرف", ADJUST: "تسوية", RETURN: "إرجاع",
+  RECEIVED: "استلام", ISSUED: "صرف", ADJUSTED: "تسوية", RETURNED: "إرجاع",
+  EXPIRED: "منتهي الصلاحية",
 };
 const TX_COLOR: Record<TransactionType, string> = {
   RECEIVE: "text-green-600", ISSUE: "text-red-600", ADJUST: "text-blue-600", RETURN: "text-orange-600",
+  RECEIVED: "text-green-600", ISSUED: "text-red-600", ADJUSTED: "text-blue-600", RETURNED: "text-orange-600",
+  EXPIRED: "text-red-600",
 };
 
 export default function InventoryItemPage() {

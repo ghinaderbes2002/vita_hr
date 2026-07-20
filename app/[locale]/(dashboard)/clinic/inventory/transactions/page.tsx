@@ -18,6 +18,12 @@ const TYPE_CONFIG: Record<TransactionType, { label: string; className: string; I
   ISSUE:   { label: "صرف",     className: "bg-red-100 text-red-800 border-red-200",         Icon: ArrowUpRight,  sign: "-" },
   ADJUST:  { label: "تعديل",   className: "bg-yellow-100 text-yellow-800 border-yellow-200", Icon: Settings2,    sign: "±" },
   RETURN:  { label: "إرجاع",   className: "bg-blue-100 text-blue-800 border-blue-200",      Icon: RotateCcw,    sign: "+" },
+  // Past-tense spellings returned by the API for the same movements.
+  RECEIVED:  { label: "استلام",  className: "bg-green-100 text-green-800 border-green-200",   Icon: ArrowDownLeft, sign: "+" },
+  ISSUED:    { label: "صرف",     className: "bg-red-100 text-red-800 border-red-200",         Icon: ArrowUpRight,  sign: "-" },
+  ADJUSTED:  { label: "تعديل",   className: "bg-yellow-100 text-yellow-800 border-yellow-200", Icon: Settings2,    sign: "±" },
+  RETURNED:  { label: "إرجاع",   className: "bg-blue-100 text-blue-800 border-blue-200",      Icon: RotateCcw,    sign: "+" },
+  EXPIRED:   { label: "منتهي الصلاحية", className: "bg-red-100 text-red-800 border-red-200",  Icon: ArrowUpRight,  sign: "-" },
 };
 
 export default function InventoryTransactionsPage() {
@@ -115,9 +121,9 @@ export default function InventoryTransactionsPage() {
                         </td>
                         <td className="p-3 font-bold tabular-nums">
                           <span className={
-                            tx.type === "ISSUE"
+                            tx.type === "ISSUE" || tx.type === "ISSUED" || tx.type === "EXPIRED"
                               ? "text-red-600"
-                              : tx.type === "ADJUST"
+                              : tx.type === "ADJUST" || tx.type === "ADJUSTED"
                               ? "text-yellow-700"
                               : "text-green-700"
                           }>

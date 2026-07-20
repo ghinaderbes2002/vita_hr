@@ -85,9 +85,9 @@ export function InventoryItemFormDialog({ open, onOpenChange, initialCode, initi
               <Label>النوع</Label>
               <Select value={form.type ?? ""} onValueChange={(v) => setForm((f) => ({ ...f, type: v ? v as ItemType : undefined }))}>
                 <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
+                {/* المستهلكات لم تعد نوعاً مستخدماً — القطع فقط. */}
                 <SelectContent>
                   <SelectItem value="COMPONENT">قطعة</SelectItem>
-                  <SelectItem value="CONSUMABLE">مستهلك</SelectItem>
                 </SelectContent>
               </Select>
             </div>

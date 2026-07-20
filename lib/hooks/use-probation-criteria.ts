@@ -14,6 +14,15 @@ export function useProbationCriteria(enabled = true) {
   });
 }
 
+/** Preview of the questions one employee's evaluation will include. */
+export function useProbationCriteriaForEmployee(employeeId: string) {
+  return useQuery({
+    queryKey: ["probation-criteria", { employeeId }],
+    queryFn: () => probationCriteriaApi.getAll({ employeeId }),
+    enabled: !!employeeId,
+  });
+}
+
 export function useCreateProbationCriteria() {
   const qc = useQueryClient();
   return useMutation({
