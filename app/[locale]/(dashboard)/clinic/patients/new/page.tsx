@@ -6,20 +6,30 @@ import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ChevronRight, ChevronLeft, Check, AlertCircle, Upload, X, FileText, Loader2, Plus, Camera } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, AlertCircle, Upload, X, FileText, Loader2, Plus, Camera, Download } from "lucide-react";
+import { toast } from "sonner";
+import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useCreateClinicPatient, useCheckDuplicate } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
 import { clinicPatientsApi, CreatePatientDto, IdentityType, ConsentOption, DocumentType } from "@/lib/api/clinic-patients";
+
+// lucide-react ships no brand icons, so the WhatsApp glyph is inlined.
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884a9.82 9.82 0 016.988 2.896 9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.359.101 11.943c0 2.096.549 4.142 1.595 5.945L0 24l6.335-1.652a11.93 11.93 0 005.71 1.454h.006c6.585 0 11.946-5.359 11.949-11.945a11.87 11.87 0 00-3.480-8.408" />
+    </svg>
+  );
+}
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -69,7 +79,14 @@ const EDUCATION_VALUES      = ["ILLITERATE", "PRIMARY", "SECONDARY", "HIGH_SCHOO
 const MARITAL_VALUES        = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as const;
 const LIVING_VALUES         = ["WITH_FAMILY", "INDEPENDENT", "SHELTER_CAMP", "OTHER"] as const;
 const FINANCIAL_VALUES      = ["LOW", "MODERATE", "GOOD", "NOT_WORKING", "RETIRED"] as const;
-const CONSENT_VALUES        = ["FULL", "ANONYMOUS", "NONE"] as const;
+
+// The three tick-boxes printed on the Pro-002 consent form. They are a shortcut
+// onto the two fields the API stores — no extra data is recorded for them.
+const CONSENT_CHOICES = [
+  { key: "OFFICIAL_ONLY", documentConsent: "FULL" as const, mediaConsent: false },
+  { key: "SOCIAL_MEDIA",  documentConsent: "FULL" as const, mediaConsent: true  },
+  { key: "REFUSED",       documentConsent: "NONE" as const, mediaConsent: false },
+];
 
 const REFERRAL_VALUES = ["SELF", "RELATIVES", "SOCIAL_MEDIA", "MEDICAL_REFERRAL", "OTHER"] as const;
 
@@ -126,6 +143,33 @@ export default function NewPatientPage() {
     resolver: zodResolver(step4Schema) as any,
     defaultValues: { documentConsent: "FULL", mediaConsent: true, notes: "", ...s4 },
   });
+
+  // Patient signature for the consent — sent as signatureBase64 on submit and
+  // drawn into the exported PDF.
+  const [consentSignature, setConsentSignature] = useState("");
+
+  // Pro-002 consent sheet — printed with the patient's name and current choice
+  // pre-filled, ready for the patient to sign on paper.
+  const [consentPdfLoading, setConsentPdfLoading] = useState(false);
+  const handleExportConsentPdf = async () => {
+    if (consentPdfLoading) return;
+    setConsentPdfLoading(true);
+    try {
+      const { downloadConsentFormPdf } = await import("@/components/clinic/consent-form-pdf");
+      const p = form1.getValues();
+      const dc = form4.watch("documentConsent");
+      const mc = form4.watch("mediaConsent") ?? true;
+      await downloadConsentFormPdf({
+        patientName: `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim(),
+        choice: dc === "NONE" ? "REFUSED" : dc === "FULL" ? (mc ? "SOCIAL_MEDIA" : "OFFICIAL_ONLY") : null,
+        signatureDataUri: consentSignature || undefined,
+      });
+    } catch {
+      toast.error(t("consentForm.exportFailed"));
+    } finally {
+      setConsentPdfLoading(false);
+    }
+  };
 
   const nextStep = async () => {
     if (step === 0) {
@@ -185,6 +229,7 @@ export default function NewPatientPage() {
         await clinicPatientsApi.createConsent(patient.id, {
           documentConsent: (v4.documentConsent as ConsentOption) ?? "FULL",
           mediaConsent:    v4.mediaConsent ?? true,
+          signatureBase64: consentSignature || undefined,
         });
       } catch {
         // consent failure is non-blocking
@@ -425,7 +470,10 @@ export default function NewPatientPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t("fields.phone")} <span className="text-destructive">*</span></Label>
+                  <Label className="gap-1.5">
+                    <WhatsAppIcon className="h-3 w-3 text-muted-foreground" />
+                    {t("fields.phone")} <span className="text-destructive">*</span>
+                  </Label>
                   <Input dir="ltr" {...form2.register("phone")} placeholder={t("fields.phonePlaceholder")} />
                   {form2.formState.errors.phone && <p className="text-xs text-destructive">{t("validation.required")}</p>}
                 </div>
@@ -558,22 +606,57 @@ export default function NewPatientPage() {
           {/* Step 5: Consent & notes */}
           {step === 3 && (
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>{t("fields.documentConsent")}</Label>
-                <Select value={form4.watch("documentConsent") ?? "FULL"} onValueChange={(v) => form4.setValue("documentConsent", v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CONSENT_VALUES.map((v) => <SelectItem key={v} value={v}>{t(`consent.${v}`)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleExportConsentPdf} disabled={consentPdfLoading}>
+                  {consentPdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {t("consentForm.exportPdf")}
+                </Button>
               </div>
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={form4.watch("mediaConsent") ?? true}
-                  onCheckedChange={(v) => form4.setValue("mediaConsent", v)}
+
+              {/* Wording of the Pro-002 paper consent form, shown for the patient
+                  to read before the choice below is recorded. */}
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                <p className="font-semibold text-sm">{t("consentForm.title")}</p>
+                <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                  <p>{t("consentForm.intro")}</p>
+                  <p>{t("consentForm.authorization")}</p>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <p className="text-xs font-medium">{t("consentForm.choicePrompt")}</p>
+                  {CONSENT_CHOICES.map((c) => {
+                    const checked =
+                      form4.watch("documentConsent") === c.documentConsent &&
+                      (form4.watch("mediaConsent") ?? true) === c.mediaConsent;
+                    return (
+                      <label key={c.key} className="flex items-start gap-2.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            form4.setValue("documentConsent", c.documentConsent);
+                            form4.setValue("mediaConsent", c.mediaConsent);
+                          }}
+                          className="w-4 h-4 checkbox-orange rounded-sm mt-0.5 shrink-0"
+                        />
+                        <span className="text-xs leading-relaxed">{t(`consentForm.choice.${c.key}`)}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed border-t pt-2">
+                  {t("consentForm.declaration")}
+                </p>
+
+                <PatientSignatureField
+                  className="border-t pt-3"
+                  patientName={`${form1.getValues().firstName ?? ""} ${form1.getValues().lastName ?? ""}`.trim() || undefined}
+                  value={consentSignature}
+                  onChange={setConsentSignature}
                 />
-                <Label>{t("fields.mediaConsent")}</Label>
               </div>
+
               <div className="space-y-1.5">
                 <Label>{t("fields.notes")}</Label>
                 <Textarea rows={3} {...form4.register("notes")} placeholder={t("fields.notesPlaceholder")} />

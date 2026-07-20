@@ -8,8 +8,11 @@ export type ProstheticsStatus =
   | "COMMITTEE_REVIEW"
   | "COMMITTEE_APPROVED"
   | "FITTING"
+  | "SOCKET_TRIAL"
   | "GAIT_ANALYSIS"
+  | "GAIT_TRAINING"
   | "FINAL_EVALUATION"
+  | "FINAL_REVIEW"
   | "DELIVERED"
   | "FOLLOW_UP"
   | "CLOSED"
@@ -239,18 +242,36 @@ export interface CommitteeDecisionDto {
   finalSummary: string;
 }
 
+// The member who actually filled an opinion, as returned alongside it. Null until
+// that opinion has been submitted.
+export interface CommitteeMemberUser {
+  id?: string;
+  firstNameAr?: string | null;
+  lastNameAr?: string | null;
+}
+
 // Submitted committee opinions/decision, echoed back on GET. A role's opinion is
 // "submitted" once its *ReviewedAt timestamp is set; the decision once decidedAt is.
 export interface CommitteeReview {
   id?: string;
   prosthetistOpinion?: string | null;
   prosthetistReviewedAt?: string | null;
+  prosthetistUserId?: string | null;
+  prosthetistUser?: CommitteeMemberUser | null;
   physiotherapistOpinion?: string | null;
   physiotherapistReviewedAt?: string | null;
+  physiotherapistUserId?: string | null;
+  physiotherapistUser?: CommitteeMemberUser | null;
   doctorOpinion?: string | null;
   doctorReviewedAt?: string | null;
+  doctorUserId?: string | null;
+  doctorUser?: CommitteeMemberUser | null;
   committeeHeadOpinion?: string | null;
+  committeeHeadUserId?: string | null;
+  committeeHeadUser?: CommitteeMemberUser | null;
   expertOpinion?: string | null;
+  expertUserId?: string | null;
+  expertUser?: CommitteeMemberUser | null;
   finalDecision?: CommitteeDecision | null;
   finalSummary?: string | null;
   decidedAt?: string | null;

@@ -29,10 +29,6 @@ import { AttendanceAlert, AlertStatus } from "@/lib/api/attendance-alerts";
 import { JustificationType } from "@/lib/api/attendance-justifications";
 import { formatDate } from "@/lib/utils/date";
 
-// Only these alert types accept a justification per the backend rules —
-// MISSING_CLOCK_OUT and CONSECUTIVE_ABSENCE do not.
-const JUSTIFIABLE_TYPES = ["LATE", "EARLY_LEAVE", "ABSENT"];
-
 // The backend auto-rejects a justification submitted more than 7 days after the
 // alert was raised. Mirror that window so the employee gets a clear message.
 const JUSTIFY_WINDOW_DAYS = 7;
@@ -133,7 +129,8 @@ export default function MyAlertsPage() {
                 <TableCell><AlertStatusBadge status={alert.status} /></TableCell>
                 <TableCell className="text-sm text-muted-foreground">{alert.resolvedNotes || "-"}</TableCell>
                 <TableCell>
-                  {alert.status === "OPEN" && JUSTIFIABLE_TYPES.includes(alert.alertType) && (
+                  {/* Every alert type accepts a justification, not just LATE/ABSENT/EARLY_LEAVE. */}
+                  {alert.status === "OPEN" && (
                     <Button variant="outline" size="sm" onClick={() => openJustify(alert)}>
                       <FileText className="h-3.5 w-3.5 ml-1" />
                       {t("attendance.justify")}

@@ -337,6 +337,19 @@ export default function PatientProfilePage() {
                       <InfoRow label="توثيق البيانات" value={CONSENT_LABEL[c.documentConsent]} />
                       <InfoRow label="وسائط" value={c.mediaConsent ? "موافق" : "رافض"} />
                       {c.signedAt && <InfoRow label="تاريخ التوقيع" value={new Date(c.signedAt).toLocaleDateString("en-GB")} />}
+                      {c.signatureUrl && (
+                        <div className="pt-1">
+                          <p className="text-sm font-medium">توقيع المريض</p>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={c.signatureUrl.startsWith("http") || c.signatureUrl.startsWith("data:")
+                              ? c.signatureUrl
+                              : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${c.signatureUrl}`}
+                            alt="توقيع المريض"
+                            className="mt-1 h-16 max-w-55 object-contain border rounded bg-white"
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </CardContent>

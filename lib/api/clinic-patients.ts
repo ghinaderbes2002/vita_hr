@@ -230,6 +230,26 @@ export const clinicPatientsApi = {
     return Array.isArray(d) ? d : d?.items ?? [];
   },
 
+  // The patient's signature lives on their consent records; the most recent one
+  // that carries a signature is treated as "the patient's signature on file", so
+  // any later form can pull it instead of asking them to sign again.
+  getPatientSignature: async (
+    patientId: string,
+  ): Promise<{ hasSignature: boolean; signatureUrl: string | null }> => {
+    const consents = await clinicPatientsApi.getConsents(patientId);
+    const signed = consents
+      .filter((c) => c.signatureUrl)
+      .sort((a, b) => new Date(b.signedAt ?? b.createdAt).getTime() - new Date(a.signedAt ?? a.createdAt).getTime())[0];
+    const url = signed?.signatureUrl ?? null;
+    if (!url) return { hasSignature: false, signatureUrl: null };
+    return {
+      hasSignature: true,
+      signatureUrl: url.startsWith("http") || url.startsWith("data:")
+        ? url
+        : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${url}`,
+    };
+  },
+
   createNote: async (patientId: string, note: string): Promise<PatientNote> => {
     const { data } = await apiClient.post(`/patients/${patientId}/notes`, { note });
     return data?.data ?? data;

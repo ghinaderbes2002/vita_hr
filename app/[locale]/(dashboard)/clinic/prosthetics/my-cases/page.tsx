@@ -24,10 +24,11 @@ const STATUS_VALUES: ProstheticsStatus[] = [
 ];
 
 const STATUS_LABEL: Record<ProstheticsStatus, string> = {
-  INTAKE: "استقبال", ASSESSMENT: "تقييم", COMMITTEE_REVIEW: "مراجعة اللجنة",
-  COMMITTEE_APPROVED: "اعتمدت اللجنة", FITTING: "تركيب", GAIT_ANALYSIS: "تحليل مشي",
-  FINAL_EVALUATION: "تقييم نهائي", DELIVERED: "تسليم", FOLLOW_UP: "متابعة",
-  CLOSED: "مغلقة", CANCELLED: "ملغاة",
+  INTAKE: "استقبال", ASSESSMENT: "معاينة", COMMITTEE_REVIEW: "مراجعة اللجنة",
+  COMMITTEE_APPROVED: "اعتمدت اللجنة", FITTING: "أخذ قياس", SOCKET_TRIAL: "تسليم تجريبي",
+  GAIT_ANALYSIS: "تحليل مشي", GAIT_TRAINING: "تأهيل",
+  FINAL_EVALUATION: "تقييم نهائي", FINAL_REVIEW: "تم التركيب", DELIVERED: "تم التسليم",
+  FOLLOW_UP: "متابعة", CLOSED: "مغلقة", CANCELLED: "ملغى",
 };
 
 const fmt = (d: string) => new Date(d).toLocaleDateString("ar");

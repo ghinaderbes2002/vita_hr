@@ -27,9 +27,10 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   username: z.string().min(3, "يجب أن يكون 3 أحرف على الأقل").regex(/^\S+$/, "لا يُسمح بالمسافات في اسم المستخدم"),
-  email: z.string().email("البريد الإلكتروني غير صحيح"),
+  // Full name and email are optional; an email that *is* entered must still be valid.
+  email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
   password: z.string().optional(),
-  fullName: z.string().min(2, "يجب أن يكون حرفين على الأقل"),
+  fullName: z.string().optional(),
   anydesk: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
 });
@@ -101,11 +102,12 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   const onSubmit = async (data: FormData) => {
     try {
       if (isEdit) {
+        // Empty optional fields are left out rather than sent blank.
         const updateData: any = {
-          email: data.email,
-          fullName: data.fullName,
           status: data.status,
           anydesk: data.anydesk || null,
+          ...(data.email ? { email: data.email } : {}),
+          ...(data.fullName ? { fullName: data.fullName } : {}),
           ...(data.password && data.password.length >= 6 && { password: data.password }),
         };
         await updateUser.mutateAsync({ id: user.id, data: updateData });
@@ -116,10 +118,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         }
         const createData: any = {
           username: data.username,
-          email: data.email,
           password: data.password,
-          fullName: data.fullName,
           anydesk: data.anydesk || null,
+          ...(data.email ? { email: data.email } : {}),
+          ...(data.fullName ? { fullName: data.fullName } : {}),
         };
         await createUser.mutateAsync(createData);
       }

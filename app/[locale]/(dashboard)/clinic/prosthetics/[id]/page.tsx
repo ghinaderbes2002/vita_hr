@@ -26,6 +26,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
+import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
 import { KLevelSelector } from "@/components/clinic/k-level-selector";
 import { AmputationLevelSelector } from "@/components/clinic/amputation-level-selector";
 import { InventoryItemCombobox } from "@/components/clinic/inventory-item-combobox";
@@ -233,6 +234,7 @@ function TreatmentProgramCard({
   const updateProgram = useUpdateTreatmentProgram();
   const archiveProgram = useArchiveTreatmentProgram();
   const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveNotes, setArchiveNotes] = useState("");
   const isArchived = !!program.archivedAt;
@@ -319,11 +321,17 @@ function TreatmentProgramCard({
   return (
     <div className="rounded-lg border p-3 space-y-2">
       <div className="flex justify-between items-start">
-        <div className="flex gap-2 items-center flex-wrap">
+        <button
+          type="button"
+          onClick={() => { if (expanded) setEditing(false); setExpanded(!expanded); }}
+          aria-expanded={expanded}
+          className="flex gap-2 items-center flex-wrap text-start rounded-md -m-1 p-1 hover:bg-muted/50 transition-colors"
+        >
+          {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
           <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{idx + 1}</Badge>
           {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
           {form.sessionTime && <span className="text-xs text-muted-foreground">{form.sessionTime}</span>}
-        </div>
+        </button>
         <div className="flex gap-1.5 items-center flex-wrap justify-end">
           {isArchived && (
             <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
@@ -332,7 +340,7 @@ function TreatmentProgramCard({
             </Badge>
           )}
           {!hasOtherData && (
-            <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
+            <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => { setEditing((v) => !v); setExpanded(true); }}>
               {editing ? "إغلاق" : "تعديل"}
             </Button>
           )}
@@ -345,7 +353,7 @@ function TreatmentProgramCard({
         </div>
       </div>
 
-      {isArchived && (
+      {expanded && isArchived && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-0.5">
           <p className="flex items-center gap-1 font-medium">
             <Archive className="h-3 w-3" />
@@ -384,7 +392,7 @@ function TreatmentProgramCard({
         </DialogContent>
       </Dialog>
 
-      {!editing && (
+      {expanded && !editing && (
         <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
           {form.description && <p><span className="font-medium text-foreground">الشرح: </span>{form.description}</p>}
           {technicianName && <p><span className="font-medium text-foreground">المعالج: </span>{technicianName.firstNameAr} {technicianName.lastNameAr}</p>}
@@ -3379,6 +3387,18 @@ function toAmputationLevels(raw: unknown): string[] {
   return [];
 }
 
+// Age in completed years, derived from the stored date of birth.
+function ageFromDob(dob?: string | null): number | null {
+  if (!dob) return null;
+  const born = new Date(dob);
+  if (Number.isNaN(born.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - born.getFullYear();
+  const monthDiff = now.getMonth() - born.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < born.getDate())) age--;
+  return age >= 0 && age < 150 ? age : null;
+}
+
 // History of past measurement-sheet submissions for one amputation type.
 // The backend appends a new record on every POST and returns them newest-first.
 function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] }) {
@@ -3447,6 +3467,40 @@ function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] 
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Opinion field that stays collapsed to just its label until clicked — keeps the
+// committee section short when most opinions are left empty.
+function CollapsibleOpinionField({
+  label, value, onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="space-y-2">
+      {/* A div, not a button: this field also lives inside the read-only
+          <fieldset> of a saved evaluation, where a button would be disabled and
+          the saved opinion could no longer be expanded for reading. */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((v) => !v); } }}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center gap-1.5 text-start rounded-md -mx-1 px-1 py-1 hover:bg-muted/50 transition-colors"
+      >
+        {open ? <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+        <span className="text-xs font-medium shrink-0">{label}</span>
+        {!open && value && <span className="truncate text-xs text-muted-foreground">— {value}</span>}
+      </div>
+      {open && (
+        <Textarea autoFocus rows={2} className="resize-none text-xs" value={value} onChange={(e) => onChange(e.target.value)} />
+      )}
     </div>
   );
 }
@@ -3663,6 +3717,9 @@ export default function ProstheticsCasePage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalEvalData]);
+  // Once the final evaluation has been saved it is locked: the whole tab turns
+  // read-only so a recorded committee decision can't be altered afterwards.
+  const finalEvalLocked = !!(finalEvalData as any)?.id || submitFinalEval.isSuccess;
   const [finalSignOpen, setFinalSignOpen] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({ deliveryDate: new Date().toISOString().slice(0, 10), notes: "" });
   const [deliverySignOpen, setDeliverySignOpen] = useState(false);
@@ -3673,6 +3730,10 @@ export default function ProstheticsCasePage() {
   // It is signed by the CEO (the trial delivery is signed by the medical director).
   const [finalDeliveryHeader, setFinalDeliveryHeader] = useState({ inspectionDate: "", prosthetistId: "", physiotherapistId: "", ceoId: "", ceoSignatureUrl: "", signatureDate: "" });
   const finalCeoSigRef = useRef<HTMLInputElement>(null);
+  // Patient signature on the delivery pledge. Pulled from the signature already on
+  // file for the patient; the final-delivery record has no field to store it yet.
+  const [pledgeSignature, setPledgeSignature] = useState("");
+  const [pledgePdfLoading, setPledgePdfLoading] = useState(false);
   // Controlled value for the workflow-stage tabs. null → follow the status-based
   // default; set it to jump to a tab programmatically (e.g. the delivery tab's
   // "إضافة قطعة" button sends the user to the fitting tab to add components).
@@ -4133,6 +4194,13 @@ export default function ProstheticsCasePage() {
       .filter(Boolean)
       .join("، ");
 
+  // Who actually filled a committee opinion — the backend returns the author with
+  // each opinion, which is more accurate than the staff assigned to the case.
+  const committeeAuthorName = (user?: { firstNameAr?: string | null; lastNameAr?: string | null } | null) => {
+    const name = `${user?.firstNameAr ?? ""} ${user?.lastNameAr ?? ""}`.trim();
+    return name || null;
+  };
+
   const handleSaveIntakeAndAdvance = async () => {
     justSavedRef.current = true;
     await updateCase.mutateAsync({ id, dto: buildIntakeDto() });
@@ -4271,11 +4339,6 @@ export default function ProstheticsCasePage() {
     }
   };
 
-  const handleSaveUpperAll = async () => {
-    await handleSaveStaff();
-    await handleSubmitUpperAssessment();
-  };
-
   const handleSubmitLowerAssessment = async () => {
     await handleSaveGeneralAssessment();
     if (lowerAssessForm.amputationSide === "BILATERAL") {
@@ -4286,7 +4349,12 @@ export default function ProstheticsCasePage() {
     }
   };
 
+  // One button for the whole assessment tab: treating team, general assessment and
+  // the limb sheets are saved together, then the case moves to committee review.
   const handleSubmitAssessmentAndAdvance = async () => {
+    justSavedRef.current = true;
+    await handleSaveStaff();
+    await handleSaveGeneralAssessment();
     // Only save an assessment that hasn't been saved yet; re-POSTing an existing
     // case+side hits a unique constraint (500). Tolerate a duplicate either way so
     // the case still advances to committee review.
@@ -4300,10 +4368,10 @@ export default function ProstheticsCasePage() {
       }
     };
     if (ampTypes.includes("UPPER")) {
-      await submitIfNew(upperSaved, () => submitAssessmentUpper.mutateAsync({ id, dto: buildUpperDto() }));
+      await submitIfNew(upperSaved, handleSubmitUpperAssessment);
     }
     if (ampTypes.includes("LOWER")) {
-      await submitIfNew(lowerSaved, () => submitAssessmentLower.mutateAsync({ id, dto: buildLowerDto() }));
+      await submitIfNew(lowerSaved, handleSubmitLowerAssessment);
     }
     await updateStatus.mutateAsync({ id, status: "COMMITTEE_REVIEW" });
   };
@@ -4330,6 +4398,12 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSubmitDecision = async () => {
+    // finalSummary is required by PUT /committee/decide — fail here with a clear
+    // message instead of letting the request come back 400.
+    if (!decisionForm.finalSummary.trim()) {
+      toast.error(t("committee.summaryRequired"));
+      return;
+    }
     const suitDto: Record<string, any> = {};
     if (committeeSuitForm.prosthesisSuitable !== null) {
       suitDto.prosthesisSuitable = committeeSuitForm.prosthesisSuitable;
@@ -4344,6 +4418,22 @@ export default function ProstheticsCasePage() {
       id,
       dto: { decision: "APPROVED" as CommitteeDecision, finalSummary: decisionForm.finalSummary },
     });
+  };
+
+  const handleExportPledgePdf = async () => {
+    if (pledgePdfLoading) return;
+    setPledgePdfLoading(true);
+    try {
+      const { downloadPledgeFormPdf } = await import("@/components/clinic/pledge-form-pdf");
+      await downloadPledgeFormPdf({
+        patientName: patientFull ? `${patientFull.firstName} ${patientFull.lastName}` : patientName,
+        signatureUrl: pledgeSignature || undefined,
+      });
+    } catch {
+      toast.error(t("finalDelivery.pledge.exportFailed"));
+    } finally {
+      setPledgePdfLoading(false);
+    }
   };
 
   const handleSign = async (base64: string) => {
@@ -4966,6 +5056,12 @@ export default function ProstheticsCasePage() {
                     <div className="space-y-1">
                       <Label className="text-xs">{t("patientInfo.dob")}</Label>
                       <Input type="date" className="h-8 text-sm" value={patientEditForm.dateOfBirth} onChange={(e) => setPatientEditForm((f) => ({ ...f, dateOfBirth: e.target.value }))} />
+                      {/* Age is never stored — it is derived from the date of birth so it can't go stale. */}
+                      {ageFromDob(patientEditForm.dateOfBirth) !== null && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("patientInfo.age")}: {t("patientInfo.ageYears", { age: ageFromDob(patientEditForm.dateOfBirth)! })}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">{t("patientInfo.heightCm")}</Label>
@@ -4991,8 +5087,12 @@ export default function ProstheticsCasePage() {
                       <p className="text-muted-foreground">{patientFull ? `${patientFull.firstName} ${patientFull.lastName}` : patientName}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-medium">{t("patientInfo.dob")}</p>
-                      <p className="text-muted-foreground">{patientFull?.dateOfBirth ? patientFull.dateOfBirth.slice(0, 10) : "—"}</p>
+                      <p className="text-xs font-medium">{t("patientInfo.age")}</p>
+                      <p className="text-muted-foreground">
+                        {ageFromDob(patientFull?.dateOfBirth) !== null
+                          ? t("patientInfo.ageYears", { age: ageFromDob(patientFull?.dateOfBirth)! })
+                          : "—"}
+                      </p>
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-xs font-medium">{t("patientInfo.amputationLevel")}</p>
@@ -5093,12 +5193,6 @@ export default function ProstheticsCasePage() {
                   </div>
                 );
               })}
-            </div>
-            <div className="pt-3">
-              <Button onClick={handleSaveStaff} disabled={updateCase.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                {t("assess.staff.save")}
-              </Button>
             </div>
           </Section>
 
@@ -5376,14 +5470,6 @@ export default function ProstheticsCasePage() {
                       </div>
                     </PfRow>
                   ))}
-                  {!upperSaved && (
-                    <div className="pt-3">
-                      <Button onClick={handleSaveUpperAll} disabled={updateCase.isPending || submitAssessmentUpper.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                        {(updateCase.isPending || submitAssessmentUpper.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        {t("assess.saveUpper")}
-                      </Button>
-                    </div>
-                  )}
                 </div>
                 </fieldset>
               </Section>
@@ -5925,31 +6011,27 @@ export default function ProstheticsCasePage() {
                   <PfRow label={t("assess.notes")}>
                     <Textarea rows={2} className="text-sm w-full" value={f.muscleMotionNotes} onChange={(e) => set({ muscleMotionNotes: e.target.value })} />
                   </PfRow>
-                  {!lowerSaved && (
-                    <div className="pt-3">
-                      <Button onClick={handleSubmitLowerAssessment} disabled={submitAssessmentLower.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                        {submitAssessmentLower.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                        {t("assess.saveLower")}
-                      </Button>
-                    </div>
-                  )}
                 </div>
                 </fieldset>
               </Section>
             );
           })()}
 
-          {/* ─── زر الإرسال للجنة ────────────────────────────────────────────── */}
-          {c.status === "ASSESSMENT" && (
-            <Button
-              onClick={handleSubmitAssessmentAndAdvance}
-              disabled={submitAssessmentUpper.isPending || submitAssessmentLower.isPending || updateStatus.isPending}
-              className="w-full"
-            >
-              {(submitAssessmentUpper.isPending || submitAssessmentLower.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-              {t("assess.sendToCommittee")}
-            </Button>
-          )}
+          {/* ─── زر واحد: يحفظ الفريق والتقييم ثم يرسل للجنة ──────────────────── */}
+          {c.status === "ASSESSMENT" && (() => {
+            const busy = updateCase.isPending || submitAssessmentUpper.isPending
+              || submitAssessmentLower.isPending || updateStatus.isPending;
+            return (
+              <Button
+                onClick={handleSubmitAssessmentAndAdvance}
+                disabled={busy}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                {t("assess.saveAndSendToCommittee")}
+              </Button>
+            );
+          })()}
           {/* ── صور البتر ── */}
           <Section
             title={attachments.length > 0 ? t("assess.attachmentsCount", { count: attachments.length }) : t("assess.attachments")}
@@ -6028,7 +6110,11 @@ export default function ProstheticsCasePage() {
               <div className="space-y-2 pt-2 first:pt-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="font-semibold">{t("committee.prosthetistOpinion")}</Label>
-                  {staffNamesOf("prosthetistIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("prosthetistIds")}</span>}
+                  {(committeeAuthorName(cr?.prosthetistUser) ?? staffNamesOf("prosthetistIds")) && (
+                    <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">
+                      {committeeAuthorName(cr?.prosthetistUser) ?? staffNamesOf("prosthetistIds")}
+                    </span>
+                  )}
                   {prosthetistOpinionSaved && <SavedBadge />}
                 </div>
                 <Textarea rows={3} disabled={prosthetistOpinionSaved} value={prosthetistOpinion} onChange={(e) => setProsthetistOpinion(e.target.value)} placeholder={t("committee.prosthetistOpinionPlaceholder")} />
@@ -6038,7 +6124,11 @@ export default function ProstheticsCasePage() {
               <div className="space-y-2 pt-4">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="font-semibold">{t("committee.physioOpinion")}</Label>
-                  {staffNamesOf("physiotherapistIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("physiotherapistIds")}</span>}
+                  {(committeeAuthorName(cr?.physiotherapistUser) ?? staffNamesOf("physiotherapistIds")) && (
+                    <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">
+                      {committeeAuthorName(cr?.physiotherapistUser) ?? staffNamesOf("physiotherapistIds")}
+                    </span>
+                  )}
                   {physioOpinionSaved && <SavedBadge />}
                 </div>
                 <Textarea rows={3} disabled={physioOpinionSaved} value={physioOpinion} onChange={(e) => setPhysioOpinion(e.target.value)} placeholder={t("committee.physioOpinionPlaceholder")} />
@@ -6048,7 +6138,11 @@ export default function ProstheticsCasePage() {
               <div className="space-y-2 pt-4">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="font-semibold">{t("committee.doctorOpinion")}</Label>
-                  {staffNamesOf("supervisingDoctorIds") && <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{staffNamesOf("supervisingDoctorIds")}</span>}
+                  {(committeeAuthorName(cr?.doctorUser) ?? staffNamesOf("supervisingDoctorIds")) && (
+                    <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">
+                      {committeeAuthorName(cr?.doctorUser) ?? staffNamesOf("supervisingDoctorIds")}
+                    </span>
+                  )}
                   {doctorOpinionSaved && <SavedBadge />}
                 </div>
                 <Textarea rows={3} disabled={doctorOpinionSaved} value={doctorOpinion} onChange={(e) => setDoctorOpinion(e.target.value)} placeholder={t("committee.doctorOpinionPlaceholder")} />
@@ -7310,10 +7404,11 @@ export default function ProstheticsCasePage() {
         )}
 
         {/* ── FINAL EVALUATION (Pro-018) ───────────────────────────────── */}
-        <TabsContent value="final_evaluation" className="mt-4 space-y-4" dir="rtl">
+        <TabsContent value="final_evaluation" className="mt-4" dir="rtl">
+          <fieldset disabled={finalEvalLocked} className="space-y-4 min-w-0">
 
           {/* ── قسم 1: المعلومات الطبية ── */}
-          <Section title={t("finalEval.medicalInfoTitle")}>
+          <Section title={t("finalEval.medicalInfoTitle")} action={finalEvalLocked ? <SavedBadge /> : undefined}>
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("finalEval.residualLimbCondition")}</Label>
@@ -7348,7 +7443,7 @@ export default function ProstheticsCasePage() {
           </Section>
 
           {/* ── قسم 2: الرأي النهائي للجنة ── */}
-          <Section title={t("finalEval.committeeFinalTitle")}>
+          <Section title={t("finalEval.committeeFinalTitle")} action={finalEvalLocked ? <SavedBadge /> : undefined}>
             <div className="space-y-3">
               {([
                 "physioOpinion",
@@ -7358,16 +7453,18 @@ export default function ProstheticsCasePage() {
                 "committeeHeadOpinion",
                 "expertOpinion",
               ] as const).map((fld) => (
-                <div key={fld} className="space-y-1.5">
-                  <Label className="text-xs">{t(`finalEval.opinion.${fld}`)}</Label>
-                  <Textarea rows={2} className="resize-none text-xs" value={(finalEvalForm as any)[fld] ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, [fld]: e.target.value }))} />
-                </div>
+                <CollapsibleOpinionField
+                  key={fld}
+                  label={t(`finalEval.opinion.${fld}`)}
+                  value={(finalEvalForm as any)[fld] ?? ""}
+                  onChange={(v) => setFinalEvalForm((f) => ({ ...f, [fld]: v }))}
+                />
               ))}
             </div>
           </Section>
 
           {/* ── قسم 3: اعتماد المدير الطبي ── */}
-          <Section title={t("finalEval.directorApprovalTitle")}>
+          <Section title={t("finalEval.directorApprovalTitle")} action={finalEvalLocked ? <SavedBadge /> : undefined}>
             <div className="space-y-4">
               <p className="text-xs text-muted-foreground leading-relaxed border rounded-lg px-3 py-2.5 bg-muted/30">
                 {t("finalEval.approvalStatement")}
@@ -7375,7 +7472,7 @@ export default function ProstheticsCasePage() {
               <div className="space-y-2">
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input type="checkbox" checked={!!finalEvalForm.readyForDelivery}
-                    onChange={() => setFinalEvalForm((f) => ({ ...f, readyForDelivery: true, needsFollowUp: false }))}
+                    onChange={() => setFinalEvalForm((f) => ({ ...f, readyForDelivery: true, needsFollowUp: false, followUpPlan: "" }))}
                     className="w-[16px] h-[16px] checkbox-orange rounded-sm" />
                   <span className="text-sm">{t("finalEval.approvedForDelivery")}</span>
                 </label>
@@ -7386,14 +7483,13 @@ export default function ProstheticsCasePage() {
                   <span className="text-sm">{t("finalEval.needsFollowUp")}</span>
                 </label>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t("finalEval.followUpPlan")}</Label>
-                <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.followUpPlan ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, followUpPlan: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t("finalEval.hasAttachment")}</Label>
-                <Input className="text-xs" value={(finalEvalForm as any).attachment ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, attachment: e.target.value }))} placeholder={t("finalEval.attachmentPlaceholder")} />
-              </div>
+              {/* The follow-up plan only makes sense for a case flagged as needing follow-up. */}
+              {finalEvalForm.needsFollowUp && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t("finalEval.followUpPlan")}</Label>
+                  <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.followUpPlan ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, followUpPlan: e.target.value }))} />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("finalEval.generalNotes")}</Label>
                 <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.medicalDirectorNotes ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, medicalDirectorNotes: e.target.value }))} />
@@ -7402,7 +7498,7 @@ export default function ProstheticsCasePage() {
           </Section>
 
           {/* ── قسم 4: تدقيق المدير ── */}
-          <Section title={t("finalEval.managerAuditTitle")}>
+          <Section title={t("finalEval.managerAuditTitle")} action={finalEvalLocked ? <SavedBadge /> : undefined}>
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("finalEval.generalNotes")}</Label>
@@ -7450,12 +7546,15 @@ export default function ProstheticsCasePage() {
           </Section>
 
           {/* ── الأزرار ── */}
-          <div className="flex gap-2">
-            <Button onClick={handleSubmitFinalEval} disabled={submitFinalEval.isPending} className="flex-1 gap-2">
-              {submitFinalEval.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              {t("finalEval.saveEval")}
-            </Button>
-          </div>
+          {!finalEvalLocked && (
+            <div className="flex gap-2">
+              <Button onClick={handleSubmitFinalEval} disabled={submitFinalEval.isPending} className="flex-1 gap-2">
+                {submitFinalEval.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {t("finalEval.saveEval")}
+              </Button>
+            </div>
+          )}
+          </fieldset>
         </TabsContent>
 
         {/* ── DELIVERED (Pro-019) ──────────────────────────────────────────── */}
@@ -7735,6 +7834,60 @@ export default function ProstheticsCasePage() {
               </div>
             </Section>
           )}
+
+          {/* ── إقرار وتعهد المريض (الورقة المرفقة بنموذج التسليم النهائي) ── */}
+          <Section
+            title={t("finalDelivery.pledge.title")}
+            action={
+              <Button size="sm" variant="outline" className="gap-2" onClick={handleExportPledgePdf} disabled={pledgePdfLoading}>
+                {pledgePdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {t("finalDelivery.pledge.exportPdf")}
+              </Button>
+            }
+          >
+            <div className="space-y-4 text-xs leading-relaxed">
+              <p className="font-semibold text-sm">{t("finalDelivery.pledge.intro")}</p>
+
+              <div className="space-y-1.5">
+                <p className="font-semibold">{t("finalDelivery.pledge.firstTitle")}</p>
+                <p className="text-muted-foreground">{t("finalDelivery.pledge.received")}</p>
+                <p className="text-muted-foreground">{t("finalDelivery.pledge.useAsInstructed")}</p>
+                <p className="text-muted-foreground">{t("finalDelivery.pledge.explained")}</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="font-semibold">{t("finalDelivery.pledge.secondTitle")}</p>
+                <p className="text-muted-foreground">{t("finalDelivery.pledge.warrantyScope")}</p>
+                <p className="text-muted-foreground">{t("finalDelivery.pledge.noLiability")}</p>
+                <ul className="list-disc pr-5 space-y-1 text-muted-foreground">
+                  <li>{t("finalDelivery.pledge.cause1")}</li>
+                  <li>{t("finalDelivery.pledge.cause2")}</li>
+                  <li>{t("finalDelivery.pledge.cause3")}</li>
+                </ul>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="font-semibold">{t("finalDelivery.pledge.finalTitle")}</p>
+                <p className="text-muted-foreground">{t("finalDelivery.pledge.finalStatement")}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-t pt-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">{t("finalDelivery.pledge.fullName")}</Label>
+                  <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    {patientFull ? `${patientFull.firstName} ${patientFull.lastName}` : patientName || "—"}
+                  </p>
+                </div>
+                <PatientSignatureField
+                  patientId={caseData?.patientId ?? undefined}
+                  patientName={patientFull ? `${patientFull.firstName} ${patientFull.lastName}` : patientName}
+                  label={t("finalDelivery.pledge.patientSignature")}
+                  value={pledgeSignature}
+                  onChange={setPledgeSignature}
+                />
+              </div>
+            </div>
+          </Section>
         </TabsContent>
 
         {/* ── TIMELINE ────────────────────────────────────────────────────── */}
