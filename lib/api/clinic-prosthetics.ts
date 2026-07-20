@@ -275,6 +275,8 @@ export interface CommitteeReview {
   finalDecision?: CommitteeDecision | null;
   finalSummary?: string | null;
   decidedAt?: string | null;
+  /** The user who submitted the decision via PUT /committee/decide. */
+  decidedByUserId?: string | null;
 }
 
 // Follow-up program alert (case-level). A case can have several; the head

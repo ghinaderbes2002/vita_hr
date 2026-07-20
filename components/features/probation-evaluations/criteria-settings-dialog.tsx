@@ -11,6 +11,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { ProbationCriteria } from "@/lib/api/probation-criteria";
 import {
   useProbationCriteria,
@@ -39,6 +41,17 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
 
   const [newNameAr, setNewNameAr] = useState("");
   const [newNameEn, setNewNameEn] = useState("");
+  // "" → a general question shown to every employee.
+  const [newTargetEmployeeId, setNewTargetEmployeeId] = useState("");
+  const [editTargetEmployeeId, setEditTargetEmployeeId] = useState("");
+
+  const { data: employeesData } = useEmployeesBasicList();
+  const employees: { id: string; firstNameAr: string; lastNameAr: string }[] =
+    Array.isArray(employeesData) ? employeesData : [];
+  const employeeName = (empId?: string | null) => {
+    const e = employees.find((x) => x.id === empId);
+    return e ? `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim() : null;
+  };
 
   const [deleteTarget, setDeleteTarget] = useState<ProbationCriteria | null>(null);
 
@@ -47,6 +60,7 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
     setEditNameAr(c.nameAr);
     setEditNameEn(c.nameEn || "");
     setEditOrder(c.displayOrder);
+    setEditTargetEmployeeId(c.targetEmployeeId ?? "");
   }
 
   function cancelEdit() {
@@ -56,7 +70,12 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
   function saveEdit() {
     if (!editingId || !editNameAr.trim()) return;
     updateCriteria.mutate(
-      { id: editingId, data: { nameAr: editNameAr.trim(), nameEn: editNameEn.trim() || undefined, displayOrder: editOrder } },
+      { id: editingId, data: {
+        nameAr: editNameAr.trim(),
+        nameEn: editNameEn.trim() || undefined,
+        displayOrder: editOrder,
+        targetEmployeeId: editTargetEmployeeId || null,
+      } },
       { onSuccess: () => setEditingId(null) },
     );
   }
@@ -64,8 +83,13 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
   function handleAdd() {
     if (!newNameAr.trim()) return;
     createCriteria.mutate(
-      { nameAr: newNameAr.trim(), nameEn: newNameEn.trim() || undefined, displayOrder: criteria.length + 1 },
-      { onSuccess: () => { setNewNameAr(""); setNewNameEn(""); } },
+      {
+        nameAr: newNameAr.trim(),
+        nameEn: newNameEn.trim() || undefined,
+        displayOrder: criteria.length + 1,
+        ...(newTargetEmployeeId ? { targetEmployeeId: newTargetEmployeeId } : {}),
+      },
+      { onSuccess: () => { setNewNameAr(""); setNewNameEn(""); setNewTargetEmployeeId(""); } },
     );
   }
 
@@ -84,23 +108,34 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
               <p className="text-sm text-muted-foreground text-center py-4">لا توجد أسئلة بعد</p>
             ) : (
               criteria.map((c) => (
-                <div key={c.id} className="flex items-center gap-2 rounded-lg border p-2">
+                <div key={c.id} className={`gap-2 rounded-lg border p-2 ${editingId === c.id ? "space-y-2" : "flex items-center"}`}>
                   {editingId === c.id ? (
                     <>
-                      <Input
-                        type="number"
-                        className="w-14 h-8 text-center shrink-0"
-                        value={editOrder}
-                        onChange={(e) => setEditOrder(parseInt(e.target.value) || 0)}
-                      />
-                      <Input className="flex-1 h-8" value={editNameAr} onChange={(e) => setEditNameAr(e.target.value)} placeholder="النص بالعربية" />
-                      <Input className="flex-1 h-8" value={editNameEn} onChange={(e) => setEditNameEn(e.target.value)} placeholder="English" />
-                      <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" disabled={!editNameAr.trim() || updateCriteria.isPending} onClick={saveEdit}>
-                        <Check className="h-4 w-4 text-green-600" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={cancelEdit}>
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          className="w-14 h-8 text-center shrink-0"
+                          value={editOrder}
+                          onChange={(e) => setEditOrder(parseInt(e.target.value) || 0)}
+                        />
+                        <Input className="flex-1 h-8" value={editNameAr} onChange={(e) => setEditNameAr(e.target.value)} placeholder="النص بالعربية" />
+                        <Input className="flex-1 h-8" value={editNameEn} onChange={(e) => setEditNameEn(e.target.value)} placeholder="English" />
+                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" disabled={!editNameAr.trim() || updateCriteria.isPending} onClick={saveEdit}>
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={cancelEdit}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <Select value={editTargetEmployeeId || "all"} onValueChange={(v) => setEditTargetEmployeeId(v === "all" ? "" : v)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">سؤال عام — لكل الموظفين</SelectItem>
+                          {employees.map((e) => (
+                            <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </>
                   ) : (
                     <>
@@ -109,6 +144,13 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
                         <p className="text-sm font-medium truncate">{c.nameAr}</p>
                         {c.nameEn && <p className="text-xs text-muted-foreground truncate">{c.nameEn}</p>}
                       </div>
+                      {c.targetEmployeeId && (
+                        <Badge variant="outline" className="text-[10px] shrink-0 border-orange-300 bg-orange-50 text-orange-700">
+                          {employeeName(c.targetEmployeeId)
+                            ?? (`${c.targetEmployee?.firstNameAr ?? ""} ${c.targetEmployee?.lastNameAr ?? ""}`.trim()
+                              || "مخصص لموظف")}
+                        </Badge>
+                      )}
                       {c.isCore && <Badge variant="secondary" className="text-[10px] shrink-0">أساسي</Badge>}
                       <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => startEdit(c)}>
                         <Pencil className="h-3.5 w-3.5" />
@@ -135,6 +177,19 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
                 إضافة
               </Button>
             </div>
+            {/* A targeted question only shows up in that employee's evaluation. */}
+            <Select value={newTargetEmployeeId || "all"} onValueChange={(v) => setNewTargetEmployeeId(v === "all" ? "" : v)}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">سؤال عام — لكل الموظفين</SelectItem>
+                {employees.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              السؤال المخصص يظهر فقط في تقييم الموظف المحدد، ولا يؤثر على التقييمات المنشأة سابقاً.
+            </p>
           </div>
 
           <DialogFooter>

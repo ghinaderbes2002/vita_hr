@@ -7,6 +7,13 @@ export interface ProbationCriteria {
   isCore: boolean;
   isActive: boolean;
   displayOrder: number;
+  /** Set → the question only appears in this employee's evaluation. */
+  targetEmployeeId?: string | null;
+  targetEmployee?: {
+    id: string;
+    firstNameAr?: string | null;
+    lastNameAr?: string | null;
+  } | null;
 }
 
 export interface CreateProbationCriteriaData {
@@ -14,6 +21,8 @@ export interface CreateProbationCriteriaData {
   nameEn?: string;
   displayOrder?: number;
   isCore?: boolean;
+  /** Omit for a general question; set to scope it to one employee. */
+  targetEmployeeId?: string | null;
 }
 
 export type UpdateProbationCriteriaData = Partial<CreateProbationCriteriaData>;

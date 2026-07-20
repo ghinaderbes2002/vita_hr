@@ -121,8 +121,8 @@ const PROSTHETIC_TYPE_LABEL: Record<ProstheticType, string> = {
 // ─── Workflow step order ───────────────────────────────────────────────────────
 
 const STATUS_ORDER: ProstheticsStatus[] = [
-  "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "COMMITTEE_APPROVED",
-  "FITTING", "GAIT_ANALYSIS", "FINAL_EVALUATION", "DELIVERED", "FOLLOW_UP",
+  "INTAKE", "ASSESSMENT", "FITTING", "SOCKET_TRIAL",
+  "GAIT_TRAINING", "FOLLOW_UP", "DELIVERED", "FINAL_REVIEW",
 ];
 
 function StepIndicator({ status }: { status: ProstheticsStatus }) {
@@ -223,13 +223,14 @@ function AttachmentCard({
 
 // ─── Treatment program card (inline form — Pro-004) ────────────────────────────
 function TreatmentProgramCard({
-  caseId, program, idx, staffList, currentUser,
+  caseId, program, idx, staffList, currentUser, locked,
 }: {
   caseId: string;
   program: any;
   idx: number;
   staffList: any[];
   currentUser: any;
+  locked?: boolean;
 }) {
   const updateProgram = useUpdateTreatmentProgram();
   const archiveProgram = useArchiveTreatmentProgram();
@@ -339,12 +340,12 @@ function TreatmentProgramCard({
               مؤرشف
             </Badge>
           )}
-          {!hasOtherData && (
+          {!locked && !hasOtherData && (
             <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => { setEditing((v) => !v); setExpanded(true); }}>
               {editing ? "إغلاق" : "تعديل"}
             </Button>
           )}
-          {!isArchived && (
+          {!locked && !isArchived && (
             <Button size="sm" variant="outline" className="gap-1" onClick={() => { setArchiveNotes(""); setArchiveOpen(true); }}>
               <Archive className="h-3.5 w-3.5" />
               أرشفة
@@ -516,11 +517,13 @@ function TreatmentProgramCard({
 
 // ─── Treatment programs section (Pro-004) ─────────────────────────────────────
 function TreatmentProgramsSection({
-  caseId, staffList, currentUser,
+  caseId, staffList, currentUser, locked,
 }: {
   caseId: string;
   staffList: any[];
   currentUser: any;
+  /** Case already delivered — the programme is history, not something to edit. */
+  locked?: boolean;
 }) {
   const { data: programs = [], isLoading } = useTreatmentPrograms(caseId);
   const createProgram = useCreateTreatmentProgram();
@@ -611,15 +614,19 @@ function TreatmentProgramsSection({
               {pendingAlerts} بانتظار الرد
             </Badge>
           )}
-          <Button size="sm" variant="outline" className="gap-1 text-xs border-orange-300 text-orange-700 hover:bg-orange-50"
-            onClick={() => { setAlertNote(""); setAlertOpen(true); }}>
-            <Bell className="h-3.5 w-3.5" />
-            تنبيه رئيس القسم
-          </Button>
-          <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
-            <Plus className="h-3.5 w-3.5" />
-            {showForm ? "إغلاق" : "إضافة جلسة"}
-          </Button>
+          {!locked && (
+            <>
+              <Button size="sm" variant="outline" className="gap-1 text-xs border-orange-300 text-orange-700 hover:bg-orange-50"
+                onClick={() => { setAlertNote(""); setAlertOpen(true); }}>
+                <Bell className="h-3.5 w-3.5" />
+                تنبيه رئيس القسم
+              </Button>
+              <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
+                <Plus className="h-3.5 w-3.5" />
+                {showForm ? "إغلاق" : "إضافة جلسة"}
+              </Button>
+            </>
+          )}
         </div>
       }
     >
@@ -818,6 +825,7 @@ function TreatmentProgramsSection({
               idx={idx}
               staffList={staffList}
               currentUser={currentUser}
+              locked={locked}
             />
           ))}
         </div>
@@ -828,13 +836,14 @@ function TreatmentProgramsSection({
 
 // ─── Review Program card & section ────────────────────────────────────────────
 function ReviewProgramCard({
-  caseId, review, idx, staffList, currentUser,
+  caseId, review, idx, staffList, currentUser, locked,
 }: {
   caseId: string;
   review: any;
   idx: number;
   staffList: any[];
   currentUser: any;
+  locked?: boolean;
 }) {
   const updateReview = useUpdateReviewProgram();
   const deleteReview = useDeleteReviewProgram();
@@ -912,15 +921,17 @@ function ReviewProgramCard({
           {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
           {form.sessionTime && <span className="text-xs text-muted-foreground">{form.sessionTime}</span>}
         </div>
-        <div className="flex gap-1.5">
-          <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
-            {editing ? "إغلاق" : "تعديل"}
-          </Button>
-          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => setConfirmDel(true)}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        {!locked && (
+          <div className="flex gap-1.5">
+            <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
+              {editing ? "إغلاق" : "تعديل"}
+            </Button>
+            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setConfirmDel(true)}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <Dialog open={confirmDel} onOpenChange={setConfirmDel}>
@@ -1037,11 +1048,12 @@ function ReviewProgramCard({
 }
 
 function ReviewProgramsSection({
-  caseId, staffList, currentUser,
+  caseId, staffList, currentUser, locked,
 }: {
   caseId: string;
   staffList: any[];
   currentUser: any;
+  locked?: boolean;
 }) {
   const { data: reviews = [], isLoading } = useReviewPrograms(caseId);
   const createReview = useCreateReviewProgram();
@@ -1077,12 +1089,12 @@ function ReviewProgramsSection({
   return (
     <Section
       title={`برنامج المراجعة${reviews.length > 0 ? ` (${reviews.length})` : ""}`}
-      action={
+      action={!locked && (
         <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
           <Plus className="h-3.5 w-3.5" />
           {showForm ? "إغلاق" : "إضافة زيارة"}
         </Button>
-      }
+      )}
     >
       {showForm && (
         <div className="rounded-lg border border-dashed p-3 space-y-3 mb-3 bg-muted/30">
@@ -1153,6 +1165,7 @@ function ReviewProgramsSection({
               idx={idx}
               staffList={staffList}
               currentUser={currentUser}
+              locked={locked}
             />
           ))}
         </div>
@@ -3387,6 +3400,42 @@ function toAmputationLevels(raw: unknown): string[] {
   return [];
 }
 
+// Which case status each workflow tab corresponds to. The tab name no longer
+// matches the status name, so the mapping is explicit in both directions:
+//   الاستقبال…التركيب → معاينة, ورق القياس → أخذ قياس, التسليم التجريبي → تسليم
+//   تجريبي, تحليل المشي/التوازن → تأهيل, التقييم النهائي → تم التسليم,
+//   التسليم النهائي → تم التركيب.
+const STATUS_BY_TAB: Record<string, ProstheticsStatus> = {
+  intake: "INTAKE",
+  patient_info: "ASSESSMENT",
+  assessment: "ASSESSMENT",
+  committee_review: "ASSESSMENT",
+  fitting: "ASSESSMENT",
+  measurement_sheet: "FITTING",
+  treatment_program: "FITTING",
+  delivered: "SOCKET_TRIAL",
+  gait_analysis: "GAIT_TRAINING",
+  balance_assessment: "GAIT_TRAINING",
+  final_evaluation: "DELIVERED",
+  final_delivery: "FINAL_REVIEW",
+};
+
+// The tab a case opens on, given its stored status. First tab that maps to it.
+const TAB_BY_STATUS: Record<string, string> = {
+  INTAKE: "intake",
+  ASSESSMENT: "assessment",
+  FITTING: "measurement_sheet",
+  SOCKET_TRIAL: "delivered",
+  GAIT_TRAINING: "gait_analysis",
+  FOLLOW_UP: "treatment_program",
+  DELIVERED: "final_evaluation",
+  FINAL_REVIEW: "final_delivery",
+  // Legacy statuses still stored on older cases.
+  COMMITTEE_REVIEW: "committee_review",
+  GAIT_ANALYSIS: "gait_analysis",
+  FINAL_EVALUATION: "final_evaluation",
+};
+
 // Age in completed years, derived from the stored date of birth.
 function ageFromDob(dob?: string | null): number | null {
   if (!dob) return null;
@@ -3678,9 +3727,6 @@ export default function ProstheticsCasePage() {
   });
   const [signOpen, setSignOpen] = useState(false);
   const [signRole, setSignRole] = useState<"DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST">("DOCTOR");
-  const [committeeSigUrls, setCommitteeSigUrls] = useState<Record<string, string>>({});
-  const [committeeSigLoading, setCommitteeSigLoading] = useState<Record<string, boolean>>({});
-  const committeeSigRefs = { DOCTOR: useRef<HTMLInputElement>(null), PROSTHETIST: useRef<HTMLInputElement>(null), PHYSIOTHERAPIST: useRef<HTMLInputElement>(null) };
   const [compShared, setCompShared] = useState({
     sourceLocation: "WAREHOUSE" as "WAREHOUSE" | "EXTERNAL" | "PATIENT_OWNED" | "OTHER",
     supplier: "OTTOBOCK" as "OTTOBOCK" | "OTHER",
@@ -3976,7 +4022,16 @@ export default function ProstheticsCasePage() {
   const physioOpinionSaved = !!cr?.physiotherapistReviewedAt;
   const doctorOpinionSaved = !!cr?.doctorReviewedAt;
   const allOpinionsSaved = prosthetistOpinionSaved && physioOpinionSaved && doctorOpinionSaved;
+  // A delivered case is closed for editing — sessions and visits become history.
+  const caseLocked = c.status === "DELIVERED";
   const committeeDecided = !!cr?.decidedAt;
+  // The decision carries only the user id; employees are linked to users, so the
+  // name comes from the staff list. Falls back to nothing when unlinked.
+  const decidedByName = (() => {
+    if (!cr?.decidedByUserId) return null;
+    const emp = staffList.find((e: any) => e.userId === cr.decidedByUserId);
+    return emp ? `${emp.firstNameAr ?? ""} ${emp.lastNameAr ?? ""}`.trim() || null : null;
+  })();
 
   // Measurement sheet history per amputation type — newest-first, per backend
   const transtibialRecords: MeasurementAssessment[] = c.transtibialAssessment ?? [];
@@ -4373,7 +4428,8 @@ export default function ProstheticsCasePage() {
     if (ampTypes.includes("LOWER")) {
       await submitIfNew(lowerSaved, handleSubmitLowerAssessment);
     }
-    await updateStatus.mutateAsync({ id, status: "COMMITTEE_REVIEW" });
+    // The committee stage has no status of its own — the case stays "معاينة".
+    await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.committee_review });
   };
 
   const handleSubmitOpinion = async (role: "PROSTHETIST" | "PHYSIOTHERAPIST" | "DOCTOR", opinion: string) => {
@@ -4440,23 +4496,6 @@ export default function ProstheticsCasePage() {
     await signDecision.mutateAsync({ id, role: signRole, signatureUrl: base64 });
   };
 
-  const handleCommitteeSigFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    role: "DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST"
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCommitteeSigLoading((prev) => ({ ...prev, [role]: true }));
-    try {
-      const res = await clinicProstheticsApi.uploadSignatureFile(file);
-      const url = res.url.startsWith("http") ? res.url : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.url}`;
-      setCommitteeSigUrls((prev) => ({ ...prev, [role]: url }));
-      await signDecision.mutateAsync({ id, role, signatureUrl: url });
-    } catch { toast.error("فشل رفع التوقيع"); }
-    finally { setCommitteeSigLoading((prev) => ({ ...prev, [role]: false })); }
-    e.target.value = "";
-  };
-
   const supplierValue = () =>
     compShared.supplier === "OTTOBOCK" ? "OTTOBOCK" : compShared.supplierOther.trim() || undefined;
 
@@ -4479,6 +4518,10 @@ export default function ProstheticsCasePage() {
       });
     }
     setCompRows(Array.from({ length: 10 }, () => ({ inventoryItemId: "" })));
+    // Saving the parts closes the fitting stage — move the case to "أخذ قياس"
+    // and open the measurement-sheet tab.
+    await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.measurement_sheet });
+    setStageTab("measurement_sheet");
   };
 
   // Scenario 2 — save a free-text part entered in the "add new item" dialog.
@@ -4499,7 +4542,7 @@ export default function ProstheticsCasePage() {
   };
 
   const handleAdvanceToGait = async () => {
-    await updateStatus.mutateAsync({ id, status: "GAIT_ANALYSIS" });
+    await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.gait_analysis });
   };
 
   const handleSubmitGait = async () => {
@@ -4511,7 +4554,7 @@ export default function ProstheticsCasePage() {
         treatmentPlan: gaitForm.treatmentPlan || undefined,
       },
     });
-    await updateStatus.mutateAsync({ id, status: "FINAL_EVALUATION" });
+    await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.final_evaluation });
   };
 
   const handleMarkDelivered = async () => {
@@ -4677,6 +4720,7 @@ export default function ProstheticsCasePage() {
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold">حالة أطراف صناعية</h1>
             <CaseStatusBadge status={c.status} />
+            {caseLocked && <SavedBadge />}
             {ampTypes.map((t) => <Badge key={t} variant="outline">{TYPE_LABEL[t] ?? t}</Badge>)}
             {c.amputationSide && <Badge variant="outline">{SIDE_LABEL[c.amputationSide]}</Badge>}
           </div>
@@ -4706,7 +4750,9 @@ export default function ProstheticsCasePage() {
 
       {/* Tabs by workflow stage */}
       <Tabs
-        value={stageTab ?? (c.status === "CANCELLED" || c.status === "CLOSED" ? "timeline" : c.status.toLowerCase())}
+        value={stageTab ?? (c.status === "CANCELLED" || c.status === "CLOSED"
+          ? "timeline"
+          : TAB_BY_STATUS[c.status] ?? "intake")}
         onValueChange={setStageTab}
         dir={isRtl ? "rtl" : "ltr"}
       >
@@ -4728,6 +4774,7 @@ export default function ProstheticsCasePage() {
 
         {/* ── INTAKE ──────────────────────────────────────────────────────── */}
         <TabsContent value="intake" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
+          <fieldset disabled={caseLocked} className="min-w-0">
 
           <div>
           <Section title={t("intake.title")}>
@@ -5011,10 +5058,12 @@ export default function ProstheticsCasePage() {
             </div>
           </Section>
           </div>
+          </fieldset>
         </TabsContent>
 
         {/* ── PATIENT INFO ─────────────────────────────────────────────────── */}
         <TabsContent value="patient_info" className="mt-4" dir="rtl">
+          <fieldset disabled={caseLocked} className="min-w-0">
           <Section
             title={t("patientInfo.title")}
             action={
@@ -5129,10 +5178,12 @@ export default function ProstheticsCasePage() {
               })()}
             </div>
           </Section>
+          </fieldset>
         </TabsContent>
 
         {/* ── ASSESSMENT ──────────────────────────────────────────────────── */}
         <TabsContent value="assessment" className="mt-4 space-y-4" dir="rtl">
+          <fieldset disabled={caseLocked} className="space-y-4 min-w-0">
 
           {/* ── فريق العمل المعالج ── */}
           {openStaffKey && <div className="fixed inset-0 z-40" onClick={() => setOpenStaffKey(null)} />}
@@ -6018,7 +6069,12 @@ export default function ProstheticsCasePage() {
           })()}
 
           {/* ─── زر واحد: يحفظ الفريق والتقييم ثم يرسل للجنة ──────────────────── */}
-          {c.status === "ASSESSMENT" && (() => {
+          {/* Hidden once every limb sheet the case needs has been saved — a saved
+              assessment is read-only, so there is nothing left to submit. */}
+          {(() => {
+            const pending = (ampTypes.includes("UPPER") && !upperSaved)
+              || (ampTypes.includes("LOWER") && !lowerSaved);
+            if (!pending) return null;
             const busy = updateCase.isPending || submitAssessmentUpper.isPending
               || submitAssessmentLower.isPending || updateStatus.isPending;
             return (
@@ -6097,10 +6153,12 @@ export default function ProstheticsCasePage() {
               </div>
             )}
           </Section>
+          </fieldset>
         </TabsContent>
 
         {/* ── COMMITTEE ───────────────────────────────────────────────────── */}
         <TabsContent value="committee_review" className="mt-4 space-y-4" dir={isRtl ? "rtl" : "ltr"}>
+          <fieldset disabled={caseLocked} className="space-y-4 min-w-0">
 
           {/* أعضاء لجنة القبول وتقييماتهم */}
           <Section title={t("committee.membersTitle")}>
@@ -6152,12 +6210,22 @@ export default function ProstheticsCasePage() {
               <div className="space-y-2 pt-4">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Label className="font-semibold">{t("committee.summary")} <span className="text-destructive">*</span></Label>
+                  {decidedByName && (
+                    <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{decidedByName}</span>
+                  )}
                   {committeeDecided && <SavedBadge />}
                 </div>
+                {committeeDecided && cr?.decidedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("committee.decidedAt", { date: new Date(cr.decidedAt).toLocaleString("en-GB") })}
+                  </p>
+                )}
                 <Textarea rows={3} disabled={committeeDecided} value={decisionForm.finalSummary} onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))} placeholder={t("committee.summaryPlaceholder")} />
               </div>
 
-              {c.status === "COMMITTEE_REVIEW" && !allOpinionsSaved && (
+              {/* The committee stage now reads as "معاينة"; COMMITTEE_REVIEW is
+                  still accepted for cases saved before the statuses changed. */}
+              {(c.status === STATUS_BY_TAB.committee_review || c.status === "COMMITTEE_REVIEW") && !allOpinionsSaved && (
                 <div className="pt-4">
                   <Button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
@@ -6192,79 +6260,37 @@ export default function ProstheticsCasePage() {
                     />
                     <span className="text-sm text-muted-foreground">{t("committee.suitable")}</span>
                   </div>
+                  {/* Only meaningful when the answer above is "مناسب" — labelled so
+                      it reads as part of that question, not as a stray field. */}
                   {committeeSuitForm.prosthesisSuitable === true && (
-                    <Input
-                      className="h-8 text-sm"
-                      disabled={committeeDecided}
-                      placeholder={t("committee.proposedTypePlaceholder")}
-                      value={committeeSuitForm.proposedProsthesisType}
-                      onChange={(e) => setCommitteeSuitForm((f) => ({ ...f, proposedProsthesisType: e.target.value }))}
-                    />
+                    <div className="space-y-1.5 pt-1">
+                      <Label className="text-xs">{t("committee.proposedType")}</Label>
+                      <Input
+                        className="h-8 text-sm"
+                        disabled={committeeDecided}
+                        placeholder={t("committee.proposedTypePlaceholder")}
+                        value={committeeSuitForm.proposedProsthesisType}
+                        onChange={(e) => setCommitteeSuitForm((f) => ({ ...f, proposedProsthesisType: e.target.value }))}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
-              {(c.status === "COMMITTEE_REVIEW" || c.status === "COMMITTEE_APPROVED") && (
-                <>
-                  <div className="pt-2">
-                    <p className="text-sm font-semibold mb-2">{t("committee.signatures")}</p>
-                    <div className="grid grid-cols-3 gap-3">
-                      {(([
-                        { role: "DOCTOR" as const, label: t("committee.signDoctor") },
-                        { role: "PROSTHETIST" as const, label: t("committee.signProsthetist") },
-                        { role: "PHYSIOTHERAPIST" as const, label: t("committee.signPhysio") },
-                      ])).map(({ role, label }) => (
-                        <ActionGuard key={role} permission={PERMISSIONS.CLINIC_PROSTHETICS.COMMITTEE_SIGN}>
-                          <div className="space-y-1.5">
-                            <input
-                              ref={committeeSigRefs[role]}
-                              type="file" accept="image/*" className="hidden"
-                              onChange={(e) => handleCommitteeSigFileChange(e, role)}
-                            />
-                            {committeeSigUrls[role] ? (
-                              <div className="rounded border p-2 space-y-1.5 text-center">
-                                <img src={committeeSigUrls[role]} alt={label} className="h-14 w-full object-contain border rounded bg-white" />
-                                <p className="text-[11px] text-muted-foreground">{label}</p>
-                                <button
-                                  type="button"
-                                  className="text-xs text-destructive hover:underline"
-                                  onClick={() => setCommitteeSigUrls((prev) => { const n = { ...prev }; delete n[role]; return n; })}
-                                >
-                                  {t("committee.remove")}
-                                </button>
-                              </div>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                className="w-full flex-col h-auto py-3 gap-1"
-                                disabled={committeeSigLoading[role]}
-                                onClick={() => committeeSigRefs[role].current?.click()}
-                              >
-                                {committeeSigLoading[role]
-                                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                                  : <span className="text-sm font-medium">{label}</span>
-                                }
-                                {!committeeSigLoading[role] && <span className="text-xs text-muted-foreground">{t("committee.uploadImage")}</span>}
-                              </Button>
-                            )}
-                          </div>
-                        </ActionGuard>
-                      ))}
-                    </div>
-                  </div>
-                  {!committeeDecided && (
-                    <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                      {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
-                      {t("committee.saveDecision")}
-                    </Button>
-                  )}
-                </>
+              {/* التوقيعات أُزيلت من تبويب اللجنة */}
+              {(c.status === STATUS_BY_TAB.committee_review || c.status === "COMMITTEE_REVIEW" || c.status === "COMMITTEE_APPROVED") && !committeeDecided && (
+                <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                  {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
+                  {t("committee.saveDecision")}
+                </Button>
               )}
             </div>
           </Section>
+          </fieldset>
         </TabsContent>
 
         {/* ── FITTING ─────────────────────────────────────────────────────── */}
         <TabsContent value="fitting" className="mt-4 space-y-4" dir={isRtl ? "rtl" : "ltr"}>
+          <fieldset disabled={caseLocked} className="space-y-4 min-w-0">
           <Section title={t("fitting.title")}>
             <div className="space-y-5">
 
@@ -6360,11 +6386,11 @@ export default function ProstheticsCasePage() {
 
               <Button
                 onClick={handleAddComponents}
-                disabled={addComponent.isPending || !compRows.some((r) => r.inventoryItemId)}
+                disabled={addComponent.isPending || updateStatus.isPending || !compRows.some((r) => r.inventoryItemId)}
                 className="w-full gap-2"
               >
-                {addComponent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                {t("fitting.saveParts")}
+                {(addComponent.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {t("fitting.savePartsAndAdvance")}
               </Button>
 
               {/* الأجزاء المضافة */}
@@ -6526,7 +6552,7 @@ export default function ProstheticsCasePage() {
                   />
                   <span className="text-sm font-medium">{t("fitting.prosthesisComplete")}</span>
                 </label>
-                {c.status === "FITTING" && (
+                {(c.status === STATUS_BY_TAB.fitting || c.status === "FITTING") && (
                   <Button onClick={handleAdvanceToGait} disabled={updateStatus.isPending} className="w-full">
                     {t("fitting.goToGait")}
                   </Button>
@@ -6535,10 +6561,12 @@ export default function ProstheticsCasePage() {
 
             </div>
           </Section>
+          </fieldset>
         </TabsContent>
 
         {/* ── MEASUREMENT SHEET ───────────────────────────────────────────── */}
         <TabsContent value="measurement_sheet" className="mt-4 space-y-4" dir="rtl">
+          <fieldset disabled={caseLocked} className="space-y-4 min-w-0">
           {/* Type selector */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {(["ankle_disarticulation", "below_knee", "knee_disarticulation", "above_knee", "hemipelvectomy", "elbow_disarticulation", "transhumeral", "transradial"] as MeasureSheetType[]).map((key) => (
@@ -7375,6 +7403,7 @@ export default function ProstheticsCasePage() {
               <p className="text-muted-foreground text-sm">{t("measurement.selectTypePrompt")}</p>
             </div>
           )}
+          </fieldset>
         </TabsContent>
 
         {/* ── TREATMENT PROGRAM ───────────────────────────────────────────── */}
@@ -7383,23 +7412,29 @@ export default function ProstheticsCasePage() {
             caseId={id}
             staffList={staffList}
             currentUser={currentUser}
+            locked={caseLocked}
           />
           <ReviewProgramsSection
             caseId={id}
             staffList={staffList}
             currentUser={currentUser}
+            locked={caseLocked}
           />
         </TabsContent>
 
         {/* ── GAIT ANALYSIS ───────────────────────────────────────────────── */}
         <TabsContent value="gait_analysis" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
+          <fieldset disabled={caseLocked} className="min-w-0">
           <GaitAnalysisSection caseId={id} staffList={staffList} patient={patientFull ?? caseData?.patient} />
+          </fieldset>
         </TabsContent>
 
         {/* ── BALANCE ASSESSMENT ──────────────────────────────────────────── */}
         {ampTypes.includes("LOWER") && (
           <TabsContent value="balance_assessment" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-            <BalanceAssessmentSection caseId={id} staffList={staffList} />
+            <fieldset disabled={caseLocked} className="min-w-0">
+              <BalanceAssessmentSection caseId={id} staffList={staffList} />
+            </fieldset>
           </TabsContent>
         )}
 
@@ -7559,6 +7594,7 @@ export default function ProstheticsCasePage() {
 
         {/* ── DELIVERED (Pro-019) ──────────────────────────────────────────── */}
         <TabsContent value="delivered" className="mt-4 space-y-4" dir="rtl">
+          <fieldset disabled={caseLocked} className="space-y-4 min-w-0">
 
           <Section
             title={t("delivered.title")}
@@ -7690,6 +7726,7 @@ export default function ProstheticsCasePage() {
               </Button>
             </div>
           </Section>
+          </fieldset>
         </TabsContent>
 
         {/* ── FINAL DELIVERY (approved items only) ─────────────────────────── */}

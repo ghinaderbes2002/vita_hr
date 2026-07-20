@@ -58,11 +58,6 @@ export function InventoryItemCombobox({
             <span className="truncate">
               {selected ? `${selected.name}${selected.code ? ` — ${selected.code}` : ""}` : placeholder}
             </span>
-            {selected && selected.currentStock != null && (
-              <span className={cn("ms-2 shrink-0 text-xs", selected.currentStock > 0 ? "text-muted-foreground" : "text-destructive")}>
-                متوفر: {selected.currentStock}
-              </span>
-            )}
             <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -98,11 +93,6 @@ export function InventoryItemCombobox({
                   >
                     <Check className={cn("me-2 h-4 w-4", item.id === value ? "opacity-100" : "opacity-0")} />
                     <span className="flex-1 truncate">{item.name}{item.code ? ` — ${item.code}` : ""}</span>
-                    {item.currentStock != null && (
-                      <span className={cn("ms-2 shrink-0 text-xs", item.currentStock > 0 ? "text-muted-foreground" : "text-destructive")}>
-                        متوفر: {item.currentStock}
-                      </span>
-                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>
