@@ -8,6 +8,7 @@ import {
   WorkflowNotesData,
   ProposeMeetingData,
   ConfirmMeetingData,
+  SuggestMeetingChangeData,
   CompleteProbationData,
 } from "@/lib/api/probation-evaluations";
 import { toast } from "sonner";
@@ -185,6 +186,19 @@ export function useConfirmMeeting() {
     onSuccess: (_, { id }) => {
       invalidateAll(qc, id);
       toast.success("تم تأكيد موعد الاجتماع");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useSuggestMeetingChange() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: SuggestMeetingChangeData }) =>
+      probationEvaluationsApi.suggestMeetingChange(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تم إرسال اقتراح تغيير الموعد إلى الموارد البشرية");
     },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });

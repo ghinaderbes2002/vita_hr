@@ -30,6 +30,8 @@ import {
   useCeoDecideProbation,
   useProposeMeeting,
   useConfirmMeeting,
+  useSuggestMeetingChange,
+  usePendingMyAction,
   useCompleteProbation,
 } from "@/lib/hooks/use-probation-evaluations";
 import {
@@ -76,7 +78,7 @@ type ActionType =
   | "propose-meeting"
   | "confirm-employee"
   | "confirm-direct-manager"
-  | "confirm-ceo"
+  | "suggest-meeting-change"
   | "complete";
 
 function ScoreLabel({ score }: { score: number | null }) {
@@ -266,6 +268,12 @@ export default function ProbationEvaluationDetailPage() {
   const ceoDecide       = useCeoDecideProbation();
   const proposeMeeting  = useProposeMeeting();
   const confirmMeeting  = useConfirmMeeting();
+  const suggestChange   = useSuggestMeetingChange();
+  // The backend already decides who still owes an action on this evaluation —
+  // the same list that drives the dashboard banner. Trust it rather than
+  // re-deriving the viewer's role from employee ids, which don't always match.
+  const { data: pendingMine = [] } = usePendingMyAction();
+  const isPendingForMe = pendingMine.some((p) => p.id === id);
   const completeProbation = useCompleteProbation();
 
   const ev = evaluation as any;
@@ -360,8 +368,8 @@ export default function ProbationEvaluationDetailPage() {
         case "confirm-direct-manager":
           await confirmMeeting.mutateAsync({ id, data: { role: "manager" } });
           break;
-        case "confirm-ceo":
-          await confirmMeeting.mutateAsync({ id, data: { role: "ceo" } });
+        case "suggest-meeting-change":
+          await suggestChange.mutateAsync({ id, data: { note: actionNotes.trim() } });
           break;
         case "complete":
           await completeProbation.mutateAsync({ id, employeeId: ev.employeeId, data: {} });
@@ -376,7 +384,8 @@ export default function ProbationEvaluationDetailPage() {
   const isActionLoading =
     selfEvaluate.isPending || seniorApprove.isPending || seniorReject.isPending ||
     hrDocument.isPending || hrReject.isPending || ceoDecide.isPending ||
-    proposeMeeting.isPending || confirmMeeting.isPending || completeProbation.isPending;
+    proposeMeeting.isPending || confirmMeeting.isPending || suggestChange.isPending ||
+    completeProbation.isPending;
 
   const dialogTitles: Partial<Record<ActionType, string>> = {
     "self-evaluate":    t("actionDialog.selfEvaluate"),
@@ -388,7 +397,7 @@ export default function ProbationEvaluationDetailPage() {
     "propose-meeting":  t("actionDialog.proposeMeeting"),
     "confirm-employee":       "تأكيد الموعد كموظف",
     "confirm-direct-manager": "تأكيد الموعد كمدير مباشر",
-    "confirm-ceo":            "تأكيد الموعد كمدير تنفيذي",
+    "suggest-meeting-change": "اقتراح تغيير موعد الاجتماع",
     complete:           "إغلاق التقييم ورفع وثيقة القرار",
   };
 
@@ -398,7 +407,8 @@ export default function ProbationEvaluationDetailPage() {
     (actionType === "hr-reject" && !actionNotes.trim()) ||
     (actionType === "approve" && (!overallRating || !recommendation)) ||
     (actionType === "ceo" && !recommendation) ||
-    (actionType === "propose-meeting" && !meetingDate);
+    (actionType === "propose-meeting" && !meetingDate) ||
+    (actionType === "suggest-meeting-change" && !actionNotes.trim());
 
   return (
     <div className="space-y-6">
@@ -475,19 +485,17 @@ export default function ProbationEvaluationDetailPage() {
                 <p className="font-medium text-green-700">{new Date(ev.confirmedMeetingDate).toLocaleString()}</p>
               </div>
             )}
-            {(() => {
-              const ceoConfirmed = !!(ev as any).meetingConfirmedByCeo ||
-                (ev.seniorIsCeo === true && !!ev.meetingConfirmedByManager);
-              return (
-                <div className="flex gap-4 text-xs text-muted-foreground sm:col-span-2">
-                  <span>موظف: {ev.meetingConfirmedByEmployee ? "✓ مؤكد" : "⏳ بانتظار"}</span>
-                  <span>مدير مباشر: {ev.meetingConfirmedByManager ? "✓ مؤكد" : "⏳ بانتظار"}</span>
-                  {!ev.seniorIsCeo && (
-                    <span>مدير تنفيذي: {ceoConfirmed ? "✓ مؤكد" : "⏳ بانتظار"}</span>
-                  )}
-                </div>
-              );
-            })()}
+            {/* Scheduling needs the employee and the direct manager only. */}
+            <div className="flex gap-4 text-xs text-muted-foreground sm:col-span-2">
+              <span>موظف: {ev.meetingConfirmedByEmployee ? "✓ مؤكد" : "⏳ بانتظار"}</span>
+              <span>مدير مباشر: {ev.meetingConfirmedByManager ? "✓ مؤكد" : "⏳ بانتظار"}</span>
+            </div>
+            {ev.meetingRescheduleNote && (
+              <div className="sm:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <span className="font-medium">طلب المدير المباشر تغيير الموعد: </span>
+                {ev.meetingRescheduleNote}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -673,24 +681,43 @@ export default function ProbationEvaluationDetailPage() {
               )}
               {ev.status === "PENDING_MEETING_SCHEDULE" && (
                 <>
-                  {!ev.meetingProposedAt && canHrDocument && (!canCeoDecide || isAdmin()) && (
+                  {/* HR owns the date for the whole scheduling stage: sets it,
+                      re-sets it after a reschedule request, and can still change
+                      it while the confirmations are outstanding. */}
+                  {!ev.meetingConfirmedAt && canHrDocument && (!canCeoDecide || isAdmin()) && (
                     <Button className="gap-2 bg-orange-600 hover:bg-orange-700" onClick={() => openAction("propose-meeting")}>
-                      <CalendarClock className="h-4 w-4" />{t("actions.proposeMeeting")}
+                      <CalendarClock className="h-4 w-4" />
+                      {ev.meetingRescheduleNote
+                        ? "تحديد موعد جديد"
+                        : ev.meetingProposedAt
+                          ? "تعديل الموعد"
+                          : t("actions.proposeMeeting")}
                     </Button>
                   )}
-                  {/* زر تأكيد موحد — يحدد الدور تلقائياً */}
-                  {ev.meetingProposedAt && (() => {
-                    const isEmployee = user?.employeeId === ev.employeeId;
+                  {/* Confirmation is for the employee and the direct manager only;
+                      it is hidden while a reschedule request is waiting on HR. */}
+                  {ev.meetingProposedAt && !ev.meetingRescheduleNote && isPendingForMe && (() => {
+                    const isEmployee = user?.employeeId === ev.employeeId
+                      || (!canSeniorApprove && !ev.meetingConfirmedByEmployee);
+                    const isManager = !isEmployee && !ev.meetingConfirmedByManager;
                     const myRole =
                       isEmployee && !ev.meetingConfirmedByEmployee ? "confirm-employee" :
-                      !isEmployee && canSeniorApprove && !ev.meetingConfirmedByManager ? "confirm-direct-manager" :
-                      !isEmployee && canCeoDecide && !(ev as any).meetingConfirmedByCeo ? "confirm-ceo" :
+                      isManager ? "confirm-direct-manager" :
                       null;
-                    return myRole ? (
-                      <Button className="gap-2 bg-teal-600 hover:bg-teal-700" onClick={() => openAction(myRole)}>
-                        <CalendarCheck className="h-4 w-4" />تأكيد الموعد
-                      </Button>
-                    ) : null;
+                    if (!myRole) return null;
+                    return (
+                      <>
+                        <Button className="gap-2 bg-teal-600 hover:bg-teal-700" onClick={() => openAction(myRole)}>
+                          <CalendarCheck className="h-4 w-4" />
+                          {isManager ? "موافقة على الموعد" : "تأكيد الموعد"}
+                        </Button>
+                        {isManager && (
+                          <Button variant="outline" className="gap-2" onClick={() => openAction("suggest-meeting-change")}>
+                            <CalendarClock className="h-4 w-4" />اقتراح تغيير الموعد
+                          </Button>
+                        )}
+                      </>
+                    );
                   })()}
                   {/* إغلاق التقييم: بعد تأكيد الموظف + المدير المباشر (يكفي) */}
                   {(ev.confirmedMeetingDate || ev.meetingConfirmedAt || (ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager)) && canHrDocument && (!canCeoDecide || isAdmin()) && (
@@ -877,7 +904,7 @@ export default function ProbationEvaluationDetailPage() {
             )}
 
             {/* Notes */}
-            {!["propose-meeting", "confirm-employee", "confirm-direct-manager", "confirm-ceo", "complete"].includes(actionType ?? "") && (
+            {!["propose-meeting", "confirm-employee", "confirm-direct-manager", "complete"].includes(actionType ?? "") && (
               <div className="space-y-1.5">
                 <Label>
                   {actionType === "reject" || actionType === "hr-reject"

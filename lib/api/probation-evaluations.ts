@@ -78,6 +78,8 @@ export interface ProbationEvaluation {
   meetingConfirmedAt?: string;
   meetingConfirmedByEmployee?: boolean;
   meetingConfirmedByManager?: boolean;
+  /** Filled when the direct manager asked HR for a different date. */
+  meetingRescheduleNote?: string | null;
   seniorIsCeo?: boolean;
 }
 
@@ -116,9 +118,14 @@ export interface ProposeMeetingData {
   meetingProposedAt: string;
 }
 
-// POST /:id/confirm-meeting
+// POST /:id/confirm-meeting — the CEO is no longer part of scheduling.
 export interface ConfirmMeetingData {
-  role: "employee" | "manager" | "ceo";
+  role: "employee" | "manager";
+}
+
+// POST /:id/suggest-meeting-change — direct manager asks HR for another date.
+export interface SuggestMeetingChangeData {
+  note: string;
 }
 
 // POST /:id/close-evaluation
@@ -199,6 +206,11 @@ export const probationEvaluationsApi = {
 
   proposeMeeting: async (id: string, data: ProposeMeetingData) => {
     const response = await apiClient.post(`/probation-evaluations/${id}/schedule-meeting`, data);
+    return response.data?.data || response.data;
+  },
+
+  suggestMeetingChange: async (id: string, data: SuggestMeetingChangeData) => {
+    const response = await apiClient.post(`/probation-evaluations/${id}/suggest-meeting-change`, data);
     return response.data?.data || response.data;
   },
 

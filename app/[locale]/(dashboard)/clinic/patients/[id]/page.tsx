@@ -24,6 +24,10 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
+import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
+import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
+import { PodiatryReception } from "@/lib/api/clinic-podiatry";
+import { VISIT_TYPE_LABEL } from "@/components/clinic/podiatry-labels";
 import {
   useClinicPatient, useDeleteClinicPatient,
   usePatientDocuments, useUploadPatientDocument, useDeletePatientDocument, useDownloadPatientDocument,
@@ -77,6 +81,8 @@ export default function PatientProfilePage() {
   const { data: physioCases = [] } = usePhysioCasesByPatient(id);
   const { data: documents = [] } = usePatientDocuments(id);
   const { data: consents = [] } = usePatientConsents(id);
+  const { data: podiatryReceptions = [] } = usePodiatryReceptions(id);
+  const [podiatryDialogOpen, setPodiatryDialogOpen] = useState(false);
   const { data: notes = [] } = usePatientNotes(id);
 
   const deletePatient = useDeleteClinicPatient();
@@ -266,6 +272,7 @@ export default function PatientProfilePage() {
           <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
           <TabsTrigger value="prosthetics">الأطراف الصناعية ({prostCases.length})</TabsTrigger>
           <TabsTrigger value="physio">العلاج الفيزيائي ({physioCases.length})</TabsTrigger>
+          <TabsTrigger value="podiatry">طب الأقدام ({podiatryReceptions.length})</TabsTrigger>
           <TabsTrigger value="documents">المستندات ({documents.length})</TabsTrigger>
           <TabsTrigger value="notes">الملاحظات ({notes.length})</TabsTrigger>
         </TabsList>
@@ -434,6 +441,43 @@ export default function PatientProfilePage() {
           )}
         </TabsContent>
 
+        {/* Podiatry Tab */}
+        <TabsContent value="podiatry" className="mt-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold">استقبالات طب الأقدام</h3>
+            <Button size="sm" onClick={() => setPodiatryDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              استقبال جديد
+            </Button>
+          </div>
+          {podiatryReceptions.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground border rounded-lg">لا توجد استقبالات طب أقدام</div>
+          ) : (
+            <div className="space-y-3">
+              {(podiatryReceptions as PodiatryReception[]).map((r) => (
+                <Card key={r.id} className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => router.push(`/${locale}/clinic/podiatry/${r.id}`)}>
+                  <CardContent className="pt-4 flex items-center justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex flex-wrap gap-1">
+                        {(r.visitTypes ?? []).map((v) => (
+                          <Badge key={v} variant="outline" className="text-[10px]">{VISIT_TYPE_LABEL[v] ?? v}</Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-GB") : "—"}
+                        {" — "}
+                        {r.sessions?.length ?? 0} جلسة
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
         {/* Documents Tab */}
         <TabsContent value="documents" className="mt-4 space-y-4">
           <div className="flex justify-between items-center">
@@ -555,6 +599,13 @@ export default function PatientProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PodiatryReceptionDialog
+        open={podiatryDialogOpen}
+        onOpenChange={setPodiatryDialogOpen}
+        patientId={id}
+        onCreated={(receptionId) => router.push(`/${locale}/clinic/podiatry/${receptionId}`)}
+      />
 
       <ConfirmDialog
         open={deletePatientOpen}
