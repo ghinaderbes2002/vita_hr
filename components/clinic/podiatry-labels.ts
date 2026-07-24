@@ -14,34 +14,43 @@ export const FOOT_SYMPTOM_LABEL: Record<FootSymptom, string> = {
   PAIN: "ألم",
   NUMBNESS: "تنميل",
   SWELLING: "تورّم",
-  INSTABILITY: "عدم ثبات",
-  FATIGUE: "تعب",
+  INSTABILITY: "عدم ثباته",
+  FATIGUE: "  تعب سريع",
 };
 
 export const VISIT_TYPE_LABEL: Record<VisitType, string> = {
   FOOT_PAIN: "ألم القدم",
-  FOOTBALANCE_ASSESSMENT: "تقييم اتزان القدم",
-  CUSTOM_INSOLES: "نعال طبية مخصصة",
+  FOOTBALANCE_ASSESSMENT: "تحليل  ",
+  CUSTOM_INSOLES: " ضبان مخصصة",
   PERFORMANCE_OPTIMIZATION: "تحسين الأداء",
   FOLLOW_UP: "متابعة",
 };
 
 export const MEDICAL_HISTORY_LABEL: Record<MedicalHistoryItem, string> = {
   DIABETES: "سكري",
-  HYPERTENSION: "ضغط",
-  NEUROLOGICAL: "عصبي",
-  VASCULAR: "وعائي",
+  HYPERTENSION: "ارتفاع ضغط",
+  NEUROLOGICAL: "أمراض أعصاب",
+  VASCULAR: "أمراض أوعية",
   ARTHRITIS: "التهاب مفاصل",
   OTHER: "أخرى",
 };
 
 export const CLINICAL_PLAN_LABEL: Record<ClinicalPlanItem, string> = {
-  CUSTOM_FOOTBALANCE_INSOLE: "نعل اتزان مخصص",
+  CUSTOM_FOOTBALANCE_INSOLE: "ضبان مخصص",
   THERAPEUTIC_EXERCISES: "تمارين علاجية",
   FOOTWEAR_MODIFICATION: "تعديل الحذاء",
-  MEDICAL_REFERRAL: "إحالة طبية",
+  MEDICAL_REFERRAL: "تحويل طبي",
   PHYSICAL_THERAPY: "علاج فيزيائي",
 };
+
+// The four per-foot findings, in the order the session form lists them. The
+// key is the suffix of the session fields (rightFlatFoot / leftFlatFoot, ...).
+export const FOOT_FLAGS = [
+  { key: "FlatFoot", label: "قدم مسطحة" },
+  { key: "HighArch", label: "قوس مرتفع" },
+  { key: "Pronation", label: "انكباب" },
+  { key: "Supination", label: "انقلاب" },
+] as const;
 
 export const AFFECTED_SIDE_VALUES = Object.keys(AFFECTED_SIDE_LABEL) as AffectedSide[];
 export const FOOT_SYMPTOM_VALUES = Object.keys(FOOT_SYMPTOM_LABEL) as FootSymptom[];

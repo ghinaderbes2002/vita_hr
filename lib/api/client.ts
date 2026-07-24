@@ -73,8 +73,13 @@ apiClient.interceptors.response.use(
 
     // Endpoints that return 403 silently (background polling, not user-initiated)
     const SILENT_403_PATHS = ["/physio/emergency/incoming"];
+    // A GET that 403s is a page auto-fetching data the user can't see (its UI is
+    // hidden anyway) — only a write the user actually triggered warrants a toast.
+    const method = (originalRequest?.method ?? "get").toLowerCase();
+    const isReadRequest = method === "get" || method === "head";
     if (
       errorCode === AUTH_ERROR_CODES.INSUFFICIENT_PERMISSIONS &&
+      !isReadRequest &&
       !SILENT_403_PATHS.some((p) => originalRequest?.url?.includes(p))
     ) {
       toast.error("ليس لديك صلاحية لهذا الإجراء");

@@ -245,6 +245,14 @@ export const PERMISSIONS = {
     SESSIONS_CREATE:   "clinic.physio.sessions.create",
     EMERGENCY_ALERT:   "physio:emergency-alert",
   },
+  CLINIC_PODIATRY: {
+    RECEPTION_VIEW:   "clinic.podiatry.reception.view",
+    RECEPTION_CREATE: "clinic.podiatry.reception.create",
+    RECEPTION_EDIT:   "clinic.podiatry.reception.edit",
+    SESSION_CREATE:   "clinic.podiatry.session.create",
+    SESSION_EDIT:     "clinic.podiatry.session.edit",
+    SESSION_ARCHIVE:  "clinic.podiatry.session.archive",
+  },
   CLINIC_APPOINTMENTS: {
     VIEW:   "clinic.appointments.view",
     CREATE: "clinic.appointments.create",

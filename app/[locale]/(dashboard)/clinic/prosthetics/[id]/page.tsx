@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
+import { MySignatureField } from "@/components/clinic/my-signature-field";
 import { KLevelSelector } from "@/components/clinic/k-level-selector";
 import { AmputationLevelSelector } from "@/components/clinic/amputation-level-selector";
 import { InventoryItemCombobox } from "@/components/clinic/inventory-item-combobox";
@@ -34,6 +35,7 @@ import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
@@ -145,6 +147,7 @@ function StepIndicator({ status }: { status: ProstheticsStatus }) {
 
 // ─── Patient photo via authenticated download ─────────────────────────────────
 function PatientPhotoViewer({ patientId, docId }: { patientId: string; docId: string }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let objectUrl: string;
@@ -154,7 +157,7 @@ function PatientPhotoViewer({ patientId, docId }: { patientId: string; docId: st
     }).catch(() => {});
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [patientId, docId]);
-  if (!src) return <span className="opacity-40 text-xs">جاري التحميل...</span>;
+  if (!src) return <span className="opacity-40 text-xs">{t("page.loading")}</span>;
   return <img src={src} alt="الصورة الشخصية" className="h-full w-full object-cover" />;
 }
 
@@ -232,6 +235,7 @@ function TreatmentProgramCard({
   currentUser: any;
   locked?: boolean;
 }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const updateProgram = useUpdateTreatmentProgram();
   const archiveProgram = useArchiveTreatmentProgram();
   const [editing, setEditing] = useState(false);
@@ -267,7 +271,7 @@ function TreatmentProgramCard({
 
   const handleSignatureClick = async (role: "technician" | "manager") => {
     const empId = role === "technician" ? form.technicianId : currentUser?.employeeId;
-    if (!empId) { toast.error(role === "technician" ? "أدخل رقم المعالج أولاً" : "لم يُعثر على بيانات المستخدم"); return; }
+    if (!empId) { toast.error(role === "technician" ? t("followUp.enterTherapistFirst") : t("followUp.noUserData")); return; }
     try {
       const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
       if (sig.hasSignature && sig.signatureUrl) {
@@ -278,7 +282,7 @@ function TreatmentProgramCard({
         setSigUploadFor(role);
         setTimeout(() => sigFileRef.current?.click(), 50);
       }
-    } catch { toast.error("فشل جلب بيانات التوقيع"); }
+    } catch { toast.error(t("followUp.signatureFetchFailed")); }
   };
 
   const handleSignatureFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,8 +295,8 @@ function TreatmentProgramCard({
       const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
       if (sigUploadFor === "technician") setForm((f) => ({ ...f, technicianSignatureUrl: url }));
       else setForm((f) => ({ ...f, managerSignatureUrl: url }));
-      toast.success("تم رفع التوقيع");
-    } catch { toast.error("فشل رفع التوقيع"); }
+      toast.success(t("followUp.signatureUploaded"));
+    } catch { toast.error(t("followUp.signatureUploadFailed")); }
     setSigUploadFor(null);
     e.target.value = "";
   };
@@ -337,18 +341,18 @@ function TreatmentProgramCard({
           {isArchived && (
             <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
               <Archive className="h-3 w-3" />
-              مؤرشف
+              {t("followUp.archived")}
             </Badge>
           )}
           {!locked && !hasOtherData && (
             <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => { setEditing((v) => !v); setExpanded(true); }}>
-              {editing ? "إغلاق" : "تعديل"}
+              {editing ? t("followUp.close") : t("followUp.edit")}
             </Button>
           )}
           {!locked && !isArchived && (
             <Button size="sm" variant="outline" className="gap-1" onClick={() => { setArchiveNotes(""); setArchiveOpen(true); }}>
               <Archive className="h-3.5 w-3.5" />
-              أرشفة
+              {t("followUp.archive")}
             </Button>
           )}
         </div>
@@ -358,10 +362,10 @@ function TreatmentProgramCard({
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-0.5">
           <p className="flex items-center gap-1 font-medium">
             <Archive className="h-3 w-3" />
-            أُرشِفت{program.archivedAt ? ` بتاريخ ${new Date(program.archivedAt).toLocaleDateString("en-GB")}` : ""}
+            {t("followUp.archivedOn")}{program.archivedAt ? ` ${t("followUp.onDate")} ${new Date(program.archivedAt).toLocaleDateString("en-GB")}` : ""}
           </p>
           {program.archiveNotes && (
-            <p><span className="font-medium">ملاحظة الأرشفة: </span>{program.archiveNotes}</p>
+            <p><span className="font-medium">{t("followUp.lblArchiveNote")} </span>{program.archiveNotes}</p>
           )}
         </div>
       )}
@@ -369,17 +373,17 @@ function TreatmentProgramCard({
       <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle>أرشفة الجلسة</DialogTitle>
-            <DialogDescription>سيتم إغلاق الجلسة. يمكنك إضافة ملاحظة اختيارية.</DialogDescription>
+            <DialogTitle>{t("followUp.archiveSession")}</DialogTitle>
+            <DialogDescription>{t("followUp.archiveDesc")}</DialogDescription>
           </DialogHeader>
           <Textarea
             rows={3}
-            placeholder="ملاحظة اختيارية..."
+            placeholder={t("followUp.optionalNote")}
             value={archiveNotes}
             onChange={(e) => setArchiveNotes(e.target.value)}
           />
           <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-            <Button variant="outline" onClick={() => setArchiveOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setArchiveOpen(false)}>{t("followUp.cancel")}</Button>
             <Button
               disabled={archiveProgram.isPending}
               onClick={async () => {
@@ -387,7 +391,7 @@ function TreatmentProgramCard({
                 setArchiveOpen(false);
               }}
             >
-              {archiveProgram.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "أرشفة"}
+              {archiveProgram.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("followUp.archive")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -395,24 +399,24 @@ function TreatmentProgramCard({
 
       {expanded && !editing && (
         <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
-          {form.description && <p><span className="font-medium text-foreground">الشرح: </span>{form.description}</p>}
-          {technicianName && <p><span className="font-medium text-foreground">المعالج: </span>{technicianName.firstNameAr} {technicianName.lastNameAr}</p>}
+          {form.description && <p><span className="font-medium text-foreground">{t("followUp.lblDescription")} </span>{form.description}</p>}
+          {technicianName && <p><span className="font-medium text-foreground">{t("followUp.lblTherapist")} </span>{technicianName.firstNameAr} {technicianName.lastNameAr}</p>}
           {(form.sessionStartTime || form.sessionEndTime) && (
-            <p><span className="font-medium text-foreground">الوقت: </span>{form.sessionStartTime || "—"} — {form.sessionEndTime || "—"}</p>
+            <p><span className="font-medium text-foreground">{t("followUp.lblTime")} </span>{form.sessionStartTime || "—"} — {form.sessionEndTime || "—"}</p>
           )}
-          {form.notes && <p><span className="font-medium text-foreground">ملاحظات: </span>{form.notes}</p>}
+          {form.notes && <p><span className="font-medium text-foreground">{t("followUp.lblNotes")} </span>{form.notes}</p>}
           {(form.technicianSignatureUrl || form.managerSignatureUrl) && (
             <div className="flex gap-3 pt-1">
               {form.technicianSignatureUrl && (
                 <div className="text-center">
-                  <img src={form.technicianSignatureUrl} alt="التوقيع" className="h-10 object-contain border rounded bg-white" />
-                  <p className="text-[10px] mt-0.5">التوقيع</p>
+                  <img src={form.technicianSignatureUrl} alt={t("followUp.signature")} className="h-10 object-contain border rounded bg-white" />
+                  <p className="text-[10px] mt-0.5">{t("followUp.signature")}</p>
                 </div>
               )}
               {form.managerSignatureUrl && (
                 <div className="text-center">
-                  <img src={form.managerSignatureUrl} alt="توقيع مدير القسم" className="h-10 object-contain border rounded bg-white" />
-                  <p className="text-[10px] mt-0.5">توقيع مدير القسم</p>
+                  <img src={form.managerSignatureUrl} alt={t("followUp.managerSignature")} className="h-10 object-contain border rounded bg-white" />
+                  <p className="text-[10px] mt-0.5">{t("followUp.managerSignature")}</p>
                 </div>
               )}
             </div>
@@ -424,26 +428,26 @@ function TreatmentProgramCard({
         <div className="space-y-3 pt-2 border-t">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">تاريخ الجلسة</Label>
+              <Label className="text-xs">{t("followUp.sessionDate")}</Label>
               <Input type="date" value={form.sessionDate} onChange={(e) => setForm((f) => ({ ...f, sessionDate: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت الجلسة</Label>
+              <Label className="text-xs">{t("followUp.sessionTime")}</Label>
               <Input type="time" value={form.sessionTime} onChange={(e) => setForm((f) => ({ ...f, sessionTime: e.target.value }))} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">الشرح / الوصف</Label>
-            <Textarea rows={2} placeholder="وصف الجلسة..." value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="resize-none" />
+            <Label className="text-xs">{t("followUp.description")}</Label>
+            <Textarea rows={2} placeholder={t("followUp.descriptionPlaceholder")} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="resize-none" />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">اسم المعالج</Label>
+            <Label className="text-xs">{t("followUp.therapistName")}</Label>
             <Select value={form.technicianId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, technicianId: v === "none" ? "" : v, technicianSignatureUrl: "" }))}>
-              <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("followUp.chooseTherapist")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">— غير محدد —</SelectItem>
+                <SelectItem value="none">{t("followUp.unspecified")}</SelectItem>
                 {staffList.filter((e: any) => {
                   if (e.employmentStatus !== "ACTIVE") return false;
                   const dep = e.department?.nameAr ?? "";
@@ -457,55 +461,50 @@ function TreatmentProgramCard({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت دخول الجلسة</Label>
+              <Label className="text-xs">{t("followUp.startTime")}</Label>
               <Input type="time" value={form.sessionStartTime} onChange={(e) => setForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت الخروج من الجلسة</Label>
+              <Label className="text-xs">{t("followUp.endTime")}</Label>
               <Input type="time" value={form.sessionEndTime} onChange={(e) => setForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">ملاحظات</Label>
-            <Textarea rows={2} placeholder="ملاحظات إضافية..." value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
+            <Label className="text-xs">{t("followUp.notes")}</Label>
+            <Textarea rows={2} placeholder={t("followUp.extraNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-xs font-semibold">التوقيع</p>
+              <p className="text-xs font-semibold">{t("followUp.signature")}</p>
               {form.technicianSignatureUrl ? (
                 <div className="relative">
-                  <img src={form.technicianSignatureUrl} alt="التوقيع" className="h-16 w-full object-contain border rounded bg-white" />
+                  <img src={form.technicianSignatureUrl} alt={t("followUp.signature")} className="h-16 w-full object-contain border rounded bg-white" />
                   <button onClick={() => setForm((f) => ({ ...f, technicianSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
                 </div>
               ) : (
                 <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleSignatureClick("technician")} disabled={!form.technicianId}>
-                  {form.technicianId ? "جلب / رفع التوقيع" : "اختر المعالج أولاً"}
+                  {form.technicianId ? t("followUp.fetchSignature") : t("followUp.chooseTherapistFirst")}
                 </Button>
               )}
             </div>
             <div className="rounded-lg border p-3 space-y-2">
-              <p className="text-xs font-semibold">توقيع مدير القسم</p>
-              {form.managerSignatureUrl ? (
-                <div className="relative">
-                  <img src={form.managerSignatureUrl} alt="توقيع مدير القسم" className="h-16 w-full object-contain border rounded bg-white" />
-                  <button onClick={() => setForm((f) => ({ ...f, managerSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
-                </div>
-              ) : (
-                <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleSignatureClick("manager")}>
-                  جلب / رفع التوقيع
-                </Button>
-              )}
+              <p className="text-xs font-semibold">{t("followUp.managerSignature")}</p>
+              <MySignatureField
+                value={form.managerSignatureUrl}
+                onChange={(v) => setForm((f) => ({ ...f, managerSignatureUrl: v }))}
+                title={t("followUp.managerSignature")}
+              />
             </div>
           </div>
 
           <div className="flex gap-2">
             <Button size="sm" onClick={handleSave} disabled={updateProgram.isPending} className="flex-1 gap-1">
               {updateProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-              حفظ
+              {t("followUp.save")}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+            <Button size="sm" variant="outline" onClick={() => setEditing(false)}>{t("followUp.cancel")}</Button>
           </div>
 
           <input ref={sigFileRef} type="file" accept="image/*" className="hidden" onChange={handleSignatureFileChange} />
@@ -525,6 +524,7 @@ function TreatmentProgramsSection({
   /** Case already delivered — the programme is history, not something to edit. */
   locked?: boolean;
 }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const { data: programs = [], isLoading } = useTreatmentPrograms(caseId);
   const createProgram = useCreateTreatmentProgram();
   // Case-level alerts (whole follow-up program). A case can have several.
@@ -553,7 +553,7 @@ function TreatmentProgramsSection({
 
   const handleNewSignatureClick = async (role: "technician" | "manager") => {
     const empId = role === "technician" ? newForm.technicianId : currentUser?.employeeId;
-    if (!empId) { toast.error(role === "technician" ? "أدخل رقم المعالج أولاً" : "لم يُعثر على بيانات المستخدم"); return; }
+    if (!empId) { toast.error(role === "technician" ? t("followUp.enterTherapistFirst") : t("followUp.noUserData")); return; }
     try {
       const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
       if (sig.hasSignature && sig.signatureUrl) {
@@ -564,7 +564,7 @@ function TreatmentProgramsSection({
         setNewSigUploadFor(role);
         setTimeout(() => newSigFileRef.current?.click(), 50);
       }
-    } catch { toast.error("فشل جلب بيانات التوقيع"); }
+    } catch { toast.error(t("followUp.signatureFetchFailed")); }
   };
 
   const handleNewSignatureFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -577,8 +577,8 @@ function TreatmentProgramsSection({
       const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
       if (newSigUploadFor === "technician") setNewForm((f) => ({ ...f, technicianSignatureUrl: url }));
       else setNewForm((f) => ({ ...f, managerSignatureUrl: url }));
-      toast.success("تم رفع التوقيع");
-    } catch { toast.error("فشل رفع التوقيع"); }
+      toast.success(t("followUp.signatureUploaded"));
+    } catch { toast.error(t("followUp.signatureUploadFailed")); }
     setNewSigUploadFor(null);
     e.target.value = "";
   };
@@ -605,13 +605,13 @@ function TreatmentProgramsSection({
 
   return (
     <Section
-      title={`برنامج المتابعة${programs.length > 0 ? ` (${programs.length})` : ""}`}
+      title={programs.length > 0 ? t("followUp.titleCount", { count: programs.length }) : t("followUp.title")}
       action={
         <div className="flex gap-1.5 items-center flex-wrap justify-end">
           {pendingAlerts > 0 && (
             <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-700 text-xs gap-1">
               <Bell className="h-3 w-3" />
-              {pendingAlerts} بانتظار الرد
+              {t("followUp.awaitingReply", { count: pendingAlerts })}
             </Badge>
           )}
           {!locked && (
@@ -619,11 +619,11 @@ function TreatmentProgramsSection({
               <Button size="sm" variant="outline" className="gap-1 text-xs border-orange-300 text-orange-700 hover:bg-orange-50"
                 onClick={() => { setAlertNote(""); setAlertOpen(true); }}>
                 <Bell className="h-3.5 w-3.5" />
-                تنبيه رئيس القسم
+                {t("followUp.alertHead")}
               </Button>
               <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
                 <Plus className="h-3.5 w-3.5" />
-                {showForm ? "إغلاق" : "إضافة جلسة"}
+                {showForm ? t("followUp.close") : t("followUp.addSession")}
               </Button>
             </>
           )}
@@ -638,15 +638,15 @@ function TreatmentProgramsSection({
                 <div className="space-y-0.5">
                   <p className="flex items-center gap-1 font-medium">
                     <Bell className="h-3 w-3" />
-                    تنبيه رئيس القسم{a.sentAt ? ` — ${new Date(a.sentAt).toLocaleString("en-GB")}` : ""}
+                    {t("followUp.alertHead")}{a.sentAt ? ` — ${new Date(a.sentAt).toLocaleString("en-GB")}` : ""}
                   </p>
-                  {a.note && <p><span className="font-medium">ملاحظة الفني: </span>{a.note}</p>}
+                  {a.note && <p><span className="font-medium">{t("followUp.lblTechNote")} </span>{a.note}</p>}
                 </div>
                 {!a.respondedAt && (
                   <Button size="sm" variant="outline" className="gap-1 text-xs border-blue-300 text-blue-700 hover:bg-blue-50 shrink-0"
                     onClick={() => { setRespondNote(""); setRespondFor(a.id); }}>
                     <Reply className="h-3.5 w-3.5" />
-                    رد
+                    {t("followUp.reply")}
                   </Button>
                 )}
               </div>
@@ -654,9 +654,9 @@ function TreatmentProgramsSection({
                 <div className="space-y-0.5 border-t border-orange-200 pt-1">
                   <p className="flex items-center gap-1 font-medium text-blue-800">
                     <Reply className="h-3 w-3" />
-                    رد رئيس القسم{a.respondedAt ? ` — ${new Date(a.respondedAt).toLocaleString("en-GB")}` : ""}
+                    {t("followUp.headReply")}{a.respondedAt ? ` — ${new Date(a.respondedAt).toLocaleString("en-GB")}` : ""}
                   </p>
-                  {a.responseNote && <p className="text-blue-900"><span className="font-medium">الرد: </span>{a.responseNote}</p>}
+                  {a.responseNote && <p className="text-blue-900"><span className="font-medium">{t("followUp.lblReply")} </span>{a.responseNote}</p>}
                 </div>
               )}
             </div>
@@ -667,17 +667,17 @@ function TreatmentProgramsSection({
       <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تنبيه رئيس القسم</DialogTitle>
-            <DialogDescription>سيتم إرسال إشعار لرئيس القسم مع ملاحظتك حول برنامج المتابعة.</DialogDescription>
+            <DialogTitle>{t("followUp.alertHead")}</DialogTitle>
+            <DialogDescription>{t("followUp.alertDesc")}</DialogDescription>
           </DialogHeader>
           <Textarea
             rows={3}
-            placeholder="اكتب ملاحظتك لرئيس القسم..."
+            placeholder={t("followUp.alertPlaceholder")}
             value={alertNote}
             onChange={(e) => setAlertNote(e.target.value)}
           />
           <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-            <Button variant="outline" onClick={() => setAlertOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setAlertOpen(false)}>{t("followUp.cancel")}</Button>
             <Button
               disabled={sendAlert.isPending || !alertNote.trim()}
               onClick={async () => {
@@ -685,7 +685,7 @@ function TreatmentProgramsSection({
                 setAlertOpen(false);
               }}
             >
-              {sendAlert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إرسال التنبيه"}
+              {sendAlert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("followUp.sendAlert")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -694,25 +694,25 @@ function TreatmentProgramsSection({
       <Dialog open={!!respondFor} onOpenChange={(o) => { if (!o) setRespondFor(null); }}>
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle>رد رئيس القسم</DialogTitle>
-            <DialogDescription>سيتم إرسال إشعار للفني الذي أرسل التنبيه مع ردّك.</DialogDescription>
+            <DialogTitle>{t("followUp.headReply")}</DialogTitle>
+            <DialogDescription>{t("followUp.headReplyDesc")}</DialogDescription>
           </DialogHeader>
           {(() => {
             const target = alerts.find((a) => a.id === respondFor);
             return target?.note ? (
               <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">ملاحظة الفني: </span>{target.note}
+                <span className="font-medium text-foreground">{t("followUp.lblTechNote")} </span>{target.note}
               </p>
             ) : null;
           })()}
           <Textarea
             rows={3}
-            placeholder="اكتب ردّك للفني..."
+            placeholder={t("followUp.replyPlaceholder")}
             value={respondNote}
             onChange={(e) => setRespondNote(e.target.value)}
           />
           <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-            <Button variant="outline" onClick={() => setRespondFor(null)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setRespondFor(null)}>{t("followUp.cancel")}</Button>
             <Button
               disabled={respondAlert.isPending || !respondNote.trim()}
               onClick={async () => {
@@ -721,7 +721,7 @@ function TreatmentProgramsSection({
                 setRespondFor(null);
               }}
             >
-              {respondAlert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إرسال الرد"}
+              {respondAlert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("followUp.sendReply")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -729,26 +729,26 @@ function TreatmentProgramsSection({
 
       {showForm && (
         <div className="rounded-lg border border-dashed p-3 space-y-3 mb-3 bg-muted/30">
-          <p className="text-sm font-medium">جلسة جديدة</p>
+          <p className="text-sm font-medium">{t("followUp.newSession")}</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">تاريخ الجلسة *</Label>
+              <Label className="text-xs">{t("followUp.sessionDateReq")}</Label>
               <Input type="date" value={newForm.sessionDate} onChange={(e) => setNewForm((f) => ({ ...f, sessionDate: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت الجلسة</Label>
+              <Label className="text-xs">{t("followUp.sessionTime")}</Label>
               <Input type="time" value={newForm.sessionTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionTime: e.target.value }))} />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs">الشرح / الوصف</Label>
-              <Textarea rows={2} className="resize-none" placeholder="وصف الجلسة..." value={newForm.description} onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))} />
+              <Label className="text-xs">{t("followUp.description")}</Label>
+              <Textarea rows={2} className="resize-none" placeholder={t("followUp.descriptionPlaceholder")} value={newForm.description} onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))} />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs">اسم المعالج</Label>
+              <Label className="text-xs">{t("followUp.therapistName")}</Label>
               <Select value={newForm.technicianId || "none"} onValueChange={(v) => setNewForm((f) => ({ ...f, technicianId: v === "none" ? "" : v }))}>
-                <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("followUp.chooseTherapist")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— غير محدد —</SelectItem>
+                  <SelectItem value="none">{t("followUp.unspecified")}</SelectItem>
                   {staffList.filter((e: any) => {
                     if (e.employmentStatus !== "ACTIVE") return false;
                     const dep = e.department?.nameAr ?? "";
@@ -760,43 +760,38 @@ function TreatmentProgramsSection({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت دخول الجلسة</Label>
+              <Label className="text-xs">{t("followUp.startTime")}</Label>
               <Input type="time" value={newForm.sessionStartTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت الخروج من الجلسة</Label>
+              <Label className="text-xs">{t("followUp.endTime")}</Label>
               <Input type="time" value={newForm.sessionEndTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs">ملاحظات</Label>
-              <Textarea rows={2} className="resize-none" placeholder="ملاحظات الجلسة..." value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
+              <Label className="text-xs">{t("followUp.notes")}</Label>
+              <Textarea rows={2} className="resize-none" placeholder={t("followUp.notesPlaceholder")} value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
             <div className="col-span-2 grid grid-cols-2 gap-3">
               <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-semibold">التوقيع</p>
+                <p className="text-xs font-semibold">{t("followUp.signature")}</p>
                 {newForm.technicianSignatureUrl ? (
                   <div className="relative">
-                    <img src={newForm.technicianSignatureUrl} alt="التوقيع" className="h-16 w-full object-contain border rounded bg-white" />
+                    <img src={newForm.technicianSignatureUrl} alt={t("followUp.signature")} className="h-16 w-full object-contain border rounded bg-white" />
                     <button onClick={() => setNewForm((f) => ({ ...f, technicianSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
                   </div>
                 ) : (
                   <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleNewSignatureClick("technician")} disabled={!newForm.technicianId}>
-                    {newForm.technicianId ? "جلب / رفع التوقيع" : "اختر المعالج أولاً"}
+                    {newForm.technicianId ? t("followUp.fetchSignature") : t("followUp.chooseTherapistFirst")}
                   </Button>
                 )}
               </div>
               <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-semibold">توقيع مدير القسم</p>
-                {newForm.managerSignatureUrl ? (
-                  <div className="relative">
-                    <img src={newForm.managerSignatureUrl} alt="توقيع مدير القسم" className="h-16 w-full object-contain border rounded bg-white" />
-                    <button onClick={() => setNewForm((f) => ({ ...f, managerSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
-                  </div>
-                ) : (
-                  <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleNewSignatureClick("manager")}>
-                    جلب / رفع التوقيع
-                  </Button>
-                )}
+                <p className="text-xs font-semibold">{t("followUp.managerSignature")}</p>
+                <MySignatureField
+                  value={newForm.managerSignatureUrl}
+                  onChange={(v) => setNewForm((f) => ({ ...f, managerSignatureUrl: v }))}
+                  title={t("followUp.managerSignature")}
+                />
               </div>
             </div>
           </div>
@@ -804,9 +799,9 @@ function TreatmentProgramsSection({
           <div className="flex gap-2">
             <Button size="sm" onClick={handleAdd} disabled={!newForm.sessionDate || createProgram.isPending} className="gap-1">
               {createProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-              إضافة
+              {t("followUp.add")}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button>
+            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>{t("followUp.cancel")}</Button>
           </div>
         </div>
       )}
@@ -814,7 +809,7 @@ function TreatmentProgramsSection({
       {isLoading ? (
         <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : programs.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">لا توجد جلسات مسجّلة</p>
+        <p className="text-sm text-muted-foreground text-center py-4">{t("followUp.noSessions")}</p>
       ) : (
         <div className="space-y-3">
           {programs.map((program: any, idx: number) => (
@@ -845,6 +840,7 @@ function ReviewProgramCard({
   currentUser: any;
   locked?: boolean;
 }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const updateReview = useUpdateReviewProgram();
   const deleteReview = useDeleteReviewProgram();
   const [editing, setEditing] = useState(false);
@@ -864,7 +860,7 @@ function ReviewProgramCard({
 
   const handleSignatureClick = async () => {
     const empId = form.technicianId;
-    if (!empId) { toast.error("أدخل اسم المعالج أولاً"); return; }
+    if (!empId) { toast.error(t("followUp.enterTherapistName")); return; }
     try {
       const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
       if (sig.hasSignature && sig.signatureUrl) {
@@ -874,7 +870,7 @@ function ReviewProgramCard({
         setSigUploadFor(true);
         setTimeout(() => sigFileRef.current?.click(), 50);
       }
-    } catch { toast.error("فشل جلب بيانات التوقيع"); }
+    } catch { toast.error(t("followUp.signatureFetchFailed")); }
   };
 
   const handleSignatureFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -886,8 +882,8 @@ function ReviewProgramCard({
       const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
       const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
       setForm((f) => ({ ...f, signatureUrl: url }));
-      toast.success("تم رفع التوقيع");
-    } catch { toast.error("فشل رفع التوقيع"); }
+      toast.success(t("followUp.signatureUploaded"));
+    } catch { toast.error(t("followUp.signatureUploadFailed")); }
     setSigUploadFor(false);
     e.target.value = "";
   };
@@ -924,7 +920,7 @@ function ReviewProgramCard({
         {!locked && (
           <div className="flex gap-1.5">
             <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
-              {editing ? "إغلاق" : "تعديل"}
+              {editing ? t("followUp.close") : t("followUp.edit")}
             </Button>
             <Button size="sm" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={() => setConfirmDel(true)}>
@@ -937,14 +933,14 @@ function ReviewProgramCard({
       <Dialog open={confirmDel} onOpenChange={setConfirmDel}>
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
-            <DialogDescription>هل تريد حذف هذه الزيارة؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+            <DialogTitle>{t("followUp.confirmDeleteTitle")}</DialogTitle>
+            <DialogDescription>{t("followUp.confirmDeleteVisit")}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-            <Button variant="outline" onClick={() => setConfirmDel(false)}>لا</Button>
+            <Button variant="outline" onClick={() => setConfirmDel(false)}>{t("followUp.no")}</Button>
             <Button variant="destructive" disabled={deleteReview.isPending}
               onClick={() => { deleteReview.mutate({ caseId, reviewId: review.id }); setConfirmDel(false); }}>
-              {deleteReview.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "نعم، احذف"}
+              {deleteReview.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("followUp.yesDelete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -952,16 +948,16 @@ function ReviewProgramCard({
 
       {!editing && (
         <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
-          {form.description && <p><span className="font-medium text-foreground">الشرح: </span>{form.description}</p>}
-          {technicianName && <p><span className="font-medium text-foreground">المعالج: </span>{technicianName.firstNameAr} {technicianName.lastNameAr}</p>}
+          {form.description && <p><span className="font-medium text-foreground">{t("followUp.lblDescription")} </span>{form.description}</p>}
+          {technicianName && <p><span className="font-medium text-foreground">{t("followUp.lblTherapist")} </span>{technicianName.firstNameAr} {technicianName.lastNameAr}</p>}
           {(form.sessionStartTime || form.sessionEndTime) && (
-            <p><span className="font-medium text-foreground">الوقت: </span>{form.sessionStartTime || "—"} — {form.sessionEndTime || "—"}</p>
+            <p><span className="font-medium text-foreground">{t("followUp.lblTime")} </span>{form.sessionStartTime || "—"} — {form.sessionEndTime || "—"}</p>
           )}
-          {form.notes && <p><span className="font-medium text-foreground">ملاحظات: </span>{form.notes}</p>}
+          {form.notes && <p><span className="font-medium text-foreground">{t("followUp.lblNotes")} </span>{form.notes}</p>}
           {form.signatureUrl && (
             <div className="pt-1">
-              <img src={form.signatureUrl} alt="التوقيع" className="h-10 object-contain border rounded bg-white" />
-              <p className="text-[10px] mt-0.5">التوقيع</p>
+              <img src={form.signatureUrl} alt={t("followUp.signature")} className="h-10 object-contain border rounded bg-white" />
+              <p className="text-[10px] mt-0.5">{t("followUp.signature")}</p>
             </div>
           )}
         </div>
@@ -971,26 +967,26 @@ function ReviewProgramCard({
         <div className="space-y-3 pt-2 border-t">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">تاريخ الزيارة</Label>
+              <Label className="text-xs">{t("followUp.visitDate")}</Label>
               <Input type="date" value={form.sessionDate} onChange={(e) => setForm((f) => ({ ...f, sessionDate: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">الوقت</Label>
+              <Label className="text-xs">{t("followUp.time")}</Label>
               <Input type="time" value={form.sessionTime} onChange={(e) => setForm((f) => ({ ...f, sessionTime: e.target.value }))} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">الشرح / الوصف</Label>
-            <Textarea rows={2} placeholder="وصف الزيارة..." value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="resize-none" />
+            <Label className="text-xs">{t("followUp.description")}</Label>
+            <Textarea rows={2} placeholder={t("followUp.visitDescPlaceholder")} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="resize-none" />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">اسم المعالج</Label>
+            <Label className="text-xs">{t("followUp.therapistName")}</Label>
             <Select value={form.technicianId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, technicianId: v === "none" ? "" : v, signatureUrl: "" }))}>
-              <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("followUp.chooseTherapist")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">— غير محدد —</SelectItem>
+                <SelectItem value="none">{t("followUp.unspecified")}</SelectItem>
                 {staffList.filter((e: any) => {
                   if (e.employmentStatus !== "ACTIVE") return false;
                   const dep = e.department?.nameAr ?? "";
@@ -1004,30 +1000,30 @@ function ReviewProgramCard({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت الدخول</Label>
+              <Label className="text-xs">{t("followUp.inTime")}</Label>
               <Input type="time" value={form.sessionStartTime} onChange={(e) => setForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت الخروج</Label>
+              <Label className="text-xs">{t("followUp.outTime")}</Label>
               <Input type="time" value={form.sessionEndTime} onChange={(e) => setForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">ملاحظات</Label>
-            <Textarea rows={2} placeholder="ملاحظات..." value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
+            <Label className="text-xs">{t("followUp.notes")}</Label>
+            <Textarea rows={2} placeholder={t("followUp.notesShort")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
           </div>
 
           <div className="rounded-lg border p-3 space-y-2">
-            <p className="text-xs font-semibold">التوقيع</p>
+            <p className="text-xs font-semibold">{t("followUp.signature")}</p>
             {form.signatureUrl ? (
               <div className="relative">
-                <img src={form.signatureUrl} alt="التوقيع" className="h-16 w-full object-contain border rounded bg-white" />
+                <img src={form.signatureUrl} alt={t("followUp.signature")} className="h-16 w-full object-contain border rounded bg-white" />
                 <button onClick={() => setForm((f) => ({ ...f, signatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
               </div>
             ) : (
               <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={handleSignatureClick} disabled={!form.technicianId}>
-                {form.technicianId ? "جلب / رفع التوقيع" : "اختر المعالج أولاً"}
+                {form.technicianId ? t("followUp.fetchSignature") : t("followUp.chooseTherapistFirst")}
               </Button>
             )}
           </div>
@@ -1035,9 +1031,9 @@ function ReviewProgramCard({
           <div className="flex gap-2">
             <Button size="sm" onClick={handleSave} disabled={updateReview.isPending} className="flex-1 gap-1">
               {updateReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-              حفظ
+              {t("followUp.save")}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+            <Button size="sm" variant="outline" onClick={() => setEditing(false)}>{t("followUp.cancel")}</Button>
           </div>
 
           <input ref={sigFileRef} type="file" accept="image/*" className="hidden" onChange={handleSignatureFileChange} />
@@ -1055,6 +1051,7 @@ function ReviewProgramsSection({
   currentUser: any;
   locked?: boolean;
 }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const { data: reviews = [], isLoading } = useReviewPrograms(caseId);
   const createReview = useCreateReviewProgram();
   const [showForm, setShowForm] = useState(false);
@@ -1088,36 +1085,36 @@ function ReviewProgramsSection({
 
   return (
     <Section
-      title={`برنامج المراجعة${reviews.length > 0 ? ` (${reviews.length})` : ""}`}
+      title={reviews.length > 0 ? t("followUp.reviewTitleCount", { count: reviews.length }) : t("followUp.reviewTitle")}
       action={!locked && (
         <Button size="sm" variant={showForm ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowForm((v) => !v)}>
           <Plus className="h-3.5 w-3.5" />
-          {showForm ? "إغلاق" : "إضافة زيارة"}
+          {showForm ? t("followUp.close") : t("followUp.addVisit")}
         </Button>
       )}
     >
       {showForm && (
         <div className="rounded-lg border border-dashed p-3 space-y-3 mb-3 bg-muted/30">
-          <p className="text-sm font-medium">زيارة مراجعة جديدة</p>
+          <p className="text-sm font-medium">{t("followUp.newVisit")}</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">تاريخ الزيارة *</Label>
+              <Label className="text-xs">{t("followUp.visitDateReq")}</Label>
               <Input type="date" value={newForm.sessionDate} onChange={(e) => setNewForm((f) => ({ ...f, sessionDate: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">الوقت</Label>
+              <Label className="text-xs">{t("followUp.time")}</Label>
               <Input type="time" value={newForm.sessionTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionTime: e.target.value }))} />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs">الشرح / الوصف</Label>
-              <Textarea rows={2} className="resize-none" placeholder="وصف الزيارة..." value={newForm.description} onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))} />
+              <Label className="text-xs">{t("followUp.description")}</Label>
+              <Textarea rows={2} className="resize-none" placeholder={t("followUp.visitDescPlaceholder")} value={newForm.description} onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))} />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs">اسم المعالج</Label>
+              <Label className="text-xs">{t("followUp.therapistName")}</Label>
               <Select value={newForm.technicianId || "none"} onValueChange={(v) => setNewForm((f) => ({ ...f, technicianId: v === "none" ? "" : v }))}>
-                <SelectTrigger><SelectValue placeholder="اختر المعالج..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("followUp.chooseTherapist")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— غير محدد —</SelectItem>
+                  <SelectItem value="none">{t("followUp.unspecified")}</SelectItem>
                   {staffList.filter((e: any) => {
                     if (e.employmentStatus !== "ACTIVE") return false;
                     const dep = e.department?.nameAr ?? "";
@@ -1129,24 +1126,24 @@ function ReviewProgramsSection({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت الدخول</Label>
+              <Label className="text-xs">{t("followUp.inTime")}</Label>
               <Input type="time" value={newForm.sessionStartTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">وقت الخروج</Label>
+              <Label className="text-xs">{t("followUp.outTime")}</Label>
               <Input type="time" value={newForm.sessionEndTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs">ملاحظات</Label>
-              <Textarea rows={2} className="resize-none" placeholder="ملاحظات..." value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
+              <Label className="text-xs">{t("followUp.notes")}</Label>
+              <Textarea rows={2} className="resize-none" placeholder={t("followUp.notesShort")} value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
           </div>
           <div className="flex gap-2">
             <Button size="sm" onClick={handleAdd} disabled={!newForm.sessionDate || createReview.isPending} className="gap-1">
               {createReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-              إضافة
+              {t("followUp.add")}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button>
+            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>{t("followUp.cancel")}</Button>
           </div>
         </div>
       )}
@@ -1154,7 +1151,7 @@ function ReviewProgramsSection({
       {isLoading ? (
         <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : reviews.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">لا توجد زيارات مراجعة مسجّلة</p>
+        <p className="text-sm text-muted-foreground text-center py-4">{t("followUp.noVisits")}</p>
       ) : (
         <div className="space-y-3">
           {reviews.map((review: any, idx: number) => (
@@ -1181,11 +1178,11 @@ const SUSPENSION_OPTS = [
   { v: "DVS", l: "DVS" }, { v: "SOFT_SOCKET", l: "Soft socket" }, { v: "BELT_STRAP", l: "belt/strap" }, { v: "OTHER", l: "other" },
 ];
 const SOCKET_BEARING_OPTS = [
-  { v: "PTB", l: "التحميل على وتر الرصفة " },
-  { v: "TSB", l: "تحميل كامل على سطح الجذع " },
-  { v: "MAS", l: "سوكيت تشريحي عند الكاحل " },
-  { v: "ISCHIAL_CONTAINMENT", l: "التحميل على عظم الاسك " },
-  { v: "OTHER", l: "أخر " },
+  { v: "PTB", l: "gait.o.PTB" },
+  { v: "TSB", l: "gait.o.TSB" },
+  { v: "MAS", l: "gait.o.MAS" },
+  { v: "ISCHIAL_CONTAINMENT", l: "gait.o.ISCHIAL" },
+  { v: "OTHER", l: "gait.o.other" },
 ];
 const KNEE_JOINT_OPTS = [
   { v: "MKP", l: "MKP" }, { v: "MONOCENTRIC", l: "monocentric" }, { v: "POLYCENTRIC", l: "polycentric" },
@@ -1196,77 +1193,77 @@ const FOOT_TYPE_OPTS = [
   { v: "CARBON", l: "Carbon" }, { v: "SINGLE_AXIS", l: "single-axis" }, { v: "MULTI_AXIS", l: "multi-axis" }, { v: "OTHER", l: "other" },
 ];
 const COMPLAINT_OPTS = [
-  { v: "RAPID_FATIGUE", l: "تعب سريع " }, { v: "FALL_NEAR_FALL", l: "تعثّر " },
-  { v: "DIFFICULTY_STAIRS", l: "صعوبة استخدام الدرج " }, { v: "FOOT_DRAG", l: "جر القدم " },
-  { v: "KNEE_INSTABILITY", l: "عدم ثبات بالركبة " }, { v: "SOCKET_PAIN", l: "ألم بالسوكيت " },
-  { v: "RESIDUAL_LIMB_PAIN", l: "ألم بالجذمور " }, { v: "NONE", l: "لا يوجد " },
+  { v: "RAPID_FATIGUE", l: "gait.o.rapidFatigue" }, { v: "FALL_NEAR_FALL", l: "gait.o.stumbling" },
+  { v: "DIFFICULTY_STAIRS", l: "gait.o.diffStairs" }, { v: "FOOT_DRAG", l: "gait.o.footDrag" },
+  { v: "KNEE_INSTABILITY", l: "gait.o.kneeInstabilityC" }, { v: "SOCKET_PAIN", l: "gait.o.socketPain" },
+  { v: "RESIDUAL_LIMB_PAIN", l: "gait.o.residualPain" }, { v: "NONE", l: "gait.o.noneSp" },
 ];
-const GFP_OPTS = [{ v: "GOOD", l: "جيد" }, { v: "FAIR", l: "متوسط" }, { v: "POOR", l: "ضعيف" }];
-const SITTING_BAL_OPTS = [{ v: "INDEPENDENT", l: "مستقل" }, { v: "ASSISTED", l: "بمساعدة" }, { v: "UNSTABLE", l: "غير مستقر" }];
-const STANDING_BAL_OPTS = [{ v: "STABLE", l: "مستقر" }, { v: "ASSISTED", l: "بمساعدة" }, { v: "UNSTABLE", l: "غير مستقر" }];
-const GAIT_DEVICE_OPTS = [{ v: "NONE", l: "لا يوجد" }, { v: "CANE", l: "عصا" }, { v: "CRUTCHES", l: "عكاز" }, { v: "WALKER", l: "مشاية" }];
-const SYMMETRY_OPTS_G = [{ v: "GOOD", l: "جيد" }, { v: "FAIR", l: "متوسط" }, { v: "POOR", l: "ضعيف" }, { v: "NONE", l: "لا يوجد" }];
+const GFP_OPTS = [{ v: "GOOD", l: "gait.o.good" }, { v: "FAIR", l: "gait.o.fair" }, { v: "POOR", l: "gait.o.poor" }];
+const SITTING_BAL_OPTS = [{ v: "INDEPENDENT", l: "gait.o.independent" }, { v: "ASSISTED", l: "gait.o.assisted" }, { v: "UNSTABLE", l: "gait.o.unstable" }];
+const STANDING_BAL_OPTS = [{ v: "STABLE", l: "gait.o.stable" }, { v: "ASSISTED", l: "gait.o.assisted" }, { v: "UNSTABLE", l: "gait.o.unstable" }];
+const GAIT_DEVICE_OPTS = [{ v: "NONE", l: "gait.o.none" }, { v: "CANE", l: "gait.o.cane" }, { v: "CRUTCHES", l: "gait.o.crutches" }, { v: "WALKER", l: "gait.o.walker" }];
+const SYMMETRY_OPTS_G = [{ v: "GOOD", l: "gait.o.good" }, { v: "FAIR", l: "gait.o.fair" }, { v: "POOR", l: "gait.o.poor" }, { v: "NONE", l: "gait.o.none" }];
 
 const GAIT_PHASES = [
-  { key: "initialContact", label: "بداية ملامسة الأرض", extraField: "notes" as const, deviations: [
-    { v: "FLAT_FOOT", l: "ملامسة كاملة للقدم" }, { v: "TOE_CONTACT", l: "ملامسة الأصابع أولاً" },
-    { v: "FOOT_SLAP", l: "سقوط القدم" }, { v: "UNSTABLE_KNEE", l: "عدم ثبات الركبة" },
-    { v: "WIDE_BASE", l: "قاعدة مشي واسعة" }, { v: "TRUNK_LEAN", l: "ميل الجذع" },
-    { v: "LATERAL_HEEL_WHIP", l: "ميلان الكعب للخارج" }, { v: "MEDIAL_HEEL_WHIP", l: "ميلان الكعب للداخل" },
+  { key: "initialContact", label: "gait.o.initialContact", extraField: "notes" as const, deviations: [
+    { v: "FLAT_FOOT", l: "gait.o.flatFoot" }, { v: "TOE_CONTACT", l: "gait.o.toeContact" },
+    { v: "FOOT_SLAP", l: "gait.o.footSlap" }, { v: "UNSTABLE_KNEE", l: "gait.o.kneeInstability" },
+    { v: "WIDE_BASE", l: "gait.o.wideBase" }, { v: "TRUNK_LEAN", l: "gait.o.trunkLean" },
+    { v: "LATERAL_HEEL_WHIP", l: "gait.o.latHeelWhip" }, { v: "MEDIAL_HEEL_WHIP", l: "gait.o.medHeelWhip" },
   ]},
-  { key: "loadingResponse", label: "استجابة التحميل", extraField: "cause" as const, deviations: [
-    { v: "EXCESSIVE_KNEE_FLEXION", l: "انثناء زائد للركبة" }, { v: "KNEE_HYPEREXTENSION", l: "فرط بسط الركبة" },
-    { v: "SOCKET_ROTATION", l: "دوران السوكت" }, { v: "LATERAL_TRUNK_BEND", l: "ميل جانبي للجذع" },
-    { v: "PAIN_AVOIDANCE", l: "تجنب الألم" }, { v: "VARUS_MOMENT", l: "انحراف للداخل" }, { v: "VALGUS_MOMENT", l: "انحراف للخارج" },
+  { key: "loadingResponse", label: "gait.o.loadingResponse", extraField: "cause" as const, deviations: [
+    { v: "EXCESSIVE_KNEE_FLEXION", l: "gait.o.excessKneeFlex" }, { v: "KNEE_HYPEREXTENSION", l: "gait.o.kneeHyperext" },
+    { v: "SOCKET_ROTATION", l: "gait.o.socketRotation" }, { v: "LATERAL_TRUNK_BEND", l: "gait.o.latTrunkBend" },
+    { v: "PAIN_AVOIDANCE", l: "gait.o.painAvoidance" }, { v: "VARUS_MOMENT", l: "gait.o.varus" }, { v: "VALGUS_MOMENT", l: "gait.o.valgus" },
   ]},
-  { key: "midStance", label: "منتصف الارتكاز", extraField: "cause" as const, deviations: [
-    { v: "ABNORMAL_GAIT_PATTERN", l: "نمط مشي غير طبيعي" }, { v: "LATERAL_TRUNK_LEAN", l: "ميل جانبي للجذع" },
-    { v: "SHORT_STANCE_TIME", l: "وقت ارتكاز قصير على الطرف الصناعي" }, { v: "UNEQUAL_STEP_LENGTH", l: "عدم تساوي طول الخطوة" },
-    { v: "BODY_RISE_SOUND", l: "رفع الجسم على الطرف السليم" },
+  { key: "midStance", label: "gait.o.midStance", extraField: "cause" as const, deviations: [
+    { v: "ABNORMAL_GAIT_PATTERN", l: "gait.o.abnormalGait" }, { v: "LATERAL_TRUNK_LEAN", l: "gait.o.latTrunkBend" },
+    { v: "SHORT_STANCE_TIME", l: "gait.o.shortStance" }, { v: "UNEQUAL_STEP_LENGTH", l: "gait.o.unequalStep" },
+    { v: "BODY_RISE_SOUND", l: "gait.o.bodyRise" },
   ]},
-  { key: "terminalStance", label: "نهاية الارتكاز / الدفع", extraField: "cause" as const, deviations: [
-    { v: "REDUCED_PUSH_OFF", l: "ضعف الدفع" }, { v: "EARLY_HEEL_RISE", l: "رفع الكعب مبكراً" },
-    { v: "LATE_HEEL", l: "رفع الكعب متأخراً" }, { v: "KNEE_INSTABILITY", l: "عدم ثبات الركبة" },
+  { key: "terminalStance", label: "gait.o.terminalStance", extraField: "cause" as const, deviations: [
+    { v: "REDUCED_PUSH_OFF", l: "gait.o.reducedPushOff" }, { v: "EARLY_HEEL_RISE", l: "gait.o.earlyHeelRise" },
+    { v: "LATE_HEEL", l: "gait.o.lateHeelRise" }, { v: "KNEE_INSTABILITY", l: "gait.o.kneeInstability" },
   ]},
-  { key: "preSwing", label: "قبل التأرجح", extraField: "cause" as const, deviations: [
-    { v: "HIP_HIKING", l: "رفع الحوض" }, { v: "CIRCUMDUCTION", l: "دوران جانبي للطرف" },
-    { v: "EXCESSIVE_PELVIC_ROTATION", l: "دوران زائد للحوض" }, { v: "DELAYED_TOE_OFF", l: "تأخر رفع الأصابع" },
+  { key: "preSwing", label: "gait.o.preSwing", extraField: "cause" as const, deviations: [
+    { v: "HIP_HIKING", l: "gait.o.hipHiking" }, { v: "CIRCUMDUCTION", l: "gait.o.circumductionLimb" },
+    { v: "EXCESSIVE_PELVIC_ROTATION", l: "gait.o.excessPelvicRot" }, { v: "DELAYED_TOE_OFF", l: "gait.o.delayedToeOff" },
   ]},
-  { key: "swingPhase", label: "مرحلة التأرجح", extraField: "notes" as const, deviations: [
-    { v: "TOE_DRAG", l: "جر الأصابع" }, { v: "CIRCUMDUCTION", l: "دوران جانبي" }, { v: "HIP_HIKING", l: "رفع الحوض" },
-    { v: "TERMINAL_IMPACT", l: "اصطدام نهاية التأرجح" }, { v: "LACK_KNEE_FLEXION", l: "نقص انثناء الركبة" }, { v: "EXCESS_KNEE_FLEXION", l: "انثناء زائد للركبة" },
+  { key: "swingPhase", label: "gait.o.swingPhase", extraField: "notes" as const, deviations: [
+    { v: "TOE_DRAG", l: "gait.o.toeDrag" }, { v: "CIRCUMDUCTION", l: "gait.o.circumduction" }, { v: "HIP_HIKING", l: "gait.o.hipHiking" },
+    { v: "TERMINAL_IMPACT", l: "gait.o.terminalImpact" }, { v: "LACK_KNEE_FLEXION", l: "gait.o.lackKneeFlex" }, { v: "EXCESS_KNEE_FLEXION", l: "gait.o.excessKneeFlex" },
   ]},
 ] as const;
 
 const PROSTHETIC_ISSUE_OPTS = [
-  { v: "PISTONING", l: "حركة عمودية داخل السوكت" },
-  { v: "LOOSE_SUSPENSION", l: "تعليق ضعيف" },
-  { v: "TOO_MANY_SOCKS", l: "الحاجة إلى جوارب كثيرة" },
-  { v: "LEG_TOO_LONG", l: "الطرف طويل" },
-  { v: "LEG_TOO_SHORT", l: "الطرف قصير" },
-  { v: "FOOT_TOO_STIFF", l: "القدم قاسية" },
-  { v: "FOOT_TOO_SOFT", l: "القدم طرية" },
-  { v: "INCORRECT_KNEE_SETTINGS", l: "إعدادات الركبة غير مناسبة" },
+  { v: "PISTONING", l: "gait.o.pistoning" },
+  { v: "LOOSE_SUSPENSION", l: "gait.o.looseSuspension" },
+  { v: "TOO_MANY_SOCKS", l: "gait.o.tooManySocks" },
+  { v: "LEG_TOO_LONG", l: "gait.o.legTooLong" },
+  { v: "LEG_TOO_SHORT", l: "gait.o.legTooShort" },
+  { v: "FOOT_TOO_STIFF", l: "gait.o.footTooStiff" },
+  { v: "FOOT_TOO_SOFT", l: "gait.o.footTooSoft" },
+  { v: "INCORRECT_KNEE_SETTINGS", l: "gait.o.incorrectKnee" },
 ];
 const LIKELY_CAUSE_OPTS = [
-  { v: "ALIGNMENT", l: "ضبط" }, { v: "SOCKET", l: "سوكت" }, { v: "SUSPENSION", l: "تعليق" },
-  { v: "COMPONENT_SELECTION", l: "اختيار المكونات" }, { v: "MUSCLE_WEAKNESS", l: "ضعف عضلي" },
-  { v: "PAIN", l: "ألم" }, { v: "LEARNED_GAIT_PATTERN", l: "نمط مكتسب" }, { v: "BALANCE", l: "توازن" },
+  { v: "ALIGNMENT", l: "gait.o.alignment" }, { v: "SOCKET", l: "gait.o.socket" }, { v: "SUSPENSION", l: "gait.o.suspension" },
+  { v: "COMPONENT_SELECTION", l: "gait.o.componentSel" }, { v: "MUSCLE_WEAKNESS", l: "gait.o.muscleWeak" },
+  { v: "PAIN", l: "gait.o.pain" }, { v: "LEARNED_GAIT_PATTERN", l: "gait.o.learnedGait" }, { v: "BALANCE", l: "gait.o.balance" },
 ];
 const RECOMMENDATION_OPTS = [
-  { v: "ALIGNMENT_ADJUSTMENT", l: "تعديل الضبط" },
-  { v: "SOCKET_MODIFICATION", l: "تعديل / تبديل السوكت" },
-  { v: "IMPROVE_SUSPENSION", l: "تحسين التعليق" },
-  { v: "CHANGE_FOOT", l: "تغيير القدم" },
-  { v: "ADJUST_KNEE_SETTINGS", l: "تعديل إعدادات الركبة" },
-  { v: "ADD_SHOCK_ABSORBER", l: "إضافة ممتص صدمات / تخميد" },
+  { v: "ALIGNMENT_ADJUSTMENT", l: "gait.o.alignAdjust" },
+  { v: "SOCKET_MODIFICATION", l: "gait.o.socketMod" },
+  { v: "IMPROVE_SUSPENSION", l: "gait.o.improveSusp" },
+  { v: "CHANGE_FOOT", l: "gait.o.changeFoot" },
+  { v: "ADJUST_KNEE_SETTINGS", l: "gait.o.adjustKnee" },
+  { v: "ADD_SHOCK_ABSORBER", l: "gait.o.addShock" },
 ];
 const REHAB_PLAN_OPTS = [
-  { v: "STRENGTHENING", l: "تقوية (مبعدات الورك / الجذع) " },
-  { v: "BALANCE_TRAINING", l: "تدريب توازن " },
-  { v: "GAIT_STEP_SYMMETRY", l: "تدريب مشي (تماثل الخطوات) " },
-  { v: "STAIRS_SLOPES", l: "تدريب درج ومنحدرات " },
-  { v: "COMMUNITY_AMBULATION", l: "تدريب خارج المنزل " },
+  { v: "STRENGTHENING", l: "gait.o.strengthening" },
+  { v: "BALANCE_TRAINING", l: "gait.o.balanceTraining" },
+  { v: "GAIT_STEP_SYMMETRY", l: "gait.o.gaitTraining" },
+  { v: "STAIRS_SLOPES", l: "gait.o.stairsSlopes" },
+  { v: "COMMUNITY_AMBULATION", l: "gait.o.community" },
 ];
 
 const INITIAL_GAIT_FORM = {
@@ -1405,6 +1402,7 @@ function YesNoButtons({ value, onChange }: { value: boolean | null; onChange: (v
 function GaitAnalysisCard({
   caseId, staffList, session, idx, onCancel, patient,
 }: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void; patient?: any }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const isNew = !session;
   const [editing, setEditing] = useState(isNew);
   const [form, setForm] = useState<GaitForm>(() => session ? gaitFormFromData(session) : { ...INITIAL_GAIT_FORM, phases: {} });
@@ -1448,14 +1446,14 @@ function GaitAnalysisCard({
       const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
       const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
       setForm((f) => ({ ...f, prosthetistSignatureUrl: url }));
-      toast.success("تم رفع التوقيع");
-    } catch { toast.error("فشل رفع التوقيع"); }
+      toast.success(t("gait.signatureUploaded"));
+    } catch { toast.error(t("gait.signatureUploadFailed")); }
     e.target.value = "";
   };
 
   const handleSigClick = async (_role: "prosto") => {
     const empId = form.examinerProsthetistId;
-    if (!empId) { toast.error("اختر الموظف أولاً"); return; }
+    if (!empId) { toast.error(t("gait.chooseEmpFirst")); return; }
     try {
       const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
       if (sig.hasSignature && sig.signatureUrl) {
@@ -1464,7 +1462,7 @@ function GaitAnalysisCard({
       } else {
         setTimeout(() => prostoSigRef.current?.click(), 50);
       }
-    } catch { toast.error("فشل جلب التوقيع"); }
+    } catch { toast.error(t("gait.signatureFetchFailed")); }
   };
 
   const handleSave = async () => {
@@ -1499,10 +1497,10 @@ function GaitAnalysisCard({
         prosthetistName: pros ? `${pros.firstNameAr ?? ""} ${pros.lastNameAr ?? ""}`.trim() : undefined,
         form,
       });
-      toast.success("تم تصدير PDF");
+      toast.success(t("gait.pdfExported"));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error(`فشل تصدير PDF: ${msg.slice(0, 120)}`);
+      toast.error(`${t("gait.pdfExportFailed")}: ${msg.slice(0, 120)}`);
       console.error("[Gait PDF Export]", e);
     } finally {
       setPdfExporting(false);
@@ -1526,26 +1524,26 @@ function GaitAnalysisCard({
               {isSaved && (
                 <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
                   <CheckCircle2 className="h-3 w-3" />
-                  محفوظ
+                  {t("gait.saved")}
                 </Badge>
               )}
               {isArchived && (
                 <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
                   <Archive className="h-3 w-3" />
-                  مؤرشف
+                  {t("gait.archived")}
                 </Badge>
               )}
             </div>
             <div className="flex gap-1 flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
               <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
                 {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                {pdfExporting ? "جاري..." : "تصدير PDF"}
+                {pdfExporting ? t("gait.loading") : t("gait.exportPdf")}
               </Button>
               {!isArchived && (
                 <Button size="sm" variant="outline" className="gap-1"
                   onClick={() => { setArchiveReason(""); setArchiveOpen(true); }}>
                   <Archive className="h-3.5 w-3.5" />
-                  أرشفة
+                  {t("gait.archive")}
                 </Button>
               )}
             </div>
@@ -1555,9 +1553,9 @@ function GaitAnalysisCard({
             <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-800 space-y-0.5">
               <p className="flex items-center gap-1 font-medium">
                 <Archive className="h-3 w-3" />
-                أُرشِف{session.archivedAt ? ` بتاريخ ${new Date(session.archivedAt).toLocaleDateString("en-GB")}` : ""}
+                {t("gait.archivedOn")}{session.archivedAt ? ` ${t("gait.onDate")} ${new Date(session.archivedAt).toLocaleDateString("en-GB")}` : ""}
               </p>
-              {session.archiveNotes && <p><span className="font-medium">السبب: </span>{session.archiveNotes}</p>}
+              {session.archiveNotes && <p><span className="font-medium">{t("gait.causeLabel")} </span>{session.archiveNotes}</p>}
             </div>
           )}
         </div>
@@ -1565,18 +1563,18 @@ function GaitAnalysisCard({
         <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
           <DialogContent className="max-w-sm" dir="rtl">
             <DialogHeader>
-              <DialogTitle>أرشفة النموذج</DialogTitle>
-              <DialogDescription>اذكر سبب الأرشفة.</DialogDescription>
+              <DialogTitle>{t("gait.archiveForm")}</DialogTitle>
+              <DialogDescription>{t("gait.archiveReason")}</DialogDescription>
             </DialogHeader>
-            <Textarea rows={3} placeholder="سبب الأرشفة..." value={archiveReason} onChange={(e) => setArchiveReason(e.target.value)} />
+            <Textarea rows={3} placeholder={t("gait.archiveReasonPlaceholder")} value={archiveReason} onChange={(e) => setArchiveReason(e.target.value)} />
             <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-              <Button variant="outline" onClick={() => setArchiveOpen(false)}>إلغاء</Button>
+              <Button variant="outline" onClick={() => setArchiveOpen(false)}>{t("gait.cancel")}</Button>
               <Button disabled={archiveMut.isPending || !archiveReason.trim()}
                 onClick={async () => {
                   await archiveMut.mutateAsync({ caseId, formId: session.id, reason: archiveReason.trim() });
                   setArchiveOpen(false);
                 }}>
-                {archiveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "أرشفة"}
+                {archiveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("gait.archive")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1591,20 +1589,20 @@ function GaitAnalysisCard({
       {!isNew && (
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold">{isSaved ? "تفاصيل" : "تعديل"} الجلسة #{(idx ?? 0) + 1}</p>
+            <p className="text-sm font-semibold">{isSaved ? t("gait.details") : t("gait.edit")} {t("gait.session")} #{(idx ?? 0) + 1}</p>
             {isSaved && (
               <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
                 <CheckCircle2 className="h-3 w-3" />
-                محفوظ — للقراءة فقط
+                {t("savedReadOnly")}
               </Badge>
             )}
           </div>
           <div className="flex items-center gap-1">
             <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
               {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-              {pdfExporting ? "جاري..." : "تصدير PDF"}
+              {pdfExporting ? t("gait.loading") : t("gait.exportPdf")}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>إغلاق</Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>{t("gait.close")}</Button>
           </div>
         </div>
       )}
@@ -1613,18 +1611,18 @@ function GaitAnalysisCard({
       <fieldset disabled={isSaved} className="contents">
       <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
         <TabsList className="w-full grid grid-cols-5 h-auto">
-          <TabsTrigger value="basic" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">تفاصيل الطرف الصناعي</TabsTrigger>
-          <TabsTrigger value="phases" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">أخطاء المشي</TabsTrigger>
-          <TabsTrigger value="diagnosis" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">التشخيص</TabsTrigger>
-          <TabsTrigger value="rehab" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">خطة العلاج</TabsTrigger>
-          <TabsTrigger value="signatures" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">التوقيعات</TabsTrigger>
+          <TabsTrigger value="basic" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabBasic")}</TabsTrigger>
+          <TabsTrigger value="phases" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.gaitDeviations")}</TabsTrigger>
+          <TabsTrigger value="diagnosis" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabDiagnosis")}</TabsTrigger>
+          <TabsTrigger value="rehab" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabRehab")}</TabsTrigger>
+          <TabsTrigger value="signatures" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabSignatures")}</TabsTrigger>
         </TabsList>
 
         {/* ── Tab 1: تفاصيل الطرف الصناعي ── */}
         <TabsContent value="basic" className="mt-4 space-y-0">
           {/* Session date */}
           <div className="mb-3 space-y-1.5">
-            <Label className="text-xs">تاريخ الجلسة</Label>
+            <Label className="text-xs">{t("gait.sessionDate")}</Label>
             <Input type="date" value={form.sessionDate} onChange={(e) => setForm((f) => ({ ...f, sessionDate: e.target.value }))} />
           </div>
 
@@ -1633,7 +1631,7 @@ function GaitAnalysisCard({
 
             {/* نظام التعليق */}
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">نظام التعليق</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.suspensionSystem")}</div>
               <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {SUSPENSION_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
@@ -1644,26 +1642,26 @@ function GaitAnalysisCard({
                         return { ...f, suspensionSystem: next, suspensionSystemOtherNotes: next.includes("OTHER") ? f.suspensionSystemOtherNotes : "" };
                       })}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{o.l}</span>
+                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                   </label>
                 ))}
                 {form.suspensionSystem.includes("OTHER") && (
                   <Input value={form.suspensionSystemOtherNotes} onChange={(e) => setForm((f) => ({ ...f, suspensionSystemOtherNotes: e.target.value }))}
-                    placeholder="تفاصيل نظام التعليق الآخر (اختياري)..." className="h-7 text-xs mt-1 w-full" />
+                    placeholder={t("gait.otherSuspensionDetails")} className="h-7 text-xs mt-1 w-full" />
                 )}
               </div>
             </div>
 
             {/* التحميل على السوكيت */}
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">التحميل على السوكيت</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.socketBearing")}</div>
               <div className="px-3 py-2.5 space-y-1.5">
                 {SOCKET_BEARING_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.socketBearing === o.v}
                       onChange={() => setForm((f) => ({ ...f, socketBearing: f.socketBearing === o.v ? "" : o.v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{o.l}</span>
+                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                   </label>
                 ))}
               </div>
@@ -1671,14 +1669,14 @@ function GaitAnalysisCard({
 
             {/* نوع مفصل الركبة */}
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">نوع مفصل الركبة</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.kneeJointType")}</div>
               <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {KNEE_JOINT_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                     <input type="checkbox" checked={form.kneeJointType === o.v}
                       onChange={() => setForm((f) => ({ ...f, kneeJointType: f.kneeJointType === o.v ? "" : o.v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{o.l}</span>
+                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                   </label>
                 ))}
               </div>
@@ -1686,14 +1684,14 @@ function GaitAnalysisCard({
 
             {/* نوع مفصل القدم */}
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">نوع مفصل القدم</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.footJointType")}</div>
               <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {FOOT_TYPE_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                     <input type="checkbox" checked={form.footType === o.v}
                       onChange={() => setForm((f) => ({ ...f, footType: f.footType === o.v ? "" : o.v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{o.l}</span>
+                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                   </label>
                 ))}
               </div>
@@ -1701,22 +1699,22 @@ function GaitAnalysisCard({
 
             {/* شكاوى المريض */}
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">شكاوى المريض</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.patientComplaints")}</div>
               <div className="px-3 py-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {COMPLAINT_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.patientComplaints.includes(o.v)} onChange={() => toggleMulti("patientComplaints", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{o.l}</span>
+                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                   </label>
                 ))}
                 <Input value={form.patientComplaintsOtherNotes} onChange={(e) => setForm((f) => ({ ...f, patientComplaintsOtherNotes: e.target.value }))}
-                  placeholder="تفاصيل شكوى أخرى (اختياري)..." className="h-7 text-xs mt-1 col-span-2" />
+                  placeholder={t("gait.otherComplaintDetails")} className="h-7 text-xs mt-1 col-span-2" />
               </div>
             </div>
 
             {/* شدة الألم */}
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">شدة الألم</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.painIntensity")}</div>
               <div className="px-3 py-2.5 flex gap-3 items-center flex-wrap">
                 {[1,2,3,4,5,6,7,8,9,10].map((n) => (
                   <label key={n} className="flex flex-col items-center gap-0.5 cursor-pointer">
@@ -1731,33 +1729,33 @@ function GaitAnalysisCard({
 
             {/* فحص الضبط + المدى الحركي */}
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">فحص الضبط</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.alignmentExam")}</div>
               <div className="px-3 py-2.5 flex gap-4">
-                {[{ v: "GOOD", l: "جيد" }, { v: "NEEDS_ADJUSTMENT", l: "يحتاج تعديل" }].map((o) => (
+                {[{ v: "GOOD", l: "gait.o.good" }, { v: "NEEDS_ADJUSTMENT", l: "gait.o.needsAdjust" }].map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.alignmentCheck === o.v}
                       onChange={() => setForm((f) => ({ ...f, alignmentCheck: f.alignmentCheck === o.v ? "" : o.v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                    <span className="text-xs">{o.l}</span>
+                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                   </label>
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">المدى الحركي</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.rangeOfMotion")}</div>
               <div className="px-3 py-2.5 flex gap-4">
                 {([true, false] as const).map((v) => (
                   <label key={String(v)} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.hasRomLimitations === v}
                       onChange={() => setForm((f) => ({ ...f, hasRomLimitations: f.hasRomLimitations === v ? null : v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                    <span className="text-xs">{v ? "نعم" : "لا"}</span>
+                    <span className="text-xs">{v ? t("gait.yes") : t("gait.no")}</span>
                   </label>
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
-              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">ملاحظات</div>
+              <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.notesLabel")}</div>
               <div className="px-3 py-1.5">
                 <Input value={form.otherWeakness} onChange={(e) => setForm((f) => ({ ...f, otherWeakness: e.target.value }))} placeholder="..." className="h-7 text-xs border-0 shadow-none px-0 focus-visible:ring-0" />
               </div>
@@ -1765,49 +1763,49 @@ function GaitAnalysisCard({
 
             {/* فحص الجذمور */}
             <div className="border-b mt-4">
-              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground">فحص الجذمور</div>
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground">{t("gait.residualExam")}</div>
               <div className="px-3 py-2.5 space-y-2">
-                <p className="text-[11px] text-foreground font-semibold">تيبس/قصر:</p>
+                <p className="text-[11px] text-foreground font-semibold">{t("gait.stiffnessShort")}</p>
                 <div className="flex gap-4 flex-wrap">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.hasHipFlexionContracture}
                       onChange={() => setForm((f) => ({ ...f, hasHipFlexionContracture: f.hasHipFlexionContracture ? null : true }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                    <span className="text-xs">قصر عطف الورك</span>
+                    <span className="text-xs">{t("gait.hipFlexShort")}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.hasKneeFlexionContracture}
                       onChange={() => setForm((f) => ({ ...f, hasKneeFlexionContracture: f.hasKneeFlexionContracture ? null : true }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                    <span className="text-xs">قصر عطف الركبة</span>
+                    <span className="text-xs">{t("gait.kneeFlexShort")}</span>
                   </label>
                 </div>
-                <p className="text-[11px] text-foreground font-semibold">ضعف عضلي:</p>
+                <p className="text-[11px] text-foreground font-semibold">{t("gait.muscleWeakness")}</p>
                 <div className="flex gap-4 flex-wrap items-center">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.weakHipAbductors}
                       onChange={() => setForm((f) => ({ ...f, weakHipAbductors: f.weakHipAbductors ? null : true }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                    <span className="text-xs">تبعيد</span>
+                    <span className="text-xs">{t("gait.abduction")}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.weakHipExtensors}
                       onChange={() => setForm((f) => ({ ...f, weakHipExtensors: f.weakHipExtensors ? null : true }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                    <span className="text-xs">بسط</span>
+                    <span className="text-xs">{t("gait.extension")}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={!!form.weakTrunkMuscles}
                       onChange={() => setForm((f) => ({ ...f, weakTrunkMuscles: f.weakTrunkMuscles ? null : true }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                    <span className="text-xs">عضلات الجذع</span>
+                    <span className="text-xs">{t("gait.trunkMuscles")}</span>
                   </label>
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={!!form.otherWeakness}
                         onChange={() => setForm((f) => ({ ...f, otherWeakness: f.otherWeakness ? "" : " " }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">أخرى:</span>
+                      <span className="text-xs">{t("gait.otherLabel")}</span>
                     </label>
                     {!!form.otherWeakness && (
                       <Input value={form.otherWeakness.trim()} onChange={(e) => setForm((f) => ({ ...f, otherWeakness: e.target.value }))}
@@ -1820,21 +1818,21 @@ function GaitAnalysisCard({
 
             {/* Core Assessment */}
             <div className="border-b mt-4">
-              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground">التقييم الأساسي</div>
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground">{t("gait.baseAssessment")}</div>
               {([
-                ["trunkStability", "ثبات الجذع "],
-                ["abdominalControl", "التحكم البطني "],
-                ["pelvicControl", "التحكم الحوضي "],
+                ["trunkStability", "gait.trunkStability"],
+                ["abdominalControl", "gait.abdominalControl"],
+                ["pelvicControl", "gait.pelvicControl"],
               ] as const).map(([fld, lbl]) => (
                 <div key={fld} className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
-                  <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{lbl}</div>
+                  <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t(lbl, { defaultValue: lbl })}</div>
                   <div className="px-3 py-2.5 flex gap-4">
                     {GFP_OPTS.map((o) => (
                       <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                         <input type="checkbox" checked={form[fld] === o.v}
                           onChange={() => setForm((f) => ({ ...f, [fld]: f[fld] === o.v ? "" : o.v }))}
                           className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                        <span className="text-xs">{o.l}</span>
+                        <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                       </label>
                     ))}
                   </div>
@@ -1845,27 +1843,27 @@ function GaitAnalysisCard({
             {/* Balance */}
             <div className="mt-4">
               <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b border-t">
-                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">التوازن أثناء الجلوس</div>
+                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t("gait.sittingBalance")}</div>
                 <div className="px-3 py-2.5 flex gap-4">
-                  {[{ v: "INDEPENDENT", l: "مستقل" }, { v: "ASSISTED", l: "بمساعدة" }].map((o) => (
+                  {[{ v: "INDEPENDENT", l: "gait.o.independent" }, { v: "ASSISTED", l: "gait.o.assisted" }].map((o) => (
                     <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" checked={form.sittingBalance === o.v}
                         onChange={() => setForm((f) => ({ ...f, sittingBalance: f.sittingBalance === o.v ? "" : o.v }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">{o.l}</span>
+                      <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                     </label>
                   ))}
                 </div>
               </div>
               <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse">
-                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">التوازن أثناء الوقوف</div>
+                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t("gait.standingBalance")}</div>
                 <div className="px-3 py-2.5 flex gap-4">
-                  {[{ v: "STABLE", l: "مستقر" }, { v: "UNSTABLE", l: "غير مستقر" }].map((o) => (
+                  {[{ v: "STABLE", l: "gait.o.stable" }, { v: "UNSTABLE", l: "gait.o.unstable" }].map((o) => (
                     <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" checked={form.standingBalance === o.v}
                         onChange={() => setForm((f) => ({ ...f, standingBalance: f.standingBalance === o.v ? "" : o.v }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">{o.l}</span>
+                      <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                     </label>
                   ))}
                 </div>
@@ -1874,18 +1872,18 @@ function GaitAnalysisCard({
 
             {/* Gait Assessment */}
             <div className="mt-4">
-              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground border-t">تقييم المشي</div>
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground border-t">{t("gait.gaitAssessment")}</div>
 
               {/* التماثل */}
               <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
-                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">التماثل</div>
+                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t("gait.symmetry")}</div>
                 <div className="px-3 py-2.5 flex gap-4">
-                  {[{ v: "GOOD", l: "جيد" }, { v: "FAIR", l: "متوسط" }, { v: "POOR", l: "ضعيف" }].map((o) => (
+                  {[{ v: "GOOD", l: "gait.o.good" }, { v: "FAIR", l: "gait.o.fair" }, { v: "POOR", l: "gait.o.poor" }].map((o) => (
                     <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" checked={form.symmetry === o.v}
                         onChange={() => setForm((f) => ({ ...f, symmetry: f.symmetry === o.v ? "" : o.v }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">{o.l}</span>
+                      <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                     </label>
                   ))}
                 </div>
@@ -1893,14 +1891,14 @@ function GaitAnalysisCard({
 
               {/* وسيلة المساعدة */}
               <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
-                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">الوسيلة المساعدة</div>
+                <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t("gait.assistiveDevice")}</div>
                 <div className="px-3 py-2.5 flex gap-4 flex-wrap">
                   {GAIT_DEVICE_OPTS.map((o) => (
                     <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" checked={form.assistiveDevice === o.v}
                         onChange={() => setForm((f) => ({ ...f, assistiveDevice: f.assistiveDevice === o.v ? "" : o.v }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">{o.l}</span>
+                      <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                     </label>
                   ))}
                 </div>
@@ -1908,34 +1906,34 @@ function GaitAnalysisCard({
 
               {/* Spatiotemporal Parameters */}
               <div className="border-t px-3 py-2">
-                <p className="text-[11px] text-foreground font-semibold mb-2">قياسات المشي</p>
+                <p className="text-[11px] text-foreground font-semibold mb-2">{t("gait.gaitMeasurements")}</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs w-44 shrink-0">السرعة</span>
+                    <span className="text-xs w-44 shrink-0">{t("gait.speed")}</span>
                     <Input type="number" step="0.01" value={form.speedMs} onChange={(e) => setForm((f) => ({ ...f, speedMs: e.target.value }))} className="h-7 text-xs w-20" />
                     <span className="text-xs text-muted-foreground shrink-0">m/s</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs w-44 shrink-0">عدد الخطوات/دقيقة</span>
+                    <span className="text-xs w-44 shrink-0">{t("gait.cadence")}</span>
                     <Input type="number" value={form.cadence} onChange={(e) => setForm((f) => ({ ...f, cadence: e.target.value }))} className="h-7 text-xs w-20" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs w-44 shrink-0">طول الخطوة — صناعي</span>
+                    <span className="text-xs w-44 shrink-0">{t("gait.stepLenProsth")}</span>
                     <Input type="number" value={form.stepLengthProsCm} onChange={(e) => setForm((f) => ({ ...f, stepLengthProsCm: e.target.value }))} className="h-7 text-xs w-20" />
                     <span className="text-xs text-muted-foreground shrink-0">cm</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs w-44 shrink-0">طول الخطوة — سليم</span>
+                    <span className="text-xs w-44 shrink-0">{t("gait.stepLenSound")}</span>
                     <Input type="number" value={form.stepLengthSoundCm} onChange={(e) => setForm((f) => ({ ...f, stepLengthSoundCm: e.target.value }))} className="h-7 text-xs w-20" />
                     <span className="text-xs text-muted-foreground shrink-0">cm</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs w-44 shrink-0">نسبة الارتكاز — صناعي</span>
+                    <span className="text-xs w-44 shrink-0">{t("gait.stanceProsth")}</span>
                     <Input type="number" value={form.stancePercProsthetic} onChange={(e) => setForm((f) => ({ ...f, stancePercProsthetic: e.target.value }))} className="h-7 text-xs w-20" />
                     <span className="text-xs text-muted-foreground shrink-0">%</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs w-44 shrink-0">نسبة الارتكاز — سليم</span>
+                    <span className="text-xs w-44 shrink-0">{t("gait.stanceSound")}</span>
                     <Input type="number" value={form.stancePercSound} onChange={(e) => setForm((f) => ({ ...f, stancePercSound: e.target.value }))} className="h-7 text-xs w-20" />
                     <span className="text-xs text-muted-foreground shrink-0">%</span>
                   </div>
@@ -1950,7 +1948,7 @@ function GaitAnalysisCard({
         <TabsContent value="phases" className="mt-4 space-y-4">
           {GAIT_PHASES.map((phase) => (
             <div key={phase.key} className="rounded-lg border overflow-hidden">
-              <div className="bg-muted/40 px-3 py-2 text-sm font-semibold flex items-center gap-2"><span>•</span>{phase.label}</div>
+              <div className="bg-muted/40 px-3 py-2 text-sm font-semibold flex items-center gap-2"><span>•</span>{t(phase.label, { defaultValue: phase.label })}</div>
               <div className="p-3 space-y-2">
                 <div className="grid grid-cols-2 gap-1">
                   {phase.deviations.map((d) => (
@@ -1960,17 +1958,17 @@ function GaitAnalysisCard({
                         onChange={() => togglePhaseDeviation(phase.key, d.v)}
                         className="w-[17px] h-[17px] checkbox-orange rounded-sm shrink-0"
                       />
-                      <span className="text-xs">{d.l}</span>
+                      <span className="text-xs">{t(d.l, { defaultValue: d.l })}</span>
                     </label>
                   ))}
                 </div>
                 {phase.extraField === "cause" && (
                   <Input value={form.phases[phase.key]?.possibleCause ?? ""} onChange={(e) => setPhaseText(phase.key, "possibleCause", e.target.value)}
-                    placeholder="السبب المحتمل..." className="h-7 text-xs" />
+                    placeholder={t("gait.causePlaceholder")} className="h-7 text-xs" />
                 )}
                 {phase.extraField === "notes" && (
                   <Input value={form.phases[phase.key]?.notes ?? ""} onChange={(e) => setPhaseText(phase.key, "notes", e.target.value)}
-                    placeholder="ملاحظات..." className="h-7 text-xs" />
+                    placeholder={t("gait.notesPlaceholder")} className="h-7 text-xs" />
                 )}
               </div>
             </div>
@@ -1983,65 +1981,65 @@ function GaitAnalysisCard({
 
             {/* مشاكل خاصة بالطرف */}
             <div>
-              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>مشاكل خاصة بالطرف</div>
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>{t("gait.prostheticIssues")}</div>
               <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {PROSTHETIC_ISSUE_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.prostheticIssues.includes(o.v)} onChange={() => toggleMulti("prostheticIssues", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{o.l}</span>
+                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                   </label>
                 ))}
               </div>
               <div className="px-3 pb-3 space-y-1.5">
-                <Label className="text-xs font-medium">تفاصيل مشكلة أخرى (اختياري)</Label>
-                <Textarea rows={2} value={form.prostheticIssuesOtherNotes} onChange={(e) => setForm((f) => ({ ...f, prostheticIssuesOtherNotes: e.target.value }))} className="resize-none text-xs" placeholder="تفاصيل إضافية..." />
+                <Label className="text-xs font-medium">{t("gait.otherProblemDetails")}</Label>
+                <Textarea rows={2} value={form.prostheticIssuesOtherNotes} onChange={(e) => setForm((f) => ({ ...f, prostheticIssuesOtherNotes: e.target.value }))} className="resize-none text-xs" placeholder={t("gait.extraDetails")} />
               </div>
             </div>
 
             {/* الاستنتاج السريري */}
             <div className="border-t">
-              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>الاستنتاج السريري</div>
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>{t("gait.clinicalConclusion")}</div>
               <div className="px-3 py-3 space-y-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">المشكلة الأساسية</Label>
+                  <Label className="text-xs font-medium">{t("gait.mainProblem")}</Label>
                   <Textarea rows={2} value={form.mainProblem} onChange={(e) => setForm((f) => ({ ...f, mainProblem: e.target.value }))} className="resize-none text-xs" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">ملاحظات التشخيص (اختياري)</Label>
-                  <Textarea rows={2} value={form.mainProblemNotes} onChange={(e) => setForm((f) => ({ ...f, mainProblemNotes: e.target.value }))} className="resize-none text-xs" placeholder="ملاحظات إضافية على التشخيص..." />
+                  <Label className="text-xs font-medium">{t("gait.diagnosisNotes")}</Label>
+                  <Textarea rows={2} value={form.mainProblemNotes} onChange={(e) => setForm((f) => ({ ...f, mainProblemNotes: e.target.value }))} className="resize-none text-xs" placeholder={t("gait.extraDiagnosisNotes")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">السبب المرجح</Label>
+                  <Label className="text-xs font-medium">{t("gait.likelyCause")}</Label>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     {LIKELY_CAUSE_OPTS.map((o) => (
                       <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={form.likelyCauses.includes(o.v)} onChange={() => toggleMulti("likelyCauses", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                        <span className="text-xs">{o.l}</span>
+                        <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                       </label>
                     ))}
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">تفاصيل سبب آخر (اختياري)</Label>
-                  <Textarea rows={2} value={form.likelyCausesOtherNotes} onChange={(e) => setForm((f) => ({ ...f, likelyCausesOtherNotes: e.target.value }))} className="resize-none text-xs" placeholder="تفاصيل إضافية..." />
+                  <Label className="text-xs font-medium">{t("gait.otherCauseDetails")}</Label>
+                  <Textarea rows={2} value={form.likelyCausesOtherNotes} onChange={(e) => setForm((f) => ({ ...f, likelyCausesOtherNotes: e.target.value }))} className="resize-none text-xs" placeholder={t("gait.extraDetails")} />
                 </div>
               </div>
             </div>
 
             {/* التوصيات */}
             <div className="border-t">
-              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>التوصيات</div>
+              <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>{t("gait.recommendations")}</div>
               <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
                 {RECOMMENDATION_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.recommendations.includes(o.v)} onChange={() => toggleMulti("recommendations", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{o.l}</span>
+                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                   </label>
                 ))}
               </div>
               <div className="px-3 pb-3 space-y-1.5">
-                <Label className="text-xs font-medium">ملاحظات التوصيات (اختياري)</Label>
-                <Textarea rows={2} value={form.recommendationsNotes} onChange={(e) => setForm((f) => ({ ...f, recommendationsNotes: e.target.value }))} className="resize-none text-xs" placeholder="ملاحظات إضافية على التوصيات..." />
+                <Label className="text-xs font-medium">{t("gait.recommendationsNotes")}</Label>
+                <Textarea rows={2} value={form.recommendationsNotes} onChange={(e) => setForm((f) => ({ ...f, recommendationsNotes: e.target.value }))} className="resize-none text-xs" placeholder={t("gait.extraRecNotes")} />
               </div>
             </div>
 
@@ -2052,17 +2050,17 @@ function GaitAnalysisCard({
         {/* ── Tab 4: خطة العلاج ── */}
         <TabsContent value="rehab" className="mt-4 space-y-0">
           <div className="rounded-lg overflow-hidden border text-sm">
-            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>خطة العلاج</div>
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>{t("gait.tabRehab")}</div>
             <div className="px-3 py-3 space-y-2">
               {REHAB_PLAN_OPTS.map((o) => (
                 <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.rehabPlanItems.includes(o.v)} onChange={() => toggleMulti("rehabPlanItems", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                  <span className="text-xs">{o.l}</span>
+                  <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
                 </label>
               ))}
             </div>
             <div className="border-t px-3 py-3 space-y-1.5">
-              <Label className="text-xs font-medium">ملاحظات | Notes</Label>
+              <Label className="text-xs font-medium">{t("gait.notesBilingual")}</Label>
               <Textarea rows={2} value={form.rehabNotes} onChange={(e) => setForm((f) => ({ ...f, rehabNotes: e.target.value }))} className="resize-none text-xs" />
             </div>
           </div>
@@ -2072,15 +2070,15 @@ function GaitAnalysisCard({
         <TabsContent value="signatures" className="mt-4 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             {([
-              ["prosto","اسم فني الأطراف الصناعية ","examinerProsthetistId","prosthetistSignatureUrl"],
+              ["prosto",t("gait.prosthetistName"),"examinerProsthetistId","prosthetistSignatureUrl"],
             ] as const).map(([role,lbl,idField,sigField]) => (
               <div key={role} className="space-y-2 rounded-lg border p-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">{lbl}</Label>
                   <Select value={(form as any)[idField] || "none"} onValueChange={(v) => setForm((f) => ({ ...f, [idField]: v === "none" ? "" : v, [sigField]: "" }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("gait.choose")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— غير محدد —</SelectItem>
+                      <SelectItem value="none">{t("gait.unspecified")}</SelectItem>
                       {(role === "prosto"
                         ? staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("الأطراف الصناعية")))
                         : staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("العلاج الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
@@ -2089,16 +2087,16 @@ function GaitAnalysisCard({
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">التوقيع</Label>
+                  <Label className="text-xs">{t("gait.signature")}</Label>
                   <div className="rounded border min-h-[64px] flex items-center justify-center bg-white/50 p-2">
                     {(form as any)[sigField] ? (
                       <div className="relative inline-block">
-                        <img src={(form as any)[sigField]} alt="توقيع" className="h-14 object-contain" />
+                        <img src={(form as any)[sigField]} alt={t("gait.signatureShort")} className="h-14 object-contain" />
                         <button onClick={() => setForm((f) => ({ ...f, [sigField]: "" }))} className="absolute -top-1 -left-1 bg-destructive text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">✕</button>
                       </div>
                     ) : (
                       <Button type="button" size="sm" variant="outline" className="text-xs w-full" onClick={() => handleSigClick(role)} disabled={!(form as any)[idField]}>
-                        {(form as any)[idField] ? "جلب / رفع التوقيع" : "اختر أولاً"}
+                        {(form as any)[idField] ? "جلب / رفع التوقيع" : t("gait.chooseFirst")}
                       </Button>
                     )}
                   </div>
@@ -2108,8 +2106,8 @@ function GaitAnalysisCard({
           </div>
           <input ref={prostoSigRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleSigFile(e, "prosto")} />
           <div className="space-y-1.5">
-            <Label className="text-xs">ملاحظات عامة</Label>
-            <Textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none text-xs" placeholder="ملاحظات إضافية..." />
+            <Label className="text-xs">{t("gait.generalNotes")}</Label>
+            <Textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none text-xs" placeholder={t("gait.extraNotes")} />
           </div>
         </TabsContent>
 
@@ -2120,9 +2118,9 @@ function GaitAnalysisCard({
         <div className="flex gap-2 pt-2 border-t">
           <Button onClick={handleSave} disabled={isSaving} className="flex-1 gap-1">
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            {isNew ? "إضافة الجلسة" : "حفظ نهائي"}
+            {isNew ? t("gait.addSession") : t("gait.saveFinal")}
           </Button>
-          <Button variant="outline" onClick={() => isNew ? onCancel?.() : setEditing(false)}>إلغاء</Button>
+          <Button variant="outline" onClick={() => isNew ? onCancel?.() : setEditing(false)}>{t("gait.cancel")}</Button>
         </div>
       )}
     </div>
@@ -2130,16 +2128,17 @@ function GaitAnalysisCard({
 }
 
 function GaitAnalysisSection({ caseId, staffList, patient }: { caseId: string; staffList: any[]; patient?: any }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const { data: sessions = [], isLoading } = useGaitAnalysisForms(caseId);
   const [showAdd, setShowAdd] = useState(false);
   const [formKey, setFormKey] = useState(0);
   return (
     <Section
-      title={`تحليل المشي — Pro-016${sessions.length > 0 ? ` (${sessions.length})` : ""}`}
+      title={sessions.length > 0 ? t("gait.sectionTitleCount", { count: sessions.length }) : t("gait.sectionTitle")}
       action={
         <Button size="sm" variant={showAdd ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowAdd((v) => !v)}>
           <Plus className="h-3.5 w-3.5" />
-          {showAdd ? "إغلاق" : "إضافة جلسة"}
+          {showAdd ? t("gait.close") : t("gait.addSessionBtn")}
         </Button>
       }
     >
@@ -2152,7 +2151,7 @@ function GaitAnalysisSection({ caseId, staffList, patient }: { caseId: string; s
       {isLoading ? (
         <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : sessions.length === 0 && !showAdd ? (
-        <p className="text-sm text-muted-foreground text-center py-4">لا توجد جلسات تحليل مشي مسجّلة</p>
+        <p className="text-sm text-muted-foreground text-center py-4">{t("gait.noSessions")}</p>
       ) : (
         <div className="space-y-3">
           {sessions.map((s: any, i: number) => (
@@ -2167,53 +2166,53 @@ function GaitAnalysisSection({ caseId, staffList, patient }: { caseId: string; s
 // ─── Balance Assessment (Pro-015) ─────────────────────────────────────────────
 
 const STATIC_BALANCE_KEYS = [
-  { key: "standing_feet_together", label: "الوقوف والقدمان متلاصقتان" },
-  { key: "narrow_base_standing", label: "الوقوف بقاعدة ضيقة" },
-  { key: "prosthetic_side", label: "الوقوف على الطرف الصناعي" },
-  { key: "sound_side", label: "الوقوف على الطرف السليم" },
-  { key: "eyes_closed", label: "الوقوف مع إغماض العينين" },
+  { key: "standing_feet_together", label: "bal.o.feetTogether" },
+  { key: "narrow_base_standing", label: "bal.o.narrowBase" },
+  { key: "prosthetic_side", label: "bal.o.onProsthetic" },
+  { key: "sound_side", label: "bal.o.onSound" },
+  { key: "eyes_closed", label: "bal.o.eyesClosed" },
 ];
-const STATIC_BALANCE_OPTS = [{ value: "INDEPENDENT", label: "مستقل" }, { value: "ASSISTED", label: "بمساعدة" }, { value: "UNABLE", label: "غير قادر" }];
+const STATIC_BALANCE_OPTS = [{ value: "INDEPENDENT", label: "bal.o.independent" }, { value: "ASSISTED", label: "bal.o.assisted" }, { value: "UNABLE", label: "bal.o.unable" }];
 
 const DYNAMIC_TASK_KEYS = [
-  { key: "weight_shifting", label: "نقل الوزن (أمامي/خلفي ـ جانبي)" },
-  { key: "reaching_outside_bos", label: "الوصول خارج قاعدة الارتكاز" },
-  { key: "turning", label: "الالتفاف (360°/180°)" },
-  { key: "stepping_forward_back", label: "الخطو للأمام / للخلف" },
-  { key: "obstacle_negotiation", label: "تجاوز العوائق" },
+  { key: "weight_shifting", label: "bal.o.weightShift" },
+  { key: "reaching_outside_bos", label: "bal.o.reaching" },
+  { key: "turning", label: "bal.o.turning" },
+  { key: "stepping_forward_back", label: "bal.o.stepping" },
+  { key: "obstacle_negotiation", label: "bal.o.obstacles" },
 ];
-const DYNAMIC_TASK_OPTS = [{ value: "GOOD", label: "جيد" }, { value: "FAIR", label: "متوسط" }, { value: "POOR", label: "ضعيف" }];
+const DYNAMIC_TASK_OPTS = [{ value: "GOOD", label: "bal.o.good" }, { value: "FAIR", label: "bal.o.fair" }, { value: "POOR", label: "bal.o.poor" }];
 
 const DYNAMIC_ACTIVITY_KEYS = [
-  { key: "sit_to_stand", label: "الجلوس إلى الوقوف" },
-  { key: "stand_to_sit", label: "الوقوف إلى الجلوس" },
-  { key: "gait_initiation", label: "بدء المشي" },
-  { key: "stair_negotiation", label: "صعود ونزول الدرج" },
-  { key: "uneven_surface_walking", label: "المشي على أسطح غير مستوية" },
+  { key: "sit_to_stand", label: "bal.o.sitToStand" },
+  { key: "stand_to_sit", label: "bal.o.standToSit" },
+  { key: "gait_initiation", label: "bal.o.gaitInit" },
+  { key: "stair_negotiation", label: "bal.o.stairs" },
+  { key: "uneven_surface_walking", label: "bal.o.uneven" },
 ];
-const DYNAMIC_ACTIVITY_OPTS = [{ value: "INDEPENDENT", label: "مستقل" }, { value: "WITH_DIFFICULTY", label: "بصعوبة" }, { value: "UNABLE", label: "غير قادر" }];
+const DYNAMIC_ACTIVITY_OPTS = [{ value: "INDEPENDENT", label: "bal.o.independent" }, { value: "WITH_DIFFICULTY", label: "bal.o.withDifficulty" }, { value: "UNABLE", label: "bal.o.unable" }];
 
 const LIMITING_FACTOR_OPTS = [
-  { value: "PROSTHETIC_CONTROL", label: "التحكم بالطرف الصناعي" },
-  { value: "MUSCLE_WEAKNESS", label: "ضعف العضلات" },
-  { value: "CORE_INSTABILITY", label: "عدم استقرار الجذع" },
-  { value: "FEAR_OF_FALLING", label: "الخوف من السقوط" },
-  { value: "ALIGNMENT_FIT_ISSUES", label: "مشاكل المحاذاة والملاءمة" },
+  { value: "PROSTHETIC_CONTROL", label: "bal.o.prostheticControl" },
+  { value: "MUSCLE_WEAKNESS", label: "bal.o.muscleWeak" },
+  { value: "CORE_INSTABILITY", label: "bal.o.coreInstab" },
+  { value: "FEAR_OF_FALLING", label: "bal.o.fearFalling" },
+  { value: "ALIGNMENT_FIT_ISSUES", label: "bal.o.alignFit" },
 ];
 const PROGRAM_PROGRESSION_OPTS = [
-  { value: "REDUCE_HAND_SUPPORT", label: "تقليل دعم اليدين" },
-  { value: "INCREASE_DURATION", label: "زيادة المدة" },
-  { value: "INCREASE_REPS", label: "زيادة التكرار" },
-  { value: "INCREASE_DIFFICULTY", label: "زيادة الصعوبة" },
-  { value: "ADD_DUAL_TASKS", label: "إضافة مهام مزدوجة" },
-  { value: "HOME_EXERCISE_PROGRAM", label: "برنامج تمارين منزلية" },
-  { value: "NOT_PRESCRIBED", label: "لم يوصف" },
-  { value: "PRESCRIBED_WITH_SAFETY", label: "وصف وتم شرح السلامة للمريض" },
+  { value: "REDUCE_HAND_SUPPORT", label: "bal.o.reduceHand" },
+  { value: "INCREASE_DURATION", label: "bal.o.incDuration" },
+  { value: "INCREASE_REPS", label: "bal.o.incReps" },
+  { value: "INCREASE_DIFFICULTY", label: "bal.o.incDifficulty" },
+  { value: "ADD_DUAL_TASKS", label: "bal.o.dualTasks" },
+  { value: "HOME_EXERCISE_PROGRAM", label: "bal.o.homeProgram" },
+  { value: "NOT_PRESCRIBED", label: "bal.o.notPrescribed" },
+  { value: "PRESCRIBED_WITH_SAFETY", label: "bal.o.prescribedSafety" },
 ];
 const EXPECTED_OUTCOME_OPTS = [
-  { value: "IMPROVE_WEIGHT", label: "تحسين الوزن" },
-  { value: "REDUCED_FALL_RISK", label: "تقليل خطر السقوط" },
-  { value: "IMPROVED_CONFIDENCE", label: "زيادة الثقة" },
+  { value: "IMPROVE_WEIGHT", label: "bal.o.improveWeight" },
+  { value: "REDUCED_FALL_RISK", label: "bal.o.reduceFallRisk" },
+  { value: "IMPROVED_CONFIDENCE", label: "bal.o.improveConfidence" },
 ];
 const ROM_GRADES = ["1","1+","2","2+","3","3+","4","4+","5","5+"];
 const ARABIC_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
@@ -2257,10 +2256,10 @@ const LOWER_ROM_MOVES: RomMove[] = [
 ];
 
 const SUPPORT_OPTS = [
-  { value: "NONE", label: "لا يوجد" },
-  { value: "BARS", label: "قضبان" },
-  { value: "SUPPORT", label: "بدعم" },
-  { value: "SUPERVISED", label: "إشراف" },
+  { value: "NONE", label: "bal.o.none" },
+  { value: "BARS", label: "bal.o.bars" },
+  { value: "SUPPORT", label: "bal.o.withSupport" },
+  { value: "SUPERVISED", label: "bal.o.supervised" },
 ];
 const DEFAULT_EXERCISE_PROGRAM = [
   { exercise: "نقل الوزن", position: "وقوف", dosage: "10-15 reps", support: "NONE", notes: "", selected: false },
@@ -2381,6 +2380,7 @@ function balanceFormToDto(form: BalanceForm) {
 function BalanceAssessmentCard({
   caseId, staffList, session, idx, onCancel,
 }: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const isNew = !session;
   const [editing, setEditing] = useState(isNew);
   const [form, setForm] = useState<BalanceForm>(() =>
@@ -2401,7 +2401,7 @@ function BalanceAssessmentCard({
 
   const handleSigClick = async (role: "physio" | "committee") => {
     const empId = role === "physio" ? form.physiotherapistId : form.committeeHeadId;
-    if (!empId) { toast.error(role === "physio" ? "اختر المعالج الفيزيائي أولاً" : "اختر رئيس اللجنة أولاً"); return; }
+    if (!empId) { toast.error(role === "physio" ? t("bal.choosePhysioFirst") : t("bal.chooseCommitteeHeadFirst")); return; }
     try {
       const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
       if (sig.hasSignature && sig.signatureUrl) {
@@ -2412,7 +2412,7 @@ function BalanceAssessmentCard({
         setSigUploadFor(role);
         setTimeout(() => (role === "physio" ? physioSigRef : committeeSigRef).current?.click(), 50);
       }
-    } catch { toast.error("فشل جلب التوقيع"); }
+    } catch { toast.error(t("bal.signatureFetchFailed")); }
   };
 
   const handleSigFile = async (e: React.ChangeEvent<HTMLInputElement>, role: "physio" | "committee") => {
@@ -2425,8 +2425,8 @@ function BalanceAssessmentCard({
       const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
       if (role === "physio") setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
       else setForm((f) => ({ ...f, committeeHeadSignatureUrl: url }));
-      toast.success("تم رفع التوقيع");
-    } catch { toast.error("فشل رفع التوقيع"); }
+      toast.success(t("bal.signatureUploaded"));
+    } catch { toast.error(t("bal.signatureUploadFailed")); }
     setSigUploadFor(null);
     e.target.value = "";
   };
@@ -2452,22 +2452,22 @@ function BalanceAssessmentCard({
           <div className="flex gap-2 items-center flex-wrap">
             <Badge variant="secondary" className="font-bold">#{(idx ?? 0) + 1}</Badge>
             {session.assessmentDate && <span className="text-sm">{new Date(session.assessmentDate).toLocaleDateString("en-GB")}</span>}
-            {session.overallBalanceLevel && <Badge variant="outline" className="text-xs">{session.overallBalanceLevel === "GOOD" ? "جيد" : session.overallBalanceLevel === "FAIR" ? "مقبول" : "ضعيف"}</Badge>}
+            {session.overallBalanceLevel && <Badge variant="outline" className="text-xs">{session.overallBalanceLevel === "GOOD" ? t("bal.o.good") : session.overallBalanceLevel === "FAIR" ? t("bal.o.acceptable") : t("bal.o.poor")}</Badge>}
             {session.fallRiskLevel && (
               <Badge className={`text-xs ${session.fallRiskLevel === "HIGH" ? "bg-red-100 text-red-800" : session.fallRiskLevel === "MODERATE" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"}`}>
-                {session.fallRiskLevel === "HIGH" ? "خطر عالي" : session.fallRiskLevel === "MODERATE" ? "خطر متوسط" : "خطر منخفض"}
+                {session.fallRiskLevel === "HIGH" ? t("bal.riskHigh") : session.fallRiskLevel === "MODERATE" ? t("bal.riskMedium") : t("bal.riskLow")}
               </Badge>
             )}
             {isSaved && (
               <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
                 <CheckCircle2 className="h-3 w-3" />
-                محفوظ
+                {t("bal.saved")}
               </Badge>
             )}
             {isArchived && (
               <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
                 <Archive className="h-3 w-3" />
-                مؤرشف
+                {t("bal.archived")}
               </Badge>
             )}
           </div>
@@ -2476,7 +2476,7 @@ function BalanceAssessmentCard({
               <Button size="sm" variant="outline" className="gap-1"
                 onClick={() => { setArchiveReason(""); setArchiveOpen(true); }}>
                 <Archive className="h-3.5 w-3.5" />
-                أرشفة
+                {t("bal.archive")}
               </Button>
             )}
           </div>
@@ -2486,27 +2486,27 @@ function BalanceAssessmentCard({
           <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-800 space-y-0.5">
             <p className="flex items-center gap-1 font-medium">
               <Archive className="h-3 w-3" />
-              أُرشِف{session.archivedAt ? ` بتاريخ ${new Date(session.archivedAt).toLocaleDateString("en-GB")}` : ""}
+              {t("bal.archivedOn")}{session.archivedAt ? ` ${t("bal.onDate")} ${new Date(session.archivedAt).toLocaleDateString("en-GB")}` : ""}
             </p>
-            {session.archiveNotes && <p><span className="font-medium">السبب: </span>{session.archiveNotes}</p>}
+            {session.archiveNotes && <p><span className="font-medium">{t("bal.causeLabel")} </span>{session.archiveNotes}</p>}
           </div>
         )}
 
         <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
           <DialogContent className="max-w-sm" dir="rtl">
             <DialogHeader>
-              <DialogTitle>أرشفة النموذج</DialogTitle>
-              <DialogDescription>اذكر سبب الأرشفة.</DialogDescription>
+              <DialogTitle>{t("bal.archiveForm")}</DialogTitle>
+              <DialogDescription>{t("bal.archiveReason")}</DialogDescription>
             </DialogHeader>
-            <Textarea rows={3} placeholder="سبب الأرشفة..." value={archiveReason} onChange={(e) => setArchiveReason(e.target.value)} />
+            <Textarea rows={3} placeholder={t("bal.archiveReasonPlaceholder")} value={archiveReason} onChange={(e) => setArchiveReason(e.target.value)} />
             <DialogFooter className="flex gap-2 justify-end sm:justify-end">
-              <Button variant="outline" onClick={() => setArchiveOpen(false)}>إلغاء</Button>
+              <Button variant="outline" onClick={() => setArchiveOpen(false)}>{t("bal.cancel")}</Button>
               <Button disabled={archiveMut.isPending || !archiveReason.trim()}
                 onClick={async () => {
                   await archiveMut.mutateAsync({ caseId, formId: session.id, reason: archiveReason.trim() });
                   setArchiveOpen(false);
                 }}>
-                {archiveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "أرشفة"}
+                {archiveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("bal.archive")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2528,17 +2528,17 @@ function BalanceAssessmentCard({
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold">
-              {isSaved ? "تفاصيل" : "تعديل"} التقييم #{(idx ?? 0) + 1}
+              {isSaved ? t("bal.details") : t("bal.edit")} {t("bal.session")} #{(idx ?? 0) + 1}
             </p>
             {isSaved && (
               <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
                 <CheckCircle2 className="h-3 w-3" />
-                محفوظ — للقراءة فقط
+                {t("savedReadOnly")}
               </Badge>
             )}
           </div>
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-            إغلاق
+            {t("bal.close")}
           </Button>
         </div>
       )}
@@ -2549,11 +2549,11 @@ function BalanceAssessmentCard({
       {/* Basic Info */}
       <div className="space-y-3">
         <p className="text-[12px] font-semibold text-foreground">
-          بيانات أساسية
+          {t("bal.baseData")}
         </p>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">تاريخ التقييم</Label>
+            <Label className="text-xs">{t("bal.assessmentDate")}</Label>
             <Input
               type="date"
               value={form.assessmentDate}
@@ -2563,12 +2563,12 @@ function BalanceAssessmentCard({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">هل استخدم طرف صناعي سابق</Label>
+            <Label className="text-xs">{t("bal.usedPrevProsthesis")}</Label>
             <div className="flex gap-4">
               {(
                 [
-                  ["true", "نعم"],
-                  ["false", "لا"],
+                  ["true", "bal.yes"],
+                  ["false", "bal.no"],
                 ] as const
               ).map(([val, label]) => (
                 <label
@@ -2589,28 +2589,28 @@ function BalanceAssessmentCard({
                     }
                     className="w-[15px] h-[15px] checkbox-orange rounded-sm"
                   />
-                  <span className="text-sm">{label}</span>
+                  <span className="text-sm">{t(label, { defaultValue: label })}</span>
                 </label>
               ))}
             </div>
             {form.previousProsthesis === true && (
               <div className="space-y-1.5 pt-2">
-                <Label className="text-xs">تفاصيل الطرف السابق (اختياري)</Label>
-                <Textarea rows={2} className="resize-none text-xs" placeholder="تفاصيل الطرف الصناعي السابق..."
+                <Label className="text-xs">{t("bal.prevProsthesisDetails")}</Label>
+                <Textarea rows={2} className="resize-none text-xs" placeholder={t("bal.prevProsthesisPlaceholder")}
                   value={form.previousProsthesisNotes}
                   onChange={(e) => setForm((f) => ({ ...f, previousProsthesisNotes: e.target.value }))} />
               </div>
             )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">وسيلة مساعدة</Label>
+            <Label className="text-xs">{t("bal.assistiveDevice")}</Label>
             <div className="flex gap-4 flex-wrap">
               {(
                 [
-                  ["NONE", "لا يوجد"],
-                  ["CANE", "عصا"],
-                  ["CRUTCHES", "عكاز"],
-                  ["WALKER", "مشاية"],
+                  ["NONE", "bal.o.none"],
+                  ["CANE", "bal.o.cane"],
+                  ["CRUTCHES", "bal.o.crutches"],
+                  ["WALKER", "bal.o.walker"],
                 ] as const
               ).map(([val, label]) => (
                 <label
@@ -2628,7 +2628,7 @@ function BalanceAssessmentCard({
                     }
                     className="w-[15px] h-[15px] checkbox-orange rounded-sm"
                   />
-                  <span className="text-sm">{label}</span>
+                  <span className="text-sm">{t(label, { defaultValue: label })}</span>
                 </label>
               ))}
             </div>
@@ -2641,21 +2641,21 @@ function BalanceAssessmentCard({
       {/* Static Balance */}
       <div className="space-y-2">
         <p className="text-[12px] font-semibold text-foreground">
-          تقييم التوازن الثابت
+          {t("bal.staticTitle")}
         </p>
         <div className="rounded-lg overflow-hidden border">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
-                <th className="text-right py-2.5 px-3 font-medium">الاختبار</th>
+                <th className="text-right py-2.5 px-3 font-medium">{t("bal.test")}</th>
                 <th className="py-2.5 px-3 font-medium text-center w-20">
-                  مستقل
+                  {t("bal.o.independent")}
                 </th>
                 <th className="py-2.5 px-3 font-medium text-center w-20">
-                  بمساعدة
+                  {t("bal.o.assisted")}
                 </th>
                 <th className="py-2.5 px-3 font-medium text-center w-20">
-                  غير قادر
+                  {t("bal.o.unable")}
                 </th>
               </tr>
             </thead>
@@ -2665,7 +2665,7 @@ function BalanceAssessmentCard({
                   key={key}
                   className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
                 >
-                  <td className="py-2.5 px-3 text-sm">{label}</td>
+                  <td className="py-2.5 px-3 text-sm">{t(label, { defaultValue: label })}</td>
                   {STATIC_BALANCE_OPTS.map((o) => (
                     <td key={o.value} className="py-2.5 px-3 text-center">
                       <input
@@ -2686,21 +2686,21 @@ function BalanceAssessmentCard({
       {/* Dynamic Balance */}
       <div className="space-y-2">
         <p className="text-[12px] font-semibold text-foreground">
-          تقييم التوازن الديناميكي
+          {t("bal.dynamicTitle")}
         </p>
         <div className="rounded-lg overflow-hidden border">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
-                <th className="text-right py-2.5 px-3 font-medium">المهمة</th>
+                <th className="text-right py-2.5 px-3 font-medium">{t("bal.task")}</th>
                 <th className="py-2.5 px-3 font-medium text-center w-16">
-                  جيد
+                  {t("bal.o.good")}
                 </th>
                 <th className="py-2.5 px-3 font-medium text-center w-16">
-                  متوسط
+                  {t("bal.o.fair")}
                 </th>
                 <th className="py-2.5 px-3 font-medium text-center w-16">
-                  ضعيف
+                  {t("bal.o.poor")}
                 </th>
               </tr>
             </thead>
@@ -2710,7 +2710,7 @@ function BalanceAssessmentCard({
                   key={key}
                   className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
                 >
-                  <td className="py-2.5 px-3 text-sm">{label}</td>
+                  <td className="py-2.5 px-3 text-sm">{t(label, { defaultValue: label })}</td>
                   {DYNAMIC_TASK_OPTS.map((o) => (
                     <td key={o.value} className="py-2.5 px-3 text-center">
                       <input
@@ -2731,21 +2731,21 @@ function BalanceAssessmentCard({
       {/* Dynamic Activities */}
       <div className="space-y-2">
         <p className="text-[12px] font-semibold text-foreground">
-          تقييم الأنشطة الديناميكية
+          {t("bal.activityTitle")}
         </p>
         <div className="rounded-lg overflow-hidden border">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
-                <th className="text-right py-2.5 px-3 font-medium">النشاط</th>
+                <th className="text-right py-2.5 px-3 font-medium">{t("bal.activity")}</th>
                 <th className="py-2.5 px-3 font-medium text-center w-20">
-                  مستقل
+                  {t("bal.o.independent")}
                 </th>
                 <th className="py-2.5 px-3 font-medium text-center w-20">
-                  بصعوبة
+                  {t("bal.o.withDiff")}
                 </th>
                 <th className="py-2.5 px-3 font-medium text-center w-20">
-                  غير قادر
+                  {t("bal.o.unable")}
                 </th>
               </tr>
             </thead>
@@ -2755,7 +2755,7 @@ function BalanceAssessmentCard({
                   key={key}
                   className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
                 >
-                  <td className="py-2.5 px-3 text-sm">{label}</td>
+                  <td className="py-2.5 px-3 text-sm">{t(label, { defaultValue: label })}</td>
                   {DYNAMIC_ACTIVITY_OPTS.map((o) => (
                     <td key={o.value} className="py-2.5 px-3 text-center">
                       <input
@@ -2780,23 +2780,23 @@ function BalanceAssessmentCard({
       {/* Fall Risk */}
       <div className="space-y-3">
         <p className="text-[12px] font-semibold text-foreground">
-          تقييم خطر السقوط
+          {t("bal.fallRiskTitle")}
         </p>
         <div className="rounded-lg overflow-hidden border">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
-                <th className="text-right py-2.5 px-3 font-medium">البند</th>
+                <th className="text-right py-2.5 px-3 font-medium">{t("bal.item")}</th>
                 <th className="py-2.5 px-3 font-medium text-center w-24">
                   <span className="flex items-center justify-center gap-1.5">
                     <span className="w-4 h-4 rounded-sm border border-white inline-block" />
-                    نعم
+                    {t("bal.yes")}
                   </span>
                 </th>
                 <th className="py-2.5 px-3 font-medium text-center w-24">
                   <span className="flex items-center justify-center gap-1.5">
                     <span className="w-4 h-4 rounded-sm border border-white inline-block" />
-                    لا
+                    {t("bal.no")}
                   </span>
                 </th>
               </tr>
@@ -2804,9 +2804,9 @@ function BalanceAssessmentCard({
             <tbody className="divide-y">
               {(
                 [
-                  ["historyOfFalls", "تاريخ سقوط سابق"],
-                  ["nearFalls", "شبه سقوط"],
-                  ["fearOfFalling", "خوف من السقوط"],
+                  ["historyOfFalls", "bal.prevFall"],
+                  ["nearFalls", "bal.nearFall"],
+                  ["fearOfFalling", "bal.fearOfFall"],
                 ] as const
               ).map(([fld, lbl], i) => (
                 <tr
@@ -2819,7 +2819,7 @@ function BalanceAssessmentCard({
                     {fld === "historyOfFalls" && form.historyOfFalls === true && (
                       <Input
                         className="mt-2 h-8 text-xs"
-                        placeholder="تاريخ السقوط"
+                        placeholder={t("bal.fallDate")}
                         value={form.fallRiskNotes}
                         onChange={(e) => setForm((f) => ({ ...f, fallRiskNotes: e.target.value }))}
                       />
@@ -2854,15 +2854,15 @@ function BalanceAssessmentCard({
                 </tr>
               ))}
               <tr className="bg-muted/30 border-t">
-                <td className="py-2.5 px-3 text-sm font-medium">مستوى خطر السقوط</td>
+                <td className="py-2.5 px-3 text-sm font-medium">{t("bal.fallRiskLevel")}</td>
                 <td colSpan={2} className="py-2.5 px-3">
                   <div className="flex gap-4">
-                    {[{ value: "LOW", label: "منخفض" }, { value: "MODERATE", label: "متوسط" }, { value: "HIGH", label: "عالي" }].map((o) => (
+                    {[{ value: "LOW", label: "bal.o.low" }, { value: "MODERATE", label: "bal.o.fair" }, { value: "HIGH", label: "bal.o.high" }].map((o) => (
                       <label key={o.value} className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={form.fallRiskLevel === o.value}
                           onChange={() => setForm((f) => ({ ...f, fallRiskLevel: f.fallRiskLevel === o.value ? "" : o.value }))}
                           className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                        <span className="text-sm">{o.label}</span>
+                        <span className="text-sm">{t(o.label, { defaultValue: o.label })}</span>
                       </label>
                     ))}
                   </div>
@@ -2879,27 +2879,27 @@ function BalanceAssessmentCard({
       <div className="space-y-3">
         <p className="text-[12px] font-semibold text-foreground">
           {" "}
-          خلاصة التوازن والانطباع السريري
+          {t("bal.summaryTitle")}
         </p>
         <div className="space-y-1.5">
-          <Label className="text-xs">مستوى التوازن العام</Label>
+          <Label className="text-xs">{t("bal.overallBalance")}</Label>
           <div className="flex gap-4">
             {[
-              { value: "GOOD", label: "جيد" },
-              { value: "FAIR", label: "مقبول" },
-              { value: "POOR", label: "ضعيف" },
+              { value: "GOOD", label: "bal.o.good" },
+              { value: "FAIR", label: "bal.o.acceptable" },
+              { value: "POOR", label: "bal.o.poor" },
             ].map((o) => (
               <label key={o.value} className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.overallBalanceLevel === o.value}
                   onChange={() => setForm((f) => ({ ...f, overallBalanceLevel: f.overallBalanceLevel === o.value ? "" : o.value }))}
                   className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                <span className="text-sm">{o.label}</span>
+                <span className="text-sm">{t(o.label, { defaultValue: o.label })}</span>
               </label>
             ))}
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">العوامل المؤثرة الرئيسية</Label>
+          <Label className="text-xs">{t("bal.mainFactors")}</Label>
           <div className="space-y-1">
             {LIMITING_FACTOR_OPTS.map((o) => (
               <label
@@ -2914,13 +2914,13 @@ function BalanceAssessmentCard({
                     toggleArr("limitingFactors", o.value, e.target.checked)
                   }
                 />
-                <span className="text-xs">{o.label}</span>
+                <span className="text-xs">{t(o.label, { defaultValue: o.label })}</span>
               </label>
             ))}
           </div>
           <div className="space-y-1.5 pt-2">
-            <Label className="text-xs">تفاصيل أخرى (اختياري)</Label>
-            <Textarea rows={2} className="resize-none text-xs" placeholder="تفاصيل العوامل الأخرى..."
+            <Label className="text-xs">{t("bal.otherFactorsDetails")}</Label>
+            <Textarea rows={2} className="resize-none text-xs" placeholder={t("bal.otherFactorsPlaceholder")}
               value={form.limitingFactorsOtherNotes}
               onChange={(e) => setForm((f) => ({ ...f, limitingFactorsOtherNotes: e.target.value }))} />
           </div>
@@ -2932,7 +2932,7 @@ function BalanceAssessmentCard({
       {/* Exercise Program */}
       <div className="space-y-2">
         <p className="text-[12px] font-semibold text-foreground">
-          برنامج تمارين التوازن
+          {t("bal.exerciseProgramTitle")}
         </p>
         <div className="rounded-lg overflow-hidden border overflow-x-auto">
           <table className="w-full text-sm">
@@ -2940,19 +2940,19 @@ function BalanceAssessmentCard({
               <tr className="bg-[#2563eb] text-white">
                 <th className="py-2.5 px-3 font-medium text-center w-10">✓</th>
                 <th className="text-right py-2.5 px-3 font-medium min-w-[140px]">
-                  التمرين
+                  {t("bal.colExercise")}
                 </th>
                 <th className="text-right py-2.5 px-3 font-medium min-w-[60px]">
-                  الوضعية
+                  {t("bal.colPosition")}
                 </th>
                 <th className="text-right py-2.5 px-3 font-medium min-w-[90px]">
-                  الجرعة
+                  {t("bal.colDosage")}
                 </th>
                 <th className="text-right py-2.5 px-3 font-medium min-w-[100px]">
-                  الدعم
+                  {t("bal.colSupport")}
                 </th>
                 <th className="text-right py-2.5 px-3 font-medium min-w-[110px]">
-                  ملاحظات
+                  {t("bal.notes")}
                 </th>
               </tr>
             </thead>
@@ -3000,7 +3000,7 @@ function BalanceAssessmentCard({
                               setForm((f) => ({ ...f, exerciseProgram: ep }));
                             }}
                             className="w-[13px] h-[13px] checkbox-orange rounded-sm" />
-                          <span className="text-xs">{o.label}</span>
+                          <span className="text-xs">{t(o.label, { defaultValue: o.label })}</span>
                         </label>
                       ))}
                     </div>
@@ -3014,7 +3014,7 @@ function BalanceAssessmentCard({
                         setForm((f) => ({ ...f, exerciseProgram: ep }));
                       }}
                       className="h-7 text-xs px-2"
-                      placeholder="ملاحظات..."
+                      placeholder={t("bal.notesPlaceholder")}
                     />
                   </td>
                 </tr>
@@ -3029,7 +3029,7 @@ function BalanceAssessmentCard({
       {/* Program Development Plan */}
       <div className="space-y-3">
         <p className="text-[12px] font-semibold text-foreground">
-          خطة تطوير البرنامج
+          {t("bal.progressionTitle")}
         </p>
         <div className="rounded-lg border divide-y">
           {PROGRAM_PROGRESSION_OPTS.map((o) => (
@@ -3045,7 +3045,7 @@ function BalanceAssessmentCard({
                 }
                 className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange shrink-0"
               />
-              <span className="text-sm">{o.label}</span>
+              <span className="text-sm">{t(o.label, { defaultValue: o.label })}</span>
             </label>
           ))}
         </div>
@@ -3056,12 +3056,12 @@ function BalanceAssessmentCard({
       {/* Follow-up + Outcomes + Signatures */}
       <div className="space-y-4">
         <p className="text-[12px] font-semibold text-foreground">
-          المراجعة والمتابعة
+          {t("bal.reviewTitle")}
         </p>
 
         {/* Review weeks */}
         <div className="flex items-center gap-2">
-          <Label className="text-sm shrink-0">المراجعة بعد</Label>
+          <Label className="text-sm shrink-0">{t("bal.reviewAfter")}</Label>
           <Input
             type="number"
             min={1}
@@ -3072,12 +3072,12 @@ function BalanceAssessmentCard({
             }
             className="w-24 text-center"
           />
-          <Label className="text-sm shrink-0">أسابيع</Label>
+          <Label className="text-sm shrink-0">{t("bal.weeks")}</Label>
         </div>
 
         {/* Expected Goals */}
         <div className="space-y-2">
-          <Label className="text-xs">الهدف المتوقع</Label>
+          <Label className="text-xs">{t("bal.expectedGoal")}</Label>
           <div className="rounded-lg border divide-y">
             {EXPECTED_OUTCOME_OPTS.map((o) => (
               <label
@@ -3092,7 +3092,7 @@ function BalanceAssessmentCard({
                   }
                   className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange shrink-0"
                 />
-                <span className="text-sm">{o.label}</span>
+                <span className="text-sm">{t(o.label, { defaultValue: o.label })}</span>
               </label>
             ))}
           </div>
@@ -3104,14 +3104,14 @@ function BalanceAssessmentCard({
             [
               [
                 "committee",
-                "رئيس لجنة التقييم",
+                "bal.committeeHead",
                 "committeeHeadId",
                 "committeeHeadSignatureUrl",
                 "committeeHeadSignatureDate",
               ],
               [
                 "physio",
-                "المعالج الفيزيائي",
+                "bal.physiotherapist",
                 "physiotherapistId",
                 "physiotherapistSignatureUrl",
                 "physiotherapistSignatureDate",
@@ -3120,7 +3120,7 @@ function BalanceAssessmentCard({
           ).map(([role, lbl, idField, sigField, dateField]) => (
             <div key={role} className="space-y-2 rounded-lg border p-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">{lbl}</Label>
+                <Label className="text-xs font-semibold">{t(lbl, { defaultValue: lbl })}</Label>
                 <Select
                   value={(form as any)[idField] || "none"}
                   onValueChange={(v) =>
@@ -3132,10 +3132,10 @@ function BalanceAssessmentCard({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر..." />
+                    <SelectValue placeholder={t("bal.choose")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— غير محدد —</SelectItem>
+                    <SelectItem value="none">{t("bal.unspecified")}</SelectItem>
                     {(role === "physio"
                       ? staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
                       : staffList
@@ -3148,13 +3148,13 @@ function BalanceAssessmentCard({
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">التوقيع</Label>
+                <Label className="text-xs">{t("bal.signature")}</Label>
                 <div className="rounded border min-h-[64px] flex items-center justify-center bg-white/50 p-2">
                   {(form as any)[sigField] ? (
                     <div className="relative inline-block">
                       <img
                         src={(form as any)[sigField]}
-                        alt="توقيع"
+                        alt={t("bal.signatureShort")}
                         className="h-14 object-contain"
                       />
                       <button
@@ -3176,14 +3176,14 @@ function BalanceAssessmentCard({
                       disabled={!(form as any)[idField]}
                     >
                       {(form as any)[idField]
-                        ? "جلب / رفع التوقيع"
-                        : "اختر أولاً"}
+                        ? t("bal.fetchSignature")
+                        : t("bal.chooseFirst")}
                     </Button>
                   )}
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">التاريخ</Label>
+                <Label className="text-xs">{t("bal.date")}</Label>
                 <Input
                   type="date"
                   value={(form as any)[dateField]}
@@ -3216,10 +3216,10 @@ function BalanceAssessmentCard({
 
       {/* Notes */}
       <div className="space-y-1.5">
-        <Label className="text-xs">ملاحظات</Label>
+        <Label className="text-xs">{t("bal.notes")}</Label>
         <Textarea
           rows={3}
-          placeholder="ملاحظات إضافية..."
+          placeholder={t("bal.extraNotes")}
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           className="resize-none"
@@ -3240,13 +3240,13 @@ function BalanceAssessmentCard({
             ) : (
               <CheckCircle2 className="h-4 w-4" />
             )}
-            {isNew ? "إضافة التقييم" : "حفظ نهائي"}
+            {isNew ? t("bal.addSessionTitle") : t("bal.saveFinal")}
           </Button>
           <Button
             variant="outline"
             onClick={() => (isNew ? onCancel?.() : setEditing(false))}
           >
-            إلغاء
+            {t("bal.cancel")}
           </Button>
         </div>
       )}
@@ -3255,15 +3255,16 @@ function BalanceAssessmentCard({
 }
 
 function BalanceAssessmentSection({ caseId, staffList }: { caseId: string; staffList: any[] }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const { data: sessions = [], isLoading } = useBalanceAssessments(caseId);
   const [showAdd, setShowAdd] = useState(false);
   return (
     <Section
-      title={`تقييمات التوازن — Pro-015${sessions.length > 0 ? ` (${sessions.length})` : ""}`}
+      title={sessions.length > 0 ? t("bal.sectionTitleBalCount", { count: sessions.length }) : t("bal.sectionTitleBal")}
       action={
         <Button size="sm" variant={showAdd ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowAdd((v) => !v)}>
           <Plus className="h-3.5 w-3.5" />
-          {showAdd ? "إغلاق" : "إضافة تقييم"}
+          {showAdd ? t("bal.close") : t("bal.addAssessmentAction")}
         </Button>
       }
     >
@@ -3275,7 +3276,7 @@ function BalanceAssessmentSection({ caseId, staffList }: { caseId: string; staff
       {isLoading ? (
         <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : sessions.length === 0 && !showAdd ? (
-        <p className="text-sm text-muted-foreground text-center py-4">لا توجد تقييمات توازن مسجّلة</p>
+        <p className="text-sm text-muted-foreground text-center py-4">{t("bal.noAssessments")}</p>
       ) : (
         <div className="space-y-3">
           {sessions.map((s: any, i: number) => (
@@ -3451,6 +3452,7 @@ function ageFromDob(dob?: string | null): number | null {
 // History of past measurement-sheet submissions for one amputation type.
 // The backend appends a new record on every POST and returns them newest-first.
 function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (records.length === 0) return null;
@@ -3485,7 +3487,7 @@ function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     {affectedEntries.length > 0 && (
                       <div>
-                        <p className="font-semibold mb-1">الطرف المصاب</p>
+                        <p className="font-semibold mb-1">{t("page.affectedLimb")}</p>
                         <div className="grid grid-cols-2 gap-1">
                           {affectedEntries.map(([k, v]) => (
                             <div key={k} className="flex justify-between border-b py-0.5">
@@ -3498,7 +3500,7 @@ function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] 
                     )}
                     {soundEntries.length > 0 && (
                       <div>
-                        <p className="font-semibold mb-1">الطرف السليم</p>
+                        <p className="font-semibold mb-1">{t("page.soundLimb")}</p>
                         <div className="grid grid-cols-2 gap-1">
                           {soundEntries.map(([k, v]) => (
                             <div key={k} className="flex justify-between border-b py-0.5">
@@ -3564,6 +3566,37 @@ export default function ProstheticsCasePage() {
   const isRtl = locale === "ar";
   const t = useTranslations("clinic.prosthetics.case");
   const tMonth = useTranslations("payroll.months");
+
+  // Tab access: intake, patient info and the read-only timeline need only
+  // case.view; every clinical tab needs its own action permission, so a user
+  // who can create+view a case (e.g. the centre supervisor) reaches the intake
+  // form but not assessment, committee, delivery, etc.
+  const { hasPermission, hasAnyPermission, isAdmin } = usePermissions();
+  const P = PERMISSIONS.CLINIC_PROSTHETICS;
+  // Every clinical action permission — anyone holding at least one is more than a
+  // pure "reception only" supervisor, so the read-only timeline is shown to them.
+  const clinicalPerms = [
+    P.ASSESSMENT_CREATE, P.COMMITTEE_OPINION, P.COMMITTEE_DECIDE, P.COMMITTEE_SIGN,
+    P.COMPONENTS_ADD, P.GAIT_CREATE, P.DELIVERY_CREATE, P.DELIVERY_APPROVE,
+  ];
+  const canTab = (perms: string[] | null): boolean =>
+    !perms || isAdmin() || hasAnyPermission(perms);
+  const tabPerm: Record<string, string[] | null> = {
+    intake: null,
+    patient_info: null,
+    timeline: clinicalPerms,
+    assessment: [P.ASSESSMENT_CREATE],
+    balance_assessment: [P.ASSESSMENT_CREATE],
+    committee_review: [P.COMMITTEE_OPINION, P.COMMITTEE_DECIDE, P.COMMITTEE_SIGN],
+    fitting: [P.COMPONENTS_ADD],
+    measurement_sheet: [P.COMPONENTS_ADD],
+    treatment_program: [P.GAIT_CREATE],
+    gait_analysis: [P.GAIT_CREATE],
+    delivered: [P.DELIVERY_CREATE],
+    final_evaluation: [P.DELIVERY_APPROVE],
+    final_delivery: [P.DELIVERY_APPROVE],
+  };
+  const showTab = (key: string) => canTab(tabPerm[key] ?? null);
 
   const { data: caseData, isLoading } = useProstheticsCase(id);
   const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
@@ -4005,7 +4038,7 @@ export default function ProstheticsCasePage() {
   }
 
   if (!caseData) {
-    return <div className="text-center py-20 text-muted-foreground">الحالة غير موجودة</div>;
+    return <div className="text-center py-20 text-muted-foreground">{t("page.caseNotFound")}</div>;
   }
 
   const c = caseData;
@@ -4072,13 +4105,27 @@ export default function ProstheticsCasePage() {
       let gaitForms: any[] = [];
       try { gaitForms = await clinicProstheticsApi.getGaitAnalysisForms(id); } catch { /* optional */ }
 
+      // Pass the whole assessment through so the PDF can mirror the form tab.
       const mapAssess = (arr: any[] | undefined, region: string) =>
         (arr ?? []).map((a: any) => ({
           region, side: a.side,
           residualLimbLength: a.residualLimbLength, residualLimbShape: a.residualLimbShape,
-          activityLevel: a.activityLevel, painPresent: a.painPresent, painIntensity: a.painIntensity,
+          amputationLevelNote: a.amputationLevelNote,
+          painPresent: a.painPresent, painIntensity: a.painIntensity, painArea: a.painArea,
+          painTypes: a.painTypes, painTypeOtherDetail: a.painTypeOtherDetail,
+          phantomPainPresent: a.phantomPainPresent, phantomPainIntensity: a.phantomPainIntensity,
+          neuromaPalpable: a.neuromaPalpable ?? a.neuromaPresent,
+          skinAppearance: a.skinAppearance, skinColor: a.skinColor, skinTemperature: a.skinTemperature,
+          scarCondition: a.scarCondition, hasSkinGrafts: a.hasSkinGrafts, graftArea: a.graftArea,
+          generalHealthNotes: a.generalHealthNotes, otherLimbCondition: a.otherLimbCondition,
+          loadTolerance: a.loadTolerance, weightBearingLevel: a.weightBearingLevel,
+          usesAssistiveDevices: a.usesAssistiveDevices, assistiveDeviceTypes: a.assistiveDeviceTypes,
+          canClimbStairs: a.canClimbStairs, canBalanceOneSide: a.canBalanceOneSide,
+          usesCompressionBandage: a.usesCompressionBandage, jointsRangeOfMotion: a.jointsRangeOfMotion,
+          activityLevel: a.activityLevel,
+          usesProstheticLimb: a.usesProstheticLimb, prostheticLimbType: a.prostheticLimbType,
           examinedAt: a.examinedAt ?? a.createdAt ?? a.updatedAt ?? null,
-          notes: a.notes ?? a.generalHealthNotes ?? null,
+          notes: a.notes ?? null,
         }));
 
       await downloadProstheticsCasePdf({
@@ -4718,7 +4765,7 @@ export default function ProstheticsCasePage() {
             {c.patient?.patientNumber && <span className="font-mono">— {c.patient.patientNumber}</span>}
           </button>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold">حالة أطراف صناعية</h1>
+            <h1 className="text-xl font-bold">{t("page.pageTitle")}</h1>
             <CaseStatusBadge status={c.status} />
             {caseLocked && <SavedBadge />}
             {ampTypes.map((t) => <Badge key={t} variant="outline">{TYPE_LABEL[t] ?? t}</Badge>)}
@@ -4750,26 +4797,31 @@ export default function ProstheticsCasePage() {
 
       {/* Tabs by workflow stage */}
       <Tabs
-        value={stageTab ?? (c.status === "CANCELLED" || c.status === "CLOSED"
-          ? "timeline"
-          : TAB_BY_STATUS[c.status] ?? "intake")}
+        // Never resolve to a tab the user can't see (e.g. a supervisor whose
+        // case is at the assessment stage) — fall back to the intake form.
+        value={(() => {
+          const resolved = stageTab ?? (c.status === "CANCELLED" || c.status === "CLOSED"
+            ? "timeline"
+            : TAB_BY_STATUS[c.status] ?? "intake");
+          return showTab(resolved) ? resolved : "intake";
+        })()}
         onValueChange={setStageTab}
         dir={isRtl ? "rtl" : "ltr"}
       >
         <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
-          <TabsTrigger value="intake" className="text-sm py-1.5">الاستقبال</TabsTrigger>
-          <TabsTrigger value="patient_info" className="text-sm py-1.5">معلومات المريض</TabsTrigger>
-          <TabsTrigger value="assessment" className="text-sm py-1.5">معلومات التقييم</TabsTrigger>
-          <TabsTrigger value="committee_review" className="text-sm py-1.5">اللجنة</TabsTrigger>
-          <TabsTrigger value="fitting" className="text-sm py-1.5">التركيب</TabsTrigger>
-          <TabsTrigger value="measurement_sheet" className="text-sm py-1.5">ورق القياس</TabsTrigger>
-          <TabsTrigger value="treatment_program" className="text-sm py-1.5">المتابعة</TabsTrigger>
-          <TabsTrigger value="delivered" className="text-sm py-1.5">التسليم التجريبي</TabsTrigger>
-          <TabsTrigger value="gait_analysis" className="text-sm py-1.5">تحليل المشي</TabsTrigger>
-          {ampTypes.includes("LOWER") && <TabsTrigger value="balance_assessment" className="text-sm py-1.5">التوازن</TabsTrigger>}
-          <TabsTrigger value="final_evaluation" className="text-sm py-1.5">التقييم النهائي</TabsTrigger>
-          <TabsTrigger value="final_delivery" className="text-sm py-1.5">التسليم النهائي</TabsTrigger>
-          <TabsTrigger value="timeline" className="text-sm py-1.5">السجل الزمني</TabsTrigger>
+          <TabsTrigger value="intake" className="text-sm py-1.5">{t("tabs.intake")}</TabsTrigger>
+          <TabsTrigger value="patient_info" className="text-sm py-1.5">{t("tabs.patientInfo")}</TabsTrigger>
+          {showTab("assessment") && <TabsTrigger value="assessment" className="text-sm py-1.5">{t("tabs.assessment")}</TabsTrigger>}
+          {showTab("committee_review") && <TabsTrigger value="committee_review" className="text-sm py-1.5">{t("tabs.committee")}</TabsTrigger>}
+          {showTab("fitting") && <TabsTrigger value="fitting" className="text-sm py-1.5">{t("tabs.fitting")}</TabsTrigger>}
+          {showTab("measurement_sheet") && <TabsTrigger value="measurement_sheet" className="text-sm py-1.5">{t("tabs.measurement")}</TabsTrigger>}
+          {showTab("treatment_program") && <TabsTrigger value="treatment_program" className="text-sm py-1.5">{t("tabs.followUp")}</TabsTrigger>}
+          {showTab("delivered") && <TabsTrigger value="delivered" className="text-sm py-1.5">{t("tabs.delivered")}</TabsTrigger>}
+          {showTab("gait_analysis") && <TabsTrigger value="gait_analysis" className="text-sm py-1.5">{t("tabs.gait")}</TabsTrigger>}
+          {ampTypes.includes("LOWER") && showTab("balance_assessment") && <TabsTrigger value="balance_assessment" className="text-sm py-1.5">{t("tabs.balance")}</TabsTrigger>}
+          {showTab("final_evaluation") && <TabsTrigger value="final_evaluation" className="text-sm py-1.5">{t("tabs.finalEval")}</TabsTrigger>}
+          {showTab("final_delivery") && <TabsTrigger value="final_delivery" className="text-sm py-1.5">{t("tabs.finalDelivery")}</TabsTrigger>}
+          {showTab("timeline") && <TabsTrigger value="timeline" className="text-sm py-1.5">{t("tabs.timeline")}</TabsTrigger>}
         </TabsList>
 
         {/* ── INTAKE ──────────────────────────────────────────────────────── */}
@@ -7931,7 +7983,7 @@ export default function ProstheticsCasePage() {
         <TabsContent value="timeline" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
           <Section title="السجل الزمني">
             {timeline.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">لا توجد أحداث بعد</p>
+              <p className="text-center py-8 text-muted-foreground">{t("page.noEvents")}</p>
             ) : (
               <div className="relative space-y-4 pr-4">
                 <div className="absolute right-2 top-0 bottom-0 w-0.5 bg-border" />

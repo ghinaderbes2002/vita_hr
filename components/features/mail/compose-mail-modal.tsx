@@ -79,8 +79,6 @@ interface Props {
   onClose: () => void;
   replyToMessageId?: string;
   replyAllMessageId?: string;
-  replyAllDisplayNames?: string[];
-  replyAllRecipients?: { employeeId: string; type: "TO" | "CC" }[];
   forwardMessageId?: string;
   quotedBody?: string;
   defaultSubject?: string;
@@ -95,8 +93,6 @@ export function ComposeMailModal({
   onClose,
   replyToMessageId,
   replyAllMessageId,
-  replyAllDisplayNames = [],
-  replyAllRecipients = [],
   forwardMessageId,
   quotedBody = "",
   defaultSubject = "",
@@ -185,7 +181,7 @@ export function ComposeMailModal({
 
   const handleSend = async () => {
     if (!subject.trim()) { toast.error("الموضوع مطلوب"); return; }
-    if (!replyAllMessageId && toIds.length === 0 && departmentIds.length === 0) {
+    if (toIds.length === 0 && ccIds.length === 0 && bccIds.length === 0 && departmentIds.length === 0) {
       toast.error("يجب إضافة مستلم أو قسم واحد على الأقل");
       return;
     }
@@ -199,7 +195,7 @@ export function ComposeMailModal({
           dto: {
             subject,
             body: bodyRef.current?.innerHTML || undefined,
-            recipients: replyAllRecipients,
+            recipients: buildRecipients(),
             ...(isHighImportance ? { importance: "HIGH" } : {}),
           },
         });
@@ -270,8 +266,8 @@ export function ComposeMailModal({
         </DialogHeader>
 
         <div className="space-y-4 pt-1 overflow-y-auto flex-1 px-1">
-          {/* Recipients — hidden for reply-all (backend builds them automatically) */}
-          {!replyAllMessageId && (
+          {/* Recipients — editable in all modes (reply-all preserves TO/CC, still editable) */}
+          {(
             <>
               {/* To */}
               <div className="space-y-1.5">
@@ -288,7 +284,7 @@ export function ComposeMailModal({
                         {t("addBcc")}
                       </button>
                     )}
-                    {!showDept && (
+                    {!showDept && !replyAllMessageId && (
                       <button type="button" onClick={() => setShowDept(true)} className="text-xs text-primary hover:underline">
                         {t("sendToDept")}
                       </button>
@@ -371,20 +367,6 @@ export function ComposeMailModal({
                 </div>
               )}
             </>
-          )}
-
-          {/* Reply-All recipients display */}
-          {replyAllMessageId && replyAllDisplayNames.length > 0 && (
-            <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground">سيُرسَل إلى</Label>
-              <div className="flex flex-wrap gap-1.5 rounded-md border bg-muted/30 px-3 py-2">
-                {replyAllDisplayNames.map((name, i) => (
-                  <span key={i} className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium">
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
           )}
 
           {/* Subject */}

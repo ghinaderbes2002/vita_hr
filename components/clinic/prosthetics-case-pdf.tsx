@@ -5,7 +5,7 @@ import React from "react";
 import { Document, Page, Text, View, pdf } from "@react-pdf/renderer";
 import {
   S, TEXT, MUTED,
-  ar, PageHeader, PageFooter, SecHead, F, Bool, InfoGrid,
+  ar, PageHeader, PageFooter, SecHead, SubHead, F, Bool, OptGrid, InfoGrid,
   ensureAmiriFonts, saveBlob,
 } from "./pdf-kit";
 
@@ -29,12 +29,6 @@ const CAUSE_LABEL: Record<string, string> = {
   VASCULAR_DISEASE: "مرض وعائي", CONGENITAL: "خلقي", INFECTION: "التهاب / إنتان",
   TUMOR: "ورم", WORK_INJURY: "إصابة عمل", OTHER: "أخرى",
 };
-const LENGTH_LABEL: Record<string, string> = {
-  LONG: "طويل", MEDIUM: "متوسط", SHORT: "قصير", VERY_SHORT: "قصير جداً",
-};
-const SHAPE_LABEL: Record<string, string> = {
-  BONY: "عظمي", SOFT: "طري", NORMAL: "طبيعي", CONICAL_BONY: "مخروطي عظمي", CONICAL_SOFT: "مخروطي طري",
-};
 const SOURCE_LOCATION_LABEL: Record<string, string> = {
   WAREHOUSE: "مستودع", EXTERNAL: "خارجي", PATIENT_OWNED: "ملك المريض", OTHER: "أخرى", SUPPLIER: "مورد",
 };
@@ -42,7 +36,40 @@ const REQUEST_STATUS_LABEL: Record<string, string> = {
   PENDING: "معلق", APPROVED: "معتمد", DONE: "تم", NOT_AVAILABLE: "لا يوجد",
 };
 
+// Assessment option labels — mirror the `assess.*` i18n keys used by the form.
+const A_LENGTH: Record<string, string> = {
+  LONG: "طويل", MEDIUM: "وسط", SHORT: "قصير", VERY_SHORT: "قصير جداً",
+};
+const A_SHAPE: Record<string, string> = {
+  BONY: "عظمي", CONICAL_BONY: "عظمي مخروطي", SOFT: "لين", CONICAL_SOFT: "لين مخروطي",
+};
+const A_PAIN_TYPE: Record<string, string> = {
+  NUMBNESS: "خدر", DULL_ACHE: "ألم خفيف", HOT_BURNING: "حارق",
+  SHARP_STABBING: "حاد", PINS: "واخز", OTHER: "أخرى",
+};
+const A_SKIN: Record<string, string> = {
+  NORMAL: "طبيعي", PALE: "شاحب", DRY: "جاف", INFLAMED: "ملتهب", PEELING: "متقشر", OOZING: "ناز",
+};
+const A_COLOR: Record<string, string> = {
+  YELLOWISH: "مصفر", ERYTHEMATOUS: "محمر", CYANOTIC: "مزرق",
+};
+const A_TEMP: Record<string, string> = { NORMAL: "طبيعي", COLD: "بارد", HOT: "حار" };
+const A_SCAR: Record<string, string> = {
+  HEALED: "ملتئمة", FLEXIBLE: "مرنة", HEALED_WITH_PINS: "ملتئمة مع ترس",
+  OPEN: "مفتوحة", DRY: "جافة", INFLAMED: "ملتهبة", OOZING: "نازة",
+};
+const A_ROM: Record<string, string> = {
+  NORMAL: "طبيعي", ACTIVE: "نشط", SEDENTARY: "خامل",
+};
+const A_LOAD: Record<string, string> = {
+  WEIGHT_BEARING: "قابل لتحمل الوزن", NON_WEIGHT_BEARING: "غير قابل لتحمل الوزن",
+  PALPABLE: "قابل للمس", NOT_PALPABLE: "غير قابل للمس",
+};
+
 const lbl = (map: Record<string, string>, v?: string | null) => (v ? map[v] ?? v : "");
+// Join an array of coded values into a readable, comma-separated Arabic string.
+const lblList = (map: Record<string, string>, vs?: string[] | null) =>
+  (vs ?? []).map((v) => map[v] ?? v).join("، ");
 
 // ── Data types ───────────────────────────────────────────────────────────────────
 export interface CasePdfAssessment {
@@ -50,9 +77,37 @@ export interface CasePdfAssessment {
   side?: string | null;
   residualLimbLength?: string | null;
   residualLimbShape?: string | null;
-  activityLevel?: string | null;  // K-level
+  amputationLevelNote?: string | null;
+  // Pain & sensation
   painPresent?: boolean | null;
   painIntensity?: number | null;
+  painArea?: string | null;
+  painTypes?: string[] | null;
+  painTypeOtherDetail?: string | null;
+  phantomPainPresent?: boolean | null;
+  phantomPainIntensity?: number | null;
+  neuromaPalpable?: boolean | null;
+  // Skin
+  skinAppearance?: string[] | null;
+  skinColor?: string[] | null;
+  skinTemperature?: string | null;
+  scarCondition?: string[] | null;
+  hasSkinGrafts?: boolean | null;
+  graftArea?: string | null;
+  // General & function
+  generalHealthNotes?: string | null;
+  otherLimbCondition?: string | null;
+  loadTolerance?: string | null;
+  weightBearingLevel?: string | null;
+  usesAssistiveDevices?: boolean | null;
+  assistiveDeviceTypes?: string | null;
+  canClimbStairs?: boolean | null;
+  canBalanceOneSide?: boolean | null;
+  usesCompressionBandage?: boolean | null;
+  jointsRangeOfMotion?: string | null;
+  activityLevel?: string | null;  // K-level
+  usesProstheticLimb?: boolean | null;
+  prostheticLimbType?: string | null;
   examinedAt?: string | null;
   notes?: string | null;
 }
@@ -122,6 +177,69 @@ const Para = ({ label, value }: { label?: string; value?: string | null }) => {
     <View style={{ marginBottom: 4 }}>
       {label && <Text style={{ fontSize: 8.5, color: TEXT, marginBottom: 1, textAlign: "right", fontWeight: "bold" }}>{ar(label)}</Text>}
       <Text style={S.fieldValue}>{ar(v)}</Text>
+    </View>
+  );
+};
+
+// One limb's full assessment, laid out like the website's assessment tab:
+// the same field order, the same option grids shown as ticked/unticked boxes.
+const AssessmentBlock = ({ a }: { a: CasePdfAssessment }) => {
+  const title = `${a.region}${a.side ? ` — ${lbl(SIDE_LABEL, a.side)}` : ""}`;
+  const opt = (map: Record<string, string>) =>
+    Object.entries(map).map(([v, l]) => ({ v, l }));
+  return (
+    <View style={{ marginBottom: 6 }}>
+      <SubHead label={title} />
+
+      <F label="جانب البتر" value={lbl(SIDE_LABEL, a.side)} />
+      <OptGrid label="طول الجذمور" options={opt(A_LENGTH)} selected={a.residualLimbLength ?? ""} cols={4} />
+      <OptGrid label="شكل الطرف المتبقي" options={opt(A_SHAPE)} selected={a.residualLimbShape ?? ""} cols={4} />
+      {a.amputationLevelNote ? <F label="ملاحظة حول مستوى البتر" value={a.amputationLevelNote} /> : null}
+
+      {/* الألم والحساسية */}
+      <Bool label="الألم والحساسية" value={a.painPresent} />
+      {a.painPresent ? (
+        <>
+          {a.painIntensity != null ? <F label="شدة الألم" value={`${a.painIntensity}/10`} /> : null}
+          {a.painArea ? <F label="المنطقة" value={a.painArea} /> : null}
+          <OptGrid label="نوع الألم" options={opt(A_PAIN_TYPE)} selected={a.painTypes ?? []} cols={3} />
+          {a.painTypeOtherDetail ? <F label="نوع الألم (أخرى)" value={a.painTypeOtherDetail} /> : null}
+        </>
+      ) : null}
+      <Bool label="ألم وهمي" value={a.phantomPainPresent} />
+      {a.phantomPainPresent && a.phantomPainIntensity != null
+        ? <F label="شدة الألم الوهمي" value={`${a.phantomPainIntensity}/10`} /> : null}
+      <Bool label="النوروم العصبي" value={a.neuromaPalpable} />
+
+      {/* الجلد */}
+      {(a.skinAppearance?.length || a.skinColor?.length || a.skinTemperature || a.scarCondition?.length || a.hasSkinGrafts != null) ? (
+        <>
+          {a.skinAppearance?.length ? <F label="المظهر العام للجلد" value={lblList(A_SKIN, a.skinAppearance)} /> : null}
+          {a.skinColor?.length ? <F label="لون البشرة" value={lblList(A_COLOR, a.skinColor)} /> : null}
+          {a.skinTemperature ? <F label="درجة حرارة الجلد" value={lbl(A_TEMP, a.skinTemperature)} /> : null}
+          {a.scarCondition?.length ? <F label="حالة الندبة" value={lblList(A_SCAR, a.scarCondition)} /> : null}
+          {a.hasSkinGrafts != null ? <Bool label="يوجد طعم جلدي" value={a.hasSkinGrafts} /> : null}
+          {a.graftArea ? <F label="منطقة الطعم" value={a.graftArea} /> : null}
+        </>
+      ) : null}
+
+      {/* الحالة العامة والوظيفية */}
+      {a.generalHealthNotes ? <F label="حالة الصحة العامة" value={a.generalHealthNotes} /> : null}
+      {a.otherLimbCondition ? <F label="حالة الأطراف الأخرى" value={a.otherLimbCondition} /> : null}
+      {a.loadTolerance ? <F label="قابلية التحميل على الجذمور" value={lbl(A_LOAD, a.loadTolerance)} /> : null}
+      {a.weightBearingLevel ? <F label="مستوى تحمل الوزن" value={lbl(A_LOAD, a.weightBearingLevel)} /> : null}
+      {a.jointsRangeOfMotion ? <F label="مدى حركة المفاصل" value={lbl(A_ROM, a.jointsRangeOfMotion)} /> : null}
+      {a.activityLevel ? <F label="مستوى النشاط" value={a.activityLevel} /> : null}
+      {a.usesAssistiveDevices != null ? <Bool label="يستخدم وسائل مساعدة للتنقل" value={a.usesAssistiveDevices} /> : null}
+      {a.assistiveDeviceTypes ? <F label="نوع الوسيلة المساعدة" value={a.assistiveDeviceTypes} /> : null}
+      {a.canClimbStairs != null ? <Bool label="يمكنه صعود ونزول الدرج" value={a.canClimbStairs} /> : null}
+      {a.canBalanceOneSide != null ? <Bool label="يحافظ على توازنه على جانب واحد" value={a.canBalanceOneSide} /> : null}
+      {a.usesCompressionBandage != null ? <Bool label="يستخدم رباط ضاغط" value={a.usesCompressionBandage} /> : null}
+      {a.usesProstheticLimb != null ? <Bool label="يستخدم طرفاً صناعياً" value={a.usesProstheticLimb} /> : null}
+      {a.prostheticLimbType ? <F label="نوع الطرف الصناعي" value={a.prostheticLimbType} /> : null}
+
+      <F label="تاريخ التقييم" value={dt(a.examinedAt)} />
+      {a.notes ? <Para label="ملاحظات" value={a.notes} /> : null}
     </View>
   );
 };
@@ -207,34 +325,8 @@ const ProstheticsCasePdfDoc = ({ data, age }: { data: CasePdfData; age: string }
         {data.assessments.length === 0 ? (
           <Text style={S.note}>{ar("لا يوجد تقييم مسجّل")}</Text>
         ) : (
-          <View style={S.table}>
-            <View style={S.tableHeaderRow} fixed>
-              <Text style={[S.tableCellHead, { flex: 1.2 }]}>{ar("الطرف")}</Text>
-              <Text style={[S.tableCellHead, { flex: 0.8 }]}>{ar("الجهة")}</Text>
-              <Text style={[S.tableCellHead, { flex: 1 }]}>{ar("طول الجذمور")}</Text>
-              <Text style={[S.tableCellHead, { flex: 1 }]}>{ar("شكل الجذمور")}</Text>
-              <Text style={[S.tableCellHead, { flex: 0.9 }]}>{ar("مستوى النشاط")}</Text>
-              <Text style={[S.tableCellHead, { flex: 0.8 }]}>{ar("الألم")}</Text>
-              <Text style={[S.tableCellHead, { flex: 1 }]}>{ar("التاريخ")}</Text>
-            </View>
-            {data.assessments.map((a, i) => (
-              <View key={i} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]} wrap={false}>
-                <Text style={[S.tableCell, { flex: 1.2 }]}>{ar(a.region)}</Text>
-                <Text style={[S.tableCell, { flex: 0.8 }]}>{ar(lbl(SIDE_LABEL, a.side)) || "—"}</Text>
-                <Text style={[S.tableCell, { flex: 1 }]}>{ar(lbl(LENGTH_LABEL, a.residualLimbLength)) || "—"}</Text>
-                <Text style={[S.tableCell, { flex: 1 }]}>{ar(lbl(SHAPE_LABEL, a.residualLimbShape)) || "—"}</Text>
-                <Text style={[S.tableCell, { flex: 0.9 }]}>{a.activityLevel || "—"}</Text>
-                <Text style={[S.tableCell, { flex: 0.8 }]}>
-                  {a.painPresent ? (a.painIntensity != null ? `${a.painIntensity}/10` : ar("نعم")) : ar("لا")}
-                </Text>
-                <Text style={[S.tableCell, { flex: 1 }]}>{dt(a.examinedAt)}</Text>
-              </View>
-            ))}
-          </View>
+          data.assessments.map((a, i) => <AssessmentBlock key={i} a={a} />)
         )}
-        {data.assessments.filter((a) => a.notes).map((a, i) => (
-          <F key={i} label={`ملاحظات — ${a.region}${a.side ? ` (${lbl(SIDE_LABEL, a.side)})` : ""}`} value={a.notes} />
-        ))}
 
         {/* ── مراجعة اللجنة ── */}
         <SecHead label="مراجعة اللجنة" break />

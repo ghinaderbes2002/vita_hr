@@ -34,6 +34,35 @@ export type WeightBearingLevelVal = "FULL" | "HIGH" | "MEDIUM" | "LOW";
 
 type StaffMember = { firstNameAr: string; lastNameAr: string; jobTitleAr?: string } | null;
 
+/** The signed-in user's own signature, as returned by /employees/my/signature. */
+export interface MySignature {
+  id?: string;
+  signatureUrl: string | null;
+  signatureBase64: string | null;
+  signatureUpdatedAt?: string | null;
+  /** Derived: the API reports absence by returning neither of the two above. */
+  hasSignature: boolean;
+  /** Ready to drop into an <img src> — base64 wins, else the URL made absolute. */
+  displaySrc: string;
+}
+
+function normalizeMySignature(raw: unknown): MySignature {
+  const d = (raw ?? {}) as Partial<MySignature>;
+  const base64 = d.signatureBase64 ?? null;
+  const url = d.signatureUrl ?? null;
+  const absolute = url && !url.startsWith("http") && !url.startsWith("data:")
+    ? `${process.env.NEXT_PUBLIC_API_URL ?? ""}${url}`
+    : url;
+  return {
+    id: d.id,
+    signatureUrl: url,
+    signatureBase64: base64,
+    signatureUpdatedAt: d.signatureUpdatedAt ?? null,
+    hasSignature: !!(base64 || url),
+    displaySrc: base64 || absolute || "",
+  };
+}
+
 export interface ProstheticsAttachment {
   id: string;
   fileName: string;
@@ -669,6 +698,9 @@ export const clinicProstheticsApi = {
   },
 
   // ── Employee signatures ─────────────────────────────────────────────────────
+  // Two families here: /employees/{id}/signature reads any employee's signature
+  // (needed for the medical director, CEO, technician... on the case forms), and
+  // /employees/my/signature reads *and writes* the signed-in user's own.
   getEmployeeSignature: async (employeeId: string): Promise<{ hasSignature: boolean; signatureUrl: string | null }> => {
     const { data } = await apiClient.get(`/employees/${employeeId}/signature`);
     return data?.data ?? data;
@@ -681,6 +713,28 @@ export const clinicProstheticsApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return data?.data ?? data;
+  },
+
+  // The "my signature" endpoints answer with the record itself and no
+  // hasSignature flag, so presence is derived from what came back.
+  getMySignature: async (): Promise<MySignature> => {
+    const { data } = await apiClient.get("/employees/my/signature");
+    return normalizeMySignature(data?.data ?? data);
+  },
+
+  // Persists a drawn signature — the only way to store one without a file.
+  saveMySignature: async (signatureBase64: string): Promise<MySignature> => {
+    const { data } = await apiClient.put("/employees/my/signature", { signatureBase64 });
+    return normalizeMySignature(data?.data ?? data);
+  },
+
+  uploadMySignatureImage: async (file: File): Promise<MySignature> => {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await apiClient.put("/employees/my/signature/image", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return normalizeMySignature(data?.data ?? data);
   },
 
   uploadSignatureFile: async (file: File): Promise<{ url: string }> => {

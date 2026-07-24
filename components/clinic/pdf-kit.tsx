@@ -305,6 +305,26 @@ export function ensureAmiriFonts() {
   fontsRegistered = true;
 }
 
+// Cairo is the UI font and, unlike Amiri, ships proper OpenType Arabic joining
+// tables — react-pdf's own bidi + fontkit shaper handle Arabic and mixed
+// Arabic/Latin text correctly with it. Documents using Cairo must therefore NOT
+// pass their text through ar(): the pre-shaping above is an Amiri workaround and
+// would fight the real shaper.
+let cairoRegistered = false;
+export function ensureCairoFonts() {
+  if (cairoRegistered) return;
+  const origin = window.location.origin;
+  Font.register({
+    family: "Cairo",
+    fonts: [
+      { src: `${origin}/fonts/cairo-regular.ttf`, fontWeight: "normal" },
+      { src: `${origin}/fonts/cairo-bold.ttf`,    fontWeight: "bold" },
+    ],
+  });
+  Font.registerHyphenationCallback((word) => [word]);
+  cairoRegistered = true;
+}
+
 export function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

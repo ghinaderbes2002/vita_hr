@@ -21,6 +21,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useClinicPatients, useDeleteClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { Patient } from "@/lib/api/clinic-patients";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,7 +38,22 @@ export default function ClinicPatientsPage() {
   const [page, setPage] = useState(1);
   const [genderFilter, setGenderFilter] = useState<"all" | "MALE" | "FEMALE">("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<"all" | "prosthetics" | "physio" | "both">("all");
+  const [consentFilter, setConsentFilter] =
+    useState<"all" | "FUNDER_ONLY" | "FUNDER_AND_SOCIAL" | "REFUSED" | "NONE">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Restrict the list to the user's own department: a physio-only clinician sees
+  // physio patients, a prosthetics/podiatry one sees that department. Admins and
+  // anyone holding both see everything (no restriction).
+  const { hasPermission, isAdmin } = usePermissions();
+  const canPhysio = hasPermission(PERMISSIONS.CLINIC_PHYSIO.CASE_VIEW);
+  const canProsthetics =
+    hasPermission(PERMISSIONS.CLINIC_PROSTHETICS.CASE_VIEW) ||
+    hasPermission(PERMISSIONS.CLINIC_PODIATRY.RECEPTION_VIEW);
+  const department: "physio" | "prosthetics" | undefined =
+    isAdmin() || canPhysio === canProsthetics
+      ? undefined
+      : canPhysio ? "physio" : "prosthetics";
 
   const { data, isLoading } = useClinicPatients({
     page,
@@ -45,6 +61,8 @@ export default function ClinicPatientsPage() {
     search: search || undefined,
     gender: genderFilter !== "all" ? (genderFilter as any) : undefined,
     caseType: caseTypeFilter !== "all" ? (caseTypeFilter as any) : undefined,
+    consentDecision: consentFilter !== "all" ? consentFilter : undefined,
+    department,
   });
 
   const deletePatient = useDeleteClinicPatient();
@@ -105,6 +123,18 @@ export default function ClinicPatientsPage() {
             <SelectItem value="prosthetics">{t("filter.prosthetics")}</SelectItem>
             <SelectItem value="physio">{t("filter.physio")}</SelectItem>
             <SelectItem value="both">{t("filter.both")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={consentFilter} onValueChange={(v) => { setConsentFilter(v as any); setPage(1); }}>
+          <SelectTrigger className="w-52">
+            <SelectValue placeholder="الموافقة" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filter.all")}</SelectItem>
+            <SelectItem value="FUNDER_ONLY">الجهة الداعمة فقط</SelectItem>
+            <SelectItem value="FUNDER_AND_SOCIAL">الداعمة ووسائل التواصل</SelectItem>
+            <SelectItem value="REFUSED">رفضوا التوثيق</SelectItem>
+            <SelectItem value="NONE">لم يوقّعوا</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -17,6 +17,8 @@ import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
 import { VISIT_TYPE_LABEL } from "@/components/clinic/podiatry-labels";
 import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
@@ -39,10 +41,12 @@ export default function PodiatryListPage() {
     <div className="space-y-6" dir="rtl">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <PageHeader title="طب الأقدام" description="استقبالات وجلسات طب الأقدام" />
-        <Button className="gap-2" onClick={() => setNewOpen(true)}>
-          <Plus className="h-4 w-4" />
-          استقبال جديد
-        </Button>
+        <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.RECEPTION_CREATE}>
+          <Button className="gap-2" onClick={() => setNewOpen(true)}>
+            <Plus className="h-4 w-4" />
+            استقبال جديد
+          </Button>
+        </ActionGuard>
       </div>
 
       <div className="relative">
@@ -72,7 +76,7 @@ export default function PodiatryListPage() {
               <TableRow>
                 <TableHead>رقم المريض</TableHead>
                 <TableHead>المريض</TableHead>
-                <TableHead>سبب الزيارة</TableHead>
+                <TableHead>نوع الزيارة</TableHead>
                 <TableHead>الجلسات</TableHead>
                 <TableHead>تاريخ الاستقبال</TableHead>
                 <TableHead />

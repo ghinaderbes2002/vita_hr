@@ -157,6 +157,20 @@ export default function PendingApprovalPage() {
     setDetailsDialogOpen(true);
   };
 
+  const formatDuration = (request: LeaveRequest) => {
+    if (request.isHourlyLeave && request.equivalentDays != null)
+      return `${request.equivalentDays.toFixed(2)} يوم`;
+    if (request.isHalfDay || request.totalDays === 0.5)
+      return "نصف يوم";
+    const days =
+      request.totalDays != null && request.totalDays > 0
+        ? request.totalDays
+        : Math.round(
+            (new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000,
+          ) + 1;
+    return `${days} ${t("common.days")}`;
+  };
+
   const confirmApprove = async () => {
     if (selectedRequest) {
       if (actionType === "manager") {
@@ -237,9 +251,7 @@ export default function PendingApprovalPage() {
               <TableCell>{format(new Date(request.startDate), "PPP", { locale: ar })}</TableCell>
               <TableCell>{format(new Date(request.endDate), "PPP", { locale: ar })}</TableCell>
               <TableCell>
-                {request.isHourlyLeave && request.equivalentDays != null
-                  ? `${request.equivalentDays.toFixed(2)} يوم`
-                  : `${Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1} ${t("common.days")}`}
+                {formatDuration(request)}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {request.isHourlyLeave && request.startTime
@@ -324,9 +336,7 @@ export default function PendingApprovalPage() {
               <TableCell>{format(new Date(request.startDate), "PPP", { locale: ar })}</TableCell>
               <TableCell>{format(new Date(request.endDate), "PPP", { locale: ar })}</TableCell>
               <TableCell>
-                {request.isHourlyLeave && request.equivalentDays != null
-                  ? `${request.equivalentDays.toFixed(2)} يوم`
-                  : `${Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1} ${t("common.days")}`}
+                {formatDuration(request)}
               </TableCell>
               <TableCell><StatusBadge status={request.status} /></TableCell>
               <TableCell className="text-sm text-muted-foreground">
@@ -629,9 +639,7 @@ export default function PendingApprovalPage() {
                     <div>
                       <label className="text-sm text-muted-foreground">عدد الأيام</label>
                       <p className="font-medium">
-                        {selectedRequest.isHourlyLeave && selectedRequest.equivalentDays != null
-                          ? `${selectedRequest.equivalentDays.toFixed(2)} يوم`
-                          : `${Math.round((new Date(selectedRequest.endDate).getTime() - new Date(selectedRequest.startDate).getTime()) / 86400000) + 1} يوم`}
+                        {formatDuration(selectedRequest)}
                       </p>
                     </div>
                     <div>
@@ -639,6 +647,14 @@ export default function PendingApprovalPage() {
                       <div>
                         <StatusBadge status={selectedRequest.status} />
                       </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground">تاريخ تقديم الطلب</label>
+                      <p className="font-medium">
+                        {selectedRequest.createdAt
+                          ? format(new Date(selectedRequest.createdAt), "PPP", { locale: ar })
+                          : "—"}
+                      </p>
                     </div>
                   </div>
                   <div>

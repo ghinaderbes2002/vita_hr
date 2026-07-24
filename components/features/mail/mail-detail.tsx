@@ -170,29 +170,6 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     ? ccRecipients.map(getRecipientEmpId).filter(Boolean)
     : [];
 
-  const getDisplayName = (r: any) => {
-    const info = r.employeeInfo ?? r.recipient ?? r.recipientInfo;
-    if (info) return `${info.firstNameAr ?? ""} ${info.lastNameAr ?? ""}`.trim() || null;
-    const rid = r.recipientId;
-    // Try arabic name from basic list, then fallback to user fullName
-    return empBasicByUserId[rid]?.nameAr ?? empNameById[rid] ?? null;
-  };
-  const replyAllDisplayNames: string[] = isSender
-    ? [
-        ...toRecipients.map(getDisplayName),
-        ...ccRecipients.map(getDisplayName),
-      ].filter((n): n is string => !!n)
-    : [
-        senderName,
-        ...toRecipients
-          .filter((r: any) => {
-            const empId = getRecipientEmpId(r);
-            return empId && empId !== user?.employeeId && empId !== user?.id;
-          })
-          .map(getDisplayName),
-        ...ccRecipients.map(getDisplayName),
-      ].filter((n): n is string => !!n);
-
   const replyAllRecipients: { employeeId: string; type: "TO" | "CC" }[] = isSender
     ? [
         ...toRecipients.map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "TO" as const })),
@@ -644,7 +621,11 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           open={replyOpen}
           onClose={() => setReplyOpen(false)}
           {...(replyAll
-            ? { replyAllMessageId: messageId, replyAllDisplayNames, replyAllRecipients }
+            ? {
+                replyAllMessageId: messageId,
+                defaultToIds: replyAllRecipients.filter((r) => r.type === "TO").map((r) => r.employeeId),
+                defaultCcIds: replyAllRecipients.filter((r) => r.type === "CC").map((r) => r.employeeId),
+              }
             : { replyToMessageId: messageId, defaultToIds, defaultCcIds }
           )}
           defaultSubject={defaultSubject}

@@ -16,7 +16,7 @@ import {
   useCreatePodiatrySession, useUpdatePodiatrySession,
 } from "@/lib/hooks/use-clinic-podiatry";
 import { ClinicalPlanItem, PodiatrySession } from "@/lib/api/clinic-podiatry";
-import { CLINICAL_PLAN_LABEL, CLINICAL_PLAN_VALUES } from "./podiatry-labels";
+import { CLINICAL_PLAN_LABEL, CLINICAL_PLAN_VALUES, FOOT_FLAGS } from "./podiatry-labels";
 
 interface Props {
   open: boolean;
@@ -45,13 +45,6 @@ const EMPTY = {
 };
 
 type FormState = typeof EMPTY;
-
-const FOOT_FLAGS = [
-  { key: "FlatFoot", label: "قدم مسطحة" },
-  { key: "HighArch", label: "قوس مرتفع" },
-  { key: "Pronation", label: "انكباب" },
-  { key: "Supination", label: "انقلاب" },
-] as const;
 
 export function PodiatrySessionDialog({ open, onOpenChange, receptionId, session }: Props) {
   const isEdit = !!session;
@@ -142,7 +135,7 @@ export function PodiatrySessionDialog({ open, onOpenChange, receptionId, session
         />
       </div>
       <div className="space-y-1.5">
-        <Label className="text-xs">عدم التناظر</Label>
+        <Label className="text-xs">عدم التماثل</Label>
         <Input
           className="h-9"
           value={form[`${side}Asymmetry` as keyof FormState] as string}

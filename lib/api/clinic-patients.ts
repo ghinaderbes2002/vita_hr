@@ -12,6 +12,14 @@ export type LivingCondition = "WITH_FAMILY" | "INDEPENDENT" | "SHELTER_CAMP" | "
 export type FinancialStatus = "LOW" | "MODERATE" | "GOOD" | "NOT_WORKING" | "RETIRED";
 export type ConsentOption   = "FULL" | "ANONYMOUS" | "NONE";
 
+// Consent records are typed by what is being consented to, and each type has
+// its own set of decisions. The documentation consent's three decisions are the
+// three tick-boxes printed on the Pro-002 sheet.
+export type ConsentType = "DOCUMENTATION" | "MEDIA_APPEARANCE";
+export type ConsentDecision =
+  | "FUNDER_ONLY" | "FUNDER_AND_SOCIAL" | "REFUSED"  // DOCUMENTATION
+  | "AGREED" | "DISAGREED";                          // MEDIA_APPEARANCE
+
 export interface Patient {
   id: string;
   patientNumber: string;
@@ -66,8 +74,9 @@ export interface PatientDocument {
 export interface PatientConsent {
   id: string;
   patientId: string;
-  documentConsent: ConsentOption;
-  mediaConsent: boolean;
+  type: ConsentType;
+  decision: ConsentDecision;
+  signedByPatient?: string | null;
   signatureUrl?: string | null;
   signedAt?: string | null;
   createdAt: string;
@@ -122,6 +131,13 @@ export interface PatientListParams {
   ageMin?: number;
   ageMax?: number;
   caseType?: "prosthetics" | "physio" | "both";
+  /**
+   * Filter by the patient's latest documentation consent decision.
+   * NONE = never signed a consent (the important one for follow-up).
+   */
+  consentDecision?: ConsentDecision | "NONE";
+  /** Restrict to a clinic department: physio only, or prosthetics + podiatry. */
+  department?: "physio" | "prosthetics";
 }
 
 export interface PaginatedPatients {
@@ -218,7 +234,7 @@ export const clinicPatientsApi = {
 
   createConsent: async (
     patientId: string,
-    dto: { documentConsent: ConsentOption; mediaConsent: boolean; signatureBase64?: string },
+    dto: { type: ConsentType; decision: ConsentDecision; signedByPatient: string },
   ): Promise<PatientConsent> => {
     const { data } = await apiClient.post(`/patients/${patientId}/consents`, dto);
     return data?.data ?? data;

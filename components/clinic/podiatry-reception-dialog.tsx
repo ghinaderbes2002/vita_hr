@@ -153,27 +153,40 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
+      <DialogContent
+        className="sm:max-w-2xl max-h-[85vh] overflow-y-auto"
+        dir="rtl"
+      >
         <DialogHeader>
-          <DialogTitle>{isEdit ? "تعديل الاستقبال" : "استقبال جديد"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "تعديل الاستقبال" : "استقبال جديد"}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {!isEdit && !fixedPatient && (
             <div className="space-y-1.5">
-              <Label>المريض <span className="text-destructive">*</span></Label>
+              <Label>
+                المريض <span className="text-destructive">*</span>
+              </Label>
               <Input
                 value={patientSearch}
                 onChange={(e) => setPatientSearch(e.target.value)}
                 placeholder="ابحث بالاسم أو رقم المريض..."
                 className="h-9"
               />
-              <Select value={form.patientId} onValueChange={(v) => setForm((f) => ({ ...f, patientId: v }))}>
-                <SelectTrigger><SelectValue placeholder="اختر المريض..." /></SelectTrigger>
+              <Select
+                value={form.patientId}
+                onValueChange={(v) => setForm((f) => ({ ...f, patientId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر المريض..." />
+                </SelectTrigger>
                 <SelectContent>
                   {patients.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.firstName} {p.lastName}{p.patientNumber ? ` — ${p.patientNumber}` : ""}
+                      {p.firstName} {p.lastName}
+                      {p.patientNumber ? ` — ${p.patientNumber}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -183,17 +196,37 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
 
           <div className="space-y-1.5">
             <Label className="text-xs">النشاطات</Label>
-            <Input className="h-9" value={form.activities} onChange={(e) => setForm((f) => ({ ...f, activities: e.target.value }))} />
+            <Input
+              className="h-9"
+              value={form.activities}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, activities: e.target.value }))
+              }
+            />
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs">وصف المشكلة</Label>
-            <Textarea rows={2} className="resize-none" value={form.problemDescription} onChange={(e) => setForm((f) => ({ ...f, problemDescription: e.target.value }))} />
+            <Textarea
+              rows={2}
+              className="resize-none"
+              value={form.problemDescription}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, problemDescription: e.target.value }))
+              }
+            />
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs">تاريخ الأعراض</Label>
-            <Input className="h-9" value={form.historyOfSymptoms} onChange={(e) => setForm((f) => ({ ...f, historyOfSymptoms: e.target.value }))} placeholder="مثال: سنتين" />
+            <Input
+              className="h-9"
+              value={form.historyOfSymptoms}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, historyOfSymptoms: e.target.value }))
+              }
+              placeholder="مثال: سنتين"
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -217,7 +250,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">سبب الزيارة</Label>
+            <Label className="text-xs">نوع الزيارة</Label>
             <ChipGroup
               values={VISIT_TYPE_VALUES}
               selected={form.visitTypes}
@@ -239,26 +272,56 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
                 className="h-9 mt-1.5"
                 placeholder="اذكر التفاصيل..."
                 value={form.medicalHistoryOther}
-                onChange={(e) => setForm((f) => ({ ...f, medicalHistoryOther: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    medicalHistoryOther: e.target.value,
+                  }))
+                }
               />
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">مقياس الألم (VAS) — {form.vasScore || 0}/10</Label>
-            <Input
-              type="range"
-              min={0}
-              max={10}
-              value={form.vasScore || 0}
-              onChange={(e) => setForm((f) => ({ ...f, vasScore: e.target.value }))}
-            />
+            <Label className="text-xs">
+              شدة الألم (VAS){form.vasScore ? ` — ${form.vasScore}/10` : ""}
+            </Label>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((n) => {
+                const on = form.vasScore === n;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    // Clicking the selected box again clears the score.
+                    onClick={() =>
+                      setForm((f) => ({ ...f, vasScore: on ? "" : n }))
+                    }
+                    className={`h-9 w-9 rounded-md border text-sm transition-colors ${
+                      on
+                        ? "border-orange-500 bg-orange-500 text-white"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
-          <Button onClick={handleSave} disabled={isPending || (!isEdit && !form.patientId && !fixedPatient)} className="gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            إلغاء
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={
+              isPending || (!isEdit && !form.patientId && !fixedPatient)
+            }
+            className="gap-2"
+          >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {isEdit ? "حفظ التعديلات" : "إنشاء الاستقبال"}
           </Button>

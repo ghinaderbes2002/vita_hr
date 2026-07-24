@@ -1,23 +1,27 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, Save, Loader2 } from "lucide-react";
+import { ArrowRight, Save, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useClinicPatient, useUpdateClinicPatient } from "@/lib/hooks/use-clinic-patients";
+import { useClinicPatient, useUpdateClinicPatient, usePatientConsents } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
-import { UpdatePatientDto } from "@/lib/api/clinic-patients";
+import { clinicPatientsApi, ConsentOption, UpdatePatientDto } from "@/lib/api/clinic-patients";
+import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
+import {
+  CONSENT_CHOICES, ConsentChoiceKey, consentChoiceOf, consentSignedByValue, decisionOfChoice,
+} from "@/components/clinic/consent-choices";
 
 const schema = z.object({
   firstName:       z.string().min(2, "مطلوب"),
@@ -41,8 +45,6 @@ const schema = z.object({
   receivesAid:     z.string().optional(),
   referralSource:  z.enum(["SELF","RELATIVES","SOCIAL_MEDIA","MEDICAL_REFERRAL","OTHER",""]).optional(),
   referralDetails: z.string().optional(),
-  documentConsent: z.enum(["FULL", "ANONYMOUS", "NONE"]).optional(),
-  mediaConsent:    z.boolean().optional(),
   notes:           z.string().optional(),
 });
 
@@ -69,10 +71,6 @@ const FINANCIAL = [
   { value: "LOW", label: "منخفض" }, { value: "MODERATE", label: "متوسط" },
   { value: "GOOD", label: "جيد" }, { value: "NOT_WORKING", label: "لا يعمل" },
   { value: "RETIRED", label: "متقاعد" },
-];
-const CONSENT = [
-  { value: "FULL", label: "موافقة كاملة" }, { value: "ANONYMOUS", label: "مجهول" },
-  { value: "NONE", label: "رفض" },
 ];
 const REFERRAL_SOURCE = [
   { value: "SELF",             label: "نفسه" },
@@ -115,6 +113,18 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
 
   const updatePatient = useUpdateClinicPatient();
 
+  // A consent is only ever recorded together with a signature, so the newest
+  // signed consent — not the patient record — is the current choice.
+  const { data: consents = [] } = usePatientConsents(id);
+  const latestConsent = useMemo(
+    () =>
+      [...consents].sort(
+        (a, b) =>
+          new Date(b.signedAt ?? b.createdAt).getTime() - new Date(a.signedAt ?? a.createdAt).getTime(),
+      )[0],
+    [consents],
+  );
+
   const defaultValues = useMemo<FormValues>(() => {
     const patientCityIdStr = (patient.cityId ?? patient.city?.id)?.toString();
     const matchedCity =
@@ -143,16 +153,51 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
     receivesAid:     patient.receivesAid ?? "",
     referralSource:  (patient.referralSource as any) ?? "",
     referralDetails: patient.referralDetails ?? "",
-    documentConsent: patient.documentConsent ?? "FULL",
-    mediaConsent:    patient.mediaConsent ?? true,
     notes:           patient.notes ?? "",
     };
-  }, [patient, cities]);
+  }, [patient, cities, latestConsent]);
 
-  const { register, handleSubmit, control, watch, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema) as any,
     defaultValues,
   });
+
+  const t = useTranslations("clinic.patients.new");
+  // A new signature is only recorded when one is drawn/uploaded here; leaving it
+  // empty keeps whatever consent is already on file.
+  const [consentSignature, setConsentSignature] = useState("");
+  const [consentChoice, setConsentChoice] = useState<ConsentChoiceKey | null>(null);
+
+  // Consents arrive after the form mounts, so the choice is applied once they
+  // land — keyed on the record id so it never overwrites the user's own edit.
+  const appliedConsentId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!latestConsent || appliedConsentId.current === latestConsent.id) return;
+    appliedConsentId.current = latestConsent.id;
+    setConsentChoice(consentChoiceOf(latestConsent.decision));
+  }, [latestConsent]);
+  const [consentPdfLoading, setConsentPdfLoading] = useState(false);
+
+  const handleExportConsentPdf = async () => {
+    if (consentPdfLoading) return;
+    setConsentPdfLoading(true);
+    try {
+      const { downloadConsentFormPdf } = await import("@/components/clinic/consent-form-pdf");
+      await downloadConsentFormPdf({
+        patientName: `${patient?.firstName ?? ""} ${patient?.lastName ?? ""}`.trim(),
+        choice: consentChoice,
+        signatureDataUri: consentSignature || undefined,
+      });
+    } catch {
+      toast.error(t("consentForm.exportFailed"));
+    } finally {
+      setConsentPdfLoading(false);
+    }
+  };
+
+  // Whether the choice on screen differs from the one currently on file.
+  const consentChanged =
+    !!consentChoice && consentChoice !== consentChoiceOf(latestConsent?.decision);
 
   const onSubmit = async (values: FormValues) => {
     const dto: UpdatePatientDto = {
@@ -177,11 +222,31 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
       receivesAid:     values.receivesAid,
       referralSource:  values.referralSource || undefined,
       referralDetails: values.referralDetails || undefined,
-      documentConsent: values.documentConsent || undefined,
-      mediaConsent:    values.mediaConsent,
+      // Consent is deliberately NOT written here: it counts only when signed,
+      // and is recorded below as a signed consent record instead.
       notes:           values.notes || undefined,
     };
     await updatePatient.mutateAsync({ id, dto });
+
+    if (consentSignature && consentChoice) {
+      try {
+        await clinicPatientsApi.createConsent(id, {
+          type:     "DOCUMENTATION",
+          decision: decisionOfChoice(consentChoice),
+          signedByPatient: consentSignedByValue(
+            consentSignature,
+            `${patient.firstName} ${patient.lastName}`.trim(),
+          ),
+        });
+      } catch {
+        toast.error("تم حفظ البيانات، لكن تسجيل الموافقة الموقّعة فشل");
+      }
+    } else if (consentChanged) {
+      // Changing the choice without signing records nothing, so say so rather
+      // than let the user leave believing the new choice was saved.
+      toast.warning("لم يُحفظ تغيير الموافقة — يجب توقيع المريض لاعتمادها");
+    }
+
     router.push(`/${locale}/clinic/patients/${id}`);
   };
 
@@ -382,27 +447,72 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
           </CardContent>
         </Card>
 
-        {/* Consent */}
+        {/* Consent — same Pro-002 wording and choices as the registration wizard,
+            so a consent can be reviewed and changed in the shape it was taken. */}
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">الموافقات والملاحظات</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">الموافقات والملاحظات</CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={handleExportConsentPdf}
+                disabled={consentPdfLoading}
+              >
+                {consentPdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {t("consentForm.exportPdf")}
+              </Button>
+            </div>
+          </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>موافقة الوثائق</Label>
-              <Controller name="documentConsent" control={control} render={({ field }) => (
-                <Select value={field.value ?? "FULL"} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CONSENT.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )} />
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+              <p className="font-semibold text-sm">{t("consentForm.title")}</p>
+              <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                <p>{t("consentForm.intro")}</p>
+                <p>{t("consentForm.authorization")}</p>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <p className="text-xs font-medium">{t("consentForm.choicePrompt")}</p>
+                {CONSENT_CHOICES.map((c) => {
+                  const checked = consentChoice === c.key;
+                  return (
+                    <label key={c.key} className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setConsentChoice(checked ? null : c.key);
+                        }}
+                        className="w-4 h-4 checkbox-orange rounded-sm mt-0.5 shrink-0"
+                      />
+                      <span className="text-xs leading-relaxed">{t(`consentForm.choice.${c.key}`)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <p className="text-xs text-muted-foreground leading-relaxed border-t pt-2">
+                {t("consentForm.declaration")}
+              </p>
+
+              <PatientSignatureField
+                className="border-t pt-3"
+                patientId={id}
+                patientName={`${patient.firstName} ${patient.lastName}`.trim()}
+                value={consentSignature}
+                onChange={setConsentSignature}
+              />
+
+              {consentChanged && !consentSignature && (
+                <p className="text-xs text-amber-600 dark:text-amber-500">
+                  غيّرت الخيار — لن يُحفظ إلا بتوقيع المريض.
+                </p>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              <Controller name="mediaConsent" control={control} render={({ field }) => (
-                <Switch checked={field.value ?? true} onCheckedChange={field.onChange} />
-              )} />
-              <Label>موافقة على الوسائط</Label>
-            </div>
+
             <div className="space-y-1.5">
               <Label>ملاحظات</Label>
               <Textarea rows={3} {...register("notes")} />

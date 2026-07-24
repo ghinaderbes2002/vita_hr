@@ -3,8 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
+import { consentChoiceOf } from "@/components/clinic/consent-choices";
 import { useParams, useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   User, Phone, MapPin, Calendar, FileText, Activity, Heart,
   Edit2, Trash2, Plus, Upload, Loader2, ArrowRight, Eye,
@@ -45,7 +46,17 @@ const IDENTITY_LABEL: Record<string, string> = { NATIONAL_ID: "هوية وطني
 const EDUCATION_LABEL: Record<string, string> = { NONE: "بدون تعليم", PRIMARY: "ابتدائي", SECONDARY: "ثانوي", UNIVERSITY: "جامعي", POSTGRADUATE: "دراسات عليا" };
 const MARITAL_LABEL: Record<string, string> = { SINGLE: "أعزب", MARRIED: "متزوج", DIVORCED: "مطلق", WIDOWED: "أرمل" };
 const FINANCIAL_LABEL: Record<string, string> = { LOW: "منخفض", MODERATE: "متوسط", GOOD: "جيد", NOT_WORKING: "غير عامل", RETIRED: "متقاعد" };
-const CONSENT_LABEL: Record<string, string> = { FULL: "موافقة كاملة", ANONYMOUS: "مجهولة", NONE: "رفض" };
+const CONSENT_TYPE_LABEL: Record<string, string> = {
+  DOCUMENTATION:    "التوثيق",
+  MEDIA_APPEARANCE: "الظهور الإعلامي",
+};
+const CONSENT_DECISION_LABEL: Record<string, string> = {
+  FUNDER_ONLY:       "الجهة الداعمة فقط",
+  FUNDER_AND_SOCIAL: "الجهة الداعمة ووسائل التواصل",
+  REFUSED:           "رفض",
+  AGREED:            "موافق",
+  DISAGREED:         "غير موافق",
+};
 const DOC_TYPE_LABEL: Record<string, string> = {
   ID_COPY:             "نسخة هوية",
   PERSONAL_PHOTO:      "صورة شخصية",
@@ -69,6 +80,7 @@ export default function PatientProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.patients.new");
   const [deletePatientOpen, setDeletePatientOpen] = useState(false);
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
@@ -90,6 +102,16 @@ export default function PatientProfilePage() {
   const deleteDoc = useDeletePatientDocument();
   const downloadDoc = useDownloadPatientDocument();
   const createNote = useCreatePatientNote();
+
+  // Most recently signed consent — the current state of the patient's choice.
+  const latestConsent = useMemo(
+    () =>
+      [...consents].sort(
+        (a, b) =>
+          new Date(b.signedAt ?? b.createdAt).getTime() - new Date(a.signedAt ?? a.createdAt).getTime(),
+      )[0],
+    [consents],
+  );
 
   const photoDoc = useMemo(() => documents.find((d) => d.type === "PERSONAL_PHOTO"), [documents]);
   const [photoLoadError, setPhotoLoadError] = useState(false);
@@ -333,32 +355,54 @@ export default function PatientProfilePage() {
               </CardContent>
             </Card>
 
+            {/* The current consent lives on the patient record and is what the
+                edit form writes, so it is shown on its own. Signed consent
+                records are a separate history and only exist once the patient
+                has actually signed. */}
             {consents.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">الموافقات</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {consents.map((c) => (
-                    <div key={c.id} className="space-y-1">
-                      <InfoRow label="توثيق البيانات" value={CONSENT_LABEL[c.documentConsent]} />
-                      <InfoRow label="وسائط" value={c.mediaConsent ? "موافق" : "رافض"} />
-                      {c.signedAt && <InfoRow label="تاريخ التوقيع" value={new Date(c.signedAt).toLocaleDateString("en-GB")} />}
-                      {c.signatureUrl && (
-                        <div className="pt-1">
-                          <p className="text-sm font-medium">توقيع المريض</p>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={c.signatureUrl.startsWith("http") || c.signatureUrl.startsWith("data:")
-                              ? c.signatureUrl
-                              : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${c.signatureUrl}`}
-                            alt="توقيع المريض"
-                            className="mt-1 h-16 max-w-55 object-contain border rounded bg-white"
-                          />
+                <CardContent className="space-y-4">
+                  {(() => {
+                    // A consent only exists once signed, so the newest record is
+                    // the patient's current choice.
+                    const choice = consentChoiceOf(latestConsent?.decision);
+                    if (!choice) return null;
+                    return (
+                      <div className="rounded-md border bg-muted/30 p-2.5">
+                        <p className="text-xs font-medium mb-1">الخيار المُحدَّد</p>
+                        <p className="text-xs leading-relaxed">{t(`consentForm.choice.${choice}`)}</p>
+                      </div>
+                    );
+                  })()}
+
+                  {consents.length > 0 && (
+                    <div className="space-y-3 border-t pt-3">
+                      <p className="text-sm font-medium">سجل الموافقات</p>
+                      {consents.map((c) => (
+                        <div key={c.id} className="space-y-1">
+                          <InfoRow label="النوع" value={CONSENT_TYPE_LABEL[c.type] ?? c.type} />
+                          <InfoRow label="القرار" value={CONSENT_DECISION_LABEL[c.decision] ?? c.decision} />
+                          {c.signedAt && <InfoRow label="تاريخ التوقيع" value={new Date(c.signedAt).toLocaleDateString("en-GB")} />}
+                          {c.signatureUrl && (
+                            <div className="pt-1">
+                              <p className="text-sm font-medium">توقيع المريض</p>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={c.signatureUrl.startsWith("http") || c.signatureUrl.startsWith("data:")
+                                  ? c.signatureUrl
+                                  : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${c.signatureUrl}`}
+                                alt="توقيع المريض"
+                                className="mt-1 h-16 max-w-55 object-contain border rounded bg-white"
+                              />
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -380,10 +424,12 @@ export default function PatientProfilePage() {
         <TabsContent value="prosthetics" className="mt-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">حالات الأطراف الصناعية</h3>
-              <Button size="sm" onClick={handleNewProstheticsCase} disabled={createProst.isPending} className="gap-2">
-                {createProst.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                حالة جديدة
-              </Button>
+              <ActionGuard permission={PERMISSIONS.CLINIC_PROSTHETICS.CASE_CREATE}>
+                <Button size="sm" onClick={handleNewProstheticsCase} disabled={createProst.isPending} className="gap-2">
+                  {createProst.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  حالة جديدة
+                </Button>
+              </ActionGuard>
           </div>
           {prostCases.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground border rounded-lg">لا توجد حالات أطراف صناعية</div>
@@ -416,10 +462,12 @@ export default function PatientProfilePage() {
         <TabsContent value="physio" className="mt-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">حالات العلاج الفيزيائي</h3>
-              <Button size="sm" onClick={handleNewPhysioCase} disabled={createPhysio.isPending} className="gap-2">
-                {createPhysio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                حالة جديدة
-              </Button>
+              <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
+                <Button size="sm" onClick={handleNewPhysioCase} disabled={createPhysio.isPending} className="gap-2">
+                  {createPhysio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  حالة جديدة
+                </Button>
+              </ActionGuard>
           </div>
           {physioCases.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground border rounded-lg">لا توجد حالات علاج فيزيائي</div>

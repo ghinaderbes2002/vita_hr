@@ -9,6 +9,9 @@ import { z } from "zod";
 import { ChevronRight, ChevronLeft, Check, AlertCircle, Upload, X, FileText, Loader2, Plus, Camera, Download } from "lucide-react";
 import { toast } from "sonner";
 import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
+import {
+  CONSENT_CHOICES, ConsentChoiceKey, consentSignedByValue, decisionOfChoice,
+} from "@/components/clinic/consent-choices";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -64,8 +67,6 @@ const step3Schema = z.object({
 });
 
 const step4Schema = z.object({
-  documentConsent: z.enum(["FULL", "ANONYMOUS", "NONE"]).optional(),
-  mediaConsent:    z.boolean().optional(),
   notes:           z.string().optional(),
 });
 
@@ -79,14 +80,6 @@ const EDUCATION_VALUES      = ["ILLITERATE", "PRIMARY", "SECONDARY", "HIGH_SCHOO
 const MARITAL_VALUES        = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as const;
 const LIVING_VALUES         = ["WITH_FAMILY", "INDEPENDENT", "SHELTER_CAMP", "OTHER"] as const;
 const FINANCIAL_VALUES      = ["LOW", "MODERATE", "GOOD", "NOT_WORKING", "RETIRED"] as const;
-
-// The three tick-boxes printed on the Pro-002 consent form. They are a shortcut
-// onto the two fields the API stores — no extra data is recorded for them.
-const CONSENT_CHOICES = [
-  { key: "OFFICIAL_ONLY", documentConsent: "FULL" as const, mediaConsent: false },
-  { key: "SOCIAL_MEDIA",  documentConsent: "FULL" as const, mediaConsent: true  },
-  { key: "REFUSED",       documentConsent: "NONE" as const, mediaConsent: false },
-];
 
 const REFERRAL_VALUES = ["SELF", "RELATIVES", "SOCIAL_MEDIA", "MEDICAL_REFERRAL", "OTHER"] as const;
 
@@ -141,12 +134,13 @@ export default function NewPatientPage() {
 
   const form4 = useForm<Step4>({
     resolver: zodResolver(step4Schema) as any,
-    defaultValues: { documentConsent: "FULL", mediaConsent: true, notes: "", ...s4 },
+    defaultValues: { notes: "", ...s4 },
   });
 
   // Patient signature for the consent — sent as signatureBase64 on submit and
   // drawn into the exported PDF.
   const [consentSignature, setConsentSignature] = useState("");
+  const [consentChoice, setConsentChoice] = useState<ConsentChoiceKey | null>(null);
 
   // Pro-002 consent sheet — printed with the patient's name and current choice
   // pre-filled, ready for the patient to sign on paper.
@@ -157,11 +151,9 @@ export default function NewPatientPage() {
     try {
       const { downloadConsentFormPdf } = await import("@/components/clinic/consent-form-pdf");
       const p = form1.getValues();
-      const dc = form4.watch("documentConsent");
-      const mc = form4.watch("mediaConsent") ?? true;
       await downloadConsentFormPdf({
         patientName: `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim(),
-        choice: dc === "NONE" ? "REFUSED" : dc === "FULL" ? (mc ? "SOCIAL_MEDIA" : "OFFICIAL_ONLY") : null,
+        choice: consentChoice,
         signatureDataUri: consentSignature || undefined,
       });
     } catch {
@@ -223,17 +215,23 @@ export default function NewPatientPage() {
 
     const patient = await createPatient.mutateAsync(dto);
 
-    // Consent created separately via POST /patients/:id/consents
-    if (v4.documentConsent || v4.mediaConsent != null) {
+    // Consent is only valid once signed, so it is recorded only when both the
+    // choice and the signature are present.
+    if (consentChoice && consentSignature) {
       try {
         await clinicPatientsApi.createConsent(patient.id, {
-          documentConsent: (v4.documentConsent as ConsentOption) ?? "FULL",
-          mediaConsent:    v4.mediaConsent ?? true,
-          signatureBase64: consentSignature || undefined,
+          type:     "DOCUMENTATION",
+          decision: decisionOfChoice(consentChoice),
+          signedByPatient: consentSignedByValue(
+            consentSignature,
+            `${s1.firstName ?? ""} ${s1.lastName ?? ""}`.trim(),
+          ),
         });
       } catch {
-        // consent failure is non-blocking
+        toast.error("تم تسجيل المريض، لكن حفظ الموافقة فشل");
       }
+    } else if (consentChoice) {
+      toast.warning("لم تُحفظ الموافقة — يجب توقيع المريض لاعتمادها");
     }
     // Notes via POST /patients/:id/notes
     if (v4.notes?.trim()) {
@@ -625,17 +623,14 @@ export default function NewPatientPage() {
                 <div className="space-y-2 pt-1">
                   <p className="text-xs font-medium">{t("consentForm.choicePrompt")}</p>
                   {CONSENT_CHOICES.map((c) => {
-                    const checked =
-                      form4.watch("documentConsent") === c.documentConsent &&
-                      (form4.watch("mediaConsent") ?? true) === c.mediaConsent;
+                    const checked = consentChoice === c.key;
                     return (
                       <label key={c.key} className="flex items-start gap-2.5 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => {
-                            form4.setValue("documentConsent", c.documentConsent);
-                            form4.setValue("mediaConsent", c.mediaConsent);
+                            setConsentChoice(checked ? null : c.key);
                           }}
                           className="w-4 h-4 checkbox-orange rounded-sm mt-0.5 shrink-0"
                         />

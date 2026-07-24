@@ -40,6 +40,7 @@ import { BodyPainMap } from "@/components/clinic/body-pain-map";
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import {
@@ -237,6 +238,32 @@ export default function PhysioCasePage() {
   const canSendAlert = !!user?.permissions?.includes("physio:emergency-alert");
   const { data: myEmployee } = useMyEmployee();
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
+
+  // Tab access by permission, so a supervisor with only case.create+view reaches
+  // the intake form but not the clinical tabs — matching the prosthetics page.
+  // The VTX-JTL-000011 job title keeps its existing intake-only shortcut.
+  const { hasAnyPermission, isAdmin } = usePermissions();
+  const PH = PERMISSIONS.CLINIC_PHYSIO;
+  // Any clinical permission means more than a pure "reception only" supervisor,
+  // so the read-only summary and timeline are shown to them.
+  const physioClinicalPerms = [
+    PH.ASSESSMENT_CREATE, PH.PLAN_SIGN, PH.SESSIONS_CREATE, PH.SUPERVISOR_REVIEW,
+  ];
+  const physioTabPerm: Record<string, string[] | null> = {
+    intake: null, patient_info: null,
+    summary: physioClinicalPerms, timeline: physioClinicalPerms,
+    complaint: [PH.ASSESSMENT_CREATE], pain_map: [PH.ASSESSMENT_CREATE],
+    medical_history: [PH.ASSESSMENT_CREATE], goals: [PH.ASSESSMENT_CREATE],
+    postural_assessment: [PH.ASSESSMENT_CREATE], evaluation: [PH.ASSESSMENT_CREATE],
+    treatment_plan: [PH.ASSESSMENT_CREATE, PH.PLAN_SIGN],
+    sessions: [PH.SESSIONS_CREATE],
+    supervisor_review: [PH.SUPERVISOR_REVIEW],
+    doctor_review: [PH.SUPERVISOR_REVIEW],
+  };
+  const showPhysioTab = (key: string) => {
+    const perms = physioTabPerm[key] ?? null;
+    return !perms || isAdmin() || hasAnyPermission(perms);
+  };
   const { data: caseData, isLoading } = usePhysioCase(id);
   const { data: sessions = [] } = usePhysioSessions(id);
   const { data: timeline = [] } = usePhysioTimeline(id);
@@ -1226,13 +1253,17 @@ export default function PhysioCasePage() {
   ];
   const defaultTab = (() => {
     if (myJobTitleCode === "VTX-JTL-000011") return "intake";
-    if (["DISCHARGED", "CANCELLED"].includes(c.status)) return "timeline";
-    if (c.status === "COMPLETED") return "doctor_review";
-    if (c.status === "DOCTOR_REVIEW") return "doctor_review";
-    if (c.status === "ACTIVE_TREATMENT") return "sessions";
-    if (c.status === "SUPERVISOR_REVIEW") return "supervisor_review";
-    if (c.status === "EVALUATION") return "evaluation";
-    return c.status.toLowerCase();
+    // Never resolve to a tab the user can't see — fall back to the intake form.
+    const stageTab = (() => {
+      if (["DISCHARGED", "CANCELLED"].includes(c.status)) return "timeline";
+      if (c.status === "COMPLETED") return "doctor_review";
+      if (c.status === "DOCTOR_REVIEW") return "doctor_review";
+      if (c.status === "ACTIVE_TREATMENT") return "sessions";
+      if (c.status === "SUPERVISOR_REVIEW") return "supervisor_review";
+      if (c.status === "EVALUATION") return "evaluation";
+      return c.status.toLowerCase();
+    })();
+    return showPhysioTab(stageTab) ? stageTab : "intake";
   })();
 
   const canEdit = !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status);
@@ -1314,7 +1345,7 @@ export default function PhysioCasePage() {
                 "medical_history", "goals", "postural_assessment",
                 "treatment_plan", "evaluation", "sessions", "summary",
                 "supervisor_review", "doctor_review", "timeline",
-              ]
+              ].filter(showPhysioTab)
           ).map((value) => {
             const key = value.replace(/_([a-z])/g, (_, c) => c.toUpperCase()) as any;
             const label = value === "sessions"
