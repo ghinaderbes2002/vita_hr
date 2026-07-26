@@ -146,6 +146,10 @@ function StepIndicator({ status }: { status: ProstheticsStatus }) {
 }
 
 // ─── Patient photo via authenticated download ─────────────────────────────────
+// Translate a value that MAY be an i18n key: if the key exists, translate it;
+// otherwise render the literal (covers English option labels like "Pin", "DVS").
+const tl = (t: any, x: any): string => (typeof x === "string" && t.has?.(x) ? t(x) : x);
+
 function PatientPhotoViewer({ patientId, docId }: { patientId: string; docId: string }) {
   const t = useTranslations("clinic.prosthetics.case");
   const [src, setSrc] = useState<string | null>(null);
@@ -1642,7 +1646,7 @@ function GaitAnalysisCard({
                         return { ...f, suspensionSystem: next, suspensionSystemOtherNotes: next.includes("OTHER") ? f.suspensionSystemOtherNotes : "" };
                       })}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                    <span className="text-xs">{tl(t, o.l)}</span>
                   </label>
                 ))}
                 {form.suspensionSystem.includes("OTHER") && (
@@ -1661,7 +1665,7 @@ function GaitAnalysisCard({
                     <input type="checkbox" checked={form.socketBearing === o.v}
                       onChange={() => setForm((f) => ({ ...f, socketBearing: f.socketBearing === o.v ? "" : o.v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                    <span className="text-xs">{tl(t, o.l)}</span>
                   </label>
                 ))}
               </div>
@@ -1676,7 +1680,7 @@ function GaitAnalysisCard({
                     <input type="checkbox" checked={form.kneeJointType === o.v}
                       onChange={() => setForm((f) => ({ ...f, kneeJointType: f.kneeJointType === o.v ? "" : o.v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                    <span className="text-xs">{tl(t, o.l)}</span>
                   </label>
                 ))}
               </div>
@@ -1691,7 +1695,7 @@ function GaitAnalysisCard({
                     <input type="checkbox" checked={form.footType === o.v}
                       onChange={() => setForm((f) => ({ ...f, footType: f.footType === o.v ? "" : o.v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                    <span className="text-xs">{tl(t, o.l)}</span>
                   </label>
                 ))}
               </div>
@@ -1704,7 +1708,7 @@ function GaitAnalysisCard({
                 {COMPLAINT_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.patientComplaints.includes(o.v)} onChange={() => toggleMulti("patientComplaints", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                    <span className="text-xs">{tl(t, o.l)}</span>
                   </label>
                 ))}
                 <Input value={form.patientComplaintsOtherNotes} onChange={(e) => setForm((f) => ({ ...f, patientComplaintsOtherNotes: e.target.value }))}
@@ -1736,7 +1740,7 @@ function GaitAnalysisCard({
                     <input type="checkbox" checked={form.alignmentCheck === o.v}
                       onChange={() => setForm((f) => ({ ...f, alignmentCheck: f.alignmentCheck === o.v ? "" : o.v }))}
                       className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                    <span className="text-xs">{tl(t, o.l)}</span>
                   </label>
                 ))}
               </div>
@@ -1825,14 +1829,14 @@ function GaitAnalysisCard({
                 ["pelvicControl", "gait.pelvicControl"],
               ] as const).map(([fld, lbl]) => (
                 <div key={fld} className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
-                  <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t(lbl, { defaultValue: lbl })}</div>
+                  <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{tl(t, lbl)}</div>
                   <div className="px-3 py-2.5 flex gap-4">
                     {GFP_OPTS.map((o) => (
                       <label key={o.v} className="flex items-center gap-1.5 cursor-pointer">
                         <input type="checkbox" checked={form[fld] === o.v}
                           onChange={() => setForm((f) => ({ ...f, [fld]: f[fld] === o.v ? "" : o.v }))}
                           className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                        <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                        <span className="text-xs">{tl(t, o.l)}</span>
                       </label>
                     ))}
                   </div>
@@ -1850,7 +1854,7 @@ function GaitAnalysisCard({
                       <input type="checkbox" checked={form.sittingBalance === o.v}
                         onChange={() => setForm((f) => ({ ...f, sittingBalance: f.sittingBalance === o.v ? "" : o.v }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                      <span className="text-xs">{tl(t, o.l)}</span>
                     </label>
                   ))}
                 </div>
@@ -1863,7 +1867,7 @@ function GaitAnalysisCard({
                       <input type="checkbox" checked={form.standingBalance === o.v}
                         onChange={() => setForm((f) => ({ ...f, standingBalance: f.standingBalance === o.v ? "" : o.v }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                      <span className="text-xs">{tl(t, o.l)}</span>
                     </label>
                   ))}
                 </div>
@@ -1883,7 +1887,7 @@ function GaitAnalysisCard({
                       <input type="checkbox" checked={form.symmetry === o.v}
                         onChange={() => setForm((f) => ({ ...f, symmetry: f.symmetry === o.v ? "" : o.v }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                      <span className="text-xs">{tl(t, o.l)}</span>
                     </label>
                   ))}
                 </div>
@@ -1898,7 +1902,7 @@ function GaitAnalysisCard({
                       <input type="checkbox" checked={form.assistiveDevice === o.v}
                         onChange={() => setForm((f) => ({ ...f, assistiveDevice: f.assistiveDevice === o.v ? "" : o.v }))}
                         className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                      <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                      <span className="text-xs">{tl(t, o.l)}</span>
                     </label>
                   ))}
                 </div>
@@ -1948,7 +1952,7 @@ function GaitAnalysisCard({
         <TabsContent value="phases" className="mt-4 space-y-4">
           {GAIT_PHASES.map((phase) => (
             <div key={phase.key} className="rounded-lg border overflow-hidden">
-              <div className="bg-muted/40 px-3 py-2 text-sm font-semibold flex items-center gap-2"><span>•</span>{t(phase.label, { defaultValue: phase.label })}</div>
+              <div className="bg-muted/40 px-3 py-2 text-sm font-semibold flex items-center gap-2"><span>•</span>{tl(t, phase.label)}</div>
               <div className="p-3 space-y-2">
                 <div className="grid grid-cols-2 gap-1">
                   {phase.deviations.map((d) => (
@@ -1958,7 +1962,7 @@ function GaitAnalysisCard({
                         onChange={() => togglePhaseDeviation(phase.key, d.v)}
                         className="w-[17px] h-[17px] checkbox-orange rounded-sm shrink-0"
                       />
-                      <span className="text-xs">{t(d.l, { defaultValue: d.l })}</span>
+                      <span className="text-xs">{tl(t, d.l)}</span>
                     </label>
                   ))}
                 </div>
@@ -1986,7 +1990,7 @@ function GaitAnalysisCard({
                 {PROSTHETIC_ISSUE_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.prostheticIssues.includes(o.v)} onChange={() => toggleMulti("prostheticIssues", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                    <span className="text-xs">{tl(t, o.l)}</span>
                   </label>
                 ))}
               </div>
@@ -2014,7 +2018,7 @@ function GaitAnalysisCard({
                     {LIKELY_CAUSE_OPTS.map((o) => (
                       <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={form.likelyCauses.includes(o.v)} onChange={() => toggleMulti("likelyCauses", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                        <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                        <span className="text-xs">{tl(t, o.l)}</span>
                       </label>
                     ))}
                   </div>
@@ -2033,7 +2037,7 @@ function GaitAnalysisCard({
                 {RECOMMENDATION_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.recommendations.includes(o.v)} onChange={() => toggleMulti("recommendations", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                    <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                    <span className="text-xs">{tl(t, o.l)}</span>
                   </label>
                 ))}
               </div>
@@ -2055,7 +2059,7 @@ function GaitAnalysisCard({
               {REHAB_PLAN_OPTS.map((o) => (
                 <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.rehabPlanItems.includes(o.v)} onChange={() => toggleMulti("rehabPlanItems", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
-                  <span className="text-xs">{t(o.l, { defaultValue: o.l })}</span>
+                  <span className="text-xs">{tl(t, o.l)}</span>
                 </label>
               ))}
             </div>
@@ -2589,7 +2593,7 @@ function BalanceAssessmentCard({
                     }
                     className="w-[15px] h-[15px] checkbox-orange rounded-sm"
                   />
-                  <span className="text-sm">{t(label, { defaultValue: label })}</span>
+                  <span className="text-sm">{tl(t, label)}</span>
                 </label>
               ))}
             </div>
@@ -2628,7 +2632,7 @@ function BalanceAssessmentCard({
                     }
                     className="w-[15px] h-[15px] checkbox-orange rounded-sm"
                   />
-                  <span className="text-sm">{t(label, { defaultValue: label })}</span>
+                  <span className="text-sm">{tl(t, label)}</span>
                 </label>
               ))}
             </div>
@@ -2665,7 +2669,7 @@ function BalanceAssessmentCard({
                   key={key}
                   className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
                 >
-                  <td className="py-2.5 px-3 text-sm">{t(label, { defaultValue: label })}</td>
+                  <td className="py-2.5 px-3 text-sm">{tl(t, label)}</td>
                   {STATIC_BALANCE_OPTS.map((o) => (
                     <td key={o.value} className="py-2.5 px-3 text-center">
                       <input
@@ -2710,7 +2714,7 @@ function BalanceAssessmentCard({
                   key={key}
                   className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
                 >
-                  <td className="py-2.5 px-3 text-sm">{t(label, { defaultValue: label })}</td>
+                  <td className="py-2.5 px-3 text-sm">{tl(t, label)}</td>
                   {DYNAMIC_TASK_OPTS.map((o) => (
                     <td key={o.value} className="py-2.5 px-3 text-center">
                       <input
@@ -2755,7 +2759,7 @@ function BalanceAssessmentCard({
                   key={key}
                   className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
                 >
-                  <td className="py-2.5 px-3 text-sm">{t(label, { defaultValue: label })}</td>
+                  <td className="py-2.5 px-3 text-sm">{tl(t, label)}</td>
                   {DYNAMIC_ACTIVITY_OPTS.map((o) => (
                     <td key={o.value} className="py-2.5 px-3 text-center">
                       <input
@@ -2862,7 +2866,7 @@ function BalanceAssessmentCard({
                         <input type="checkbox" checked={form.fallRiskLevel === o.value}
                           onChange={() => setForm((f) => ({ ...f, fallRiskLevel: f.fallRiskLevel === o.value ? "" : o.value }))}
                           className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                        <span className="text-sm">{t(o.label, { defaultValue: o.label })}</span>
+                        <span className="text-sm">{tl(t, o.label)}</span>
                       </label>
                     ))}
                   </div>
@@ -2893,7 +2897,7 @@ function BalanceAssessmentCard({
                 <input type="checkbox" checked={form.overallBalanceLevel === o.value}
                   onChange={() => setForm((f) => ({ ...f, overallBalanceLevel: f.overallBalanceLevel === o.value ? "" : o.value }))}
                   className="w-[15px] h-[15px] checkbox-orange rounded-sm" />
-                <span className="text-sm">{t(o.label, { defaultValue: o.label })}</span>
+                <span className="text-sm">{tl(t, o.label)}</span>
               </label>
             ))}
           </div>
@@ -2914,7 +2918,7 @@ function BalanceAssessmentCard({
                     toggleArr("limitingFactors", o.value, e.target.checked)
                   }
                 />
-                <span className="text-xs">{t(o.label, { defaultValue: o.label })}</span>
+                <span className="text-xs">{tl(t, o.label)}</span>
               </label>
             ))}
           </div>
@@ -3000,7 +3004,7 @@ function BalanceAssessmentCard({
                               setForm((f) => ({ ...f, exerciseProgram: ep }));
                             }}
                             className="w-[13px] h-[13px] checkbox-orange rounded-sm" />
-                          <span className="text-xs">{t(o.label, { defaultValue: o.label })}</span>
+                          <span className="text-xs">{tl(t, o.label)}</span>
                         </label>
                       ))}
                     </div>
@@ -3045,7 +3049,7 @@ function BalanceAssessmentCard({
                 }
                 className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange shrink-0"
               />
-              <span className="text-sm">{t(o.label, { defaultValue: o.label })}</span>
+              <span className="text-sm">{tl(t, o.label)}</span>
             </label>
           ))}
         </div>
@@ -3092,7 +3096,7 @@ function BalanceAssessmentCard({
                   }
                   className="w-[18px] h-[18px] rounded-sm cursor-pointer checkbox-orange shrink-0"
                 />
-                <span className="text-sm">{t(o.label, { defaultValue: o.label })}</span>
+                <span className="text-sm">{tl(t, o.label)}</span>
               </label>
             ))}
           </div>
@@ -3120,7 +3124,7 @@ function BalanceAssessmentCard({
           ).map(([role, lbl, idField, sigField, dateField]) => (
             <div key={role} className="space-y-2 rounded-lg border p-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">{t(lbl, { defaultValue: lbl })}</Label>
+                <Label className="text-xs font-semibold">{tl(t, lbl)}</Label>
                 <Select
                   value={(form as any)[idField] || "none"}
                   onValueChange={(v) =>
@@ -4104,6 +4108,21 @@ export default function ProstheticsCasePage() {
       const { downloadProstheticsCasePdf } = await import("@/components/clinic/prosthetics-case-pdf");
       let gaitForms: any[] = [];
       try { gaitForms = await clinicProstheticsApi.getGaitAnalysisForms(id); } catch { /* optional */ }
+      let sessionPrograms: any[] = [];
+      try { sessionPrograms = await clinicProstheticsApi.getTreatmentPrograms(id); } catch { /* optional */ }
+      let balanceForms: any[] = [];
+      try { balanceForms = await clinicProstheticsApi.getBalanceAssessments(id); } catch { /* optional */ }
+      const resolveTechName = (p: any) => {
+        if (p.technician) return `${p.technician.firstNameAr ?? ""} ${p.technician.lastNameAr ?? ""}`.trim();
+        const e = staffList.find((x: any) => x.id === p.technicianId);
+        return e ? `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim() : "";
+      };
+      const staffNameById = (sid?: string | null) => {
+        if (!sid) return "";
+        const e = staffList.find((x: any) => x.id === sid);
+        return e ? `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim() : "";
+      };
+      const dv = deliveryData19 as any;
 
       // Pass the whole assessment through so the PDF can mirror the form tab.
       const mapAssess = (arr: any[] | undefined, region: string) =>
@@ -4114,9 +4133,11 @@ export default function ProstheticsCasePage() {
           painPresent: a.painPresent, painIntensity: a.painIntensity, painArea: a.painArea,
           painTypes: a.painTypes, painTypeOtherDetail: a.painTypeOtherDetail,
           phantomPainPresent: a.phantomPainPresent, phantomPainIntensity: a.phantomPainIntensity,
-          neuromaPalpable: a.neuromaPalpable ?? a.neuromaPresent,
+          neuromaPalpable: a.neuromaPalpable, neuromaPresent: a.neuromaPresent,
+          skinNotes: a.skinNotes ?? a.notes,
           skinAppearance: a.skinAppearance, skinColor: a.skinColor, skinTemperature: a.skinTemperature,
           scarCondition: a.scarCondition, hasSkinGrafts: a.hasSkinGrafts, graftArea: a.graftArea,
+          closureNotes: a.closureNotes,
           generalHealthNotes: a.generalHealthNotes, otherLimbCondition: a.otherLimbCondition,
           loadTolerance: a.loadTolerance, weightBearingLevel: a.weightBearingLevel,
           usesAssistiveDevices: a.usesAssistiveDevices, assistiveDeviceTypes: a.assistiveDeviceTypes,
@@ -4124,6 +4145,14 @@ export default function ProstheticsCasePage() {
           usesCompressionBandage: a.usesCompressionBandage, jointsRangeOfMotion: a.jointsRangeOfMotion,
           activityLevel: a.activityLevel,
           usesProstheticLimb: a.usesProstheticLimb, prostheticLimbType: a.prostheticLimbType,
+          romData: a.romData ?? null, muscleMotionNotes: a.muscleMotionNotes ?? null,
+          // Case-level fields the website shows inside the assessment tab.
+          clinicalHistory: (c as any).clinicalHistory ?? null,
+          amputationCause: c.causeOfAmputation ?? (c as any).amputationCause ?? null,
+          amputationDate: c.dateOfAmputation ?? null,
+          currentlyUsingProsthesis: c.currentlyUsingProsthesis,
+          previouslyUsedProsthesis: c.previouslyUsedProsthesis,
+          previousProsthesisSystemDetail: c.previousProsthesisSystemDetail,
           examinedAt: a.examinedAt ?? a.createdAt ?? a.updatedAt ?? null,
           notes: a.notes ?? null,
         }));
@@ -4174,6 +4203,10 @@ export default function ProstheticsCasePage() {
           prosthetistOpinion: cr.prosthetistOpinion, physiotherapistOpinion: cr.physiotherapistOpinion,
           doctorOpinion: cr.doctorOpinion, committeeHeadOpinion: cr.committeeHeadOpinion,
           expertOpinion: cr.expertOpinion, finalDecision: cr.finalDecision, finalSummary: cr.finalSummary,
+          prosthetistName: committeeAuthorName((cr as any).prosthetistUser) ?? staffNamesOf("prosthetistIds"),
+          physioName: committeeAuthorName((cr as any).physiotherapistUser) ?? staffNamesOf("physiotherapistIds"),
+          doctorName: committeeAuthorName((cr as any).doctorUser) ?? staffNamesOf("supervisingDoctorIds"),
+          decidedByName, decidedAt: (cr as any).decidedAt ?? null,
         } : null,
         proposed: {
           proposedProstheticType: c.proposedProstheticType, prosthesisType: c.prosthesisType,
@@ -4183,10 +4216,50 @@ export default function ProstheticsCasePage() {
         components: (components ?? []).map((cp: any) => ({
           partName: cp.partName ?? cp.name, partCode: cp.partCode ?? cp.code,
           sourceLocation: cp.sourceLocation ?? cp.source, supplier: cp.supplier,
-          reason: cp.reason, requestStatus: cp.inventoryRequest?.status,
+          reason: cp.reason, requestStatus: cp.inventoryRequest?.status ?? null,
+          addedAt: cp.addedAt ?? null,
+          matched: cp.matchedInInventory ?? (cp.inventoryRequest === undefined ? undefined : cp.inventoryRequest !== null),
         })),
-        gait: (gaitForms ?? []).map((g: any) => ({ sessionDate: g.sessionDate, mainProblem: g.mainProblem, symmetry: g.symmetry })),
-        finalEval: (finalEvalData as any) ?? null,
+        gait: (gaitForms ?? []).map((g: any, gi: number) => ({
+          sessionNumber: gi + 1, sessionDate: g.sessionDate,
+          prosthetistName: staffNameById(g.examinerProsthetistId),
+          form: gaitFormFromData(g),
+        })),
+        balance: (balanceForms ?? []).map((s: any) => ({
+          ...balanceFormFromData(s),
+          physiotherapistName: staffNameById(s.physiotherapistId),
+          committeeHeadName: staffNameById(s.committeeHeadId),
+        })),
+        sessions: (sessionPrograms ?? []).map((p: any) => ({
+          sessionDate: p.sessionDate, sessionTime: p.sessionTime, description: p.description,
+          therapistName: resolveTechName(p), startTime: p.sessionStartTime, endTime: p.sessionEndTime,
+          notes: p.notes,
+        })),
+        delivery: dv ? {
+          dischargeDate: dv.inspectionDate ?? null,
+          prosthetist: staffNameById(dv.prosthetistId),
+          physiotherapist: staffNameById(dv.physiotherapistId),
+          medicalDirector: staffNameById(dv.medicalDirectorId),
+          date: dv.signatureDate ?? null,
+          items: (dv.items ?? []).map((it: any) => ({
+            name: it.deliveredProduct, symbol: it.partCode, quantity: it.quantity,
+            company: it.company, source: it.sourceComponentId ? "تلقائي" : "يدوي",
+            addedDate: it.itemAddedDate,
+          })),
+        } : null,
+        finalEval: finalEvalData ? { ...(finalEvalData as any), managerName: staffNameById((finalEvalData as any).managerId) } : null,
+        finalDelivery: (finalDelivery as any) ? {
+          dischargeDate: (finalDelivery as any).inspectionDate ?? null,
+          prosthetist: staffNameById((finalDelivery as any).prosthetistId),
+          physiotherapist: staffNameById((finalDelivery as any).physiotherapistId),
+          ceo: staffNameById((finalDelivery as any).ceoId),
+          date: (finalDelivery as any).signatureDate ?? null,
+          patientName: `${patientFull?.firstName ?? c.patient?.firstName ?? ""} ${patientFull?.lastName ?? c.patient?.lastName ?? ""}`.trim(),
+          items: ((finalDelivery as any).items ?? []).map((it: any) => ({
+            name: it.deliveredProduct, symbol: it.partCode, quantity: it.quantity,
+            company: it.company, addedDate: it.itemAddedDate,
+          })),
+        } : null,
         followUps: (followUps ?? []).map((f: any) => ({ date: f.date, notes: f.notes, kLevel: f.kLevel, painLevel: f.painLevel })),
       });
       toast.success("تم تصدير PDF");
@@ -4546,6 +4619,12 @@ export default function ProstheticsCasePage() {
   const supplierValue = () =>
     compShared.supplier === "OTTOBOCK" ? "OTTOBOCK" : compShared.supplierOther.trim() || undefined;
 
+  // True once the case has advanced to the measurement stage (أخذ القياس) or
+  // beyond — used to stop the components save from advancing/renaming again.
+  const reachedMeasurement =
+    STATUS_ORDER.indexOf(c.status as ProstheticsStatus) >=
+    STATUS_ORDER.indexOf(STATUS_BY_TAB.measurement_sheet);
+
   const handleAddComponents = async () => {
     const filled = compRows.filter((r) => r.inventoryItemId);
     if (!filled.length) return;
@@ -4565,10 +4644,13 @@ export default function ProstheticsCasePage() {
       });
     }
     setCompRows(Array.from({ length: 10 }, () => ({ inventoryItemId: "" })));
-    // Saving the parts closes the fitting stage — move the case to "أخذ قياس"
-    // and open the measurement-sheet tab.
-    await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.measurement_sheet });
-    setStageTab("measurement_sheet");
+    // The first save closes the fitting stage — move the case to "أخذ قياس" and
+    // open that tab. Once the case has already reached it, later saves just add
+    // parts without advancing again.
+    if (!reachedMeasurement) {
+      await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.measurement_sheet });
+      setStageTab("measurement_sheet");
+    }
   };
 
   // Scenario 2 — save a free-text part entered in the "add new item" dialog.
@@ -4586,10 +4668,6 @@ export default function ProstheticsCasePage() {
       },
     });
     setCustomPartDialog({ open: false, name: "", code: "" });
-  };
-
-  const handleAdvanceToGait = async () => {
-    await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.gait_analysis });
   };
 
   const handleSubmitGait = async () => {
@@ -6442,7 +6520,7 @@ export default function ProstheticsCasePage() {
                 className="w-full gap-2"
               >
                 {(addComponent.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                {t("fitting.savePartsAndAdvance")}
+                {reachedMeasurement ? t("fitting.saveParts") : t("fitting.savePartsAndAdvance")}
               </Button>
 
               {/* الأجزاء المضافة */}
@@ -6489,7 +6567,7 @@ export default function ProstheticsCasePage() {
                             <td className="p-2 font-mono text-xs">{comp.partCode ?? comp.code ?? "—"}</td>
                             <td className="p-2">{comp.partName ?? comp.name ?? "—"}</td>
                             <td className="p-2 text-muted-foreground">{comp.supplier ?? "—"}</td>
-                            <td className="p-2 text-muted-foreground">{(() => { const k = (comp.sourceLocation ?? comp.source) as string; return k ? t(`fitting.srcLoc.${k}` as any, { defaultValue: k }) : "—"; })()}</td>
+                            <td className="p-2 text-muted-foreground">{(() => { const k = (comp.sourceLocation ?? comp.source) as string; return k ? tl(t, `fitting.srcLoc.${k}`) : "—"; })()}</td>
                             <td className="p-2 text-muted-foreground text-xs">
                               {comp.addedAt ? new Date(comp.addedAt).toLocaleDateString("en-GB") : "—"}
                             </td>
@@ -6501,7 +6579,7 @@ export default function ProstheticsCasePage() {
                                   <PopoverTrigger asChild>
                                     <button type="button">
                                       <Badge variant="outline" className={`text-xs cursor-pointer ${REQUEST_STATUS_BADGE[reqStatus]}`}>
-                                        {t(`fitting.reqStatus.${reqStatus}` as any, { defaultValue: reqStatus })}
+                                        {tl(t, `fitting.reqStatus.${reqStatus}`)}
                                       </Badge>
                                     </button>
                                   </PopoverTrigger>
@@ -6509,7 +6587,7 @@ export default function ProstheticsCasePage() {
                                 </Popover>
                               ) : (
                                 <Badge variant="outline" className={`text-xs ${REQUEST_STATUS_BADGE[reqStatus]}`}>
-                                  {t(`fitting.reqStatus.${reqStatus}` as any, { defaultValue: reqStatus })}
+                                  {tl(t, `fitting.reqStatus.${reqStatus}`)}
                                 </Badge>
                               )}
                             </td>
@@ -6604,11 +6682,6 @@ export default function ProstheticsCasePage() {
                   />
                   <span className="text-sm font-medium">{t("fitting.prosthesisComplete")}</span>
                 </label>
-                {(c.status === STATUS_BY_TAB.fitting || c.status === "FITTING") && (
-                  <Button onClick={handleAdvanceToGait} disabled={updateStatus.isPending} className="w-full">
-                    {t("fitting.goToGait")}
-                  </Button>
-                )}
               </div>
 
             </div>

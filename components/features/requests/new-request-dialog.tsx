@@ -321,6 +321,12 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
         if (remoteWork.endDate < remoteWork.startDate) { toast.error("تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية"); return; }
       }
 
+      if (actualType === "BUSINESS_MISSION") {
+        if (data.missionStartDate && data.missionEndDate && data.missionEndDate < data.missionStartDate) {
+          toast.error("تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية"); return;
+        }
+      }
+
       if (actualType === "REWARD") {
         const errs = rewardEmployees.map((e) => ({
           employeeId: !e.employeeId,
@@ -666,7 +672,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormItem><FormLabel>{t("requests.dialog.mission.startDate")}</FormLabel><FormControl><Input {...field} type="date" /></FormControl></FormItem>
                   )} />
                   <FormField control={form.control} name="missionEndDate" render={({ field }) => (
-                    <FormItem><FormLabel>{t("requests.dialog.mission.endDate")}</FormLabel><FormControl><Input {...field} type="date" /></FormControl></FormItem>
+                    <FormItem><FormLabel>{t("requests.dialog.mission.endDate")}</FormLabel><FormControl><Input {...field} type="date" min={watchedMissionStart || undefined} /></FormControl></FormItem>
                   )} />
                 </div>
                 {previewMissionDays !== null && (

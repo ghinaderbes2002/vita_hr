@@ -145,32 +145,15 @@ export interface ProstheticsGaitPdfData {
 const num = (v: string | number | null | undefined) =>
   v !== "" && v != null ? String(v) : "—";
 
-// ── PDF Document ─────────────────────────────────────────────────────────────────
-const ProstheticsGaitPdfDoc = ({ data, age }: { data: ProstheticsGaitPdfData; age: string }) => {
-  const { patient, form } = data;
-  const fullName = `${patient?.firstName ?? ""} ${patient?.lastName ?? ""}`.trim() || "—";
+// ── Reusable: one gait session's full detail. Used by the standalone gait PDF and
+// embedded (once per session) inside the full prosthetics case report. ───────────
+export const GaitSessionBlock = ({
+  form, prosthetistName, showFooter = false,
+}: { form: ProstheticsGaitPdfForm; prosthetistName?: string | null; showFooter?: boolean }) => {
   const anyWeakness =
-    form.weakHipAbductors || form.weakHipExtensors || form.weakTrunkMuscles || !!form.otherWeakness.trim();
-
+    form.weakHipAbductors || form.weakHipExtensors || form.weakTrunkMuscles || !!form.otherWeakness?.trim();
   return (
-    <Document title={`تحليل المشي — ${fullName}`} author="Vita HR System" language="ar">
-      <Page size="A4" style={S.page}>
-        <PageHeader />
-        <PageFooter />
-
-        {/* ── معلومات المريض ── */}
-        <SecHead label="تحليل المشي — الأطراف الصناعية (Pro-016)" />
-        <InfoGrid
-          items={[
-            { label: "الاسم", value: fullName },
-            { label: "رقم تعريف المريض", value: patient?.patientNumber || "—" },
-            { label: "العمر", value: age },
-            { label: "رقم الجلسة", value: data.sessionNumber != null ? String(data.sessionNumber) : "—" },
-            { label: "تاريخ الجلسة", value: form.sessionDate ? new Date(form.sessionDate).toLocaleDateString("en-GB") : "—" },
-            { label: "أخصائي الأطراف الصناعية", value: data.prosthetistName || "—" },
-          ]}
-        />
-
+    <>
         {/* ── 1. تفاصيل الطرف الصناعي ── */}
         <SecHead label="تفاصيل الطرف الصناعي" />
         <SubHead label="مكونات الطرف الصناعي" />
@@ -260,8 +243,8 @@ const ProstheticsGaitPdfDoc = ({ data, age }: { data: ProstheticsGaitPdfData; ag
 
         {/* ── 5. التوقيعات ── */}
         <SecHead label="التوقيعات" break />
-        <F label="اسم فني الأطراف الصناعية" value={data.prosthetistName} />
-        {form.prosthetistSignatureUrl ? (
+        <F label="اسم فني الأطراف الصناعية" value={prosthetistName} />
+        {form.prosthetistSignatureUrl?.startsWith("data:") ? (
           <View style={{ marginTop: 4, marginBottom: 6 }} wrap={false}>
             <Text style={{ fontSize: 8.5, color: TEXT, marginBottom: 3, textAlign: "right" }}>{ar("التوقيع")}</Text>
             {/* react-pdf Image, not an HTML img — the a11y alt rule does not apply */}
@@ -276,14 +259,43 @@ const ProstheticsGaitPdfDoc = ({ data, age }: { data: ProstheticsGaitPdfData; ag
           </>
         )}
 
-        <View style={{ marginTop: 30, flexDirection: "row-reverse", justifyContent: "space-around" }}>
-          {["توقيع فني الأطراف الصناعية", "توقيع المريض", "توقيع رئيس القسم"].map((label, i) => (
-            <View key={i} style={{ alignItems: "center", gap: 6 }}>
-              <View style={{ width: 100, borderBottomWidth: 0.5, borderBottomColor: TEXT }} />
-              <Text style={{ fontSize: 8.5, color: MUTED, textAlign: "center" }}>{ar(label)}</Text>
-            </View>
-          ))}
-        </View>
+        {showFooter && (
+          <View style={{ marginTop: 30, flexDirection: "row-reverse", justifyContent: "space-around" }}>
+            {["توقيع فني الأطراف الصناعية", "توقيع المريض", "توقيع رئيس القسم"].map((label, i) => (
+              <View key={i} style={{ alignItems: "center", gap: 6 }}>
+                <View style={{ width: 100, borderBottomWidth: 0.5, borderBottomColor: TEXT }} />
+                <Text style={{ fontSize: 8.5, color: MUTED, textAlign: "center" }}>{ar(label)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+    </>
+  );
+};
+
+// ── PDF Document (standalone single-session gait export) ─────────────────────────
+const ProstheticsGaitPdfDoc = ({ data, age }: { data: ProstheticsGaitPdfData; age: string }) => {
+  const { patient, form } = data;
+  const fullName = `${patient?.firstName ?? ""} ${patient?.lastName ?? ""}`.trim() || "—";
+  return (
+    <Document title={`تحليل المشي — ${fullName}`} author="Vita HR System" language="ar">
+      <Page size="A4" style={S.page}>
+        <PageHeader />
+        <PageFooter />
+
+        {/* ── معلومات المريض ── */}
+        <SecHead label="تحليل المشي — الأطراف الصناعية (Pro-016)" />
+        <InfoGrid
+          items={[
+            { label: "الاسم", value: fullName },
+            { label: "رقم تعريف المريض", value: patient?.patientNumber || "—" },
+            { label: "العمر", value: age },
+            { label: "رقم الجلسة", value: data.sessionNumber != null ? String(data.sessionNumber) : "—" },
+            { label: "تاريخ الجلسة", value: form.sessionDate ? new Date(form.sessionDate).toLocaleDateString("en-GB") : "—" },
+            { label: "أخصائي الأطراف الصناعية", value: data.prosthetistName || "—" },
+          ]}
+        />
+        <GaitSessionBlock form={form} prosthetistName={data.prosthetistName} showFooter />
       </Page>
     </Document>
   );

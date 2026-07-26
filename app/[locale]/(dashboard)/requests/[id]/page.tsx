@@ -592,16 +592,24 @@ export default function RequestDetailPage() {
                       <Separator className="mt-3" />
                     </div>
                   );
-                if (key === "totalDays" && value != null)
+                if (key === "totalDays" && value != null) {
+                  // Recompute from the actual dates so the count is correct even when
+                  // the stored totalDays is stale/wrong (e.g. reversed start/end).
+                  const s = (request.details as any).startDate;
+                  const e = (request.details as any).endDate;
+                  const days = s && e
+                    ? Math.round(Math.abs(new Date(e).getTime() - new Date(s).getTime()) / 86400000) + 1
+                    : value;
                   return (
                     <div key={key}>
                       <div className="flex justify-between items-start gap-4">
                         <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
-                        <span className="text-sm font-medium text-right">{String(value)} يوم</span>
+                        <span className="text-sm font-medium text-right">{String(days)} يوم</span>
                       </div>
                       <Separator className="mt-3" />
                     </div>
                   );
+                }
 
                 const rendered = renderDetailValue(value, employeeMap);
                 if (rendered === null) return null;

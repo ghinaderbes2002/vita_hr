@@ -42,8 +42,9 @@ interface PolicyFormData {
   lateToleranceMinutes: number;
   lateDeductionType: DeductionType;
   lateDeductionTiers: DeductionTier[];
+  earlyLeaveToleranceMinutes: number;
   earlyLeaveDeductionType: DeductionType;
-  earlyLeaveTiers: DeductionTier[];
+  earlyLeaveDeductionTiers: DeductionTier[];
   absenceDeductionDays: number;
   repeatLateThreshold: string;
   repeatLatePenaltyDays: string;
@@ -62,7 +63,7 @@ function parseTiers(tiers: DeductionTier[] | string | null | undefined): Deducti
 const EMPTY_FORM: PolicyFormData = {
   nameAr: "", nameEn: "", isDefault: false, isActive: true,
   lateToleranceMinutes: 0, lateDeductionType: "MINUTE_BY_MINUTE", lateDeductionTiers: [],
-  earlyLeaveDeductionType: "MINUTE_BY_MINUTE", earlyLeaveTiers: [],
+  earlyLeaveToleranceMinutes: 0, earlyLeaveDeductionType: "MINUTE_BY_MINUTE", earlyLeaveDeductionTiers: [],
   absenceDeductionDays: 1, repeatLateThreshold: "", repeatLatePenaltyDays: "",
   breakOverLimitDeduction: "MINUTE_BY_MINUTE" as BreakDeductionType,
   holidayOvertimeMultiplier: "2", internalMissionDailyRate: "", externalMissionDailyRate: "",
@@ -78,7 +79,11 @@ function formToData(form: PolicyFormData): CreateDeductionPolicyData {
     lateDeductionTiers: form.lateDeductionType === "TIERED" && form.lateDeductionTiers.length
       ? JSON.stringify(form.lateDeductionTiers)
       : undefined,
+    earlyLeaveToleranceMinutes: form.earlyLeaveToleranceMinutes,
     earlyLeaveDeductionType: form.earlyLeaveDeductionType,
+    earlyLeaveDeductionTiers: form.earlyLeaveDeductionType === "TIERED" && form.earlyLeaveDeductionTiers.length
+      ? JSON.stringify(form.earlyLeaveDeductionTiers)
+      : undefined,
     absenceDeductionDays: form.absenceDeductionDays,
     repeatLateThreshold: form.repeatLateThreshold ? Number(form.repeatLateThreshold) : undefined,
     repeatLatePenaltyDays: form.repeatLatePenaltyDays ? Number(form.repeatLatePenaltyDays) : undefined,
@@ -152,8 +157,11 @@ export default function DeductionPoliciesPage() {
     setForm({
       nameAr: policy.nameAr, nameEn: policy.nameEn, isDefault: policy.isDefault, isActive: policy.isActive,
       lateToleranceMinutes: policy.lateToleranceMinutes, lateDeductionType: policy.lateDeductionType,
-      lateDeductionTiers: parseTiers(policy.lateDeductionTiers), earlyLeaveDeductionType: policy.earlyLeaveDeductionType,
-      earlyLeaveTiers: parseTiers(policy.earlyLeaveTiers), absenceDeductionDays: policy.absenceDeductionDays,
+      lateDeductionTiers: parseTiers(policy.lateDeductionTiers),
+      earlyLeaveToleranceMinutes: policy.earlyLeaveToleranceMinutes ?? 0,
+      earlyLeaveDeductionType: policy.earlyLeaveDeductionType,
+      earlyLeaveDeductionTiers: parseTiers(policy.earlyLeaveDeductionTiers ?? policy.earlyLeaveTiers),
+      absenceDeductionDays: policy.absenceDeductionDays,
       repeatLateThreshold: policy.repeatLateThreshold?.toString() || "",
       repeatLatePenaltyDays: policy.repeatLatePenaltyDays?.toString() || "",
       breakOverLimitDeduction: policy.breakOverLimitDeduction,
@@ -232,6 +240,14 @@ export default function DeductionPoliciesPage() {
                   <span className="font-medium">{t(`deductionType.${policy.lateDeductionType}`)}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t("card.earlyLeaveTolerance")}</span>
+                  <span className="font-medium">{t("card.minutesUnit", { count: policy.earlyLeaveToleranceMinutes ?? 0 })}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t("card.earlyLeaveDeduction")}</span>
+                  <span className="font-medium">{t(`deductionType.${policy.earlyLeaveDeductionType}`)}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-muted-foreground">{t("card.absenceDeduction")}</span>
                   <span className="font-medium">{t("card.dayPerDay", { days: policy.absenceDeductionDays })}</span>
                 </div>
@@ -247,6 +263,18 @@ export default function DeductionPoliciesPage() {
                   <div className="pt-1 border-t">
                     <p className="text-xs text-muted-foreground mb-1">{t("card.lateTiers")}</p>
                     {parseTiers(policy.lateDeductionTiers).map((tier, i) => (
+                      <div key={i} className="text-xs flex gap-1">
+                        <span>{tier.fromMinute}–{tier.toMinute ?? "∞"} {t("card.minAbbrev")}</span>
+                        <span className="text-muted-foreground">←</span>
+                        <span className="font-medium">{tier.deductionDays} {t("form.dayLabel")}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {policy.earlyLeaveDeductionType === "TIERED" && parseTiers(policy.earlyLeaveDeductionTiers ?? policy.earlyLeaveTiers).length ? (
+                  <div className="pt-1 border-t">
+                    <p className="text-xs text-muted-foreground mb-1">{t("card.earlyLeaveTiers")}</p>
+                    {parseTiers(policy.earlyLeaveDeductionTiers ?? policy.earlyLeaveTiers).map((tier, i) => (
                       <div key={i} className="text-xs flex gap-1">
                         <span>{tier.fromMinute}–{tier.toMinute ?? "∞"} {t("card.minAbbrev")}</span>
                         <span className="text-muted-foreground">←</span>
@@ -363,20 +391,27 @@ export default function DeductionPoliciesPage() {
             {/* Early leave */}
             <div className="space-y-3 rounded-lg border p-3">
               <p className="text-sm font-medium">{t("form.earlyLeave")}</p>
-              <div className="space-y-1.5">
-                <Label>{t("form.deductionType")}</Label>
-                <Select value={form.earlyLeaveDeductionType} onValueChange={(v) => setForm({ ...form, earlyLeaveDeductionType: v as DeductionType })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MINUTE_BY_MINUTE">{t("deductionType.MINUTE_BY_MINUTE")}</SelectItem>
-                    <SelectItem value="TIERED">{t("deductionType.TIERED")}</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>{t("form.tolerance")}</Label>
+                  <Input type="number" value={form.earlyLeaveToleranceMinutes} onChange={(e) => setForm({ ...form, earlyLeaveToleranceMinutes: Number(e.target.value) })} min={0} />
+                  <p className="text-xs text-muted-foreground">{t("form.earlyLeaveToleranceHint")}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("form.deductionType")}</Label>
+                  <Select value={form.earlyLeaveDeductionType} onValueChange={(v) => setForm({ ...form, earlyLeaveDeductionType: v as DeductionType })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MINUTE_BY_MINUTE">{t("deductionType.MINUTE_BY_MINUTE")}</SelectItem>
+                      <SelectItem value="TIERED">{t("deductionType.TIERED")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               {form.earlyLeaveDeductionType === "TIERED" && (
                 <div className="space-y-1.5">
                   <Label>{t("form.earlyLeaveTiers")}</Label>
-                  <TiersEditor tiers={form.earlyLeaveTiers} onChange={(tiers) => setForm({ ...form, earlyLeaveTiers: tiers })} t={t} />
+                  <TiersEditor tiers={form.earlyLeaveDeductionTiers} onChange={(tiers) => setForm({ ...form, earlyLeaveDeductionTiers: tiers })} t={t} />
                 </div>
               )}
             </div>

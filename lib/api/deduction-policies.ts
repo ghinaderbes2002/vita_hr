@@ -17,7 +17,10 @@ export interface DeductionPolicy {
   lateToleranceMinutes: number;
   lateDeductionType: DeductionType;
   lateDeductionTiers?: DeductionTier[] | null;
+  earlyLeaveToleranceMinutes: number;
   earlyLeaveDeductionType: DeductionType;
+  earlyLeaveDeductionTiers?: DeductionTier[] | null;
+  /** @deprecated legacy name — read only, kept for older API responses */
   earlyLeaveTiers?: DeductionTier[] | null;
   absenceDeductionDays: number;
   repeatLateThreshold?: number | null;
@@ -39,8 +42,9 @@ export interface CreateDeductionPolicyData {
   lateToleranceMinutes?: number;
   lateDeductionType?: DeductionType;
   lateDeductionTiers?: string;
+  earlyLeaveToleranceMinutes?: number;
   earlyLeaveDeductionType?: DeductionType;
-  earlyLeaveTiers?: string;
+  earlyLeaveDeductionTiers?: string;
   absenceDeductionDays?: number;
   repeatLateThreshold?: number;
   repeatLatePenaltyDays?: number;

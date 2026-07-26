@@ -242,7 +242,7 @@ export const OptGrid = ({
   label, options, selected, cols = 2,
 }: { label?: string; options: Opt[]; selected: string | string[]; cols?: number }) => {
   const sel = Array.isArray(selected) ? selected : selected ? [selected] : [];
-  const width = cols === 3 ? "33%" : cols === 1 ? "100%" : "50%";
+  const width = cols === 5 ? "20%" : cols === 4 ? "25%" : cols === 3 ? "33%" : cols === 1 ? "100%" : "50%";
   return (
     <View style={{ marginBottom: 4 }} wrap={false}>
       {label && <Text style={{ fontSize: 8.5, color: TEXT, marginBottom: 3, textAlign: "right" }}>{ar(label)}</Text>}
