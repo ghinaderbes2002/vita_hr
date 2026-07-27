@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Search, Eye, Plus, Footprints } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—"
 export default function PodiatryListPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.podiatry");
   const [search, setSearch] = useState("");
   const [newOpen, setNewOpen] = useState(false);
 
@@ -38,23 +39,26 @@ export default function PodiatryListPage() {
   });
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <PageHeader title="طب الأقدام" description="استقبالات وجلسات طب الأقدام" />
-        <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.RECEPTION_CREATE}>
-          <Button className="gap-2" onClick={() => setNewOpen(true)}>
-            <Plus className="h-4 w-4" />
-            استقبال جديد
-          </Button>
-        </ActionGuard>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        actions={
+          <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.RECEPTION_CREATE}>
+            <Button className="gap-2" onClick={() => setNewOpen(true)}>
+              <Plus className="h-4 w-4" />
+              {t("newReception")}
+            </Button>
+          </ActionGuard>
+        }
+      />
 
       <div className="relative">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="ابحث باسم أو رقم المريض..."
+          placeholder={t("searchPlaceholder")}
           className="pr-9"
         />
       </div>
@@ -67,18 +71,18 @@ export default function PodiatryListPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<Footprints className="h-8 w-8 text-muted-foreground" />}
-            title="لا توجد استقبالات"
-            description="ابدأ بإنشاء استقبال جديد لمريض"
+            title={t("empty.title")}
+            description={t("empty.description")}
           />
         ) : (
-          <Table dir="rtl">
+          <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>رقم المريض</TableHead>
-                <TableHead>المريض</TableHead>
-                <TableHead>نوع الزيارة</TableHead>
-                <TableHead>الجلسات</TableHead>
-                <TableHead>تاريخ الاستقبال</TableHead>
+                <TableHead>{t("table.patientNumber")}</TableHead>
+                <TableHead>{t("table.patient")}</TableHead>
+                <TableHead>{t("table.visitType")}</TableHead>
+                <TableHead>{t("table.sessions")}</TableHead>
+                <TableHead>{t("table.receptionDate")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>

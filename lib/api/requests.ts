@@ -93,7 +93,9 @@ export const requestsApi = {
   },
 
   reject: async (id: string, reason: string) => {
-    const response = await apiClient.post(`/requests/${id}/reject`, { reason });
+    // Backend validates `notes` (required, non-empty) on this endpoint — like the
+    // manager/hr reject endpoints. Send it as `notes`; keep `reason` for back-compat.
+    const response = await apiClient.post(`/requests/${id}/reject`, { reason, notes: reason });
     return response.data.data;
   },
 

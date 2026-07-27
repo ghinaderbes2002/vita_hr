@@ -838,7 +838,9 @@ export default function PhysioCasePage() {
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleSaveComplaint = async () => {
-    await updateCase.mutateAsync({
+    // Persist via the dedicated /complaint endpoint (the generic case PUT does not
+    // save complaint columns, so those values were lost on reload).
+    await submitComplaint.mutateAsync({
       id,
       dto: {
         majorComplaint: complaint.majorComplaint || undefined,
@@ -1801,10 +1803,10 @@ export default function PhysioCasePage() {
               {canEdit && (
                 <Button
                   onClick={handleSaveComplaint}
-                  disabled={updateCase.isPending || updateStatus.isPending}
+                  disabled={submitComplaint.isPending || updateStatus.isPending}
                   className="w-full gap-2"
                 >
-                  {updateCase.isPending || updateStatus.isPending ? (
+                  {submitComplaint.isPending || updateStatus.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Save className="h-4 w-4" />

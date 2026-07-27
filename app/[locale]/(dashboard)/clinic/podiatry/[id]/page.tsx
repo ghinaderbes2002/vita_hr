@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Archive, ArrowRight, Download, Loader2, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -101,9 +101,10 @@ function ReadOnlyChips<T extends string>({
 // A foot's findings, laid out like the session form's foot block: the four
 // flags as (read-only) checkboxes, then the pressure notes and asymmetry.
 function FootFindings({ side, s }: { side: "right" | "left"; s: PodiatrySession }) {
+  const t = useTranslations("clinic.podiatry.detail");
   return (
     <div className="rounded-lg border p-3 space-y-2">
-      <p className="text-sm font-semibold">{side === "right" ? "القدم اليمنى" : "القدم اليسرى"}</p>
+      <p className="text-sm font-semibold">{side === "right" ? t("rightFoot") : t("leftFoot")}</p>
       <div className="space-y-1.5">
         {FOOT_FLAGS.map(({ key, label }) => (
           <div key={key} className="flex items-center gap-2.5">
@@ -118,10 +119,10 @@ function FootFindings({ side, s }: { side: "right" | "left"; s: PodiatrySession 
           </div>
         ))}
       </div>
-      <Field label="ملاحظات الضغط">
+      <Field label={t("pressureNotes")}>
         <TextBox value={side === "right" ? s.rightPressureNotes : s.leftPressureNotes} minHeight="min-h-14" />
       </Field>
-      <Field label="عدم التماثل">
+      <Field label={t("asymmetry")}>
         <TextBox value={side === "right" ? s.rightAsymmetry : s.leftAsymmetry} />
       </Field>
     </div>
@@ -132,6 +133,7 @@ export default function PodiatryReceptionPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.podiatry.detail");
 
   // The assessment (sessions) tab is a clinical activity: a supervisor who can
   // only receive patients sees the reception + patient info only.
@@ -184,7 +186,7 @@ export default function PodiatryReceptionPage() {
         session,
       });
     } catch {
-      toast.error("فشل تصدير الـ PDF");
+      toast.error(t("exportFailed"));
     } finally {
       setPdfSessionId(null);
     }
@@ -194,7 +196,7 @@ export default function PodiatryReceptionPage() {
     return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>;
   }
   if (!reception) {
-    return <p className="text-center py-12 text-muted-foreground">لم يُعثر على الاستقبال</p>;
+    return <p className="text-center py-12 text-muted-foreground">{t("notFound")}</p>;
   }
 
   const patientName =
@@ -202,15 +204,15 @@ export default function PodiatryReceptionPage() {
     || "—";
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="space-y-1">
           <button
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             onClick={() => router.push(`/${locale}/clinic/podiatry`)}
           >
-            <ArrowRight className="h-3.5 w-3.5" />
-            طب الأقدام
+            <ArrowRight className="h-3.5 w-3.5 ltr:rotate-180" />
+            {t("back")}
           </button>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-bold">{patientName}</h1>
@@ -224,22 +226,22 @@ export default function PodiatryReceptionPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="reception" dir="rtl">
-        <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir="rtl">
-          <TabsTrigger value="reception" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">الاستقبال</TabsTrigger>
-          <TabsTrigger value="patient_info" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">معلومات المريض</TabsTrigger>
+      <Tabs defaultValue="reception">
+        <TabsList className="flex-wrap h-auto gap-1 w-full justify-start">
+          <TabsTrigger value="reception" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabReception")}</TabsTrigger>
+          <TabsTrigger value="patient_info" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabPatientInfo")}</TabsTrigger>
           {/* The assessment form is a session activity — hidden from a supervisor
               who can only receive patients (no session permission). */}
           {showSessionsTab && (
-            <TabsTrigger value="sessions" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">نموذج تقييم القدم الاحترافي</TabsTrigger>
+            <TabsTrigger value="sessions" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabSessions")}</TabsTrigger>
           )}
         </TabsList>
 
-        <TabsContent value="reception" className="mt-4" dir="rtl">
+        <TabsContent value="reception" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-base">بيانات الاستقبال</CardTitle>
+                <CardTitle className="text-base">{t("receptionData")}</CardTitle>
                 <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.RECEPTION_EDIT}>
                   <Button
                     size="sm"
@@ -247,18 +249,18 @@ export default function PodiatryReceptionPage() {
                     onClick={() => setEditOpen(true)}
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                    تعديل
+                    {t("edit")}
                   </Button>
                 </ActionGuard>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <Field label="النشاطات"><TextBox value={reception.activities} /></Field>
-                <Field label="وصف المشكلة"><TextBox value={reception.problemDescription} minHeight="min-h-16" /></Field>
-                <Field label="تاريخ الأعراض"><TextBox value={reception.historyOfSymptoms} /></Field>
+                <Field label={t("activities")}><TextBox value={reception.activities} /></Field>
+                <Field label={t("problemDescription")}><TextBox value={reception.problemDescription} minHeight="min-h-16" /></Field>
+                <Field label={t("symptomHistory")}><TextBox value={reception.historyOfSymptoms} /></Field>
 
-                <Field label="القدم المصابة">
+                <Field label={t("affectedFoot")}>
                   <ReadOnlyChips
                     values={AFFECTED_SIDE_VALUES}
                     selected={reception.affectedSide ?? []}
@@ -266,7 +268,7 @@ export default function PodiatryReceptionPage() {
                   />
                 </Field>
 
-                <Field label="أعراض القدم">
+                <Field label={t("footSymptoms")}>
                   <ReadOnlyChips
                     values={FOOT_SYMPTOM_VALUES}
                     selected={reception.footSymptoms ?? []}
@@ -274,7 +276,7 @@ export default function PodiatryReceptionPage() {
                   />
                 </Field>
 
-                <Field label="نوع الزيارة">
+                <Field label={t("visitType")}>
                   <ReadOnlyChips
                     values={VISIT_TYPE_VALUES}
                     selected={reception.visitTypes ?? []}
@@ -282,7 +284,7 @@ export default function PodiatryReceptionPage() {
                   />
                 </Field>
 
-                <Field label="التاريخ الطبي">
+                <Field label={t("medicalHistory")}>
                   <ReadOnlyChips
                     values={MEDICAL_HISTORY_VALUES}
                     selected={reception.medicalHistory ?? []}
@@ -293,7 +295,7 @@ export default function PodiatryReceptionPage() {
                   )}
                 </Field>
 
-                <Field label={`شدة الألم (VAS)${reception.vasScore != null ? ` — ${reception.vasScore}/10` : ""}`}>
+                <Field label={`${t("painIntensity")}${reception.vasScore != null ? ` — ${reception.vasScore}/10` : ""}`}>
                   <div className="flex flex-wrap gap-1.5">
                     {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                       <div
@@ -314,21 +316,21 @@ export default function PodiatryReceptionPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="patient_info" className="mt-4" dir="rtl">
+        <TabsContent value="patient_info" className="mt-4">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">معلومات المريض</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("patientInfo")}</CardTitle></CardHeader>
             <CardContent>
               <div className="flex gap-6 items-start">
                 <div className="grid flex-1 grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3">
-                <Row label="رقم المريض" value={patient?.patientNumber ?? reception.patient?.patientNumber} />
-                <Row label="اسم المريض" value={patientName} />
+                <Row label={t("patientNumber")} value={patient?.patientNumber ?? reception.patient?.patientNumber} />
+                <Row label={t("patientName")} value={patientName} />
                 <Row
-                  label="العمر"
-                  value={ageFromDob(patient?.dateOfBirth) != null ? `${ageFromDob(patient?.dateOfBirth)} سنة` : null}
+                  label={t("age")}
+                  value={ageFromDob(patient?.dateOfBirth) != null ? `${ageFromDob(patient?.dateOfBirth)} ${t("years")}` : null}
                 />
-                <Row label="الطول" value={patient?.heightCm ? `${patient.heightCm} cm` : null} />
-                <Row label="الوزن" value={patient?.weightKg ? `${patient.weightKg} kg` : null} />
-                <Row label="مؤشر كتلة الجسم" value={patient?.bmi ? patient.bmi.toFixed(1) : null} />
+                <Row label={t("height")} value={patient?.heightCm ? `${patient.heightCm} cm` : null} />
+                <Row label={t("weight")} value={patient?.weightKg ? `${patient.weightKg} kg` : null} />
+                <Row label={t("bmi")} value={patient?.bmi ? patient.bmi.toFixed(1) : null} />
                 </div>
                 <PatientPhoto patientId={reception.patientId} className="h-32 w-32 shrink-0" />
               </div>
@@ -336,12 +338,12 @@ export default function PodiatryReceptionPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="sessions" className="mt-4" dir="rtl">
+        <TabsContent value="sessions" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">
-                  الجلسات{sessions.length > 0 ? ` (${sessions.length})` : ""}
+                  {t("sessions")}{sessions.length > 0 ? ` (${sessions.length})` : ""}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button
@@ -351,12 +353,12 @@ export default function PodiatryReceptionPage() {
                     onClick={() => setShowArchived((v) => !v)}
                   >
                     <Archive className="h-3.5 w-3.5" />
-                    {showArchived ? "إخفاء المؤرشفة" : "عرض المؤرشفة"}
+                    {showArchived ? t("hideArchived") : t("showArchived")}
                   </Button>
                   <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_CREATE}>
                     <Button size="sm" className="gap-1.5" onClick={() => setSessionDialog({ open: true })}>
                       <Plus className="h-3.5 w-3.5" />
-                      إضافة جلسة
+                      {t("addSession")}
                     </Button>
                   </ActionGuard>
                 </div>
@@ -364,7 +366,7 @@ export default function PodiatryReceptionPage() {
             </CardHeader>
             <CardContent>
               {sessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">لا توجد جلسات مسجّلة</p>
+                <p className="text-sm text-muted-foreground text-center py-6">{t("noSessions")}</p>
               ) : (
                 <div className="space-y-3">
                   {sessions.map((s, idx) => (
@@ -386,25 +388,25 @@ export default function PodiatryReceptionPage() {
                             {pdfSessionId === s.id
                               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               : <Download className="h-3.5 w-3.5" />}
-                            {pdfSessionId === s.id ? "جاري..." : "تصدير PDF"}
+                            {pdfSessionId === s.id ? t("loading") : t("exportPdf")}
                           </Button>
                           {s.archivedAt ? (
                             <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
                               <Archive className="h-3 w-3" />
-                              مؤرشفة{` — ${fmt(s.archivedAt)}`}
+                              {t("archived")}{` — ${fmt(s.archivedAt)}`}
                             </Badge>
                           ) : (
                             <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_ARCHIVE}>
                               <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setArchiveTarget(s)}>
                                 <Archive className="h-3.5 w-3.5" />
-                                أرشفة
+                                {t("archive")}
                               </Button>
                             </ActionGuard>
                           )}
                         </div>
                       </div>
 
-                      <Field label="الخطة العلاجية">
+                      <Field label={t("treatmentPlan")}>
                         <ReadOnlyChips
                           values={CLINICAL_PLAN_VALUES}
                           selected={s.clinicalPlan ?? []}
@@ -418,12 +420,12 @@ export default function PodiatryReceptionPage() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <Field label="اسم الأخصائي"><TextBox value={s.clinicianName} /></Field>
-                        <Field label="التوقيع">
+                        <Field label={t("clinicianName")}><TextBox value={s.clinicianName} /></Field>
+                        <Field label={t("signature")}>
                           {s.clinicianSignature ? (
                             s.clinicianSignature.startsWith("data:") || s.clinicianSignature.startsWith("http") ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={s.clinicianSignature} alt="التوقيع" className="h-16 w-full object-contain border rounded bg-white" />
+                              <img src={s.clinicianSignature} alt={t("signature")} className="h-16 w-full object-contain border rounded bg-white" />
                             ) : (
                               <TextBox value={s.clinicianSignature} />
                             )
@@ -453,8 +455,8 @@ export default function PodiatryReceptionPage() {
       <ConfirmDialog
         open={!!archiveTarget}
         onOpenChange={(o) => { if (!o) setArchiveTarget(null); }}
-        title="أرشفة الجلسة؟"
-        description="ستُخفى الجلسة من القائمة مع الاحتفاظ ببياناتها، ويمكن عرضها لاحقاً من زر «عرض المؤرشفة»."
+        title={t("archiveSessionTitle")}
+        description={t("archiveSessionDesc")}
         onConfirm={() => {
           if (archiveTarget) archiveSession.mutate({ receptionId: id, sessionId: archiveTarget.id });
           setArchiveTarget(null);
