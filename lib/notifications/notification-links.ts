@@ -48,7 +48,18 @@ export function resolveNotificationLink(notif: Notification): string | null {
     case "CONTRACT_EXPIRY":
       return d.employeeId ? `/employees/${d.employeeId}` : "/reports/contract-ending";
 
-    case "ATTENDANCE_ALERT":            return "/attendance/my-alerts";
+    // Attendance alerts carry { alertType, attendanceRecordId, date } so the
+    // employee lands on the matching alert with the justify dialog already open.
+    // Notifications raised before that payload existed have no `data` — they
+    // still open the plain list.
+    case "ATTENDANCE_ALERT": {
+      const params = new URLSearchParams();
+      if (d.alertType) params.set("type", d.alertType);
+      if (d.date) params.set("date", d.date);
+      if (d.attendanceRecordId) params.set("recordId", d.attendanceRecordId);
+      const qs = params.toString();
+      return qs ? `/attendance/my-alerts?${qs}` : "/attendance/my-alerts";
+    }
     case "ATTENDANCE_JUSTIFICATION":    return "/attendance/justifications";
     case "ATTENDANCE_NEEDS_REVIEW":     return "/attendance/needs-review";
     case "BREAK_EXCEEDED":              return "/attendance/records";

@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 import { ApiResponse } from "@/types";
 
-export type AlertType = "LATE" | "ABSENT" | "EARLY_LEAVE" | "MISSING_CLOCK_OUT" | "CONSECUTIVE_ABSENCE" | "LEAVE_ATTENDANCE_CONFLICT" | "ANOMALY_NO_STAMP" | "BREAK_GAP";
+export type AlertType = "LATE" | "ABSENT" | "EARLY_LEAVE" | "MISSING_CLOCK_OUT" | "MISSING_CLOCK_IN" | "CONSECUTIVE_ABSENCE" | "LEAVE_ATTENDANCE_CONFLICT" | "ANOMALY_NO_STAMP" | "BREAK_GAP";
 
 export type AlertSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -20,6 +20,8 @@ export interface AttendanceAlert {
   };
   date: string;
   alertType: AlertType;
+  /** Present on alerts raised from a specific attendance record; used to match notification deep-links. */
+  attendanceRecordId?: string;
   severity: AlertSeverity;
   message: string;
   messageAr: string;
@@ -58,6 +60,16 @@ export interface AlertQueryParams {
   dateTo?: string;
   page?: number;
   limit?: number;
+}
+
+/** The alert endpoints return either a bare array or a paginated envelope. */
+export function extractAlertItems(data: unknown): AttendanceAlert[] {
+  if (Array.isArray(data)) return data as AttendanceAlert[];
+  const outer = data as { items?: unknown; data?: { items?: unknown } } | null | undefined;
+  if (Array.isArray(outer?.items)) return outer.items as AttendanceAlert[];
+  if (Array.isArray(outer?.data?.items)) return outer.data.items as AttendanceAlert[];
+  if (Array.isArray(outer?.data)) return outer.data as AttendanceAlert[];
+  return [];
 }
 
 export const attendanceAlertsApi = {

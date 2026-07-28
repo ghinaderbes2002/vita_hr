@@ -185,6 +185,14 @@ export interface TrainingCertificate {
   createdAt?: string;
 }
 
+/** A commission line on an employee. All lines are summed into net salary. */
+export interface EmployeeCommission {
+  id?: string;
+  amount: number;
+  /** Shown in the UI only — the payroll Excel carries the total, not the labels. */
+  description?: string;
+}
+
 export interface Employee {
   id: string;
   userId?: string;
@@ -215,6 +223,7 @@ export interface Employee {
   employmentStatus: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
   workType?: "FULL_TIME" | "PART_TIME" | "REMOTE";
   basicSalary?: number;
+  commissions?: EmployeeCommission[];
   // Additional fields
   profilePhoto?: string;
   bloodType?: "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE";

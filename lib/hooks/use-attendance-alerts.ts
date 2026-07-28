@@ -9,7 +9,7 @@ import {
   AlertQueryParams,
 } from "@/lib/api/attendance-alerts";
 
-export function useMyAlerts(params: AlertQueryParams) {
+export function useMyAlerts(params: AlertQueryParams, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["attendance-alerts", "my-alerts", params],
     queryFn: async () => {
@@ -22,6 +22,7 @@ export function useMyAlerts(params: AlertQueryParams) {
         throw error;
       }
     },
+    enabled: options?.enabled ?? true,
     retry: (failureCount, error: any) =>
       error.response?.data?.code !== "EMPLOYEE_NOT_FOUND" && failureCount < 3,
   });

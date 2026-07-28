@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { EmployeeCommission } from "@/types";
 
 export type ProbationStatus =
   | "DRAFT"
@@ -138,6 +139,11 @@ export interface WorkflowNotesData {
   notes?: string;
 }
 
+export interface EmployeeEvaluationsResponse {
+  evaluations: ProbationEvaluation[];
+  employeeCommissions: EmployeeCommission[];
+}
+
 export const probationEvaluationsApi = {
   getAll: async (params?: { status?: string }) => {
     const response = await apiClient.get("/probation-evaluations", { params });
@@ -149,9 +155,18 @@ export const probationEvaluationsApi = {
     return response.data?.data || response.data;
   },
 
-  getByEmployee: async (employeeId: string): Promise<ProbationEvaluation[]> => {
+  /**
+   * Returns `{ evaluations, employeeCommissions }`. Older deployments returned a
+   * bare evaluations array, so both shapes are normalised here.
+   */
+  getByEmployee: async (employeeId: string): Promise<EmployeeEvaluationsResponse> => {
     const response = await apiClient.get(`/probation-evaluations/employee/${employeeId}`);
-    return response.data?.data || response.data;
+    const payload = response.data?.data ?? response.data;
+    if (Array.isArray(payload)) return { evaluations: payload, employeeCommissions: [] };
+    return {
+      evaluations: Array.isArray(payload?.evaluations) ? payload.evaluations : [],
+      employeeCommissions: Array.isArray(payload?.employeeCommissions) ? payload.employeeCommissions : [],
+    };
   },
 
   getPendingMyAction: async (): Promise<ProbationEvaluation[]> => {

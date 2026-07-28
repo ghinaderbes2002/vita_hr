@@ -79,7 +79,7 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
   const t = useTranslations("dashboard");
   const employeeId = d?.employee?.id ?? "";
   const { data: myEvals } = useProbationEvaluationsByEmployee(employeeId);
-  const evalList = Array.isArray(myEvals) ? myEvals : [];
+  const evalList = myEvals?.evaluations ?? [];
   const selfEvalPending = evalList.filter((e: any) => e.status === "PENDING_SELF_EVALUATION");
   const meetingPending = evalList.filter(
     (e: any) => e.status === "PENDING_MEETING_SCHEDULE" && e.meetingProposedAt && !e.meetingConfirmedByEmployee,

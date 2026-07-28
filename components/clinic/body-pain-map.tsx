@@ -83,10 +83,10 @@ function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false, cus
                 position: "absolute",
                 left: `${pt.x}%`, top: `${pt.y}%`,
                 transform: "translate(-50%, -50%)",
-                width: 14, height: 14, borderRadius: "50%",
+                width: 9, height: 9, borderRadius: "50%",
                 backgroundColor: color,
-                border: "2px solid white",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+                border: "1.5px solid white",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.35)",
                 cursor: readonly ? "default" : "pointer",
                 zIndex: 10,
               }}

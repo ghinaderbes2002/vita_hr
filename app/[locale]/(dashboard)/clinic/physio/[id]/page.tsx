@@ -418,6 +418,8 @@ export default function PhysioCasePage() {
     boneDensityDetail: "",
     hospitalizedLastYear: false,
     hospitalizedDetail: "",
+    imagingProcedures: [] as { imageUrl: string; description: string }[],
+    diagnosis: "",
     hadSurgeries: false,
     surgeriesDetail: "",
   });
@@ -429,6 +431,7 @@ export default function PhysioCasePage() {
     "new" | "old" | null
   >(null);
   const [attachmentDownloading, setAttachmentDownloading] = useState<"new" | "old" | null>(null);
+  const [imagingUploadingIdx, setImagingUploadingIdx] = useState<number | null>(null);
   const [surgeries, setSurgeries] = useState([
     { name: "", type: "", date: "" },
     { name: "", type: "", date: "" },
@@ -657,6 +660,8 @@ export default function PhysioCasePage() {
         boneDensityDetail: mh.boneDensityDetail ?? "",
         hospitalizedLastYear: mh.hospitalizedLastYear ?? false,
         hospitalizedDetail: mh.hospitalizedDetail ?? "",
+        imagingProcedures: Array.isArray(mh.imagingProcedures) ? mh.imagingProcedures : [],
+        diagnosis: mh.diagnosis ?? "",
         hadSurgeries: mh.hadSurgeries ?? false,
         surgeriesDetail: mh.surgeriesDetail ?? "",
       });
@@ -1021,6 +1026,11 @@ export default function PhysioCasePage() {
         hospitalizedDetail: history.hospitalizedLastYear
           ? history.hospitalizedDetail || undefined
           : undefined,
+        imagingProcedures: (() => {
+          const rows = history.imagingProcedures.filter((p) => p.imageUrl || p.description.trim());
+          return rows.length ? rows : undefined;
+        })(),
+        diagnosis: history.diagnosis || undefined,
         hadSurgeries: history.hadSurgeries,
         surgeriesDetail: history.hadSurgeries
           ? history.surgeriesDetail || undefined
@@ -1253,7 +1263,11 @@ export default function PhysioCasePage() {
     "DOCTOR_REVIEW",
     "COMPLETED",
   ];
-  const defaultTab = (() => {
+  // complaint / pain_map / medical_history are now sub-tabs nested under the
+  // "نموذج العلاج الطبيعي" (patient_info) tab — resolve the top-level tab to that
+  // parent when the case stage lands on one of them.
+  const NESTED_FORM_TABS = ["complaint", "pain_map", "medical_history"];
+  const resolvedTab = (() => {
     if (myJobTitleCode === "VTX-JTL-000011") return "intake";
     // Never resolve to a tab the user can't see — fall back to the intake form.
     const stageTab = (() => {
@@ -1267,6 +1281,13 @@ export default function PhysioCasePage() {
     })();
     return showPhysioTab(stageTab) ? stageTab : "intake";
   })();
+  // goals … summary are grouped under the "نموذج المعالج الفيزيائي" (physio_form) tab.
+  const PHYSIO_FORM_TABS = ["goals", "postural_assessment", "treatment_plan", "evaluation", "sessions", "summary"];
+  const defaultTab = NESTED_FORM_TABS.includes(resolvedTab) ? "patient_info"
+    : PHYSIO_FORM_TABS.includes(resolvedTab) ? "physio_form"
+    : resolvedTab;
+  const formSubTab = NESTED_FORM_TABS.includes(resolvedTab) ? resolvedTab : "complaint";
+  const formSubTab2 = PHYSIO_FORM_TABS.includes(resolvedTab) ? resolvedTab : (PHYSIO_FORM_TABS.find(showPhysioTab) ?? "goals");
 
   const canEdit = !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status);
 
@@ -1343,11 +1364,11 @@ export default function PhysioCasePage() {
           {(myJobTitleCode === "VTX-JTL-000011"
             ? ["intake"]
             : [
-                "intake", "patient_info", "complaint", "pain_map",
-                "medical_history", "goals", "postural_assessment",
-                "treatment_plan", "evaluation", "sessions", "summary",
+                "intake", "patient_info", "physio_form",
                 "supervisor_review", "doctor_review", "timeline",
-              ].filter(showPhysioTab)
+              ].filter((v) =>
+                v === "physio_form" ? PHYSIO_FORM_TABS.some(showPhysioTab) : showPhysioTab(v)
+              )
           ).map((value) => {
             const key = value.replace(/_([a-z])/g, (_, c) => c.toUpperCase()) as any;
             const label = value === "sessions"
@@ -1647,7 +1668,15 @@ export default function PhysioCasePage() {
               </div>
             </div>
           </Section>
-        </TabsContent>
+
+          {/* Nested sub-tabs: الشكوى / حدد أماكن الألم / التاريخ الطبي */}
+          {showPhysioTab("complaint") && (
+          <Tabs defaultValue={formSubTab} className="mt-6">
+            <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
+              <TabsTrigger value="complaint" className="text-sm py-1.5">{t("tabs.complaint")}</TabsTrigger>
+              <TabsTrigger value="pain_map" className="text-sm py-1.5">{t("tabs.painMap")}</TabsTrigger>
+              <TabsTrigger value="medical_history" className="text-sm py-1.5">{t("tabs.medicalHistory")}</TabsTrigger>
+            </TabsList>
 
         {/* ── COMPLAINT ──────────────────────────────────────────────────── */}
         <TabsContent value="complaint" className="mt-4 space-y-4">
@@ -1737,18 +1766,28 @@ export default function PhysioCasePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>{t("complaint.painType")}</Label>
+                  {/* Multi-select: the value is stored as a comma-separated list. */}
                   <div className="flex flex-wrap gap-4">
-                    {(["INTERMITTENT", "CONSTANT", "WITH_CERTAIN_MOTIONS"] as const).map((v) => (
-                      <label key={v} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          className="h-4 w-4 accent-primary"
-                          checked={complaint.painDuration === v}
-                          onChange={() => setComplaint((f) => ({ ...f, painDuration: v }))}
-                        />
-                        <span className="text-sm">{t(`complaint.${v}`)}</span>
-                      </label>
-                    ))}
+                    {(["INTERMITTENT", "CONSTANT", "WITH_CERTAIN_MOTIONS"] as const).map((v) => {
+                      const selected = (complaint.painDuration || "").split(",").filter(Boolean);
+                      return (
+                        <label key={v} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-primary rounded-sm"
+                            checked={selected.includes(v)}
+                            onChange={() =>
+                              setComplaint((f) => {
+                                const arr = (f.painDuration || "").split(",").filter(Boolean);
+                                const next = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+                                return { ...f, painDuration: next.join(",") };
+                              })
+                            }
+                          />
+                          <span className="text-sm">{t(`complaint.${v}`)}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -1757,8 +1796,8 @@ export default function PhysioCasePage() {
                     {(["MILD", "MODERATE", "SEVERE", "EXCRUCIATING"] as const).map((v) => (
                       <label key={v} className="flex items-center gap-2 cursor-pointer">
                         <input
-                          type="radio"
-                          className="h-4 w-4 accent-primary"
+                          type="checkbox"
+                          className="h-4 w-4 accent-primary rounded-sm"
                           checked={complaint.painLevel === v}
                           onChange={() => setComplaint((f) => ({ ...f, painLevel: v }))}
                         />
@@ -2339,6 +2378,75 @@ export default function PhysioCasePage() {
                   <Input className="mr-4" value={history.hospitalizedDetail} onChange={(e) => setHistory((h) => ({ ...h, hospitalizedDetail: e.target.value }))} disabled={!canEdit} />
                 )}
               </div>
+
+              {/* ── الإجراءات التصويرية (صورة + وصف لكل إجراء) ── */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("medicalHistory.imagingProcedures")}</Label>
+                  {canEdit && (
+                    <Button type="button" variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => setHistory((h) => ({ ...h, imagingProcedures: [...h.imagingProcedures, { imageUrl: "", description: "" }] }))}>
+                      <Plus className="h-3.5 w-3.5" />
+                      {t("medicalHistory.addImaging")}
+                    </Button>
+                  )}
+                </div>
+                {history.imagingProcedures.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("medicalHistory.noImaging")}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {history.imagingProcedures.map((proc, idx) => (
+                      <div key={idx} className="rounded-lg border p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">#{idx + 1}</span>
+                          {canEdit && (
+                            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
+                              onClick={() => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.filter((_, i) => i !== idx) }))}>
+                              {t("medicalHistory.removeImaging")}
+                            </Button>
+                          )}
+                        </div>
+                        {proc.imageUrl ? (
+                          <div className="flex items-center gap-2">
+                            <a href={proc.imageUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline truncate flex-1 text-right">{t("viewFile")}</a>
+                            {canEdit && (
+                              <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
+                                onClick={() => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: "" } : p) }))}>
+                                {t("deleteFile")}
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <label className={`flex items-center justify-center gap-2 h-9 px-3 rounded-md border border-dashed text-sm cursor-pointer transition-colors ${imagingUploadingIdx === idx ? "opacity-50 pointer-events-none" : "hover:bg-muted"}`}>
+                            {imagingUploadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                            {imagingUploadingIdx === idx ? t("uploading") : t("medicalHistory.uploadImage")}
+                            <input type="file" accept="image/*" className="hidden" disabled={!canEdit || imagingUploadingIdx !== null}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file || !c.patientId) return;
+                                setImagingUploadingIdx(idx);
+                                try {
+                                  const doc = await clinicPatientsApi.uploadDocument(c.patientId, file, "MEDICAL_REPORT");
+                                  const url = doc.url ?? "";
+                                  setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: url } : p) }));
+                                } catch {
+                                  toast.error(t("uploadFailed"));
+                                } finally {
+                                  setImagingUploadingIdx(null);
+                                  e.target.value = "";
+                                }
+                              }}
+                            />
+                          </label>
+                        )}
+                        <Input value={proc.description}
+                          onChange={(e) => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, description: e.target.value } : p) }))}
+                          placeholder={t("medicalHistory.imagingDescPlaceholder")} disabled={!canEdit} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </Section>
 
@@ -2358,6 +2466,16 @@ export default function PhysioCasePage() {
             )}
           </Section>
 
+          <Section title={t("medicalHistory.diagnosisTitle")}>
+            <Textarea
+              rows={4}
+              value={history.diagnosis}
+              onChange={(e) => setHistory((h) => ({ ...h, diagnosis: e.target.value }))}
+              placeholder={t("medicalHistory.diagnosisPlaceholder")}
+              disabled={!canEdit}
+            />
+          </Section>
+
           {canEdit && (
             <Button onClick={handleSaveHistory} disabled={submitHistory.isPending || updateStatus.isPending} className="w-full gap-2">
               {submitHistory.isPending || updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -2365,6 +2483,21 @@ export default function PhysioCasePage() {
             </Button>
           )}
         </TabsContent>
+          </Tabs>
+          )}
+        </TabsContent>
+
+        {/* ── نموذج المعالج الفيزيائي (nested sub-tabs) ── */}
+        <TabsContent value="physio_form" className="mt-4">
+          <Tabs defaultValue={formSubTab2}>
+            <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
+              {showPhysioTab("goals") && <TabsTrigger value="goals" className="text-sm py-1.5">{t("tabs.goals")}</TabsTrigger>}
+              {showPhysioTab("postural_assessment") && <TabsTrigger value="postural_assessment" className="text-sm py-1.5">{t("tabs.posturalAssessment")}</TabsTrigger>}
+              {showPhysioTab("treatment_plan") && <TabsTrigger value="treatment_plan" className="text-sm py-1.5">{t("tabs.treatmentPlan")}</TabsTrigger>}
+              {showPhysioTab("evaluation") && <TabsTrigger value="evaluation" className="text-sm py-1.5">{t("tabs.evaluation")}</TabsTrigger>}
+              {showPhysioTab("sessions") && <TabsTrigger value="sessions" className="text-sm py-1.5">{`${t("tabs.sessions")} (${sessions.length})`}</TabsTrigger>}
+              {showPhysioTab("summary") && <TabsTrigger value="summary" className="text-sm py-1.5">{t("tabs.summary")}</TabsTrigger>}
+            </TabsList>
 
         {/* ── GOALS ─────────────────────────────────────────────────────── */}
         <TabsContent value="goals" className="mt-4 space-y-4">
@@ -3240,73 +3373,6 @@ export default function PhysioCasePage() {
           )}
         </TabsContent>
 
-        <TabsContent value="supervisor_review" className="mt-4">
-          <Section title={t("supervisorReview.title")}>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>{t("supervisorReview.label")}</Label>
-                <Textarea rows={4} value={supervisorGaze} onChange={(e) => setSupervisorGaze(e.target.value)} placeholder={t("supervisorReview.placeholder")} />
-              </div>
-              {c.status === "ACTIVE_TREATMENT" ? (
-                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
-                  <Button onClick={handleSupervisorReview} disabled={supervisorRev.isPending} className="w-full gap-2">
-                    {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    {t("supervisorReview.approveAndReview")}
-                  </Button>
-                </ActionGuard>
-              ) : (
-                !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status) && (
-                  <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
-                    <Button variant="outline" onClick={handleSupervisorReview} disabled={supervisorRev.isPending} className="w-full gap-2">
-                      {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                      {t("supervisorReview.saveNotes")}
-                    </Button>
-                  </ActionGuard>
-                )
-              )}
-            </div>
-          </Section>
-        </TabsContent>
-
-        {/* ── DOCTOR REVIEW ───────────────────────────────────────────────── */}
-        <TabsContent value="doctor_review" className="mt-4">
-          <Section title={t("doctorReview.title")}>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>{t("doctorReview.label")}</Label>
-                <Textarea rows={4} value={doctorGaze} onChange={(e) => setDoctorGaze(e.target.value)} placeholder={t("doctorReview.placeholder")} disabled={!canEdit} />
-              </div>
-              {canEdit && (
-                <Button
-                  variant="outline"
-                  onClick={() => doctorRev.mutate({ id, dto: { doctorGaze: doctorGaze || undefined } })}
-                  disabled={doctorRev.isPending}
-                  className="w-full gap-2"
-                >
-                  {doctorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  {t("doctorReview.save")}
-                </Button>
-              )}
-              {c.status === "SUPERVISOR_REVIEW" && (
-                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
-                  <Button onClick={handleDoctorReview} disabled={doctorRev.isPending || updateStatus.isPending} className="w-full gap-2">
-                    {doctorRev.isPending || updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    {t("doctorReview.approveDoctorReview")}
-                  </Button>
-                </ActionGuard>
-              )}
-              {c.status === "DOCTOR_REVIEW" && (
-                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
-                  <Button onClick={handleCompleteCase} disabled={updateStatus.isPending} className="w-full gap-2">
-                    {updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    {t("doctorReview.closeCase")}
-                  </Button>
-                </ActionGuard>
-              )}
-            </div>
-          </Section>
-        </TabsContent>
-
         {/* ── SESSIONS ────────────────────────────────────────────────────── */}
         <TabsContent value="sessions" className="mt-4 space-y-4">
           {canEdit && (
@@ -3546,6 +3612,76 @@ export default function PhysioCasePage() {
                 {submitFinalSummary.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 {t("sessions.saveSummary")}
               </Button>
+            </div>
+          </Section>
+        </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* ── SUPERVISOR REVIEW ── (moved out of the physiotherapist-form group) */}
+        <TabsContent value="supervisor_review" className="mt-4">
+          <Section title={t("supervisorReview.title")}>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>{t("supervisorReview.label")}</Label>
+                <Textarea rows={4} value={supervisorGaze} onChange={(e) => setSupervisorGaze(e.target.value)} placeholder={t("supervisorReview.placeholder")} />
+              </div>
+              {c.status === "ACTIVE_TREATMENT" ? (
+                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
+                  <Button onClick={handleSupervisorReview} disabled={supervisorRev.isPending} className="w-full gap-2">
+                    {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {t("supervisorReview.approveAndReview")}
+                  </Button>
+                </ActionGuard>
+              ) : (
+                !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status) && (
+                  <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
+                    <Button variant="outline" onClick={handleSupervisorReview} disabled={supervisorRev.isPending} className="w-full gap-2">
+                      {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                      {t("supervisorReview.saveNotes")}
+                    </Button>
+                  </ActionGuard>
+                )
+              )}
+            </div>
+          </Section>
+        </TabsContent>
+
+        {/* ── DOCTOR REVIEW ───────────────────────────────────────────────── */}
+        <TabsContent value="doctor_review" className="mt-4">
+          <Section title={t("doctorReview.title")}>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>{t("doctorReview.label")}</Label>
+                <Textarea rows={4} value={doctorGaze} onChange={(e) => setDoctorGaze(e.target.value)} placeholder={t("doctorReview.placeholder")} disabled={!canEdit} />
+              </div>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  onClick={() => doctorRev.mutate({ id, dto: { doctorGaze: doctorGaze || undefined } })}
+                  disabled={doctorRev.isPending}
+                  className="w-full gap-2"
+                >
+                  {doctorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {t("doctorReview.save")}
+                </Button>
+              )}
+              {c.status === "SUPERVISOR_REVIEW" && (
+                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
+                  <Button onClick={handleDoctorReview} disabled={doctorRev.isPending || updateStatus.isPending} className="w-full gap-2">
+                    {doctorRev.isPending || updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {t("doctorReview.approveDoctorReview")}
+                  </Button>
+                </ActionGuard>
+              )}
+              {c.status === "DOCTOR_REVIEW" && (
+                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
+                  <Button onClick={handleCompleteCase} disabled={updateStatus.isPending} className="w-full gap-2">
+                    {updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {t("doctorReview.closeCase")}
+                  </Button>
+                </ActionGuard>
+              )}
             </div>
           </Section>
         </TabsContent>

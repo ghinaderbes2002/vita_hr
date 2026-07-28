@@ -9,7 +9,7 @@ import {
   BadgeCheck, Cigarette, Award, ExternalLink,
   Fingerprint, Plus, Trash2, Settings, Save, ClipboardList, Pencil, X,
   Clock, CalendarDays, AlertTriangle, CheckCircle2,
-  ArrowLeftRight, DollarSign, FolderOpen,
+  ArrowLeftRight, DollarSign, FolderOpen, Percent,
 } from "lucide-react";
 import { PROBATION_RECOMMENDATION_OPTIONS } from "@/lib/api/probation-evaluations";
 import { useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
@@ -27,11 +27,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { TrainingCertificate, EmployeeAllowance, EmployeeRewardPenalty } from "@/types";
+import { TrainingCertificate, EmployeeAllowance, EmployeeCommission, EmployeeRewardPenalty } from "@/types";
 import { useEmployee, useUpdateEmployee } from "@/lib/hooks/use-employees";
 import { EmployeeDossier } from "@/components/features/employees/employee-dossier";
 import { TransferDialog } from "@/components/features/employees/transfer-dialog";
 import { SalaryChangeDialog } from "@/components/features/employees/salary-change-dialog";
+import { EmployeeCommissionsDialog } from "@/components/features/employees/employee-commissions-dialog";
 import { assetUrl, formatUSD } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ActionGuard } from "@/components/permissions/action-guard";
@@ -324,7 +325,7 @@ export default function EmployeeDetailsPage() {
   const updateEmployee = useUpdateEmployee();
 
   const { data: probationEvals } = useProbationEvaluationsByEmployee(employeeId);
-  const completedEval = (probationEvals as any[])?.find((e: any) => e.status === "COMPLETED");
+  const completedEval = probationEvals?.evaluations?.find((e) => e.status === "COMPLETED");
 
   // Export
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -429,6 +430,7 @@ export default function EmployeeDetailsPage() {
   // Transfer & Salary-change dialogs
   const [transferOpen, setTransferOpen]           = useState(false);
   const [salaryChangeOpen, setSalaryChangeOpen]   = useState(false);
+  const [commissionsOpen, setCommissionsOpen] = useState(false);
 
   // Contract end date inline edit
   const [contractEditOpen, setContractEditOpen] = useState(false);
@@ -580,6 +582,11 @@ export default function EmployeeDetailsPage() {
     ? emp.allowances
     : emp.allowances?.items || emp.allowances?.data || [];
 
+  const commissions: EmployeeCommission[] = Array.isArray(emp.commissions)
+    ? emp.commissions
+    : emp.commissions?.items || emp.commissions?.data || [];
+  const commissionsTotal = commissions.reduce((s, c) => s + Number(c.amount || 0), 0);
+
   const CONTRACT_TYPE_LABELS: Record<string, string> = {
     FIXED_TERM: "عقد محدد المدة",
     INDEFINITE: "عقد غير محدد المدة",
@@ -618,6 +625,12 @@ export default function EmployeeDetailsPage() {
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setTransferOpen(true)}>
               <ArrowLeftRight className="h-4 w-4" />
               نقل / تحويل
+            </Button>
+          </ActionGuard>
+          <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setCommissionsOpen(true)}>
+              <Percent className="h-4 w-4" />
+              العمولات
             </Button>
           </ActionGuard>
           <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
@@ -784,6 +797,25 @@ export default function EmployeeDetailsPage() {
             <FieldGuard permission={PERMISSIONS.ATTENDANCE_PAYROLL.READ} hideEntirely>
               <InfoRow label={t("employees.fields.basicSalary")} value={emp.basicSalary ? `$${Number(emp.basicSalary).toLocaleString("en-US")}` : undefined} />
               <InfoRow label="الأجر اليومي" value={emp.dailyWage ? `$${Number(emp.dailyWage).toFixed(2)}` : undefined} />
+              {commissions.length > 0 && (
+                <div className="pt-2">
+                  <span className="text-sm text-muted-foreground block mb-2">{t("employees.fields.commissions")}</span>
+                  <div className="space-y-1">
+                    {commissions.map((c, i) => (
+                      <div key={c.id ?? i} className="flex items-center justify-between text-sm gap-3">
+                        <span className="text-muted-foreground truncate">{c.description || "—"}</span>
+                        <span className="font-medium shrink-0">${Number(c.amount).toLocaleString("en-US")}</span>
+                      </div>
+                    ))}
+                    {commissions.length > 1 && (
+                      <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
+                        <span className="text-muted-foreground">مجموع العمولات</span>
+                        <span className="font-medium">${commissionsTotal.toLocaleString("en-US")}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </FieldGuard>
             {employee.manager && (
               <InfoRow
@@ -1415,6 +1447,12 @@ export default function EmployeeDetailsPage() {
         employeeId={employeeId}
         currentSalary={emp?.basicSalary}
         currentCurrency={emp?.salaryCurrency ?? "USD"}
+      />
+      <EmployeeCommissionsDialog
+        open={commissionsOpen}
+        onOpenChange={setCommissionsOpen}
+        employeeId={employeeId}
+        currentCommissions={commissions}
       />
 
       {/* ─── Start Workflow Dialog ─────────────────────────── */}

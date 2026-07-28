@@ -54,9 +54,13 @@ export default function PhysioListPage() {
   );
   const practitionerPatientIds: string[] | undefined = shouldFilter ? practitionerPatientsData : undefined;
 
+  // While searching, pull a larger page so results are found across ALL records
+  // (not just the current page), then filter client-side below. The backend does
+  // not accept a `search` param, so we don't send one.
+  const trimmedSearch = search.trim();
   const { data, isLoading } = usePhysioCases({
-    page,
-    limit: LIMIT,
+    page: trimmedSearch ? 1 : page,
+    limit: trimmedSearch ? 100 : LIMIT,
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
@@ -174,7 +178,7 @@ export default function PhysioListPage() {
         </Table>
       </div>
 
-      {totalPages > 1 && (
+      {!trimmedSearch && totalPages > 1 && (
         <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
       )}
     </div>

@@ -313,6 +313,8 @@ export interface MedicalHistoryDto {
   boneDensityDetail?: string;
   hospitalizedLastYear?: boolean;
   hospitalizedDetail?: string;
+  imagingProcedures?: { imageUrl: string; description: string }[];
+  diagnosis?: string;
   hadSurgeries?: boolean;
   surgeriesDetail?: string;
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { FileText } from "lucide-react";
@@ -25,7 +26,7 @@ import { useCreateJustification } from "@/lib/hooks/use-attendance-justification
 import { AlertSeverityBadge } from "@/components/features/attendance/alert-severity-badge";
 import { AlertStatusBadge } from "@/components/features/attendance/alert-status-badge";
 import { AlertTypeBadge } from "@/components/features/attendance/alert-type-badge";
-import { AttendanceAlert, AlertStatus } from "@/lib/api/attendance-alerts";
+import { AttendanceAlert, AlertStatus, extractAlertItems } from "@/lib/api/attendance-alerts";
 import { JustificationType } from "@/lib/api/attendance-justifications";
 import { formatDate } from "@/lib/utils/date";
 
@@ -64,6 +65,21 @@ export default function MyAlertsPage() {
   const { data, isLoading } = useMyAlerts(queryParams);
   const createJustification = useCreateJustification();
 
+  // Deep-link from an ATTENDANCE_ALERT notification: ?type & ?date & ?recordId.
+  // The notification payload identifies the attendance record, not the alert, so
+  // fetch that day's alerts and match to open the justify dialog straight away.
+  const searchParams = useSearchParams();
+  const linkType = searchParams.get("type");
+  const linkDate = searchParams.get("date");
+  const linkRecordId = searchParams.get("recordId");
+  const hasDeepLink = !!(linkRecordId || (linkType && linkDate));
+
+  const { data: linkData, isLoading: linkLoading } = useMyAlerts(
+    { dateFrom: linkDate ?? undefined, dateTo: linkDate ?? undefined, limit: 50 },
+    { enabled: hasDeepLink }
+  );
+  const deepLinkHandled = useRef(false);
+
   const alerts = (data as any)?.items || (data as any)?.data?.items || [];
   const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
   const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
@@ -80,6 +96,23 @@ export default function MyAlertsPage() {
     setDescAr("");
     setJustifyDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!hasDeepLink || deepLinkHandled.current || linkLoading) return;
+
+    const dayAlerts = extractAlertItems(linkData);
+    const match = dayAlerts.find((a) =>
+      (linkRecordId && a.attendanceRecordId === linkRecordId) ||
+      (!!linkType && !!linkDate && a.alertType === linkType && a.date?.substring(0, 10) === linkDate)
+    );
+
+    deepLinkHandled.current = true;
+    // Already acknowledged/resolved alerts stay in the list without a dialog.
+    if (match?.status === "OPEN") openJustify(match);
+    else if (!match) toast.info(t("attendance.alertNotFound"));
+    // openJustify / t are stable enough for this one-shot effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasDeepLink, linkLoading, linkData, linkRecordId, linkType, linkDate]);
 
   const submitJustification = async () => {
     if (!selectedAlert || !descAr.trim()) return;
