@@ -432,6 +432,7 @@ export default function PhysioCasePage() {
   >(null);
   const [attachmentDownloading, setAttachmentDownloading] = useState<"new" | "old" | null>(null);
   const [imagingUploadingIdx, setImagingUploadingIdx] = useState<number | null>(null);
+  const [imagingDownloadingIdx, setImagingDownloadingIdx] = useState<number | null>(null);
   const [surgeries, setSurgeries] = useState([
     { name: "", type: "", date: "" },
     { name: "", type: "", date: "" },
@@ -2408,7 +2409,24 @@ export default function PhysioCasePage() {
                         </div>
                         {proc.imageUrl ? (
                           <div className="flex items-center gap-2">
-                            <a href={proc.imageUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline truncate flex-1 text-right">{t("viewFile")}</a>
+                            <button type="button" disabled={imagingDownloadingIdx === idx}
+                              className="text-xs text-primary underline truncate flex-1 text-right disabled:opacity-40"
+                              onClick={async () => {
+                                if (!c.patientId) return;
+                                setImagingDownloadingIdx(idx);
+                                try {
+                                  const blob = await clinicPatientsApi.downloadDocument(c.patientId, proc.imageUrl);
+                                  const blobUrl = URL.createObjectURL(blob);
+                                  window.open(blobUrl, "_blank");
+                                  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                                } catch {
+                                  toast.error(t("uploadFailed"));
+                                } finally {
+                                  setImagingDownloadingIdx(null);
+                                }
+                              }}>
+                              {imagingDownloadingIdx === idx ? <Loader2 className="h-3 w-3 animate-spin inline" /> : t("viewFile")}
+                            </button>
                             {canEdit && (
                               <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
                                 onClick={() => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: "" } : p) }))}>
@@ -2427,8 +2445,10 @@ export default function PhysioCasePage() {
                                 setImagingUploadingIdx(idx);
                                 try {
                                   const doc = await clinicPatientsApi.uploadDocument(c.patientId, file, "MEDICAL_REPORT");
-                                  const url = doc.url ?? "";
-                                  setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: url } : p) }));
+                                  // Store the document id — files are fetched via the authenticated
+                                  // download endpoint (the raw /uploads/ path is not served publicly).
+                                  const ref = doc.id ?? "";
+                                  setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: ref } : p) }));
                                 } catch {
                                   toast.error(t("uploadFailed"));
                                 } finally {
