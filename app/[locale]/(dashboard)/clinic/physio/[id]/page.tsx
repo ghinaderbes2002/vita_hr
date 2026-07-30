@@ -3321,10 +3321,10 @@ export default function PhysioCasePage() {
               {(
                 [
                   ["spineNeutral", "حيادي "],
-                  ["spineKyphosis", "حداب "],
-                  ["spineFlatLumbar", "تسطح قطني "],
-                  ["spineNormalLumbar", "مسافة طبيعية "],
-                  ["spineHyperLordotic", "فرط تقعر "],
+                  ["spineKyphosis", "حدب "],
+                  ["spineFlatLumbar", "تسطح العمود القطني "],
+                  ["spineNormalLumbar", "المسافة القطنبية الطبيعية "],
+                  ["spineHyperLordotic", "فرط التقعر القطني"],
                 ] as [string, string][]
               ).map(([k, lbl]) => (
                 <label
@@ -4254,7 +4254,7 @@ export default function PhysioCasePage() {
                               />
                             </div>
                             <div className="space-y-1 col-span-2">
-                              <Label className="text-xs">رأي رئيس القسم / Supervisor Opinion</Label>
+                              <Label className="text-xs">رأي رئيس القسم </Label>
                               <Textarea
                                 rows={2}
                                 value={editingSession.supervisorOpinion}
@@ -4267,7 +4267,7 @@ export default function PhysioCasePage() {
                               />
                             </div>
                             <div className="space-y-1 col-span-2">
-                              <Label className="text-xs">قرار الطبيب / Doctor Decision</Label>
+                              <Label className="text-xs">قرار الطبيب </Label>
                               <Textarea
                                 rows={2}
                                 value={editingSession.doctorDecision}
