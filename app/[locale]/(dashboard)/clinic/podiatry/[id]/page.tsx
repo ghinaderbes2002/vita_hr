@@ -1,27 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Archive, ArrowRight, Download, Loader2, Pencil, Plus } from "lucide-react";
+import { Archive, ArrowRight, Download, Loader2, Pencil, Plus, Save, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
   usePodiatryReception, usePodiatrySessions, useArchivePodiatrySession,
+  useSubmitPodiatryComplaint, useSubmitPodiatryMedicalHistory,
 } from "@/lib/hooks/use-clinic-podiatry";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { PatientPhoto } from "@/components/clinic/patient-photo";
-import { PodiatrySession } from "@/lib/api/clinic-podiatry";
+import { PodiatrySession, PodiatryPainType, PodiatryPainLevel } from "@/lib/api/clinic-podiatry";
 import {
   AFFECTED_SIDE_LABEL, AFFECTED_SIDE_VALUES, CLINICAL_PLAN_LABEL,
   CLINICAL_PLAN_VALUES, FOOT_FLAGS, FOOT_SYMPTOM_LABEL, FOOT_SYMPTOM_VALUES,
   MEDICAL_HISTORY_LABEL, MEDICAL_HISTORY_VALUES, VISIT_TYPE_LABEL, VISIT_TYPE_VALUES,
 } from "@/components/clinic/podiatry-labels";
+import { MedicalHistoryForm } from "@/components/clinic/medical-history-form";
 import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
 import { PodiatrySessionDialog } from "@/components/clinic/podiatry-session-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
@@ -29,6 +33,9 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
+
+const PAIN_TYPE_VALUES: PodiatryPainType[] = ["INTERMITTENT", "CONSTANT", "WITH_MOTION"];
+const PAIN_LEVEL_VALUES: PodiatryPainLevel[] = ["MILD", "MODERATE", "SEVERE", "EXCRUCIATING"];
 
 // Age in completed years, derived from the stored date of birth.
 function ageFromDob(dob?: string | null): number | null {
@@ -133,6 +140,7 @@ export default function PodiatryReceptionPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const locale = useLocale();
+  const isRtl = locale === "ar";
   const t = useTranslations("clinic.podiatry.detail");
 
   // The assessment (sessions) tab is a clinical activity: a supervisor who can
@@ -157,6 +165,53 @@ export default function PodiatryReceptionPage() {
   const [archiveTarget, setArchiveTarget] = useState<PodiatrySession | null>(null);
   // Id of the session currently being rendered to PDF, so only its button spins.
   const [pdfSessionId, setPdfSessionId] = useState<string | null>(null);
+
+  // ── نموذج الطبيب: الشكوى + التاريخ الطبي (dedicated upsert endpoints) ──
+  const submitComplaint = useSubmitPodiatryComplaint();
+  const submitMH = useSubmitPodiatryMedicalHistory();
+  const canEditReception = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PODIATRY.RECEPTION_EDIT]);
+
+  const [complaintForm, setComplaintForm] = useState({
+    majorComplaint: "", complaintStartDate: "", possibleCause: "",
+    previousDoctorSeen: "", previousTreatment: "",
+    bestTimeOfDay: "", worstTimeOfDay: "",
+    painType: "" as "" | PodiatryPainType, painLevel: "" as "" | PodiatryPainLevel,
+    painProgression: "", hadPreviousInjury: "",
+  });
+  const [formHydrated, setFormHydrated] = useState(false);
+
+  useEffect(() => {
+    if (!reception || formHydrated) return;
+    setComplaintForm({
+      majorComplaint: reception.majorComplaint ?? "",
+      complaintStartDate: reception.complaintStartDate ?? "",
+      possibleCause: reception.possibleCause ?? "",
+      previousDoctorSeen: reception.previousDoctorSeen ?? "",
+      previousTreatment: reception.previousTreatment ?? "",
+      bestTimeOfDay: reception.bestTimeOfDay ?? "",
+      worstTimeOfDay: reception.worstTimeOfDay ?? "",
+      painType: (reception.painType as PodiatryPainType) ?? "",
+      painLevel: (reception.painLevel as PodiatryPainLevel) ?? "",
+      painProgression: reception.painProgression ?? "",
+      hadPreviousInjury: reception.hadPreviousInjury ?? "",
+    });
+    setFormHydrated(true);
+  }, [reception, formHydrated]);
+
+  const handleSaveComplaint = () => submitComplaint.mutate({ id, dto: {
+    majorComplaint: complaintForm.majorComplaint || undefined,
+    complaintStartDate: complaintForm.complaintStartDate || undefined,
+    possibleCause: complaintForm.possibleCause || undefined,
+    previousDoctorSeen: complaintForm.previousDoctorSeen || undefined,
+    previousTreatment: complaintForm.previousTreatment || undefined,
+    bestTimeOfDay: complaintForm.bestTimeOfDay || undefined,
+    worstTimeOfDay: complaintForm.worstTimeOfDay || undefined,
+    painType: complaintForm.painType || undefined,
+    painLevel: complaintForm.painLevel || undefined,
+    painProgression: complaintForm.painProgression || undefined,
+    hadPreviousInjury: complaintForm.hadPreviousInjury || undefined,
+  } });
+
 
   // One sheet per session: reception data is shared, the analysis is the session's.
   const handleExportPdf = async (session: PodiatrySession) => {
@@ -226,10 +281,11 @@ export default function PodiatryReceptionPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="reception">
-        <TabsList className="flex-wrap h-auto gap-1 w-full justify-start">
+      <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
+        <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
           <TabsTrigger value="reception" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabReception")}</TabsTrigger>
           <TabsTrigger value="patient_info" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabPatientInfo")}</TabsTrigger>
+          <TabsTrigger value="physician_form" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabPhysicianForm")}</TabsTrigger>
           {/* The assessment form is a session activity — hidden from a supervisor
               who can only receive patients (no session permission). */}
           {showSessionsTab && (
@@ -336,6 +392,105 @@ export default function PodiatryReceptionPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ── نموذج الطبيب: تابين فرعيين (الشكوى + التاريخ الطبي) ── */}
+        <TabsContent value="physician_form" className="mt-4">
+          <Tabs defaultValue="complaint" dir={isRtl ? "rtl" : "ltr"}>
+            <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
+              <TabsTrigger value="complaint" className="text-sm py-1.5">{t("tabComplaint")}</TabsTrigger>
+              <TabsTrigger value="medical_history" className="text-sm py-1.5">{t("tabMedicalHistory")}</TabsTrigger>
+            </TabsList>
+
+            {/* ── الشكوى ── */}
+            <TabsContent value="complaint" className="mt-4">
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-base">{t("tabComplaint")}</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Field label={t("majorComplaint")}>
+                      <Textarea rows={3} value={complaintForm.majorComplaint} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, majorComplaint: e.target.value }))} />
+                    </Field>
+                    <Field label={t("startDate")}>
+                      <Input value={complaintForm.complaintStartDate} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, complaintStartDate: e.target.value }))} />
+                    </Field>
+                    <Field label={t("possibleCause")}>
+                      <Input value={complaintForm.possibleCause} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, possibleCause: e.target.value }))} />
+                    </Field>
+                    <Field label={t("previousDoctorSeen")}>
+                      <Input value={complaintForm.previousDoctorSeen} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, previousDoctorSeen: e.target.value }))} />
+                    </Field>
+                    <Field label={t("previousTreatment")}>
+                      <Input value={complaintForm.previousTreatment} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, previousTreatment: e.target.value }))} />
+                    </Field>
+                    <Field label={t("lessBothersome")}>
+                      <Input value={complaintForm.bestTimeOfDay} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, bestTimeOfDay: e.target.value }))} />
+                    </Field>
+                    <Field label={t("moreBothersome")}>
+                      <Input value={complaintForm.worstTimeOfDay} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, worstTimeOfDay: e.target.value }))} />
+                    </Field>
+                    <Field label={t("painTypeLabel")}>
+                      <div className="flex flex-wrap gap-4">
+                        {PAIN_TYPE_VALUES.map((v) => (
+                          <label key={v} className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" className="h-4 w-4 accent-primary rounded-sm" disabled={!canEditReception}
+                              checked={complaintForm.painType === v}
+                              onChange={() => setComplaintForm((f) => ({ ...f, painType: f.painType === v ? "" : v }))} />
+                            <span className="text-sm">{t(`painType.${v}`)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </Field>
+                    <Field label={t("painLevelLabel")}>
+                      <div className="flex flex-wrap gap-4">
+                        {PAIN_LEVEL_VALUES.map((v) => (
+                          <label key={v} className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" className="h-4 w-4 accent-primary rounded-sm" disabled={!canEditReception}
+                              checked={complaintForm.painLevel === v}
+                              onChange={() => setComplaintForm((f) => ({ ...f, painLevel: f.painLevel === v ? "" : v }))} />
+                            <span className="text-sm">{t(`painLevel.${v}`)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </Field>
+                    <Field label={t("painProgression")}>
+                      <Input value={complaintForm.painProgression} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, painProgression: e.target.value }))} />
+                    </Field>
+                    <Field label={t("hadInjuryBefore")}>
+                      <Input value={complaintForm.hadPreviousInjury} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, hadPreviousInjury: e.target.value }))} />
+                    </Field>
+                    {canEditReception && (
+                      <Button onClick={handleSaveComplaint} disabled={submitComplaint.isPending} className="w-full gap-2 bg-orange-500 hover:bg-orange-600 text-white">
+                        {submitComplaint.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {t("saveComplaint")}
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* ── التاريخ الطبي ── (نفس فورم العلاج الفيزيائي بالضبط) */}
+            <TabsContent value="medical_history" className="mt-4">
+              <MedicalHistoryForm
+                initial={reception as any}
+                patientId={reception.patientId}
+                gender={patient?.gender}
+                canEdit={canEditReception}
+                saving={submitMH.isPending}
+                onSave={(dto) => submitMH.mutate({ id, dto })}
+              />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-4">

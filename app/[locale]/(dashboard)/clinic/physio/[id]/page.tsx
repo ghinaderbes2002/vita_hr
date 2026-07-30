@@ -2015,24 +2015,73 @@ export default function PhysioCasePage() {
         <TabsContent value="medical_history" className="mt-4 space-y-4">
           <Section title={t("medicalHistory.title")}>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>{t("medicalHistory.lifeType")}</Label>
-                <Select
-                  value={history.lifeType}
-                  onValueChange={(v) => setHistory((h) => ({ ...h, lifeType: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("select")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SEDENTARY">{t("medicalHistory.SEDENTARY")}</SelectItem>
-                    <SelectItem value="NORMAL">{t("medicalHistory.LIFE_NORMAL")}</SelectItem>
-                    <SelectItem value="ABNORMAL">{t("medicalHistory.ABNORMAL")}</SelectItem>
-                    <SelectItem value="PROFESSIONAL">{t("medicalHistory.PROFESSIONAL")}</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* الأدوية الموصوفة حالياً */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("medicalHistory.prescriptionDrugs")}</Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">{t("no")}</span>
+                    <Switch checked={history.prescriptionDrugs} onCheckedChange={(v) => setHistory((h) => ({ ...h, prescriptionDrugs: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
+                  </div>
+                </div>
+                {history.prescriptionDrugs && (
+                  <Input className="mr-4" value={history.currentMedications} onChange={(e) => setHistory((h) => ({ ...h, currentMedications: e.target.value }))} placeholder={t("medicalHistory.currentMedicationsPlaceholder")} disabled={!canEdit} />
+                )}
               </div>
 
+              {/* التشخيصات السابقة / الأدوية السابقة */}
+              <div className="space-y-1.5">
+                <Label>{t("medicalHistory.previousDiagnoses")}</Label>
+                <Textarea rows={2} value={history.previousDiagnoses} onChange={(e) => setHistory((h) => ({ ...h, previousDiagnoses: e.target.value }))} disabled={!canEdit} />
+              </div>
+
+              {/* 2. المستحضرات العشبية / الفيتامينات */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("medicalHistory.herbalSupplements")}</Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">{t("no")}</span>
+                    <Switch checked={history.herbalSupplements} onCheckedChange={(v) => setHistory((h) => ({ ...h, herbalSupplements: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
+                  </div>
+                </div>
+                {history.herbalSupplements && (
+                  <Input className="mr-4" value={history.supplementsList} onChange={(e) => setHistory((h) => ({ ...h, supplementsList: e.target.value }))} placeholder={t("medicalHistory.supplementsListPlaceholder")} disabled={!canEdit} />
+                )}
+              </div>
+
+              {/* 3. مشاكل صحية أخرى */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("medicalHistory.hasOtherHealthProblems")}</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{t("no")}</span>
+                    <Switch checked={history.hasOtherHealthProblems} onCheckedChange={(v) => setHistory((h) => ({ ...h, hasOtherHealthProblems: v }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
+                  </div>
+                </div>
+                {history.hasOtherHealthProblems && (
+                  <Input className="mr-4" value={history.otherConditions} onChange={(e) => setHistory((h) => ({ ...h, otherConditions: e.target.value }))} placeholder={t("medicalHistory.otherConditionsPlaceholder")} disabled={!canEdit} />
+                )}
+              </div>
+
+              {/* 4. قيود الطبيب */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>{t("medicalHistory.hasDoctorRestrictions")}</Label>
+                  <div className="flex items-center gap-2 shrink-0 mr-2">
+                    <span className="text-xs text-muted-foreground">{t("no")}</span>
+                    <Switch checked={history.hasDoctorRestrictions} onCheckedChange={(v) => setHistory((h) => ({ ...h, hasDoctorRestrictions: v, doctorRestrictions: v ? h.doctorRestrictions : "" }))} disabled={!canEdit} />
+                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
+                  </div>
+                </div>
+                {history.hasDoctorRestrictions && (
+                  <Input value={history.doctorRestrictions} onChange={(e) => setHistory((h) => ({ ...h, doctorRestrictions: e.target.value }))} placeholder={t("medicalHistory.doctorRestrictionsPlaceholder")} disabled={!canEdit} />
+                )}
+              </div>
+
+              {/* 5. هل تدخن */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>{t("medicalHistory.smokes")}</Label>
@@ -2050,6 +2099,7 @@ export default function PhysioCasePage() {
                 )}
               </div>
 
+              {/* 6. هل سبق لك أن دخنت */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>{t("medicalHistory.hasSmokedBefore")}</Label>
@@ -2067,6 +2117,7 @@ export default function PhysioCasePage() {
                 )}
               </div>
 
+              {/* 7. جهاز تنظيم ضربات القلب */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>{t("medicalHistory.hasPacemaker")}</Label>
@@ -2081,11 +2132,7 @@ export default function PhysioCasePage() {
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <Label>{t("medicalHistory.allergies")}</Label>
-                <Input value={history.allergies} onChange={(e) => setHistory((h) => ({ ...h, allergies: e.target.value }))} placeholder={t("medicalHistory.allergiesPlaceholder")} disabled={!canEdit} />
-              </div>
-
+              {/* 8. للإناث: الحمل */}
               {patientFull?.gender === "FEMALE" && (
                 <>
                   <div className="flex items-center justify-between">
@@ -2107,67 +2154,32 @@ export default function PhysioCasePage() {
                 </>
               )}
 
+              {/* 9. نمط الحياة */}
               <div className="space-y-1.5">
-                <Label>{t("medicalHistory.previousDiagnoses")}</Label>
-                <Textarea rows={2} value={history.previousDiagnoses} onChange={(e) => setHistory((h) => ({ ...h, previousDiagnoses: e.target.value }))} disabled={!canEdit} />
+                <Label>{t("medicalHistory.lifeType")}</Label>
+                <Select
+                  value={history.lifeType}
+                  onValueChange={(v) => setHistory((h) => ({ ...h, lifeType: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("select")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SEDENTARY">{t("medicalHistory.SEDENTARY")}</SelectItem>
+                    <SelectItem value="NORMAL">{t("medicalHistory.LIFE_NORMAL")}</SelectItem>
+                    <SelectItem value="ABNORMAL">{t("medicalHistory.ABNORMAL")}</SelectItem>
+                    <SelectItem value="PROFESSIONAL">{t("medicalHistory.PROFESSIONAL")}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>{t("medicalHistory.hasOtherHealthProblems")}</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{t("no")}</span>
-                    <Switch checked={history.hasOtherHealthProblems} onCheckedChange={(v) => setHistory((h) => ({ ...h, hasOtherHealthProblems: v }))} disabled={!canEdit} />
-                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
-                  </div>
-                </div>
-                {history.hasOtherHealthProblems && (
-                  <Input className="mr-4" value={history.otherConditions} onChange={(e) => setHistory((h) => ({ ...h, otherConditions: e.target.value }))} placeholder={t("medicalHistory.otherConditionsPlaceholder")} disabled={!canEdit} />
-                )}
+              {/* 10. الحساسية */}
+              <div className="space-y-1.5">
+                <Label>{t("medicalHistory.allergies")}</Label>
+                <Input value={history.allergies} onChange={(e) => setHistory((h) => ({ ...h, allergies: e.target.value }))} placeholder={t("medicalHistory.allergiesPlaceholder")} disabled={!canEdit} />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>{t("medicalHistory.hasDoctorRestrictions")}</Label>
-                  <div className="flex items-center gap-2 shrink-0 mr-2">
-                    <span className="text-xs text-muted-foreground">{t("no")}</span>
-                    <Switch checked={history.hasDoctorRestrictions} onCheckedChange={(v) => setHistory((h) => ({ ...h, hasDoctorRestrictions: v, doctorRestrictions: v ? h.doctorRestrictions : "" }))} disabled={!canEdit} />
-                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
-                  </div>
-                </div>
-                {history.hasDoctorRestrictions && (
-                  <Input value={history.doctorRestrictions} onChange={(e) => setHistory((h) => ({ ...h, doctorRestrictions: e.target.value }))} placeholder={t("medicalHistory.doctorRestrictionsPlaceholder")} disabled={!canEdit} />
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>{t("medicalHistory.prescriptionDrugs")}</Label>
-                  <div className="flex items-center gap-2 shrink-0 mr-2">
-                    <span className="text-xs text-muted-foreground">{t("no")}</span>
-                    <Switch checked={history.prescriptionDrugs} onCheckedChange={(v) => setHistory((h) => ({ ...h, prescriptionDrugs: v }))} disabled={!canEdit} />
-                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
-                  </div>
-                </div>
-                {history.prescriptionDrugs && (
-                  <Input className="mr-4" value={history.currentMedications} onChange={(e) => setHistory((h) => ({ ...h, currentMedications: e.target.value }))} placeholder={t("medicalHistory.currentMedicationsPlaceholder")} disabled={!canEdit} />
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>{t("medicalHistory.herbalSupplements")}</Label>
-                  <div className="flex items-center gap-2 shrink-0 mr-2">
-                    <span className="text-xs text-muted-foreground">{t("no")}</span>
-                    <Switch checked={history.herbalSupplements} onCheckedChange={(v) => setHistory((h) => ({ ...h, herbalSupplements: v }))} disabled={!canEdit} />
-                    <span className="text-xs text-muted-foreground">{t("yes")}</span>
-                  </div>
-                </div>
-                {history.herbalSupplements && (
-                  <Input className="mr-4" value={history.supplementsList} onChange={(e) => setHistory((h) => ({ ...h, supplementsList: e.target.value }))} placeholder={t("medicalHistory.supplementsListPlaceholder")} disabled={!canEdit} />
-                )}
-              </div>
-
+              {/* 11. حساسية المواد اللاصقة / اللاتكس / لسعات النحل */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>{t("medicalHistory.adhesiveAllergy")}</Label>
@@ -2182,11 +2194,13 @@ export default function PhysioCasePage() {
                 )}
               </div>
 
+              {/* 12. الشكاوى والعمليات السابقة */}
               <div className="space-y-1.5">
                 <Label>{t("medicalHistory.previousComplaintsSurgeries")}</Label>
                 <Textarea rows={2} value={history.previousComplaintsSurgeries} onChange={(e) => setHistory((h) => ({ ...h, previousComplaintsSurgeries: e.target.value }))} disabled={!canEdit} />
               </div>
 
+              {/* 13. هل خضعت لأي عمليات جراحية */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>{t("medicalHistory.hadSurgeries")}</Label>

@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SignaturePadDialog } from "./signature-pad-dialog";
 import {
   useCreatePodiatrySession, useUpdatePodiatrySession,
 } from "@/lib/hooks/use-clinic-podiatry";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { ClinicalPlanItem, PodiatrySession } from "@/lib/api/clinic-podiatry";
 import { CLINICAL_PLAN_LABEL, CLINICAL_PLAN_VALUES, FOOT_FLAGS } from "./podiatry-labels";
 
@@ -54,6 +56,18 @@ export function PodiatrySessionDialog({ open, onOpenChange, receptionId, session
   const createSession = useCreatePodiatrySession();
   const updateSession = useUpdatePodiatrySession();
   const isPending = createSession.isPending || updateSession.isPending;
+
+  // "اسم الأخصائي" is chosen from the clinical departments' staff (Medical
+  // Administration, Physiotherapy, Prosthetics, Podiatry).
+  const { data: staffData } = useEmployeesBasicList();
+  const staffList: any[] = Array.isArray(staffData)
+    ? staffData
+    : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
+  const CLINICAL_DEPTS = ["الإدارة الطبية", "الادارة الطبية", "العلاج الفيزيائي", "الأطراف الصناعية", "الاطراف الصناعية", "طب الأقدام", "طب الاقدام"];
+  const medicalStaff = staffList.filter((e: any) =>
+    e.employmentStatus === "ACTIVE" &&
+    CLINICAL_DEPTS.some((d) => e.department?.nameAr?.includes(d))
+  );
 
   // Reset the form each time the dialog opens (adjusting state on prop change,
   // which React prefers over doing it in an effect).
@@ -183,7 +197,18 @@ export function PodiatrySessionDialog({ open, onOpenChange, receptionId, session
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">اسم الأخصائي</Label>
-                <Input className="h-9" value={form.clinicianName} onChange={(e) => setForm((f) => ({ ...f, clinicianName: e.target.value }))} />
+                <Select
+                  value={form.clinicianName || undefined}
+                  onValueChange={(v) => setForm((f) => ({ ...f, clinicianName: v }))}
+                >
+                  <SelectTrigger className="h-9"><SelectValue placeholder="اختر الأخصائي..." /></SelectTrigger>
+                  <SelectContent>
+                    {medicalStaff.map((e: any) => {
+                      const name = `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim();
+                      return <SelectItem key={e.id} value={name}>{name}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">التوقيع</Label>

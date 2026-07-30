@@ -4,6 +4,8 @@ import {
   clinicPodiatryApi,
   PodiatryReceptionDto,
   PodiatrySessionDto,
+  PodiatryComplaintDto,
+  PodiatryMedicalHistoryDto,
 } from "@/lib/api/clinic-podiatry";
 
 type ApiError = { response?: { data?: { message?: string; error?: { message?: string } } } };
@@ -50,6 +52,34 @@ export function useUpdatePodiatryReception() {
       toast.success("تم حفظ التعديلات");
     },
     onError: (e: unknown) => toast.error(errMsg(e, "فشل حفظ التعديلات")),
+  });
+}
+
+export function useSubmitPodiatryComplaint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: PodiatryComplaintDto }) =>
+      clinicPodiatryApi.submitComplaint(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["podiatry-receptions"] });
+      qc.invalidateQueries({ queryKey: ["podiatry-reception", id] });
+      toast.success("تم حفظ الشكوى");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل حفظ الشكوى")),
+  });
+}
+
+export function useSubmitPodiatryMedicalHistory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: PodiatryMedicalHistoryDto }) =>
+      clinicPodiatryApi.submitMedicalHistory(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["podiatry-receptions"] });
+      qc.invalidateQueries({ queryKey: ["podiatry-reception", id] });
+      toast.success("تم حفظ التاريخ الطبي");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل حفظ التاريخ الطبي")),
   });
 }
 

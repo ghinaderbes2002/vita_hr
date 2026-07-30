@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Plus, Footprints } from "lucide-react";
+import { Search, Eye, Footprints } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,9 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
 import { VISIT_TYPE_LABEL } from "@/components/clinic/podiatry-labels";
-import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
-import { ActionGuard } from "@/components/permissions/action-guard";
-import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
@@ -27,7 +24,6 @@ export default function PodiatryListPage() {
   const locale = useLocale();
   const t = useTranslations("clinic.podiatry");
   const [search, setSearch] = useState("");
-  const [newOpen, setNewOpen] = useState(false);
 
   const { data: receptions = [], isLoading } = usePodiatryReceptions();
 
@@ -43,14 +39,6 @@ export default function PodiatryListPage() {
       <PageHeader
         title={t("title")}
         description={t("description")}
-        actions={
-          <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.RECEPTION_CREATE}>
-            <Button className="gap-2" onClick={() => setNewOpen(true)}>
-              <Plus className="h-4 w-4" />
-              {t("newReception")}
-            </Button>
-          </ActionGuard>
-        }
       />
 
       <div className="relative">
@@ -113,11 +101,6 @@ export default function PodiatryListPage() {
         )}
       </div>
 
-      <PodiatryReceptionDialog
-        open={newOpen}
-        onOpenChange={setNewOpen}
-        onCreated={(id) => router.push(`/${locale}/clinic/podiatry/${id}`)}
-      />
     </div>
   );
 }

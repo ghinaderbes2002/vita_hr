@@ -52,6 +52,18 @@ export interface PodiatryReception {
   medicalHistory?: MedicalHistoryItem[] | null;
   medicalHistoryOther?: string | null;
   vasScore?: number | null;
+  // Physician-form complaint fields (mirror the paper form)
+  majorComplaint?: string | null;
+  complaintStartDate?: string | null;
+  possibleCause?: string | null;
+  previousDoctorSeen?: string | null;
+  previousTreatment?: string | null;
+  bestTimeOfDay?: string | null;
+  worstTimeOfDay?: string | null;
+  painType?: string | null;
+  painLevel?: string | null;
+  painProgression?: string | null;
+  hadPreviousInjury?: string | null;
   sessions?: PodiatrySession[];
   createdAt?: string;
 }
@@ -73,6 +85,27 @@ export interface PodiatryReceptionDto {
 }
 
 export type PodiatrySessionDto = Partial<Omit<PodiatrySession, "id" | "receptionId" | "createdAt">>;
+
+// Dedicated "physician form" upserts on a reception (all fields optional).
+export type PodiatryPainType = "INTERMITTENT" | "CONSTANT" | "WITH_MOTION";
+export type PodiatryPainLevel = "MILD" | "MODERATE" | "SEVERE" | "EXCRUCIATING";
+
+export interface PodiatryComplaintDto {
+  majorComplaint?: string;        // الشكوى الرئيسية والأعراض
+  complaintStartDate?: string;    // تاريخ البدء
+  possibleCause?: string;         // السبب المحتمل
+  previousDoctorSeen?: string;    // زيارة الطبيب السابق
+  previousTreatment?: string;     // العلاج السابق للشكوى
+  bestTimeOfDay?: string;         // أقل إزعاجاً
+  worstTimeOfDay?: string;        // أكثر إزعاجاً
+  painType?: PodiatryPainType;    // نوع الألم
+  painLevel?: PodiatryPainLevel;  // مستوى الألم الحالي
+  painProgression?: string;       // يتحسن / يزداد
+  hadPreviousInjury?: string;     // سبق التعرض للإصابة
+}
+// Mirrors the physiotherapy medical-history form (many optional fields). Kept
+// open so the full form can be upserted; the backend accepts what it supports.
+export type PodiatryMedicalHistoryDto = Record<string, unknown>;
 
 const unwrap = (data: { data?: unknown } | unknown) =>
   (data as { data?: unknown })?.data ?? data;
@@ -99,6 +132,16 @@ export const clinicPodiatryApi = {
 
   updateReception: async (id: string, dto: PodiatryReceptionDto): Promise<PodiatryReception> => {
     const { data } = await apiClient.patch(`/podiatry/receptions/${id}`, dto);
+    return unwrap(data) as PodiatryReception;
+  },
+
+  // Physician-form upserts. POST and PUT behave identically (upsert); we use PUT.
+  submitComplaint: async (id: string, dto: PodiatryComplaintDto): Promise<PodiatryReception> => {
+    const { data } = await apiClient.put(`/podiatry/receptions/${id}/complaint`, dto);
+    return unwrap(data) as PodiatryReception;
+  },
+  submitMedicalHistory: async (id: string, dto: PodiatryMedicalHistoryDto): Promise<PodiatryReception> => {
+    const { data } = await apiClient.put(`/podiatry/receptions/${id}/medical-history`, dto);
     return unwrap(data) as PodiatryReception;
   },
 
