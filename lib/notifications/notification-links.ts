@@ -7,6 +7,12 @@ import type { Notification } from "@/lib/api/notifications";
 export function resolveNotificationLink(notif: Notification): string | null {
   const d = (notif.data ?? {}) as Record<string, any>;
 
+  // Appointment notifications (created / reminder / cancelled …) all carry an
+  // `appointmentId` regardless of their type → open the therapist's own list.
+  // There is no dedicated appointment detail route (appointments open in a
+  // dialog), so we land on "my-appointments".
+  if (d.appointmentId) return "/clinic/my-appointments";
+
   switch (notif.type) {
     case "GENERAL":
       if (d.alertType === "PHYSIO_EMERGENCY") {

@@ -52,18 +52,18 @@ export interface PodiatryReception {
   medicalHistory?: MedicalHistoryItem[] | null;
   medicalHistoryOther?: string | null;
   vasScore?: number | null;
-  // Physician-form complaint fields (mirror the paper form)
-  majorComplaint?: string | null;
-  complaintStartDate?: string | null;
+  // Physician-form complaint fields (backend contract — mirror the paper form)
+  mainComplaint?: string | null;
+  startDate?: string | null;
   possibleCause?: string | null;
-  previousDoctorSeen?: string | null;
+  previousDoctor?: string | null;
   previousTreatment?: string | null;
-  bestTimeOfDay?: string | null;
-  worstTimeOfDay?: string | null;
+  symptomsBetterTime?: string | null;
+  symptomsWorseTime?: string | null;
   painType?: string | null;
   painLevel?: string | null;
-  painProgression?: string | null;
-  hadPreviousInjury?: string | null;
+  painTrend?: string | null;
+  hadInjuryBefore?: boolean | null;
   sessions?: PodiatrySession[];
   createdAt?: string;
 }
@@ -87,25 +87,83 @@ export interface PodiatryReceptionDto {
 export type PodiatrySessionDto = Partial<Omit<PodiatrySession, "id" | "receptionId" | "createdAt">>;
 
 // Dedicated "physician form" upserts on a reception (all fields optional).
-export type PodiatryPainType = "INTERMITTENT" | "CONSTANT" | "WITH_MOTION";
+// Field names/enums mirror the podiatry backend contract exactly.
+export type PodiatryPainType = "INTERMITTENT" | "CONSTANT" | "WITH_CERTAIN_MOTIONS";
 export type PodiatryPainLevel = "MILD" | "MODERATE" | "SEVERE" | "EXCRUCIATING";
+export type PodiatryPainTrend = "BETTER" | "WORSE" | "SAME";
 
 export interface PodiatryComplaintDto {
-  majorComplaint?: string;        // الشكوى الرئيسية والأعراض
-  complaintStartDate?: string;    // تاريخ البدء
-  possibleCause?: string;         // السبب المحتمل
-  previousDoctorSeen?: string;    // زيارة الطبيب السابق
-  previousTreatment?: string;     // العلاج السابق للشكوى
-  bestTimeOfDay?: string;         // أقل إزعاجاً
-  worstTimeOfDay?: string;        // أكثر إزعاجاً
-  painType?: PodiatryPainType;    // نوع الألم
-  painLevel?: PodiatryPainLevel;  // مستوى الألم الحالي
-  painProgression?: string;       // يتحسن / يزداد
-  hadPreviousInjury?: string;     // سبق التعرض للإصابة
+  mainComplaint?: string;          // ما هي شكواك الرئيسية والأعراض
+  startDate?: string;              // تاريخ البدء
+  possibleCause?: string;          // السبب المحتمل
+  previousDoctor?: string;         // طبيب سابق بسبب الشكوى
+  previousTreatment?: string;      // العلاج السابق للشكوى
+  symptomsBetterTime?: string;     // وقت تحسّن الأعراض
+  symptomsWorseTime?: string;      // وقت تفاقم الأعراض
+  painType?: PodiatryPainType;     // نوع الألم
+  painLevel?: PodiatryPainLevel;   // مستوى الألم الحالي
+  painTrend?: PodiatryPainTrend;   // يتحسن / يزداد / كما هو
+  hadInjuryBefore?: boolean;       // سبق التعرض للإصابة
 }
-// Mirrors the physiotherapy medical-history form (many optional fields). Kept
-// open so the full form can be upserted; the backend accepts what it supports.
-export type PodiatryMedicalHistoryDto = Record<string, unknown>;
+
+// Podiatry medical-history contract. All fields optional; the API accepts any
+// partial subset. Enum values mirror the backend exactly.
+export type PodiatryRadiographyType = "MRI" | "X_RAY" | "CT" | "MYELOGRAM" | "OTHER";
+export type PodiatryMedicalHistoryItem =
+  | "LIVER_PROBLEMS" | "PNEUMONIA" | "URINARY_INFECTION" | "DIABETES"
+  | "HEMOPHILIA" | "LUNG_ISSUES" | "STROKE" | "KIDNEY_PROBLEMS"
+  | "ANEMIA" | "ASTHMA" | "CHEMICAL_DEPENDENCY" | "EPILEPSY"
+  | "HIGH_LOW_BP" | "HEART_PROBLEMS" | "DEPRESSION" | "BONE_INFECTION"
+  | "ARTERIOSCLEROSIS" | "TUBERCULOSIS" | "MUSCULOSKELETAL"
+  | "JOINT_BONE_INFECTION" | "EYE_INFECTION" | "CIRCULATION_PROBLEMS"
+  | "ARTHRITIS" | "CANCER" | "BLOOD_CLOTS" | "ANGINA"
+  | "STD" | "MULTIPLE_SCLEROSIS" | "AIDS_HIV" | "OTHER";
+
+export interface PodiatrySurgeryEntry {
+  surgeryName?: string;
+  type?: string;
+  date?: string;
+}
+
+export interface PodiatryImagingProcedure {
+  imageUrl?: string;      // uploaded document id
+  description?: string;
+}
+
+export interface PodiatryMedicalHistoryDto {
+  height?: number;
+  weight?: number;
+  currentMedications?: string;
+  previousDiagnoses?: string;
+  herbalPreparations?: boolean;
+  herbalPreparationsDetails?: string;
+  otherHealthProblems?: string;
+  doctorRestrictions?: string;
+  smoker?: boolean;
+  everSmoked?: boolean;
+  smokingFrequency?: string;
+  hasPacemaker?: boolean;
+  isPregnant?: boolean;
+  allergyToAdhesives?: boolean;
+  surgeries?: PodiatrySurgeryEntry[];
+  hadPhysicalTherapy?: boolean;
+  hasOtherTreatments?: boolean;
+  radiographyTypes?: PodiatryRadiographyType[];
+  radiographyOther?: string;
+  radiographyResults?: string;
+  hasNewAnalysis?: boolean;
+  newAnalysisDate?: string;
+  newAnalysisNotes?: string;   // free-text notes for the new analysis
+  hasOldAnalysis?: boolean;
+  oldAnalysisDate?: string;
+  oldAnalysisNotes?: string;   // free-text notes for the old analysis
+  boneDensityScan?: boolean;
+  hospitalizedPastYear?: boolean;
+  imagingProcedures?: PodiatryImagingProcedure[];  // image + description per row
+  diagnosis?: string;          // free-text diagnosis (edited in the medical-history tab)
+  medicalHistory?: PodiatryMedicalHistoryItem[];
+  medicalHistoryOther?: string;
+}
 
 const unwrap = (data: { data?: unknown } | unknown) =>
   (data as { data?: unknown })?.data ?? data;

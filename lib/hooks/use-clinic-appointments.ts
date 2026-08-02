@@ -9,6 +9,13 @@ export function useClinicAppointments(params?: AppointmentListParams) {
   });
 }
 
+export function useMyAppointments(params?: AppointmentListParams) {
+  return useQuery({
+    queryKey: ["my-appointments", params],
+    queryFn: () => clinicAppointmentsApi.myAppointments(params),
+  });
+}
+
 export function useClinicCalendar(from: string, to: string) {
   return useQuery({
     queryKey: ["clinic-calendar", from, to],

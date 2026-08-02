@@ -3,7 +3,7 @@
 import { useState, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight, Plus, Clock, X, Check, Loader2, UserRound, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, X, Check, Loader2, UserRound, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,13 +13,24 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
 import { Appointment, AppointmentType, AppointmentStatus, PractitionerRole } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
-import { useMyEmployee, useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { useMyEmployee, useEmployeesByDepartment, useEmployeesBasicList } from "@/lib/hooks/use-employees";
+
+// Clinical departments whose staff can be assigned as the specialist therapist
+// (both spellings — with and without hamza — are accepted).
+const CLINICAL_DEPTS = [
+  "الإدارة الطبية", "الادارة الطبية",
+  "الأطراف الصناعية", "الاطراف الصناعية",
+  "طب الأقدام", "طب الاقدام",
+  "العلاج الفيزيائي",
+];
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
@@ -64,6 +75,18 @@ export default function AppointmentsPage() {
   const { data: physioDeptData } = useEmployeesByDepartment(PHYSIO_DEPT_ID);
   const physioEmployees: { id: string; firstNameAr: string; lastNameAr: string }[] =
     (physioDeptData as any)?.employees ?? (physioDeptData as any)?.items ?? (Array.isArray(physioDeptData) ? physioDeptData : []);
+  // Specialist-therapist pool: active staff across all clinical departments.
+  const { data: staffData } = useEmployeesBasicList();
+  const staffList: any[] = Array.isArray(staffData)
+    ? staffData
+    : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
+  const clinicalStaff = staffList.filter(
+    (e: any) => e.employmentStatus === "ACTIVE" && CLINICAL_DEPTS.some((d) => e.department?.nameAr?.includes(d)),
+  );
+  const therapistLabel = (id: string) => {
+    const e = clinicalStaff.find((x: any) => (x.userId ?? x.id) === id);
+    return e ? `${e.firstNameAr} ${e.lastNameAr}` : id;
+  };
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string>(toISO(today));
@@ -81,6 +104,7 @@ export default function AppointmentsPage() {
     appointmentType: "ASSESSMENT" as AppointmentType,
     practitionerRole: "PROSTHETIST" as PractitionerRole,
     physiotherapistId: "",
+    therapistIds: [] as string[],
     date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "",
   });
 
@@ -143,6 +167,7 @@ export default function AppointmentsPage() {
       startTime: startISO,
       endTime: endISO,
       notes: newForm.notes || undefined,
+      therapistIds: newForm.therapistIds.length ? newForm.therapistIds : undefined,
       // Auto-linked prosthetics case (hidden from reception). Omitted when the
       // patient has no active case → no auto-session is created.
       ...(activeProstheticsCase
@@ -153,7 +178,7 @@ export default function AppointmentsPage() {
     setSelectedDate(newForm.date);
     setPatientSearch("");
     setSelectedPatientLabel("");
-    setNewForm({ patientId: "", appointmentType: "ASSESSMENT", practitionerRole: "PROSTHETIST", physiotherapistId: "", date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "" });
+    setNewForm({ patientId: "", appointmentType: "ASSESSMENT", practitionerRole: "PROSTHETIST", physiotherapistId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "" });
   };
 
   // Build calendar grid
@@ -341,6 +366,12 @@ export default function AppointmentsPage() {
               ["الممارس", detailAppt.practitioner ? `${detailAppt.practitioner.firstName} ${detailAppt.practitioner.lastName}` : "—"],
               ["ملاحظات", detailAppt.notes || "—"],
             ];
+            const therapistNames = (detailAppt.therapists ?? [])
+              .map((tp) => `${tp.firstNameAr ?? tp.firstName ?? ""} ${tp.lastNameAr ?? tp.lastName ?? ""}`.trim())
+              .filter(Boolean);
+            if (therapistNames.length) {
+              rows.push(["معالجون إضافيون", therapistNames.join("، ")]);
+            }
             if (detailAppt.status === "CANCELLED" && (detailAppt.cancelReason || detailAppt.cancelledReason)) {
               rows.push(["سبب الإلغاء", detailAppt.cancelReason ?? detailAppt.cancelledReason ?? "—"]);
             }
@@ -507,6 +538,53 @@ export default function AppointmentsPage() {
                 </Select>
               </div>
             )}
+            {/* Specialist therapists — one or more, from any clinical department;
+                each gets notified of the appointment. */}
+            <div className="space-y-1.5">
+              <Label>{t("form.specialistTherapist")}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between font-normal h-auto min-h-10 py-2">
+                    <span className={cn("truncate text-start", newForm.therapistIds.length === 0 && "text-muted-foreground")}>
+                      {newForm.therapistIds.length
+                        ? newForm.therapistIds.map(therapistLabel).join("، ")
+                        : t("form.specialistTherapistPlaceholder")}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-(--radix-popover-trigger-width) p-1" align="start">
+                  {clinicalStaff.length === 0 ? (
+                    <p className="px-2 py-1.5 text-sm text-muted-foreground">—</p>
+                  ) : (
+                    <div className="max-h-60 overflow-y-auto">
+                      {clinicalStaff.map((emp: any) => {
+                        const val = emp.userId ?? emp.id;
+                        const active = newForm.therapistIds.includes(val);
+                        return (
+                          <button
+                            key={emp.id}
+                            type="button"
+                            onClick={() =>
+                              setNewForm((f) => ({
+                                ...f,
+                                therapistIds: active
+                                  ? f.therapistIds.filter((x) => x !== val)
+                                  : [...f.therapistIds, val],
+                              }))
+                            }
+                            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent text-start"
+                          >
+                            <Checkbox checked={active} className="pointer-events-none" />
+                            <span className="flex-1 truncate">{emp.firstNameAr} {emp.lastNameAr}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+            </div>
             <div className="space-y-1.5">
               <Label>{t("form.date")}</Label>
               <Input type="date" value={newForm.date} onChange={(e) => setNewForm((f) => ({ ...f, date: e.target.value }))} />

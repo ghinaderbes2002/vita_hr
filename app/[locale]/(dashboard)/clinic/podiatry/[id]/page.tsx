@@ -18,8 +18,9 @@ import {
   useSubmitPodiatryComplaint, useSubmitPodiatryMedicalHistory,
 } from "@/lib/hooks/use-clinic-podiatry";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
+import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { PatientPhoto } from "@/components/clinic/patient-photo";
-import { PodiatrySession, PodiatryPainType, PodiatryPainLevel } from "@/lib/api/clinic-podiatry";
+import { PodiatrySession, PodiatryPainType, PodiatryPainLevel, PodiatryPainTrend } from "@/lib/api/clinic-podiatry";
 import {
   AFFECTED_SIDE_LABEL, AFFECTED_SIDE_VALUES, CLINICAL_PLAN_LABEL,
   CLINICAL_PLAN_VALUES, FOOT_FLAGS, FOOT_SYMPTOM_LABEL, FOOT_SYMPTOM_VALUES,
@@ -34,8 +35,108 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
-const PAIN_TYPE_VALUES: PodiatryPainType[] = ["INTERMITTENT", "CONSTANT", "WITH_MOTION"];
+const PAIN_TYPE_VALUES: PodiatryPainType[] = ["INTERMITTENT", "CONSTANT", "WITH_CERTAIN_MOTIONS"];
 const PAIN_LEVEL_VALUES: PodiatryPainLevel[] = ["MILD", "MODERATE", "SEVERE", "EXCRUCIATING"];
+const PAIN_TREND_VALUES: PodiatryPainTrend[] = ["BETTER", "WORSE", "SAME"];
+
+// ── Podiatry medical-history adapters ──────────────────────────────────────
+// The shared <MedicalHistoryForm> speaks the physiotherapy field vocabulary.
+// These translate to/from the podiatry backend contract so the UI stays
+// untouched while the payload matches the backend field names/enums exactly.
+const MH_COND_TO_BACKEND: Record<string, string> = { STDS: "STD", HYPERTENSION: "HIGH_LOW_BP" };
+const MH_COND_FROM_BACKEND: Record<string, string> = { STD: "STDS", HIGH_LOW_BP: "HYPERTENSION" };
+const MH_RADIO_TO_BACKEND: Record<string, string> = { XRAY: "X_RAY" };
+const MH_RADIO_FROM_BACKEND: Record<string, string> = { X_RAY: "XRAY" };
+
+const nz = (v: unknown) => (v === "" || v == null ? undefined : v);
+
+function mhFormToBackend(d: Record<string, any>): Record<string, any> {
+  const radio = Array.isArray(d.tests)
+    ? d.tests.filter((x: string) => x !== "BONE_DENSITY").map((x: string) => MH_RADIO_TO_BACKEND[x] ?? x)
+    : undefined;
+  const conds = Array.isArray(d.chronicConditions)
+    ? d.chronicConditions.map((x: string) => MH_COND_TO_BACKEND[x] ?? x)
+    : undefined;
+  const surgeries = Array.isArray(d.surgeries)
+    ? d.surgeries
+        .filter((s: any) => s.name || s.type || s.date)
+        .map((s: any) => ({ surgeryName: nz(s.name), type: nz(s.type), date: nz(s.date) }))
+    : undefined;
+  return {
+    currentMedications: nz(d.currentMedications),
+    previousDiagnoses: nz(d.previousDiagnoses),
+    herbalPreparations: d.herbalSupplements,
+    herbalPreparationsDetails: nz(d.supplementsList),
+    otherHealthProblems: nz(d.otherConditions),
+    doctorRestrictions: nz(d.doctorRestrictions),
+    smoker: d.smokes,
+    everSmoked: d.hasSmokedBefore,
+    smokingFrequency: nz(d.smokingFrequency),
+    hasPacemaker: d.hasPacemaker,
+    isPregnant: d.isPregnant,
+    allergyToAdhesives: d.adhesiveAllergy,
+    surgeries: surgeries && surgeries.length ? surgeries : undefined,
+    hadPhysicalTherapy: d.hadPTSameProblem,
+    hasOtherTreatments: d.receivingOtherTreatment,
+    radiographyTypes: radio && radio.length ? radio : undefined,
+    radiographyOther: nz(d.testsOther),
+    radiographyResults: nz(d.testResults),
+    hasNewAnalysis: !!(nz(d.newAnalysis) || nz(d.newAnalysisDate)) || undefined,
+    newAnalysisDate: nz(d.newAnalysisDate),
+    newAnalysisNotes: nz(d.newAnalysis),
+    hasOldAnalysis: !!(nz(d.oldAnalysis) || nz(d.oldAnalysisDate)) || undefined,
+    oldAnalysisDate: nz(d.oldAnalysisDate),
+    oldAnalysisNotes: nz(d.oldAnalysis),
+    boneDensityScan: d.boneDensityTest,
+    hospitalizedPastYear: d.hospitalizedLastYear,
+    imagingProcedures: Array.isArray(d.imagingProcedures) && d.imagingProcedures.length ? d.imagingProcedures : undefined,
+    diagnosis: nz(d.diagnosis),
+    medicalHistory: conds && conds.length ? conds : undefined,
+    medicalHistoryOther: nz(d.chronicConditionsOther),
+  };
+}
+
+function mhBackendToForm(r: Record<string, any>): Record<string, any> {
+  const tests = Array.isArray(r.radiographyTypes) ? r.radiographyTypes.map((x: string) => MH_RADIO_FROM_BACKEND[x] ?? x) : [];
+  const chronic = Array.isArray(r.medicalHistory) ? r.medicalHistory.map((x: string) => MH_COND_FROM_BACKEND[x] ?? x) : [];
+  const surgeries = Array.isArray(r.surgeries)
+    ? r.surgeries.map((s: any) => ({ name: s.surgeryName ?? "", type: s.type ?? "", date: s.date ?? "" }))
+    : [];
+  return {
+    currentMedications: r.currentMedications ?? "",
+    prescriptionDrugs: !!r.currentMedications,
+    previousDiagnoses: r.previousDiagnoses ?? "",
+    herbalSupplements: !!r.herbalPreparations,
+    supplementsList: r.herbalPreparationsDetails ?? "",
+    hasOtherHealthProblems: !!r.otherHealthProblems,
+    otherConditions: r.otherHealthProblems ?? "",
+    hasDoctorRestrictions: !!r.doctorRestrictions,
+    doctorRestrictions: r.doctorRestrictions ?? "",
+    smokes: !!r.smoker,
+    hasSmokedBefore: !!r.everSmoked,
+    smokingFrequency: r.smokingFrequency ?? "",
+    hasPacemaker: !!r.hasPacemaker,
+    isPregnant: !!r.isPregnant,
+    adhesiveAllergy: !!r.allergyToAdhesives,
+    hadSurgeries: surgeries.length > 0,
+    surgeries,
+    hadPTSameProblem: !!r.hadPhysicalTherapy,
+    receivingOtherTreatment: !!r.hasOtherTreatments,
+    tests,
+    testsOther: r.radiographyOther ?? "",
+    testResults: r.radiographyResults ?? "",
+    newAnalysis: r.newAnalysisNotes ?? "",
+    newAnalysisDate: r.newAnalysisDate ?? "",
+    oldAnalysis: r.oldAnalysisNotes ?? "",
+    oldAnalysisDate: r.oldAnalysisDate ?? "",
+    boneDensityTest: !!r.boneDensityScan,
+    hospitalizedLastYear: !!r.hospitalizedPastYear,
+    imagingProcedures: Array.isArray(r.imagingProcedures) ? r.imagingProcedures : [],
+    diagnosis: r.diagnosis ?? "",
+    chronicConditions: chronic,
+    chronicConditionsOther: r.medicalHistoryOther ?? "",
+  };
+}
 
 // Age in completed years, derived from the stored date of birth.
 function ageFromDob(dob?: string | null): number | null {
@@ -172,44 +273,44 @@ export default function PodiatryReceptionPage() {
   const canEditReception = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PODIATRY.RECEPTION_EDIT]);
 
   const [complaintForm, setComplaintForm] = useState({
-    majorComplaint: "", complaintStartDate: "", possibleCause: "",
-    previousDoctorSeen: "", previousTreatment: "",
-    bestTimeOfDay: "", worstTimeOfDay: "",
+    mainComplaint: "", startDate: "", possibleCause: "",
+    previousDoctor: "", previousTreatment: "",
+    symptomsBetterTime: "", symptomsWorseTime: "",
     painType: "" as "" | PodiatryPainType, painLevel: "" as "" | PodiatryPainLevel,
-    painProgression: "", hadPreviousInjury: "",
+    painTrend: "" as "" | PodiatryPainTrend, hadInjuryBefore: null as boolean | null,
   });
   const [formHydrated, setFormHydrated] = useState(false);
 
   useEffect(() => {
     if (!reception || formHydrated) return;
     setComplaintForm({
-      majorComplaint: reception.majorComplaint ?? "",
-      complaintStartDate: reception.complaintStartDate ?? "",
+      mainComplaint: reception.mainComplaint ?? "",
+      startDate: reception.startDate ?? "",
       possibleCause: reception.possibleCause ?? "",
-      previousDoctorSeen: reception.previousDoctorSeen ?? "",
+      previousDoctor: reception.previousDoctor ?? "",
       previousTreatment: reception.previousTreatment ?? "",
-      bestTimeOfDay: reception.bestTimeOfDay ?? "",
-      worstTimeOfDay: reception.worstTimeOfDay ?? "",
+      symptomsBetterTime: reception.symptomsBetterTime ?? "",
+      symptomsWorseTime: reception.symptomsWorseTime ?? "",
       painType: (reception.painType as PodiatryPainType) ?? "",
       painLevel: (reception.painLevel as PodiatryPainLevel) ?? "",
-      painProgression: reception.painProgression ?? "",
-      hadPreviousInjury: reception.hadPreviousInjury ?? "",
+      painTrend: (reception.painTrend as PodiatryPainTrend) ?? "",
+      hadInjuryBefore: typeof reception.hadInjuryBefore === "boolean" ? reception.hadInjuryBefore : null,
     });
     setFormHydrated(true);
   }, [reception, formHydrated]);
 
   const handleSaveComplaint = () => submitComplaint.mutate({ id, dto: {
-    majorComplaint: complaintForm.majorComplaint || undefined,
-    complaintStartDate: complaintForm.complaintStartDate || undefined,
+    mainComplaint: complaintForm.mainComplaint || undefined,
+    startDate: complaintForm.startDate || undefined,
     possibleCause: complaintForm.possibleCause || undefined,
-    previousDoctorSeen: complaintForm.previousDoctorSeen || undefined,
+    previousDoctor: complaintForm.previousDoctor || undefined,
     previousTreatment: complaintForm.previousTreatment || undefined,
-    bestTimeOfDay: complaintForm.bestTimeOfDay || undefined,
-    worstTimeOfDay: complaintForm.worstTimeOfDay || undefined,
+    symptomsBetterTime: complaintForm.symptomsBetterTime || undefined,
+    symptomsWorseTime: complaintForm.symptomsWorseTime || undefined,
     painType: complaintForm.painType || undefined,
     painLevel: complaintForm.painLevel || undefined,
-    painProgression: complaintForm.painProgression || undefined,
-    hadPreviousInjury: complaintForm.hadPreviousInjury || undefined,
+    painTrend: complaintForm.painTrend || undefined,
+    hadInjuryBefore: complaintForm.hadInjuryBefore ?? undefined,
   } });
 
 
@@ -219,6 +320,30 @@ export default function PodiatryReceptionPage() {
     setPdfSessionId(session.id);
     try {
       const { downloadPodiatryFormPdf } = await import("@/components/clinic/podiatry-form-pdf");
+      // Resolve imaging-procedure images (stored as document ids) to data URIs so
+      // they embed in the PDF; on failure the row still prints its description.
+      const pid = reception?.patientId;
+      const rawImaging: any[] = Array.isArray((reception as any)?.imagingProcedures)
+        ? (reception as any).imagingProcedures : [];
+      const blobToDataUri = (blob: Blob) =>
+        new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result as string);
+          r.onerror = reject;
+          r.readAsDataURL(blob);
+        });
+      const imagingProcedures = await Promise.all(
+        rawImaging.map(async (proc) => {
+          if (!proc?.imageUrl || !pid) return { ...proc };
+          try {
+            const blob = await clinicPatientsApi.downloadDocument(pid, proc.imageUrl);
+            return { ...proc, imageData: await blobToDataUri(blob) };
+          } catch {
+            return { ...proc };
+          }
+        }),
+      );
+      const physician = { ...(reception as any), imagingProcedures };
       await downloadPodiatryFormPdf({
         date: session.createdAt,
         patientName:
@@ -239,6 +364,9 @@ export default function PodiatryReceptionPage() {
         medicalHistoryOther: reception?.medicalHistoryOther,
         vasScore: reception?.vasScore,
         session,
+        // Full reception → renders the physician-form sheet (complaint + history),
+        // with imaging images resolved to embeddable data URIs.
+        physician,
       });
     } catch {
       toast.error(t("exportFailed"));
@@ -409,32 +537,32 @@ export default function PodiatryReceptionPage() {
                 <CardContent>
                   <div className="space-y-4">
                     <Field label={t("majorComplaint")}>
-                      <Textarea rows={3} value={complaintForm.majorComplaint} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, majorComplaint: e.target.value }))} />
+                      <Textarea rows={3} value={complaintForm.mainComplaint} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, mainComplaint: e.target.value }))} />
                     </Field>
                     <Field label={t("startDate")}>
-                      <Input value={complaintForm.complaintStartDate} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, complaintStartDate: e.target.value }))} />
+                      <Input value={complaintForm.startDate} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, startDate: e.target.value }))} />
                     </Field>
                     <Field label={t("possibleCause")}>
                       <Input value={complaintForm.possibleCause} disabled={!canEditReception}
                         onChange={(e) => setComplaintForm((f) => ({ ...f, possibleCause: e.target.value }))} />
                     </Field>
                     <Field label={t("previousDoctorSeen")}>
-                      <Input value={complaintForm.previousDoctorSeen} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, previousDoctorSeen: e.target.value }))} />
+                      <Input value={complaintForm.previousDoctor} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, previousDoctor: e.target.value }))} />
                     </Field>
                     <Field label={t("previousTreatment")}>
                       <Input value={complaintForm.previousTreatment} disabled={!canEditReception}
                         onChange={(e) => setComplaintForm((f) => ({ ...f, previousTreatment: e.target.value }))} />
                     </Field>
                     <Field label={t("lessBothersome")}>
-                      <Input value={complaintForm.bestTimeOfDay} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, bestTimeOfDay: e.target.value }))} />
+                      <Input value={complaintForm.symptomsBetterTime} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, symptomsBetterTime: e.target.value }))} />
                     </Field>
                     <Field label={t("moreBothersome")}>
-                      <Input value={complaintForm.worstTimeOfDay} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, worstTimeOfDay: e.target.value }))} />
+                      <Input value={complaintForm.symptomsWorseTime} disabled={!canEditReception}
+                        onChange={(e) => setComplaintForm((f) => ({ ...f, symptomsWorseTime: e.target.value }))} />
                     </Field>
                     <Field label={t("painTypeLabel")}>
                       <div className="flex flex-wrap gap-4">
@@ -461,12 +589,28 @@ export default function PodiatryReceptionPage() {
                       </div>
                     </Field>
                     <Field label={t("painProgression")}>
-                      <Input value={complaintForm.painProgression} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, painProgression: e.target.value }))} />
+                      <div className="flex flex-wrap gap-4">
+                        {PAIN_TREND_VALUES.map((v) => (
+                          <label key={v} className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" className="h-4 w-4 accent-primary rounded-sm" disabled={!canEditReception}
+                              checked={complaintForm.painTrend === v}
+                              onChange={() => setComplaintForm((f) => ({ ...f, painTrend: f.painTrend === v ? "" : v }))} />
+                            <span className="text-sm">{t(`painTrend.${v}`)}</span>
+                          </label>
+                        ))}
+                      </div>
                     </Field>
                     <Field label={t("hadInjuryBefore")}>
-                      <Input value={complaintForm.hadPreviousInjury} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, hadPreviousInjury: e.target.value }))} />
+                      <div className="flex flex-wrap gap-4">
+                        {([["yes", true], ["no", false]] as const).map(([labelKey, val]) => (
+                          <label key={labelKey} className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" className="h-4 w-4 accent-primary rounded-sm" disabled={!canEditReception}
+                              checked={complaintForm.hadInjuryBefore === val}
+                              onChange={() => setComplaintForm((f) => ({ ...f, hadInjuryBefore: f.hadInjuryBefore === val ? null : val }))} />
+                            <span className="text-sm">{t(labelKey)}</span>
+                          </label>
+                        ))}
+                      </div>
                     </Field>
                     {canEditReception && (
                       <Button onClick={handleSaveComplaint} disabled={submitComplaint.isPending} className="w-full gap-2 bg-orange-500 hover:bg-orange-600 text-white">
@@ -482,12 +626,12 @@ export default function PodiatryReceptionPage() {
             {/* ── التاريخ الطبي ── (نفس فورم العلاج الفيزيائي بالضبط) */}
             <TabsContent value="medical_history" className="mt-4">
               <MedicalHistoryForm
-                initial={reception as any}
+                initial={mhBackendToForm(reception as any)}
                 patientId={reception.patientId}
                 gender={patient?.gender}
                 canEdit={canEditReception}
                 saving={submitMH.isPending}
-                onSave={(dto) => submitMH.mutate({ id, dto })}
+                onSave={(dto) => submitMH.mutate({ id, dto: mhFormToBackend(dto) })}
               />
             </TabsContent>
           </Tabs>

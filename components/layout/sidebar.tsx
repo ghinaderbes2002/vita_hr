@@ -248,6 +248,7 @@ const navigation: NavItem[] = [
       { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
       { title: "nav.clinicPodiatry", href: "/clinic/podiatry", icon: Footprints, permission: "clinic.podiatry.reception.view" },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
+      { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
       { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor" },
     ],
@@ -347,6 +348,7 @@ export function Sidebar() {
         "/clinic/physio",
         "/clinic/podiatry",
         "/clinic/appointments",
+        "/clinic/my-appointments",
         "/clinic/inventory",
         "/clinic/reports",
       ];

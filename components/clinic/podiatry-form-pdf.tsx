@@ -67,6 +67,7 @@ const s = StyleSheet.create({
   vasNumOn: { color: "#ffffff" },
 
   signatureImage: { height: 26, width: 80, objectFit: "contain" },
+  imagingImage: { marginTop: 3, maxHeight: 150, width: "60%", objectFit: "contain", alignSelf: "flex-end" },
 
   footer: {
     position: "absolute", bottom: 10, left: 26, right: 26,
@@ -186,6 +187,89 @@ const CLINICAL_PLAN: [ClinicalPlanItem, ArLabel, string][] = [
   ["PHYSICAL_THERAPY", "علاج فيزيائي", "Physical Therapy"],
 ];
 
+// ── Physician-form (نموذج الطبيب) option tables ───────────────────────────────
+const PAIN_TYPE_OPTS: [string, ArLabel, string][] = [
+  ["INTERMITTENT", "متقطع", "Intermittent"],
+  ["CONSTANT", "مستمر", "Constant"],
+  ["WITH_CERTAIN_MOTIONS", ["مع", "بعض", "الحركات"], "With certain motions"],
+];
+const PAIN_LEVEL_OPTS: [string, ArLabel, string][] = [
+  ["MILD", "خفيف", "Mild"],
+  ["MODERATE", "متوسط", "Moderate"],
+  ["SEVERE", "شديد", "Severe"],
+  ["EXCRUCIATING", ["مؤلم", "للغاية"], "Excruciating"],
+];
+const PAIN_TREND_OPTS: [string, ArLabel, string][] = [
+  ["BETTER", "يتحسّن", "Better"],
+  ["WORSE", ["يزداد", "سوءاً"], "Worse"],
+  ["SAME", "كما هو", "Same"],
+];
+const RADIO_OPTS: [string, ArLabel, string][] = [
+  ["MRI", "رنين مغناطيسي", "MRI"],
+  ["X_RAY", "أشعة سينية", "X-Ray"],
+  ["CT", "طبقي محوري", "CT"],
+  ["MYELOGRAM", "تصوير النخاع", "Myelogram"],
+  ["OTHER", "أخرى", "Other"],
+];
+// Podiatry medical-history condition labels (Arabic) for the selected list.
+const MH_COND_LABELS: Record<string, string> = {
+  LIVER_PROBLEMS: "مشاكل الكبد", PNEUMONIA: "التهاب رئوي", URINARY_INFECTION: "التهاب المسالك البولية",
+  DIABETES: "السكري", HEMOPHILIA: "الناعور", LUNG_ISSUES: "مشاكل الرئة", STROKE: "جلطة",
+  KIDNEY_PROBLEMS: "مشاكل الكلى", ANEMIA: "فقر الدم", ASTHMA: "الربو", CHEMICAL_DEPENDENCY: "الإدمان الكيميائي",
+  EPILEPSY: "الصرع", HIGH_LOW_BP: "ارتفاع/انخفاض ضغط الدم", HEART_PROBLEMS: "مشاكل القلب", DEPRESSION: "اكتئاب",
+  BONE_INFECTION: "التهاب نقي العظم", ARTERIOSCLEROSIS: "تصلب الشرايين", TUBERCULOSIS: "السل",
+  MUSCULOSKELETAL: "الجهاز العضلي الهيكلي", JOINT_BONE_INFECTION: "عدوى المفاصل/العظام", EYE_INFECTION: "التهاب العين",
+  CIRCULATION_PROBLEMS: "مشاكل الدورة الدموية", ARTHRITIS: "التهاب المفاصل", CANCER: "السرطان",
+  BLOOD_CLOTS: "جلطات دم", ANGINA: "ذبحة", STD: "أمراض منقولة جنسياً", MULTIPLE_SCLEROSIS: "التصلب المتعدد",
+  AIDS_HIV: "الإيدز", OTHER: "أخرى",
+};
+
+// A yes/no answer rendered on the sheet as نعم/لا with two tick-boxes.
+const YesNo = ({ a, e, on }: { a: ArLabel; e: string; on?: boolean | null }) => (
+  <View style={s.fieldRow} wrap={false}>
+    <ArText t={a} style={s.fieldLabelAr} />
+    <Text style={s.fieldLabelEn}>{"/"}</Text>
+    <Text style={s.fieldLabelEn}>{e}</Text>
+    <Text style={[s.fieldLabelEn, { marginRight: -2 }]}>{":"}</Text>
+    <View style={{ flexDirection: "row-reverse", gap: 10, flex: 1 }}>
+      {([["نعم", "Yes", true], ["لا", "No", false]] as const).map(([la, le, val]) => (
+        <View key={le} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
+          <View style={on === val ? [s.box, s.boxOn] : s.box}>
+            {on === val && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
+          </View>
+          <Text style={s.chkAr}>{ar(la)}</Text>
+          <Text style={s.chkEn}>{le}</Text>
+        </View>
+      ))}
+    </View>
+  </View>
+);
+
+// A single-line group of inline tick-boxes (نوع الألم / مستوى الألم …).
+const ChkGroupRow = ({
+  a, e, options, isOn,
+}: {
+  a: ArLabel; e: string; options: [string, ArLabel, string][]; isOn: (v: string) => boolean;
+}) => (
+  <View style={s.fieldRow} wrap={false}>
+    <ArText t={a} style={s.fieldLabelAr} />
+    <Text style={s.fieldLabelEn}>{"/"}</Text>
+    <Text style={s.fieldLabelEn}>{e}</Text>
+    <Text style={[s.fieldLabelEn, { marginRight: -2 }]}>{":"}</Text>
+    <View style={{ flexDirection: "row-reverse", gap: 10, flex: 1, flexWrap: "wrap" }}>
+      {options.map(([v, la, le]) => (
+        <View key={v} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
+          <View style={isOn(v) ? [s.box, s.boxOn] : s.box}>
+            {isOn(v) && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
+          </View>
+          <ArText t={la} style={s.chkAr} />
+          <Text style={s.chkEn}>{le}</Text>
+        </View>
+      ))}
+    </View>
+  </View>
+);
+
 export interface PodiatryFormPdfData {
   /** Sheet date — defaults to the session's date, else today. */
   date?: string;
@@ -207,6 +291,12 @@ export interface PodiatryFormPdfData {
   vasScore?: number | null;
   /** The session this sheet is for; its analysis fills the left column. */
   session?: PodiatrySession | null;
+  /**
+   * Physician-form data (نموذج الطبيب): the reception's complaint + medical
+   * history, rendered on a second sheet. Loosely typed — it mirrors the backend
+   * reception fields exactly.
+   */
+  physician?: Record<string, any> | null;
 }
 
 const d = (v?: string | null) => (v ? new Date(v).toLocaleDateString("en-GB") : "");
@@ -347,21 +437,148 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
           </View>
         </View>
 
-        <View style={s.footer} fixed>
-          <View style={{ alignItems: "flex-end", gap: 1.5 }}>
-            <Text style={s.footText}>{ar("سوريا - حلب - حي حلب الجديدة شمالي")}</Text>
-            <Text style={s.footText}>{ar("خلف فيلا العقاد - شارع إيكاردا")}</Text>
-          </View>
-          <View style={{ alignItems: "center", gap: 1.5 }}>
-            <Text style={s.footText}>vitafoot@vitaxir.com</Text>
-          </View>
-          <View style={{ alignItems: "flex-start", gap: 1.5 }}>
-            <Text style={s.footText}>MOB: +963 935 813 333</Text>
-            <Text style={s.footText}>TEL: +963 21 522 6391  |  FAX: +963 21 522 6392</Text>
-          </View>
-        </View>
+        <Footer />
       </Page>
+
+      {/* ── Sheet 2 — نموذج الطبيب (الشكوى + التاريخ الطبي) ─────────────────── */}
+      <PhysicianSheet p={data.physician ?? {}} date={data.date} />
     </Document>
+  );
+};
+
+// Shared footer used on every sheet.
+const Footer = () => (
+  <View style={s.footer} fixed>
+    <View style={{ alignItems: "flex-end", gap: 1.5 }}>
+      <Text style={s.footText}>{ar("سوريا - حلب - حي حلب الجديدة شمالي")}</Text>
+      <Text style={s.footText}>{ar("خلف فيلا العقاد - شارع إيكاردا")}</Text>
+    </View>
+    <View style={{ alignItems: "center", gap: 1.5 }}>
+      <Text style={s.footText}>vitafoot@vitaxir.com</Text>
+    </View>
+    <View style={{ alignItems: "flex-start", gap: 1.5 }}>
+      <Text style={s.footText}>MOB: +963 935 813 333</Text>
+      <Text style={s.footText}>TEL: +963 21 522 6391  |  FAX: +963 21 522 6392</Text>
+    </View>
+  </View>
+);
+
+// Second sheet: the physician form — complaint then full medical history.
+const PhysicianSheet = ({ p, date }: { p: Record<string, any>; date?: string }) => {
+  const surgeries: any[] = Array.isArray(p.surgeries) ? p.surgeries : [];
+  const imaging: any[] = Array.isArray(p.imagingProcedures) ? p.imagingProcedures : [];
+  const conditions: string[] = Array.isArray(p.medicalHistory) ? p.medicalHistory : [];
+  const conditionsList = conditions.map((c) => MH_COND_LABELS[c] ?? c).join("، ");
+  const surgeryLine = (x: any) =>
+    [x.surgeryName, x.type, d(x.date) || x.date].filter(Boolean).join("  —  ");
+
+  return (
+    <Page size="A4" style={s.page}>
+      <View style={s.logoWrap}>
+        <Text style={s.logoText}>VitaFoot</Text>
+      </View>
+      <Text style={s.titleAr}>{ar("نموذج الطبيب")}</Text>
+      <Text style={s.titleEn}>Physician Form</Text>
+
+      <View style={[s.dateRow, { gap: 3 }]}>
+        <Text style={s.dateText}>{ar("التاريخ")}</Text>
+        <Text style={s.dateText}>{"/"}</Text>
+        <Text style={s.dateText}>{"Date"}</Text>
+        <Text style={[s.dateText, { marginRight: -2 }]}>{":"}</Text>
+        <Text style={s.dateText}>{d(date) || new Date().toLocaleDateString("en-GB")}</Text>
+      </View>
+
+      {/* ── الشكوى ── */}
+      <SecHead a="الشكوى" e="Complaint" />
+      <Field a="الشكوى الرئيسية" e="Main Complaint" value={p.mainComplaint} />
+      <Field a="تاريخ البدء" e="Start Date" value={p.startDate} />
+      <Field a="السبب المحتمل" e="Possible Cause" value={p.possibleCause} />
+      <Field a="طبيب سابق" e="Previous Doctor" value={p.previousDoctor} />
+      <Field a="العلاج السابق" e="Previous Treatment" value={p.previousTreatment} />
+      <Field a={["وقت", "التحسّن"]} e="Symptoms Better" value={p.symptomsBetterTime} />
+      <Field a={["وقت", "التفاقم"]} e="Symptoms Worse" value={p.symptomsWorseTime} />
+      <ChkGroupRow a="نوع الألم" e="Pain Type" options={PAIN_TYPE_OPTS} isOn={(v) => p.painType === v} />
+      <ChkGroupRow a="مستوى الألم" e="Pain Level" options={PAIN_LEVEL_OPTS} isOn={(v) => p.painLevel === v} />
+      <ChkGroupRow a="التطور" e="Progression" options={PAIN_TREND_OPTS} isOn={(v) => p.painTrend === v} />
+      <YesNo a={["سبق", "التعرض", "للإصابة"]} e="Injured Before" on={p.hadInjuryBefore} />
+
+      {/* ── التاريخ الطبي ── */}
+      <SecHead a="التاريخ الطبي" e="Medical History" />
+      <Field a="الأدوية الحالية" e="Current Medications" value={p.currentMedications} />
+      <Field a={["التشخيصات", "السابقة"]} e="Previous Diagnoses" value={p.previousDiagnoses} />
+      <YesNo a={["مستحضرات", "عشبية"]} e="Herbal Preparations" on={p.herbalPreparations} />
+      {p.herbalPreparationsDetails ? <Field a="التفاصيل" e="Details" value={p.herbalPreparationsDetails} /> : null}
+      <Field a={["مشاكل", "صحية", "أخرى"]} e="Other Health Problems" value={p.otherHealthProblems} />
+      <Field a="قيود الطبيب" e="Doctor Restrictions" value={p.doctorRestrictions} />
+      <YesNo a="مدخّن" e="Smoker" on={p.smoker} />
+      <YesNo a={["سبق", "التدخين"]} e="Ever Smoked" on={p.everSmoked} />
+      {p.smokingFrequency ? <Field a={["عدد", "المرات"]} e="Frequency" value={p.smokingFrequency} /> : null}
+      <YesNo a={["منظّم", "ضربات", "القلب"]} e="Pacemaker" on={p.hasPacemaker} />
+      <YesNo a="حامل" e="Pregnant" on={p.isPregnant} />
+      <YesNo a={["حساسية", "لاصقات"]} e="Adhesive Allergy" on={p.allergyToAdhesives} />
+
+      {surgeries.length > 0 && (
+        <>
+          <SecHead a="العمليات الجراحية" e="Surgeries" />
+          {surgeries.map((x, i) => (
+            <Field key={i} a={["عملية", String(i + 1)]} e={`Surgery ${i + 1}`} value={surgeryLine(x)} />
+          ))}
+        </>
+      )}
+
+      <YesNo a={["علاج", "فيزيائي", "سابق"]} e="Prior Physical Therapy" on={p.hadPhysicalTherapy} />
+      <YesNo a={["علاجات", "أخرى"]} e="Other Treatments" on={p.hasOtherTreatments} />
+
+      <ChkGroupRow a="أنواع التصوير" e="Imaging Types" options={RADIO_OPTS} isOn={(v) => (p.radiographyTypes ?? []).includes(v)} />
+      {p.radiographyOther ? <Field a="أخرى" e="Other" value={p.radiographyOther} /> : null}
+      {p.radiographyResults ? <Field a={["نتائج", "التصوير"]} e="Imaging Results" value={p.radiographyResults} /> : null}
+
+      <YesNo a={["تحليل", "جديد"]} e="New Analysis" on={p.hasNewAnalysis} />
+      {(p.newAnalysisDate || p.newAnalysisNotes) ? (
+        <Field a={["تفاصيل", "الجديد"]} e="New Analysis Details"
+          value={[d(p.newAnalysisDate) || p.newAnalysisDate, p.newAnalysisNotes].filter(Boolean).join("  —  ")} />
+      ) : null}
+      <YesNo a={["تحليل", "قديم"]} e="Old Analysis" on={p.hasOldAnalysis} />
+      {(p.oldAnalysisDate || p.oldAnalysisNotes) ? (
+        <Field a={["تفاصيل", "القديم"]} e="Old Analysis Details"
+          value={[d(p.oldAnalysisDate) || p.oldAnalysisDate, p.oldAnalysisNotes].filter(Boolean).join("  —  ")} />
+      ) : null}
+
+      <YesNo a={["كثافة", "العظام"]} e="Bone Density Scan" on={p.boneDensityScan} />
+      <YesNo a={["دخول", "المشفى"]} e="Hospitalized (past year)" on={p.hospitalizedPastYear} />
+
+      {imaging.length > 0 && (
+        <>
+          <SecHead a="الإجراءات التصويرية" e="Imaging Procedures" />
+          {imaging.map((x, i) => (
+            <View key={i} style={{ marginBottom: 5 }} wrap={false}>
+              <Field a={["إجراء", String(i + 1)]} e={`Procedure ${i + 1}`} value={x.description} />
+              {typeof x.imageData === "string" && x.imageData.startsWith("data:image") && (
+                // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image, not an <img>
+                <Image src={x.imageData} style={s.imagingImage} />
+              )}
+            </View>
+          ))}
+        </>
+      )}
+
+      {conditionsList ? (
+        <>
+          <SecHead a="الحالات المرضية" e="Medical Conditions" />
+          <Text style={[s.fieldValue, { borderBottomWidth: 0, marginBottom: 3 }]}>{ar(conditionsList)}</Text>
+          {p.medicalHistoryOther ? <Field a="أخرى" e="Other" value={p.medicalHistoryOther} /> : null}
+        </>
+      ) : null}
+
+      {p.diagnosis ? (
+        <>
+          <SecHead a="التشخيص" e="Diagnosis" />
+          <Text style={[s.fieldValue, { borderBottomWidth: 0 }]}>{ar(String(p.diagnosis))}</Text>
+        </>
+      ) : null}
+
+      <Footer />
+    </Page>
   );
 };
 

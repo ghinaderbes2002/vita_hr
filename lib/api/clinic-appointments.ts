@@ -23,6 +23,9 @@ export interface Appointment {
   cancelReason?: string | null;
   cancelledReason?: string | null;
   physiotherapistId?: string | null;
+  /** Additional therapists assigned to the appointment (they get notified). */
+  therapistIds?: string[] | null;
+  therapists?: { id: string; firstName?: string; lastName?: string; firstNameAr?: string; lastNameAr?: string }[] | null;
   patientName?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +42,8 @@ export interface CreateAppointmentDto {
   startTime: string;
   endTime: string;
   notes?: string;
+  /** Additional therapist user IDs; each is notified. Send [] to clear all. */
+  therapistIds?: string[];
 }
 
 export interface UpdateAppointmentDto extends Partial<CreateAppointmentDto> {
@@ -74,6 +79,20 @@ export const clinicAppointmentsApi = {
       total: d?.total ?? 0,
       page: d?.page ?? 1,
       limit: d?.limit ?? 10,
+      totalPages: d?.totalPages ?? 0,
+    };
+  },
+
+  // Appointments where the logged-in therapist is the main practitioner, the
+  // physiotherapist, or one of the additional therapists.
+  myAppointments: async (params?: AppointmentListParams) => {
+    const { data } = await apiClient.get("/appointments/my-appointments", { params });
+    const d = data?.data ?? data;
+    return {
+      items: (d?.items ?? d?.data ?? (Array.isArray(d) ? d : [])) as Appointment[],
+      total: d?.total ?? 0,
+      page: d?.page ?? 1,
+      limit: d?.limit ?? 50,
       totalPages: d?.totalPages ?? 0,
     };
   },
