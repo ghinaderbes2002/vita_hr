@@ -4454,6 +4454,7 @@
         "title": "Department View",
         "free": "Free",
         "busy": "Busy",
+        "appointments": "appointments",
         "time": "Time",
         "patient": "Patient",
         "type": "Type",
@@ -4513,6 +4514,7 @@
       "actions": {
         "confirm": "Confirm",
         "complete": "Complete",
+        "cancel": "Cancel Appointment",
         "cancelConfirmTitle": "Cancel Appointment",
         "cancelReasonPlaceholder": "Reason for cancellation (optional)",
         "cancelConfirm": "Confirm Cancellation"

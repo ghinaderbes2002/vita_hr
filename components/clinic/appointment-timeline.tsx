@@ -1,0 +1,198 @@
+"use client";
+
+// Professional day timeline: a time axis with appointments laid out as
+// positioned blocks per department column. Free gaps read at a glance, a live
+// "now" line marks the current time, overlapping bookings split side-by-side.
+import { useLocale, useTranslations } from "next-intl";
+import { cn } from "@/lib/utils";
+import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
+
+const DAY_START = 8 * 60;   // 08:00
+const DAY_END = 20 * 60;    // 20:00
+const HOUR_H = 58;          // px per hour
+const TOTAL_MIN = DAY_END - DAY_START;
+const TOTAL_H = (TOTAL_MIN / 60) * HOUR_H;
+
+const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
+  SCHEDULED:   { bar: "#3b82f6", cls: "bg-blue-50/90 dark:bg-blue-950/50 text-blue-950 dark:text-blue-100" },
+  CONFIRMED:   { bar: "#22c55e", cls: "bg-emerald-50/90 dark:bg-emerald-950/50 text-emerald-950 dark:text-emerald-100" },
+  COMPLETED:   { bar: "#6b7280", cls: "bg-gray-50/90 dark:bg-gray-900/50 text-gray-700 dark:text-gray-200" },
+  CANCELLED:   { bar: "#ef4444", cls: "bg-red-50/80 dark:bg-red-950/40 text-red-800/70 dark:text-red-200/70" },
+  NO_SHOW:     { bar: "#f97316", cls: "bg-orange-50/90 dark:bg-orange-950/50 text-orange-950 dark:text-orange-100" },
+  RESCHEDULED: { bar: "#a855f7", cls: "bg-purple-50/90 dark:bg-purple-950/50 text-purple-950 dark:text-purple-100" },
+};
+
+function toMinutes(v?: string | null): number | null {
+  if (!v) return null;
+  if (v.length > 5) { const d = new Date(v); return d.getHours() * 60 + d.getMinutes(); }
+  const m = /^(\d{1,2}):(\d{2})/.exec(v);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+const fmtTime = (v?: string | null) =>
+  v ? (v.length > 5 ? new Date(v).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : v) : "";
+
+type Placed = { a: Appointment; start: number; end: number; lane: number; lanes: number };
+
+// Split a column's appointments into overlap clusters and assign side-by-side
+// lanes so concurrent bookings never cover each other.
+function layout(appts: Appointment[]): Placed[] {
+  const items = appts
+    .map((a) => {
+      const s = toMinutes(a.startTime);
+      let e = toMinutes(a.endTime);
+      if (s == null) return null;
+      if (e == null || e <= s) e = s + 30;
+      return { a, start: Math.max(DAY_START, s), end: Math.min(DAY_END, Math.max(s + 15, e)) };
+    })
+    .filter((x): x is { a: Appointment; start: number; end: number } => !!x && x.end > DAY_START && x.start < DAY_END)
+    .sort((x, y) => x.start - y.start || x.end - y.end);
+
+  const out: Placed[] = [];
+  let cluster: { a: Appointment; start: number; end: number }[] = [];
+  let clusterEnd = -1;
+  const flush = () => {
+    const laneEnds: number[] = [];
+    const laned = cluster.map((it) => {
+      let lane = laneEnds.findIndex((end) => end <= it.start);
+      if (lane === -1) { lane = laneEnds.length; laneEnds.push(it.end); } else laneEnds[lane] = it.end;
+      return { ...it, lane };
+    });
+    const lanes = laneEnds.length;
+    laned.forEach((it) => out.push({ ...it, lanes }));
+    cluster = [];
+  };
+  for (const it of items) {
+    if (cluster.length && it.start >= clusterEnd) { flush(); clusterEnd = -1; }
+    cluster.push(it);
+    clusterEnd = Math.max(clusterEnd, it.end);
+  }
+  flush();
+  return out;
+}
+
+export interface TimelineGroup {
+  title: string;
+  color: string;   // header accent
+  appointments: Appointment[];
+}
+
+function Column({ group, onSelect }: { group: TimelineGroup; onSelect: (a: Appointment) => void }) {
+  const t = useTranslations("clinic.appointments");
+  const placed = layout(group.appointments);
+  return (
+    <div className="relative border-s border-border/70" style={{ height: TOTAL_H }}>
+      {/* hour grid lines */}
+      {Array.from({ length: TOTAL_MIN / 60 + 1 }, (_, i) => (
+        <div key={i} className="absolute inset-x-0 border-t border-border/50" style={{ top: i * HOUR_H }} />
+      ))}
+      {placed.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs text-muted-foreground">{t("emptyDay")}</span>
+        </div>
+      )}
+      {placed.map(({ a, start, end, lane, lanes }) => {
+        const top = ((start - DAY_START) / 60) * HOUR_H;
+        const height = Math.max(22, ((end - start) / 60) * HOUR_H - 2);
+        const w = 100 / lanes;
+        const st = STATUS_STYLE[a.status];
+        const cancelled = a.status === "CANCELLED";
+        return (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => onSelect(a)}
+            title={`${fmtTime(a.startTime)} — ${fmtTime(a.endTime)}`}
+            className={cn(
+              "absolute overflow-hidden rounded-md border border-black/5 px-2 py-1 text-start shadow-sm ring-0 transition-all hover:z-10 hover:shadow-md dark:border-white/10",
+              st.cls,
+            )}
+            style={{
+              top, height,
+              insetInlineStart: `calc(${lane * w}% + 2px)`,
+              width: `calc(${w}% - 4px)`,
+              borderInlineStartWidth: 3, borderInlineStartColor: st.bar,
+            }}
+          >
+            <div className="flex items-center gap-1 text-[10px] font-mono font-semibold leading-tight opacity-90">
+              {fmtTime(a.startTime)}
+            </div>
+            <div className={cn("truncate text-xs font-semibold leading-tight", cancelled && "line-through")}>
+              {a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : (a.patientName || "—")}
+            </div>
+            {height > 40 && (
+              <div className="truncate text-[10px] leading-tight opacity-80">{t(`types.${a.appointmentType}`)}</div>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function AppointmentTimeline({
+  groups, isToday, onSelect,
+}: {
+  groups: TimelineGroup[];
+  isToday: boolean;
+  onSelect: (a: Appointment) => void;
+}) {
+  const locale = useLocale();
+  const isRtl = locale === "ar";
+  const hours = Array.from({ length: TOTAL_MIN / 60 + 1 }, (_, i) => DAY_START / 60 + i);
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const showNow = isToday && nowMin >= DAY_START && nowMin <= DAY_END;
+  const nowTop = ((nowMin - DAY_START) / 60) * HOUR_H;
+
+  const hourLabel = (h: number) =>
+    new Date(2000, 0, 1, h).toLocaleTimeString(locale, { hour: "numeric" });
+
+  return (
+    <div className="overflow-hidden rounded-xl border bg-card shadow-sm" dir={isRtl ? "rtl" : "ltr"}>
+      {/* column headers */}
+      <div className="grid border-b bg-muted/30" style={{ gridTemplateColumns: `56px repeat(${groups.length}, 1fr)` }}>
+        <div />
+        {groups.map((g) => {
+          const count = g.appointments.filter((a) => a.status !== "CANCELLED").length;
+          return (
+            <div key={g.title} className="flex items-center gap-2 border-s border-border/70 px-3 py-2.5">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.color }} />
+              <span className="truncate text-sm font-semibold">{g.title}</span>
+              <span className="ms-auto rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">{count}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* timeline body */}
+      <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${groups.length}, 1fr)` }}>
+        {/* time gutter */}
+        <div className="relative" style={{ height: TOTAL_H }}>
+          {hours.map((h, i) => (
+            <div key={h} className="absolute inset-x-0 -translate-y-1/2 pe-2 text-end" style={{ top: i * HOUR_H }}>
+              <span className="text-[10px] font-medium text-muted-foreground">{i === 0 ? "" : hourLabel(h)}</span>
+            </div>
+          ))}
+        </div>
+
+        {groups.map((g) => (
+          <Column key={g.title} group={g} onSelect={onSelect} />
+        ))}
+
+        {/* now indicator — spans all department columns */}
+        {showNow && (
+          <div
+            className="pointer-events-none absolute z-20"
+            style={{ top: nowTop, insetInlineStart: 56, insetInlineEnd: 0 }}
+          >
+            <div className="relative border-t-2 border-red-500">
+              <span className="absolute -top-1.5 h-3 w-3 -translate-x-1/2 rounded-full bg-red-500 shadow"
+                style={{ insetInlineStart: 0 }} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

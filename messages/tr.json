@@ -3543,6 +3543,7 @@
         "title": "Bölüm Görünümü",
         "free": "Boş",
         "busy": "Dolu",
+        "appointments": "randevu",
         "time": "Saat",
         "patient": "Hasta",
         "type": "Tür",
@@ -3597,7 +3598,8 @@
       },
       "actions": {
         "confirm": "Onayla",
-        "complete": "Tamamla"
+        "complete": "Tamamla",
+        "cancel": "Randevuyu İptal Et"
       }
     },
     "inventory": {

@@ -3,7 +3,7 @@
 import { useState, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, Clock, X, Check, Loader2, UserRound, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Check, Loader2, UserRound, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AppointmentScheduleBoard } from "@/components/clinic/appointment-schedule-board";
+import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
@@ -98,6 +98,13 @@ export default function AppointmentsPage() {
     const e = clinicalStaff.find((x: any) => (x.userId ?? x.id) === id);
     return e ? `${e.firstNameAr} ${e.lastNameAr}` : id;
   };
+  // Resolve any staff member (practitioner / therapist) by their user or employee
+  // id — the appointment API returns only ids, not the person objects.
+  const staffName = (id?: string | null): string | null => {
+    if (!id) return null;
+    const e = staffList.find((x: any) => x.userId === id || x.id === id);
+    return e ? `${e.firstNameAr} ${e.lastNameAr}`.trim() : null;
+  };
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string>(toISO(today));
@@ -164,9 +171,11 @@ export default function AppointmentsPage() {
   const isPhysio = (n: string) => n.includes("العلاج الفيزيائي");
   const isProsth = (n: string) =>
     n.includes("الأطراف الصناعية") || n.includes("الاطراف الصناعية") || n.includes("طب الأقدام") || n.includes("طب الاقدام");
-  const boardGroups = [
-    { title: t("board.physioDept"), appointments: dayScoped.filter((a: Appointment) => isPhysio(deptNameOf(a))) },
-    { title: t("board.prosthDept"), appointments: dayScoped.filter((a: Appointment) => isProsth(deptNameOf(a))) },
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const isSelectedToday = selectedDate === todayIso;
+  const timelineGroups = [
+    { title: t("board.physioDept"), color: "#10b981", appointments: dayScoped.filter((a: Appointment) => isPhysio(deptNameOf(a))) },
+    { title: t("board.prosthDept"), color: "#6366f1", appointments: dayScoped.filter((a: Appointment) => isProsth(deptNameOf(a))) },
   ];
 
   // Group appointments by date for calendar dots
@@ -193,7 +202,7 @@ export default function AppointmentsPage() {
     if (!newForm.patientId) return;
     const startISO = new Date(`${newForm.date}T${newForm.startTime}:00`).toISOString();
     const endISO = new Date(`${newForm.date}T${newForm.endTime}:00`).toISOString();
-    await createAppt.mutateAsync({
+    const created = await createAppt.mutateAsync({
       patientId: newForm.patientId,
       practitionerId: (myEmployee as any)?.userId ?? "",
       appointmentType: newForm.appointmentType,
@@ -208,6 +217,10 @@ export default function AppointmentsPage() {
         ? { caseId: activeProstheticsCase.id, caseType: "PROSTHETICS" as const }
         : {}),
     });
+    // New appointments should be confirmed straight away (no manual step).
+    if (created?.id) {
+      try { await updateStatus.mutateAsync({ id: created.id, status: "CONFIRMED" }); } catch { /* stays scheduled on failure */ }
+    }
     setNewApptOpen(false);
     setSelectedDate(newForm.date);
     setPatientSearch("");
@@ -314,93 +327,20 @@ export default function AppointmentsPage() {
           </CardContent>
         </Card>
 
-        {/* Day view */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">
+        {/* Day view — professional timeline */}
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-base font-semibold">
               {new Date(selectedDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {dayLoading ? (
-              <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
-            ) : dayAppointments.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Clock className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                <p>{t("emptyDay")}</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {dayAppointments
-                  .sort((a: Appointment, b: Appointment) => a.startTime.localeCompare(b.startTime))
-                  .map((appt: Appointment) => (
-                    <div key={appt.id} onClick={() => setDetailAppt(appt)}
-                      className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors cursor-pointer">
-                      <div className="text-center min-w-14 shrink-0">
-                        <p className="font-mono text-sm font-bold">
-                          {appt.startTime?.length > 5 ? new Date(appt.startTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : appt.startTime}
-                        </p>
-                        <p className="font-mono text-xs text-muted-foreground">
-                          {appt.endTime?.length > 5 ? new Date(appt.endTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : appt.endTime}
-                        </p>
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm">
-                            {appt.patient
-                              ? `${appt.patient.firstName} ${appt.patient.lastName}`
-                              : appt.patientName || "—"}
-                          </span>
-                          <Badge className={cn("text-xs", STATUS_COLOR[appt.status])} variant="outline">
-                            {t(`statuses.${appt.status}`)}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">{t(`types.${appt.appointmentType}`)}</Badge>
-                        </div>
-                        {appt.notes && <p className="text-xs text-muted-foreground">{appt.notes}</p>}
-                        {appt.status === "CANCELLED" && (appt.cancelReason || appt.cancelledReason) && (
-                          <p className="text-xs text-destructive/80">
-                            {t("cancelReason")}: {appt.cancelReason ?? appt.cancelledReason}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                        {appt.status === "SCHEDULED" && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs"
-                            onClick={() => updateStatus.mutate({ id: appt.id, status: "CONFIRMED" })}>
-                            {t("actions.confirm")}
-                          </Button>
-                        )}
-                        {appt.status === "CONFIRMED" && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs"
-                            onClick={() => updateStatus.mutate({ id: appt.id, status: "COMPLETED" })}>
-                            {t("actions.complete")}
-                          </Button>
-                        )}
-                        {!["CANCELLED", "COMPLETED"].includes(appt.status) && (
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive"
-                            onClick={() => { setCancelTargetId(appt.id); setCancelReason(""); setCancelDialogOpen(true); }}>
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Department board — free/busy overview + per-department tables */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          {t("board.title")}
-          <span className="text-muted-foreground font-normal">
-            {" — "}
-            {new Date(selectedDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}
-          </span>
-        </h2>
-        <AppointmentScheduleBoard groups={boardGroups} onSelect={setDetailAppt} />
+            </h2>
+            <span className="text-xs text-muted-foreground">{dayScoped.filter((a: Appointment) => a.status !== "CANCELLED").length} {t("board.appointments")}</span>
+          </div>
+          {dayLoading ? (
+            <Skeleton className="h-[560px] w-full rounded-xl" />
+          ) : (
+            <AppointmentTimeline groups={timelineGroups} isToday={isSelectedToday} onSelect={setDetailAppt} />
+          )}
+        </div>
       </div>
 
       {/* Appointment details dialog */}
@@ -414,23 +354,28 @@ export default function AppointmentsPage() {
             const dateStr = detailAppt.startTime && detailAppt.startTime.length > 5
               ? new Date(detailAppt.startTime).toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })
               : (detailAppt.date ?? "—");
+            // Compute the real duration from start/end — the backend's
+            // durationMinutes is unreliable (often a fixed 60).
+            const durMin = detailAppt.startTime && detailAppt.endTime && detailAppt.startTime.length > 5 && detailAppt.endTime.length > 5
+              ? Math.round((new Date(detailAppt.endTime).getTime() - new Date(detailAppt.startTime).getTime()) / 60000)
+              : (detailAppt.durationMinutes ?? null);
             const rows: [string, ReactNode][] = [
               ["المريض", detailAppt.patient ? `${detailAppt.patient.firstName} ${detailAppt.patient.lastName}` : (detailAppt.patientName || "—")],
-              ["رقم المريض", detailAppt.patient?.patientNumber ?? "—"],
+              ["رقم المريض", detailAppt.patientNumber ?? detailAppt.patient?.patientNumber ?? "—"],
               ["نوع الموعد", t(`types.${detailAppt.appointmentType}`)],
               ["الحالة", <Badge key="s" className={cn("text-xs", STATUS_COLOR[detailAppt.status])} variant="outline">{t(`statuses.${detailAppt.status}`)}</Badge>],
               ["التاريخ", dateStr],
               ["الوقت", `${fmtT(detailAppt.startTime)} — ${fmtT(detailAppt.endTime)}`],
-              ["المدة", detailAppt.durationMinutes ? `${detailAppt.durationMinutes} دقيقة` : "—"],
-              ["الممارس", detailAppt.practitioner ? `${detailAppt.practitioner.firstName} ${detailAppt.practitioner.lastName}` : "—"],
+              ["المدة", durMin != null && durMin > 0 ? `${durMin} دقيقة` : "—"],
               ["القسم", detailAppt.department?.nameAr ?? (detailAppt.departmentId ? deptLabel(detailAppt.departmentId) : "—")],
               ["ملاحظات", detailAppt.notes || "—"],
             ];
-            const therapistNames = (detailAppt.therapists ?? [])
-              .map((tp) => `${tp.firstNameAr ?? tp.firstName ?? ""} ${tp.lastNameAr ?? tp.lastName ?? ""}`.trim())
-              .filter(Boolean);
+            const therapistNames = (detailAppt.therapists?.length
+              ? detailAppt.therapists.map((tp) => `${tp.firstNameAr ?? tp.firstName ?? ""} ${tp.lastNameAr ?? tp.lastName ?? ""}`.trim())
+              : (detailAppt.therapistIds ?? []).map((id) => staffName(id)))
+              .filter((x): x is string => !!x);
             if (therapistNames.length) {
-              rows.push(["معالجون إضافيون", therapistNames.join("، ")]);
+              rows.push(["المختص/المعالج", therapistNames.join("، ")]);
             }
             if (detailAppt.status === "CANCELLED" && (detailAppt.cancelReason || detailAppt.cancelledReason)) {
               rows.push(["سبب الإلغاء", detailAppt.cancelReason ?? detailAppt.cancelledReason ?? "—"]);
@@ -447,8 +392,26 @@ export default function AppointmentsPage() {
               </dl>
             );
           })()}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailAppt(null)}>إغلاق</Button>
+          <DialogFooter className="flex-wrap gap-2 sm:justify-start">
+            {detailAppt?.status === "SCHEDULED" && (
+              <Button size="sm" variant="outline" className="gap-1.5"
+                onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "CONFIRMED" }); setDetailAppt(null); }}>
+                <Check className="h-4 w-4" />{t("actions.confirm")}
+              </Button>
+            )}
+            {detailAppt?.status === "CONFIRMED" && (
+              <Button size="sm" variant="outline" className="gap-1.5"
+                onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "COMPLETED" }); setDetailAppt(null); }}>
+                <Check className="h-4 w-4" />{t("actions.complete")}
+              </Button>
+            )}
+            {detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
+              <Button size="sm" variant="ghost" className="gap-1.5 text-destructive"
+                onClick={() => { setCancelTargetId(detailAppt.id); setCancelReason(""); setCancelDialogOpen(true); setDetailAppt(null); }}>
+                <X className="h-4 w-4" />{t("actions.cancel")}
+              </Button>
+            )}
+            <Button variant="outline" className="ms-auto" onClick={() => setDetailAppt(null)}>{t("form.cancel")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

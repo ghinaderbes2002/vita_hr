@@ -29,6 +29,7 @@ export interface Appointment {
   therapistIds?: string[] | null;
   therapists?: { id: string; firstName?: string; lastName?: string; firstNameAr?: string; lastNameAr?: string }[] | null;
   patientName?: string | null;
+  patientNumber?: string | null;
   createdAt: string;
   updatedAt: string;
 }

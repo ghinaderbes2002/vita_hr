@@ -4614,6 +4614,7 @@
         "title": "عرض الأقسام",
         "free": "فارغ",
         "busy": "مشغول",
+        "appointments": "مواعيد",
         "time": "الوقت",
         "patient": "المريض",
         "type": "النوع",
@@ -4673,6 +4674,7 @@
       "actions": {
         "confirm": "تأكيد",
         "complete": "إنجاز",
+        "cancel": "إلغاء الموعد",
         "cancelConfirmTitle": "إلغاء الموعد",
         "cancelReasonPlaceholder": "سبب الإلغاء (اختياري)",
         "cancelConfirm": "تأكيد الإلغاء"

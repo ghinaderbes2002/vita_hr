@@ -39,6 +39,7 @@ export function useCreateAppointment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
+      qc.invalidateQueries({ queryKey: ["my-appointments"] });
       toast.success("تم حجز الموعد");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حجز الموعد"),
@@ -53,6 +54,7 @@ export function useUpdateAppointment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
+      qc.invalidateQueries({ queryKey: ["my-appointments"] });
       toast.success("تم تحديث الموعد");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحديث"),
@@ -67,6 +69,7 @@ export function useCancelAppointment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
+      qc.invalidateQueries({ queryKey: ["my-appointments"] });
       toast.success("تم إلغاء الموعد");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الإلغاء"),
@@ -81,6 +84,7 @@ export function useRescheduleAppointment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
+      qc.invalidateQueries({ queryKey: ["my-appointments"] });
       toast.success("تم إعادة جدولة الموعد");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إعادة الجدولة"),
@@ -95,6 +99,7 @@ export function useUpdateAppointmentStatus() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
+      qc.invalidateQueries({ queryKey: ["my-appointments"] });
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تغيير الحالة"),
   });

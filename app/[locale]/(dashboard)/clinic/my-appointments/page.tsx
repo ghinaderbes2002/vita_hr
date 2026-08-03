@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Clock, X } from "lucide-react";
+import { Clock, X, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
-import { useMyAppointments } from "@/lib/hooks/use-clinic-appointments";
+import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment } from "@/lib/hooks/use-clinic-appointments";
 import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
 
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
@@ -30,6 +32,12 @@ export default function MyAppointmentsPage() {
 
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL");
   const [dateFilter, setDateFilter] = useState("");
+  const [cancelTargetId, setCancelTargetId] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+
+  const updateStatus = useUpdateAppointmentStatus();
+  const cancelAppt = useCancelAppointment();
 
   const { data, isLoading } = useMyAppointments({
     status: statusFilter !== "ALL" ? statusFilter : undefined,
@@ -102,6 +110,9 @@ export default function MyAppointmentsPage() {
                     <span className="font-medium text-sm">
                       {appt.patient ? `${appt.patient.firstName} ${appt.patient.lastName}` : (appt.patientName || "—")}
                     </span>
+                    {(appt.patientNumber ?? appt.patient?.patientNumber) && (
+                      <span className="font-mono text-xs text-muted-foreground">{appt.patientNumber ?? appt.patient?.patientNumber}</span>
+                    )}
                     <Badge className={cn("text-xs", STATUS_COLOR[appt.status])} variant="outline">{t(`statuses.${appt.status}`)}</Badge>
                     <Badge variant="outline" className="text-xs">{t(`types.${appt.appointmentType}`)}</Badge>
                   </div>
@@ -111,11 +122,59 @@ export default function MyAppointmentsPage() {
                     <p className="text-xs text-destructive/80">{t("cancelReason")}: {appt.cancelReason ?? appt.cancelledReason}</p>
                   )}
                 </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {appt.status === "SCHEDULED" && (
+                    <Button size="sm" variant="outline" className="h-7 gap-1 text-xs"
+                      disabled={updateStatus.isPending}
+                      onClick={() => updateStatus.mutate({ id: appt.id, status: "CONFIRMED" })}>
+                      <Check className="h-3.5 w-3.5" />{t("actions.confirm")}
+                    </Button>
+                  )}
+                  {appt.status === "CONFIRMED" && (
+                    <Button size="sm" variant="outline" className="h-7 gap-1 text-xs"
+                      disabled={updateStatus.isPending}
+                      onClick={() => updateStatus.mutate({ id: appt.id, status: "COMPLETED" })}>
+                      <Check className="h-3.5 w-3.5" />{t("actions.complete")}
+                    </Button>
+                  )}
+                  {!["CANCELLED", "COMPLETED"].includes(appt.status) && (
+                    <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-destructive"
+                      onClick={() => { setCancelTargetId(appt.id); setCancelReason(""); setCancelOpen(true); }}>
+                      <X className="h-3.5 w-3.5" />{t("actions.cancel")}
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Cancel appointment dialog */}
+      <Dialog open={cancelOpen} onOpenChange={(o) => { if (!cancelAppt.isPending) setCancelOpen(o); }}>
+        <DialogContent className="max-w-sm" dir={isRtl ? "rtl" : "ltr"}>
+          <DialogHeader>
+            <DialogTitle>{t("actions.cancelConfirmTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Textarea rows={3} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
+              placeholder={t("actions.cancelReasonPlaceholder")} className="text-sm" />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={cancelAppt.isPending}>
+              {t("form.cancel")}
+            </Button>
+            <Button variant="destructive" disabled={cancelAppt.isPending}
+              onClick={async () => {
+                await cancelAppt.mutateAsync({ id: cancelTargetId, reason: cancelReason.trim() || undefined });
+                setCancelOpen(false);
+              }}>
+              {cancelAppt.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              {t("actions.cancelConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
