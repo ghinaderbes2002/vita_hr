@@ -3537,7 +3537,8 @@
         "description": "Uygulayıcı veya terapist olarak sorumlu olduğunuz tüm randevular",
         "empty": "Randevu yok",
         "dateFilter": "Tarih",
-        "clearFilters": "Filtreleri temizle"
+        "clearFilters": "Filtreleri temizle",
+        "today": "Bugün"
       },
       "board": {
         "title": "Bölüm Görünümü",

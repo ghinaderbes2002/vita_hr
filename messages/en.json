@@ -4448,7 +4448,8 @@
         "description": "All appointments you are responsible for as a practitioner or therapist",
         "empty": "No appointments",
         "dateFilter": "Date",
-        "clearFilters": "Clear filters"
+        "clearFilters": "Clear filters",
+        "today": "Today"
       },
       "board": {
         "title": "Department View",
