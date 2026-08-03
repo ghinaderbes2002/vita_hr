@@ -4610,6 +4610,17 @@
         "dateFilter": "التاريخ",
         "clearFilters": "مسح الفلاتر"
       },
+      "board": {
+        "title": "عرض الأقسام",
+        "free": "فارغ",
+        "busy": "مشغول",
+        "time": "الوقت",
+        "patient": "المريض",
+        "type": "النوع",
+        "status": "الحالة",
+        "physioDept": "قسم العلاج الفيزيائي",
+        "prosthDept": "قسم الأطراف الصناعية وطب الأقدام"
+      },
       "types": {
         "ASSESSMENT": "تقييم",
         "FITTING": "تركيب",
@@ -4626,7 +4637,8 @@
       },
       "cancelReason": "سبب الإلغاء",
       "filter": {
-        "allStatuses": "كل الحالات"
+        "allStatuses": "كل الحالات",
+        "allDepartments": "كل الأقسام"
       },
       "statuses": {
         "SCHEDULED": "مجدول",
@@ -4648,6 +4660,8 @@
         "physiotherapistIdPlaceholder": " (اختياري)",
         "specialistTherapist": "المعالج المختص",
         "specialistTherapistPlaceholder": "اختر المعالج المختص... (اختياري)",
+        "department": "القسم",
+        "departmentPlaceholder": "اختر القسم... (اختياري)",
         "date": "التاريخ",
         "startTime": "وقت البداية",
         "endTime": "وقت النهاية",

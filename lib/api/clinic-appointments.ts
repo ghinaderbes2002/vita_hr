@@ -13,6 +13,8 @@ export interface Appointment {
   practitionerId: string;
   practitionerRole?: PractitionerRole | null;
   practitioner?: { id: string; firstName: string; lastName: string };
+  departmentId?: string | null;
+  department?: { id: string; nameAr?: string; nameEn?: string } | null;
   appointmentType: AppointmentType;
   status: AppointmentStatus;
   date: string;
@@ -36,7 +38,8 @@ export interface CreateAppointmentDto {
   caseId?: string;
   caseType?: "PROSTHETICS" | "PHYSIO" | "GENERAL";
   practitionerId: string;
-  practitionerRole: PractitionerRole;
+  practitionerRole?: PractitionerRole;   // now optional (replaced by department)
+  departmentId?: string;                 // clinic department the appointment belongs to
   physiotherapistId?: string;
   appointmentType: AppointmentType;
   startTime: string;
@@ -62,6 +65,7 @@ export interface AppointmentListParams {
   limit?: number;
   date?: string;
   practitionerId?: string;
+  departmentId?: string;
   status?: AppointmentStatus;
 }
 

@@ -15,13 +15,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AppointmentScheduleBoard } from "@/components/clinic/appointment-schedule-board";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
-import { Appointment, AppointmentType, AppointmentStatus, PractitionerRole } from "@/lib/api/clinic-appointments";
+import { Appointment, AppointmentType, AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
-import { useMyEmployee, useEmployeesByDepartment, useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useDepartments } from "@/lib/hooks/use-departments";
 
 // Clinical departments whose staff can be assigned as the specialist therapist
 // (both spellings — with and without hamza — are accepted).
@@ -71,10 +73,19 @@ export default function AppointmentsPage() {
   const today = new Date();
   const { data: myEmployee } = useMyEmployee();
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
-  const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
-  const { data: physioDeptData } = useEmployeesByDepartment(PHYSIO_DEPT_ID);
-  const physioEmployees: { id: string; firstNameAr: string; lastNameAr: string }[] =
-    (physioDeptData as any)?.employees ?? (physioDeptData as any)?.items ?? (Array.isArray(physioDeptData) ? physioDeptData : []);
+  const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
+  const departments: { id: string; nameAr: string; nameEn?: string }[] =
+    (depsData as any)?.data?.items ?? (depsData as any)?.items ?? [];
+  // The department picker/filter only offers the clinical departments:
+  // Physiotherapy and Prosthetics & Podiatry (both spellings accepted).
+  const APPT_DEPT_NAMES = ["العلاج الفيزيائي", "الأطراف الصناعية", "الاطراف الصناعية", "طب الأقدام", "طب الاقدام"];
+  const clinicDepartments = departments.filter((dep) =>
+    APPT_DEPT_NAMES.some((n) => dep.nameAr?.includes(n)),
+  );
+  const deptLabel = (id: string) => {
+    const dep = departments.find((x) => x.id === id);
+    return dep ? (locale === "ar" ? dep.nameAr : (dep.nameEn ?? dep.nameAr)) : id;
+  };
   // Specialist-therapist pool: active staff across all clinical departments.
   const { data: staffData } = useEmployeesBasicList();
   const staffList: any[] = Array.isArray(staffData)
@@ -91,6 +102,7 @@ export default function AppointmentsPage() {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<string>(toISO(today));
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("ALL");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<string>("");
   const [cancelReason, setCancelReason] = useState("");
@@ -102,8 +114,7 @@ export default function AppointmentsPage() {
   const [newForm, setNewForm] = useState({
     patientId: "",
     appointmentType: "ASSESSMENT" as AppointmentType,
-    practitionerRole: "PROSTHETIST" as PractitionerRole,
-    physiotherapistId: "",
+    departmentId: "",
     therapistIds: [] as string[],
     date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "",
   });
@@ -114,7 +125,11 @@ export default function AppointmentsPage() {
   const to = toISO(lastDay);
 
   const { data: calendarAppts = [], isLoading: calLoading } = useClinicCalendar(from, to);
-  const { data: dayData, isLoading: dayLoading } = useClinicAppointments({ limit: 500, status: statusFilter !== "ALL" ? statusFilter : undefined });
+  const { data: dayData, isLoading: dayLoading } = useClinicAppointments({
+    limit: 500,
+    status: statusFilter !== "ALL" ? statusFilter : undefined,
+    departmentId: departmentFilter !== "ALL" ? departmentFilter : undefined,
+  });
   const { data: patientsData } = useClinicPatients({ search: patientSearch, limit: 50 });
   const createAppt = useCreateAppointment();
   const cancelAppt = useCancelAppointment();
@@ -133,6 +148,26 @@ export default function AppointmentsPage() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
   const dayAppointments = dayData?.items ?? [];
+
+  // ── Department board (selected day, split by clinical department) ──────────
+  const deptNameOf = (a: Appointment) =>
+    a.department?.nameAr ?? (a.departmentId ? (departments.find((x) => x.id === a.departmentId)?.nameAr ?? "") : "");
+  const isSelectedDay = (a: Appointment) => {
+    if (a.startTime && a.startTime.length > 5) {
+      const dt = new Date(a.startTime);
+      const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+      return iso === selectedDate;
+    }
+    return a.date === selectedDate;
+  };
+  const dayScoped = dayAppointments.filter(isSelectedDay);
+  const isPhysio = (n: string) => n.includes("العلاج الفيزيائي");
+  const isProsth = (n: string) =>
+    n.includes("الأطراف الصناعية") || n.includes("الاطراف الصناعية") || n.includes("طب الأقدام") || n.includes("طب الاقدام");
+  const boardGroups = [
+    { title: t("board.physioDept"), appointments: dayScoped.filter((a: Appointment) => isPhysio(deptNameOf(a))) },
+    { title: t("board.prosthDept"), appointments: dayScoped.filter((a: Appointment) => isProsth(deptNameOf(a))) },
+  ];
 
   // Group appointments by date for calendar dots
   const apptsByDate = useMemo(() => {
@@ -161,9 +196,8 @@ export default function AppointmentsPage() {
     await createAppt.mutateAsync({
       patientId: newForm.patientId,
       practitionerId: (myEmployee as any)?.userId ?? "",
-      practitionerRole: newForm.practitionerRole,
-      physiotherapistId: newForm.physiotherapistId || undefined,
       appointmentType: newForm.appointmentType,
+      departmentId: newForm.departmentId || undefined,
       startTime: startISO,
       endTime: endISO,
       notes: newForm.notes || undefined,
@@ -178,7 +212,7 @@ export default function AppointmentsPage() {
     setSelectedDate(newForm.date);
     setPatientSearch("");
     setSelectedPatientLabel("");
-    setNewForm({ patientId: "", appointmentType: "ASSESSMENT", practitionerRole: "PROSTHETIST", physiotherapistId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "" });
+    setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "" });
   };
 
   // Build calendar grid
@@ -206,7 +240,7 @@ export default function AppointmentsPage() {
         }
       />
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as AppointmentStatus | "ALL")}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder={t("filter.allStatuses")} />
@@ -215,6 +249,19 @@ export default function AppointmentsPage() {
             <SelectItem value="ALL">{t("filter.allStatuses")}</SelectItem>
             {(["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED"] as AppointmentStatus[]).map((s) => (
               <SelectItem key={s} value={s}>{t(`statuses.${s}`)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder={t("filter.allDepartments")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">{t("filter.allDepartments")}</SelectItem>
+            {clinicDepartments.map((dep) => (
+              <SelectItem key={dep.id} value={dep.id}>
+                {locale === "ar" ? dep.nameAr : (dep.nameEn ?? dep.nameAr)}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -344,6 +391,18 @@ export default function AppointmentsPage() {
         </Card>
       </div>
 
+      {/* Department board — free/busy overview + per-department tables */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold">
+          {t("board.title")}
+          <span className="text-muted-foreground font-normal">
+            {" — "}
+            {new Date(selectedDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}
+          </span>
+        </h2>
+        <AppointmentScheduleBoard groups={boardGroups} onSelect={setDetailAppt} />
+      </div>
+
       {/* Appointment details dialog */}
       <Dialog open={!!detailAppt} onOpenChange={(o) => { if (!o) setDetailAppt(null); }}>
         <DialogContent className="max-w-md" dir="rtl">
@@ -364,6 +423,7 @@ export default function AppointmentsPage() {
               ["الوقت", `${fmtT(detailAppt.startTime)} — ${fmtT(detailAppt.endTime)}`],
               ["المدة", detailAppt.durationMinutes ? `${detailAppt.durationMinutes} دقيقة` : "—"],
               ["الممارس", detailAppt.practitioner ? `${detailAppt.practitioner.firstName} ${detailAppt.practitioner.lastName}` : "—"],
+              ["القسم", detailAppt.department?.nameAr ?? (detailAppt.departmentId ? deptLabel(detailAppt.departmentId) : "—")],
               ["ملاحظات", detailAppt.notes || "—"],
             ];
             const therapistNames = (detailAppt.therapists ?? [])
@@ -507,37 +567,19 @@ export default function AppointmentsPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("form.practitionerRole")}</Label>
-                <Select value={newForm.practitionerRole} onValueChange={(v) => setNewForm((f) => ({ ...f, practitionerRole: v as PractitionerRole }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Label>{t("form.department")}</Label>
+                <Select value={newForm.departmentId} onValueChange={(v) => setNewForm((f) => ({ ...f, departmentId: v }))}>
+                  <SelectTrigger><SelectValue placeholder={t("form.departmentPlaceholder")} /></SelectTrigger>
                   <SelectContent>
-                    {(["PROSTHETIST", "PHYSIOTHERAPIST", "DOCTOR", "TECHNICIAN"] as PractitionerRole[]).map((k) => (
-                      <SelectItem key={k} value={k}>{t(`roles.${k}`)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {newForm.practitionerRole === "PHYSIOTHERAPIST" && (
-              <div className="space-y-1.5">
-                <Label>{t("form.physiotherapistId")}</Label>
-                <Select
-                  value={newForm.physiotherapistId}
-                  onValueChange={(v) => setNewForm((f) => ({ ...f, physiotherapistId: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("form.physiotherapistIdPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {physioEmployees.map((emp) => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        {emp.firstNameAr} {emp.lastNameAr}
+                    {clinicDepartments.map((dep) => (
+                      <SelectItem key={dep.id} value={dep.id}>
+                        {locale === "ar" ? dep.nameAr : (dep.nameEn ?? dep.nameAr)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            )}
+            </div>
             {/* Specialist therapists — one or more, from any clinical department;
                 each gets notified of the appointment. */}
             <div className="space-y-1.5">

@@ -3539,6 +3539,17 @@
         "dateFilter": "Tarih",
         "clearFilters": "Filtreleri temizle"
       },
+      "board": {
+        "title": "Bölüm Görünümü",
+        "free": "Boş",
+        "busy": "Dolu",
+        "time": "Saat",
+        "patient": "Hasta",
+        "type": "Tür",
+        "status": "Durum",
+        "physioDept": "Fizyoterapi",
+        "prosthDept": "Protez ve Ayak Sağlığı"
+      },
       "types": {
         "ASSESSMENT": "Değerlendirme",
         "FITTING": "Takma",
@@ -3551,6 +3562,10 @@
         "PHYSIOTHERAPIST": "Fizyoterapist",
         "DOCTOR": "Doktor",
         "NURSE": "Hemşire"
+      },
+      "filter": {
+        "allStatuses": "Tüm Durumlar",
+        "allDepartments": "Tüm Bölümler"
       },
       "statuses": {
         "SCHEDULED": "Planlandı",
@@ -3570,6 +3585,8 @@
         "practitionerRole": "Uzman Rolü",
         "specialistTherapist": "Uzman Terapist",
         "specialistTherapistPlaceholder": "Uzman terapist seç... (isteğe bağlı)",
+        "department": "Bölüm",
+        "departmentPlaceholder": "Bölüm seç... (isteğe bağlı)",
         "date": "Tarih",
         "startTime": "Başlangıç Saati",
         "endTime": "Bitiş Saati",

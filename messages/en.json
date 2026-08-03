@@ -4450,6 +4450,17 @@
         "dateFilter": "Date",
         "clearFilters": "Clear filters"
       },
+      "board": {
+        "title": "Department View",
+        "free": "Free",
+        "busy": "Busy",
+        "time": "Time",
+        "patient": "Patient",
+        "type": "Type",
+        "status": "Status",
+        "physioDept": "Physiotherapy",
+        "prosthDept": "Prosthetics & Podiatry"
+      },
       "types": {
         "ASSESSMENT": "Assessment",
         "FITTING": "Fitting",
@@ -4466,7 +4477,8 @@
       },
       "cancelReason": "Cancellation Reason",
       "filter": {
-        "allStatuses": "All Statuses"
+        "allStatuses": "All Statuses",
+        "allDepartments": "All Departments"
       },
       "statuses": {
         "SCHEDULED": "Scheduled",
@@ -4488,6 +4500,8 @@
         "physiotherapistIdPlaceholder": "UUID (optional)",
         "specialistTherapist": "Specialist Therapist",
         "specialistTherapistPlaceholder": "Select specialist therapist... (optional)",
+        "department": "Department",
+        "departmentPlaceholder": "Select department... (optional)",
         "date": "Date",
         "startTime": "Start Time",
         "endTime": "End Time",
