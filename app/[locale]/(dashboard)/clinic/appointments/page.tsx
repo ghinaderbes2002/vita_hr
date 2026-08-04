@@ -3,7 +3,7 @@
 import { useState, useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Check, Loader2, UserRound, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Loader2, UserRound, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -395,24 +395,31 @@ export default function AppointmentsPage() {
               </dl>
             );
           })()}
-          <DialogFooter className="flex-wrap gap-2 sm:justify-start">
-            {detailAppt?.status === "SCHEDULED" && (
-              <Button size="sm" variant="outline" className="gap-1.5"
-                onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "CONFIRMED" }); setDetailAppt(null); }}>
-                <Check className="h-4 w-4" />{t("actions.confirm")}
-              </Button>
-            )}
-            {detailAppt?.status === "CONFIRMED" && (
-              <Button size="sm" variant="outline" className="gap-1.5"
-                onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "COMPLETED" }); setDetailAppt(null); }}>
-                <Check className="h-4 w-4" />{t("actions.complete")}
-              </Button>
-            )}
-            {detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
-              <Button size="sm" variant="ghost" className="gap-1.5 text-destructive"
-                onClick={() => { setCancelTargetId(detailAppt.id); setCancelReason(""); setCancelDialogOpen(true); setDetailAppt(null); }}>
-                <X className="h-4 w-4" />{t("actions.cancel")}
-              </Button>
+          <DialogFooter className="flex-wrap items-center gap-2 sm:justify-start">
+            {detailAppt && detailAppt.status !== "CANCELLED" && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground shrink-0">{t("actions.changeStatus")}</span>
+                <Select
+                  value={detailAppt.status}
+                  onValueChange={(v) => {
+                    const next = v as AppointmentStatus;
+                    if (next === detailAppt.status) return;
+                    if (next === "CANCELLED") {
+                      setCancelTargetId(detailAppt.id); setCancelReason(""); setCancelDialogOpen(true);
+                    } else {
+                      updateStatus.mutate({ id: detailAppt.id, status: next });
+                    }
+                    setDetailAppt(null);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(["SCHEDULED", "CONFIRMED", "COMPLETED", "NO_SHOW", "RESCHEDULED", "CANCELLED"] as AppointmentStatus[]).map((s) => (
+                      <SelectItem key={s} value={s}>{t(`statuses.${s}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
             <Button variant="outline" className="ms-auto" onClick={() => setDetailAppt(null)}>{t("form.cancel")}</Button>
           </DialogFooter>

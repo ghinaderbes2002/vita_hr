@@ -3600,7 +3600,8 @@
       "actions": {
         "confirm": "Onayla",
         "complete": "Tamamla",
-        "cancel": "Randevuyu İptal Et"
+        "cancel": "Randevuyu İptal Et",
+        "changeStatus": "Durumu değiştir"
       }
     },
     "inventory": {

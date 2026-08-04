@@ -4516,6 +4516,7 @@
         "confirm": "Confirm",
         "complete": "Complete",
         "cancel": "Cancel Appointment",
+        "changeStatus": "Change status",
         "cancelConfirmTitle": "Cancel Appointment",
         "cancelReasonPlaceholder": "Reason for cancellation (optional)",
         "cancelConfirm": "Confirm Cancellation"

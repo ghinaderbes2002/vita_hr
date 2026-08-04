@@ -35,7 +35,7 @@ const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
 };
 
 // Order shown in the colour legend.
-const LEGEND_STATUSES: AppointmentStatus[] = ["CONFIRMED", "SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED"];
+const LEGEND_STATUSES: AppointmentStatus[] = ["CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED"];
 
 function toMinutes(v?: string | null): number | null {
   if (!v) return null;

@@ -4676,6 +4676,7 @@
         "confirm": "تأكيد",
         "complete": "إنجاز",
         "cancel": "إلغاء الموعد",
+        "changeStatus": "تغيير الحالة",
         "cancelConfirmTitle": "إلغاء الموعد",
         "cancelReasonPlaceholder": "سبب الإلغاء (اختياري)",
         "cancelConfirm": "تأكيد الإلغاء"
