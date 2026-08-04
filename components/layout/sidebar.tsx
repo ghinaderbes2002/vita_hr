@@ -109,9 +109,13 @@ const navigation: NavItem[] = [
   },
   {
     title: "nav.hr",
-    titleForRoles: { "DIRECT_MANAGER": "nav.subordinatesAffairs", "QS": "nav.subordinatesAffairs" },
+    titleForRoles: { "DIRECT_MANAGER": "nav.subordinatesAffairs" },
     icon: Briefcase,
-    hiddenForRoles: ["employee", "موظف"],
+    // "شؤون المرؤوسين" is for direct managers only. showForRoles is evaluated
+    // before hiddenForRoles, so a direct manager who also holds "موظف" still
+    // sees it; a center supervisor (QS) without direct-manager does not.
+    showForRoles: ["DIRECT_MANAGER", "المدير المباشر"],
+    hiddenForRoles: ["employee", "موظف", "QS", "مشرف مركز"],
     children: [
       {
         title: "nav.attendance",

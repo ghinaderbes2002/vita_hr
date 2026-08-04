@@ -7,11 +7,23 @@ import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
 
-const DAY_START = 8 * 60;   // 08:00
-const DAY_END = 20 * 60;    // 20:00
-const HOUR_H = 58;          // px per hour
+const DAY_START = 10 * 60;  // 10:00
+const DAY_END = 18 * 60;    // 18:00
+const HOUR_H = 72;          // px per hour
+const SLOT_MIN = 30;        // gridline / label granularity (half-hour)
+const SLOT_H = HOUR_H / 2;  // px per half-hour
+const PAD = 16;             // top/bottom breathing room so 10:00 & 18:00 aren't clipped
 const TOTAL_MIN = DAY_END - DAY_START;
 const TOTAL_H = (TOTAL_MIN / 60) * HOUR_H;
+const BODY_H = TOTAL_H + PAD * 2;
+
+// "10", "10:30", "11" … afternoon in 12-hour form ("1", "6").
+const slotLabel = (min: number) => {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return m === 0 ? String(h12) : `${h12}:30`;
+};
 
 const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
   SCHEDULED:   { bar: "#3b82f6", cls: "bg-blue-50/90 dark:bg-blue-950/50 text-blue-950 dark:text-blue-100" },
@@ -21,6 +33,9 @@ const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
   NO_SHOW:     { bar: "#f97316", cls: "bg-orange-50/90 dark:bg-orange-950/50 text-orange-950 dark:text-orange-100" },
   RESCHEDULED: { bar: "#a855f7", cls: "bg-purple-50/90 dark:bg-purple-950/50 text-purple-950 dark:text-purple-100" },
 };
+
+// Order shown in the colour legend.
+const LEGEND_STATUSES: AppointmentStatus[] = ["CONFIRMED", "SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED"];
 
 function toMinutes(v?: string | null): number | null {
   if (!v) return null;
@@ -80,10 +95,14 @@ function Column({ group, onSelect }: { group: TimelineGroup; onSelect: (a: Appoi
   const t = useTranslations("clinic.appointments");
   const placed = layout(group.appointments);
   return (
-    <div className="relative border-s border-border/70" style={{ height: TOTAL_H }}>
-      {/* hour grid lines */}
-      {Array.from({ length: TOTAL_MIN / 60 + 1 }, (_, i) => (
-        <div key={i} className="absolute inset-x-0 border-t border-border/50" style={{ top: i * HOUR_H }} />
+    <div className="relative border-s border-border/70" style={{ height: BODY_H }}>
+      {/* half-hour grid lines (full hours a touch darker) */}
+      {Array.from({ length: TOTAL_MIN / SLOT_MIN + 1 }, (_, i) => (
+        <div
+          key={i}
+          className={`absolute inset-x-0 border-t ${i % 2 === 0 ? "border-border/60" : "border-border/25"}`}
+          style={{ top: PAD + i * SLOT_H }}
+        />
       ))}
       {placed.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -91,7 +110,7 @@ function Column({ group, onSelect }: { group: TimelineGroup; onSelect: (a: Appoi
         </div>
       )}
       {placed.map(({ a, start, end, lane, lanes }) => {
-        const top = ((start - DAY_START) / 60) * HOUR_H;
+        const top = PAD + ((start - DAY_START) / 60) * HOUR_H;
         const height = Math.max(22, ((end - start) / 60) * HOUR_H - 2);
         const w = 100 / lanes;
         const st = STATUS_STYLE[a.status];
@@ -138,18 +157,26 @@ export function AppointmentTimeline({
 }) {
   const locale = useLocale();
   const isRtl = locale === "ar";
-  const hours = Array.from({ length: TOTAL_MIN / 60 + 1 }, (_, i) => DAY_START / 60 + i);
+  const t = useTranslations("clinic.appointments");
+  const slots = Array.from({ length: TOTAL_MIN / SLOT_MIN + 1 }, (_, i) => DAY_START + i * SLOT_MIN);
 
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const showNow = isToday && nowMin >= DAY_START && nowMin <= DAY_END;
-  const nowTop = ((nowMin - DAY_START) / 60) * HOUR_H;
-
-  const hourLabel = (h: number) =>
-    new Date(2000, 0, 1, h).toLocaleTimeString(locale, { hour: "numeric" });
+  const nowTop = PAD + ((nowMin - DAY_START) / 60) * HOUR_H;
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm" dir={isRtl ? "rtl" : "ltr"}>
+      {/* status colour legend */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/20 px-3 py-2">
+        {LEGEND_STATUSES.map((s) => (
+          <span key={s} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: STATUS_STYLE[s].bar }} />
+            {t(`statuses.${s}`)}
+          </span>
+        ))}
+      </div>
+
       {/* column headers */}
       <div className="grid border-b bg-muted/30" style={{ gridTemplateColumns: `56px repeat(${groups.length}, 1fr)` }}>
         <div />
@@ -168,10 +195,10 @@ export function AppointmentTimeline({
       {/* timeline body */}
       <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${groups.length}, 1fr)` }}>
         {/* time gutter */}
-        <div className="relative" style={{ height: TOTAL_H }}>
-          {hours.map((h, i) => (
-            <div key={h} className="absolute inset-x-0 -translate-y-1/2 pe-2 text-end" style={{ top: i * HOUR_H }}>
-              <span className="text-[10px] font-medium text-muted-foreground">{i === 0 ? "" : hourLabel(h)}</span>
+        <div className="relative" style={{ height: BODY_H }}>
+          {slots.map((min, i) => (
+            <div key={min} className="absolute inset-x-0 -translate-y-1/2 pe-2 text-end" style={{ top: PAD + i * SLOT_H }}>
+              <span className={min % 60 === 0 ? "text-[10px] font-semibold text-muted-foreground" : "text-[9px] font-medium text-muted-foreground/60"}>{slotLabel(min)}</span>
             </div>
           ))}
         </div>

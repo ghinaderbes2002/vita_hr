@@ -1,0 +1,95 @@
+"use client";
+
+// Anatomical measurement diagram: renders the VitaSyr SVG (from /public) and
+// overlays a transparent input inside each drawn box/oval, positioned by
+// percentage. Each field writes to either the sound- or affected-limb map.
+// Same overlay technique as body-pain-map (relative container + absolute boxes).
+
+export interface DiagramField {
+  /** Key stored in the limb map (e.g. the SVG shape id "circ_01" / "len_07"). */
+  key: string;
+  /** Which limb map this field belongs to. */
+  map: "sound" | "affected";
+  /** Center position + size, as a percentage of the image (0–100). */
+  cx: number;
+  cy: number;
+  w: number;
+  h: number;
+}
+
+export function MeasurementDiagram({
+  imageSrc,
+  fields,
+  sound,
+  affected,
+  onChange,
+  disabled = false,
+  maxWidth = 1040,
+  className,
+}: {
+  imageSrc: string;
+  fields: DiagramField[];
+  sound: Record<string, string>;
+  affected: Record<string, string>;
+  onChange: (map: "sound" | "affected", key: string, value: string) => void;
+  disabled?: boolean;
+  maxWidth?: number;
+  className?: string;
+}) {
+  return (
+    <div className={`relative mx-auto ${className ?? ""}`} style={{ maxWidth }} dir="ltr">
+      {/* eslint-disable-next-line @next/next/no-img-element -- static overlay image */}
+      <img src={imageSrc} alt="مخطط القياس" className="block h-auto w-full select-none" draggable={false} />
+      {fields.map((f) => {
+        const value = (f.map === "sound" ? sound : affected)[f.key] ?? "";
+        return (
+          <input
+            key={`${f.map}:${f.key}`}
+            value={value}
+            onChange={(e) => onChange(f.map, f.key, e.target.value)}
+            disabled={disabled}
+            inputMode="decimal"
+            title={f.key}
+            className="absolute -translate-x-1/2 -translate-y-1/2 rounded bg-transparent text-center text-[11px] font-semibold text-foreground outline-none focus:bg-primary/10 disabled:opacity-60"
+            style={{ left: `${f.cx}%`, top: `${f.cy}%`, width: `${f.w}%`, height: `${f.h}%` }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// Field layout for /prosthetics/vitasyr.svg (viewBox 1536×1024). Generated from
+// the SVG's <g class="fld"> groups: 9 circumference ovals + 18 length boxes.
+// Sound limb = the left-side shapes (x < 400); affected limb = the rest.
+export const VITASYR_LOWER_LIMB_FIELDS: DiagramField[] = [
+  // ── Affected limb (right side) ──────────────────────────────────────────
+  { key: "circ_01", map: "affected", cx: 52.83, cy: 29.64, w: 6.97, h: 4.59 },
+  { key: "circ_02", map: "affected", cx: 52.73, cy: 39.06, w: 6.64, h: 4.69 },
+  { key: "len_01",  map: "affected", cx: 84.93, cy: 40.19, w: 6.84, h: 4.79 },
+  { key: "circ_03", map: "affected", cx: 52.73, cy: 45.56, w: 6.64, h: 4.59 },
+  { key: "len_02",  map: "affected", cx: 60.42, cy: 45.46, w: 6.25, h: 4.39 },
+  { key: "len_03",  map: "affected", cx: 80.24, cy: 45.51, w: 6.18, h: 4.30 },
+  { key: "len_04",  map: "affected", cx: 90.27, cy: 49.02, w: 6.18, h: 4.88 },
+  { key: "len_05",  map: "affected", cx: 74.64, cy: 49.76, w: 5.66, h: 4.00 },
+  { key: "circ_04", map: "affected", cx: 52.73, cy: 50.63, w: 6.64, h: 4.59 },
+  { key: "len_06",  map: "affected", cx: 60.42, cy: 50.54, w: 6.25, h: 4.39 },
+  { key: "len_07",  map: "affected", cx: 67.90, cy: 50.54, w: 6.12, h: 4.39 },
+  { key: "len_08",  map: "affected", cx: 96.16, cy: 54.54, w: 5.99, h: 4.59 },
+  { key: "len_09",  map: "affected", cx: 63.83, cy: 56.45, w: 6.18, h: 4.30 },
+  { key: "circ_05", map: "affected", cx: 52.73, cy: 57.32, w: 6.64, h: 4.69 },
+  { key: "len_10",  map: "affected", cx: 70.35, cy: 57.71, w: 5.79, h: 4.30 },
+  { key: "len_11",  map: "affected", cx: 80.37, cy: 57.91, w: 6.05, h: 4.49 },
+  { key: "circ_07", map: "affected", cx: 52.73, cy: 62.65, w: 6.64, h: 4.79 },
+  { key: "len_12",  map: "affected", cx: 74.45, cy: 63.13, w: 5.79, h: 4.39 },
+  { key: "len_13",  map: "affected", cx: 84.93, cy: 63.38, w: 6.58, h: 4.69 },
+  { key: "circ_08", map: "affected", cx: 52.73, cy: 69.09, w: 6.64, h: 4.79 },
+  { key: "len_18",  map: "affected", cx: 89.23, cy: 96.09, w: 6.71, h: 4.69 },
+  // ── Sound limb (left side) ──────────────────────────────────────────────
+  { key: "circ_06", map: "sound", cx: 20.05, cy: 61.77, w: 5.86, h: 4.59 },
+  { key: "len_14",  map: "sound", cx: 4.26,  cy: 68.75, w: 6.58, h: 4.69 },
+  { key: "len_15",  map: "sound", cx: 9.70,  cy: 75.00, w: 6.12, h: 4.69 },
+  { key: "circ_09", map: "sound", cx: 20.02, cy: 78.66, w: 5.93, h: 4.59 },
+  { key: "len_16",  map: "sound", cx: 14.81, cy: 83.06, w: 5.93, h: 4.20 },
+  { key: "len_17",  map: "sound", cx: 16.86, cy: 95.07, w: 6.77, h: 4.79 },
+];

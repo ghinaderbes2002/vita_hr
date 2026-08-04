@@ -24,6 +24,8 @@ import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
 import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 // Clinical departments whose staff can be assigned as the specialist therapist
 // (both spellings — with and without hamza — are accepted).
@@ -72,7 +74,8 @@ export default function AppointmentsPage() {
 
   const today = new Date();
   const { data: myEmployee } = useMyEmployee();
-  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
+  const { hasPermission, isAdmin } = usePermissions();
+  const canCreateAppt = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CREATE);
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
   const departments: { id: string; nameAr: string; nameEn?: string }[] =
     (depsData as any)?.data?.items ?? (depsData as any)?.items ?? [];
@@ -244,7 +247,7 @@ export default function AppointmentsPage() {
         title={t("title")}
         description={t("description")}
         actions={
-          myJobTitleCode !== "VTX-JTL-000011" ? (
+          canCreateAppt ? (
             <Button onClick={() => setNewApptOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               {t("newAppointment")}
