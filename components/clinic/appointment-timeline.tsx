@@ -35,7 +35,7 @@ const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
 };
 
 // Order shown in the colour legend.
-const LEGEND_STATUSES: AppointmentStatus[] = ["CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED"];
+const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED"];
 
 function toMinutes(v?: string | null): number | null {
   if (!v) return null;
@@ -91,7 +91,14 @@ export interface TimelineGroup {
   appointments: Appointment[];
 }
 
-function Column({ group, onSelect }: { group: TimelineGroup; onSelect: (a: Appointment) => void }) {
+function Column({
+  group, onSelect, resolveTherapist, hideEmptyLabel,
+}: {
+  group: TimelineGroup;
+  onSelect: (a: Appointment) => void;
+  resolveTherapist?: (a: Appointment) => string | null;
+  hideEmptyLabel?: boolean;
+}) {
   const t = useTranslations("clinic.appointments");
   const placed = layout(group.appointments);
   return (
@@ -104,7 +111,7 @@ function Column({ group, onSelect }: { group: TimelineGroup; onSelect: (a: Appoi
           style={{ top: PAD + i * SLOT_H }}
         />
       ))}
-      {placed.length === 0 && (
+      {placed.length === 0 && !hideEmptyLabel && (
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-xs text-muted-foreground">{t("emptyDay")}</span>
         </div>
@@ -115,6 +122,7 @@ function Column({ group, onSelect }: { group: TimelineGroup; onSelect: (a: Appoi
         const w = 100 / lanes;
         const st = STATUS_STYLE[a.status];
         const cancelled = a.status === "CANCELLED";
+        const therapist = resolveTherapist?.(a);
         return (
           <button
             key={a.id}
@@ -141,6 +149,9 @@ function Column({ group, onSelect }: { group: TimelineGroup; onSelect: (a: Appoi
             {height > 40 && (
               <div className="truncate text-[10px] leading-tight opacity-80">{t(`types.${a.appointmentType}`)}</div>
             )}
+            {height > 40 && therapist && (
+              <div className="truncate text-[10px] font-medium leading-tight text-primary/90">{therapist}</div>
+            )}
           </button>
         );
       })}
@@ -149,11 +160,13 @@ function Column({ group, onSelect }: { group: TimelineGroup; onSelect: (a: Appoi
 }
 
 export function AppointmentTimeline({
-  groups, isToday, onSelect,
+  groups, isToday, onSelect, resolveTherapist, hideEmptyLabel,
 }: {
   groups: TimelineGroup[];
   isToday: boolean;
   onSelect: (a: Appointment) => void;
+  resolveTherapist?: (a: Appointment) => string | null;
+  hideEmptyLabel?: boolean;
 }) {
   const locale = useLocale();
   const isRtl = locale === "ar";
@@ -204,7 +217,7 @@ export function AppointmentTimeline({
         </div>
 
         {groups.map((g) => (
-          <Column key={g.title} group={g} onSelect={onSelect} />
+          <Column key={g.title} group={g} onSelect={onSelect} resolveTherapist={resolveTherapist} hideEmptyLabel={hideEmptyLabel} />
         ))}
 
         {/* now indicator — spans all department columns */}

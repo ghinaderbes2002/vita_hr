@@ -4110,7 +4110,9 @@
       },
       "case": {
         "pageTitle": "Physiotherapy Case",
+        "pageTitleDoctorExam": "Doctor Exam",
         "cancelCase": "Cancel Case",
+        "convertToPhysio": "Convert to Physiotherapy",
         "exportPdf": "Full PDF",
         "exporting": "Exporting...",
         "notFound": "Case not found",
@@ -4143,9 +4145,30 @@
           "evaluation": "Observation & Evaluation",
           "sessions": "Therapeutic Procedures",
           "summary": "Summary",
+          "followUps": "Follow-up",
           "supervisorReview": "Supervisor Review",
           "doctorReview": "Doctor Review",
           "timeline": "Timeline"
+        },
+        "followUps": {
+          "addTitle": "Add a follow-up",
+          "listTitle": "Follow-ups",
+          "date": "Date *",
+          "time": "Time",
+          "notes": "Notes",
+          "notesPlaceholder": "Follow-up notes...",
+          "supervisorOpinion": "Supervisor Opinion",
+          "supervisorOpinionPlaceholder": "Supervisor opinion...",
+          "doctorDecision": "Specialist Opinion",
+          "doctorDecisionPlaceholder": "Specialist opinion...",
+          "add": "Add Follow-up",
+          "save": "Save",
+          "cancel": "Cancel",
+          "edit": "Edit",
+          "delete": "Delete",
+          "deleteTitle": "Delete follow-up",
+          "deleteDescription": "Delete this follow-up? This action cannot be undone.",
+          "empty": "No follow-ups"
         },
         "intake": {
           "title": "Patient Intake",
@@ -4279,8 +4302,9 @@
           "imagingProcedures": "Imaging Procedures",
           "addImaging": "Add Procedure",
           "removeImaging": "Remove",
-          "uploadImage": "Upload Image",
+          "uploadImage": "Upload file (image / video / PDF)",
           "noImaging": "No imaging procedures",
+          "deleteImagingConfirm": "This file will be permanently removed from the patient record. Continue?",
           "imagingDescPlaceholder": "Imaging procedure description...",
           "chronicConditionsTitle": "Do you have any of the following? (check if yes)",
           "saveAndNext": "Save & Continue to Goals",
@@ -4371,14 +4395,14 @@
           "summary": "Summary",
           "fromPlaceholder": "e.g. 2026-06-18 or after one week",
           "toPlaceholder": "e.g. 2026-07-18 or after one month",
-          "save": "Save Treatment Plan"
+          "save": "Save Treatment Plan & Continue to Evaluation"
         },
         "evaluation": {
           "diagnosisTitle": "Diagnosis",
           "diagnosisPlaceholder": "Write your notes on patient progress...",
           "appliedTreatmentTitle": "Applied Treatment",
           "otherModalityPlaceholder": "Specify other treatment modality...",
-          "save": "Save Observation & Evaluation"
+          "save": "Save & Continue to Sessions"
         },
         "supervisorReview": {
           "title": "Supervisor's View",
@@ -4449,7 +4473,11 @@
         "empty": "No appointments",
         "dateFilter": "Date",
         "clearFilters": "Clear filters",
-        "today": "Today"
+        "today": "Today",
+        "thisWeek": "This week",
+        "statusBreakdown": "Status breakdown",
+        "detailTitle": "Appointment details",
+        "patientNumber": "Patient number"
       },
       "board": {
         "title": "Department View",
@@ -4515,8 +4543,11 @@
       "actions": {
         "confirm": "Confirm",
         "complete": "Complete",
+        "noShow": "No Show",
         "cancel": "Cancel Appointment",
         "changeStatus": "Change status",
+        "rescheduleTitle": "Reschedule Appointment",
+        "rescheduleConfirm": "Reschedule",
         "cancelConfirmTitle": "Cancel Appointment",
         "cancelReasonPlaceholder": "Reason for cancellation (optional)",
         "cancelConfirm": "Confirm Cancellation"

@@ -7,7 +7,9 @@
       "Bash(node -e \"const j = require\\('./messages/en.json'\\); console.log\\(JSON.stringify\\({nav: j.nav}, null, 2\\)\\)\")",
       "Bash(npx tsc *)",
       "Bash(git stash *)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json 2>&1 | Select-Object -First 20; foreach \\($f in @\\(\"ar\",\"en\",\"tr\"\\)\\) { $p = \"messages/$f.json\"; try { Get-Content $p -Raw -Encoding UTF8 | ConvertFrom-Json | Out-Null; \"$f.json OK\" } catch { \"$f.json INVALID: $_\" } })",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json 2>&1)"
     ]
   }
 }

@@ -16,6 +16,15 @@ export function useMyAppointments(params?: AppointmentListParams) {
   });
 }
 
+export function usePatientAppointments(patientId?: string) {
+  return useQuery({
+    queryKey: ["clinic-appointments", "by-patient", patientId],
+    queryFn: () => clinicAppointmentsApi.listByPatient(patientId!),
+    enabled: !!patientId,
+    staleTime: 60_000,
+  });
+}
+
 export function useClinicCalendar(from: string, to: string) {
   return useQuery({
     queryKey: ["clinic-calendar", from, to],

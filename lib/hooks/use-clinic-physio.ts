@@ -15,8 +15,10 @@ import {
   DoctorReviewDto,
   CreatePhysioSessionDto,
   UpdatePhysioSessionDto,
+  PhysioFollowUpDto,
   FinalSummaryDto,
   PhysioCaseListParams,
+  PhysioCaseType,
   EmergencyAlert,
 } from "@/lib/api/clinic-physio";
 import { toast } from "sonner";
@@ -36,10 +38,10 @@ export function usePhysioCase(id: string) {
   });
 }
 
-export function usePhysioCasesByPatient(patientId: string) {
+export function usePhysioCasesByPatient(patientId: string, caseType?: PhysioCaseType) {
   return useQuery({
-    queryKey: ["clinic-physio-cases-patient", patientId],
-    queryFn: () => clinicPhysioApi.getByPatient(patientId),
+    queryKey: ["clinic-physio-cases-patient", patientId, caseType ?? "PHYSIO"],
+    queryFn: () => clinicPhysioApi.getByPatient(patientId, caseType),
     enabled: !!patientId,
   });
 }
@@ -48,12 +50,25 @@ export function useCreatePhysioCase() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (dto: CreatePhysioCaseDto) => clinicPhysioApi.create(dto),
-    onSuccess: (data) => {
+    onSuccess: (data, dto) => {
       qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
       qc.invalidateQueries({ queryKey: ["clinic-physio-cases-patient", data.patientId] });
-      toast.success("تم إنشاء حالة الفيزيائي");
+      toast.success(dto.caseType === "DOCTOR_EXAM" ? "تم إنشاء معاينة الطبيب" : "تم إنشاء حالة الفيزيائي");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إنشاء الحالة"),
+  });
+}
+
+export function useConvertToPhysio() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string; patientId?: string }) => clinicPhysioApi.convertToPhysio(id),
+    onSuccess: (_, { patientId }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
+      if (patientId) qc.invalidateQueries({ queryKey: ["clinic-physio-cases-patient", patientId] });
+      toast.success("تم تحويل المعاينة إلى حالة علاج فيزيائي");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحويل"),
   });
 }
 
@@ -300,6 +315,53 @@ export function useUpdatePhysioSession() {
       toast.success("تم تعديل الجلسة");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التعديل"),
+  });
+}
+
+export function usePhysioFollowUps(caseId: string) {
+  return useQuery({
+    queryKey: ["clinic-physio-follow-ups", caseId],
+    queryFn: () => clinicPhysioApi.getFollowUps(caseId),
+    enabled: !!caseId,
+  });
+}
+
+export function useAddPhysioFollowUp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: PhysioFollowUpDto }) =>
+      clinicPhysioApi.addFollowUp(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-follow-ups", id] });
+      toast.success("تمت إضافة المتابعة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة المتابعة"),
+  });
+}
+
+export function useUpdatePhysioFollowUp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, followUpId, dto }: { id: string; followUpId: string; dto: Partial<PhysioFollowUpDto> }) =>
+      clinicPhysioApi.updateFollowUp(id, followUpId, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-follow-ups", id] });
+      toast.success("تم تعديل المتابعة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التعديل"),
+  });
+}
+
+export function useDeletePhysioFollowUp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, followUpId }: { id: string; followUpId: string }) =>
+      clinicPhysioApi.deleteFollowUp(id, followUpId),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-follow-ups", id] });
+      toast.success("تم حذف المتابعة");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
   });
 }
 

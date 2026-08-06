@@ -2,7 +2,18 @@ import { apiClient } from "./client";
 
 export type DocumentType =
   | "ID_COPY" | "PERSONAL_PHOTO" | "AMPUTATION_PHOTO"
-  | "RESIDUAL_LIMB_PHOTO" | "MEDICAL_REPORT" | "OTHER";
+  | "RESIDUAL_LIMB_PHOTO" | "MEDICAL_REPORT" | "IMAGING_PROCEDURE" | "OTHER";
+
+/** Imaging procedures may be video clips; everything else is a still or a PDF. */
+export const DOCUMENT_ACCEPT: Record<DocumentType, string> = {
+  ID_COPY:             "image/*,application/pdf",
+  PERSONAL_PHOTO:      "image/*,application/pdf",
+  AMPUTATION_PHOTO:    "image/*,application/pdf",
+  RESIDUAL_LIMB_PHOTO: "image/*,application/pdf",
+  MEDICAL_REPORT:      "image/*,application/pdf",
+  IMAGING_PROCEDURE:   "image/*,application/pdf,video/mp4,video/quicktime,video/webm",
+  OTHER:               "image/*,application/pdf",
+};
 
 export type Gender         = "MALE" | "FEMALE";
 export type IdentityType   = "NATIONAL_ID" | "PASSPORT" | "UNHCR" | "OTHER";

@@ -89,6 +89,7 @@ const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: "AMPUTATION_PHOTO",    label: "صورة البتر" },
   { value: "RESIDUAL_LIMB_PHOTO", label: "صورة الطرف المتبقي" },
   { value: "MEDICAL_REPORT",      label: "تقرير طبي" },
+  { value: "IMAGING_PROCEDURE",   label: "الإجراءات التصويرية" },
   { value: "OTHER",               label: "أخرى" },
 ];
 

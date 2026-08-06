@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
+import { ImagingProcedures } from "@/components/clinic/imaging-procedures";
 import { ChronicCondition, CHRONIC_CONDITION_LABELS, TestType } from "@/lib/api/clinic-physio";
 
 const CHRONIC_CONDITIONS = Object.keys(CHRONIC_CONDITION_LABELS) as ChronicCondition[];
@@ -96,8 +97,6 @@ export function MedicalHistoryForm({ initial, patientId, gender, canEdit, saving
   ]);
   const [attachmentUploading, setAttachmentUploading] = useState<"new" | "old" | null>(null);
   const [attachmentDownloading, setAttachmentDownloading] = useState<"new" | "old" | null>(null);
-  const [imagingUploadingIdx, setImagingUploadingIdx] = useState<number | null>(null);
-  const [imagingDownloadingIdx, setImagingDownloadingIdx] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -582,84 +581,8 @@ export function MedicalHistoryForm({ initial, patientId, gender, canEdit, saving
             )}
           </div>
 
-          {/* الإجراءات التصويرية (صورة + وصف لكل إجراء) */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>{t("medicalHistory.imagingProcedures")}</Label>
-              {canEdit && (
-                <Button type="button" variant="outline" size="sm" className="gap-1.5"
-                  onClick={() => setHistory((h) => ({ ...h, imagingProcedures: [...h.imagingProcedures, { imageUrl: "", description: "" }] }))}>
-                  <Plus className="h-3.5 w-3.5" />
-                  {t("medicalHistory.addImaging")}
-                </Button>
-              )}
-            </div>
-            {history.imagingProcedures.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("medicalHistory.noImaging")}</p>
-            ) : (
-              <div className="space-y-3">
-                {history.imagingProcedures.map((proc, idx) => (
-                  <div key={idx} className="rounded-lg border p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">#{idx + 1}</span>
-                      {canEdit && (
-                        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
-                          onClick={() => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.filter((_, i) => i !== idx) }))}>
-                          {t("medicalHistory.removeImaging")}
-                        </Button>
-                      )}
-                    </div>
-                    {proc.imageUrl ? (
-                      <div className="flex items-center gap-2">
-                        <button type="button" disabled={imagingDownloadingIdx === idx}
-                          className="text-xs text-primary underline truncate flex-1 text-right disabled:opacity-40"
-                          onClick={async () => {
-                            if (!patientId) return;
-                            setImagingDownloadingIdx(idx);
-                            try {
-                              const blob = await clinicPatientsApi.downloadDocument(patientId, proc.imageUrl);
-                              const blobUrl = URL.createObjectURL(blob);
-                              window.open(blobUrl, "_blank");
-                              setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-                            } catch { toast.error(t("uploadFailed")); }
-                            finally { setImagingDownloadingIdx(null); }
-                          }}>
-                          {imagingDownloadingIdx === idx ? <Loader2 className="h-3 w-3 animate-spin inline" /> : t("viewFile")}
-                        </button>
-                        {canEdit && (
-                          <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
-                            onClick={() => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: "" } : p) }))}>
-                            {t("deleteFile")}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <label className={`flex items-center justify-center gap-2 h-9 px-3 rounded-md border border-dashed text-sm cursor-pointer transition-colors ${imagingUploadingIdx === idx ? "opacity-50 pointer-events-none" : "hover:bg-muted"}`}>
-                        {imagingUploadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        {imagingUploadingIdx === idx ? t("uploading") : t("medicalHistory.uploadImage")}
-                        <input type="file" accept="image/*" className="hidden" disabled={!canEdit || imagingUploadingIdx !== null}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file || !patientId) return;
-                            setImagingUploadingIdx(idx);
-                            try {
-                              const doc = await clinicPatientsApi.uploadDocument(patientId, file, "MEDICAL_REPORT");
-                              const ref = doc.id ?? "";
-                              setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: ref } : p) }));
-                            } catch { toast.error(t("uploadFailed")); }
-                            finally { setImagingUploadingIdx(null); e.target.value = ""; }
-                          }}
-                        />
-                      </label>
-                    )}
-                    <Input value={proc.description}
-                      onChange={(e) => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, description: e.target.value } : p) }))}
-                      placeholder={t("medicalHistory.imagingDescPlaceholder")} disabled={!canEdit} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* الإجراءات التصويرية — تُقرأ من مستندات المريض مباشرة */}
+          {patientId && <ImagingProcedures patientId={patientId} canEdit={canEdit} />}
         </div>
       </Section>
 

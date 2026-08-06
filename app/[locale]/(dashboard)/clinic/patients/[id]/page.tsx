@@ -7,8 +7,8 @@ import { consentChoiceOf } from "@/components/clinic/consent-choices";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
-  User, Phone, MapPin, Calendar, FileText, Activity, Heart,
-  Edit2, Trash2, Plus, Upload, Loader2, ArrowRight, Eye,
+  User, Phone, MapPin, Calendar, CalendarCheck, FileText, Activity, Heart,
+  Edit2, Trash2, Plus, Upload, Loader2, ArrowRight, ArrowLeftRight, Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,9 +35,11 @@ import {
   usePatientNotes, useCreatePatientNote,
   usePatientConsents,
 } from "@/lib/hooks/use-clinic-patients";
-import { DocumentType } from "@/lib/api/clinic-patients";
+import { DocumentType, DOCUMENT_ACCEPT } from "@/lib/api/clinic-patients";
+import { usePatientAppointments } from "@/lib/hooks/use-clinic-appointments";
+import { AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { useProstheticsCasesByPatient, useCreateProstheticsCase } from "@/lib/hooks/use-clinic-prosthetics";
-import { usePhysioCasesByPatient, useCreatePhysioCase } from "@/lib/hooks/use-clinic-physio";
+import { usePhysioCasesByPatient, useCreatePhysioCase, useConvertToPhysio } from "@/lib/hooks/use-clinic-physio";
 import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
 import { PhysioCase } from "@/lib/api/clinic-physio";
 
@@ -63,6 +65,7 @@ const DOC_TYPE_LABEL: Record<string, string> = {
   AMPUTATION_PHOTO:    "صورة البتر",
   RESIDUAL_LIMB_PHOTO: "صورة الطرف المتبقي",
   MEDICAL_REPORT:      "تقرير طبي",
+  IMAGING_PROCEDURE:   "الإجراءات التصويرية",
   OTHER:               "أخرى",
 };
 
@@ -90,10 +93,14 @@ export default function PatientProfilePage() {
 
   const { data: patient, isLoading } = useClinicPatient(id);
   const { data: prostCases = [] } = useProstheticsCasesByPatient(id);
+  // Doctor exams are physio cases of their own type and live behind their own
+  // caseType filter — the unfiltered call answers with PT cases only.
   const { data: physioCases = [] } = usePhysioCasesByPatient(id);
+  const { data: doctorExams = [] } = usePhysioCasesByPatient(id, "DOCTOR_EXAM");
   const { data: documents = [] } = usePatientDocuments(id);
   const { data: consents = [] } = usePatientConsents(id);
   const { data: podiatryReceptions = [] } = usePodiatryReceptions(id);
+  const { data: appointments = [], isLoading: apptsLoading } = usePatientAppointments(id);
   const [podiatryDialogOpen, setPodiatryDialogOpen] = useState(false);
   const { data: notes = [] } = usePatientNotes(id);
 
@@ -132,6 +139,25 @@ export default function PatientProfilePage() {
   }, [photoUrl]);
   const createProst = useCreateProstheticsCase();
   const createPhysio = useCreatePhysioCase();
+  const convertToPhysio = useConvertToPhysio();
+
+  // Attendance record: how many of the patient's appointments were actually
+  // honoured versus missed or called off.
+  const apptStats = useMemo(() => {
+    const by = (s: AppointmentStatus) => appointments.filter((a) => a.status === s).length;
+    const attended = by("COMPLETED");
+    const noShow = by("NO_SHOW");
+    const cancelled = by("CANCELLED");
+    const settled = attended + noShow;
+    return {
+      total: appointments.length,
+      attended,
+      noShow,
+      cancelled,
+      upcoming: by("SCHEDULED") + by("CONFIRMED") + by("RESCHEDULED"),
+      attendanceRate: settled ? Math.round((attended / settled) * 100) : null,
+    };
+  }, [appointments]);
 
   const age = patient?.dateOfBirth
     ? Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
@@ -181,8 +207,15 @@ export default function PatientProfilePage() {
     router.push(`/${locale}/clinic/prosthetics/${c.id}`);
   };
 
-  const handleNewPhysioCase = async () => {
-    const c = await createPhysio.mutateAsync({ patientId: id, majorComplaint: "", symptoms: "" });
+  const handleConvertToPhysio = async (examId: string) => {
+    const { convertedCaseId } = await convertToPhysio.mutateAsync({ id: examId, patientId: id });
+    if (convertedCaseId) router.push(`/${locale}/clinic/physio/${convertedCaseId}`);
+  };
+
+  const handleNewDoctorExam = async () => {
+    const c = await createPhysio.mutateAsync({
+      patientId: id, caseType: "DOCTOR_EXAM", majorComplaint: "", symptoms: "",
+    });
     router.push(`/${locale}/clinic/physio/${c.id}`);
   };
 
@@ -288,6 +321,48 @@ export default function PatientProfilePage() {
         </Card>
       </div>
 
+      {/* Appointment attendance */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <CalendarCheck className="h-4 w-4" />
+            إحصائية المواعيد
+            {apptStats.attendanceRate !== null && (
+              <Badge variant="outline" className="text-xs font-normal">
+                نسبة الحضور {apptStats.attendanceRate}%
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {apptsLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
+            </div>
+          ) : apptStats.total === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">لا توجد مواعيد لهذا المريض</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {[
+                { label: "إجمالي المواعيد", value: apptStats.total, color: "#64748b" },
+                { label: "حضر", value: apptStats.attended, color: "#22c55e" },
+                { label: "لم يحضر", value: apptStats.noShow, color: "#f97316" },
+                { label: "ملغي", value: apptStats.cancelled, color: "#ef4444" },
+                { label: "قادمة", value: apptStats.upcoming, color: "#3b82f6" },
+              ].map((s) => (
+                <div key={s.label} className="rounded-lg border p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="text-xs text-muted-foreground truncate">{s.label}</span>
+                  </div>
+                  <p className="text-2xl font-bold tabular-nums">{s.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList>
@@ -295,6 +370,7 @@ export default function PatientProfilePage() {
           <TabsTrigger value="prosthetics">الأطراف الصناعية ({prostCases.length})</TabsTrigger>
           <TabsTrigger value="physio">العلاج الفيزيائي ({physioCases.length})</TabsTrigger>
           <TabsTrigger value="podiatry">طب الأقدام ({podiatryReceptions.length})</TabsTrigger>
+          <TabsTrigger value="doctor_exam">معاينة الطبيب ({doctorExams.length})</TabsTrigger>
           <TabsTrigger value="documents">المستندات ({documents.length})</TabsTrigger>
           <TabsTrigger value="notes">الملاحظات ({notes.length})</TabsTrigger>
         </TabsList>
@@ -460,14 +536,11 @@ export default function PatientProfilePage() {
 
         {/* Physio Tab */}
         <TabsContent value="physio" className="mt-4 space-y-4">
+          {/* A PT case cannot be opened directly any more — it only comes from
+              converting a finished doctor exam. */}
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">حالات العلاج الفيزيائي</h3>
-              <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
-                <Button size="sm" onClick={handleNewPhysioCase} disabled={createPhysio.isPending} className="gap-2">
-                  {createPhysio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  حالة جديدة
-                </Button>
-              </ActionGuard>
+            <span className="text-xs text-muted-foreground">تُنشأ بتحويل معاينة الطبيب</span>
           </div>
           {physioCases.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground border rounded-lg">لا توجد حالات علاج فيزيائي</div>
@@ -519,6 +592,54 @@ export default function PatientProfilePage() {
                       </p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Doctor Exam Tab */}
+        <TabsContent value="doctor_exam" className="mt-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold">معاينات الطبيب</h3>
+            <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
+              <Button size="sm" onClick={handleNewDoctorExam} disabled={createPhysio.isPending} className="gap-2">
+                {createPhysio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                معاينة جديدة
+              </Button>
+            </ActionGuard>
+          </div>
+          {doctorExams.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground border rounded-lg">لا توجد معاينات طبيب</div>
+          ) : (
+            <div className="space-y-3">
+              {doctorExams.map((c: PhysioCase) => (
+                <Card key={c.id} className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}>
+                  <CardContent className="pt-4 flex items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CaseStatusBadge status={c.status} />
+                        {c.caseNumber && <span className="text-xs font-mono text-muted-foreground">{c.caseNumber}</span>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("en-GB")}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Carries the exam's data into a new PT case — the backend
+                          returns the same case if it was already converted. */}
+                      <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
+                        <Button size="sm" variant="outline" className="gap-1.5"
+                          disabled={convertToPhysio.isPending}
+                          onClick={(e) => { e.stopPropagation(); handleConvertToPhysio(c.id); }}>
+                          {convertToPhysio.isPending && convertToPhysio.variables?.id === c.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <ArrowLeftRight className="h-3.5 w-3.5" />}
+                          التحويل إلى العلاج الفيزيائي
+                        </Button>
+                      </ActionGuard>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -617,7 +738,9 @@ export default function PatientProfilePage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>نوع المستند</Label>
-              <Select value={uploadType} onValueChange={(v) => setUploadType(v as DocumentType)}>
+              {/* Changing the type changes what the picker accepts, so the
+                  already-chosen file is dropped rather than silently kept. */}
+              <Select value={uploadType} onValueChange={(v) => { setUploadType(v as DocumentType); setUploadFile(null); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {(Object.keys(DOC_TYPE_LABEL) as DocumentType[]).map((t) => (
@@ -629,12 +752,16 @@ export default function PatientProfilePage() {
             <div className="space-y-1.5">
               <Label>اختر الملف</Label>
               <Input
+                key={uploadType}
                 type="file"
-                accept="image/*,.pdf"
+                accept={DOCUMENT_ACCEPT[uploadType]}
                 onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
               />
               {uploadFile && (
                 <p className="text-xs text-muted-foreground">{uploadFile.name}</p>
+              )}
+              {uploadType === "IMAGING_PROCEDURE" && (
+                <p className="text-xs text-muted-foreground">يمكن رفع مقطع فيديو (MP4 / MOV / WebM) أو صورة أو PDF</p>
               )}
             </div>
           </div>

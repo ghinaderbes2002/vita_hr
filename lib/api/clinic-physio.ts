@@ -131,9 +131,16 @@ export const PHYSIO_GOAL_LABELS: Record<PhysioGoal, string> = {
 };
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
+/**
+ * A doctor exam is a physio case with its own type: same screens and endpoints,
+ * its own case-number series (DE-…), and it can be converted into a PT case.
+ */
+export type PhysioCaseType = "PHYSIO" | "DOCTOR_EXAM";
+
 export interface PhysioCase {
   id: string;
   caseNumber?: string;
+  caseType?: PhysioCaseType | null;
   patientId: string;
   patient?: { id: string; firstName: string; lastName: string; patientNumber: string };
   status: PhysioStatus;
@@ -193,12 +200,24 @@ export interface PhysioCase {
   updatedAt: string;
 }
 
+/**
+ * Only a doctor exam can be created — the API rejects a direct PHYSIO create with
+ * 400. A PT case is born from convertToPhysio, so the type is fixed here.
+ */
 export interface CreatePhysioCaseDto {
   patientId: string;
+  caseType: "DOCTOR_EXAM";
   majorComplaint?: string;
   symptoms?: string;
   notes?: string;
 }
+
+/**
+ * Legacy cases carry no caseType, so the DE- case-number series is the fallback
+ * signal — treat anything else as a regular PT case.
+ */
+export const isDoctorExamCase = (c: Pick<PhysioCase, "caseType" | "caseNumber">) =>
+  c.caseType === "DOCTOR_EXAM" || !!c.caseNumber?.startsWith("DE-");
 
 export interface UpdatePhysioCaseDto {
   // Complaint fields
@@ -441,6 +460,26 @@ export interface UpdatePhysioSessionDto {
   modalities?: TherapyModality[];
 }
 
+/** A follow-up carries the same fields as a session, kept as its own list. */
+export interface PhysioFollowUp {
+  id: string;
+  caseId: string;
+  sessionDate: string;
+  sessionTime?: string;
+  notes?: string;
+  supervisorOpinion?: string | null;
+  doctorDecision?: string | null;
+  createdAt: string;
+}
+
+export interface PhysioFollowUpDto {
+  sessionDate: string;
+  sessionTime?: string;
+  notes?: string;
+  supervisorOpinion?: string;
+  doctorDecision?: string;
+}
+
 export interface FinalSummaryDto {
   finalSummary: string;
 }
@@ -461,6 +500,7 @@ export interface PhysioCaseListParams {
   limit?: number;
   status?: PhysioStatus;
   patientId?: string;
+  caseType?: PhysioCaseType;
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────────
@@ -499,8 +539,22 @@ export const clinicPhysioApi = {
     return data?.data ?? data;
   },
 
-  getByPatient: async (patientId: string): Promise<PhysioCase[]> => {
-    const { data } = await apiClient.get(`/physio/cases/by-patient/${patientId}`);
+  /**
+   * The only way to open a PT case: the backend rejects creating one directly,
+   * so a doctor exam is converted once it is done.
+   */
+  convertToPhysio: async (id: string): Promise<{ convertedCaseId: string; caseNumber?: string }> => {
+    const { data } = await apiClient.post(`/physio/cases/${id}/convert-to-physio`);
+    const d = data?.data ?? data;
+    return { convertedCaseId: d?.convertedCaseId ?? d?.id, caseNumber: d?.caseNumber };
+  },
+
+  // Without caseType the API answers with PT cases only; doctor exams are a
+  // separate list behind ?caseType=DOCTOR_EXAM.
+  getByPatient: async (patientId: string, caseType?: PhysioCaseType): Promise<PhysioCase[]> => {
+    const { data } = await apiClient.get(`/physio/cases/by-patient/${patientId}`, {
+      params: caseType ? { caseType } : undefined,
+    });
     const d = data?.data ?? data;
     return Array.isArray(d) ? d : d?.items ?? [];
   },
@@ -578,6 +632,26 @@ export const clinicPhysioApi = {
 
   deleteSession: async (id: string, sessionId: string): Promise<void> => {
     await apiClient.delete(`/physio/cases/${id}/sessions/${sessionId}`);
+  },
+
+  getFollowUps: async (id: string): Promise<PhysioFollowUp[]> => {
+    const { data } = await apiClient.get(`/physio/cases/${id}/follow-ups`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  addFollowUp: async (id: string, dto: PhysioFollowUpDto): Promise<PhysioFollowUp> => {
+    const { data } = await apiClient.post(`/physio/cases/${id}/follow-ups`, dto);
+    return data?.data ?? data;
+  },
+
+  updateFollowUp: async (id: string, followUpId: string, dto: Partial<PhysioFollowUpDto>): Promise<PhysioFollowUp> => {
+    const { data } = await apiClient.put(`/physio/cases/${id}/follow-ups/${followUpId}`, dto);
+    return data?.data ?? data;
+  },
+
+  deleteFollowUp: async (id: string, followUpId: string): Promise<void> => {
+    await apiClient.delete(`/physio/cases/${id}/follow-ups/${followUpId}`);
   },
 
   submitFinalSummary: async (id: string, dto: FinalSummaryDto): Promise<{ caseId: string; finalSummary: string }> => {

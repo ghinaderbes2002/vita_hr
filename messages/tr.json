@@ -3201,7 +3201,9 @@
       },
       "case": {
         "pageTitle": "Fizyoterapi Vakası",
+        "pageTitleDoctorExam": "Doktor Muayenesi",
         "cancelCase": "Vakayı İptal Et",
+        "convertToPhysio": "Fizyoterapiye Dönüştür",
         "exportPdf": "Tam PDF",
         "exporting": "Dışa aktarılıyor...",
         "notFound": "Vaka bulunamadı",
@@ -3233,9 +3235,31 @@
           "treatmentPlan": "Tedavi Planı",
           "evaluation": "Gözlem & Değerlendirme",
           "sessions": "Terapötik Prosedürler",
+          "summary": "Özet",
+          "followUps": "Takip",
           "supervisorReview": "Bölüm Başkanı Görüşü",
           "doctorReview": "Doktor Görüşü",
           "timeline": "Zaman Çizelgesi"
+        },
+        "followUps": {
+          "addTitle": "Yeni takip ekle",
+          "listTitle": "Takipler",
+          "date": "Tarih *",
+          "time": "Saat",
+          "notes": "Notlar",
+          "notesPlaceholder": "Takip notları...",
+          "supervisorOpinion": "Bölüm Başkanı Görüşü",
+          "supervisorOpinionPlaceholder": "Bölüm başkanı görüşü...",
+          "doctorDecision": "Uzman Görüşü",
+          "doctorDecisionPlaceholder": "Uzman görüşü...",
+          "add": "Takip Ekle",
+          "save": "Kaydet",
+          "cancel": "İptal",
+          "edit": "Düzenle",
+          "delete": "Sil",
+          "deleteTitle": "Takibi sil",
+          "deleteDescription": "Bu takip silinsin mi? Bu işlem geri alınamaz.",
+          "empty": "Takip yok"
         },
         "intake": {
           "title": "Hasta Kabulü",
@@ -3369,8 +3393,9 @@
           "imagingProcedures": "Görüntüleme İşlemleri",
           "addImaging": "İşlem Ekle",
           "removeImaging": "Kaldır",
-          "uploadImage": "Resim Yükle",
+          "uploadImage": "Dosya yükle (resim / video / PDF)",
           "noImaging": "Görüntüleme işlemi yok",
+          "deleteImagingConfirm": "Bu dosya hasta kaydından kalıcı olarak silinecek. Devam edilsin mi?",
           "imagingDescPlaceholder": "Görüntüleme işlemi açıklaması...",
           "chronicConditionsTitle": "Aşağıdakilerden herhangi birine sahip misiniz? (evet ise işaretleyin)",
           "saveAndNext": "Kaydet ve Hedeflere Geç",
@@ -3461,14 +3486,14 @@
           "summary": "Özet",
           "fromPlaceholder": "örn. 2026-06-18 veya bir hafta sonra",
           "toPlaceholder": "örn. 2026-07-18 veya bir ay sonra",
-          "save": "Tedavi Planını Kaydet"
+          "save": "Tedavi Planını Kaydet ve Değerlendirmeye Geç"
         },
         "evaluation": {
           "diagnosisTitle": "Tanı",
           "diagnosisPlaceholder": "Hasta ilerlemesi hakkındaki notlarınızı yazın...",
           "appliedTreatmentTitle": "Uygulanan Tedavi",
           "otherModalityPlaceholder": "Diğer tedavi modalitesini belirtin...",
-          "save": "Gözlem & Değerlendirmeyi Kaydet"
+          "save": "Kaydet ve Seanslara Geç"
         },
         "supervisorReview": {
           "title": "Bölüm Başkanının Görüşü",
@@ -3538,7 +3563,11 @@
         "empty": "Randevu yok",
         "dateFilter": "Tarih",
         "clearFilters": "Filtreleri temizle",
-        "today": "Bugün"
+        "today": "Bugün",
+        "thisWeek": "Bu hafta",
+        "statusBreakdown": "Durum dağılımı",
+        "detailTitle": "Randevu detayları",
+        "patientNumber": "Hasta numarası"
       },
       "board": {
         "title": "Bölüm Görünümü",
@@ -3600,8 +3629,11 @@
       "actions": {
         "confirm": "Onayla",
         "complete": "Tamamla",
+        "noShow": "Gelmedi",
         "cancel": "Randevuyu İptal Et",
-        "changeStatus": "Durumu değiştir"
+        "changeStatus": "Durumu değiştir",
+        "rescheduleTitle": "Randevuyu Yeniden Planla",
+        "rescheduleConfirm": "Yeniden Planla"
       }
     },
     "inventory": {

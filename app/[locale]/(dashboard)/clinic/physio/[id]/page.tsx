@@ -16,6 +16,7 @@ import {
   XCircle,
   AlertTriangle,
   Bell,
+  ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -49,6 +50,7 @@ import {
   useUpdatePhysioStatus,
   useSubmitComplaint,
   useSubmitPainMap,
+  useConvertToPhysio,
   useSubmitMedicalHistory,
   useAddPhysioSurgery,
   useSubmitPhysioGoals,
@@ -85,8 +87,11 @@ import {
   PhysioGoal,
   PHYSIO_GOAL_LABELS,
   TestType,
+  isDoctorExamCase,
 } from "@/lib/api/clinic-physio";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
+import { ImagingProcedures } from "@/components/clinic/imaging-procedures";
+import { PhysioFollowUps } from "@/components/clinic/physio-follow-ups";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import {
   Dialog,
@@ -217,6 +222,11 @@ const CHRONIC_CONDITIONS = Object.keys(
 ) as ChronicCondition[];
 const PHYSIO_GOALS = Object.keys(PHYSIO_GOAL_LABELS) as PhysioGoal[];
 
+// The two nested form tab groups, in the order the therapist fills them in. Each
+// "save and next" button walks to the following visible tab of its own group.
+const INTAKE_SUB_TABS = ["complaint", "pain_map", "medical_history"];
+const PHYSIO_SUB_TABS = ["goals", "postural_assessment", "treatment_plan", "evaluation", "sessions", "summary", "follow_ups"];
+
 const TEST_LABELS: Partial<Record<TestType, string>> = {
   MRI: "التصوير بالرنين المغناطيسي / MRI",
   MYELOGRAM: "تصوير النخاع / Scan Myelogram",
@@ -257,10 +267,16 @@ export default function PhysioCasePage() {
     postural_assessment: [PH.ASSESSMENT_CREATE], evaluation: [PH.ASSESSMENT_CREATE],
     treatment_plan: [PH.ASSESSMENT_CREATE, PH.PLAN_SIGN],
     sessions: [PH.SESSIONS_CREATE],
+    // A follow-up is a session-shaped record, so it rides the same permission.
+    follow_ups: [PH.SESSIONS_CREATE],
     supervisor_review: [PH.SUPERVISOR_REVIEW],
     doctor_review: [PH.SUPERVISOR_REVIEW],
   };
+  // A doctor exam stops at the intake + doctor form; everything downstream of it
+  // belongs to the PT case it can be converted into.
+  const DOCTOR_EXAM_TABS = ["intake", "patient_info", ...INTAKE_SUB_TABS];
   const showPhysioTab = (key: string) => {
+    if (caseData && isDoctorExamCase(caseData) && !DOCTOR_EXAM_TABS.includes(key)) return false;
     const perms = physioTabPerm[key] ?? null;
     return !perms || isAdmin() || hasAnyPermission(perms);
   };
@@ -276,6 +292,7 @@ export default function PhysioCasePage() {
   const updateStatus = useUpdatePhysioStatus();
   const submitComplaint = useSubmitComplaint();
   const submitPainMap = useSubmitPainMap();
+  const convertToPhysio = useConvertToPhysio();
   const submitHistory = useSubmitMedicalHistory();
   const addSurgery = useAddPhysioSurgery();
   const submitGoals = useSubmitPhysioGoals();
@@ -334,6 +351,34 @@ export default function PhysioCasePage() {
     Array.isArray(physioDeptData) ? physioDeptData : [];
 
   const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
+
+  // Active sub-tab of each nested form. Left undefined until something moves it,
+  // so the tab derived from the case stage stays the default on first render.
+  const [topTab, setTopTab] = useState<string | undefined>(undefined);
+  const formTabsRef = useRef<HTMLDivElement>(null);
+  const [formTab, setFormTab] = useState<string | undefined>(undefined);
+  const physioFormTabsRef = useRef<HTMLDivElement>(null);
+  const [physioFormTab, setPhysioFormTab] = useState<string | undefined>(undefined);
+
+  const goToFormTab = (tab: string) => {
+    setFormTab(tab);
+    requestAnimationFrame(() =>
+      formTabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+  const goToPhysioFormTab = (tab: string) => {
+    setTopTab("physio_form");
+    setPhysioFormTab(tab);
+    requestAnimationFrame(() =>
+      physioFormTabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+  // Walks to the next step of the physiotherapist form once the current one is
+  // saved, skipping any tab the user isn't allowed to see.
+  const goToNextPhysioFormTab = (from: string) => {
+    const next = PHYSIO_SUB_TABS.slice(PHYSIO_SUB_TABS.indexOf(from) + 1).find(showPhysioTab);
+    if (next) goToPhysioFormTab(next);
+  };
 
   // ── Complaint state ──────────────────────────────────────────────────────────
   const [complaint, setComplaint] = useState({
@@ -431,8 +476,6 @@ export default function PhysioCasePage() {
     "new" | "old" | null
   >(null);
   const [attachmentDownloading, setAttachmentDownloading] = useState<"new" | "old" | null>(null);
-  const [imagingUploadingIdx, setImagingUploadingIdx] = useState<number | null>(null);
-  const [imagingDownloadingIdx, setImagingDownloadingIdx] = useState<number | null>(null);
   const [surgeries, setSurgeries] = useState([
     { name: "", type: "", date: "" },
     { name: "", type: "", date: "" },
@@ -846,46 +889,53 @@ export default function PhysioCasePage() {
   const handleSaveComplaint = async () => {
     // Persist via the dedicated /complaint endpoint (the generic case PUT does not
     // save complaint columns, so those values were lost on reload).
-    await submitComplaint.mutateAsync({
-      id,
-      dto: {
-        majorComplaint: complaint.majorComplaint || undefined,
-        symptoms: complaint.symptoms || undefined,
-        currentJob: complaint.currentJob || undefined,
-        lifeType: (complaint.lifeType as any) || undefined,
-        complaintStartDate: complaint.complaintStartDate || undefined,
-        possibleCause: complaint.possibleCause || undefined,
-        previousDoctorSeen: complaint.previousDoctorSeen || undefined,
-        previousTreatment: complaint.previousTreatment || undefined,
-        painLevel: (complaint.painLevel as any) || undefined,
-        painDuration: (complaint.painDuration as any) || undefined,
-        painProgression: complaint.painProgression || undefined,
-        hadPreviousInjury: complaint.hadPreviousInjury || undefined,
-        bestTimeOfDay: complaint.bestTimeOfDay || undefined,
-        worstTimeOfDay: complaint.worstTimeOfDay || undefined,
-        complaintType: complaint.complaintType || undefined,
-        painLocation: complaint.painLocation || undefined,
-        complaintDuration: complaint.complaintDuration || undefined,
-        complaintNotes: complaint.complaintNotes || undefined,
-        hasChronicDiseases: complaint.hasChronicDiseases,
-        chronicDiseasesDetail: complaint.hasChronicDiseases
-          ? complaint.chronicDiseasesDetail || undefined
-          : undefined,
-        visitedSpecialist: complaint.visitedSpecialist,
-        specialistReason: complaint.visitedSpecialist
-          ? complaint.specialistReason || undefined
-          : undefined,
-        hadPreviousPT: complaint.hadPreviousPT,
-        previousPTDetail: complaint.hadPreviousPT
-          ? complaint.previousPTDetail || undefined
-          : undefined,
-        hadSurgery: complaint.hadSurgery,
-        surgeryDetail: complaint.hadSurgery
-          ? complaint.surgeryDetail || undefined
-          : undefined,
-      },
-    });
-    await tryAdvanceStatus("INTAKE", "COMPLAINT");
+    try {
+      await submitComplaint.mutateAsync({
+        id,
+        dto: {
+          majorComplaint: complaint.majorComplaint || undefined,
+          symptoms: complaint.symptoms || undefined,
+          currentJob: complaint.currentJob || undefined,
+          lifeType: (complaint.lifeType as any) || undefined,
+          complaintStartDate: complaint.complaintStartDate || undefined,
+          possibleCause: complaint.possibleCause || undefined,
+          previousDoctorSeen: complaint.previousDoctorSeen || undefined,
+          previousTreatment: complaint.previousTreatment || undefined,
+          painLevel: (complaint.painLevel as any) || undefined,
+          painDuration: (complaint.painDuration as any) || undefined,
+          painProgression: complaint.painProgression || undefined,
+          hadPreviousInjury: complaint.hadPreviousInjury || undefined,
+          bestTimeOfDay: complaint.bestTimeOfDay || undefined,
+          worstTimeOfDay: complaint.worstTimeOfDay || undefined,
+          complaintType: complaint.complaintType || undefined,
+          painLocation: complaint.painLocation || undefined,
+          complaintDuration: complaint.complaintDuration || undefined,
+          complaintNotes: complaint.complaintNotes || undefined,
+          hasChronicDiseases: complaint.hasChronicDiseases,
+          chronicDiseasesDetail: complaint.hasChronicDiseases
+            ? complaint.chronicDiseasesDetail || undefined
+            : undefined,
+          visitedSpecialist: complaint.visitedSpecialist,
+          specialistReason: complaint.visitedSpecialist
+            ? complaint.specialistReason || undefined
+            : undefined,
+          hadPreviousPT: complaint.hadPreviousPT,
+          previousPTDetail: complaint.hadPreviousPT
+            ? complaint.previousPTDetail || undefined
+            : undefined,
+          hadSurgery: complaint.hadSurgery,
+          surgeryDetail: complaint.hadSurgery
+            ? complaint.surgeryDetail || undefined
+            : undefined,
+        },
+      });
+    } catch {
+      return; // the mutation hook already toasted the reason — stay on the tab
+    }
+    // Move on as soon as the data is saved; advancing the case stage is a second
+    // (slow) round-trip and must not hold the user on the finished tab.
+    goToFormTab("pain_map");
+    void tryAdvanceStatus("INTAKE", "COMPLAINT");
   };
 
   const handleSaveIntake = async () => {
@@ -917,27 +967,32 @@ export default function PhysioCasePage() {
   };
 
   const handleSavePainMap = async () => {
-    await submitPainMap.mutateAsync({
-      id,
-      dto: {
-        regions: painRegions,
-        painTypes: painTypes.length ? painTypes : undefined,
-        customPainTypes: painTypes.includes("OTHER") && customPainTypes.length ? customPainTypes : undefined,
-        aggravatingFactors: aggravatingFactors.length
-          ? aggravatingFactors
-          : undefined,
-        aggravatingOther: aggravatingFactors.includes("OTHER")
-          ? aggravatingOther || undefined
-          : undefined,
-        alleviatingFactors: alleviatingFactors.length
-          ? alleviatingFactors
-          : undefined,
-        alleviatingOther: alleviatingFactors.includes("OTHER")
-          ? alleviatingOther || undefined
-          : undefined,
-      },
-    });
-    await tryAdvanceStatus("COMPLAINT", "PAIN_MAP");
+    try {
+      await submitPainMap.mutateAsync({
+        id,
+        dto: {
+          regions: painRegions,
+          painTypes: painTypes.length ? painTypes : undefined,
+          customPainTypes: painTypes.includes("OTHER") && customPainTypes.length ? customPainTypes : undefined,
+          aggravatingFactors: aggravatingFactors.length
+            ? aggravatingFactors
+            : undefined,
+          aggravatingOther: aggravatingFactors.includes("OTHER")
+            ? aggravatingOther || undefined
+            : undefined,
+          alleviatingFactors: alleviatingFactors.length
+            ? alleviatingFactors
+            : undefined,
+          alleviatingOther: alleviatingFactors.includes("OTHER")
+            ? alleviatingOther || undefined
+            : undefined,
+        },
+      });
+    } catch {
+      return; // the mutation hook already toasted the reason — stay on the tab
+    }
+    goToFormTab("medical_history");
+    void tryAdvanceStatus("COMPLAINT", "PAIN_MAP");
   };
 
   const handleSaveHistory = async () => {
@@ -1043,69 +1098,86 @@ export default function PhysioCasePage() {
       await addSurgery.mutateAsync({ id, dto: s });
     }
 
-    await tryAdvanceStatus("PAIN_MAP", "MEDICAL_HISTORY");
+    // Last step of the intake form — hands over to the physiotherapist form.
+    goToPhysioFormTab(PHYSIO_SUB_TABS.find(showPhysioTab) ?? "goals");
+    void tryAdvanceStatus("PAIN_MAP", "MEDICAL_HISTORY");
   };
 
   const handleSaveGoals = async () => {
-    await submitGoals.mutateAsync({
-      id,
-      dto: {
-        goals: goals.length ? goals : undefined,
-        customGoal: goalsExtra.customGoal || undefined,
-        decreasePain: goalsExtra.decreasePain,
-        improveStrength: goalsExtra.improveStrength,
-        lessDifficultyWork: goalsExtra.lessDifficultyWork,
-        improveMovement: goalsExtra.improveMovement,
-        standLonger: goalsExtra.standLonger || undefined,
-        sleepLonger: goalsExtra.sleepLonger || undefined,
-        sitLonger: goalsExtra.sitLonger || undefined,
-        otherGoals: goalsExtra.otherGoals || undefined,
-      },
-    });
-    await tryAdvanceStatus("MEDICAL_HISTORY", "GOALS");
+    try {
+      await submitGoals.mutateAsync({
+        id,
+        dto: {
+          goals: goals.length ? goals : undefined,
+          customGoal: goalsExtra.customGoal || undefined,
+          decreasePain: goalsExtra.decreasePain,
+          improveStrength: goalsExtra.improveStrength,
+          lessDifficultyWork: goalsExtra.lessDifficultyWork,
+          improveMovement: goalsExtra.improveMovement,
+          standLonger: goalsExtra.standLonger || undefined,
+          sleepLonger: goalsExtra.sleepLonger || undefined,
+          sitLonger: goalsExtra.sitLonger || undefined,
+          otherGoals: goalsExtra.otherGoals || undefined,
+        },
+      });
+    } catch {
+      return; // the mutation hook already toasted the reason — stay on the tab
+    }
+    goToNextPhysioFormTab("goals");
+    void tryAdvanceStatus("MEDICAL_HISTORY", "GOALS");
   };
 
   const handleSavePostural = async () => {
     const p = postural;
-    await submitPostural.mutateAsync({
-      id,
-      dto: {
-        seatedPosition: p.seatedPosition || undefined,
-        trunkControl: p.trunkControl || undefined,
-        head: { neutral: p.headNeutral, hyperextended: p.headHyperextended, fwdFlexed: p.headFwdFlexed, laterallyFlexed: { L: p.headLaterallyFlexedL, R: p.headLaterallyFlexedR }, rotated: { L: p.headRotatedL, R: p.headRotatedR } },
-        shoulders: { level: p.shouldersLevel, elevated: { L: p.shouldersElevatedL, R: p.shouldersElevatedR }, sublaxed: { L: p.shouldersSublaxedL, R: p.shouldersSublaxedR } },
-        elbow: { hyperextended: p.elbowHyperextended, flexed: p.elbowFlexed, supination: { L: p.elbowSupinationL, R: p.elbowSupinationR }, pronation: { L: p.elbowPronationL, R: p.elbowPronationR } },
-        ribCage: { neutral: p.ribCageNeutral, elevated: { L: p.ribCageElevatedL, R: p.ribCageElevatedR }, rotatedFwd: { L: p.ribCageRotatedFwdL, R: p.ribCageRotatedFwdR } },
-        spine: { neutral: p.spineNeutral, kyphosis: p.spineKyphosis, flatLumbar: p.spineFlatLumbar, normalLumbar: p.spineNormalLumbar, hyperLordotic: p.spineHyperLordotic, scoliosisApex: { L: p.spineScoliosisApexL, R: p.spineScoliosisApexR } },
-        pelvis: { neutral: p.pelvisNeutral, rotatedFwd: p.pelvisRotatedFwd, anteriorTilt: p.pelvisAnteriorTilt, posteriorTilt: p.pelvisPosteriorTilt, oblique: { L: p.pelvisObliqueL, R: p.pelvisObliqueR }, other: p.pelvisOther || undefined },
-        hips: { abducted: { L: p.hipsAbductedL, R: p.hipsAbductedR }, adducted: { L: p.hipsAdductedL, R: p.hipsAdductedR }, flexed: { L: p.hipsFlexedL, R: p.hipsFlexedR }, extended: { L: p.hipsExtendedL, R: p.hipsExtendedR } },
-        knees: { flexedBeyond90: { L: p.kneesFlexedBeyond90L, R: p.kneesFlexedBeyond90R }, extendedBeyond90: { L: p.kneesExtendedBeyond90L, R: p.kneesExtendedBeyond90R } },
-        feet: { pronateEvert: { L: p.feetPronateEvertL, R: p.feetPronateEvertR }, supinateInv: { L: p.feetSupinateInvL, R: p.feetSupinateInvR }, dorsiflexed: { L: p.feetDorsiflexedL, R: p.feetDorsiflexedR }, plantarflexed: { L: p.feetPlantarflexedL, R: p.feetPlantarflexedR }, other: p.feetOther || undefined },
-        spasticityNotes: p.spasticityNotes || undefined,
-        generalNotes: p.generalNotes || undefined,
-        diagnosis: p.diagnosis || undefined,
-      },
-    });
-    await tryAdvanceStatus("GOALS", "POSTURAL_ASSESSMENT");
+    try {
+      await submitPostural.mutateAsync({
+        id,
+        dto: {
+          seatedPosition: p.seatedPosition || undefined,
+          trunkControl: p.trunkControl || undefined,
+          head: { neutral: p.headNeutral, hyperextended: p.headHyperextended, fwdFlexed: p.headFwdFlexed, laterallyFlexed: { L: p.headLaterallyFlexedL, R: p.headLaterallyFlexedR }, rotated: { L: p.headRotatedL, R: p.headRotatedR } },
+          shoulders: { level: p.shouldersLevel, elevated: { L: p.shouldersElevatedL, R: p.shouldersElevatedR }, sublaxed: { L: p.shouldersSublaxedL, R: p.shouldersSublaxedR } },
+          elbow: { hyperextended: p.elbowHyperextended, flexed: p.elbowFlexed, supination: { L: p.elbowSupinationL, R: p.elbowSupinationR }, pronation: { L: p.elbowPronationL, R: p.elbowPronationR } },
+          ribCage: { neutral: p.ribCageNeutral, elevated: { L: p.ribCageElevatedL, R: p.ribCageElevatedR }, rotatedFwd: { L: p.ribCageRotatedFwdL, R: p.ribCageRotatedFwdR } },
+          spine: { neutral: p.spineNeutral, kyphosis: p.spineKyphosis, flatLumbar: p.spineFlatLumbar, normalLumbar: p.spineNormalLumbar, hyperLordotic: p.spineHyperLordotic, scoliosisApex: { L: p.spineScoliosisApexL, R: p.spineScoliosisApexR } },
+          pelvis: { neutral: p.pelvisNeutral, rotatedFwd: p.pelvisRotatedFwd, anteriorTilt: p.pelvisAnteriorTilt, posteriorTilt: p.pelvisPosteriorTilt, oblique: { L: p.pelvisObliqueL, R: p.pelvisObliqueR }, other: p.pelvisOther || undefined },
+          hips: { abducted: { L: p.hipsAbductedL, R: p.hipsAbductedR }, adducted: { L: p.hipsAdductedL, R: p.hipsAdductedR }, flexed: { L: p.hipsFlexedL, R: p.hipsFlexedR }, extended: { L: p.hipsExtendedL, R: p.hipsExtendedR } },
+          knees: { flexedBeyond90: { L: p.kneesFlexedBeyond90L, R: p.kneesFlexedBeyond90R }, extendedBeyond90: { L: p.kneesExtendedBeyond90L, R: p.kneesExtendedBeyond90R } },
+          feet: { pronateEvert: { L: p.feetPronateEvertL, R: p.feetPronateEvertR }, supinateInv: { L: p.feetSupinateInvL, R: p.feetSupinateInvR }, dorsiflexed: { L: p.feetDorsiflexedL, R: p.feetDorsiflexedR }, plantarflexed: { L: p.feetPlantarflexedL, R: p.feetPlantarflexedR }, other: p.feetOther || undefined },
+          spasticityNotes: p.spasticityNotes || undefined,
+          generalNotes: p.generalNotes || undefined,
+          diagnosis: p.diagnosis || undefined,
+        },
+      });
+    } catch {
+      return; // the mutation hook already toasted the reason — stay on the tab
+    }
+    goToNextPhysioFormTab("postural_assessment");
+    void tryAdvanceStatus("GOALS", "POSTURAL_ASSESSMENT");
   };
 
   const handleSavePlan = async () => {
-    await submitPlan.mutateAsync({
-      id,
-      dto: {
-        treatmentFrom: planHeader.treatmentFrom || undefined,
-        treatmentTo: planHeader.treatmentTo || undefined,
-        anticipatedVisits: planHeader.anticipatedVisits ? Number(planHeader.anticipatedVisits) : undefined,
-        physiotherapistIds: planPhysiotherapistIds.length ? planPhysiotherapistIds : undefined,
-        caseManagerId: planHeader.caseManagerId || undefined,
-        modalities: planModalities.length ? planModalities : undefined,
-        otherModality: planModalities.includes("OTHER") ? (planOtherModality || undefined) : undefined,
-        remarks: planRemarks || undefined,
-        observation: planObservation || undefined,
-        status: planStatus,
-      },
-    });
-    await tryAdvanceStatus("POSTURAL_ASSESSMENT", "TREATMENT_PLAN");
+    try {
+      await submitPlan.mutateAsync({
+        id,
+        dto: {
+          treatmentFrom: planHeader.treatmentFrom || undefined,
+          treatmentTo: planHeader.treatmentTo || undefined,
+          anticipatedVisits: planHeader.anticipatedVisits ? Number(planHeader.anticipatedVisits) : undefined,
+          physiotherapistIds: planPhysiotherapistIds.length ? planPhysiotherapistIds : undefined,
+          caseManagerId: planHeader.caseManagerId || undefined,
+          modalities: planModalities.length ? planModalities : undefined,
+          otherModality: planModalities.includes("OTHER") ? (planOtherModality || undefined) : undefined,
+          remarks: planRemarks || undefined,
+          observation: planObservation || undefined,
+          status: planStatus,
+        },
+      });
+    } catch {
+      return; // the mutation hook already toasted the reason — stay on the tab
+    }
+    goToNextPhysioFormTab("treatment_plan");
+    void tryAdvanceStatus("POSTURAL_ASSESSMENT", "TREATMENT_PLAN");
   };
 
   const handleSupervisorReview = async () => {
@@ -1267,7 +1339,7 @@ export default function PhysioCasePage() {
   // complaint / pain_map / medical_history are now sub-tabs nested under the
   // "نموذج العلاج الطبيعي" (patient_info) tab — resolve the top-level tab to that
   // parent when the case stage lands on one of them.
-  const NESTED_FORM_TABS = ["complaint", "pain_map", "medical_history"];
+  const NESTED_FORM_TABS = INTAKE_SUB_TABS;
   const resolvedTab = (() => {
     if (myJobTitleCode === "VTX-JTL-000011") return "intake";
     // Never resolve to a tab the user can't see — fall back to the intake form.
@@ -1283,7 +1355,7 @@ export default function PhysioCasePage() {
     return showPhysioTab(stageTab) ? stageTab : "intake";
   })();
   // goals … summary are grouped under the "نموذج المعالج الفيزيائي" (physio_form) tab.
-  const PHYSIO_FORM_TABS = ["goals", "postural_assessment", "treatment_plan", "evaluation", "sessions", "summary"];
+  const PHYSIO_FORM_TABS = PHYSIO_SUB_TABS;
   const defaultTab = NESTED_FORM_TABS.includes(resolvedTab) ? "patient_info"
     : PHYSIO_FORM_TABS.includes(resolvedTab) ? "physio_form"
     : resolvedTab;
@@ -1291,6 +1363,12 @@ export default function PhysioCasePage() {
   const formSubTab2 = PHYSIO_FORM_TABS.includes(resolvedTab) ? resolvedTab : (PHYSIO_FORM_TABS.find(showPhysioTab) ?? "goals");
 
   const canEdit = !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status);
+  const isDoctorExam = isDoctorExamCase(c);
+
+  const handleConvertToPhysio = async () => {
+    const { convertedCaseId } = await convertToPhysio.mutateAsync({ id, patientId: c.patientId });
+    if (convertedCaseId) router.push(`/${locale}/clinic/physio/${convertedCaseId}`);
+  };
 
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1314,7 +1392,7 @@ export default function PhysioCasePage() {
             )}
           </button>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold">{t("pageTitle")}</h1>
+            <h1 className="text-xl font-bold">{t(isDoctorExam ? "pageTitleDoctorExam" : "pageTitle")}</h1>
             {c.caseNumber && (
               <span className="text-sm font-mono text-muted-foreground">
                 {c.caseNumber}
@@ -1329,6 +1407,16 @@ export default function PhysioCasePage() {
           </div>
         </div>
         <div className="flex gap-2">
+          {/* A PT case can only be opened by converting a doctor exam. */}
+          {isDoctorExam && (
+            <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
+              <Button size="sm" className="gap-2" disabled={convertToPhysio.isPending}
+                onClick={handleConvertToPhysio}>
+                {convertToPhysio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeftRight className="h-4 w-4" />}
+                {t("convertToPhysio")}
+              </Button>
+            </ActionGuard>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -1357,7 +1445,7 @@ export default function PhysioCasePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs key={`${id}-${myJobTitleCode}`} defaultValue={defaultTab}>
+      <Tabs key={`${id}-${myJobTitleCode}`} value={topTab ?? defaultTab} onValueChange={setTopTab}>
         <TabsList
           className="flex-wrap h-auto gap-1 w-full justify-start"
           dir={isRtl ? "rtl" : "ltr"}
@@ -1385,7 +1473,7 @@ export default function PhysioCasePage() {
               </TabsTrigger>
             );
           })}
-          {myJobTitleCode !== "VTX-JTL-000011" && (
+          {myJobTitleCode !== "VTX-JTL-000011" && showPhysioTab("emergency") && (
             <TabsTrigger value="emergency" className="text-sm py-1.5 gap-1.5 text-destructive data-[state=active]:text-destructive">
               <AlertTriangle className="h-3.5 w-3.5" />
               تنبيه طارئ
@@ -1672,7 +1760,8 @@ export default function PhysioCasePage() {
 
           {/* Nested sub-tabs: الشكوى / حدد أماكن الألم / التاريخ الطبي */}
           {showPhysioTab("complaint") && (
-          <Tabs defaultValue={formSubTab} className="mt-6">
+          <div ref={formTabsRef} className="scroll-mt-4">
+          <Tabs value={formTab ?? formSubTab} onValueChange={setFormTab} className="mt-6">
             <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
               <TabsTrigger value="complaint" className="text-sm py-1.5">{t("tabs.complaint")}</TabsTrigger>
               <TabsTrigger value="pain_map" className="text-sm py-1.5">{t("tabs.painMap")}</TabsTrigger>
@@ -1793,18 +1882,28 @@ export default function PhysioCasePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>{t("complaint.painLevel")}</Label>
+                  {/* Multi-select: the value is stored as a comma-separated list. */}
                   <div className="flex flex-wrap gap-4">
-                    {(["MILD", "MODERATE", "SEVERE", "EXCRUCIATING"] as const).map((v) => (
-                      <label key={v} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 accent-primary rounded-sm"
-                          checked={complaint.painLevel === v}
-                          onChange={() => setComplaint((f) => ({ ...f, painLevel: v }))}
-                        />
-                        <span className="text-sm">{t(`complaint.${v}`)}</span>
-                      </label>
-                    ))}
+                    {(["MILD", "MODERATE", "SEVERE", "EXCRUCIATING"] as const).map((v) => {
+                      const selected = (complaint.painLevel || "").split(",").filter(Boolean);
+                      return (
+                        <label key={v} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-primary rounded-sm"
+                            checked={selected.includes(v)}
+                            onChange={() =>
+                              setComplaint((f) => {
+                                const arr = (f.painLevel || "").split(",").filter(Boolean);
+                                const next = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+                                return { ...f, painLevel: next.join(",") };
+                              })
+                            }
+                          />
+                          <span className="text-sm">{t(`complaint.${v}`)}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -2394,93 +2493,8 @@ export default function PhysioCasePage() {
                 )}
               </div>
 
-              {/* ── الإجراءات التصويرية (صورة + وصف لكل إجراء) ── */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>{t("medicalHistory.imagingProcedures")}</Label>
-                  {canEdit && (
-                    <Button type="button" variant="outline" size="sm" className="gap-1.5"
-                      onClick={() => setHistory((h) => ({ ...h, imagingProcedures: [...h.imagingProcedures, { imageUrl: "", description: "" }] }))}>
-                      <Plus className="h-3.5 w-3.5" />
-                      {t("medicalHistory.addImaging")}
-                    </Button>
-                  )}
-                </div>
-                {history.imagingProcedures.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("medicalHistory.noImaging")}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {history.imagingProcedures.map((proc, idx) => (
-                      <div key={idx} className="rounded-lg border p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-muted-foreground">#{idx + 1}</span>
-                          {canEdit && (
-                            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
-                              onClick={() => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.filter((_, i) => i !== idx) }))}>
-                              {t("medicalHistory.removeImaging")}
-                            </Button>
-                          )}
-                        </div>
-                        {proc.imageUrl ? (
-                          <div className="flex items-center gap-2">
-                            <button type="button" disabled={imagingDownloadingIdx === idx}
-                              className="text-xs text-primary underline truncate flex-1 text-right disabled:opacity-40"
-                              onClick={async () => {
-                                if (!c.patientId) return;
-                                setImagingDownloadingIdx(idx);
-                                try {
-                                  const blob = await clinicPatientsApi.downloadDocument(c.patientId, proc.imageUrl);
-                                  const blobUrl = URL.createObjectURL(blob);
-                                  window.open(blobUrl, "_blank");
-                                  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-                                } catch {
-                                  toast.error(t("uploadFailed"));
-                                } finally {
-                                  setImagingDownloadingIdx(null);
-                                }
-                              }}>
-                              {imagingDownloadingIdx === idx ? <Loader2 className="h-3 w-3 animate-spin inline" /> : t("viewFile")}
-                            </button>
-                            {canEdit && (
-                              <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
-                                onClick={() => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: "" } : p) }))}>
-                                {t("deleteFile")}
-                              </Button>
-                            )}
-                          </div>
-                        ) : (
-                          <label className={`flex items-center justify-center gap-2 h-9 px-3 rounded-md border border-dashed text-sm cursor-pointer transition-colors ${imagingUploadingIdx === idx ? "opacity-50 pointer-events-none" : "hover:bg-muted"}`}>
-                            {imagingUploadingIdx === idx ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                            {imagingUploadingIdx === idx ? t("uploading") : t("medicalHistory.uploadImage")}
-                            <input type="file" accept="image/*" className="hidden" disabled={!canEdit || imagingUploadingIdx !== null}
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file || !c.patientId) return;
-                                setImagingUploadingIdx(idx);
-                                try {
-                                  const doc = await clinicPatientsApi.uploadDocument(c.patientId, file, "MEDICAL_REPORT");
-                                  // Store the document id — files are fetched via the authenticated
-                                  // download endpoint (the raw /uploads/ path is not served publicly).
-                                  const ref = doc.id ?? "";
-                                  setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, imageUrl: ref } : p) }));
-                                } catch {
-                                  toast.error(t("uploadFailed"));
-                                } finally {
-                                  setImagingUploadingIdx(null);
-                                  e.target.value = "";
-                                }
-                              }}
-                            />
-                          </label>
-                        )}
-                        <Input value={proc.description}
-                          onChange={(e) => setHistory((h) => ({ ...h, imagingProcedures: h.imagingProcedures.map((p, i) => i === idx ? { ...p, description: e.target.value } : p) }))}
-                          placeholder={t("medicalHistory.imagingDescPlaceholder")} disabled={!canEdit} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* ── الإجراءات التصويرية — تُقرأ من مستندات المريض مباشرة ── */}
+              <ImagingProcedures patientId={c.patientId} canEdit={canEdit} />
             </div>
           </Section>
 
@@ -2518,12 +2532,14 @@ export default function PhysioCasePage() {
           )}
         </TabsContent>
           </Tabs>
+          </div>
           )}
         </TabsContent>
 
         {/* ── نموذج المعالج الفيزيائي (nested sub-tabs) ── */}
         <TabsContent value="physio_form" className="mt-4">
-          <Tabs defaultValue={formSubTab2}>
+          <div ref={physioFormTabsRef} className="scroll-mt-4">
+          <Tabs value={physioFormTab ?? formSubTab2} onValueChange={setPhysioFormTab}>
             <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
               {showPhysioTab("goals") && <TabsTrigger value="goals" className="text-sm py-1.5">{t("tabs.goals")}</TabsTrigger>}
               {showPhysioTab("postural_assessment") && <TabsTrigger value="postural_assessment" className="text-sm py-1.5">{t("tabs.posturalAssessment")}</TabsTrigger>}
@@ -2531,6 +2547,7 @@ export default function PhysioCasePage() {
               {showPhysioTab("evaluation") && <TabsTrigger value="evaluation" className="text-sm py-1.5">{t("tabs.evaluation")}</TabsTrigger>}
               {showPhysioTab("sessions") && <TabsTrigger value="sessions" className="text-sm py-1.5">{`${t("tabs.sessions")} (${sessions.length})`}</TabsTrigger>}
               {showPhysioTab("summary") && <TabsTrigger value="summary" className="text-sm py-1.5">{t("tabs.summary")}</TabsTrigger>}
+              {showPhysioTab("follow_ups") && <TabsTrigger value="follow_ups" className="text-sm py-1.5">{t("tabs.followUps")}</TabsTrigger>}
             </TabsList>
 
         {/* ── GOALS ─────────────────────────────────────────────────────── */}
@@ -3387,16 +3404,21 @@ export default function PhysioCasePage() {
           {canEdit && (
             <Button
               onClick={async () => {
-                await submitEval.mutateAsync({
-                  id,
-                  dto: {
-                    modalities: evalModalities.length ? evalModalities : undefined,
-                    otherModality: evalModalities.includes("OTHER") ? evalOtherModality || undefined : undefined,
-                    notes: evalNotes || undefined,
-                    evaluation: evalText || undefined,
-                  },
-                });
-                await tryAdvanceStatus("TREATMENT_PLAN", "EVALUATION");
+                try {
+                  await submitEval.mutateAsync({
+                    id,
+                    dto: {
+                      modalities: evalModalities.length ? evalModalities : undefined,
+                      otherModality: evalModalities.includes("OTHER") ? evalOtherModality || undefined : undefined,
+                      notes: evalNotes || undefined,
+                      evaluation: evalText || undefined,
+                    },
+                  });
+                } catch {
+                  return; // the mutation hook already toasted the reason
+                }
+                goToNextPhysioFormTab("evaluation");
+                void tryAdvanceStatus("TREATMENT_PLAN", "EVALUATION");
               }}
               disabled={submitEval.isPending}
               className="w-full gap-2"
@@ -3649,7 +3671,15 @@ export default function PhysioCasePage() {
             </div>
           </Section>
         </TabsContent>
+
+        {/* ── FOLLOW-UPS ──────────────────────────────────────────────────── */}
+        <TabsContent value="follow_ups" className="mt-4">
+          <Section title={t("tabs.followUps")}>
+            <PhysioFollowUps caseId={id} canEdit={canEdit} />
+          </Section>
+        </TabsContent>
           </Tabs>
+          </div>
         </TabsContent>
 
         {/* ── SUPERVISOR REVIEW ── (moved out of the physiotherapist-form group) */}

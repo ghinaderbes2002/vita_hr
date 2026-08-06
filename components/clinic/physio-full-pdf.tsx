@@ -414,6 +414,19 @@ const PAIN_LABELS_AR: Record<string, string> = {
   HOT_BURNING: "حارق", SHARP_STABBING: "حاد", PINS: "واخز", OTHER: "أخرى",
 };
 
+// Pain type and pain level are both multi-select in the complaint form and are
+// stored as a comma-separated list of codes.
+const PAIN_TYPE_AR: Record<string, string> = {
+  INTERMITTENT: "متقطع", CONSTANT: "مستمر", WITH_CERTAIN_MOTIONS: "مع حركات معينة",
+};
+const PAIN_LEVEL_AR: Record<string, string> = {
+  MILD: "خفيف", MODERATE: "متوسط", SEVERE: "شديد", EXCRUCIATING: "لا يُحتمل",
+};
+const codeList = (value: string | null | undefined, labels: Record<string, string>) =>
+  value
+    ? value.split(",").filter(Boolean).map((c) => labels[c.trim()] ?? c.trim()).join(" - ")
+    : undefined;
+
 const TEST_LABELS_PDF: Record<string, string> = {
   MRI:       "التصوير بالرنين المغناطيسي / MRI",
   MYELOGRAM: "تصوير النخاع / Scan Myelogram",
@@ -648,32 +661,8 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
           label="في أي وقت تكون الأعراض أقل إزعاجاً"
           value={complaint.bestTimeOfDay}
         />
-        <F
-          label="نوع الألم"
-          value={
-            complaint.painDuration === "INTERMITTENT"
-              ? "متقطع"
-              : complaint.painDuration === "CONSTANT"
-                ? "مستمر"
-                : complaint.painDuration === "WITH_CERTAIN_MOTIONS"
-                  ? "مع حركات معينة"
-                  : complaint.painDuration || undefined
-          }
-        />
-        <F
-          label="مستوى الألم الحالي"
-          value={
-            complaint.painLevel === "MILD"
-              ? "خفيف"
-              : complaint.painLevel === "MODERATE"
-                ? "متوسط"
-                : complaint.painLevel === "SEVERE"
-                  ? "شديد"
-                  : complaint.painLevel === "EXCRUCIATING"
-                    ? "لا يُحتمل"
-                    : complaint.painLevel || undefined
-          }
-        />
+        <F label="نوع الألم" value={codeList(complaint.painDuration, PAIN_TYPE_AR)} />
+        <F label="مستوى الألم الحالي" value={codeList(complaint.painLevel, PAIN_LEVEL_AR)} />
         <F
           label="هل يتحسن الألم أم يزداد سوءاً؟"
           value={

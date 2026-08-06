@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
-import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
+import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment } from "@/lib/hooks/use-clinic-appointments";
 import { Appointment, AppointmentType, AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
@@ -116,6 +116,8 @@ export default function AppointmentsPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<string>("");
   const [cancelReason, setCancelReason] = useState("");
+  const [rescheduleFor, setRescheduleFor] = useState<Appointment | null>(null);
+  const [rsForm, setRsForm] = useState({ date: "", startTime: "", endTime: "" });
   const [newApptOpen, setNewApptOpen] = useState(false);
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
@@ -144,6 +146,7 @@ export default function AppointmentsPage() {
   const createAppt = useCreateAppointment();
   const cancelAppt = useCancelAppointment();
   const updateStatus = useUpdateAppointmentStatus();
+  const rescheduleAppt = useRescheduleAppointment();
 
   const patientsList = patientsData?.items ?? [];
 
@@ -205,7 +208,7 @@ export default function AppointmentsPage() {
     if (!newForm.patientId) return;
     const startISO = new Date(`${newForm.date}T${newForm.startTime}:00`).toISOString();
     const endISO = new Date(`${newForm.date}T${newForm.endTime}:00`).toISOString();
-    const created = await createAppt.mutateAsync({
+    await createAppt.mutateAsync({
       patientId: newForm.patientId,
       practitionerId: (myEmployee as any)?.userId ?? "",
       appointmentType: newForm.appointmentType,
@@ -220,10 +223,7 @@ export default function AppointmentsPage() {
         ? { caseId: activeProstheticsCase.id, caseType: "PROSTHETICS" as const }
         : {}),
     });
-    // New appointments should be confirmed straight away (no manual step).
-    if (created?.id) {
-      try { await updateStatus.mutateAsync({ id: created.id, status: "CONFIRMED" }); } catch { /* stays scheduled on failure */ }
-    }
+    // New appointments start as SCHEDULED (مجدول); confirmed manually afterwards.
     setNewApptOpen(false);
     setSelectedDate(newForm.date);
     setPatientSearch("");
@@ -341,7 +341,20 @@ export default function AppointmentsPage() {
           {dayLoading ? (
             <Skeleton className="h-[560px] w-full rounded-xl" />
           ) : (
-            <AppointmentTimeline groups={timelineGroups} isToday={isSelectedToday} onSelect={setDetailAppt} />
+            <AppointmentTimeline
+              groups={timelineGroups}
+              isToday={isSelectedToday}
+              onSelect={setDetailAppt}
+              resolveTherapist={(a) => {
+                if (a.therapists?.length) {
+                  return a.therapists
+                    .map((tp) => `${tp.firstNameAr ?? tp.firstName ?? ""} ${tp.lastNameAr ?? tp.lastName ?? ""}`.trim())
+                    .filter(Boolean)
+                    .join("، ") || null;
+                }
+                return (a.therapistIds ?? []).map((id) => staffName(id)).filter(Boolean).join("، ") || null;
+              }}
+            />
           )}
         </div>
       </div>
@@ -406,10 +419,24 @@ export default function AppointmentsPage() {
                     if (next === detailAppt.status) return;
                     if (next === "CANCELLED") {
                       setCancelTargetId(detailAppt.id); setCancelReason(""); setCancelDialogOpen(true);
+                      setDetailAppt(null);
+                    } else if (next === "RESCHEDULED") {
+                      // Real reschedule → pick a new date/time (prefilled with current).
+                      const s = detailAppt.startTime, e = detailAppt.endTime;
+                      const pad = (n: number) => String(n).padStart(2, "0");
+                      const dObj = s && s.length > 5 ? new Date(s) : null;
+                      const eObj = e && e.length > 5 ? new Date(e) : null;
+                      setRsForm({
+                        date: dObj ? `${dObj.getFullYear()}-${pad(dObj.getMonth() + 1)}-${pad(dObj.getDate())}` : (detailAppt.date ?? ""),
+                        startTime: dObj ? `${pad(dObj.getHours())}:${pad(dObj.getMinutes())}` : "",
+                        endTime: eObj ? `${pad(eObj.getHours())}:${pad(eObj.getMinutes())}` : "",
+                      });
+                      setRescheduleFor(detailAppt);
+                      setDetailAppt(null);
                     } else {
                       updateStatus.mutate({ id: detailAppt.id, status: next });
+                      setDetailAppt(null);
                     }
-                    setDetailAppt(null);
                   }}
                 >
                   <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
@@ -455,6 +482,49 @@ export default function AppointmentsPage() {
             >
               {cancelAppt.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
               {t("actions.cancelConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule appointment dialog */}
+      <Dialog open={!!rescheduleFor} onOpenChange={(o) => { if (!o && !rescheduleAppt.isPending) setRescheduleFor(null); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{t("actions.rescheduleTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{t("form.date")}</Label>
+              <Input type="date" value={rsForm.date} onChange={(e) => setRsForm((f) => ({ ...f, date: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>{t("form.startTime")}</Label>
+                <Input type="time" value={rsForm.startTime} onChange={(e) => setRsForm((f) => ({ ...f, startTime: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("form.endTime")}</Label>
+                <Input type="time" value={rsForm.endTime} onChange={(e) => setRsForm((f) => ({ ...f, endTime: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRescheduleFor(null)} disabled={rescheduleAppt.isPending}>
+              {t("form.cancel")}
+            </Button>
+            <Button
+              disabled={rescheduleAppt.isPending || !rsForm.date || !rsForm.startTime || !rsForm.endTime}
+              onClick={async () => {
+                if (!rescheduleFor) return;
+                const startISO = new Date(`${rsForm.date}T${rsForm.startTime}:00`).toISOString();
+                const endISO = new Date(`${rsForm.date}T${rsForm.endTime}:00`).toISOString();
+                await rescheduleAppt.mutateAsync({ id: rescheduleFor.id, dto: { date: rsForm.date, startTime: startISO, endTime: endISO } });
+                setRescheduleFor(null);
+              }}
+            >
+              {rescheduleAppt.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              {t("actions.rescheduleConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

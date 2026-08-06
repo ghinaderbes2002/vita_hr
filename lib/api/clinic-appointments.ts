@@ -67,6 +67,7 @@ export interface AppointmentListParams {
   date?: string;
   practitionerId?: string;
   departmentId?: string;
+  patientId?: string;
   status?: AppointmentStatus;
 }
 
@@ -100,6 +101,20 @@ export const clinicAppointmentsApi = {
       limit: d?.limit ?? 50,
       totalPages: d?.totalPages ?? 0,
     };
+  },
+
+  // Every appointment of a single patient. The patientId filter is sent to the
+  // API, but the result is narrowed client-side too so the numbers stay right
+  // even if the backend ignores (or rejects) the filter.
+  listByPatient: async (patientId: string): Promise<Appointment[]> => {
+    const mine = (items: Appointment[]) => items.filter((a) => a.patientId === patientId);
+    try {
+      const { items } = await clinicAppointmentsApi.list({ patientId, limit: 500 });
+      return mine(items);
+    } catch {
+      const { items } = await clinicAppointmentsApi.list({ limit: 500 });
+      return mine(items);
+    }
   },
 
   getCalendar: async (from: string, to: string): Promise<Appointment[]> => {
