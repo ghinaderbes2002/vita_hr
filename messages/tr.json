@@ -3566,6 +3566,9 @@
         "today": "Bugün",
         "thisWeek": "Bu hafta",
         "statusBreakdown": "Durum dağılımı",
+        "todayLoad": "Bugünkü randevular",
+        "nextUp": "Sıradaki",
+        "noneLeftToday": "Bugün başka randevu yok",
         "detailTitle": "Randevu detayları",
         "patientNumber": "Hasta numarası"
       },

@@ -4476,6 +4476,9 @@
         "today": "Today",
         "thisWeek": "This week",
         "statusBreakdown": "Status breakdown",
+        "todayLoad": "Today's appointments",
+        "nextUp": "Next up",
+        "noneLeftToday": "Nothing left today",
         "detailTitle": "Appointment details",
         "patientNumber": "Patient number"
       },

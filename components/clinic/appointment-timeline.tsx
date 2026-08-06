@@ -1,21 +1,22 @@
 "use client";
 
 // Professional day timeline: a time axis with appointments laid out as
-// positioned blocks per department column. Free gaps read at a glance, a live
-// "now" line marks the current time, overlapping bookings split side-by-side.
+// positioned blocks per column. Free gaps read at a glance, a live "now" line
+// marks the current time, overlapping bookings split side-by-side.
 import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
 
-const DAY_START = 10 * 60;  // 10:00
-const DAY_END = 18 * 60;    // 18:00
-const HOUR_H = 72;          // px per hour
-const SLOT_MIN = 30;        // gridline / label granularity (half-hour)
-const SLOT_H = HOUR_H / 2;  // px per half-hour
-const PAD = 16;             // top/bottom breathing room so 10:00 & 18:00 aren't clipped
-const TOTAL_MIN = DAY_END - DAY_START;
-const TOTAL_H = (TOTAL_MIN / 60) * HOUR_H;
-const BODY_H = TOTAL_H + PAD * 2;
+const DEFAULT_START = 10 * 60; // 10:00 — the window never narrows past clinic hours
+const DEFAULT_END = 18 * 60;   // 18:00
+const MIN_SPAN = 6 * 60;
+const HOUR_H = 72;             // px per hour
+const SLOT_MIN = 30;           // gridline / label granularity (half-hour)
+const SLOT_H = HOUR_H / 2;     // px per half-hour
+const PAD = 16;                // top/bottom breathing room so the edges aren't clipped
+
+type Win = { start: number; end: number };
+const bodyHeight = (w: Win) => ((w.end - w.start) / 60) * HOUR_H + PAD * 2;
 
 // "10", "10:30", "11" … afternoon in 12-hour form ("1", "6").
 const slotLabel = (min: number) => {
@@ -46,20 +47,46 @@ function toMinutes(v?: string | null): number | null {
 const fmtTime = (v?: string | null) =>
   v ? (v.length > 5 ? new Date(v).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : v) : "";
 
+const patientOf = (a: Appointment) =>
+  a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : (a.patientName || "—");
+
+/**
+ * The axis grows to cover every booking on screen — an early or late
+ * appointment must never be drawn at the wrong hour just to fit the grid.
+ */
+function windowOf(groups: TimelineGroup[]): Win {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const g of groups) {
+    for (const a of g.appointments) {
+      const s = toMinutes(a.startTime);
+      if (s == null) continue;
+      const e = Math.max(toMinutes(a.endTime) ?? 0, s + 30);
+      lo = Math.min(lo, s);
+      hi = Math.max(hi, e);
+    }
+  }
+  if (!Number.isFinite(lo)) return { start: DEFAULT_START, end: DEFAULT_END };
+  const start = Math.max(0, Math.min(DEFAULT_START, Math.floor(lo / 60) * 60));
+  let end = Math.min(24 * 60, Math.max(DEFAULT_END, Math.ceil(hi / 60) * 60));
+  if (end - start < MIN_SPAN) end = Math.min(24 * 60, start + MIN_SPAN);
+  return { start, end };
+}
+
 type Placed = { a: Appointment; start: number; end: number; lane: number; lanes: number };
 
 // Split a column's appointments into overlap clusters and assign side-by-side
 // lanes so concurrent bookings never cover each other.
-function layout(appts: Appointment[]): Placed[] {
+function layout(appts: Appointment[], win: Win): Placed[] {
   const items = appts
     .map((a) => {
       const s = toMinutes(a.startTime);
       let e = toMinutes(a.endTime);
       if (s == null) return null;
       if (e == null || e <= s) e = s + 30;
-      return { a, start: Math.max(DAY_START, s), end: Math.min(DAY_END, Math.max(s + 15, e)) };
+      return { a, start: Math.max(win.start, s), end: Math.min(win.end, Math.max(s + 15, e)) };
     })
-    .filter((x): x is { a: Appointment; start: number; end: number } => !!x && x.end > DAY_START && x.start < DAY_END)
+    .filter((x): x is { a: Appointment; start: number; end: number } => !!x && x.end > win.start && x.start < win.end)
     .sort((x, y) => x.start - y.start || x.end - y.end);
 
   const out: Placed[] = [];
@@ -89,22 +116,31 @@ export interface TimelineGroup {
   title: string;
   color: string;   // header accent
   appointments: Appointment[];
+  /** Marks the column as the current day so it reads apart from the rest. */
+  isToday?: boolean;
+  /** Secondary line under the title (a date, a room, …). */
+  subtitle?: string;
 }
 
 function Column({
-  group, onSelect, resolveTherapist, hideEmptyLabel,
+  group, win, onSelect, resolveTherapist, hideEmptyLabel,
 }: {
   group: TimelineGroup;
+  win: Win;
   onSelect: (a: Appointment) => void;
   resolveTherapist?: (a: Appointment) => string | null;
   hideEmptyLabel?: boolean;
 }) {
   const t = useTranslations("clinic.appointments");
-  const placed = layout(group.appointments);
+  const placed = layout(group.appointments, win);
+  const slots = (win.end - win.start) / SLOT_MIN;
   return (
-    <div className="relative border-s border-border/70" style={{ height: BODY_H }}>
+    <div
+      className={cn("relative border-s border-border/70", group.isToday && "bg-primary/4")}
+      style={{ height: bodyHeight(win) }}
+    >
       {/* half-hour grid lines (full hours a touch darker) */}
-      {Array.from({ length: TOTAL_MIN / SLOT_MIN + 1 }, (_, i) => (
+      {Array.from({ length: slots + 1 }, (_, i) => (
         <div
           key={i}
           className={`absolute inset-x-0 border-t ${i % 2 === 0 ? "border-border/60" : "border-border/25"}`}
@@ -117,7 +153,7 @@ function Column({
         </div>
       )}
       {placed.map(({ a, start, end, lane, lanes }) => {
-        const top = PAD + ((start - DAY_START) / 60) * HOUR_H;
+        const top = PAD + ((start - win.start) / 60) * HOUR_H;
         const height = Math.max(22, ((end - start) / 60) * HOUR_H - 2);
         const w = 100 / lanes;
         const st = STATUS_STYLE[a.status];
@@ -128,9 +164,11 @@ function Column({
             key={a.id}
             type="button"
             onClick={() => onSelect(a)}
-            title={`${fmtTime(a.startTime)} — ${fmtTime(a.endTime)}`}
+            title={`${fmtTime(a.startTime)} — ${fmtTime(a.endTime)} · ${patientOf(a)}`}
             className={cn(
-              "absolute overflow-hidden rounded-md border border-black/5 px-2 py-1 text-start shadow-sm ring-0 transition-all hover:z-10 hover:shadow-md dark:border-white/10",
+              "absolute cursor-pointer overflow-hidden rounded-md border border-black/5 px-2 py-1 text-start shadow-sm transition-all",
+              "hover:z-10 hover:shadow-md focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "dark:border-white/10",
               st.cls,
             )}
             style={{
@@ -140,11 +178,12 @@ function Column({
               borderInlineStartWidth: 3, borderInlineStartColor: st.bar,
             }}
           >
-            <div className="flex items-center gap-1 text-[10px] font-mono font-semibold leading-tight opacity-90">
+            <div className="flex items-center gap-1 font-mono text-[10px] font-semibold leading-tight opacity-90">
               {fmtTime(a.startTime)}
+              {height > 56 && a.endTime && <span className="opacity-70">— {fmtTime(a.endTime)}</span>}
             </div>
             <div className={cn("truncate text-xs font-semibold leading-tight", cancelled && "line-through")}>
-              {a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : (a.patientName || "—")}
+              {patientOf(a)}
             </div>
             {height > 40 && (
               <div className="truncate text-[10px] leading-tight opacity-80">{t(`types.${a.appointmentType}`)}</div>
@@ -160,35 +199,40 @@ function Column({
 }
 
 export function AppointmentTimeline({
-  groups, isToday, onSelect, resolveTherapist, hideEmptyLabel,
+  groups, isToday, onSelect, resolveTherapist, hideEmptyLabel, hideLegend,
 }: {
   groups: TimelineGroup[];
   isToday: boolean;
   onSelect: (a: Appointment) => void;
   resolveTherapist?: (a: Appointment) => string | null;
   hideEmptyLabel?: boolean;
+  /** Set when the page already shows the statuses elsewhere. */
+  hideLegend?: boolean;
 }) {
   const locale = useLocale();
   const isRtl = locale === "ar";
   const t = useTranslations("clinic.appointments");
-  const slots = Array.from({ length: TOTAL_MIN / SLOT_MIN + 1 }, (_, i) => DAY_START + i * SLOT_MIN);
+  const win = windowOf(groups);
+  const slots = Array.from({ length: (win.end - win.start) / SLOT_MIN + 1 }, (_, i) => win.start + i * SLOT_MIN);
 
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
-  const showNow = isToday && nowMin >= DAY_START && nowMin <= DAY_END;
-  const nowTop = PAD + ((nowMin - DAY_START) / 60) * HOUR_H;
+  const showNow = isToday && nowMin >= win.start && nowMin <= win.end;
+  const nowTop = PAD + ((nowMin - win.start) / 60) * HOUR_H;
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm" dir={isRtl ? "rtl" : "ltr"}>
       {/* status colour legend */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/20 px-3 py-2">
-        {LEGEND_STATUSES.map((s) => (
-          <span key={s} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: STATUS_STYLE[s].bar }} />
-            {t(`statuses.${s}`)}
-          </span>
-        ))}
-      </div>
+      {!hideLegend && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/20 px-3 py-2">
+          {LEGEND_STATUSES.map((s) => (
+            <span key={s} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: STATUS_STYLE[s].bar }} />
+              {t(`statuses.${s}`)}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* column headers */}
       <div className="grid border-b bg-muted/30" style={{ gridTemplateColumns: `56px repeat(${groups.length}, 1fr)` }}>
@@ -196,10 +240,26 @@ export function AppointmentTimeline({
         {groups.map((g) => {
           const count = g.appointments.filter((a) => a.status !== "CANCELLED").length;
           return (
-            <div key={g.title} className="flex items-center gap-2 border-s border-border/70 px-3 py-2.5">
+            <div
+              key={g.title}
+              className={cn(
+                "flex items-center gap-2 border-s border-border/70 px-3 py-2.5",
+                g.isToday && "bg-primary/8",
+              )}
+            >
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.color }} />
-              <span className="truncate text-sm font-semibold">{g.title}</span>
-              <span className="ms-auto rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">{count}</span>
+              <div className="min-w-0 flex-1">
+                <p className={cn("truncate text-sm", g.isToday ? "font-bold text-primary" : "font-semibold")}>{g.title}</p>
+                {g.subtitle && <p className="truncate text-[10px] text-muted-foreground">{g.subtitle}</p>}
+              </div>
+              <span
+                className={cn(
+                  "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+                  count > 0 ? "bg-background text-foreground" : "text-muted-foreground/60",
+                )}
+              >
+                {count}
+              </span>
             </div>
           );
         })}
@@ -208,7 +268,7 @@ export function AppointmentTimeline({
       {/* timeline body */}
       <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${groups.length}, 1fr)` }}>
         {/* time gutter */}
-        <div className="relative" style={{ height: BODY_H }}>
+        <div className="relative" style={{ height: bodyHeight(win) }}>
           {slots.map((min, i) => (
             <div key={min} className="absolute inset-x-0 -translate-y-1/2 pe-2 text-end" style={{ top: PAD + i * SLOT_H }}>
               <span className={min % 60 === 0 ? "text-[10px] font-semibold text-muted-foreground" : "text-[9px] font-medium text-muted-foreground/60"}>{slotLabel(min)}</span>
@@ -217,10 +277,10 @@ export function AppointmentTimeline({
         </div>
 
         {groups.map((g) => (
-          <Column key={g.title} group={g} onSelect={onSelect} resolveTherapist={resolveTherapist} hideEmptyLabel={hideEmptyLabel} />
+          <Column key={g.title} group={g} win={win} onSelect={onSelect} resolveTherapist={resolveTherapist} hideEmptyLabel={hideEmptyLabel} />
         ))}
 
-        {/* now indicator — spans all department columns */}
+        {/* now indicator — spans all columns */}
         {showNow && (
           <div
             className="pointer-events-none absolute z-20"
