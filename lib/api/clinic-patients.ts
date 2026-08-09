@@ -58,6 +58,9 @@ export interface Patient {
   receivesAid?: string;
   referralSource?: string | null;
   referralDetails?: string | null;
+  /** Set when referralSource is STAFF — the employee who referred the patient. */
+  referralStaffId?: string | null;
+  referralStaff?: { id: string; fullName?: string } | null;
   photoUrl?: string | null;
   documentConsent?: ConsentOption | null;
   mediaConsent?: boolean;
@@ -125,6 +128,7 @@ export interface CreatePatientDto {
   receivesAid?: string;
   referralSource?: string;
   referralDetails?: string;
+  referralStaffId?: string;
   photoUrl?: string;
   documentConsent?: ConsentOption;
   mediaConsent?: boolean;

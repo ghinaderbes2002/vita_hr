@@ -42,6 +42,7 @@ import { useProstheticsCasesByPatient, useCreateProstheticsCase } from "@/lib/ho
 import { usePhysioCasesByPatient, useCreatePhysioCase, useConvertToPhysio } from "@/lib/hooks/use-clinic-physio";
 import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
 import { PhysioCase } from "@/lib/api/clinic-physio";
+import { referralSourceLabel, REFERRAL_DETAILS_LABEL, ReferralSource } from "@/lib/clinic/referral-sources";
 
 const GENDER_LABEL: Record<string, string> = { MALE: "ذكر", FEMALE: "أنثى" };
 const IDENTITY_LABEL: Record<string, string> = { NATIONAL_ID: "هوية وطنية", PASSPORT: "جواز سفر", RESIDENCE: "إقامة" };
@@ -426,8 +427,12 @@ export default function PatientProfilePage() {
                 <InfoRow label="الحالة الاجتماعية" value={patient.maritalStatus ? MARITAL_LABEL[patient.maritalStatus] : null} />
                 <InfoRow label="الوضع المادي" value={patient.financialStatus ? FINANCIAL_LABEL[patient.financialStatus] : null} />
                 <InfoRow label="مقدم الرعاية / Care Provider" value={patient.receivesAid ?? null} />
-                <InfoRow label="مصدر الإحالة" value={patient.referralSource} />
-                <InfoRow label="تفاصيل الإحالة" value={patient.referralDetails} />
+                <InfoRow label="طريقة الوصول" value={referralSourceLabel(patient.referralSource)} />
+                <InfoRow
+                  label={REFERRAL_DETAILS_LABEL[patient.referralSource as ReferralSource] ?? "تفاصيل الإحالة"}
+                  value={patient.referralDetails}
+                />
+                <InfoRow label="الموظف المُحيل" value={patient.referralStaff?.fullName} />
               </CardContent>
             </Card>
 

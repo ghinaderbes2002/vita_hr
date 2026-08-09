@@ -18,6 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useClinicPatient, useUpdateClinicPatient, usePatientConsents } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
 import { clinicPatientsApi, ConsentOption, UpdatePatientDto } from "@/lib/api/clinic-patients";
+import { ReferralSourceFields, referralDto } from "@/components/clinic/referral-source-fields";
+import { REFERRAL_SOURCES, asCurrentReferralSource } from "@/lib/clinic/referral-sources";
 import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
 import {
   CONSENT_CHOICES, ConsentChoiceKey, consentChoiceOf, consentSignedByValue, decisionOfChoice,
@@ -43,8 +45,9 @@ const schema = z.object({
   livingCondition: z.string().optional(),
   financialStatus: z.string().optional(),
   receivesAid:     z.string().optional(),
-  referralSource:  z.enum(["SELF","RELATIVES","SOCIAL_MEDIA","MEDICAL_REFERRAL","OTHER",""]).optional(),
+  referralSource:  z.enum([...REFERRAL_SOURCES, ""]).optional(),
   referralDetails: z.string().optional(),
+  referralStaffId: z.string().optional(),
   notes:           z.string().optional(),
 });
 
@@ -72,14 +75,6 @@ const FINANCIAL = [
   { value: "GOOD", label: "جيد" }, { value: "NOT_WORKING", label: "لا يعمل" },
   { value: "RETIRED", label: "متقاعد" },
 ];
-const REFERRAL_SOURCE = [
-  { value: "SELF",             label: "نفسه" },
-  { value: "RELATIVES",        label: "أقارب" },
-  { value: "SOCIAL_MEDIA",     label: "وسائل التواصل الاجتماعي" },
-  { value: "MEDICAL_REFERRAL", label: "إحالة طبية" },
-  { value: "OTHER",            label: "أخرى" },
-];
-
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
   return <p className="text-xs text-destructive mt-0.5">{msg}</p>;
@@ -151,8 +146,10 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
     livingCondition: patient.livingCondition ?? "",
     financialStatus: patient.financialStatus ?? "",
     receivesAid:     patient.receivesAid ?? "",
-    referralSource:  (patient.referralSource as any) ?? "",
+    // A retired source (SELF/RELATIVES/…) is cleared so it can't be resent.
+    referralSource:  asCurrentReferralSource(patient.referralSource),
     referralDetails: patient.referralDetails ?? "",
+    referralStaffId: patient.referralStaffId ?? "",
     notes:           patient.notes ?? "",
     };
   }, [patient, cities, latestConsent]);
@@ -220,8 +217,11 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
       livingCondition: (values.livingCondition as any) || undefined,
       financialStatus: (values.financialStatus as any) || undefined,
       receivesAid:     values.receivesAid,
-      referralSource:  values.referralSource || undefined,
-      referralDetails: values.referralDetails || undefined,
+      ...referralDto({
+        referralSource:  values.referralSource ?? "",
+        referralDetails: values.referralDetails ?? "",
+        referralStaffId: values.referralStaffId ?? "",
+      }),
       // Consent is deliberately NOT written here: it counts only when signed,
       // and is recorded below as a signed consent record instead.
       notes:           values.notes || undefined,
@@ -423,23 +423,18 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
                 )} />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>طريقة الوصول</Label>
-              <Controller name="referralSource" control={control} render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    {REFERRAL_SOURCE.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>تفاصيل الإحالة</Label>
-              <Input {...register("referralDetails")} />
-            </div>
+            <ReferralSourceFields
+              value={{
+                referralSource:  watch("referralSource") ?? "",
+                referralDetails: watch("referralDetails") ?? "",
+                referralStaffId: watch("referralStaffId") ?? "",
+              }}
+              onChange={(v) => {
+                setValue("referralSource", v.referralSource);
+                setValue("referralDetails", v.referralDetails);
+                setValue("referralStaffId", v.referralStaffId);
+              }}
+            />
             <div className="space-y-1.5">
               <Label>مقدم الرعاية / Care Provider</Label>
               <Input {...register("receivesAid")} placeholder="مقدم الرعاية..." />

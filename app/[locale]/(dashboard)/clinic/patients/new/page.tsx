@@ -24,6 +24,8 @@ import { cn } from "@/lib/utils";
 import { useCreateClinicPatient, useCheckDuplicate } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
 import { clinicPatientsApi, CreatePatientDto, IdentityType, ConsentOption, DocumentType } from "@/lib/api/clinic-patients";
+import { ReferralSourceFields, referralDto } from "@/components/clinic/referral-source-fields";
+import { REFERRAL_SOURCES } from "@/lib/clinic/referral-sources";
 
 // lucide-react ships no brand icons, so the WhatsApp glyph is inlined.
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -62,8 +64,9 @@ const step3Schema = z.object({
   livingCondition: z.string().optional(),
   financialStatus: z.string().optional(),
   receivesAid:     z.string().optional(),
-  referralSource:  z.enum(["SELF","RELATIVES","SOCIAL_MEDIA","MEDICAL_REFERRAL","OTHER",""]).optional(),
+  referralSource:  z.enum([...REFERRAL_SOURCES, ""]).optional(),
   referralDetails: z.string().optional(),
+  referralStaffId: z.string().optional(),
 });
 
 const step4Schema = z.object({
@@ -81,7 +84,6 @@ const MARITAL_VALUES        = ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"] as co
 const LIVING_VALUES         = ["WITH_FAMILY", "INDEPENDENT", "SHELTER_CAMP", "OTHER"] as const;
 const FINANCIAL_VALUES      = ["LOW", "MODERATE", "GOOD", "NOT_WORKING", "RETIRED"] as const;
 
-const REFERRAL_VALUES = ["SELF", "RELATIVES", "SOCIAL_MEDIA", "MEDICAL_REFERRAL", "OTHER"] as const;
 
 const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: "PERSONAL_PHOTO",      label: "صورة شخصية" },
@@ -130,7 +132,7 @@ export default function NewPatientPage() {
 
   const form3 = useForm<Step3>({
     resolver: zodResolver(step3Schema) as any,
-    defaultValues: { receivesAid: "", referralSource: "", referralDetails: "", ...s3 },
+    defaultValues: { receivesAid: "", referralSource: "", referralDetails: "", referralStaffId: "", ...s3 },
   });
 
   const form4 = useForm<Step4>({
@@ -210,8 +212,11 @@ export default function NewPatientPage() {
       livingCondition: (s3.livingCondition as any) || undefined,
       financialStatus: (s3.financialStatus as any) || undefined,
       receivesAid:     s3.receivesAid,
-      referralSource:  s3.referralSource || undefined,
-      referralDetails: s3.referralDetails || undefined,
+      ...referralDto({
+        referralSource:  s3.referralSource ?? "",
+        referralDetails: s3.referralDetails ?? "",
+        referralStaffId: s3.referralStaffId ?? "",
+      }),
     };
 
     const patient = await createPatient.mutateAsync(dto);
@@ -444,19 +449,19 @@ export default function NewPatientPage() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.referralSource")}</Label>
-                <Select value={form3.watch("referralSource") ?? ""} onValueChange={(v) => form3.setValue("referralSource", v as any)}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    {REFERRAL_VALUES.map((v) => <SelectItem key={v} value={v}>{t(`referral.${v}`)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.referralDetails")}</Label>
-                <Input {...form3.register("referralDetails")} placeholder={t("fields.referralDetailsPlaceholder")} />
-              </div>
+              <ReferralSourceFields
+                label={t("fields.referralSource")}
+                value={{
+                  referralSource:  form3.watch("referralSource") ?? "",
+                  referralDetails: form3.watch("referralDetails") ?? "",
+                  referralStaffId: form3.watch("referralStaffId") ?? "",
+                }}
+                onChange={(v) => {
+                  form3.setValue("referralSource", v.referralSource);
+                  form3.setValue("referralDetails", v.referralDetails);
+                  form3.setValue("referralStaffId", v.referralStaffId);
+                }}
+              />
               <div className="space-y-1.5">
                 <Label>{t("fields.careProvider")}</Label>
                 <Input {...form3.register("receivesAid")} placeholder={t("fields.careProviderPlaceholder")} />
