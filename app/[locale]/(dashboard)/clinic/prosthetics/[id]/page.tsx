@@ -30,7 +30,9 @@ import { PatientSignatureField } from "@/components/clinic/patient-signature-fie
 import { MySignatureField } from "@/components/clinic/my-signature-field";
 import { KLevelSelector } from "@/components/clinic/k-level-selector";
 import { AmputationLevelSelector } from "@/components/clinic/amputation-level-selector";
-import { MeasurementDiagram, VITASYR_LOWER_LIMB_FIELDS } from "@/components/clinic/measurement-diagram";
+import { MeasurementSheet } from "@/components/clinic/measurement-diagram";
+import { MEASUREMENT_SHEET_FIELDS } from "@/lib/clinic/measurement-sheet-fields";
+import type { MeasureSheetKey } from "@/lib/clinic/measurement-sheet-images";
 import { InventoryItemCombobox } from "@/components/clinic/inventory-item-combobox";
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -3456,19 +3458,33 @@ function ageFromDob(dob?: string | null): number | null {
 
 // History of past measurement-sheet submissions for one amputation type.
 // The backend appends a new record on every POST and returns them newest-first.
-function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] }) {
+function MeasurementHistoryList({
+  records, sheet,
+}: {
+  records: MeasurementAssessment[];
+  /** Renders the saved values back onto this sheet's drawing when expanded. */
+  sheet?: MeasureSheetKey;
+}) {
   const t = useTranslations("clinic.prosthetics.case");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (records.length === 0) return null;
 
+  // Values captured before this sheet had a drawing (or against an older one)
+  // have no place on it, so they stay in the plain list underneath.
+  const drawnKeys = new Set((sheet && MEASUREMENT_SHEET_FIELDS[sheet]?.map((f) => f.key)) ?? []);
+  const offSheet = (entries: [string, string][]) =>
+    drawnKeys.size ? entries.filter(([k]) => !drawnKeys.has(k)) : entries;
+
   return (
     <div className="space-y-2">
       {records.map((r) => {
         const expanded = expandedId === r.id;
-        const affectedEntries = Object.entries(r.affectedLimb ?? {});
-        const soundEntries = Object.entries(r.soundLimb ?? {});
-        const hasDetails = affectedEntries.length > 0 || soundEntries.length > 0 || !!r.notes;
+        const affectedEntries = offSheet(Object.entries(r.affectedLimb ?? {}));
+        const soundEntries = offSheet(Object.entries(r.soundLimb ?? {}));
+        const hasValues =
+          Object.keys(r.affectedLimb ?? {}).length > 0 || Object.keys(r.soundLimb ?? {}).length > 0;
+        const hasDetails = hasValues || !!r.notes;
         return (
           <div key={r.id} className="rounded-lg border overflow-hidden">
             <button
@@ -3488,6 +3504,18 @@ function MeasurementHistoryList({ records }: { records: MeasurementAssessment[] 
             {expanded && (
               <div className="border-t p-3 space-y-3 bg-muted/20">
                 {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
+                {sheet && hasValues && (
+                  <div className="rounded-lg bg-white">
+                    <MeasurementSheet
+                      sheet={sheet}
+                      mirrored={r.side === "LEFT"}
+                      sound={r.soundLimb ?? {}}
+                      affected={r.affectedLimb ?? {}}
+                      onChange={() => {}}
+                      disabled
+                    />
+                  </div>
+                )}
                 {(affectedEntries.length > 0 || soundEntries.length > 0) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     {affectedEntries.length > 0 && (
@@ -6715,7 +6743,7 @@ export default function ProstheticsCasePage() {
           {measureSheetType.includes("ankle_disarticulation") && (
             <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.ankle_disarticulation") })}>
               <div className="space-y-5">
-                <MeasurementHistoryList records={ankleDisarticulationRecords} />
+                <MeasurementHistoryList records={ankleDisarticulationRecords} sheet="ankle_disarticulation" />
 
                 {(ankleDisarticulationRecords.length === 0 || measureAddOpen.ankle_disarticulation) && (
                   <div className="space-y-5">
@@ -6753,9 +6781,9 @@ export default function ProstheticsCasePage() {
                     </div>
 
                     {/* Interactive measurement diagram — write inside each box/oval */}
-                    <MeasurementDiagram
-                      imageSrc="/prosthetics/vitasyr.svg"
-                      fields={VITASYR_LOWER_LIMB_FIELDS}
+                    <MeasurementSheet
+                      sheet="ankle_disarticulation"
+                      mirrored={ankleForm.side === "LEFT"}
                       sound={ankleForm.soundLimb}
                       affected={ankleForm.affectedLimb}
                       onChange={(map, k, v) =>
@@ -6809,7 +6837,7 @@ export default function ProstheticsCasePage() {
           {measureSheetType.includes("knee_disarticulation") && (
             <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.knee_disarticulation") })}>
               <div className="space-y-5">
-                <MeasurementHistoryList records={kneeDisarticulationRecords} />
+                <MeasurementHistoryList records={kneeDisarticulationRecords} sheet="knee_disarticulation" />
 
                 {(kneeDisarticulationRecords.length === 0 || measureAddOpen.knee_disarticulation) && (
                   <div className="space-y-5">
@@ -6834,39 +6862,20 @@ export default function ProstheticsCasePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Affected limb — 12 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–12" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={kneeForm.affectedLimb[k] ?? ""}
-                                onChange={(e) => setKneeForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Sound limb — 5 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–5" })}</p>
-                        <div className="grid grid-cols-1 gap-2 max-w-xs">
-                          {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={kneeForm.soundLimb[k] ?? ""}
-                                onChange={(e) => setKneeForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Interactive measurement diagram — write inside each box/oval */}
+                    <MeasurementSheet
+                      sheet="knee_disarticulation"
+                      mirrored={kneeForm.side === "LEFT"}
+                      sound={kneeForm.soundLimb}
+                      affected={kneeForm.affectedLimb}
+                      onChange={(map, k, v) =>
+                        setKneeForm((f) =>
+                          map === "sound"
+                            ? { ...f, soundLimb: { ...f.soundLimb, [k]: v } }
+                            : { ...f, affectedLimb: { ...f.affectedLimb, [k]: v } },
+                        )
+                      }
+                    />
 
                     <div className="flex justify-end pt-2">
                       <Button
@@ -6909,7 +6918,7 @@ export default function ProstheticsCasePage() {
           {measureSheetType.includes("above_knee") && (
             <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.above_knee") })}>
               <div className="space-y-5">
-                <MeasurementHistoryList records={transfemoralRecords} />
+                <MeasurementHistoryList records={transfemoralRecords} sheet="above_knee" />
 
                 {(transfemoralRecords.length === 0 || measureAddOpen.above_knee) && (
                   <div className="space-y-5">
@@ -7009,7 +7018,7 @@ export default function ProstheticsCasePage() {
           {measureSheetType.includes("below_knee") && (
             <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.below_knee") })}>
               <div className="space-y-5">
-                <MeasurementHistoryList records={transtibialRecords} />
+                <MeasurementHistoryList records={transtibialRecords} sheet="below_knee" />
 
                 {(transtibialRecords.length === 0 || measureAddOpen.below_knee) && (
                   <div className="space-y-5">
@@ -7034,39 +7043,20 @@ export default function ProstheticsCasePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Affected limb — 19 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–19" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 19 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={transtibialForm.affectedLimb[k] ?? ""}
-                                onChange={(e) => setTranstibialForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Sound limb — 5 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–5" })}</p>
-                        <div className="grid grid-cols-1 gap-2 max-w-xs">
-                          {Array.from({ length: 5 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={transtibialForm.soundLimb[k] ?? ""}
-                                onChange={(e) => setTranstibialForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Interactive measurement diagram — write inside each box/oval */}
+                    <MeasurementSheet
+                      sheet="below_knee"
+                      mirrored={transtibialForm.side === "LEFT"}
+                      sound={transtibialForm.soundLimb}
+                      affected={transtibialForm.affectedLimb}
+                      onChange={(map, k, v) =>
+                        setTranstibialForm((f) =>
+                          map === "sound"
+                            ? { ...f, soundLimb: { ...f.soundLimb, [k]: v } }
+                            : { ...f, affectedLimb: { ...f.affectedLimb, [k]: v } },
+                        )
+                      }
+                    />
 
                     <div className="flex justify-end pt-2">
                       <Button
@@ -7109,7 +7099,7 @@ export default function ProstheticsCasePage() {
           {measureSheetType.includes("transradial") && (
             <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.transradial") })}>
               <div className="space-y-5">
-                <MeasurementHistoryList records={transradialRecords} />
+                <MeasurementHistoryList records={transradialRecords} sheet="transradial" />
 
                 {(transradialRecords.length === 0 || measureAddOpen.transradial) && (
                   <div className="space-y-5">
@@ -7130,39 +7120,20 @@ export default function ProstheticsCasePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Sound limb — 7 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–7" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 7 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={transradialForm.soundLimb[k] ?? ""}
-                                onChange={(e) => setTransradialForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Affected limb — 10 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–10" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={transradialForm.affectedLimb[k] ?? ""}
-                                onChange={(e) => setTransradialForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Interactive measurement diagram — write inside each box/oval */}
+                    <MeasurementSheet
+                      sheet="transradial"
+                      mirrored={transradialForm.side === "LEFT"}
+                      sound={transradialForm.soundLimb}
+                      affected={transradialForm.affectedLimb}
+                      onChange={(map, k, v) =>
+                        setTransradialForm((f) =>
+                          map === "sound"
+                            ? { ...f, soundLimb: { ...f.soundLimb, [k]: v } }
+                            : { ...f, affectedLimb: { ...f.affectedLimb, [k]: v } },
+                        )
+                      }
+                    />
 
                     <div className="flex justify-end pt-2">
                       <Button
@@ -7204,7 +7175,7 @@ export default function ProstheticsCasePage() {
           {measureSheetType.includes("transhumeral") && (
             <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.transhumeral") })}>
               <div className="space-y-5">
-                <MeasurementHistoryList records={transhumeralRecords} />
+                <MeasurementHistoryList records={transhumeralRecords} sheet="transhumeral" />
 
                 {(transhumeralRecords.length === 0 || measureAddOpen.transhumeral) && (
                   <div className="space-y-5">
@@ -7225,39 +7196,20 @@ export default function ProstheticsCasePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Sound limb — 10 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–10" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={transhumeralForm.soundLimb[k] ?? ""}
-                                onChange={(e) => setTranshumeralForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Affected limb — 6 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–6" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 6 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={transhumeralForm.affectedLimb[k] ?? ""}
-                                onChange={(e) => setTranshumeralForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Interactive measurement diagram — write inside each box/oval */}
+                    <MeasurementSheet
+                      sheet="transhumeral"
+                      mirrored={transhumeralForm.side === "LEFT"}
+                      sound={transhumeralForm.soundLimb}
+                      affected={transhumeralForm.affectedLimb}
+                      onChange={(map, k, v) =>
+                        setTranshumeralForm((f) =>
+                          map === "sound"
+                            ? { ...f, soundLimb: { ...f.soundLimb, [k]: v } }
+                            : { ...f, affectedLimb: { ...f.affectedLimb, [k]: v } },
+                        )
+                      }
+                    />
 
                     <div className="flex justify-end pt-2">
                       <Button
@@ -7299,7 +7251,7 @@ export default function ProstheticsCasePage() {
           {measureSheetType.includes("elbow_disarticulation") && (
             <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.elbow_disarticulation") })}>
               <div className="space-y-5">
-                <MeasurementHistoryList records={elbowDisarticulationRecords} />
+                <MeasurementHistoryList records={elbowDisarticulationRecords} sheet="elbow_disarticulation" />
 
                 {(elbowDisarticulationRecords.length === 0 || measureAddOpen.elbow_disarticulation) && (
                   <div className="space-y-5">
@@ -7320,39 +7272,20 @@ export default function ProstheticsCasePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Sound limb — 12 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–12" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={elbowForm.soundLimb[k] ?? ""}
-                                onChange={(e) => setElbowForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Affected limb — 9 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–9" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 9 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={elbowForm.affectedLimb[k] ?? ""}
-                                onChange={(e) => setElbowForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Interactive measurement diagram — write inside each box/oval */}
+                    <MeasurementSheet
+                      sheet="elbow_disarticulation"
+                      mirrored={elbowForm.side === "LEFT"}
+                      sound={elbowForm.soundLimb}
+                      affected={elbowForm.affectedLimb}
+                      onChange={(map, k, v) =>
+                        setElbowForm((f) =>
+                          map === "sound"
+                            ? { ...f, soundLimb: { ...f.soundLimb, [k]: v } }
+                            : { ...f, affectedLimb: { ...f.affectedLimb, [k]: v } },
+                        )
+                      }
+                    />
 
                     <div className="flex justify-end pt-2">
                       <Button
@@ -7394,7 +7327,7 @@ export default function ProstheticsCasePage() {
           {measureSheetType.includes("hemipelvectomy") && (
             <Section title={t("measurement.sheetTitle", { type: t("measurement.selectType.hemipelvectomy") })}>
               <div className="space-y-5">
-                <MeasurementHistoryList records={hemipelvectomyRecords} />
+                <MeasurementHistoryList records={hemipelvectomyRecords} sheet="hemipelvectomy" />
 
                 {(hemipelvectomyRecords.length === 0 || measureAddOpen.hemipelvectomy) && (
                   <div className="space-y-5">
@@ -7419,35 +7352,20 @@ export default function ProstheticsCasePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Sound limb — 15 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–15" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 15 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={hemipelvectomyForm.soundLimb[k] ?? ""}
-                                onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Affected limb — 1 field only */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimb")}</p>
-                        <div className="flex items-center gap-2 max-w-xs">
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">1</span>
-                          <Input className="h-8 text-sm" placeholder="cm"
-                            value={hemipelvectomyForm.affectedLimb["1"] ?? ""}
-                            onChange={(e) => setHemipelvectomyForm((f) => ({ ...f, affectedLimb: { "1": e.target.value } }))}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    {/* Interactive measurement diagram — write inside each box/oval */}
+                    <MeasurementSheet
+                      sheet="hemipelvectomy"
+                      mirrored={hemipelvectomyForm.side === "LEFT"}
+                      sound={hemipelvectomyForm.soundLimb}
+                      affected={hemipelvectomyForm.affectedLimb}
+                      onChange={(map, k, v) =>
+                        setHemipelvectomyForm((f) =>
+                          map === "sound"
+                            ? { ...f, soundLimb: { ...f.soundLimb, [k]: v } }
+                            : { ...f, affectedLimb: { ...f.affectedLimb, [k]: v } },
+                        )
+                      }
+                    />
 
                     <div className="flex justify-end pt-2">
                       <Button

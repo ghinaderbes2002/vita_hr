@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "measurement:fields": "node scripts/extract-measurement-fields.mjs"
   },
   "dependencies": {
     "@fontsource/amiri": "^5.2.8",

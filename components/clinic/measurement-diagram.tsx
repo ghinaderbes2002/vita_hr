@@ -4,6 +4,9 @@
 // overlays a transparent input inside each drawn box/oval, positioned by
 // percentage. Each field writes to either the sound- or affected-limb map.
 // Same overlay technique as body-pain-map (relative container + absolute boxes).
+import { FlipHorizontal } from "lucide-react";
+import { MEASUREMENT_SHEET_FIELDS } from "@/lib/clinic/measurement-sheet-fields";
+import { measurementSheetImage, MeasureSheetKey } from "@/lib/clinic/measurement-sheet-images";
 
 export interface DiagramField {
   /** Key stored in the limb map (e.g. the SVG shape id "circ_01" / "len_07"). */
@@ -17,6 +20,45 @@ export interface DiagramField {
   h: number;
 }
 
+/**
+ * The measurement sheet for one amputation level: its drawing with an input
+ * sitting inside every box and oval the drawing already has.
+ */
+export function MeasurementSheet({
+  sheet, sound, affected, onChange, disabled, mirrored,
+}: {
+  sheet: MeasureSheetKey;
+  sound: Record<string, string>;
+  affected: Record<string, string>;
+  onChange: (map: "sound" | "affected", key: string, value: string) => void;
+  disabled?: boolean;
+  /** Drawings depict the right side; a left-side case flips the whole sheet. */
+  mirrored?: boolean;
+}) {
+  const image = measurementSheetImage(sheet);
+  const fields = MEASUREMENT_SHEET_FIELDS[sheet];
+  if (!image || !fields) return null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-end gap-1.5 text-[11px] text-muted-foreground">
+        <FlipHorizontal
+          className={`h-3.5 w-3.5 transition-transform duration-500 ${mirrored ? "-scale-x-100" : ""}`}
+        />
+        {mirrored ? "الرسم معكوس — الجهة اليسرى" : "الجهة اليمنى"}
+      </div>
+      <MeasurementDiagram
+        imageSrc={image}
+        fields={fields}
+        sound={sound}
+        affected={affected}
+        onChange={onChange}
+        disabled={disabled}
+        mirrored={mirrored}
+      />
+    </div>
+  );
+}
+
 export function MeasurementDiagram({
   imageSrc,
   fields,
@@ -24,6 +66,7 @@ export function MeasurementDiagram({
   affected,
   onChange,
   disabled = false,
+  mirrored = false,
   maxWidth = 1040,
   className,
 }: {
@@ -33,35 +76,50 @@ export function MeasurementDiagram({
   affected: Record<string, string>;
   onChange: (map: "sound" | "affected", key: string, value: string) => void;
   disabled?: boolean;
+  /** Flip the artwork horizontally; the inputs move with it but stay readable. */
+  mirrored?: boolean;
   maxWidth?: number;
   className?: string;
 }) {
   return (
-    <div className={`relative mx-auto ${className ?? ""}`} style={{ maxWidth }} dir="ltr">
-      {/* eslint-disable-next-line @next/next/no-img-element -- static overlay image */}
-      <img src={imageSrc} alt="مخطط القياس" className="block h-auto w-full select-none" draggable={false} />
-      {fields.map((f) => {
-        const value = (f.map === "sound" ? sound : affected)[f.key] ?? "";
-        return (
-          <input
-            key={`${f.map}:${f.key}`}
-            value={value}
-            onChange={(e) => onChange(f.map, f.key, e.target.value)}
-            disabled={disabled}
-            inputMode="decimal"
-            title={f.key}
-            className="absolute -translate-x-1/2 -translate-y-1/2 rounded bg-transparent text-center text-[11px] font-semibold text-foreground outline-none focus:bg-primary/10 disabled:opacity-60"
-            style={{ left: `${f.cx}%`, top: `${f.cy}%`, width: `${f.w}%`, height: `${f.h}%` }}
-          />
-        );
-      })}
+    // The sheet turns over like a card: the whole plate rotates, and each input
+    // counter-flips so the digits stay upright at rest and while typing.
+    <div className={`mx-auto ${className ?? ""}`} style={{ maxWidth, perspective: 1600 }} dir="ltr">
+      <div
+        className="relative transition-transform duration-500 ease-out motion-reduce:transition-none"
+        style={{ transform: mirrored ? "rotateY(180deg)" : "rotateY(0deg)", transformStyle: "preserve-3d" }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- static overlay image */}
+        <img src={imageSrc} alt="مخطط القياس" className="block h-auto w-full select-none" draggable={false} />
+        {fields.map((f) => {
+          const value = (f.map === "sound" ? sound : affected)[f.key] ?? "";
+          return (
+            <input
+              key={`${f.map}:${f.key}`}
+              value={value}
+              onChange={(e) => onChange(f.map, f.key, e.target.value)}
+              disabled={disabled}
+              inputMode="decimal"
+              title={f.key}
+              // Saved sheets render disabled; keep the numbers fully legible there.
+              className="absolute rounded bg-transparent text-center text-[11px] font-semibold text-foreground outline-none focus:bg-primary/10 disabled:cursor-default disabled:opacity-100"
+              style={{
+                left: `${f.cx}%`,
+                top: `${f.cy}%`,
+                width: `${f.w}%`,
+                height: `${f.h}%`,
+                transform: `translate(-50%, -50%)${mirrored ? " scaleX(-1)" : ""}`,
+              }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-// Field layout for /prosthetics/vitasyr.svg (viewBox 1536×1024). Generated from
-// the SVG's <g class="fld"> groups: 9 circumference ovals + 18 length boxes.
-// Sound limb = the left-side shapes (x < 400); affected limb = the rest.
+// Legacy layout for the retired /prosthetics/vitasyr.svg, kept only so records
+// captured against that drawing still map to their old keys.
 export const VITASYR_LOWER_LIMB_FIELDS: DiagramField[] = [
   // ── Affected limb (right side) ──────────────────────────────────────────
   { key: "circ_01", map: "affected", cx: 52.83, cy: 29.64, w: 6.97, h: 4.59 },
