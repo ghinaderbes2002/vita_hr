@@ -3,9 +3,10 @@
 // The referral source plus whatever extra field it asks for. Shared by the
 // create wizard and the edit form so both send the same shape.
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUsers } from "@/lib/hooks/use-users";
+import { ReferralSourceCombobox } from "@/components/clinic/referral-source-combobox";
+import { ReferralSourceType } from "@/lib/api/clinic-referrals";
 import {
   REFERRAL_SOURCES,
   REFERRAL_SOURCE_LABEL,
@@ -18,6 +19,8 @@ import {
 export interface ReferralValue {
   referralSource: ReferralSource | "";
   referralDetails: string;
+  /** Set only when the name was picked from the sources directory. */
+  referralSourceId: string | null;
   referralStaffId: string;
 }
 
@@ -32,10 +35,10 @@ export function ReferralSourceFields({
   const users: { id: string; fullName: string }[] =
     (usersData as any)?.data?.items ?? (usersData as any)?.items ?? [];
 
-  // Switching source drops the field the previous one owned, so a doctor's name
+  // Switching source drops the fields the previous one owned, so a doctor's name
   // never rides along with a "friend" referral.
   const setSource = (source: ReferralSource | "") =>
-    onChange({ referralSource: source, referralDetails: "", referralStaffId: "" });
+    onChange({ referralSource: source, referralDetails: "", referralSourceId: null, referralStaffId: "" });
 
   return (
     <>
@@ -54,9 +57,12 @@ export function ReferralSourceFields({
       {referralNeedsDetails(value.referralSource) && (
         <div className="space-y-1.5">
           <Label>{REFERRAL_DETAILS_LABEL[value.referralSource]}</Label>
-          <Input
-            value={value.referralDetails}
-            onChange={(e) => onChange({ ...value, referralDetails: e.target.value })}
+          <ReferralSourceCombobox
+            // DOCTOR / HOSPITAL / ASSOCIATION are exactly the source types the
+            // referrals directory holds, so the enum value doubles as the filter.
+            type={value.referralSource as ReferralSourceType}
+            value={{ referralSourceId: value.referralSourceId, referralDetails: value.referralDetails }}
+            onChange={(pick) => onChange({ ...value, ...pick })}
             placeholder={REFERRAL_DETAILS_LABEL[value.referralSource]}
           />
         </div>
@@ -80,9 +86,12 @@ export function ReferralSourceFields({
   );
 }
 
-/** Only the field the chosen source owns is sent. */
+/** Only the fields the chosen source owns are sent. */
 export const referralDto = (v: ReferralValue) => ({
   referralSource: v.referralSource || undefined,
   referralDetails: referralNeedsDetails(v.referralSource) ? v.referralDetails || undefined : undefined,
+  // Sent as an explicit null (not undefined) for a freehand name, so an edit
+  // that replaces a linked source with typed text clears the old link.
+  referralSourceId: referralNeedsDetails(v.referralSource) ? v.referralSourceId : undefined,
   referralStaffId: referralNeedsStaff(v.referralSource) ? v.referralStaffId || undefined : undefined,
 });

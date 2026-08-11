@@ -23,6 +23,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useUnreadCount, useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
 import { resolveNotificationLink } from "@/lib/notifications/notification-links";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -97,9 +98,18 @@ export function Header() {
     icon: null, iconClass: "text-blue-500", bgClass: "bg-blue-50/50 dark:bg-blue-950/20", dotClass: "bg-blue-500",
   };
 
+  // A justification notification lands a reviewer on the request itself and the
+  // employee on their own list.
+  const { hasPermission } = usePermissions();
+  const notifLinkCtx = {
+    canReviewJustifications:
+      hasPermission("attendance.justifications.manager-review") ||
+      hasPermission("attendance.justifications.hr-review"),
+  };
+
   const handleNotifClick = (notif: any) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
-    const link = resolveNotificationLink(notif);
+    const link = resolveNotificationLink(notif, notifLinkCtx);
     if (link) router.push(link as any);
   };
 
@@ -240,7 +250,7 @@ export function Header() {
                           {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
                         </p>
                       </div>
-                      {resolveNotificationLink(notif) && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
+                      {resolveNotificationLink(notif, notifLinkCtx) && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />}
                     </div>
                   );
                 })

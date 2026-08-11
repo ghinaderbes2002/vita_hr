@@ -1,10 +1,23 @@
 import type { Notification } from "@/lib/api/notifications";
 
 /**
+ * Facts about the viewer that change where a notification leads. A reviewer and
+ * the employee who filed the request get the same notification type but belong
+ * on different screens.
+ */
+export interface NotificationLinkContext {
+  /** Holds attendance.justifications.manager-review or …hr-review. */
+  canReviewJustifications?: boolean;
+}
+
+/**
  * يُرجع مسار الوجهة (بدون بادئة اللغة) أو null إذا لا وجهة → يُفتح Dialog.
  * المستدعي يضيف `/${locale}` في البداية.
  */
-export function resolveNotificationLink(notif: Notification): string | null {
+export function resolveNotificationLink(
+  notif: Notification,
+  ctx: NotificationLinkContext = {},
+): string | null {
   const d = (notif.data ?? {}) as Record<string, any>;
 
   // Appointment notifications (created / reminder / cancelled …) all carry an
@@ -66,7 +79,15 @@ export function resolveNotificationLink(notif: Notification): string | null {
       const qs = params.toString();
       return qs ? `/attendance/my-alerts?${qs}` : "/attendance/my-alerts";
     }
-    case "ATTENDANCE_JUSTIFICATION":    return "/attendance/justifications";
+    // Reviewers (direct manager / HR) go straight to the justification that
+    // needs them; the list they land on otherwise already scopes itself to the
+    // team for a direct manager. The employee who filed it gets their own list,
+    // since the notification they receive is the decision on their request.
+    case "ATTENDANCE_JUSTIFICATION":
+      if (!ctx.canReviewJustifications) return "/attendance/my-justifications";
+      return d.justificationId
+        ? `/attendance/justifications/${d.justificationId}`
+        : "/attendance/justifications";
     case "ATTENDANCE_NEEDS_REVIEW":     return "/attendance/needs-review";
     case "BREAK_EXCEEDED":              return "/attendance/records";
     case "PROBATION_REMINDER":
@@ -106,6 +127,6 @@ export function resolveNotificationLink(notif: Notification): string | null {
   }
 }
 
-export function hasNotificationLink(notif: Notification): boolean {
-  return resolveNotificationLink(notif) !== null;
+export function hasNotificationLink(notif: Notification, ctx?: NotificationLinkContext): boolean {
+  return resolveNotificationLink(notif, ctx) !== null;
 }

@@ -267,6 +267,12 @@ export const PERMISSIONS = {
     VIEW_CLINICAL: "clinic.reports.view_clinical",
     VIEW_DONOR:    "clinic.reports.view_donor",
   },
+  CLINIC_REFERRALS: {
+    VIEW:       "clinic.referrals.view",
+    MANAGE:     "clinic.referrals.manage",
+    VISITS_ADD: "clinic.referrals.visits.add",
+    STATS_VIEW: "clinic.referrals.stats.view",
+  },
 
   AUDIT: {
     READ: "audit:read",

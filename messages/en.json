@@ -189,6 +189,7 @@
     "clinicAppointments": "Appointments",
     "clinicMyAppointments": "My Appointments",
     "clinicInventory": "Medical Inventory",
+    "clinicReferrals": "Referral Sources",
     "clinicReports": "Clinic Reports",
     "myProfile": "My Profile",
     "maintenanceRequests": "Maintenance Requests",
@@ -966,6 +967,9 @@
     "reviewNotesPlaceholder": "Add your notes...",
     "approveJustification": "Approve Justification",
     "rejectJustification": "Reject Justification",
+    "justificationAttachment": "Attachment",
+    "justificationReviewSteps": "Review steps",
+    "justificationReviewed": "Reviewed",
     "submitting": "Submitting..."
   },
   "requests": {

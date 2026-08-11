@@ -28,6 +28,14 @@ export function useMyTeamJustifications(params?: JustificationQueryParams) {
   });
 }
 
+export function useJustification(id: string) {
+  return useQuery({
+    queryKey: ["justifications", id],
+    queryFn: () => attendanceJustificationsApi.getById(id),
+    enabled: !!id,
+  });
+}
+
 export function useCreateJustification() {
   const queryClient = useQueryClient();
   return useMutation({

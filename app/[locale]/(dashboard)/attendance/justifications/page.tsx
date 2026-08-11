@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +42,8 @@ const toCamelCase = (s: string) =>
 
 export default function JustificationsPage() {
   const t = useTranslations();
+  const router = useRouter();
+  const locale = useLocale();
   const { user } = useAuthStore();
   const { hasPermission } = usePermissions();
 
@@ -52,7 +55,10 @@ export default function JustificationsPage() {
   const canHrReview = hasPermission("attendance.justifications.hr-review");
 
   const [page, setPage] = useState(1);
-  const [activeTab, setActiveTab] = useState("all");
+  // ?status=PENDING_HR lands here from the dashboard card; the tab values are the
+  // status codes themselves.
+  const initialTab = useSearchParams().get("status");
+  const [activeTab, setActiveTab] = useState(initialTab ?? "all");
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<AttendanceJustification | null>(null);
   const [reviewType, setReviewType] = useState<"manager" | "hr">("manager");
@@ -137,7 +143,11 @@ export default function JustificationsPage() {
                   </TableRow>
                 ) : (
                   items.map((item) => (
-                    <TableRow key={item.id}>
+                    <TableRow
+                      key={item.id}
+                      className="cursor-pointer"
+                      onClick={() => router.push(`/${locale}/attendance/justifications/${item.id}`)}
+                    >
                       <TableCell>
                         <div className="font-medium">
                           {item.employee?.firstNameAr} {item.employee?.lastNameAr}
@@ -156,7 +166,8 @@ export default function JustificationsPage() {
                       </TableCell>
                       {(canManagerReview || canHrReview) && (
                         <TableCell>
-                          <div className="flex gap-1">
+                          {/* Reviewing from the row must not also open the detail page. */}
+                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                             {canManagerReview && item.status === "PENDING_MANAGER" && (
                               <>
                                 <Button size="sm" variant="default" onClick={() => openReview(item, "manager", "APPROVE")}>

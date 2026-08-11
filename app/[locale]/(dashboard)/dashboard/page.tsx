@@ -24,6 +24,7 @@ import { usePendingMyApproval } from "@/lib/hooks/use-requests";
 import { usePendingManagerLeaveRequests } from "@/lib/hooks/use-leave-requests";
 import { usePendingMyAction, useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
+import { useAllJustifications } from "@/lib/hooks/use-attendance-justifications";
 import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -287,6 +288,12 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
   const probationEndingCount = probationEndingList.length;
   const [probationDialogOpen, setProbationDialogOpen] = useState(false);
 
+  // Justifications the manager already passed on and that now sit with HR. Only
+  // the total is needed, so a single row is fetched.
+  const { data: pendingHrJustifications } = useAllJustifications({ status: "PENDING_HR", limit: 1 });
+  const justificationsPendingHR =
+    (pendingHrJustifications as any)?.data?.total ?? (pendingHrJustifications as any)?.total ?? 0;
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -294,8 +301,8 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
           iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/employees`)} />
         <StatCard title={t("hr.probationEndingSoon")} value={probationEndingCount} icon={FileWarning}
           iconBg="bg-red-500" onClick={() => setProbationDialogOpen(true)} />
-        <StatCard title={t("hr.employeeJustifications")} value="" icon={AlertCircle}
-          iconBg="bg-orange-500" onClick={() => router.push(`/${locale}/attendance/justifications`)} />
+        <StatCard title={t("hr.employeeJustifications")} value={justificationsPendingHR} icon={AlertCircle}
+          iconBg="bg-orange-500" onClick={() => router.push(`/${locale}/attendance/justifications?status=PENDING_HR`)} />
         <StatCard title={t("hr.leavesAwaitingHR")} value={d.pendingLeaveHRCount ?? 0} icon={Hourglass}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
       </div>

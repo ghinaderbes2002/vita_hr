@@ -48,6 +48,7 @@ import {
   Heart,
   Activity,
   Footprints,
+  Share2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -254,6 +255,7 @@ const navigation: NavItem[] = [
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
       { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
+      { title: "nav.clinicReferrals", href: "/clinic/referrals", icon: Share2, permission: "clinic.referrals.view" },
       { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor" },
     ],
   },

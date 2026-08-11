@@ -66,6 +66,7 @@ const step3Schema = z.object({
   receivesAid:     z.string().optional(),
   referralSource:  z.enum([...REFERRAL_SOURCES, ""]).optional(),
   referralDetails: z.string().optional(),
+  referralSourceId: z.string().nullable().optional(),
   referralStaffId: z.string().optional(),
 });
 
@@ -132,7 +133,7 @@ export default function NewPatientPage() {
 
   const form3 = useForm<Step3>({
     resolver: zodResolver(step3Schema) as any,
-    defaultValues: { receivesAid: "", referralSource: "", referralDetails: "", referralStaffId: "", ...s3 },
+    defaultValues: { receivesAid: "", referralSource: "", referralDetails: "", referralSourceId: null, referralStaffId: "", ...s3 },
   });
 
   const form4 = useForm<Step4>({
@@ -213,9 +214,10 @@ export default function NewPatientPage() {
       financialStatus: (s3.financialStatus as any) || undefined,
       receivesAid:     s3.receivesAid,
       ...referralDto({
-        referralSource:  s3.referralSource ?? "",
-        referralDetails: s3.referralDetails ?? "",
-        referralStaffId: s3.referralStaffId ?? "",
+        referralSource:   s3.referralSource ?? "",
+        referralDetails:  s3.referralDetails ?? "",
+        referralSourceId: s3.referralSourceId ?? null,
+        referralStaffId:  s3.referralStaffId ?? "",
       }),
     };
 
@@ -452,13 +454,15 @@ export default function NewPatientPage() {
               <ReferralSourceFields
                 label={t("fields.referralSource")}
                 value={{
-                  referralSource:  form3.watch("referralSource") ?? "",
-                  referralDetails: form3.watch("referralDetails") ?? "",
-                  referralStaffId: form3.watch("referralStaffId") ?? "",
+                  referralSource:   form3.watch("referralSource") ?? "",
+                  referralDetails:  form3.watch("referralDetails") ?? "",
+                  referralSourceId: form3.watch("referralSourceId") ?? null,
+                  referralStaffId:  form3.watch("referralStaffId") ?? "",
                 }}
                 onChange={(v) => {
                   form3.setValue("referralSource", v.referralSource);
                   form3.setValue("referralDetails", v.referralDetails);
+                  form3.setValue("referralSourceId", v.referralSourceId);
                   form3.setValue("referralStaffId", v.referralStaffId);
                 }}
               />

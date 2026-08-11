@@ -30,6 +30,7 @@ import { ComposeMailModal } from "@/components/features/mail/compose-mail-modal"
 import { useNotificationsPage, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
 import type { Notification, NotificationType } from "@/lib/api/notifications";
 import { resolveNotificationLink, hasNotificationLink } from "@/lib/notifications/notification-links";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
   LEAVE_REQUEST_SUBMITTED:        { icon: Bell,          color: "text-blue-600",   bg: "bg-blue-100",   label: "طلب إجازة جديد" },
@@ -132,10 +133,19 @@ export default function NotificationsPage() {
 
   const usedTypes = [...new Set(notifList.map((n) => n.type))];
 
+  // A justification notification lands a reviewer on the request itself and the
+  // employee on their own list.
+  const { hasPermission } = usePermissions();
+  const notifLinkCtx = {
+    canReviewJustifications:
+      hasPermission("attendance.justifications.manager-review") ||
+      hasPermission("attendance.justifications.hr-review"),
+  };
+
   const handleClick = (notif: Notification) => {
     if (!notif.isRead) markAsRead.mutate(notif.id);
     if (notif.type === "BIRTHDAY") { setSelectedNotif(notif); return; }
-    const link = resolveNotificationLink(notif);
+    const link = resolveNotificationLink(notif, notifLinkCtx);
     if (link) router.push(`/${locale}${link}`);
     else setSelectedNotif(notif);
   };
@@ -331,7 +341,7 @@ export default function NotificationsPage() {
                     </div>
                   </div>
 
-                  {hasNotificationLink(notif) && (
+                  {hasNotificationLink(notif, notifLinkCtx) && (
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-1" />
                   )}
                 </div>
@@ -361,7 +371,7 @@ export default function NotificationsPage() {
           {selectedNotif && (() => {
             const cfg = getConfig(selectedNotif.type);
             const Icon = cfg.icon;
-            const link = resolveNotificationLink(selectedNotif);
+            const link = resolveNotificationLink(selectedNotif, notifLinkCtx);
             const target = link ? `/${locale}${link}` : null;
             const isMailNotif = selectedNotif.type === "GENERAL";
             return (

@@ -58,6 +58,12 @@ export interface Patient {
   receivesAid?: string;
   referralSource?: string | null;
   referralDetails?: string | null;
+  /**
+   * Set when the referring doctor / hospital / association is a registered
+   * referral source. Null when the name in referralDetails was typed freehand
+   * and matches nothing in the sources directory.
+   */
+  referralSourceId?: string | null;
   /** Set when referralSource is STAFF — the employee who referred the patient. */
   referralStaffId?: string | null;
   referralStaff?: { id: string; fullName?: string } | null;
@@ -128,6 +134,8 @@ export interface CreatePatientDto {
   receivesAid?: string;
   referralSource?: string;
   referralDetails?: string;
+  /** null clears the link when the name was typed freehand. */
+  referralSourceId?: string | null;
   referralStaffId?: string;
   photoUrl?: string;
   documentConsent?: ConsentOption;

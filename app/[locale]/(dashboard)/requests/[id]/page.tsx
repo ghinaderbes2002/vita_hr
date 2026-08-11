@@ -67,6 +67,10 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
   newDepartmentId: "القسم الجديد",
   newJobTitleId: "المسمى الجديد",
   violationDescription: "وصف المخالفة",
+  penaltyType: "نوع العقوبة",
+  penaltyDays: "أيام الخصم",
+  targetEmployeeId: "الموظف المستهدف",
+  targetEmployeeIds: "الموظفون المستهدفون",
   employees: "الموظفون",
   rewardType: "نوع المكافأة",
   employeeId: "الموظف",
@@ -98,6 +102,11 @@ const DETAIL_VALUE_LABELS: Record<string, string> = {
   NEW_ALEPPO: "حلب الجديدة",
   MATERIAL: "مادي",
   MORAL: "معنوي",
+  // disciplinary penalties
+  NOTICE: "لفت نظر",
+  WARNING_1: "إنذار أول",
+  WARNING_2: "إنذار ثانٍ",
+  DAYS_DEDUCTION: "خصم أيام",
 };
 
 function formatDetailKey(key: string): string {

@@ -47,6 +47,7 @@ const schema = z.object({
   receivesAid:     z.string().optional(),
   referralSource:  z.enum([...REFERRAL_SOURCES, ""]).optional(),
   referralDetails: z.string().optional(),
+  referralSourceId: z.string().nullable().optional(),
   referralStaffId: z.string().optional(),
   notes:           z.string().optional(),
 });
@@ -149,6 +150,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
     // A retired source (SELF/RELATIVES/…) is cleared so it can't be resent.
     referralSource:  asCurrentReferralSource(patient.referralSource),
     referralDetails: patient.referralDetails ?? "",
+    referralSourceId: patient.referralSourceId ?? null,
     referralStaffId: patient.referralStaffId ?? "",
     notes:           patient.notes ?? "",
     };
@@ -218,9 +220,10 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
       financialStatus: (values.financialStatus as any) || undefined,
       receivesAid:     values.receivesAid,
       ...referralDto({
-        referralSource:  values.referralSource ?? "",
-        referralDetails: values.referralDetails ?? "",
-        referralStaffId: values.referralStaffId ?? "",
+        referralSource:   values.referralSource ?? "",
+        referralDetails:  values.referralDetails ?? "",
+        referralSourceId: values.referralSourceId ?? null,
+        referralStaffId:  values.referralStaffId ?? "",
       }),
       // Consent is deliberately NOT written here: it counts only when signed,
       // and is recorded below as a signed consent record instead.
@@ -425,13 +428,15 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
             </div>
             <ReferralSourceFields
               value={{
-                referralSource:  watch("referralSource") ?? "",
-                referralDetails: watch("referralDetails") ?? "",
-                referralStaffId: watch("referralStaffId") ?? "",
+                referralSource:   watch("referralSource") ?? "",
+                referralDetails:  watch("referralDetails") ?? "",
+                referralSourceId: watch("referralSourceId") ?? null,
+                referralStaffId:  watch("referralStaffId") ?? "",
               }}
               onChange={(v) => {
                 setValue("referralSource", v.referralSource);
                 setValue("referralDetails", v.referralDetails);
+                setValue("referralSourceId", v.referralSourceId);
                 setValue("referralStaffId", v.referralStaffId);
               }}
             />

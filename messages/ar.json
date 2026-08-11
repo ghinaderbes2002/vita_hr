@@ -141,6 +141,7 @@
     "clinicAppointments": "المواعيد",
     "clinicMyAppointments": "مواعيدي",
     "clinicInventory": "المخزون الطبي",
+    "clinicReferrals": "مصادر الإحالة",
     "clinicReports": "تقارير العيادة",
     "maintenanceRequests": "طلبات الصيانة",
     "myMaintenanceRequests": "طلبات صيانتي",
@@ -855,6 +856,9 @@
     "reviewNotesPlaceholder": "أضف ملاحظاتك...",
     "approveJustification": "قبول التبرير",
     "rejectJustification": "رفض التبرير",
+    "justificationAttachment": "المرفق",
+    "justificationReviewSteps": "مسار المراجعة",
+    "justificationReviewed": "تمت المراجعة",
     "submitting": "جاري الإرسال..."
   },
   "evaluations": {

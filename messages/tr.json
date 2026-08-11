@@ -188,6 +188,7 @@
     "clinicAppointments": "Randevular",
     "clinicMyAppointments": "Randevularım",
     "clinicInventory": "Tıbbi Stok",
+    "clinicReferrals": "Sevk Kaynakları",
     "clinicReports": "Klinik Raporları",
     "myProfile": "Profilim",
     "maintenanceRequests": "Bakım Talepleri",
@@ -963,6 +964,9 @@
     "reviewNotesPlaceholder": "Notlarınızı ekleyin...",
     "approveJustification": "Gerekçeyi Onayla",
     "rejectJustification": "Gerekçeyi Reddet",
+    "justificationAttachment": "Ek",
+    "justificationReviewSteps": "İnceleme adımları",
+    "justificationReviewed": "İncelendi",
     "submitting": "Gönderiliyor..."
   },
   "requests": {
