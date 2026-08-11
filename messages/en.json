@@ -756,6 +756,8 @@
     "hourlyBadge": "Hourly",
     "deductionBadge": "⚠️ Salary Deduction ({hours}h)",
     "substituteTitle": "Requests awaiting my approval as substitute ({count})",
+    "requestedOn": "Requested on:",
+    "unknownRequester": "Unknown employee",
     "substituteApproveTitle": "Confirm Approval as Substitute",
     "substituteRejectTitle": "Confirm Rejection as Substitute",
     "substituteNotesPlaceholder": "Add a note if you wish...",

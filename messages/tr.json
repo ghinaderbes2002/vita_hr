@@ -753,6 +753,8 @@
     "hourlyBadge": "Saatlik",
     "deductionBadge": "⚠️ Maaş Kesintisi ({hours}s)",
     "substituteTitle": "Vekil olarak onayımı bekleyen talepler ({count})",
+    "requestedOn": "Talep tarihi:",
+    "unknownRequester": "Bilinmeyen personel",
     "substituteApproveTitle": "Vekil Olarak Onayı Onayla",
     "substituteRejectTitle": "Vekil Olarak Reddi Onayla",
     "substituteNotesPlaceholder": "İsterseniz not ekleyin...",

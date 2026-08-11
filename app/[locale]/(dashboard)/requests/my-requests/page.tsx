@@ -39,6 +39,7 @@ import {
   useSubstituteResponse,
 } from "@/lib/hooks/use-leave-requests";
 import { LeaveRequest } from "@/lib/api/leave-requests";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { CheckCircle2, UserCheck } from "lucide-react";
 import { Request } from "@/types";
 import { toast } from "sonner";
@@ -114,6 +115,21 @@ export default function MyRequestsPage() {
   const { data: pendingSubstitute, isLoading: loadingSubstitute, isFetching: fetchingSubstitute } = usePendingSubstituteRequests();
   const substituteResponse = useSubstituteResponse();
   const pendingSubstituteList: LeaveRequest[] = Array.isArray(pendingSubstitute) ? pendingSubstitute : [];
+
+  // Who asked. The endpoint may nest the employee, flatten it onto the request,
+  // or send neither — in which case the id is resolved against the staff list.
+  const { data: staffData } = useEmployeesBasicList();
+  const staffList: { id: string; firstNameAr?: string; lastNameAr?: string }[] =
+    Array.isArray(staffData) ? staffData : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
+  const requesterName = (req: LeaveRequest) => {
+    const nested = [req.employee?.firstNameAr, req.employee?.lastNameAr].filter(Boolean).join(" ");
+    if (nested.trim()) return nested;
+    const flat = [req.employeeFirstNameAr, req.employeeLastNameAr].filter(Boolean).join(" ");
+    if (flat.trim()) return flat;
+    const found = staffList.find((e) => e.id === req.employeeId);
+    const listed = [found?.firstNameAr, found?.lastNameAr].filter(Boolean).join(" ");
+    return listed.trim() || t("leaves.unknownRequester");
+  };
 
   const openSubstituteDialog = (req: LeaveRequest, action: "approve" | "reject") => {
     setSubstituteRequest(req);
@@ -328,26 +344,50 @@ export default function MyRequestsPage() {
                 const calcDays = req.totalDays > 0
                   ? req.totalDays
                   : Math.max(1, Math.round((new Date(req.endDate).getTime() - new Date(req.startDate).getTime()) / 86400000) + 1);
+                const sameDay = req.startDate.slice(0, 10) === req.endDate.slice(0, 10);
                 return (
-                  <div key={req.id} className="flex items-center justify-between bg-white rounded-md border p-3">
-                    <div className="space-y-0.5">
-                      <p className="font-medium text-sm">
-                        {req.employee?.firstNameAr} {req.employee?.lastNameAr}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {req.leaveType?.nameAr} — {format(new Date(req.startDate), "PPP", { locale: dateLocale })} {t("common.to")} {format(new Date(req.endDate), "PPP", { locale: dateLocale })} ({calcDays} {t("common.days")})
-                      </p>
+                  <div key={req.id} className="bg-white rounded-md border p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm">{requesterName(req)}</span>
+                          {req.leaveType?.nameAr && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px]"
+                              style={req.leaveType.color ? { borderColor: req.leaveType.color, color: req.leaveType.color } : undefined}
+                            >
+                              {req.leaveType.nameAr}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {sameDay
+                            ? format(new Date(req.startDate), "PPP", { locale: dateLocale })
+                            : `${format(new Date(req.startDate), "PPP", { locale: dateLocale })} ${t("common.to")} ${format(new Date(req.endDate), "PPP", { locale: dateLocale })}`}
+                          {" — "}
+                          {req.isHourlyLeave && req.startTime && req.endTime
+                            ? `${req.startTime} - ${req.endTime}`
+                            : `${calcDays} ${t("common.days")}`}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => openSubstituteDialog(req, "approve")}>
+                          <CheckCircle2 className="h-4 w-4 ml-1" />
+                          {t("requests.actions.approve")}
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50" onClick={() => openSubstituteDialog(req, "reject")}>
+                          <XCircle className="h-4 w-4 ml-1" />
+                          {t("requests.actions.reject")}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => openSubstituteDialog(req, "approve")}>
-                        <CheckCircle2 className="h-4 w-4 ml-1" />
-                        {t("requests.actions.approve")}
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50" onClick={() => openSubstituteDialog(req, "reject")}>
-                        <XCircle className="h-4 w-4 ml-1" />
-                        {t("requests.actions.reject")}
-                      </Button>
-                    </div>
+                    {req.reason && (
+                      <p className="text-xs text-foreground/80 border-t pt-2">{req.reason}</p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground">
+                      {t("leaves.requestedOn")} {format(new Date(req.createdAt), "PPP", { locale: dateLocale })}
+                    </p>
                   </div>
                 );
               })}

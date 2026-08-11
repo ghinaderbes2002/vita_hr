@@ -643,6 +643,8 @@
     "hourlyBadge": "ساعية",
     "deductionBadge": "⚠️ خصم راتب ({hours}س)",
     "substituteTitle": "طلبات تنتظر موافقتي كبديل ({count})",
+    "requestedOn": "تاريخ الطلب:",
+    "unknownRequester": "موظف غير معروف",
     "substituteApproveTitle": "تأكيد الموافقة كبديل",
     "substituteRejectTitle": "تأكيد الرفض كبديل",
     "substituteNotesPlaceholder": "أضف ملاحظة إن أردت...",
