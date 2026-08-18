@@ -18,6 +18,12 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 const SRC = path.join(ROOT, "public", "prosthetics");
 const OUT = path.join(ROOT, "lib", "clinic", "measurement-sheet-fields.ts");
 
+// Some drawings ship as a flat bitmap with no vector shapes to read, so their
+// field boxes were measured off the image once and recorded here. A sheet listed
+// in this file wins over whatever the SVG declares.
+const MANUAL_PATH = path.join(import.meta.dirname, "measurement-fields.manual.json");
+const MANUAL = existsSync(MANUAL_PATH) ? JSON.parse(readFileSync(MANUAL_PATH, "utf8")) : {};
+
 // sheet key → drawing file name (without .svg)
 const SHEETS = [
   ["ankle_disarticulation", "عبر الكاحل"],
@@ -67,6 +73,31 @@ function parse(svg) {
       h: (fh / H) * 100,
     });
   }
+
+  // Older drawings declare a plain <rect class="fld-box"> per field with no id.
+  // They get positional keys from document order — meaning the keys shift if the
+  // artwork is redrawn with boxes added or removed, unlike the named groups above.
+  if (fields.length === 0) {
+    let n = 0;
+    for (const tag of svg.match(/<rect class="fld-box"[^>]*\/?>/g) ?? []) {
+      const num = (name) => Number(tag.match(new RegExp(`\\s${name}="([\\d.-]+)"`))?.[1]);
+      const x = num("x");
+      const y = num("y");
+      const fw = num("width");
+      const fh = num("height");
+      if ([x, y, fw, fh].some(Number.isNaN)) continue;
+      n += 1;
+      fields.push({
+        key: `box_${String(n).padStart(2, "0")}`,
+        type: "length",
+        limb: undefined,
+        cx: ((x + fw / 2) / W) * 100,
+        cy: ((y + fh / 2) / H) * 100,
+        w: (fw / W) * 100,
+        h: (fh / H) * 100,
+      });
+    }
+  }
   return fields;
 }
 
@@ -98,7 +129,18 @@ for (const [key, file] of SHEETS) {
     report.push(`//   ${key.padEnd(22)} — no drawing (${file}.svg)`);
     continue;
   }
-  let fields = parse(readFileSync(full, "utf8"));
+  let fields = MANUAL[key] ?? parse(readFileSync(full, "utf8"));
+  if (MANUAL[key]) {
+    const affected = fields.filter((f) => f.limb === "affected").length;
+    report.push(
+      `//   ${key.padEnd(22)} ${String(fields.length).padStart(2)} fields ` +
+        `(affected ${affected} / sound ${fields.length - affected})  [measured]`,
+    );
+    body += `  ${key}: [\n${fields
+      .map((f) => `    { key: "${f.key}", map: "${f.limb}", cx: ${f.cx.toFixed(2)}, cy: ${f.cy.toFixed(2)}, w: ${f.w.toFixed(2)}, h: ${f.h.toFixed(2)} },`)
+      .join("\n")}\n  ],\n`;
+    continue;
+  }
   const declared = fields.every((f) => f.limb === "affected" || f.limb === "sound");
   const override = LIMB_OVERRIDES[key];
   let source = "data-limb";

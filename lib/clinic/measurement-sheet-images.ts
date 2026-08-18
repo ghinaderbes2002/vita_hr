@@ -18,7 +18,7 @@ const FILE: Partial<Record<MeasureSheetKey, string>> = {
   elbow_disarticulation: "عبر المرفق",
   transhumeral:          "فوق المرفق",
   transradial:           "تحت المرفق",
-  // above_knee (فوق الركبة): no drawing supplied yet.
+  above_knee:            "فوق الركبة",
 };
 
 export const measurementSheetImage = (key: MeasureSheetKey): string | null =>

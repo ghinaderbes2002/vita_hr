@@ -1,0 +1,193 @@
+{
+ "above_knee": [
+  {
+   "key": "len_01",
+   "type": "length",
+   "limb": "sound",
+   "cx": 22.26,
+   "cy": 18.3,
+   "w": 5.73,
+   "h": 4.32
+  },
+  {
+   "key": "circ_01",
+   "type": "circumference",
+   "limb": "sound",
+   "cx": 33.93,
+   "cy": 18.24,
+   "w": 5.98,
+   "h": 3.75
+  },
+  {
+   "key": "circ_02",
+   "type": "circumference",
+   "limb": "affected",
+   "cx": 68.29,
+   "cy": 34.15,
+   "w": 5.98,
+   "h": 3.75
+  },
+  {
+   "key": "len_02",
+   "type": "length",
+   "limb": "affected",
+   "cx": 78.63,
+   "cy": 35.11,
+   "w": 5.98,
+   "h": 3.86
+  },
+  {
+   "key": "len_03",
+   "type": "length",
+   "limb": "affected",
+   "cx": 56.62,
+   "cy": 37.56,
+   "w": 5.73,
+   "h": 4.43
+  },
+  {
+   "key": "circ_03",
+   "type": "circumference",
+   "limb": "affected",
+   "cx": 68.25,
+   "cy": 38.58,
+   "w": 5.9,
+   "h": 3.75
+  },
+  {
+   "key": "len_04",
+   "type": "length",
+   "limb": "affected",
+   "cx": 85.56,
+   "cy": 38.58,
+   "w": 5.98,
+   "h": 3.75
+  },
+  {
+   "key": "circ_04",
+   "type": "circumference",
+   "limb": "affected",
+   "cx": 68.25,
+   "cy": 43.24,
+   "w": 5.9,
+   "h": 3.75
+  },
+  {
+   "key": "len_05",
+   "type": "length",
+   "limb": "affected",
+   "cx": 90.38,
+   "cy": 44.2,
+   "w": 6.07,
+   "h": 3.86
+  },
+  {
+   "key": "circ_05",
+   "type": "circumference",
+   "limb": "sound",
+   "cx": 33.93,
+   "cy": 45.11,
+   "w": 5.98,
+   "h": 3.86
+  },
+  {
+   "key": "circ_06",
+   "type": "circumference",
+   "limb": "affected",
+   "cx": 68.29,
+   "cy": 48.01,
+   "w": 5.98,
+   "h": 3.75
+  },
+  {
+   "key": "circ_07",
+   "type": "circumference",
+   "limb": "sound",
+   "cx": 33.93,
+   "cy": 55.45,
+   "w": 5.98,
+   "h": 3.86
+  },
+  {
+   "key": "len_06",
+   "type": "length",
+   "limb": "sound",
+   "cx": 6.41,
+   "cy": 58.07,
+   "w": 5.98,
+   "h": 3.86
+  },
+  {
+   "key": "len_07",
+   "type": "length",
+   "limb": "sound",
+   "cx": 11.24,
+   "cy": 65.17,
+   "w": 6.07,
+   "h": 3.75
+  },
+  {
+   "key": "circ_08",
+   "type": "circumference",
+   "limb": "sound",
+   "cx": 33.93,
+   "cy": 65.51,
+   "w": 5.98,
+   "h": 3.75
+  },
+  {
+   "key": "len_08",
+   "type": "length",
+   "limb": "affected",
+   "cx": 56.79,
+   "cy": 68.41,
+   "w": 5.9,
+   "h": 4.09
+  },
+  {
+   "key": "len_09",
+   "type": "length",
+   "limb": "sound",
+   "cx": 17.78,
+   "cy": 71.53,
+   "w": 5.98,
+   "h": 3.75
+  },
+  {
+   "key": "len_10",
+   "type": "length",
+   "limb": "sound",
+   "cx": 23.16,
+   "cy": 77.56,
+   "w": 5.98,
+   "h": 3.75
+  },
+  {
+   "key": "circ_09",
+   "type": "circumference",
+   "limb": "sound",
+   "cx": 33.97,
+   "cy": 80.62,
+   "w": 5.9,
+   "h": 3.75
+  },
+  {
+   "key": "len_11",
+   "type": "length",
+   "limb": "sound",
+   "cx": 28.68,
+   "cy": 84.66,
+   "w": 6.07,
+   "h": 3.86
+  },
+  {
+   "key": "len_12",
+   "type": "length",
+   "limb": "sound",
+   "cx": 16.15,
+   "cy": 95.51,
+   "w": 5.98,
+   "h": 3.75
+  }
+ ]
+}

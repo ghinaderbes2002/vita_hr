@@ -6,7 +6,7 @@
 //   ankle_disarticulation  25 fields (affected 19 / sound 6)  [left=sound]
 //   below_knee             26 fields (affected 20 / sound 6)  [left=sound]
 //   knee_disarticulation   18 fields (affected 12 / sound 6)  [left=sound]
-//   above_knee              0 fields (affected 0 / sound 0)  [data-limb]
+//   above_knee             21 fields (affected 9 / sound 12)  [measured]
 //   hemipelvectomy         17 fields (affected 17 / sound 0)  [left=sound]
 //   elbow_disarticulation  21 fields (affected 9 / sound 12)  [left=sound]
 //   transhumeral           18 fields (affected 6 / sound 12)  [left=sound]
@@ -91,7 +91,27 @@ export const MEASUREMENT_SHEET_FIELDS: Partial<Record<MeasureSheetKey, DiagramFi
     { key: "len_08", map: "sound", cx: 18.06, cy: 94.16, w: 6.25, h: 4.34 },
   ],
   above_knee: [
-
+    { key: "len_01", map: "sound", cx: 22.26, cy: 18.30, w: 5.73, h: 4.32 },
+    { key: "circ_01", map: "sound", cx: 33.93, cy: 18.24, w: 5.98, h: 3.75 },
+    { key: "circ_02", map: "affected", cx: 68.29, cy: 34.15, w: 5.98, h: 3.75 },
+    { key: "len_02", map: "affected", cx: 78.63, cy: 35.11, w: 5.98, h: 3.86 },
+    { key: "len_03", map: "affected", cx: 56.62, cy: 37.56, w: 5.73, h: 4.43 },
+    { key: "circ_03", map: "affected", cx: 68.25, cy: 38.58, w: 5.90, h: 3.75 },
+    { key: "len_04", map: "affected", cx: 85.56, cy: 38.58, w: 5.98, h: 3.75 },
+    { key: "circ_04", map: "affected", cx: 68.25, cy: 43.24, w: 5.90, h: 3.75 },
+    { key: "len_05", map: "affected", cx: 90.38, cy: 44.20, w: 6.07, h: 3.86 },
+    { key: "circ_05", map: "sound", cx: 33.93, cy: 45.11, w: 5.98, h: 3.86 },
+    { key: "circ_06", map: "affected", cx: 68.29, cy: 48.01, w: 5.98, h: 3.75 },
+    { key: "circ_07", map: "sound", cx: 33.93, cy: 55.45, w: 5.98, h: 3.86 },
+    { key: "len_06", map: "sound", cx: 6.41, cy: 58.07, w: 5.98, h: 3.86 },
+    { key: "len_07", map: "sound", cx: 11.24, cy: 65.17, w: 6.07, h: 3.75 },
+    { key: "circ_08", map: "sound", cx: 33.93, cy: 65.51, w: 5.98, h: 3.75 },
+    { key: "len_08", map: "affected", cx: 56.79, cy: 68.41, w: 5.90, h: 4.09 },
+    { key: "len_09", map: "sound", cx: 17.78, cy: 71.53, w: 5.98, h: 3.75 },
+    { key: "len_10", map: "sound", cx: 23.16, cy: 77.56, w: 5.98, h: 3.75 },
+    { key: "circ_09", map: "sound", cx: 33.97, cy: 80.62, w: 5.90, h: 3.75 },
+    { key: "len_11", map: "sound", cx: 28.68, cy: 84.66, w: 6.07, h: 3.86 },
+    { key: "len_12", map: "sound", cx: 16.15, cy: 95.51, w: 5.98, h: 3.75 },
   ],
   hemipelvectomy: [
     { key: "bone_01", map: "affected", cx: 34.74, cy: 10.42, w: 5.72, h: 4.58 },

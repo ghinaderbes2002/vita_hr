@@ -6943,39 +6943,20 @@ export default function ProstheticsCasePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Affected limb — 12 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.affectedLimbRange", { range: "1–12" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={transfemoralForm.affectedLimb[k] ?? ""}
-                                onChange={(e) => setTransfemoralForm((f) => ({ ...f, affectedLimb: { ...f.affectedLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Sound limb — 11 fields */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-center border-b pb-2">{t("measurement.soundLimbRange", { range: "1–11" })}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Array.from({ length: 11 }, (_, i) => String(i + 1)).map((k) => (
-                            <div key={k} className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{k}</span>
-                              <Input className="h-8 text-sm" placeholder="cm"
-                                value={transfemoralForm.soundLimb[k] ?? ""}
-                                onChange={(e) => setTransfemoralForm((f) => ({ ...f, soundLimb: { ...f.soundLimb, [k]: e.target.value } }))}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Interactive measurement diagram — write inside each box/oval */}
+                    <MeasurementSheet
+                      sheet="above_knee"
+                      mirrored={transfemoralForm.side === "LEFT"}
+                      sound={transfemoralForm.soundLimb}
+                      affected={transfemoralForm.affectedLimb}
+                      onChange={(map, k, v) =>
+                        setTransfemoralForm((f) =>
+                          map === "sound"
+                            ? { ...f, soundLimb: { ...f.soundLimb, [k]: v } }
+                            : { ...f, affectedLimb: { ...f.affectedLimb, [k]: v } },
+                        )
+                      }
+                    />
 
                     <div className="flex justify-end pt-2">
                       <Button
