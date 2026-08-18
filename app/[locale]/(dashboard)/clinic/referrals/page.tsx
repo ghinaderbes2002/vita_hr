@@ -3,13 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import {
-  Building2, Eye, HeartHandshake, Pencil, Plus, Search, Stethoscope, Trash2, Trophy, Users,
-} from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,20 +16,13 @@ import { Pagination } from "@/components/shared/pagination";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard, PageGuard } from "@/components/permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
-import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ReferralSourceFormDialog } from "@/components/clinic/referral-source-form-dialog";
-import { useDeleteReferralSource, useReferralSources, useReferralStats } from "@/lib/hooks/use-clinic-referrals";
+import { useDeleteReferralSource, useReferralSources } from "@/lib/hooks/use-clinic-referrals";
 import {
   REFERRAL_SOURCE_TYPES, REFERRAL_SOURCE_TYPE_LABEL, ReferralSource, ReferralSourceType, visitsCountOf,
 } from "@/lib/api/clinic-referrals";
 
 const PAGE_SIZE = 20;
-
-const TYPE_ICON: Record<ReferralSourceType, typeof Stethoscope> = {
-  DOCTOR: Stethoscope,
-  HOSPITAL: Building2,
-  ASSOCIATION: HeartHandshake,
-};
 
 const TYPE_BADGE: Record<ReferralSourceType, string> = {
   DOCTOR:      "border-blue-300 bg-blue-50 text-blue-700",
@@ -43,9 +33,6 @@ const TYPE_BADGE: Record<ReferralSourceType, string> = {
 export default function ReferralSourcesPage() {
   const router = useRouter();
   const locale = useLocale();
-  const { hasPermission, isAdmin } = usePermissions();
-  const canSeeStats = isAdmin() || hasPermission(PERMISSIONS.CLINIC_REFERRALS.STATS_VIEW);
-
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<ReferralSourceType | "all">("all");
@@ -70,12 +57,9 @@ export default function ReferralSourcesPage() {
     search: debouncedSearch || undefined,
     type: typeFilter !== "all" ? typeFilter : undefined,
   });
-  const { data: stats } = useReferralStats({ enabled: canSeeStats });
   const deleteSource = useDeleteReferralSource();
 
   const sources = data?.items ?? [];
-  const countOfType = (t: ReferralSourceType) =>
-    stats?.byType.find((b) => b.type === t)?._count.id ?? 0;
 
   const openEdit = (s: ReferralSource) => { setEditing(s); setFormOpen(true); };
   const openCreate = () => { setEditing(null); setFormOpen(true); };
@@ -84,7 +68,7 @@ export default function ReferralSourcesPage() {
     <PageGuard permission={PERMISSIONS.CLINIC_REFERRALS.VIEW}>
       <div className="space-y-6">
         <PageHeader
-          title="مصادر الإحالة"
+          title="جهات الاتصال"
           description="الأطباء والمشافي والجمعيات التي تُحيل المرضى إلى المركز"
           actions={
             <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.MANAGE}>
@@ -95,87 +79,6 @@ export default function ReferralSourcesPage() {
             </ActionGuard>
           }
         />
-
-        {canSeeStats && (
-          <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {REFERRAL_SOURCE_TYPES.map((t) => {
-                const Icon = TYPE_ICON[t];
-                return (
-                  <Card key={t}>
-                    <CardContent className="flex items-center gap-3 pt-4 pb-3">
-                      <div className="rounded-lg bg-muted p-2">
-                        <Icon className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="mb-0.5 text-sm text-muted-foreground">{REFERRAL_SOURCE_TYPE_LABEL[t]}</p>
-                        <p className="text-2xl font-bold">{countOfType(t)}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {(stats?.topSources.length ?? 0) > 0 && (
-              <Card>
-                <CardContent className="space-y-3 pt-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4 text-amber-500" />
-                      <p className="font-semibold">أكثر 10 مصادر نشاطاً</p>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      «مرضى مسجّلون» كل من أُدرج باسم المصدر، و«مرضى فعليون» من دخل خدمة فعلاً —
-                      والفرق بينهما هم من لم يحضروا بعد.
-                    </p>
-                  </div>
-                  <div className="rounded-md border">
-                    <Table dir="rtl">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>المصدر</TableHead>
-                          <TableHead>النوع</TableHead>
-                          <TableHead>المدينة</TableHead>
-                          <TableHead>زيارات الفريق</TableHead>
-                          <TableHead>مرضى مسجّلون</TableHead>
-                          <TableHead>مرضى فعليون</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {stats!.topSources.slice(0, 10).map((s, i) => (
-                          <TableRow
-                            key={s.id}
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => router.push(`/${locale}/clinic/referrals/${s.id}`)}
-                          >
-                            <TableCell className="font-medium">
-                              <span className="flex items-center gap-2">
-                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold">
-                                  {i + 1}
-                                </span>
-                                {s.name}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={`text-xs ${TYPE_BADGE[s.type]}`}>
-                                {REFERRAL_SOURCE_TYPE_LABEL[s.type]}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{s.city || "—"}</TableCell>
-                            <TableCell className="font-medium">{visitsCountOf(s)}</TableCell>
-                            <TableCell className="font-medium">{s.patientCount ?? 0}</TableCell>
-                            <TableCell className="font-medium text-green-600">{s.realPatientCount ?? 0}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
 
         <div className="flex flex-wrap gap-3">
           <div className="relative min-w-48 flex-1">
@@ -230,7 +133,11 @@ export default function ReferralSourcesPage() {
                 </TableRow>
               ) : (
                 sources.map((s) => (
-                  <TableRow key={s.id} className="hover:bg-muted/50">
+                  <TableRow
+                    key={s.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(`/${locale}/clinic/referrals/${s.id}`)}
+                  >
                     <TableCell className="font-medium">{s.name}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`text-xs ${TYPE_BADGE[s.type]}`}>
@@ -242,11 +149,9 @@ export default function ReferralSourcesPage() {
                     <TableCell className="font-medium">{visitsCountOf(s)}</TableCell>
                     <TableCell className="font-medium">{s.patientCount ?? "—"}</TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7"
-                          onClick={() => router.push(`/${locale}/clinic/referrals/${s.id}`)}>
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
+                      {/* The row itself opens the source, so editing and deleting
+                          must not bubble up to it. */}
+                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                         <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.MANAGE}>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}>
                             <Pencil className="h-3.5 w-3.5" />

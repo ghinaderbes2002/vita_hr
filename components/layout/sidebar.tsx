@@ -49,6 +49,7 @@ import {
   Activity,
   Footprints,
   Share2,
+  Trophy,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -255,8 +256,17 @@ const navigation: NavItem[] = [
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
       { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
-      { title: "nav.clinicReferrals", href: "/clinic/referrals", icon: Share2, permission: "clinic.referrals.view" },
       { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor" },
+    ],
+  },
+  {
+    title: "nav.clinicSales",
+    icon: Share2,
+    separator: true,
+    permission: "clinic.referrals.view",
+    children: [
+      { title: "nav.clinicContacts", href: "/clinic/referrals", icon: Users, permission: "clinic.referrals.view" },
+      { title: "nav.clinicSalesOverview", href: "/clinic/referrals/sales", icon: Trophy, permission: "clinic.referrals.view" },
     ],
   },
   {
@@ -357,6 +367,9 @@ export function Sidebar() {
         "/clinic/my-appointments",
         "/clinic/inventory",
         "/clinic/reports",
+        // Sits under the contacts route but is its own nav item — without this
+        // both items light up at once.
+        "/clinic/referrals/sales",
       ];
 
       // If current path is a known sub-route, don't match parent

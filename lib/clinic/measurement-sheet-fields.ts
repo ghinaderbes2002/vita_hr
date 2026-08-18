@@ -6,7 +6,7 @@
 //   ankle_disarticulation  25 fields (affected 19 / sound 6)  [left=sound]
 //   below_knee             26 fields (affected 20 / sound 6)  [left=sound]
 //   knee_disarticulation   18 fields (affected 12 / sound 6)  [left=sound]
-//   above_knee             — no drawing (فوق الركبة.svg)
+//   above_knee              0 fields (affected 0 / sound 0)  [data-limb]
 //   hemipelvectomy         17 fields (affected 17 / sound 0)  [left=sound]
 //   elbow_disarticulation  21 fields (affected 9 / sound 12)  [left=sound]
 //   transhumeral           18 fields (affected 6 / sound 12)  [left=sound]
@@ -89,6 +89,9 @@ export const MEASUREMENT_SHEET_FIELDS: Partial<Record<MeasureSheetKey, DiagramFi
     { key: "circ_07", map: "sound", cx: 26.52, cy: 79.31, w: 6.16, h: 4.45 },
     { key: "len_07", map: "sound", cx: 18.23, cy: 83.31, w: 6.25, h: 4.45 },
     { key: "len_08", map: "sound", cx: 18.06, cy: 94.16, w: 6.25, h: 4.34 },
+  ],
+  above_knee: [
+
   ],
   hemipelvectomy: [
     { key: "bone_01", map: "affected", cx: 34.74, cy: 10.42, w: 5.72, h: 4.58 },
