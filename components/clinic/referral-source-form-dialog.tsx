@@ -239,9 +239,7 @@ export function ReferralSourceFormDialog({
     return {
       type: form.type,
       name: form.name.trim(),
-      // Specialty belongs to doctors only — switching away from DOCTOR must not
-      // carry a stale specialty into the payload.
-      specialty: form.type === "DOCTOR" ? text(form.specialty) : undefined,
+      specialty: text(form.specialty),
       city: text(form.city),
       region: text(form.region),
       street: text(form.street),
@@ -310,8 +308,7 @@ export function ReferralSourceFormDialog({
                   <Input value={form.name} onChange={(e) => set("name", e.target.value)}
                     placeholder="مثال: د. أحمد الحربي" />
                 </div>
-                {form.type === "DOCTOR" && (
-                  <div className="space-y-1.5">
+                <div className="space-y-1.5">
                     <Label>التخصص</Label>
                     <Select
                       value={isOtherSpecialty ? OTHER : form.specialty}
@@ -336,8 +333,7 @@ export function ReferralSourceFormDialog({
                         placeholder="اكتب التخصص الجديد..."
                       />
                     )}
-                  </div>
-                )}
+                </div>
                 <div className="space-y-1.5">
                   <Label>هاتف العيادة</Label>
                   <Input value={form.clinicPhone} onChange={(e) => set("clinicPhone", e.target.value)} dir="ltr" />
