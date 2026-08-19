@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -24,7 +25,7 @@ import {
   useDeleteReferralVisit, useReferralSource, useReferralSourcePatientCount, useReferralVisits,
 } from "@/lib/hooks/use-clinic-referrals";
 import {
-  REFERRAL_SOURCE_TYPE_LABEL, REFERRAL_VISIT_TYPE_LABEL, ReferralVisit,
+  REFERRAL_SOURCE_TYPE_LABEL, REFERRAL_VISIT_TYPE_LABEL, ReferralVisit, visitedByNameOf,
 } from "@/lib/api/clinic-referrals";
 
 const formatDate = (iso?: string | null) =>
@@ -75,6 +76,17 @@ export default function ReferralSourceDetailPage() {
 
   const openNewVisit = () => { setEditingVisit(null); setVisitOpen(true); };
   const openEditVisit = (v: ReferralVisit) => { setEditingVisit(v); setVisitOpen(true); };
+
+  // Filter by whoever logged the visit. Names come from the visits themselves, so
+  // the list only ever offers people who actually appear in this source's log.
+  const [visitorFilter, setVisitorFilter] = useState("all");
+  const visitorNames = [...new Set(visits.map(visitedByNameOf).filter(Boolean) as string[])].sort();
+  const hasUnnamed = visits.some((v) => !visitedByNameOf(v));
+  const shownVisits = visits.filter((v) =>
+    visitorFilter === "all" ? true
+      : visitorFilter === "__none" ? !visitedByNameOf(v)
+        : visitedByNameOf(v) === visitorFilter,
+  );
 
   if (isLoading) {
     return (
@@ -232,6 +244,22 @@ export default function ReferralSourceDetailPage() {
                 description="سجّل أول زيارة لهذا المصدر"
               />
             ) : (
+              <>
+              {visitorNames.length > 0 && (
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">الموظف</span>
+                  <Select value={visitorFilter} onValueChange={setVisitorFilter}>
+                    <SelectTrigger className="h-8 w-56 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل</SelectItem>
+                      {visitorNames.map((name) => (
+                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                      ))}
+                      {hasUnnamed && <SelectItem value="__none">غير محدد</SelectItem>}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="rounded-md border">
                 <Table dir="rtl">
                   <TableHeader>
@@ -246,7 +274,7 @@ export default function ReferralSourceDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {[...visits]
+                    {shownVisits
                       .sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime())
                       .map((v) => (
                         <TableRow key={v.id} className="hover:bg-muted/50">
@@ -256,7 +284,7 @@ export default function ReferralSourceDetailPage() {
                           </TableCell>
                           <TableCell className="max-w-52 truncate text-sm">{v.topics || "—"}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{formatDate(v.nextVisitDate)}</TableCell>
-                          <TableCell className="text-sm">{v.visitedBy?.fullName ?? "—"}</TableCell>
+                          <TableCell className="text-sm">{visitedByNameOf(v) ?? "—"}</TableCell>
                           <TableCell className="max-w-52 truncate text-sm text-muted-foreground">{v.notes || "—"}</TableCell>
                           <TableCell>
                             <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.VISITS_ADD}>
@@ -276,7 +304,13 @@ export default function ReferralSourceDetailPage() {
                       ))}
                   </TableBody>
                 </Table>
+                {shownVisits.length === 0 && (
+                  <p className="p-4 text-center text-sm text-muted-foreground">
+                    لا توجد زيارات لهذا الموظف
+                  </p>
+                )}
               </div>
+              </>
             )}
           </CardContent>
         </Card>

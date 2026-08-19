@@ -38,10 +38,12 @@ const median = (xs: number[]) => {
 };
 
 export function ReferralPerformanceMatrix({
-  sources, onSelect,
+  sources, onSelect, visitsOf = visitsCountOf,
 }: {
   sources: ReferralSource[];
   onSelect?: (id: string) => void;
+  /** Lets the page narrow the visit count, e.g. to one employee's visits. */
+  visitsOf?: (s: ReferralSource) => number;
 }) {
   const [hover, setHover] = useState<string | null>(null);
 
@@ -49,7 +51,7 @@ export function ReferralPerformanceMatrix({
     id: s.id,
     name: s.name,
     type: s.type,
-    x: visitsCountOf(s),
+    x: visitsOf(s),
     y: s.realPatientCount ?? 0,
     registered: s.patientCount ?? 0,
   }));

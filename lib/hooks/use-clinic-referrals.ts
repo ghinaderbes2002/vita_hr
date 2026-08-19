@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   clinicReferralsApi,
@@ -7,6 +7,7 @@ import {
   ReferralSourceListParams,
   UpdateReferralSourceDto,
   UpdateReferralVisitDto,
+  ReferralVisit,
 } from "@/lib/api/clinic-referrals";
 
 export function useReferralSources(
@@ -141,5 +142,39 @@ export function useDeleteReferralVisit() {
       toast.success("تم حذف الزيارة");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حذف الزيارة"),
+  });
+}
+
+/**
+ * Visits for several sources at once. The stats endpoint reports totals only, so
+ * attributing them to a person means reading each source's own visit log.
+ */
+export function useReferralVisitsBySources(sourceIds: string[]) {
+  const results = useQueries({
+    queries: sourceIds.map((id) => ({
+      queryKey: ["referral-visits", id],
+      queryFn: () => clinicReferralsApi.listVisits(id),
+      staleTime: 60_000,
+    })),
+  });
+  const bySource: Record<string, ReferralVisit[]> = {};
+  sourceIds.forEach((id, i) => { bySource[id] = results[i]?.data ?? []; });
+  return { bySource, isLoading: results.some((r) => r.isLoading) };
+}
+
+export function useReferralSpecialties() {
+  return useQuery({
+    queryKey: ["referral-specialties"],
+    queryFn: () => clinicReferralsApi.listSpecialties(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateReferralSpecialty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => clinicReferralsApi.createSpecialty(name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["referral-specialties"] }),
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة التخصص"),
   });
 }

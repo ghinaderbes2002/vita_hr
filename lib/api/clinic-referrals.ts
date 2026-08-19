@@ -29,9 +29,17 @@ export interface ReferralVisit {
   notes?: string | null;
   /** Filled by the backend from the token — never sent by the client. */
   visitedById?: string | null;
-  visitedBy?: { id: string; fullName?: string } | null;
+  /** The API returns the id here; older responses embedded the whole user. */
+  visitedBy?: string | { id: string; fullName?: string } | null;
+  visitedByName?: string | null;
   createdAt: string;
 }
+
+/** Who logged the visit, across the id-only and embedded-user response shapes. */
+export const visitedByNameOf = (v: ReferralVisit): string | null =>
+  v.visitedByName
+  ?? (typeof v.visitedBy === "object" ? v.visitedBy?.fullName ?? null : null)
+  ?? null;
 
 export interface ReferralSource {
   id: string;
@@ -103,6 +111,13 @@ export interface CreateReferralVisitDto {
 }
 
 export type UpdateReferralVisitDto = Partial<CreateReferralVisitDto>;
+
+/** A doctor's field of practice. Custom ones are added by users on the fly. */
+export interface ReferralSpecialty {
+  id: string;
+  name: string;
+  isCustom?: boolean;
+}
 
 export interface ReferralSourceListParams {
   type?: ReferralSourceType;
@@ -196,5 +211,16 @@ export const clinicReferralsApi = {
 
   deleteVisit: async (sourceId: string, visitId: string): Promise<void> => {
     await apiClient.delete(`${BASE}/${sourceId}/visits/${visitId}`);
+  },
+
+  listSpecialties: async (): Promise<ReferralSpecialty[]> => {
+    const { data } = await apiClient.get(`${BASE}/specialties`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  createSpecialty: async (name: string): Promise<ReferralSpecialty> => {
+    const { data } = await apiClient.post(`${BASE}/specialties`, { name });
+    return data?.data ?? data;
   },
 };

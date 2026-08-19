@@ -2,7 +2,7 @@
 
 // Add / edit a referral source. One dialog for both — pass `source` to edit.
 import { useState } from "react";
-import { Loader2, Plus, Star, X } from "lucide-react";
+import { Loader2, Plus, Search, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,9 @@ import { LocationMap, LatLng } from "@/components/clinic/location-map";
 import { cn } from "@/lib/utils";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
 import { SYRIA_GOVERNORATES } from "@/lib/clinic/syria-cities";
-import { useCreateReferralSource, useUpdateReferralSource } from "@/lib/hooks/use-clinic-referrals";
+import {
+  useCreateReferralSource, useCreateReferralSpecialty, useReferralSpecialties, useUpdateReferralSource,
+} from "@/lib/hooks/use-clinic-referrals";
 import {
   CreateReferralSourceDto,
   REFERRAL_SOURCE_TYPES,
@@ -46,11 +48,15 @@ interface FormState {
   location: LatLng | null;
 }
 
+// Most sources the centre deals with are in Aleppo, so a new form starts there.
+const DEFAULT_CITY = "حلب";
+const OTHER = "__other";
+
 const emptyForm = (): FormState => ({
   type: "DOCTOR",
   name: "",
   specialty: "",
-  city: "",
+  city: DEFAULT_CITY,
   region: "",
   street: "",
   landmark: "",
@@ -165,9 +171,15 @@ export function ReferralSourceFormDialog({
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [tab, setTab] = useState("basic");
+  const [citySearch, setCitySearch] = useState("");
+  const [isOtherSpecialty, setIsOtherSpecialty] = useState(false);
+
+  const { data: specialtyData } = useReferralSpecialties();
+  const specialties = specialtyData ?? [];
+  const createSpecialty = useCreateReferralSpecialty();
   const create = useCreateReferralSource();
   const update = useUpdateReferralSource();
-  const saving = create.isPending || update.isPending;
+  const saving = create.isPending || update.isPending || createSpecialty.isPending;
 
   // The city is stored as a plain name, so the options come from the static
   // Syrian governorate list rather than the clinic `/cities` table (which is
@@ -190,6 +202,19 @@ export function ReferralSourceFormDialog({
       : SYRIA_GOVERNORATES;
   })();
 
+  // Search matches the city and the governorate, so "حلب" also surfaces the
+  // towns filed under it. Groups left with no match drop out entirely.
+  const visibleCityGroups = (() => {
+    const q = citySearch.trim();
+    if (!q) return cityGroups;
+    return cityGroups
+      .map((g) => ({
+        governorate: g.governorate,
+        cities: g.governorate.includes(q) ? g.cities : g.cities.filter((c) => c.includes(q)),
+      }))
+      .filter((g) => g.cities.length > 0);
+  })();
+
   // Reload the form when the dialog transitions to open, so a cancelled edit
   // never leaks into the next one — done during render rather than in an
   // effect, which would flash the previous values first.
@@ -197,8 +222,12 @@ export function ReferralSourceFormDialog({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setForm(source ? formOf(source) : emptyForm());
+      const next = source ? formOf(source) : emptyForm();
+      setForm(next);
       setTab("basic");
+      setIsOtherSpecialty(
+        !!next.specialty && !(specialtyData ?? []).some((sp) => sp.name === next.specialty),
+      );
     }
   }
 
@@ -234,6 +263,12 @@ export function ReferralSourceFormDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
+    // A freehand specialty joins the directory first, so the next source can
+    // pick it from the list instead of retyping it.
+    const typed = form.specialty.trim();
+    if (isOtherSpecialty && typed && !specialties.some((sp) => sp.name === typed)) {
+      await createSpecialty.mutateAsync(typed);
+    }
     const dto = buildDto();
     const saved = source
       ? await update.mutateAsync({ id: source.id, dto })
@@ -278,8 +313,29 @@ export function ReferralSourceFormDialog({
                 {form.type === "DOCTOR" && (
                   <div className="space-y-1.5">
                     <Label>التخصص</Label>
-                    <Input value={form.specialty} onChange={(e) => set("specialty", e.target.value)}
-                      placeholder="مثال: جراحة عظمية" />
+                    <Select
+                      value={isOtherSpecialty ? OTHER : form.specialty}
+                      onValueChange={(v) => {
+                        setIsOtherSpecialty(v === OTHER);
+                        set("specialty", v === OTHER ? "" : v);
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="اختر التخصص..." /></SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {specialties.map((sp) => (
+                          <SelectItem key={sp.id} value={sp.name}>{sp.name}</SelectItem>
+                        ))}
+                        <SelectItem value={OTHER}>أخرى…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isOtherSpecialty && (
+                      <Input
+                        autoFocus
+                        value={form.specialty}
+                        onChange={(e) => set("specialty", e.target.value)}
+                        placeholder="اكتب التخصص الجديد..."
+                      />
+                    )}
                   </div>
                 )}
                 <div className="space-y-1.5">
@@ -306,17 +362,41 @@ export function ReferralSourceFormDialog({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>المدينة</Label>
-                  <Select value={form.city} onValueChange={(v) => set("city", v)}>
+                  <Select
+                    value={form.city}
+                    onValueChange={(v) => set("city", v)}
+                    // Typing filters the list, so the search box has to start
+                    // empty again the next time it opens.
+                    onOpenChange={(o) => { if (!o) setCitySearch(""); }}
+                  >
                     <SelectTrigger><SelectValue placeholder="اختر المدينة..." /></SelectTrigger>
                     <SelectContent className="max-h-72">
-                      {cityGroups.map((g) => (
-                        <SelectGroup key={g.governorate}>
-                          <SelectLabel>{g.governorate}</SelectLabel>
-                          {g.cities.map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ))}
+                      <div className="sticky top-0 z-10 bg-popover p-1">
+                        <div className="relative">
+                          <Search className="absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            value={citySearch}
+                            onChange={(e) => setCitySearch(e.target.value)}
+                            placeholder="ابحث عن مدينة..."
+                            className="h-8 pr-7 text-sm"
+                            // Radix Select moves focus to matching items as you
+                            // type; without this the box never keeps a character.
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      {visibleCityGroups.length === 0 ? (
+                        <p className="px-2 py-4 text-center text-sm text-muted-foreground">لا توجد نتائج</p>
+                      ) : (
+                        visibleCityGroups.map((g) => (
+                          <SelectGroup key={g.governorate}>
+                            <SelectLabel>{g.governorate}</SelectLabel>
+                            {g.cities.map((name) => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

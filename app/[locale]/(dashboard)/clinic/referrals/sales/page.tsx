@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { ChevronDown, ChevronUp, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,9 +16,10 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageGuard } from "@/components/permissions";
 import { ReferralPerformanceMatrix } from "@/components/clinic/referral-performance-matrix";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
-import { useReferralStats } from "@/lib/hooks/use-clinic-referrals";
+import { useReferralStats, useReferralVisitsBySources } from "@/lib/hooks/use-clinic-referrals";
 import {
-  REFERRAL_SOURCE_TYPES, REFERRAL_SOURCE_TYPE_LABEL, ReferralSourceType, ReferralStats, visitsCountOf,
+  REFERRAL_SOURCE_TYPES, REFERRAL_SOURCE_TYPE_LABEL, ReferralSourceType, ReferralStats,
+  visitedByNameOf, visitsCountOf,
 } from "@/lib/api/clinic-referrals";
 
 const TYPE_BADGE: Record<ReferralSourceType, string> = {
@@ -81,6 +83,7 @@ export default function ReferralSalesPage() {
 
   const { data: stats, isLoading } = useReferralStats();
 
+  const [staffFilter, setStaffFilter] = useState("all");
   const [sortBy, setSortBy] = useState<SortKey>("registered");
   const [hideEmpty, setHideEmpty] = useState(false);
   const [tableOpen, setTableOpen] = useState(false);
@@ -90,23 +93,38 @@ export default function ReferralSalesPage() {
       : sortBy === "actual" ? (s.realPatientCount ?? 0)
         : visitsCountOf(s);
 
+  const allSources = stats?.topSources ?? [];
+  const { bySource } = useReferralVisitsBySources(allSources.map((s) => s.id));
+  const staffNames = [...new Set(
+    Object.values(bySource).flat().map(visitedByNameOf).filter(Boolean) as string[],
+  )].sort();
+
+  // Filtering by a person narrows both the sources shown and the visit count on
+  // each — the patient figures stay whole, since a patient is credited to the
+  // source, never to the employee who happened to visit it.
+  const visitsOf = (id: string, fallback: number) =>
+    staffFilter === "all"
+      ? fallback
+      : (bySource[id] ?? []).filter((v) => visitedByNameOf(v) === staffFilter).length;
+
   // Both charts list the same sources in the same order, so a row can be read
   // across them — visits on one line against the patients they produced.
-  const rows = (stats?.topSources ?? [])
+  const rows = allSources
     .filter((s) => !hideEmpty || (s.patientCount ?? 0) > 0)
+    .filter((s) => staffFilter === "all" || visitsOf(s.id, 0) > 0)
     .sort((a, b) => metricOf(b) - metricOf(a))
     .slice(0, 10);
 
   // Each chart is scaled to its own measure — patients and visits are different
   // quantities and must never share one axis.
   const maxPatients = Math.max(1, ...rows.map((s) => s.patientCount ?? 0));
-  const maxVisits = Math.max(1, ...rows.map(visitsCountOf));
+  const maxVisits = Math.max(1, ...rows.map((s) => visitsOf(s.id, visitsCountOf(s))));
 
   // The API only returns the leading sources, so the summary is explicitly about
   // those rather than pretending to be a centre-wide total.
   const sumRegistered = rows.reduce((n, s) => n + (s.patientCount ?? 0), 0);
   const sumActual = rows.reduce((n, s) => n + (s.realPatientCount ?? 0), 0);
-  const sumVisits = rows.reduce((n, s) => n + visitsCountOf(s), 0);
+  const sumVisits = rows.reduce((n, s) => n + visitsOf(s.id, visitsCountOf(s)), 0);
   const conversion = sumRegistered ? Math.round((sumActual / sumRegistered) * 100) : null;
 
   const countOfType = (t: ReferralSourceType) =>
@@ -186,7 +204,11 @@ export default function ReferralSalesPage() {
                   description="سجّل زيارات لمصادر الإحالة حتى يظهر أداؤها هنا."
                 />
               ) : (
-                <ReferralPerformanceMatrix sources={rows} onSelect={openSource} />
+                <ReferralPerformanceMatrix
+                  sources={rows}
+                  onSelect={openSource}
+                  visitsOf={(s) => visitsOf(s.id, visitsCountOf(s))}
+                />
               )}
             </CardContent>
           </Card>
@@ -236,6 +258,19 @@ export default function ReferralSalesPage() {
         {/* One control drives both charts and the table, so the ordering stays
             comparable across them. */}
         <div className="flex flex-wrap items-center gap-2">
+          {staffNames.length > 0 && (
+            <>
+              <span className="text-xs text-muted-foreground">الموظف</span>
+              <Select value={staffFilter} onValueChange={setStaffFilter}>
+                <SelectTrigger className="h-8 w-48 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  {staffNames.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <span className="mx-1 h-4 w-px bg-border" />
+            </>
+          )}
           <span className="text-xs text-muted-foreground">الترتيب حسب</span>
           {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
             <button
@@ -303,7 +338,7 @@ export default function ReferralSalesPage() {
                   const registered = s.patientCount ?? 0;
                   const actual = s.realPatientCount ?? 0;
                   const pending = Math.max(0, registered - actual);
-                  const visits = visitsCountOf(s);
+                  const visits = visitsOf(s.id, visitsCountOf(s));
                   const pct = (n: number) => (n / maxPatients) * 100;
                   return (
                     <BarRow
@@ -395,7 +430,7 @@ export default function ReferralSalesPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{s.city || "—"}</TableCell>
-                        <TableCell className="font-medium">{visitsCountOf(s)}</TableCell>
+                        <TableCell className="font-medium">{visitsOf(s.id, visitsCountOf(s))}</TableCell>
                         <TableCell className="font-medium">{s.patientCount ?? 0}</TableCell>
                         <TableCell className="font-medium text-green-600">{s.realPatientCount ?? 0}</TableCell>
                       </TableRow>
