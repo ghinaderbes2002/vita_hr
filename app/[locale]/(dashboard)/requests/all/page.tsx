@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/page-header";
+import { Pagination } from "@/components/shared/pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipboardList } from "lucide-react";
@@ -26,6 +27,8 @@ import { Request } from "@/types";
 
 const STATUS_OPTIONS = ["DRAFT", "PENDING_MANAGER", "PENDING_HR", "IN_APPROVAL", "APPROVED", "REJECTED", "CANCELLED"];
 const TYPE_OPTIONS = ["TRANSFER", "RESIGNATION", "REWARD", "OTHER", "PENALTY_PROPOSAL", "OVERTIME_EMPLOYEE", "OVERTIME_MANAGER", "BUSINESS_MISSION", "DELEGATION", "HIRING_REQUEST", "COMPLAINT"];
+
+const PAGE_SIZE = 20;
 
 export default function AllRequestsPage() {
   const t = useTranslations();
@@ -39,9 +42,11 @@ export default function AllRequestsPage() {
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selected, setSelected] = useState<Request | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useRequests({
-    limit: 50,
+    page,
+    limit: PAGE_SIZE,
     status: statusFilter === "all" ? undefined : statusFilter,
     type: typeFilter === "all" ? undefined : typeFilter,
   });
@@ -49,6 +54,9 @@ export default function AllRequestsPage() {
   const hrReject = useRejectRequest();
 
   const requests: Request[] = (data as any)?.data?.items || (data as any)?.data || [];
+  const meta = (data as any)?.data ?? data ?? {};
+  const total: number = meta.total ?? requests.length;
+  const totalPages: number = meta.totalPages ?? Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const handleApproveConfirm = async (notes: string) => {
     if (selected) {
@@ -71,11 +79,11 @@ export default function AllRequestsPage() {
       <PageHeader
         title={t("requests.allRequests")}
         description={t("requests.allRequestsDescription")}
-        count={!isLoading ? requests.length : undefined}
+        count={!isLoading ? total : undefined}
       />
 
       <div className="filter-bar">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
           <SelectTrigger className="w-48 bg-background">
             <SelectValue placeholder={t("requests.filterByStatus")} />
           </SelectTrigger>
@@ -87,7 +95,7 @@ export default function AllRequestsPage() {
           </SelectContent>
         </Select>
 
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
+        <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
           <SelectTrigger className="w-48 bg-background">
             <SelectValue placeholder={t("requests.filterByType")} />
           </SelectTrigger>
@@ -186,6 +194,16 @@ export default function AllRequestsPage() {
             )}
           </TableBody>
         </Table>
+
+        {totalPages > 1 && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            limit={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       <RequestActionDialog
