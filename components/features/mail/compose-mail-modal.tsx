@@ -141,9 +141,11 @@ export function ComposeMailModal({
     setActiveFormats((prev) => ({ ...prev, [command]: !prev[command] }));
   };
 
-  const sendMail = useSendMail();
+  // مع وجود مرفقات، النجاح يُعلن مرة واحدة بعد اكتمال الرفع لا قبله
+  const hasPendingFiles = pendingFiles.length > 0;
+  const sendMail = useSendMail(hasPendingFiles);
   const saveDraft = useSaveDraft();
-  const uploadAttachment = useUploadAttachment();
+  const uploadAttachment = useUploadAttachment(true);
   const forwardMail = useForwardMail();
   const replyAllMail = useReplyAllMail();
 
@@ -223,11 +225,21 @@ export function ComposeMailModal({
       }
 
       if (pendingFiles.length > 0 && message?.id) {
-        await Promise.all(
-          pendingFiles.map((file) =>
-            uploadAttachment.mutateAsync({ messageId: message.id, file }),
-          ),
-        );
+        try {
+          await Promise.all(
+            pendingFiles.map((file) =>
+              uploadAttachment.mutateAsync({ messageId: message.id, file }),
+            ),
+          );
+          toast.success("تم إرسال الرسالة مع المرفقات بنجاح");
+        } catch {
+          // الرسالة وصلت فعلاً — الفشل في المرفقات وحدها. لا نغلق النافذة حتى
+          // لا تُفقد الملفات المختارة، ونوضّح للمستخدم أين توقفت العملية.
+          toast.error(
+            "أُرسلت الرسالة لكن فشل رفع المرفقات. افتحي الرسالة من \"المرسلة\" وأرفقي الملفات مجدداً.",
+          );
+          return;
+        }
       }
 
       onClose();

@@ -46,10 +46,20 @@ const EMPTY = {
   affectedSide: [] as AffectedSide[],
   footSymptoms: [] as FootSymptom[],
   visitTypes: [] as VisitType[],
+  // Used instead of the two above once both feet are affected.
+  footSymptomsRight: [] as FootSymptom[],
+  footSymptomsLeft: [] as FootSymptom[],
+  visitTypesRight: [] as VisitType[],
+  visitTypesLeft: [] as VisitType[],
   medicalHistory: [] as MedicalHistoryItem[],
   medicalHistoryOther: "",
-  vasScore: "",
 };
+
+/** Right foot first, matching the RTL sheet. */
+const SIDES = [
+  { key: "Right", label: "القدم اليمنى" },
+  { key: "Left", label: "القدم اليسرى" },
+] as const;
 
 // Multi-select rendered as a row of toggle chips — every one of these fields
 // accepts more than one value.
@@ -110,13 +120,19 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
             affectedSide: reception.affectedSide ?? [],
             footSymptoms: reception.footSymptoms ?? [],
             visitTypes: reception.visitTypes ?? [],
+            footSymptomsRight: reception.footSymptomsRight ?? [],
+            footSymptomsLeft: reception.footSymptomsLeft ?? [],
+            visitTypesRight: reception.visitTypesRight ?? [],
+            visitTypesLeft: reception.visitTypesLeft ?? [],
             medicalHistory: reception.medicalHistory ?? [],
             medicalHistoryOther: reception.medicalHistoryOther ?? "",
-            vasScore: reception.vasScore?.toString() ?? "",
           }
         : { ...EMPTY, patientId: patientId ?? "" });
     }
   }
+
+  // "الطرفان" splits the symptoms and the visit types per foot.
+  const isBilateral = form.affectedSide.includes("BILATERAL");
 
   const toggle = <T extends string>(key: keyof typeof EMPTY, v: T) =>
     setForm((f) => {
@@ -130,14 +146,24 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
     problemDescription: form.problemDescription || undefined,
     historyOfSymptoms: form.historyOfSymptoms || undefined,
     affectedSide: form.affectedSide.length ? form.affectedSide : undefined,
-    footSymptoms: form.footSymptoms.length ? form.footSymptoms : undefined,
-    visitTypes: form.visitTypes.length ? form.visitTypes : undefined,
+    // With both feet affected the per-foot fields replace the shared ones;
+    // a single side keeps sending the shared pair as before.
+    ...(isBilateral
+      ? {
+          footSymptomsRight: form.footSymptomsRight.length ? form.footSymptomsRight : undefined,
+          footSymptomsLeft: form.footSymptomsLeft.length ? form.footSymptomsLeft : undefined,
+          visitTypesRight: form.visitTypesRight.length ? form.visitTypesRight : undefined,
+          visitTypesLeft: form.visitTypesLeft.length ? form.visitTypesLeft : undefined,
+        }
+      : {
+          footSymptoms: form.footSymptoms.length ? form.footSymptoms : undefined,
+          visitTypes: form.visitTypes.length ? form.visitTypes : undefined,
+        }),
     medicalHistory: form.medicalHistory.length ? form.medicalHistory : undefined,
     // Only meaningful alongside the OTHER option.
     medicalHistoryOther: form.medicalHistory.includes("OTHER")
       ? form.medicalHistoryOther || undefined
       : undefined,
-    vasScore: form.vasScore !== "" ? Number(form.vasScore) : undefined,
   });
 
   const handleSave = async () => {
@@ -239,25 +265,65 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs">أعراض القدم</Label>
-            <ChipGroup
-              values={FOOT_SYMPTOM_VALUES}
-              selected={form.footSymptoms}
-              label={(v) => FOOT_SYMPTOM_LABEL[v]}
-              onToggle={(v) => toggle("footSymptoms", v)}
-            />
-          </div>
+          {isBilateral ? (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-xs">أعراض القدم</Label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {SIDES.map(({ key, label }) => (
+                    <div key={key} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
+                      <p className="text-[11px] text-muted-foreground">{label}</p>
+                      <ChipGroup
+                        values={FOOT_SYMPTOM_VALUES}
+                        selected={form[`footSymptoms${key}`]}
+                        label={(v) => FOOT_SYMPTOM_LABEL[v]}
+                        onToggle={(v) => toggle(`footSymptoms${key}`, v)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs">نوع الزيارة</Label>
-            <ChipGroup
-              values={VISIT_TYPE_VALUES}
-              selected={form.visitTypes}
-              label={(v) => VISIT_TYPE_LABEL[v]}
-              onToggle={(v) => toggle("visitTypes", v)}
-            />
-          </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">نوع الزيارة</Label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {SIDES.map(({ key, label }) => (
+                    <div key={key} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
+                      <p className="text-[11px] text-muted-foreground">{label}</p>
+                      <ChipGroup
+                        values={VISIT_TYPE_VALUES}
+                        selected={form[`visitTypes${key}`]}
+                        label={(v) => VISIT_TYPE_LABEL[v]}
+                        onToggle={(v) => toggle(`visitTypes${key}`, v)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-xs">أعراض القدم</Label>
+                <ChipGroup
+                  values={FOOT_SYMPTOM_VALUES}
+                  selected={form.footSymptoms}
+                  label={(v) => FOOT_SYMPTOM_LABEL[v]}
+                  onToggle={(v) => toggle("footSymptoms", v)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">نوع الزيارة</Label>
+                <ChipGroup
+                  values={VISIT_TYPE_VALUES}
+                  selected={form.visitTypes}
+                  label={(v) => VISIT_TYPE_LABEL[v]}
+                  onToggle={(v) => toggle("visitTypes", v)}
+                />
+              </div>
+            </>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs">التاريخ الطبي</Label>
@@ -280,34 +346,6 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
                 }
               />
             )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs">
-              شدة الألم (VAS){form.vasScore ? ` — ${form.vasScore}/10` : ""}
-            </Label>
-            <div className="flex flex-wrap gap-1.5">
-              {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((n) => {
-                const on = form.vasScore === n;
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    // Clicking the selected box again clears the score.
-                    onClick={() =>
-                      setForm((f) => ({ ...f, vasScore: on ? "" : n }))
-                    }
-                    className={`h-9 w-9 rounded-md border text-sm transition-colors ${
-                      on
-                        ? "border-orange-500 bg-orange-500 text-white"
-                        : "border-border hover:bg-muted"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
 

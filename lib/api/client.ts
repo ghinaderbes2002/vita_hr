@@ -5,10 +5,14 @@ import { AUTH_ERROR_CODES } from "@/lib/permissions/error-codes";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+const DEFAULT_TIMEOUT = 15000; // 15 second timeout
+/** رفع الملفات: السيرفر مهلته 300 ثانية، فلا معنى لأن يقطع العميل قبله. */
+const UPLOAD_TIMEOUT = 5 * 60 * 1000;
+
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
-  timeout: 15000, // 15 second timeout
+  timeout: DEFAULT_TIMEOUT,
 });
 
 // Separate instance for refresh to avoid interceptor loop
@@ -31,6 +35,16 @@ apiClient.interceptors.request.use((config) => {
   const token = getTokenFromCookie() || useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // أي طلب جسمه FormData هو رفع ملف — السقف العام لا يكفي لملف كبير على اتصال
+  // بطيء، وكان axios يقطع الطلب بعد وصول الملف للسيرفر فعلاً. الطلب الذي يحدد
+  // مهلته صراحةً يبقى على قيمته.
+  if (
+    typeof FormData !== "undefined" &&
+    config.data instanceof FormData &&
+    config.timeout === DEFAULT_TIMEOUT
+  ) {
+    config.timeout = UPLOAD_TIMEOUT;
   }
   // Remove Cache-Control header to avoid CORS preflight rejection
   delete config.headers['Cache-Control'];

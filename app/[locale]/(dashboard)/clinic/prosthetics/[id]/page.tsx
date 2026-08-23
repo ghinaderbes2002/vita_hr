@@ -3757,6 +3757,7 @@ export default function ProstheticsCasePage() {
     painArea: "",
     painTypes: [] as string[],
     painTypeOtherDetail: "",
+    phantomSensationPresent: null as boolean | null,
     phantomPainPresent: null as boolean | null,
     phantomPainIntensity: 0,
     neuromaPalpable: null as boolean | null,
@@ -3791,6 +3792,9 @@ export default function ProstheticsCasePage() {
     prosthesisSuitable: null as boolean | null,
     proposedProsthesisType: "",
   });
+  // "غير مناسب" (and the untouched default) asks the committee for its notes;
+  // "مناسب" asks for the proposed prosthesis instead.
+  const notesRequired = committeeSuitForm.prosthesisSuitable !== true;
   const [signOpen, setSignOpen] = useState(false);
   const [signRole, setSignRole] = useState<"DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST">("DOCTOR");
   const [compShared, setCompShared] = useState({
@@ -4161,6 +4165,7 @@ export default function ProstheticsCasePage() {
           amputationLevelNote: a.amputationLevelNote,
           painPresent: a.painPresent, painIntensity: a.painIntensity, painArea: a.painArea,
           painTypes: a.painTypes, painTypeOtherDetail: a.painTypeOtherDetail,
+          phantomSensationPresent: a.phantomSensationPresent,
           phantomPainPresent: a.phantomPainPresent, phantomPainIntensity: a.phantomPainIntensity,
           neuromaPalpable: a.neuromaPalpable, neuromaPresent: a.neuromaPresent,
           skinNotes: a.skinNotes ?? a.notes,
@@ -4472,8 +4477,15 @@ export default function ProstheticsCasePage() {
       painArea: f.painPresent ? f.painArea || undefined : undefined,
       painTypes: f.painPresent && f.painTypes.length ? f.painTypes as any : undefined,
       painTypeOtherDetail: f.painTypes.includes("OTHER") ? f.painTypeOtherDetail || undefined : undefined,
-      phantomPainPresent: f.phantomPainPresent ?? undefined,
-      phantomPainIntensity: f.phantomPainPresent ? f.phantomPainIntensity : undefined,
+      phantomSensationPresent: f.phantomSensationPresent ?? undefined,
+      // No phantom sensation means no phantom pain, so the answer is pinned to
+      // false rather than carrying over whatever was ticked before.
+      phantomPainPresent: f.phantomSensationPresent === false
+        ? false
+        : f.phantomPainPresent ?? undefined,
+      phantomPainIntensity: f.phantomSensationPresent === true && f.phantomPainPresent
+        ? f.phantomPainIntensity
+        : undefined,
       neuromaPalpable: f.neuromaPalpable ?? undefined,
       loadTolerance: (f.loadTolerance as any) || undefined,
       weightBearingLevel: f.loadTolerance === "WEIGHT_BEARING" ? (f.weightBearingLevel as any) || undefined : undefined,
@@ -4603,9 +4615,8 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSubmitDecision = async () => {
-    // finalSummary is required by PUT /committee/decide — fail here with a clear
-    // message instead of letting the request come back 400.
-    if (!decisionForm.finalSummary.trim()) {
+    // The notes explain a refusal, so they are only demanded for "غير مناسب".
+    if (notesRequired && !decisionForm.finalSummary.trim()) {
       toast.error(t("committee.summaryRequired"));
       return;
     }
@@ -4621,7 +4632,12 @@ export default function ProstheticsCasePage() {
     }
     await submitDecision.mutateAsync({
       id,
-      dto: { decision: "APPROVED" as CommitteeDecision, finalSummary: decisionForm.finalSummary },
+      // Omitted rather than sent empty when the answer is "مناسب", so an
+      // optional-but-non-empty validator on the API still passes.
+      dto: {
+        decision: "APPROVED" as CommitteeDecision,
+        finalSummary: decisionForm.finalSummary.trim() || undefined,
+      },
     });
   };
 
@@ -5780,29 +5796,48 @@ export default function ProstheticsCasePage() {
                       </>
                     )}
                   </PfRow>
-                  <PfRow label={t("assess.phantomPain")}>
+                  <PfRow label={t("assess.phantomSensation")}>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">
                         {t("assess.absent")}
                       </span>
                       <Switch
-                        checked={sf.phantomPainPresent === true}
-                        onCheckedChange={(v) => setS({ phantomPainPresent: v })}
+                        checked={sf.phantomSensationPresent === true}
+                        onCheckedChange={(v) => setS(v
+                          ? { phantomSensationPresent: true }
+                          : { phantomSensationPresent: false, phantomPainPresent: false, phantomPainIntensity: 0 })}
                       />
                       <span className="text-sm text-muted-foreground">
                         {t("assess.present")}
                       </span>
                     </div>
-                    {sf.phantomPainPresent && (
-                      <div className="mt-1">
-                        <PfNumPicker
-                          value={sf.phantomPainIntensity}
-                          onChange={(n) => setS({ phantomPainIntensity: n })}
-                          max={9}
-                        />
-                      </div>
-                    )}
                   </PfRow>
+                  {/* Phantom pain only exists where a phantom sensation does. */}
+                  {sf.phantomSensationPresent === true && (
+                    <PfRow label={t("assess.phantomPain")}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">
+                          {t("assess.absent")}
+                        </span>
+                        <Switch
+                          checked={sf.phantomPainPresent === true}
+                          onCheckedChange={(v) => setS({ phantomPainPresent: v })}
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {t("assess.present")}
+                        </span>
+                      </div>
+                      {sf.phantomPainPresent && (
+                        <div className="mt-1">
+                          <PfNumPicker
+                            value={sf.phantomPainIntensity}
+                            onChange={(n) => setS({ phantomPainIntensity: n })}
+                            max={9}
+                          />
+                        </div>
+                      )}
+                    </PfRow>
+                  )}
                   <PfRow label={t("assess.painType")}>
                     {[
                       ["NUMBNESS", "pain.NUMBNESS"],
@@ -6365,22 +6400,6 @@ export default function ProstheticsCasePage() {
                 <Textarea rows={3} disabled={doctorOpinionSaved} value={doctorOpinion} onChange={(e) => setDoctorOpinion(e.target.value)} placeholder={t("committee.doctorOpinionPlaceholder")} />
               </div>
 
-              {/* الخلاصة */}
-              <div className="space-y-2 pt-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Label className="font-semibold">{t("committee.summary")} <span className="text-destructive">*</span></Label>
-                  {decidedByName && (
-                    <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{decidedByName}</span>
-                  )}
-                  {committeeDecided && <SavedBadge />}
-                </div>
-                {committeeDecided && cr?.decidedAt && (
-                  <p className="text-xs text-muted-foreground">
-                    {t("committee.decidedAt", { date: new Date(cr.decidedAt).toLocaleString("en-GB") })}
-                  </p>
-                )}
-                <Textarea rows={3} disabled={committeeDecided} value={decisionForm.finalSummary} onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))} placeholder={t("committee.summaryPlaceholder")} />
-              </div>
 
               {/* The committee stage now reads as "معاينة"; COMMITTEE_REVIEW is
                   still accepted for cases saved before the statuses changed. */}
@@ -6402,6 +6421,19 @@ export default function ProstheticsCasePage() {
           {/* القرار النهائي */}
           <Section title={t("committee.finalDecisionTitle")}>
             <div className="space-y-3">
+              {committeeDecided && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {decidedByName && (
+                    <span className="text-xs text-orange-700 bg-orange-100 rounded-full px-2 py-0.5">{decidedByName}</span>
+                  )}
+                  <SavedBadge />
+                  {cr?.decidedAt && (
+                    <span className="text-xs text-muted-foreground">
+                      {t("committee.decidedAt", { date: new Date(cr.decidedAt).toLocaleString("en-GB") })}
+                    </span>
+                  )}
+                </div>
+              )}
               {/* هل المريض مناسب للطرف الصناعي؟ */}
               <div className="space-y-1.5">
                 <Label>{t("committee.suitableQuestion")}</Label>
@@ -6419,8 +6451,8 @@ export default function ProstheticsCasePage() {
                     />
                     <span className="text-sm text-muted-foreground">{t("committee.suitable")}</span>
                   </div>
-                  {/* Only meaningful when the answer above is "مناسب" — labelled so
-                      it reads as part of that question, not as a stray field. */}
+                  {/* Each answer opens its own follow-up: "مناسب" asks which
+                      prosthesis, "غير مناسب" asks the committee to say why. */}
                   {committeeSuitForm.prosthesisSuitable === true && (
                     <div className="space-y-1.5 pt-1">
                       <Label className="text-xs">{t("committee.proposedType")}</Label>
@@ -6433,11 +6465,32 @@ export default function ProstheticsCasePage() {
                       />
                     </div>
                   )}
+                  {/* A decided case keeps showing whatever was written, so an old
+                      note stays readable even after the answer turned "مناسب". */}
+                  {(notesRequired || (committeeDecided && !!decisionForm.finalSummary)) && (
+                    <div className="space-y-1.5 pt-1">
+                      <Label className="text-xs">
+                        {t("committee.summary")}
+                        {notesRequired && <span className="text-destructive"> *</span>}
+                      </Label>
+                      <Textarea
+                        rows={3}
+                        disabled={committeeDecided}
+                        value={decisionForm.finalSummary}
+                        onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))}
+                        placeholder={t("committee.summaryPlaceholder")}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               {/* التوقيعات أُزيلت من تبويب اللجنة */}
               {(c.status === STATUS_BY_TAB.committee_review || c.status === "COMMITTEE_REVIEW" || c.status === "COMMITTEE_APPROVED") && !committeeDecided && (
-                <Button onClick={handleSubmitDecision} disabled={!decisionForm.finalSummary || submitDecision.isPending} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                <Button
+                  onClick={handleSubmitDecision}
+                  disabled={(notesRequired && !decisionForm.finalSummary.trim()) || submitDecision.isPending}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                >
                   {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
                   {t("committee.saveDecision")}
                 </Button>

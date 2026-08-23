@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,6 +38,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isUuid = (value: unknown): value is string =>
+  typeof value === "string" && UUID_RE.test(value);
+
 interface RoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -69,7 +75,31 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   const { data: fullRoleData } = useRole(role?.id || "");
   const roleToUse = isEdit ? fullRoleData : role;
 
-  const permissions = permissionsData || [];
+  const permissions = useMemo(() => permissionsData ?? [], [permissionsData]);
+
+  // الباك يرجّع صلاحيات الدور أحياناً كـ objects وأحياناً كأسماء نصية (نفس الحالة
+  // المعالَجة في auth-store). بدون التطبيع كان `p.id` يساوي undefined فتتحول إلى
+  // null داخل الـ payload ويرفضها التحقق كـ UUID.
+  const idByName = useMemo(() => {
+    const map = new Map<string, string>();
+    permissions.forEach((p) => {
+      if (p?.name && isUuid(p.id)) map.set(p.name, p.id);
+    });
+    return map;
+  }, [permissions]);
+
+  const toPermissionIds = (rolePermissions: any[] | undefined): string[] => {
+    if (!rolePermissions) return [];
+    return rolePermissions
+      .map((p: any) => {
+        if (isUuid(p)) return p;
+        if (typeof p === "string") return idByName.get(p);
+        if (isUuid(p?.id)) return p.id;
+        if (isUuid(p?.permissionId)) return p.permissionId;
+        return p?.name ? idByName.get(p.name) : undefined;
+      })
+      .filter(isUuid);
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -89,7 +119,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
         displayNameAr: roleToUse.displayNameAr || "",
         displayNameEn: roleToUse.displayNameEn || "",
         description: roleToUse.description || "",
-        permissionIds: roleToUse.permissions?.map((p) => p.id) || [],
+        permissionIds: toPermissionIds(roleToUse.permissions),
       });
     } else {
       form.reset({
@@ -100,9 +130,21 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
         permissionIds: [],
       });
     }
-  }, [roleToUse, form]);
+    // idByName لازم ضمن الاعتماديات: بذرة الصلاحيات تُحلّ عبره عند وصول القائمة
+  }, [roleToUse, form, idByName]);
 
   const onSubmit = async (data: FormData) => {
+    // حارس: الباك يتحقق من permissionIds كـ UUIDs. أي قيمة غير صالحة تُسقط هنا
+    // وتُطبع بدل أن ترجع 400 بلا معلومة عن القيمة المخالفة.
+    const rawIds = data.permissionIds || [];
+    const permissionIds = rawIds.filter(isUuid);
+    if (permissionIds.length !== rawIds.length) {
+      console.warn(
+        "[role-dialog] تم إسقاط قيم غير صالحة من permissionIds:",
+        rawIds.filter((id) => !isUuid(id))
+      );
+    }
+
     try {
       if (isEdit) {
         await Promise.all([
@@ -116,12 +158,12 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
           }),
           updateRolePermissions.mutateAsync({
             id: role.id,
-            data: { permissionIds: data.permissionIds || [] },
+            data: { permissionIds },
           })
         ]);
       } else {
         // For create, send all data
-        await createRole.mutateAsync(data);
+        await createRole.mutateAsync({ ...data, permissionIds });
       }
       onOpenChange(false);
       form.reset();

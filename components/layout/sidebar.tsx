@@ -158,7 +158,7 @@ const navigation: NavItem[] = [
         hiddenForRoles: ["DIRECT_MANAGER", "QS", "IT", "تقنية المعلومات", "CFO"],
         children: [
           { title: "nav.allJobApplications", href: "/job-applications", icon: ClipboardList, permission: "job-applications:read" },
-          { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
+          { title: "nav.interviewPositions", href: "/interview-positions", icon: Briefcase, permission: "job-applications:read", hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
         ],
       },
       {
@@ -184,7 +184,7 @@ const navigation: NavItem[] = [
         icon: Fingerprint,
         hiddenForRoles: ["DIRECT_MANAGER", "QS", "CFO"],
         children: [
-          { title: "nav.allBiometricDevices", href: "/biometric-devices", icon: Fingerprint },
+          { title: "nav.allBiometricDevices", href: "/biometric-devices", icon: Fingerprint, permission: "biometric.devices.read" },
         ],
       },
       {
@@ -192,7 +192,7 @@ const navigation: NavItem[] = [
         icon: ShieldCheck,
         hiddenForRoles: ["DIRECT_MANAGER", "QS", "IT", "تقنية المعلومات", "CFO"],
         children: [
-          { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck, hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
+          { title: "nav.allDeductionPolicies", href: "/deduction-policies", icon: ShieldCheck, permission: "attendance.policies.read", hiddenForRoles: ["Follow-up official", "مسؤول متابعة"] },
         ],
       },
       {
@@ -200,7 +200,7 @@ const navigation: NavItem[] = [
         icon: Wallet,
         hiddenForRoles: ["DIRECT_MANAGER", "QS", "General Manager", "Follow-up official", "موظف", "HR_Specialist", "IT", "تقنية المعلومات"],
         children: [
-          { title: "nav.payrollList", href: "/payroll", icon: Wallet },
+          { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "attendance.payroll.read" },
           { title: "nav.salaryAdvances", href: "/salary-advances", icon: Banknote },
           { title: "nav.salesCommissions", href: "/sales-commissions", icon: Award },
         ],
@@ -211,10 +211,10 @@ const navigation: NavItem[] = [
         hiddenForRoles: ["DIRECT_MANAGER", "QS", "Follow-up official", "مسؤول متابعة", "IT", "تقنية المعلومات", "CFO"],
         children: [
           { title: "nav.hrReportsSummary", href: "/reports/hr", icon: FileBarChart },
-          { title: "nav.leaveReports", href: "/reports/leave", icon: FileBarChart },
-          { title: "nav.attendanceReportsSummary", href: "/reports/attendance", icon: FileBarChart },
-          { title: "nav.evaluationReports", href: "/reports/evaluation", icon: FileBarChart },
-          { title: "nav.custodyReport", href: "/reports/custody", icon: FileBarChart },
+          { title: "nav.leaveReports", href: "/reports/leave", icon: FileBarChart, permission: "leave_requests:read_all" },
+          { title: "nav.attendanceReportsSummary", href: "/reports/attendance", icon: FileBarChart, permission: "attendance.reports.read" },
+          { title: "nav.evaluationReports", href: "/reports/evaluation", icon: FileBarChart, permission: "evaluation:forms:view-all" },
+          { title: "nav.custodyReport", href: "/reports/custody", icon: FileBarChart, permission: "custodies:read" },
           { title: "تقرير الحضور الشهري", href: "/reports/attendance-monthly-summary", icon: FileBarChart, permission: "attendance.reports.read" },
           { title: "ملخص الرواتب", href: "/reports/payroll-summary", icon: Wallet, permission: "attendance.reports.read" },
           { title: "التأخر التراكمي", href: "/reports/lateness-accumulated", icon: FileBarChart, permission: "attendance.reports.read" },
@@ -223,7 +223,7 @@ const navigation: NavItem[] = [
           { title: "بطاقة الموظف", href: "/reports/employee-card", icon: FileBarChart, permission: "attendance.reports.read" },
           { title: "انتهاء فترة التجربة", href: "/reports/probation-ending", icon: FileBarChart, permission: "employees:probation-report:read" },
           { title: "انتهاء العقود", href: "/reports/contract-ending", icon: FileBarChart, permission: "employees:contract-report:read" },
-          { title: "nav.biometricReports", href: "/attendance/biometric-reports", icon: FileBarChart },
+          { title: "nav.biometricReports", href: "/attendance/biometric-reports", icon: FileBarChart, permission: "biometric.devices.read" },
         ],
       },
       {
@@ -235,7 +235,7 @@ const navigation: NavItem[] = [
           { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
-          { title: "nav.allProbationEvaluations", href: "/probation-evaluations", icon: UserRoundCheck },
+          { title: "nav.allProbationEvaluations", href: "/probation-evaluations", icon: UserRoundCheck, permission: "probation:view-all" },
         ],
       },
     ],
@@ -244,7 +244,18 @@ const navigation: NavItem[] = [
     title: "nav.clinic",
     icon: Stethoscope,
     separator: true,
-    permission: "clinic.patients.view",
+    // صلاحية القسم = OR على صلاحيات أبنائه. لا تكفي clinic.patients.view وحدها،
+    // وإلا اختفى القسم عن طبيب يملك صلاحية العلاج الفيزيائي فقط مثلاً.
+    permissions: [
+      "clinic.patients.view",
+      "clinic.prosthetics.case.view",
+      "clinic.physio.case.view",
+      "clinic.podiatry.reception.view",
+      "clinic.appointments.view",
+      "clinic.appointments.view_own",
+      "clinic.inventory.view",
+      "clinic.reports.view_donor",
+    ],
     // Clinic tabs are gated purely by permission — a user sees each tab only if
     // they hold its permission (which the backend also enforces), so the sidebar
     // never shows a tab the API would 403.
@@ -254,7 +265,7 @@ const navigation: NavItem[] = [
       { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
       { title: "nav.clinicPodiatry", href: "/clinic/podiatry", icon: Footprints, permission: "clinic.podiatry.reception.view" },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
-      { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays },
+      { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permissions: ["clinic.appointments.view_own", "clinic.appointments.view"] },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
       { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor" },
     ],
@@ -406,9 +417,12 @@ export function Sidebar() {
     if (item.showForJobTitleCodes && currentJobTitleCode && item.showForJobTitleCodes.includes(currentJobTitleCode)) return true;
     // إذا showForJobTitleCodes موجود والمسمى مش فيه، نخفيه بغض النظر عن الصلاحيات
     if (item.showForJobTitleCodes && currentJobTitleCode && !item.showForJobTitleCodes.includes(currentJobTitleCode)) return false;
+    // صلاحية العنصر نفسه شرط لازم — حتى لو كان قسماً له أبناء. بدون هذا السطر
+    // كان أي ابن بلا صلاحية (مثل "مواعيدي") يفتح القسم المحمي كله للجميع.
+    if (!hasItemPermission(item)) return false;
     // إذا ما في أطفال، نتحقق من صلاحية العنصر مباشرة
     if (!item.children || item.children.length === 0) {
-      return hasItemPermission(item);
+      return true;
     }
     // إذا في أطفال، القسم يظهر فقط إذا أي طفل (أو أحفاد) له صلاحية
     return item.children.some((child) => hasSectionPermission(child));

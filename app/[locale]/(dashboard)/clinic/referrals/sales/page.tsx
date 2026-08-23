@@ -26,6 +26,7 @@ const TYPE_BADGE: Record<ReferralSourceType, string> = {
   DOCTOR:      "border-blue-300 bg-blue-50 text-blue-700",
   HOSPITAL:    "border-purple-300 bg-purple-50 text-purple-700",
   ASSOCIATION: "border-green-300 bg-green-50 text-green-700",
+  OTHER:       "border-slate-300 bg-slate-50 text-slate-700",
 };
 
 // Two shades of one hue for the patient split: the segments are parts of the
@@ -38,10 +39,11 @@ const TYPE_FILL: Record<ReferralSourceType, string> = {
   DOCTOR:      "#2563eb",
   HOSPITAL:    "#9333ea",
   ASSOCIATION: "#16a34a",
+  OTHER:       "#64748b",
 };
 // Blue and purple are the weakest pair under colour-vision deficiency, so green
 // is drawn between them — and every segment carries its own count as well.
-const TYPE_ORDER: ReferralSourceType[] = ["DOCTOR", "ASSOCIATION", "HOSPITAL"];
+const TYPE_ORDER: ReferralSourceType[] = ["DOCTOR", "ASSOCIATION", "HOSPITAL", "OTHER"];
 
 type SortKey = "registered" | "actual" | "visits";
 type ReferralStatsSource = ReferralStats["topSources"][number];

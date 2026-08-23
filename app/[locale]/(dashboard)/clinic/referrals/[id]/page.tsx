@@ -163,6 +163,9 @@ export default function ReferralSourceDetailPage() {
               <div>
                 <p className="mb-0.5 text-sm text-muted-foreground">أيام الزيارة</p>
                 <p className="text-base font-semibold">{source.visitDays || "—"}</p>
+                {source.visitTimes && (
+                  <p className="text-xs text-muted-foreground">{source.visitTimes}</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -194,6 +197,7 @@ export default function ReferralSourceDetailPage() {
               )} />
               <InfoRow label="تقييم العيادة" value={source.clinicRating ? <Stars value={source.clinicRating} /> : null} />
               <InfoRow label="كثافة المرضى" value={source.patientDensityRating ? <Stars value={source.patientDensityRating} /> : null} />
+              <InfoRow label="أوقات الزيارة" value={source.visitTimes} />
               <InfoRow label="الاهتمامات" value={source.interests?.length ? (
                 <span className="flex flex-wrap justify-end gap-1">
                   {source.interests.map((t) => <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>)}

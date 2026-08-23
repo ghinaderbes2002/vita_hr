@@ -153,7 +153,7 @@ export interface PatientListParams {
   gender?: Gender;
   ageMin?: number;
   ageMax?: number;
-  caseType?: "prosthetics" | "physio" | "both";
+  caseType?: "prosthetics" | "physio" | "podiatry" | "both";
   /**
    * Filter by the patient's latest documentation consent decision.
    * NONE = never signed a consent (the important one for follow-up).

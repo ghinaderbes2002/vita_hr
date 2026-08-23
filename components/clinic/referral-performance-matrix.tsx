@@ -18,10 +18,11 @@ const TYPE_FILL: Record<ReferralSourceType, string> = {
   DOCTOR:      "#2563eb",
   HOSPITAL:    "#9333ea",
   ASSOCIATION: "#16a34a",
+  OTHER:       "#64748b",
 };
 // Blue and purple are the weakest pair under colour-vision deficiency, so green
 // sits between them in the legend and the dots carry a label on hover.
-const TYPE_ORDER: ReferralSourceType[] = ["DOCTOR", "ASSOCIATION", "HOSPITAL"];
+const TYPE_ORDER: ReferralSourceType[] = ["DOCTOR", "ASSOCIATION", "HOSPITAL", "OTHER"];
 
 /** Round an axis maximum up to a clean tick value. */
 function niceMax(n: number): number {

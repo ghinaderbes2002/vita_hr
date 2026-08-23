@@ -255,6 +255,8 @@ export const PERMISSIONS = {
   },
   CLINIC_APPOINTMENTS: {
     VIEW:   "clinic.appointments.view",
+    /** مواعيد المستخدم نفسه فقط — تُمنح للموظف العادي */
+    VIEW_OWN: "clinic.appointments.view_own",
     CREATE: "clinic.appointments.create",
     CANCEL: "clinic.appointments.cancel",
   },

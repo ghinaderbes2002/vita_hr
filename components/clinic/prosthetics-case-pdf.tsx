@@ -168,6 +168,7 @@ export interface CasePdfAssessment {
   painArea?: string | null;
   painTypes?: string[] | null;
   painTypeOtherDetail?: string | null;
+  phantomSensationPresent?: boolean | null;
   phantomPainPresent?: boolean | null;
   phantomPainIntensity?: number | null;
   neuromaPalpable?: boolean | null;
@@ -418,9 +419,14 @@ const AssessmentBlock = ({ a }: { a: CasePdfAssessment }) => {
           {a.painIntensity != null ? <F label="شدة الألم" value={String(a.painIntensity)} /> : null}
         </>
       ) : null}
-      <F label="ألم وهمي" value={wb(a.phantomPainPresent)} />
-      {a.phantomPainPresent && a.phantomPainIntensity != null
-        ? <F label="شدة الألم الوهمي" value={String(a.phantomPainIntensity)} /> : null}
+      <F label="إحساس وهمي" value={wb(a.phantomSensationPresent)} />
+      {a.phantomSensationPresent !== false ? (
+        <>
+          <F label="ألم وهمي" value={wb(a.phantomPainPresent)} />
+          {a.phantomPainPresent && a.phantomPainIntensity != null
+            ? <F label="شدة الألم الوهمي" value={String(a.phantomPainIntensity)} /> : null}
+        </>
+      ) : null}
       <OptGrid label="نوع الألم" cols={3} options={O_PAIN_TYPE} selected={a.painTypes ?? []} />
       {a.painTypeOtherDetail ? <F label="نوع الألم (أخرى)" value={a.painTypeOtherDetail} /> : null}
 

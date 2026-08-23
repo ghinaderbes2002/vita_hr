@@ -231,6 +231,8 @@ export interface AssessmentLowerDto {
   painArea?: string;
   painTypes?: PainTypeVal[];
   painTypeOtherDetail?: string;
+  /** Gates the phantom pain answer: no sensation, no pain. */
+  phantomSensationPresent?: boolean;
   phantomPainPresent?: boolean;
   phantomPainIntensity?: number;
   neuromaPalpable?: boolean;
@@ -268,7 +270,8 @@ export interface CommitteeOpinionDto {
 
 export interface CommitteeDecisionDto {
   decision: CommitteeDecision;
-  finalSummary: string;
+  /** The committee notes — only filled when the patient is not suitable. */
+  finalSummary?: string;
 }
 
 // The member who actually filled an opinion, as returned alongside it. Null until

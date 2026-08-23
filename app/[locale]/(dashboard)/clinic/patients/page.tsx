@@ -37,7 +37,8 @@ export default function ClinicPatientsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [genderFilter, setGenderFilter] = useState<"all" | "MALE" | "FEMALE">("all");
-  const [caseTypeFilter, setCaseTypeFilter] = useState<"all" | "prosthetics" | "physio" | "both">("all");
+  const [caseTypeFilter, setCaseTypeFilter] =
+    useState<"all" | "prosthetics" | "physio" | "podiatry" | "both">("all");
   const [consentFilter, setConsentFilter] =
     useState<"all" | "FUNDER_ONLY" | "FUNDER_AND_SOCIAL" | "REFUSED" | "NONE">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -122,6 +123,7 @@ export default function ClinicPatientsPage() {
             <SelectItem value="all">{t("filter.all")}</SelectItem>
             <SelectItem value="prosthetics">{t("filter.prosthetics")}</SelectItem>
             <SelectItem value="physio">{t("filter.physio")}</SelectItem>
+            <SelectItem value="podiatry">{t("filter.podiatry")}</SelectItem>
             <SelectItem value="both">{t("filter.both")}</SelectItem>
           </SelectContent>
         </Select>

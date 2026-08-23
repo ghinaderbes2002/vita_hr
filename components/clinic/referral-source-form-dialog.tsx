@@ -44,6 +44,7 @@ interface FormState {
   patientDensityRating: number | null;
   interests: string[];
   visitDays: string;
+  visitTimes: string;
   notes: string;
   location: LatLng | null;
 }
@@ -51,6 +52,14 @@ interface FormState {
 // Most sources the centre deals with are in Aleppo, so a new form starts there.
 const DEFAULT_CITY = "حلب";
 const OTHER = "__other";
+
+// The name means something different per type, so the hint follows the choice.
+const NAME_PLACEHOLDER: Record<ReferralSourceType, string> = {
+  DOCTOR:      "مثال: د. أحمد الحربي",
+  HOSPITAL:    "مثال: مشفى الرازي",
+  ASSOCIATION: "مثال: جمعية البر",
+  OTHER:       "مثال: صيدلية النور",
+};
 
 const emptyForm = (): FormState => ({
   type: "DOCTOR",
@@ -68,6 +77,7 @@ const emptyForm = (): FormState => ({
   patientDensityRating: null,
   interests: [],
   visitDays: "",
+  visitTimes: "",
   notes: "",
   location: null,
 });
@@ -88,6 +98,7 @@ const formOf = (s: ReferralSource): FormState => ({
   patientDensityRating: s.patientDensityRating ?? null,
   interests: s.interests ?? [],
   visitDays: s.visitDays ?? "",
+  visitTimes: s.visitTimes ?? "",
   notes: s.notes ?? "",
   location:
     s.latitude != null && s.longitude != null
@@ -252,6 +263,7 @@ export function ReferralSourceFormDialog({
       patientDensityRating: form.patientDensityRating ?? undefined,
       interests: form.interests.length ? form.interests : undefined,
       visitDays: text(form.visitDays),
+      visitTimes: text(form.visitTimes),
       notes: text(form.notes),
       latitude: form.location?.latitude,
       longitude: form.location?.longitude,
@@ -306,7 +318,7 @@ export function ReferralSourceFormDialog({
                 <div className="space-y-1.5">
                   <Label>الاسم <span className="text-destructive">*</span></Label>
                   <Input value={form.name} onChange={(e) => set("name", e.target.value)}
-                    placeholder="مثال: د. أحمد الحربي" />
+                    placeholder={NAME_PLACEHOLDER[form.type]} />
                 </div>
                 <div className="space-y-1.5">
                     <Label>التخصص</Label>
@@ -346,6 +358,11 @@ export function ReferralSourceFormDialog({
                   <Label>أيام الزيارة</Label>
                   <Input value={form.visitDays} onChange={(e) => set("visitDays", e.target.value)}
                     placeholder="مثال: الأحد والثلاثاء" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>أوقات الزيارة</Label>
+                  <Input value={form.visitTimes} onChange={(e) => set("visitTimes", e.target.value)}
+                    placeholder="مثال: 9 صباحاً - 5 مساءً" />
                 </div>
               </div>
               <div className="space-y-1.5">

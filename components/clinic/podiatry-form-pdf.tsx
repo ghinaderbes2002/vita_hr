@@ -9,9 +9,15 @@ import { Document, Page, Text, View, Image, StyleSheet, pdf } from "@react-pdf/r
 import type { Style } from "@react-pdf/types";
 import { ar, ensureAmiriFonts, saveBlob } from "./pdf-kit";
 import {
-  AffectedSide, ClinicalPlanItem, FootSymptom, MedicalHistoryItem,
-  PodiatrySession, VisitType,
+  AffectedSide, FootSymptom, MedicalHistoryItem, PodiatrySession, VisitType,
 } from "@/lib/api/clinic-podiatry";
+import {
+  ARCH_ARCHITECTURE_OPTS, DEFORMITY_TYPE_OPTS, EDEMA_TYPE_OPTS, FOOTWEAR_OPTS,
+  FOOT_MEASUREMENT_ROWS, JACK_TEST_OPTS, MAIN_CAUSE_OPTS, OUTSOLE_WEAR_OPTS,
+  PAIN_CHARACTERISTIC_OPTS, PAIN_LOCATION_OPTS, PALPATION_POINTS,
+  REARFOOT_ALIGNMENT_OPTS, ROM_OPTS, TOO_MANY_TOES_OPTS, WALKING_LINE_OPTS,
+  labelsOf,
+} from "./podiatry-session-schema";
 
 // ── VitaFoot theme (teal), distinct from the VitaSyr reports ──────────────────
 const TEAL = "#2E9CAB";
@@ -133,6 +139,20 @@ const Chk = ({ on, a, e }: { on: boolean; a: ArLabel; e: string }) => (
   </View>
 );
 
+/** Right foot first, matching the sheet. */
+const SIDES = [
+  ["Right", "القدم اليمنى", "Right Foot"],
+  ["Left", "القدم اليسرى", "Left Foot"],
+] as const;
+
+// Sub-heading for a per-foot block inside a section.
+const SideHead = ({ a, e }: { a: string; e: string }) => (
+  <View style={{ flexDirection: "row-reverse", gap: 3, marginTop: 2, marginBottom: 2 }}>
+    <Text style={[s.chkAr, { fontWeight: "bold" }]}>{ar(a)}</Text>
+    <Text style={s.chkEn}>{e}</Text>
+  </View>
+);
+
 // The sheet ticks the affected side inline on one row (R / L / Bilateral).
 const SideRow = ({ sides }: { sides: AffectedSide[] }) => (
   <View style={s.fieldRow} wrap={false}>
@@ -179,97 +199,6 @@ const FOOT_SYMPTOMS: [FootSymptom, ArLabel, string][] = [
   ["FATIGUE", "تعب سريع", "Fatigue"],
 ];
 
-const CLINICAL_PLAN: [ClinicalPlanItem, ArLabel, string][] = [
-  ["CUSTOM_FOOTBALANCE_INSOLE", "ضبان مخصص", "Custom FootBalance Insole"],
-  ["THERAPEUTIC_EXERCISES", "تمارين علاجية", "Therapeutic Exercises"],
-  ["FOOTWEAR_MODIFICATION", "تعديل الحذاء", "Footwear Modification"],
-  ["MEDICAL_REFERRAL", "تحويل طبي", "Medical Referral"],
-  ["PHYSICAL_THERAPY", "علاج فيزيائي", "Physical Therapy"],
-];
-
-// ── Physician-form (نموذج الطبيب) option tables ───────────────────────────────
-const PAIN_TYPE_OPTS: [string, ArLabel, string][] = [
-  ["INTERMITTENT", "متقطع", "Intermittent"],
-  ["CONSTANT", "مستمر", "Constant"],
-  ["WITH_CERTAIN_MOTIONS", ["مع", "بعض", "الحركات"], "With certain motions"],
-];
-const PAIN_LEVEL_OPTS: [string, ArLabel, string][] = [
-  ["MILD", "خفيف", "Mild"],
-  ["MODERATE", "متوسط", "Moderate"],
-  ["SEVERE", "شديد", "Severe"],
-  ["EXCRUCIATING", ["مؤلم", "للغاية"], "Excruciating"],
-];
-const PAIN_TREND_OPTS: [string, ArLabel, string][] = [
-  ["BETTER", "يتحسّن", "Better"],
-  ["WORSE", ["يزداد", "سوءاً"], "Worse"],
-  ["SAME", "كما هو", "Same"],
-];
-const RADIO_OPTS: [string, ArLabel, string][] = [
-  ["MRI", "رنين مغناطيسي", "MRI"],
-  ["X_RAY", "أشعة سينية", "X-Ray"],
-  ["CT", "طبقي محوري", "CT"],
-  ["MYELOGRAM", "تصوير النخاع", "Myelogram"],
-  ["OTHER", "أخرى", "Other"],
-];
-// Podiatry medical-history condition labels (Arabic) for the selected list.
-const MH_COND_LABELS: Record<string, string> = {
-  LIVER_PROBLEMS: "مشاكل الكبد", PNEUMONIA: "التهاب رئوي", URINARY_INFECTION: "التهاب المسالك البولية",
-  DIABETES: "السكري", HEMOPHILIA: "الناعور", LUNG_ISSUES: "مشاكل الرئة", STROKE: "جلطة",
-  KIDNEY_PROBLEMS: "مشاكل الكلى", ANEMIA: "فقر الدم", ASTHMA: "الربو", CHEMICAL_DEPENDENCY: "الإدمان الكيميائي",
-  EPILEPSY: "الصرع", HIGH_LOW_BP: "ارتفاع/انخفاض ضغط الدم", HEART_PROBLEMS: "مشاكل القلب", DEPRESSION: "اكتئاب",
-  BONE_INFECTION: "التهاب نقي العظم", ARTERIOSCLEROSIS: "تصلب الشرايين", TUBERCULOSIS: "السل",
-  MUSCULOSKELETAL: "الجهاز العضلي الهيكلي", JOINT_BONE_INFECTION: "عدوى المفاصل/العظام", EYE_INFECTION: "التهاب العين",
-  CIRCULATION_PROBLEMS: "مشاكل الدورة الدموية", ARTHRITIS: "التهاب المفاصل", CANCER: "السرطان",
-  BLOOD_CLOTS: "جلطات دم", ANGINA: "ذبحة", STD: "أمراض منقولة جنسياً", MULTIPLE_SCLEROSIS: "التصلب المتعدد",
-  AIDS_HIV: "الإيدز", OTHER: "أخرى",
-};
-
-// A yes/no answer rendered on the sheet as نعم/لا with two tick-boxes.
-const YesNo = ({ a, e, on }: { a: ArLabel; e: string; on?: boolean | null }) => (
-  <View style={s.fieldRow} wrap={false}>
-    <ArText t={a} style={s.fieldLabelAr} />
-    <Text style={s.fieldLabelEn}>{"/"}</Text>
-    <Text style={s.fieldLabelEn}>{e}</Text>
-    <Text style={[s.fieldLabelEn, { marginRight: -2 }]}>{":"}</Text>
-    <View style={{ flexDirection: "row-reverse", gap: 10, flex: 1 }}>
-      {([["نعم", "Yes", true], ["لا", "No", false]] as const).map(([la, le, val]) => (
-        <View key={le} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
-          <View style={on === val ? [s.box, s.boxOn] : s.box}>
-            {on === val && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
-          </View>
-          <Text style={s.chkAr}>{ar(la)}</Text>
-          <Text style={s.chkEn}>{le}</Text>
-        </View>
-      ))}
-    </View>
-  </View>
-);
-
-// A single-line group of inline tick-boxes (نوع الألم / مستوى الألم …).
-const ChkGroupRow = ({
-  a, e, options, isOn,
-}: {
-  a: ArLabel; e: string; options: [string, ArLabel, string][]; isOn: (v: string) => boolean;
-}) => (
-  <View style={s.fieldRow} wrap={false}>
-    <ArText t={a} style={s.fieldLabelAr} />
-    <Text style={s.fieldLabelEn}>{"/"}</Text>
-    <Text style={s.fieldLabelEn}>{e}</Text>
-    <Text style={[s.fieldLabelEn, { marginRight: -2 }]}>{":"}</Text>
-    <View style={{ flexDirection: "row-reverse", gap: 10, flex: 1, flexWrap: "wrap" }}>
-      {options.map(([v, la, le]) => (
-        <View key={v} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
-          <View style={isOn(v) ? [s.box, s.boxOn] : s.box}>
-            {isOn(v) && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
-          </View>
-          <ArText t={la} style={s.chkAr} />
-          <Text style={s.chkEn}>{le}</Text>
-        </View>
-      ))}
-    </View>
-  </View>
-);
-
 export interface PodiatryFormPdfData {
   /** Sheet date — defaults to the session's date, else today. */
   date?: string;
@@ -286,43 +215,46 @@ export interface PodiatryFormPdfData {
   affectedSide?: AffectedSide[] | null;
   footSymptoms?: FootSymptom[] | null;
   visitTypes?: VisitType[] | null;
+  /** Filled instead of the shared pair when both feet are affected. */
+  footSymptomsRight?: FootSymptom[] | null;
+  footSymptomsLeft?: FootSymptom[] | null;
+  visitTypesRight?: VisitType[] | null;
+  visitTypesLeft?: VisitType[] | null;
   medicalHistory?: MedicalHistoryItem[] | null;
   medicalHistoryOther?: string | null;
   vasScore?: number | null;
   /** The session this sheet is for; its analysis fills the left column. */
   session?: PodiatrySession | null;
-  /**
-   * Physician-form data (نموذج الطبيب): the reception's complaint + medical
-   * history, rendered on a second sheet. Loosely typed — it mirrors the backend
-   * reception fields exactly.
-   */
-  physician?: Record<string, any> | null;
+  /** Both live on the reception, each on its own endpoint. */
+  reviews?: string[];
+  doctorDecision?: string | null;
 }
 
 const d = (v?: string | null) => (v ? new Date(v).toLocaleDateString("en-GB") : "");
 
 const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
   const se = data.session;
-  // The printed analysis block has one tick per finding; our model records each
-  // side separately, so a finding is ticked when either foot shows it and the
-  // side is spelled out next to it.
-  const analysis: [string, string, boolean, boolean][] = [
-    ["قدم مسطحة", "Flat Foot", !!se?.rightFlatFoot, !!se?.leftFlatFoot],
-    ["قوس مرتفع", "High Arch", !!se?.rightHighArch, !!se?.leftHighArch],
-    ["الكب", "Pronation", !!se?.rightPronation, !!se?.leftPronation],
-    ["الاستلقاء", "Supination", !!se?.rightSupination, !!se?.leftSupination],
-  ];
-  const sides = (r: boolean, l: boolean) =>
-    r && l ? "R + L" : r ? "R" : l ? "L" : "";
+  const sub = se?.subjectiveHistory ?? {};
+  const vis = se?.visualInspection ?? {};
+  const pal = se?.palpation ?? {};
+  const rom = se?.rangeOfMotion ?? {};
+  const dyn = se?.dynamicAnalysis ?? {};
+  const shoe = se?.shoeWearPattern ?? {};
+  const meas = (se?.footMeasurements ?? {}) as Record<string, string | undefined>;
 
-  const pressure = [
-    se?.rightPressureNotes ? `R: ${se.rightPressureNotes}` : "",
-    se?.leftPressureNotes ? `L: ${se.leftPressureNotes}` : "",
-  ].filter(Boolean).join("  |  ");
-  const asymmetry = [
-    se?.rightAsymmetry ? `R: ${se.rightAsymmetry}` : "",
-    se?.leftAsymmetry ? `L: ${se.leftAsymmetry}` : "",
-  ].filter(Boolean).join("  |  ");
+  // The VAS lives on the assessment now; older receptions still carry their own.
+  const vasScore = Number(sub.vasScore) || data.vasScore || 0;
+
+  // Every per-foot finding prints on one line, right foot first like the sheet.
+  const pair = (r?: string, l?: string) =>
+    [r ? `يمين: ${r}` : "", l ? `يسار: ${l}` : ""].filter(Boolean).join("   —   ");
+
+  const measRows = FOOT_MEASUREMENT_ROWS
+    .map(([k, a, e]) => [a, e, pair(meas[`${k}Right`], meas[`${k}Left`])] as const)
+    .filter(([, , v]) => v);
+
+  // Both feet affected → the symptoms and the visit types print per foot.
+  const bilateral = (data.affectedSide ?? []).includes("BILATERAL");
 
   const sig = se?.clinicianSignature ?? "";
   const sigIsImage = sig.startsWith("data:") || sig.startsWith("http");
@@ -369,22 +301,49 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
             <SideRow sides={data.affectedSide ?? []} />
 
             <SecHead a="أعراض القدم" e="Foot Symptoms" />
-            {FOOT_SYMPTOMS.map(([v, a, e]) => (
-              <Chk key={v} on={(data.footSymptoms ?? []).includes(v)} a={a} e={e} />
-            ))}
-
-            <SecHead a="الخطة العلاجية" e="Clinical Plan" />
-            {CLINICAL_PLAN.map(([v, a, e]) => (
-              <Chk key={v} on={(se?.clinicalPlan ?? []).includes(v)} a={a} e={e} />
-            ))}
+            {bilateral ? (
+              SIDES.map(([side, sa, se_]) => (
+                <View key={side} wrap={false}>
+                  <SideHead a={sa} e={se_} />
+                  {FOOT_SYMPTOMS.map(([v, a, e]) => (
+                    <Chk
+                      key={v}
+                      on={((side === "Right" ? data.footSymptomsRight : data.footSymptomsLeft) ?? []).includes(v)}
+                      a={a}
+                      e={e}
+                    />
+                  ))}
+                </View>
+              ))
+            ) : (
+              FOOT_SYMPTOMS.map(([v, a, e]) => (
+                <Chk key={v} on={(data.footSymptoms ?? []).includes(v)} a={a} e={e} />
+              ))
+            )}
           </View>
 
           {/* ── Left column ──────────────────────────────────────────────── */}
           <View style={s.col}>
             <SecHead a="نوع الزيارة" e="Visit Type" />
-            {VISIT_TYPES.map(([v, a, e]) => (
-              <Chk key={v} on={(data.visitTypes ?? []).includes(v)} a={a} e={e} />
-            ))}
+            {bilateral ? (
+              SIDES.map(([side, sa, se_]) => (
+                <View key={side} wrap={false}>
+                  <SideHead a={sa} e={se_} />
+                  {VISIT_TYPES.map(([v, a, e]) => (
+                    <Chk
+                      key={v}
+                      on={((side === "Right" ? data.visitTypesRight : data.visitTypesLeft) ?? []).includes(v)}
+                      a={a}
+                      e={e}
+                    />
+                  ))}
+                </View>
+              ))
+            ) : (
+              VISIT_TYPES.map(([v, a, e]) => (
+                <Chk key={v} on={(data.visitTypes ?? []).includes(v)} a={a} e={e} />
+              ))
+            )}
 
             <SecHead a="التاريخ المرضي" e="Medical History" />
             {MEDICAL_HISTORY.map(([v, a, e]) => (
@@ -401,29 +360,16 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
               <Text style={s.chkEn}>{"VAS Score"}</Text>
               <Text style={[s.chkEn, { marginRight: -2 }]}>{":"}</Text>
               {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                <View key={n} style={data.vasScore === n ? [s.vasBox, s.boxOn] : s.vasBox}>
-                  <Text style={data.vasScore === n ? [s.vasNum, s.vasNumOn] : s.vasNum}>{n}</Text>
+                <View key={n} style={vasScore === n ? [s.vasBox, s.boxOn] : s.vasBox}>
+                  <Text style={vasScore === n ? [s.vasNum, s.vasNumOn] : s.vasNum}>{n}</Text>
                 </View>
               ))}
             </View>
 
-            <SecHead a={["تحليل", "FootBalance"]} e="FootBalance Analysis" />
-            {analysis.map(([a, e, r, l]) => (
-              <View key={e} style={s.chkRow} wrap={false}>
-                <View style={r || l ? [s.box, s.boxOn] : s.box}>
-                  {(r || l) && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
-                </View>
-                <Text style={s.chkAr}>{ar(a)}</Text>
-                <Text style={s.chkEn}>{"/"}</Text>
-                <Text style={s.chkEn}>{e}</Text>
-                {(r || l) && <Text style={[s.chkEn, { color: TEAL }]}>{`(${sides(r, l)})`}</Text>}
-              </View>
-            ))}
-            <Field a="ملاحظات الضغط" e="Pressure Notes" value={pressure} />
-            <Field a="عدم التماثل" e="Asymmetry" value={asymmetry} />
-
             <SecHead a="التوقيع" e="Signature" />
             <Field a="اسم الأخصائي" e="Clinician Name" value={se?.clinicianName} />
+            <Field a={["عبّأ", "النموذج"]} e="Filled By" value={se?.createdByName} />
+            <Field a={["تاريخ", "التركيب"]} e="Installed On" value={d(se?.installedAt)} />
             <View style={s.fieldRow} wrap={false}>
               <Text style={s.fieldLabelAr}>{ar("التوقيع")}</Text>
               <Text style={s.fieldLabelEn}>{"/"}</Text>
@@ -437,11 +383,111 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
           </View>
         </View>
 
+        {/* The assessment, printed full width under the two columns. */}
+        <SecHead a="القصة المرضية" e="Subjective History" />
+        <Field a="السبب الرئيسي" e="Main Cause" value={labelsOf(MAIN_CAUSE_OPTS, sub.mainCause)} />
+        <Field a="موضع الألم" e="Pain Location" value={labelsOf(PAIN_LOCATION_OPTS, sub.painLocation)} />
+        <Field a="خصائص الألم" e="Pain Characteristics" value={labelsOf(PAIN_CHARACTERISTIC_OPTS, sub.painCharacteristics)} />
+
+        <SecHead a="الفحص البصري" e="Visual Inspection" />
+        <Field a={["محاذاة", "مؤخرة القدم"]} e="Rearfoot Alignment" value={pair(
+          labelsOf(REARFOOT_ALIGNMENT_OPTS, vis.rightRearfootAlignment),
+          labelsOf(REARFOOT_ALIGNMENT_OPTS, vis.leftRearfootAlignment),
+        )} />
+        <Field a={["كثرة", "الأصابع الظاهرة"]} e="Too Many Toes" value={pair(
+          [labelsOf(TOO_MANY_TOES_OPTS, vis.rightTooManyToes), vis.rightTooManyToesCount].filter(Boolean).join(" "),
+          [labelsOf(TOO_MANY_TOES_OPTS, vis.leftTooManyToes), vis.leftTooManyToesCount].filter(Boolean).join(" "),
+        )} />
+        <Field a="بنية القوس" e="Arch Architecture" value={pair(
+          labelsOf(ARCH_ARCHITECTURE_OPTS, vis.rightArchArchitecture),
+          labelsOf(ARCH_ARCHITECTURE_OPTS, vis.leftArchArchitecture),
+        )} />
+        <Chk on={!!vis.halluxValgus} a="إبهام أروح" e="Hallux Valgus" />
+        {vis.halluxValgus && vis.halluxValgusType?.length ? (
+          <Field a="النوع" e="Type" value={labelsOf(DEFORMITY_TYPE_OPTS, vis.halluxValgusType)} />
+        ) : null}
+        <Chk on={!!vis.tailorsBunion} a="ورم الخياط" e="Tailor Bunion" />
+        {vis.tailorsBunion && vis.tailorsBunionType?.length ? (
+          <Field a="النوع" e="Type" value={labelsOf(DEFORMITY_TYPE_OPTS, vis.tailorsBunionType)} />
+        ) : null}
+        <Chk on={!!vis.hammerToes} a="أصابع مطرقية" e="Hammer Toes" />
+        {vis.hammerToes && vis.hammerToesAffected ? (
+          <Field a="الأصابع المصابة" e="Affected" value={vis.hammerToesAffected} />
+        ) : null}
+        <Chk on={!!vis.clawToes} a="أصابع مخلبية" e="Claw Toes" />
+        {vis.clawToes && vis.clawToesAffected ? (
+          <Field a="الأصابع المصابة" e="Affected" value={vis.clawToesAffected} />
+        ) : null}
+        <Chk on={!!vis.malletToes} a={["أصابع مطرقية", "طرفية"]} e="Mallet Toes" />
+        {vis.malletToes && vis.malletToesAffected ? (
+          <Field a="الأصابع المصابة" e="Affected" value={vis.malletToesAffected} />
+        ) : null}
+        <Chk on={!!vis.hyperkeratosisCallus} a="فرط تقرن" e="Hyperkeratosis" />
+        {vis.hyperkeratosisCallus && vis.hyperkeratosisLocation ? (
+          <Field a="الموضع" e="Location" value={vis.hyperkeratosisLocation} />
+        ) : null}
+        <Chk on={!!vis.preTrophicLesions} a={["آفات ما قبل", "التقرح"]} e="Pre-Trophic Lesions" />
+        {vis.preTrophicLesions && vis.preTrophicLesionsNotes ? (
+          <Field a="ملاحظات" e="Notes" value={vis.preTrophicLesionsNotes} />
+        ) : null}
+        <Chk on={!!vis.edema} a="وذمة" e="Edema" />
+        {vis.edema && vis.edemaType?.length ? (
+          <Field a="النوع" e="Type" value={labelsOf(EDEMA_TYPE_OPTS, vis.edemaType)} />
+        ) : null}
+
+        <SecHead a="الجس" e="Palpation" />
+        <View style={{ flexDirection: "row-reverse", gap: 12, flexWrap: "wrap" }}>
+          {PALPATION_POINTS.map(([k, a, e]) => (
+            <View key={k} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
+              <View style={pal[k] ? [s.box, s.boxOn] : s.box}>
+                {pal[k] && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
+              </View>
+              <Text style={s.chkAr}>{ar(a)}</Text>
+              <Text style={s.chkEn}>{e}</Text>
+            </View>
+          ))}
+        </View>
+
+        <SecHead a="المدى الحركي" e="Range of Motion" />
+        <Field a={["عطف ظهري", "للكاحل"]} e="Ankle Dorsiflexion" value={labelsOf(ROM_OPTS, rom.ankleDorsiflexion)} />
+        <Field a={["عطف أخمصي", "للكاحل"]} e="Ankle Plantarflexion" value={labelsOf(ROM_OPTS, rom.anklePlantarflexion)} />
+
+        <SecHead a="التحليل الديناميكي" e="Dynamic Analysis" />
+        <Field a="اختبار جاك" e="Jack Test" value={pair(
+          labelsOf(JACK_TEST_OPTS, dyn.rightJackTest),
+          labelsOf(JACK_TEST_OPTS, dyn.leftJackTest),
+        )} />
+        <Field a="خط المشي" e="Walking Line" value={pair(
+          labelsOf(WALKING_LINE_OPTS, dyn.rightWalkingLine),
+          labelsOf(WALKING_LINE_OPTS, dyn.leftWalkingLine),
+        )} />
+
+        <SecHead a={["الحذاء ونمط", "التآكل"]} e="Shoe Wear Pattern" />
+        <Field a="الحذاء الحالي" e="Current Footwear" value={labelsOf(FOOTWEAR_OPTS, shoe.currentFootwear)} />
+        <Field a={["نمط تآكل", "النعل"]} e="Outsole Wear" value={labelsOf(OUTSOLE_WEAR_OPTS, shoe.outsoleWear)} />
+
+        {measRows.length > 0 && (
+          <>
+            <SecHead a="قياسات القدم" e="Foot Measurements" />
+            {measRows.map(([a, e, v]) => <Field key={e} a={a} e={e} value={v} />)}
+          </>
+        )}
+
+        <SecHead a="الضبانة والقرار" e="Insole and Decision" />
+        <Field a="نوع الضبانة" e="Insole Type" value={(se?.insoleType ?? []).join(" / ")} />
+        <Field a="ملاحظات" e="Notes" value={se?.notes} />
+        {(data.reviews ?? []).length > 0 ? (
+          (data.reviews ?? []).map((r, i) => (
+            <Field key={i} a={["مراجعة", String(i + 1)]} e={`Review ${i + 1}`} value={r} />
+          ))
+        ) : (
+          <Field a="المراجعة" e="Review" value="" />
+        )}
+        <Field a="قرار الطبيب" e="Doctor Decision" value={data.doctorDecision} />
+
         <Footer />
       </Page>
 
-      {/* ── Sheet 2 — نموذج الطبيب (الشكوى + التاريخ الطبي) ─────────────────── */}
-      <PhysicianSheet p={data.physician ?? {}} date={data.date} />
     </Document>
   );
 };
@@ -462,125 +508,6 @@ const Footer = () => (
     </View>
   </View>
 );
-
-// Second sheet: the physician form — complaint then full medical history.
-const PhysicianSheet = ({ p, date }: { p: Record<string, any>; date?: string }) => {
-  const surgeries: any[] = Array.isArray(p.surgeries) ? p.surgeries : [];
-  const imaging: any[] = Array.isArray(p.imagingProcedures) ? p.imagingProcedures : [];
-  const conditions: string[] = Array.isArray(p.medicalHistory) ? p.medicalHistory : [];
-  const conditionsList = conditions.map((c) => MH_COND_LABELS[c] ?? c).join("، ");
-  const surgeryLine = (x: any) =>
-    [x.surgeryName, x.type, d(x.date) || x.date].filter(Boolean).join("  —  ");
-
-  return (
-    <Page size="A4" style={s.page}>
-      <View style={s.logoWrap}>
-        <Text style={s.logoText}>VitaFoot</Text>
-      </View>
-      <Text style={s.titleAr}>{ar("نموذج الطبيب")}</Text>
-      <Text style={s.titleEn}>Physician Form</Text>
-
-      <View style={[s.dateRow, { gap: 3 }]}>
-        <Text style={s.dateText}>{ar("التاريخ")}</Text>
-        <Text style={s.dateText}>{"/"}</Text>
-        <Text style={s.dateText}>{"Date"}</Text>
-        <Text style={[s.dateText, { marginRight: -2 }]}>{":"}</Text>
-        <Text style={s.dateText}>{d(date) || new Date().toLocaleDateString("en-GB")}</Text>
-      </View>
-
-      {/* ── الشكوى ── */}
-      <SecHead a="الشكوى" e="Complaint" />
-      <Field a="الشكوى الرئيسية" e="Main Complaint" value={p.mainComplaint} />
-      <Field a="تاريخ البدء" e="Start Date" value={p.startDate} />
-      <Field a="السبب المحتمل" e="Possible Cause" value={p.possibleCause} />
-      <Field a="طبيب سابق" e="Previous Doctor" value={p.previousDoctor} />
-      <Field a="العلاج السابق" e="Previous Treatment" value={p.previousTreatment} />
-      <Field a={["وقت", "التحسّن"]} e="Symptoms Better" value={p.symptomsBetterTime} />
-      <Field a={["وقت", "التفاقم"]} e="Symptoms Worse" value={p.symptomsWorseTime} />
-      <ChkGroupRow a="نوع الألم" e="Pain Type" options={PAIN_TYPE_OPTS} isOn={(v) => p.painType === v} />
-      <ChkGroupRow a="مستوى الألم" e="Pain Level" options={PAIN_LEVEL_OPTS} isOn={(v) => p.painLevel === v} />
-      <ChkGroupRow a="التطور" e="Progression" options={PAIN_TREND_OPTS} isOn={(v) => p.painTrend === v} />
-      <YesNo a={["سبق", "التعرض", "للإصابة"]} e="Injured Before" on={p.hadInjuryBefore} />
-
-      {/* ── التاريخ الطبي ── */}
-      <SecHead a="التاريخ الطبي" e="Medical History" />
-      <Field a="الأدوية الحالية" e="Current Medications" value={p.currentMedications} />
-      <Field a={["التشخيصات", "السابقة"]} e="Previous Diagnoses" value={p.previousDiagnoses} />
-      <YesNo a={["مستحضرات", "عشبية"]} e="Herbal Preparations" on={p.herbalPreparations} />
-      {p.herbalPreparationsDetails ? <Field a="التفاصيل" e="Details" value={p.herbalPreparationsDetails} /> : null}
-      <Field a={["مشاكل", "صحية", "أخرى"]} e="Other Health Problems" value={p.otherHealthProblems} />
-      <Field a="قيود الطبيب" e="Doctor Restrictions" value={p.doctorRestrictions} />
-      <YesNo a="مدخّن" e="Smoker" on={p.smoker} />
-      <YesNo a={["سبق", "التدخين"]} e="Ever Smoked" on={p.everSmoked} />
-      {p.smokingFrequency ? <Field a={["عدد", "المرات"]} e="Frequency" value={p.smokingFrequency} /> : null}
-      <YesNo a={["منظّم", "ضربات", "القلب"]} e="Pacemaker" on={p.hasPacemaker} />
-      <YesNo a="حامل" e="Pregnant" on={p.isPregnant} />
-      <YesNo a={["حساسية", "لاصقات"]} e="Adhesive Allergy" on={p.allergyToAdhesives} />
-
-      {surgeries.length > 0 && (
-        <>
-          <SecHead a="العمليات الجراحية" e="Surgeries" />
-          {surgeries.map((x, i) => (
-            <Field key={i} a={["عملية", String(i + 1)]} e={`Surgery ${i + 1}`} value={surgeryLine(x)} />
-          ))}
-        </>
-      )}
-
-      <YesNo a={["علاج", "فيزيائي", "سابق"]} e="Prior Physical Therapy" on={p.hadPhysicalTherapy} />
-      <YesNo a={["علاجات", "أخرى"]} e="Other Treatments" on={p.hasOtherTreatments} />
-
-      <ChkGroupRow a="أنواع التصوير" e="Imaging Types" options={RADIO_OPTS} isOn={(v) => (p.radiographyTypes ?? []).includes(v)} />
-      {p.radiographyOther ? <Field a="أخرى" e="Other" value={p.radiographyOther} /> : null}
-      {p.radiographyResults ? <Field a={["نتائج", "التصوير"]} e="Imaging Results" value={p.radiographyResults} /> : null}
-
-      <YesNo a={["تحليل", "جديد"]} e="New Analysis" on={p.hasNewAnalysis} />
-      {(p.newAnalysisDate || p.newAnalysisNotes) ? (
-        <Field a={["تفاصيل", "الجديد"]} e="New Analysis Details"
-          value={[d(p.newAnalysisDate) || p.newAnalysisDate, p.newAnalysisNotes].filter(Boolean).join("  —  ")} />
-      ) : null}
-      <YesNo a={["تحليل", "قديم"]} e="Old Analysis" on={p.hasOldAnalysis} />
-      {(p.oldAnalysisDate || p.oldAnalysisNotes) ? (
-        <Field a={["تفاصيل", "القديم"]} e="Old Analysis Details"
-          value={[d(p.oldAnalysisDate) || p.oldAnalysisDate, p.oldAnalysisNotes].filter(Boolean).join("  —  ")} />
-      ) : null}
-
-      <YesNo a={["كثافة", "العظام"]} e="Bone Density Scan" on={p.boneDensityScan} />
-      <YesNo a={["دخول", "المشفى"]} e="Hospitalized (past year)" on={p.hospitalizedPastYear} />
-
-      {imaging.length > 0 && (
-        <>
-          <SecHead a="الإجراءات التصويرية" e="Imaging Procedures" />
-          {imaging.map((x, i) => (
-            <View key={i} style={{ marginBottom: 5 }} wrap={false}>
-              <Field a={["إجراء", String(i + 1)]} e={`Procedure ${i + 1}`} value={x.description} />
-              {typeof x.imageData === "string" && x.imageData.startsWith("data:image") && (
-                // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image, not an <img>
-                <Image src={x.imageData} style={s.imagingImage} />
-              )}
-            </View>
-          ))}
-        </>
-      )}
-
-      {conditionsList ? (
-        <>
-          <SecHead a="الحالات المرضية" e="Medical Conditions" />
-          <Text style={[s.fieldValue, { borderBottomWidth: 0, marginBottom: 3 }]}>{ar(conditionsList)}</Text>
-          {p.medicalHistoryOther ? <Field a="أخرى" e="Other" value={p.medicalHistoryOther} /> : null}
-        </>
-      ) : null}
-
-      {p.diagnosis ? (
-        <>
-          <SecHead a="التشخيص" e="Diagnosis" />
-          <Text style={[s.fieldValue, { borderBottomWidth: 0 }]}>{ar(String(p.diagnosis))}</Text>
-        </>
-      ) : null}
-
-      <Footer />
-    </Page>
-  );
-};
 
 // ── Public export ────────────────────────────────────────────────────────────
 export async function downloadPodiatryFormPdf(data: PodiatryFormPdfData): Promise<void> {

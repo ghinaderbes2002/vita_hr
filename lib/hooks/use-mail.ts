@@ -64,14 +64,18 @@ export function useMailThread(messageId: string | null) {
   });
 }
 
-export function useSendMail() {
+/**
+ * @param silentSuccess اكتم رسالة النجاح — تُستخدم عند وجود مرفقات، فالإرسال
+ * لا يكتمل فعلياً إلا بعد رفعها، وإعلان النجاح قبلها كان مضللاً.
+ */
+export function useSendMail(silentSuccess = false) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (dto: SendMailDto) => mailApi.send(dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mail", "sent"] });
       qc.invalidateQueries({ queryKey: ["mail", "inbox"] });
-      toast.success("تم إرسال الرسالة بنجاح");
+      if (!silentSuccess) toast.success("تم إرسال الرسالة بنجاح");
     },
     onError: () => toast.error("فشل إرسال الرسالة"),
   });
@@ -207,14 +211,14 @@ export function useEditMail() {
   });
 }
 
-export function useUploadAttachment() {
+export function useUploadAttachment(silentSuccess = false) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ messageId, file }: { messageId: string; file: File }) =>
       mailApi.uploadAttachment(messageId, file),
     onSuccess: (_, { messageId }) => {
       qc.invalidateQueries({ queryKey: ["mail", "message", messageId] });
-      toast.success("تم رفع المرفق");
+      if (!silentSuccess) toast.success("تم رفع المرفق");
     },
     onError: (error: any) => {
       if (error.response?.data?.error?.code === "EMPTY_FILE") {

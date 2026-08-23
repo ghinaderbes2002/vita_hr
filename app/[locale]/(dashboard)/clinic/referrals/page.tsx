@@ -28,6 +28,7 @@ const TYPE_BADGE: Record<ReferralSourceType, string> = {
   DOCTOR:      "border-blue-300 bg-blue-50 text-blue-700",
   HOSPITAL:    "border-purple-300 bg-purple-50 text-purple-700",
   ASSOCIATION: "border-green-300 bg-green-50 text-green-700",
+  OTHER:       "border-slate-300 bg-slate-50 text-slate-700",
 };
 
 export default function ReferralSourcesPage() {

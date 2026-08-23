@@ -1,8 +1,8 @@
 import { apiClient } from "./client";
 
-// Referral sources — the doctors, hospitals and associations that send patients
-// to the clinic, plus the marketing visits paid to each of them.
-export const REFERRAL_SOURCE_TYPES = ["DOCTOR", "HOSPITAL", "ASSOCIATION"] as const;
+// Referral sources — the doctors, hospitals, associations and anyone else who
+// sends patients to the clinic, plus the marketing visits paid to each of them.
+export const REFERRAL_SOURCE_TYPES = ["DOCTOR", "HOSPITAL", "ASSOCIATION", "OTHER"] as const;
 export type ReferralSourceType = (typeof REFERRAL_SOURCE_TYPES)[number];
 
 export const REFERRAL_VISIT_TYPES = ["INTRODUCTORY", "FOLLOW_UP"] as const;
@@ -12,6 +12,7 @@ export const REFERRAL_SOURCE_TYPE_LABEL: Record<ReferralSourceType, string> = {
   DOCTOR:      "طبيب",
   HOSPITAL:    "مشفى",
   ASSOCIATION: "جمعية",
+  OTHER:       "أخرى",
 };
 
 export const REFERRAL_VISIT_TYPE_LABEL: Record<ReferralVisitType, string> = {
@@ -58,6 +59,7 @@ export interface ReferralSource {
   patientDensityRating?: number | null;
   interests?: string[] | null;
   visitDays?: string | null;
+  visitTimes?: string | null;
   notes?: string | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -95,6 +97,7 @@ export interface CreateReferralSourceDto {
   patientDensityRating?: number;
   interests?: string[];
   visitDays?: string;
+  visitTimes?: string;
   notes?: string;
   latitude?: number;
   longitude?: number;

@@ -1,142 +1,42 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Archive, ArrowRight, Download, Loader2, Pencil, Plus, Save, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Download, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
-  usePodiatryReception, usePodiatrySessions, useArchivePodiatrySession,
-  useSubmitPodiatryComplaint, useSubmitPodiatryMedicalHistory,
+  useInstallPodiatrySession, usePodiatryDoctorDecision, usePodiatryReception,
+  usePodiatryReviews, usePodiatrySessions,
 } from "@/lib/hooks/use-clinic-podiatry";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
-import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { PatientPhoto } from "@/components/clinic/patient-photo";
-import { PodiatrySession, PodiatryPainType, PodiatryPainLevel, PodiatryPainTrend } from "@/lib/api/clinic-podiatry";
+import { PodiatrySession } from "@/lib/api/clinic-podiatry";
 import {
-  AFFECTED_SIDE_LABEL, AFFECTED_SIDE_VALUES, CLINICAL_PLAN_LABEL,
-  CLINICAL_PLAN_VALUES, FOOT_FLAGS, FOOT_SYMPTOM_LABEL, FOOT_SYMPTOM_VALUES,
+  AFFECTED_SIDE_LABEL, AFFECTED_SIDE_VALUES, FOOT_SYMPTOM_LABEL, FOOT_SYMPTOM_VALUES,
   MEDICAL_HISTORY_LABEL, MEDICAL_HISTORY_VALUES, VISIT_TYPE_LABEL, VISIT_TYPE_VALUES,
 } from "@/components/clinic/podiatry-labels";
-import { MedicalHistoryForm } from "@/components/clinic/medical-history-form";
+import { PodiatryAssessmentPanel } from "@/components/clinic/podiatry-assessment-panel";
+import {
+  PodiatryDoctorDecisionCard, PodiatryReviewCard,
+} from "@/components/clinic/podiatry-review-decision";
 import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
-import { PodiatrySessionDialog } from "@/components/clinic/podiatry-session-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
-const PAIN_TYPE_VALUES: PodiatryPainType[] = ["INTERMITTENT", "CONSTANT", "WITH_CERTAIN_MOTIONS"];
-const PAIN_LEVEL_VALUES: PodiatryPainLevel[] = ["MILD", "MODERATE", "SEVERE", "EXCRUCIATING"];
-const PAIN_TREND_VALUES: PodiatryPainTrend[] = ["BETTER", "WORSE", "SAME"];
-
-// ── Podiatry medical-history adapters ──────────────────────────────────────
-// The shared <MedicalHistoryForm> speaks the physiotherapy field vocabulary.
-// These translate to/from the podiatry backend contract so the UI stays
-// untouched while the payload matches the backend field names/enums exactly.
-const MH_COND_TO_BACKEND: Record<string, string> = { STDS: "STD", HYPERTENSION: "HIGH_LOW_BP" };
-const MH_COND_FROM_BACKEND: Record<string, string> = { STD: "STDS", HIGH_LOW_BP: "HYPERTENSION" };
-const MH_RADIO_TO_BACKEND: Record<string, string> = { XRAY: "X_RAY" };
-const MH_RADIO_FROM_BACKEND: Record<string, string> = { X_RAY: "XRAY" };
-
-const nz = (v: unknown) => (v === "" || v == null ? undefined : v);
-
-function mhFormToBackend(d: Record<string, any>): Record<string, any> {
-  const radio = Array.isArray(d.tests)
-    ? d.tests.filter((x: string) => x !== "BONE_DENSITY").map((x: string) => MH_RADIO_TO_BACKEND[x] ?? x)
-    : undefined;
-  const conds = Array.isArray(d.chronicConditions)
-    ? d.chronicConditions.map((x: string) => MH_COND_TO_BACKEND[x] ?? x)
-    : undefined;
-  const surgeries = Array.isArray(d.surgeries)
-    ? d.surgeries
-        .filter((s: any) => s.name || s.type || s.date)
-        .map((s: any) => ({ surgeryName: nz(s.name), type: nz(s.type), date: nz(s.date) }))
-    : undefined;
-  return {
-    currentMedications: nz(d.currentMedications),
-    previousDiagnoses: nz(d.previousDiagnoses),
-    herbalPreparations: d.herbalSupplements,
-    herbalPreparationsDetails: nz(d.supplementsList),
-    otherHealthProblems: nz(d.otherConditions),
-    doctorRestrictions: nz(d.doctorRestrictions),
-    smoker: d.smokes,
-    everSmoked: d.hasSmokedBefore,
-    smokingFrequency: nz(d.smokingFrequency),
-    hasPacemaker: d.hasPacemaker,
-    isPregnant: d.isPregnant,
-    allergyToAdhesives: d.adhesiveAllergy,
-    surgeries: surgeries && surgeries.length ? surgeries : undefined,
-    hadPhysicalTherapy: d.hadPTSameProblem,
-    hasOtherTreatments: d.receivingOtherTreatment,
-    radiographyTypes: radio && radio.length ? radio : undefined,
-    radiographyOther: nz(d.testsOther),
-    radiographyResults: nz(d.testResults),
-    hasNewAnalysis: !!(nz(d.newAnalysis) || nz(d.newAnalysisDate)) || undefined,
-    newAnalysisDate: nz(d.newAnalysisDate),
-    newAnalysisNotes: nz(d.newAnalysis),
-    hasOldAnalysis: !!(nz(d.oldAnalysis) || nz(d.oldAnalysisDate)) || undefined,
-    oldAnalysisDate: nz(d.oldAnalysisDate),
-    oldAnalysisNotes: nz(d.oldAnalysis),
-    boneDensityScan: d.boneDensityTest,
-    hospitalizedPastYear: d.hospitalizedLastYear,
-    imagingProcedures: Array.isArray(d.imagingProcedures) && d.imagingProcedures.length ? d.imagingProcedures : undefined,
-    diagnosis: nz(d.diagnosis),
-    medicalHistory: conds && conds.length ? conds : undefined,
-    medicalHistoryOther: nz(d.chronicConditionsOther),
-  };
-}
-
-function mhBackendToForm(r: Record<string, any>): Record<string, any> {
-  const tests = Array.isArray(r.radiographyTypes) ? r.radiographyTypes.map((x: string) => MH_RADIO_FROM_BACKEND[x] ?? x) : [];
-  const chronic = Array.isArray(r.medicalHistory) ? r.medicalHistory.map((x: string) => MH_COND_FROM_BACKEND[x] ?? x) : [];
-  const surgeries = Array.isArray(r.surgeries)
-    ? r.surgeries.map((s: any) => ({ name: s.surgeryName ?? "", type: s.type ?? "", date: s.date ?? "" }))
-    : [];
-  return {
-    currentMedications: r.currentMedications ?? "",
-    prescriptionDrugs: !!r.currentMedications,
-    previousDiagnoses: r.previousDiagnoses ?? "",
-    herbalSupplements: !!r.herbalPreparations,
-    supplementsList: r.herbalPreparationsDetails ?? "",
-    hasOtherHealthProblems: !!r.otherHealthProblems,
-    otherConditions: r.otherHealthProblems ?? "",
-    hasDoctorRestrictions: !!r.doctorRestrictions,
-    doctorRestrictions: r.doctorRestrictions ?? "",
-    smokes: !!r.smoker,
-    hasSmokedBefore: !!r.everSmoked,
-    smokingFrequency: r.smokingFrequency ?? "",
-    hasPacemaker: !!r.hasPacemaker,
-    isPregnant: !!r.isPregnant,
-    adhesiveAllergy: !!r.allergyToAdhesives,
-    hadSurgeries: surgeries.length > 0,
-    surgeries,
-    hadPTSameProblem: !!r.hadPhysicalTherapy,
-    receivingOtherTreatment: !!r.hasOtherTreatments,
-    tests,
-    testsOther: r.radiographyOther ?? "",
-    testResults: r.radiographyResults ?? "",
-    newAnalysis: r.newAnalysisNotes ?? "",
-    newAnalysisDate: r.newAnalysisDate ?? "",
-    oldAnalysis: r.oldAnalysisNotes ?? "",
-    oldAnalysisDate: r.oldAnalysisDate ?? "",
-    boneDensityTest: !!r.boneDensityScan,
-    hospitalizedLastYear: !!r.hospitalizedPastYear,
-    imagingProcedures: Array.isArray(r.imagingProcedures) ? r.imagingProcedures : [],
-    diagnosis: r.diagnosis ?? "",
-    chronicConditions: chronic,
-    chronicConditionsOther: r.medicalHistoryOther ?? "",
-  };
-}
+/** Right foot first, matching the RTL sheet. */
+const SIDES = [
+  { key: "Right", label: "القدم اليمنى" },
+  { key: "Left", label: "القدم اليسرى" },
+] as const;
 
 // Age in completed years, derived from the stored date of birth.
 function ageFromDob(dob?: string | null): number | null {
@@ -206,37 +106,6 @@ function ReadOnlyChips<T extends string>({
   );
 }
 
-// A foot's findings, laid out like the session form's foot block: the four
-// flags as (read-only) checkboxes, then the pressure notes and asymmetry.
-function FootFindings({ side, s }: { side: "right" | "left"; s: PodiatrySession }) {
-  const t = useTranslations("clinic.podiatry.detail");
-  return (
-    <div className="rounded-lg border p-3 space-y-2">
-      <p className="text-sm font-semibold">{side === "right" ? t("rightFoot") : t("leftFoot")}</p>
-      <div className="space-y-1.5">
-        {FOOT_FLAGS.map(({ key, label }) => (
-          <div key={key} className="flex items-center gap-2.5">
-            <input
-              type="checkbox"
-              checked={!!s[`${side}${key}` as keyof PodiatrySession]}
-              readOnly
-              tabIndex={-1}
-              className="w-4 h-4 checkbox-orange rounded-sm pointer-events-none"
-            />
-            <span className="text-sm">{label}</span>
-          </div>
-        ))}
-      </div>
-      <Field label={t("pressureNotes")}>
-        <TextBox value={side === "right" ? s.rightPressureNotes : s.leftPressureNotes} minHeight="min-h-14" />
-      </Field>
-      <Field label={t("asymmetry")}>
-        <TextBox value={side === "right" ? s.rightAsymmetry : s.leftAsymmetry} />
-      </Field>
-    </div>
-  );
-}
-
 export default function PodiatryReceptionPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -252,98 +121,35 @@ export default function PodiatryReceptionPage() {
     hasAnyPermission([
       PERMISSIONS.CLINIC_PODIATRY.SESSION_CREATE,
       PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT,
-      PERMISSIONS.CLINIC_PODIATRY.SESSION_ARCHIVE,
     ]);
 
   const { data: reception, isLoading } = usePodiatryReception(id);
-  const [showArchived, setShowArchived] = useState(false);
-  const { data: sessions = [] } = usePodiatrySessions(id, showArchived);
+  // The API returns at most one assessment per reception.
+  const { data: sessions = [] } = usePodiatrySessions(id);
+  const session: PodiatrySession | null = sessions[0] ?? null;
   const { data: patient } = useClinicPatient(reception?.patientId ?? "");
-  const archiveSession = useArchivePodiatrySession();
+  // Both hang off the reception, and both print on the sheet.
+  const { data: reviews = [] } = usePodiatryReviews(id);
+  const { data: doctorDecision } = usePodiatryDoctorDecision(id);
+  // The review and the decision are clinical writing, like the assessment.
+  const canEditAssessment =
+    isAdmin() ||
+    hasAnyPermission([
+      PERMISSIONS.CLINIC_PODIATRY.SESSION_CREATE,
+      PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT,
+    ]);
+
+  const install = useInstallPodiatrySession();
 
   const [editOpen, setEditOpen] = useState(false);
-  const [sessionDialog, setSessionDialog] = useState<{ open: boolean; session?: PodiatrySession }>({ open: false });
-  const [archiveTarget, setArchiveTarget] = useState<PodiatrySession | null>(null);
-  // Id of the session currently being rendered to PDF, so only its button spins.
-  const [pdfSessionId, setPdfSessionId] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
-  // ── نموذج الطبيب: الشكوى + التاريخ الطبي (dedicated upsert endpoints) ──
-  const submitComplaint = useSubmitPodiatryComplaint();
-  const submitMH = useSubmitPodiatryMedicalHistory();
-  const canEditReception = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PODIATRY.RECEPTION_EDIT]);
-
-  const [complaintForm, setComplaintForm] = useState({
-    mainComplaint: "", startDate: "", possibleCause: "",
-    previousDoctor: "", previousTreatment: "",
-    symptomsBetterTime: "", symptomsWorseTime: "",
-    painType: "" as "" | PodiatryPainType, painLevel: "" as "" | PodiatryPainLevel,
-    painTrend: "" as "" | PodiatryPainTrend, hadInjuryBefore: null as boolean | null,
-  });
-  const [formHydrated, setFormHydrated] = useState(false);
-
-  useEffect(() => {
-    if (!reception || formHydrated) return;
-    setComplaintForm({
-      mainComplaint: reception.mainComplaint ?? "",
-      startDate: reception.startDate ?? "",
-      possibleCause: reception.possibleCause ?? "",
-      previousDoctor: reception.previousDoctor ?? "",
-      previousTreatment: reception.previousTreatment ?? "",
-      symptomsBetterTime: reception.symptomsBetterTime ?? "",
-      symptomsWorseTime: reception.symptomsWorseTime ?? "",
-      painType: (reception.painType as PodiatryPainType) ?? "",
-      painLevel: (reception.painLevel as PodiatryPainLevel) ?? "",
-      painTrend: (reception.painTrend as PodiatryPainTrend) ?? "",
-      hadInjuryBefore: typeof reception.hadInjuryBefore === "boolean" ? reception.hadInjuryBefore : null,
-    });
-    setFormHydrated(true);
-  }, [reception, formHydrated]);
-
-  const handleSaveComplaint = () => submitComplaint.mutate({ id, dto: {
-    mainComplaint: complaintForm.mainComplaint || undefined,
-    startDate: complaintForm.startDate || undefined,
-    possibleCause: complaintForm.possibleCause || undefined,
-    previousDoctor: complaintForm.previousDoctor || undefined,
-    previousTreatment: complaintForm.previousTreatment || undefined,
-    symptomsBetterTime: complaintForm.symptomsBetterTime || undefined,
-    symptomsWorseTime: complaintForm.symptomsWorseTime || undefined,
-    painType: complaintForm.painType || undefined,
-    painLevel: complaintForm.painLevel || undefined,
-    painTrend: complaintForm.painTrend || undefined,
-    hadInjuryBefore: complaintForm.hadInjuryBefore ?? undefined,
-  } });
-
-
-  // One sheet per session: reception data is shared, the analysis is the session's.
-  const handleExportPdf = async (session: PodiatrySession) => {
-    if (pdfSessionId) return;
-    setPdfSessionId(session.id);
+  // The sheet pairs the reception data with the reception's assessment.
+  const handleExportPdf = async () => {
+    if (pdfBusy || !session) return;
+    setPdfBusy(true);
     try {
       const { downloadPodiatryFormPdf } = await import("@/components/clinic/podiatry-form-pdf");
-      // Resolve imaging-procedure images (stored as document ids) to data URIs so
-      // they embed in the PDF; on failure the row still prints its description.
-      const pid = reception?.patientId;
-      const rawImaging: any[] = Array.isArray((reception as any)?.imagingProcedures)
-        ? (reception as any).imagingProcedures : [];
-      const blobToDataUri = (blob: Blob) =>
-        new Promise<string>((resolve, reject) => {
-          const r = new FileReader();
-          r.onload = () => resolve(r.result as string);
-          r.onerror = reject;
-          r.readAsDataURL(blob);
-        });
-      const imagingProcedures = await Promise.all(
-        rawImaging.map(async (proc) => {
-          if (!proc?.imageUrl || !pid) return { ...proc };
-          try {
-            const blob = await clinicPatientsApi.downloadDocument(pid, proc.imageUrl);
-            return { ...proc, imageData: await blobToDataUri(blob) };
-          } catch {
-            return { ...proc };
-          }
-        }),
-      );
-      const physician = { ...(reception as any), imagingProcedures };
       await downloadPodiatryFormPdf({
         date: session.createdAt,
         patientName:
@@ -360,18 +166,21 @@ export default function PodiatryReceptionPage() {
         affectedSide: reception?.affectedSide,
         footSymptoms: reception?.footSymptoms,
         visitTypes: reception?.visitTypes,
+        footSymptomsRight: reception?.footSymptomsRight,
+        footSymptomsLeft: reception?.footSymptomsLeft,
+        visitTypesRight: reception?.visitTypesRight,
+        visitTypesLeft: reception?.visitTypesLeft,
         medicalHistory: reception?.medicalHistory,
         medicalHistoryOther: reception?.medicalHistoryOther,
         vasScore: reception?.vasScore,
         session,
-        // Full reception → renders the physician-form sheet (complaint + history),
-        // with imaging images resolved to embeddable data URIs.
-        physician,
+        reviews: reviews.map((r) => r.notes).filter((n): n is string => !!n),
+        doctorDecision: doctorDecision?.decision,
       });
     } catch {
       toast.error(t("exportFailed"));
     } finally {
-      setPdfSessionId(null);
+      setPdfBusy(false);
     }
   };
 
@@ -381,6 +190,8 @@ export default function PodiatryReceptionPage() {
   if (!reception) {
     return <p className="text-center py-12 text-muted-foreground">{t("notFound")}</p>;
   }
+
+  const isBilateral = (reception.affectedSide ?? []).includes("BILATERAL");
 
   const patientName =
     `${patient?.firstName ?? reception.patient?.firstName ?? ""} ${patient?.lastName ?? reception.patient?.lastName ?? ""}`.trim()
@@ -407,17 +218,46 @@ export default function PodiatryReceptionPage() {
             <span className="text-xs text-muted-foreground">{fmt(reception.createdAt)}</span>
           </div>
         </div>
+
+        {/* Recorded once, any time after the assessment exists. */}
+        {session && (
+          session.installedAt ? (
+            <Badge variant="outline" className="gap-1.5 border-emerald-300 bg-emerald-50 px-3 py-1.5 text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" />
+              {t("installed")} — {fmt(session.installedAt)}
+              {session.installedByName ? ` — ${session.installedByName}` : ""}
+            </Badge>
+          ) : (
+            <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT}>
+              <Button
+                className="gap-1.5"
+                disabled={install.isPending}
+                onClick={() => install.mutate({ receptionId: id, sessionId: session.id })}
+              >
+                {install.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <CheckCircle2 className="h-4 w-4" />}
+                {t("markInstalled")}
+              </Button>
+            </ActionGuard>
+          )
+        )}
       </div>
 
       <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
         <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
           <TabsTrigger value="reception" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabReception")}</TabsTrigger>
           <TabsTrigger value="patient_info" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabPatientInfo")}</TabsTrigger>
-          <TabsTrigger value="physician_form" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabPhysicianForm")}</TabsTrigger>
           {/* The assessment form is a session activity — hidden from a supervisor
               who can only receive patients (no session permission). */}
           {showSessionsTab && (
             <TabsTrigger value="sessions" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabSessions")}</TabsTrigger>
+          )}
+          {showSessionsTab && (
+            <TabsTrigger value="review" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabReview")}</TabsTrigger>
+          )}
+          {showSessionsTab && (
+            <TabsTrigger value="doctor_decision" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabDoctorDecision")}</TabsTrigger>
           )}
         </TabsList>
 
@@ -452,21 +292,58 @@ export default function PodiatryReceptionPage() {
                   />
                 </Field>
 
-                <Field label={t("footSymptoms")}>
-                  <ReadOnlyChips
-                    values={FOOT_SYMPTOM_VALUES}
-                    selected={reception.footSymptoms ?? []}
-                    label={(v) => FOOT_SYMPTOM_LABEL[v]}
-                  />
-                </Field>
+                {/* Both feet affected → each one carries its own answers. */}
+                {isBilateral ? (
+                  <>
+                    <Field label={t("footSymptoms")}>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {SIDES.map(({ key, label }) => (
+                          <div key={key} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
+                            <p className="text-[11px] text-muted-foreground">{label}</p>
+                            <ReadOnlyChips
+                              values={FOOT_SYMPTOM_VALUES}
+                              selected={(key === "Right" ? reception.footSymptomsRight : reception.footSymptomsLeft) ?? []}
+                              label={(v) => FOOT_SYMPTOM_LABEL[v]}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </Field>
 
-                <Field label={t("visitType")}>
-                  <ReadOnlyChips
-                    values={VISIT_TYPE_VALUES}
-                    selected={reception.visitTypes ?? []}
-                    label={(v) => VISIT_TYPE_LABEL[v]}
-                  />
-                </Field>
+                    <Field label={t("visitType")}>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {SIDES.map(({ key, label }) => (
+                          <div key={key} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
+                            <p className="text-[11px] text-muted-foreground">{label}</p>
+                            <ReadOnlyChips
+                              values={VISIT_TYPE_VALUES}
+                              selected={(key === "Right" ? reception.visitTypesRight : reception.visitTypesLeft) ?? []}
+                              label={(v) => VISIT_TYPE_LABEL[v]}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </Field>
+                  </>
+                ) : (
+                  <>
+                    <Field label={t("footSymptoms")}>
+                      <ReadOnlyChips
+                        values={FOOT_SYMPTOM_VALUES}
+                        selected={reception.footSymptoms ?? []}
+                        label={(v) => FOOT_SYMPTOM_LABEL[v]}
+                      />
+                    </Field>
+
+                    <Field label={t("visitType")}>
+                      <ReadOnlyChips
+                        values={VISIT_TYPE_VALUES}
+                        selected={reception.visitTypes ?? []}
+                        label={(v) => VISIT_TYPE_LABEL[v]}
+                      />
+                    </Field>
+                  </>
+                )}
 
                 <Field label={t("medicalHistory")}>
                   <ReadOnlyChips
@@ -479,22 +356,6 @@ export default function PodiatryReceptionPage() {
                   )}
                 </Field>
 
-                <Field label={`${t("painIntensity")}${reception.vasScore != null ? ` — ${reception.vasScore}/10` : ""}`}>
-                  <div className="flex flex-wrap gap-1.5">
-                    {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                      <div
-                        key={n}
-                        className={`flex h-9 w-9 items-center justify-center rounded-md border text-sm ${
-                          reception.vasScore === n
-                            ? "border-orange-500 bg-orange-500 text-white"
-                            : "border-border text-muted-foreground"
-                        }`}
-                      >
-                        {n}
-                      </div>
-                    ))}
-                  </div>
-                </Field>
               </div>
             </CardContent>
           </Card>
@@ -522,249 +383,30 @@ export default function PodiatryReceptionPage() {
           </Card>
         </TabsContent>
 
-        {/* ── نموذج الطبيب: تابين فرعيين (الشكوى + التاريخ الطبي) ── */}
-        <TabsContent value="physician_form" className="mt-4">
-          <Tabs defaultValue="complaint" dir={isRtl ? "rtl" : "ltr"}>
-            <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
-              <TabsTrigger value="complaint" className="text-sm py-1.5">{t("tabComplaint")}</TabsTrigger>
-              <TabsTrigger value="medical_history" className="text-sm py-1.5">{t("tabMedicalHistory")}</TabsTrigger>
-            </TabsList>
-
-            {/* ── الشكوى ── */}
-            <TabsContent value="complaint" className="mt-4">
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-base">{t("tabComplaint")}</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <Field label={t("majorComplaint")}>
-                      <Textarea rows={3} value={complaintForm.mainComplaint} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, mainComplaint: e.target.value }))} />
-                    </Field>
-                    <Field label={t("startDate")}>
-                      <Input value={complaintForm.startDate} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, startDate: e.target.value }))} />
-                    </Field>
-                    <Field label={t("possibleCause")}>
-                      <Input value={complaintForm.possibleCause} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, possibleCause: e.target.value }))} />
-                    </Field>
-                    <Field label={t("previousDoctorSeen")}>
-                      <Input value={complaintForm.previousDoctor} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, previousDoctor: e.target.value }))} />
-                    </Field>
-                    <Field label={t("previousTreatment")}>
-                      <Input value={complaintForm.previousTreatment} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, previousTreatment: e.target.value }))} />
-                    </Field>
-                    <Field label={t("lessBothersome")}>
-                      <Input value={complaintForm.symptomsBetterTime} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, symptomsBetterTime: e.target.value }))} />
-                    </Field>
-                    <Field label={t("moreBothersome")}>
-                      <Input value={complaintForm.symptomsWorseTime} disabled={!canEditReception}
-                        onChange={(e) => setComplaintForm((f) => ({ ...f, symptomsWorseTime: e.target.value }))} />
-                    </Field>
-                    <Field label={t("painTypeLabel")}>
-                      <div className="flex flex-wrap gap-4">
-                        {PAIN_TYPE_VALUES.map((v) => (
-                          <label key={v} className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" className="h-4 w-4 accent-primary rounded-sm" disabled={!canEditReception}
-                              checked={complaintForm.painType === v}
-                              onChange={() => setComplaintForm((f) => ({ ...f, painType: f.painType === v ? "" : v }))} />
-                            <span className="text-sm">{t(`painType.${v}`)}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </Field>
-                    <Field label={t("painLevelLabel")}>
-                      <div className="flex flex-wrap gap-4">
-                        {PAIN_LEVEL_VALUES.map((v) => (
-                          <label key={v} className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" className="h-4 w-4 accent-primary rounded-sm" disabled={!canEditReception}
-                              checked={complaintForm.painLevel === v}
-                              onChange={() => setComplaintForm((f) => ({ ...f, painLevel: f.painLevel === v ? "" : v }))} />
-                            <span className="text-sm">{t(`painLevel.${v}`)}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </Field>
-                    <Field label={t("painProgression")}>
-                      <div className="flex flex-wrap gap-4">
-                        {PAIN_TREND_VALUES.map((v) => (
-                          <label key={v} className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" className="h-4 w-4 accent-primary rounded-sm" disabled={!canEditReception}
-                              checked={complaintForm.painTrend === v}
-                              onChange={() => setComplaintForm((f) => ({ ...f, painTrend: f.painTrend === v ? "" : v }))} />
-                            <span className="text-sm">{t(`painTrend.${v}`)}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </Field>
-                    <Field label={t("hadInjuryBefore")}>
-                      <div className="flex flex-wrap gap-4">
-                        {([["yes", true], ["no", false]] as const).map(([labelKey, val]) => (
-                          <label key={labelKey} className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" className="h-4 w-4 accent-primary rounded-sm" disabled={!canEditReception}
-                              checked={complaintForm.hadInjuryBefore === val}
-                              onChange={() => setComplaintForm((f) => ({ ...f, hadInjuryBefore: f.hadInjuryBefore === val ? null : val }))} />
-                            <span className="text-sm">{t(labelKey)}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </Field>
-                    {canEditReception && (
-                      <Button onClick={handleSaveComplaint} disabled={submitComplaint.isPending} className="w-full gap-2 bg-orange-500 hover:bg-orange-600 text-white">
-                        {submitComplaint.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        {t("saveComplaint")}
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ── التاريخ الطبي ── (نفس فورم العلاج الفيزيائي بالضبط) */}
-            <TabsContent value="medical_history" className="mt-4">
-              <MedicalHistoryForm
-                initial={mhBackendToForm(reception as any)}
-                patientId={reception.patientId}
-                gender={patient?.gender}
-                canEdit={canEditReception}
-                saving={submitMH.isPending}
-                onSave={(dto) => submitMH.mutate({ id, dto: mhFormToBackend(dto) })}
-              />
-            </TabsContent>
-          </Tabs>
+        <TabsContent value="sessions" className="mt-4">
+          <PodiatryAssessmentPanel
+            receptionId={id}
+            session={session}
+            title={t("tabSessions")}
+            actions={session && (
+              <Button size="sm" variant="outline" className="gap-1.5" disabled={pdfBusy} onClick={handleExportPdf}>
+                {pdfBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                {pdfBusy ? t("loading") : t("exportPdf")}
+              </Button>
+            )}
+          />
         </TabsContent>
 
-        <TabsContent value="sessions" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
-                  {t("sessions")}{sessions.length > 0 ? ` (${sessions.length})` : ""}
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant={showArchived ? "secondary" : "outline"}
-                    className="gap-1.5"
-                    onClick={() => setShowArchived((v) => !v)}
-                  >
-                    <Archive className="h-3.5 w-3.5" />
-                    {showArchived ? t("hideArchived") : t("showArchived")}
-                  </Button>
-                  <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_CREATE}>
-                    <Button size="sm" className="gap-1.5" onClick={() => setSessionDialog({ open: true })}>
-                      <Plus className="h-3.5 w-3.5" />
-                      {t("addSession")}
-                    </Button>
-                  </ActionGuard>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {sessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">{t("noSessions")}</p>
-              ) : (
-                <div className="space-y-3">
-                  {sessions.map((s, idx) => (
-                    <div key={s.id} className="rounded-lg border p-3 space-y-3">
-                      <div className="flex items-start justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{idx + 1}</Badge>
-                          <span className="text-xs text-muted-foreground">{fmt(s.createdAt)}</span>
-                          {s.clinicianName && <span className="text-sm font-medium">{s.clinicianName}</span>}
-                        </div>
-                        <div className="flex gap-1.5 items-center">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5"
-                            disabled={pdfSessionId === s.id}
-                            onClick={() => handleExportPdf(s)}
-                          >
-                            {pdfSessionId === s.id
-                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              : <Download className="h-3.5 w-3.5" />}
-                            {pdfSessionId === s.id ? t("loading") : t("exportPdf")}
-                          </Button>
-                          {s.archivedAt ? (
-                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-xs gap-1">
-                              <Archive className="h-3 w-3" />
-                              {t("archived")}{` — ${fmt(s.archivedAt)}`}
-                            </Badge>
-                          ) : (
-                            <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_ARCHIVE}>
-                              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setArchiveTarget(s)}>
-                                <Archive className="h-3.5 w-3.5" />
-                                {t("archive")}
-                              </Button>
-                            </ActionGuard>
-                          )}
-                        </div>
-                      </div>
+        <TabsContent value="review" className="mt-4">
+          <PodiatryReviewCard receptionId={id} canEdit={canEditAssessment} />
+        </TabsContent>
 
-                      <Field label={t("treatmentPlan")}>
-                        <ReadOnlyChips
-                          values={CLINICAL_PLAN_VALUES}
-                          selected={s.clinicalPlan ?? []}
-                          label={(v) => CLINICAL_PLAN_LABEL[v]}
-                        />
-                      </Field>
-
-                      <div className="grid md:grid-cols-2 gap-3">
-                        <FootFindings side="right" s={s} />
-                        <FootFindings side="left" s={s} />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <Field label={t("clinicianName")}><TextBox value={s.clinicianName} /></Field>
-                        <Field label={t("signature")}>
-                          {s.clinicianSignature ? (
-                            s.clinicianSignature.startsWith("data:") || s.clinicianSignature.startsWith("http") ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={s.clinicianSignature} alt={t("signature")} className="h-16 w-full object-contain border rounded bg-white" />
-                            ) : (
-                              <TextBox value={s.clinicianSignature} />
-                            )
-                          ) : (
-                            <TextBox value={null} />
-                          )}
-                        </Field>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="doctor_decision" className="mt-4">
+          <PodiatryDoctorDecisionCard receptionId={id} canEdit={canEditAssessment} />
         </TabsContent>
       </Tabs>
 
       <PodiatryReceptionDialog open={editOpen} onOpenChange={setEditOpen} reception={reception} />
-
-      <PodiatrySessionDialog
-        open={sessionDialog.open}
-        onOpenChange={(o) => setSessionDialog((s) => ({ ...s, open: o }))}
-        receptionId={id}
-        session={sessionDialog.session}
-      />
-
-      <ConfirmDialog
-        open={!!archiveTarget}
-        onOpenChange={(o) => { if (!o) setArchiveTarget(null); }}
-        title={t("archiveSessionTitle")}
-        description={t("archiveSessionDesc")}
-        onConfirm={() => {
-          if (archiveTarget) archiveSession.mutate({ receptionId: id, sessionId: archiveTarget.id });
-          setArchiveTarget(null);
-        }}
-      />
-
-      {archiveSession.isPending && (
-        <div className="fixed bottom-4 left-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-      )}
     </div>
   );
 }
