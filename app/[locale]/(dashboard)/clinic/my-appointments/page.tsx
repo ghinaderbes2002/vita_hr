@@ -197,7 +197,7 @@ export default function MyAppointmentsPage() {
              and the calendar's legend. ── */}
       <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset((w) => w - 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -295,7 +295,7 @@ export default function MyAppointmentsPage() {
                   [t("form.department"), detailDept || "—"],
                   [t("form.notes"), detailAppt.notes || "—"],
                 ] as [string, React.ReactNode][]).map(([label, value]) => (
-                  <div key={label} className="flex items-start justify-between gap-3 py-2">
+                  <div key={label} className="flex flex-wrap items-start justify-between gap-3 py-2">
                     <dt className="shrink-0 text-muted-foreground">{label}</dt>
                     <dd className="text-end font-medium">{value}</dd>
                   </div>

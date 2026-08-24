@@ -60,7 +60,7 @@ export default function HrReportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{tHr("title")}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{tHr("description")}</p>
@@ -68,7 +68,7 @@ export default function HrReportsPage() {
       </div>
 
       {/* ─── 1. Employee Distribution ─────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
           {tHr("employees.title")}
@@ -149,7 +149,7 @@ export default function HrReportsPage() {
       ) : null}
 
       {/* ─── 2. Turnover ──────────────────────────────── */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex flex-wrap gap-2 items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />
           {tHr("turnover.title")}
@@ -262,7 +262,7 @@ export default function HrReportsPage() {
       </Card>
 
       {/* ─── 4. Expiry ───────────────────── */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex flex-wrap gap-2 items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-500" />
           {tHr("expiry.title")}

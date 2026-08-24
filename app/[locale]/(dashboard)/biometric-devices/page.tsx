@@ -352,7 +352,7 @@ export default function BiometricDevicesPage() {
                 placeholder={t("form.modelPlaceholder")}
               />
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
               <Label className="cursor-pointer">{t("form.isActive")}</Label>
               <Switch
                 checked={form.isActive}

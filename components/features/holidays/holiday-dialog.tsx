@@ -276,7 +276,7 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
               control={form.control}
               name="isRecurring"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <FormItem className="flex flex-wrap gap-2 flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">
                       {t("holidays.fields.isRecurring")}
@@ -313,7 +313,7 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
                 control={form.control}
                 name="isActive"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <FormItem className="flex flex-wrap gap-2 flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">
                         {t("common.active")}

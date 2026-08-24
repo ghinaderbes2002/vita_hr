@@ -100,7 +100,7 @@ export function GmApprovalTab({ form }: GmApprovalTabProps) {
           {/* HR Review Summary */}
           {form.hrComments && (
             <div className="space-y-2 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <div className="flex justify-between items-start">
+              <div className="flex flex-wrap gap-2 justify-between items-start">
                 <h4 className="font-semibold text-purple-900">مراجعة الموارد البشرية</h4>
                 {form.hrRecommendation && (
                   <Badge className="bg-purple-100 text-purple-800">

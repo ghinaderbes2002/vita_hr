@@ -100,14 +100,14 @@ export function ManagerEvaluationTab({ form }: ManagerEvaluationTabProps) {
               <h4 className="font-semibold text-blue-900 mb-2">التقييم الذاتي للموظف</h4>
               <div className="space-y-2">
                 {form.sections.map((section) => (
-                  <div key={section.criteriaId} className="flex justify-between text-sm">
+                  <div key={section.criteriaId} className="flex flex-wrap gap-2 justify-between text-sm">
                     <span className="text-blue-700">{section.criteria?.nameAr}</span>
                     <span className="font-medium text-blue-900">
                       {section.selfScore || "-"} / {section.criteria?.maxScore}
                     </span>
                   </div>
                 ))}
-                <div className="flex justify-between pt-2 border-t border-blue-300">
+                <div className="flex flex-wrap gap-2 justify-between pt-2 border-t border-blue-300">
                   <span className="font-semibold text-blue-900">المجموع الكلي</span>
                   <span className="font-bold text-blue-900">{form.totalSelfScore.toFixed(1)}</span>
                 </div>
@@ -128,7 +128,7 @@ export function ManagerEvaluationTab({ form }: ManagerEvaluationTabProps) {
             const sectionData = sections[index];
             return (
               <div key={section.criteriaId} className="p-4 border rounded-lg space-y-3">
-                <div className="flex justify-between items-start">
+                <div className="flex flex-wrap gap-2 justify-between items-start">
                   <div className="flex-1">
                     <h4 className="font-semibold">{section.criteria?.nameAr}</h4>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -221,7 +221,7 @@ export function ManagerEvaluationTab({ form }: ManagerEvaluationTabProps) {
 
           {/* Summary */}
           <div className="p-4 bg-muted rounded-lg">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-2 justify-between items-center">
               <span className="text-sm font-medium">المجموع الكلي</span>
               <span className="text-2xl font-bold text-orange-600">
                 {form.totalManagerScore?.toFixed(1) || "0.0"}

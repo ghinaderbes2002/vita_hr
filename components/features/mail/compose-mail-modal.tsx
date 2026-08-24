@@ -271,7 +271,7 @@ export function ComposeMailModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-4 w-4" />
@@ -285,7 +285,7 @@ export function ComposeMailModal({
             <>
               {/* To */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label className="text-sm">{t("toLabel")}</Label>
                   <div className="flex gap-2">
                     {!showCc && (
@@ -316,7 +316,7 @@ export function ComposeMailModal({
               {/* CC */}
               {showCc && (
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <Label className="text-sm">{t("ccLabel")}</Label>
                     <button type="button" onClick={() => { setShowCc(false); setCcIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
                       <X className="h-3.5 w-3.5" />
@@ -329,7 +329,7 @@ export function ComposeMailModal({
               {/* BCC */}
               {showBcc && (
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <Label className="text-sm">{t("bccLabel")}</Label>
                     <button type="button" onClick={() => { setShowBcc(false); setBccIds([]); }} className="text-xs text-muted-foreground hover:text-destructive">
                       <X className="h-3.5 w-3.5" />
@@ -342,7 +342,7 @@ export function ComposeMailModal({
               {/* Department */}
               {showDept && (
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <Label className="text-sm flex items-center gap-1">
                       <Building2 className="h-3.5 w-3.5" />
                       {t("sendToDeptLabel")}
@@ -396,7 +396,7 @@ export function ComposeMailModal({
 
           {/* Body */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <Label className="text-sm">{t("bodyLabel")}</Label>
               {!forwardMessageId && (
                 <button
@@ -506,7 +506,7 @@ export function ComposeMailModal({
             {pendingFiles.length > 0 && (
               <div className="border rounded-md divide-y">
                 {pendingFiles.map((file) => (
-                  <div key={file.name} className="flex items-center justify-between px-3 py-1.5 text-sm">
+                  <div key={file.name} className="flex flex-wrap gap-2 items-center justify-between px-3 py-1.5 text-sm">
                     <div className="flex items-center gap-2 min-w-0">
                       <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="truncate">{file.name}</span>
@@ -526,7 +526,7 @@ export function ComposeMailModal({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex flex-wrap gap-2 items-center justify-between pt-1">
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={onClose} disabled={isPending}>{t("cancel")}</Button>
               <Button type="button" variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => fileInputRef.current?.click()} disabled={isPending}>

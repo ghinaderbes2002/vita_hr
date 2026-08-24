@@ -102,7 +102,7 @@ export default function CustodyDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 pb-4 border-b">
+      <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowRight className="h-5 w-5" />
@@ -297,7 +297,7 @@ export default function CustodyDetailPage() {
             <img
               src={assetUrl(attachments[lightboxIndex].fileUrl)}
               alt={attachments[lightboxIndex].fileName}
-              className="max-w-[80vw] max-h-[80vh] rounded-lg object-contain"
+              className="max-w-[80vw] max-h-[80dvh] rounded-lg object-contain"
               onClick={(e) => e.stopPropagation()}
             />
             <button
@@ -343,7 +343,7 @@ export default function CustodyDetailPage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4">
+    <div className="flex flex-wrap justify-between gap-4">
       <span className="text-muted-foreground shrink-0">{label}</span>
       <span className="font-medium text-left">{value}</span>
     </div>

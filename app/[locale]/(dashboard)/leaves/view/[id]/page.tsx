@@ -329,7 +329,7 @@ export default function ViewLeaveRequestPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex items-center justify-between rounded-md bg-amber-100 px-3 py-2 text-sm">
+              <div className="flex flex-wrap gap-2 items-center justify-between rounded-md bg-amber-100 px-3 py-2 text-sm">
                 <span className="text-amber-900">{d.reason}</span>
                 <span className="font-semibold text-amber-800">{d.overLimitHours} ساعة تُخصم من الراتب</span>
               </div>

@@ -73,7 +73,7 @@ const DOC_TYPE_LABEL: Record<string, string> = {
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
   return (
-    <div className="flex justify-between py-1.5 border-b last:border-0">
+    <div className="flex flex-wrap gap-2 justify-between py-1.5 border-b last:border-0">
       <span className="text-muted-foreground text-sm">{label}</span>
       <span className="text-sm font-medium">{value}</span>
     </div>
@@ -168,7 +168,7 @@ export default function PatientProfilePage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
         </div>
         <Skeleton className="h-96" />
@@ -223,8 +223,8 @@ export default function PatientProfilePage() {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap gap-2 items-start justify-between">
+        <div className="flex flex-wrap items-center gap-4">
           {photoUrl && !photoLoadError ? (
             <button
               type="button"
@@ -260,7 +260,7 @@ export default function PatientProfilePage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}/clinic/patients/${id}/timeline`)}>
             <Activity className="h-4 w-4 ml-1" />
             الرحلة الزمنية
@@ -503,7 +503,7 @@ export default function PatientProfilePage() {
 
         {/* Prosthetics Tab */}
         <TabsContent value="prosthetics" className="mt-4 space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
             <h3 className="font-semibold">حالات الأطراف الصناعية</h3>
               <ActionGuard permission={PERMISSIONS.CLINIC_PROSTHETICS.CASE_CREATE}>
                 <Button size="sm" onClick={handleNewProstheticsCase} disabled={createProst.isPending} className="gap-2">
@@ -519,7 +519,7 @@ export default function PatientProfilePage() {
               {prostCases.map((c: ProstheticsCase) => (
                 <Card key={c.id} className="cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => router.push(`/${locale}/clinic/prosthetics/${c.id}`)}>
-                  <CardContent className="pt-4 flex items-center justify-between">
+                  <CardContent className="pt-4 flex flex-wrap gap-2 items-center justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <CaseStatusBadge status={c.status} />
@@ -543,7 +543,7 @@ export default function PatientProfilePage() {
         <TabsContent value="physio" className="mt-4 space-y-4">
           {/* A PT case cannot be opened directly any more — it only comes from
               converting a finished doctor exam. */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
             <h3 className="font-semibold">حالات العلاج الفيزيائي</h3>
             <span className="text-xs text-muted-foreground">تُنشأ بتحويل معاينة الطبيب</span>
           </div>
@@ -554,7 +554,7 @@ export default function PatientProfilePage() {
               {physioCases.map((c: PhysioCase) => (
                 <Card key={c.id} className="cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}>
-                  <CardContent className="pt-4 flex items-center justify-between">
+                  <CardContent className="pt-4 flex flex-wrap gap-2 items-center justify-between">
                     <div>
                       <CaseStatusBadge status={c.status} />
                       <p className="text-xs text-muted-foreground mt-1">{new Date(c.createdAt).toLocaleDateString("en-GB")}</p>
@@ -569,7 +569,7 @@ export default function PatientProfilePage() {
 
         {/* Podiatry Tab */}
         <TabsContent value="podiatry" className="mt-4 space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
             <h3 className="font-semibold">استقبالات طب الأقدام</h3>
             <Button size="sm" onClick={() => setPodiatryDialogOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -583,7 +583,7 @@ export default function PatientProfilePage() {
               {(podiatryReceptions as PodiatryReception[]).map((r) => (
                 <Card key={r.id} className="cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => router.push(`/${locale}/clinic/podiatry/${r.id}`)}>
-                  <CardContent className="pt-4 flex items-center justify-between gap-3">
+                  <CardContent className="pt-4 flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap gap-1">
                         {(r.visitTypes ?? []).map((v) => (
@@ -606,7 +606,7 @@ export default function PatientProfilePage() {
 
         {/* Doctor Exam Tab */}
         <TabsContent value="doctor_exam" className="mt-4 space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
             <h3 className="font-semibold">معاينات الطبيب</h3>
             <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
               <Button size="sm" onClick={handleNewDoctorExam} disabled={createPhysio.isPending} className="gap-2">
@@ -622,7 +622,7 @@ export default function PatientProfilePage() {
               {doctorExams.map((c: PhysioCase) => (
                 <Card key={c.id} className="cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => router.push(`/${locale}/clinic/physio/${c.id}`)}>
-                  <CardContent className="pt-4 flex items-center justify-between gap-3">
+                  <CardContent className="pt-4 flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <CaseStatusBadge status={c.status} />
@@ -654,7 +654,7 @@ export default function PatientProfilePage() {
 
         {/* Documents Tab */}
         <TabsContent value="documents" className="mt-4 space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
             <h3 className="font-semibold">المستندات</h3>
             <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.UPLOAD_DOCUMENTS}>
               <Button size="sm" variant="outline" className="gap-2" onClick={() => setUploadDialogOpen(true)}>

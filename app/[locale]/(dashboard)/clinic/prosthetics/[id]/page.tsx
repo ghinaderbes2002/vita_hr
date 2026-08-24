@@ -332,7 +332,7 @@ function TreatmentProgramCard({
 
   return (
     <div className="rounded-lg border p-3 space-y-2">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-wrap gap-2 justify-between items-start">
         <button
           type="button"
           onClick={() => { if (expanded) setEditing(false); setExpanded(!expanded); }}
@@ -433,7 +433,7 @@ function TreatmentProgramCard({
 
       {editing && (
         <div className="space-y-3 pt-2 border-t">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">{t("followUp.sessionDate")}</Label>
               <Input type="date" value={form.sessionDate} onChange={(e) => setForm((f) => ({ ...f, sessionDate: e.target.value }))} />
@@ -466,7 +466,7 @@ function TreatmentProgramCard({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">{t("followUp.startTime")}</Label>
               <Input type="time" value={form.sessionStartTime} onChange={(e) => setForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
@@ -482,7 +482,7 @@ function TreatmentProgramCard({
             <Textarea rows={2} placeholder={t("followUp.extraNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="rounded-lg border p-3 space-y-2">
               <p className="text-xs font-semibold">{t("followUp.signature")}</p>
               {form.technicianSignatureUrl ? (
@@ -506,7 +506,7 @@ function TreatmentProgramCard({
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={handleSave} disabled={updateProgram.isPending} className="flex-1 gap-1">
               {updateProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
               {t("followUp.save")}
@@ -641,7 +641,7 @@ function TreatmentProgramsSection({
         <div className="space-y-2 mb-3">
           {alerts.map((a) => (
             <div key={a.id} className="rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-900 space-y-1">
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="space-y-0.5">
                   <p className="flex items-center gap-1 font-medium">
                     <Bell className="h-3 w-3" />
@@ -737,7 +737,7 @@ function TreatmentProgramsSection({
       {showForm && (
         <div className="rounded-lg border border-dashed p-3 space-y-3 mb-3 bg-muted/30">
           <p className="text-sm font-medium">{t("followUp.newSession")}</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">{t("followUp.sessionDateReq")}</Label>
               <Input type="date" value={newForm.sessionDate} onChange={(e) => setNewForm((f) => ({ ...f, sessionDate: e.target.value }))} />
@@ -746,11 +746,11 @@ function TreatmentProgramsSection({
               <Label className="text-xs">{t("followUp.sessionTime")}</Label>
               <Input type="time" value={newForm.sessionTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionTime: e.target.value }))} />
             </div>
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 col-span-1 sm:col-span-2">
               <Label className="text-xs">{t("followUp.description")}</Label>
               <Textarea rows={2} className="resize-none" placeholder={t("followUp.descriptionPlaceholder")} value={newForm.description} onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))} />
             </div>
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 col-span-1 sm:col-span-2">
               <Label className="text-xs">{t("followUp.therapistName")}</Label>
               <Select value={newForm.technicianId || "none"} onValueChange={(v) => setNewForm((f) => ({ ...f, technicianId: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder={t("followUp.chooseTherapist")} /></SelectTrigger>
@@ -774,11 +774,11 @@ function TreatmentProgramsSection({
               <Label className="text-xs">{t("followUp.endTime")}</Label>
               <Input type="time" value={newForm.sessionEndTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
             </div>
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 col-span-1 sm:col-span-2">
               <Label className="text-xs">{t("followUp.notes")}</Label>
               <Textarea rows={2} className="resize-none" placeholder={t("followUp.notesPlaceholder")} value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
-            <div className="col-span-2 grid grid-cols-2 gap-3">
+            <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-lg border p-3 space-y-2">
                 <p className="text-xs font-semibold">{t("followUp.signature")}</p>
                 {newForm.technicianSignatureUrl ? (
@@ -803,7 +803,7 @@ function TreatmentProgramsSection({
             </div>
           </div>
           <input ref={newSigFileRef} type="file" accept="image/*" className="hidden" onChange={handleNewSignatureFileChange} />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={handleAdd} disabled={!newForm.sessionDate || createProgram.isPending} className="gap-1">
               {createProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               {t("followUp.add")}
@@ -918,14 +918,14 @@ function ReviewProgramCard({
 
   return (
     <div className="rounded-lg border p-3 space-y-2">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-wrap gap-2 justify-between items-start">
         <div className="flex gap-2 items-center flex-wrap">
           <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{idx + 1}</Badge>
           {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
           {form.sessionTime && <span className="text-xs text-muted-foreground">{form.sessionTime}</span>}
         </div>
         {!locked && (
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
               {editing ? t("followUp.close") : t("followUp.edit")}
             </Button>
@@ -972,7 +972,7 @@ function ReviewProgramCard({
 
       {editing && (
         <div className="space-y-3 pt-2 border-t">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">{t("followUp.visitDate")}</Label>
               <Input type="date" value={form.sessionDate} onChange={(e) => setForm((f) => ({ ...f, sessionDate: e.target.value }))} />
@@ -1005,7 +1005,7 @@ function ReviewProgramCard({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">{t("followUp.inTime")}</Label>
               <Input type="time" value={form.sessionStartTime} onChange={(e) => setForm((f) => ({ ...f, sessionStartTime: e.target.value }))} />
@@ -1035,7 +1035,7 @@ function ReviewProgramCard({
             )}
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={handleSave} disabled={updateReview.isPending} className="flex-1 gap-1">
               {updateReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
               {t("followUp.save")}
@@ -1103,7 +1103,7 @@ function ReviewProgramsSection({
       {showForm && (
         <div className="rounded-lg border border-dashed p-3 space-y-3 mb-3 bg-muted/30">
           <p className="text-sm font-medium">{t("followUp.newVisit")}</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">{t("followUp.visitDateReq")}</Label>
               <Input type="date" value={newForm.sessionDate} onChange={(e) => setNewForm((f) => ({ ...f, sessionDate: e.target.value }))} />
@@ -1112,11 +1112,11 @@ function ReviewProgramsSection({
               <Label className="text-xs">{t("followUp.time")}</Label>
               <Input type="time" value={newForm.sessionTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionTime: e.target.value }))} />
             </div>
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 col-span-1 sm:col-span-2">
               <Label className="text-xs">{t("followUp.description")}</Label>
               <Textarea rows={2} className="resize-none" placeholder={t("followUp.visitDescPlaceholder")} value={newForm.description} onChange={(e) => setNewForm((f) => ({ ...f, description: e.target.value }))} />
             </div>
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 col-span-1 sm:col-span-2">
               <Label className="text-xs">{t("followUp.therapistName")}</Label>
               <Select value={newForm.technicianId || "none"} onValueChange={(v) => setNewForm((f) => ({ ...f, technicianId: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder={t("followUp.chooseTherapist")} /></SelectTrigger>
@@ -1140,12 +1140,12 @@ function ReviewProgramsSection({
               <Label className="text-xs">{t("followUp.outTime")}</Label>
               <Input type="time" value={newForm.sessionEndTime} onChange={(e) => setNewForm((f) => ({ ...f, sessionEndTime: e.target.value }))} />
             </div>
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 col-span-1 sm:col-span-2">
               <Label className="text-xs">{t("followUp.notes")}</Label>
               <Textarea rows={2} className="resize-none" placeholder={t("followUp.notesShort")} value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={handleAdd} disabled={!newForm.sessionDate || createReview.isPending} className="gap-1">
               {createReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               {t("followUp.add")}
@@ -1520,7 +1520,7 @@ function GaitAnalysisCard({
       <>
         <div className="rounded-lg border p-3 space-y-1 transition-colors cursor-pointer hover:bg-muted/30"
           onClick={() => setEditing(true)}>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
             <div className="flex gap-2 items-center flex-wrap">
               <Badge variant="secondary" className="font-bold">#{(idx ?? 0) + 1}</Badge>
               {session.sessionDate && <span className="text-sm">{new Date(session.sessionDate).toLocaleDateString("en-GB")}</span>}
@@ -1594,7 +1594,7 @@ function GaitAnalysisCard({
   return (
     <div className="rounded-lg border p-4 space-y-4">
       {!isNew && (
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap gap-2 justify-between items-center">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold">{isSaved ? t("gait.details") : t("gait.edit")} {t("gait.session")} #{(idx ?? 0) + 1}</p>
             {isSaved && (
@@ -1604,7 +1604,7 @@ function GaitAnalysisCard({
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             <Button size="sm" variant="outline" className="gap-1" onClick={handleExportPdf} disabled={pdfExporting}>
               {pdfExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
               {pdfExporting ? t("gait.loading") : t("gait.exportPdf")}
@@ -1617,7 +1617,7 @@ function GaitAnalysisCard({
       {/* Saved forms are frozen server-side (PATCH → 400) — render read-only. */}
       <fieldset disabled={isSaved} className="contents">
       <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
-        <TabsList className="w-full grid grid-cols-5 h-auto">
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto">
           <TabsTrigger value="basic" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabBasic")}</TabsTrigger>
           <TabsTrigger value="phases" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.gaitDeviations")}</TabsTrigger>
           <TabsTrigger value="diagnosis" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabDiagnosis")}</TabsTrigger>
@@ -1637,7 +1637,7 @@ function GaitAnalysisCard({
           <div className="rounded-lg overflow-hidden border text-sm">
 
             {/* نظام التعليق */}
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.suspensionSystem")}</div>
               <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {SUSPENSION_OPTS.map((o) => (
@@ -1660,7 +1660,7 @@ function GaitAnalysisCard({
             </div>
 
             {/* التحميل على السوكيت */}
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.socketBearing")}</div>
               <div className="px-3 py-2.5 space-y-1.5">
                 {SOCKET_BEARING_OPTS.map((o) => (
@@ -1675,7 +1675,7 @@ function GaitAnalysisCard({
             </div>
 
             {/* نوع مفصل الركبة */}
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.kneeJointType")}</div>
               <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {KNEE_JOINT_OPTS.map((o) => (
@@ -1690,7 +1690,7 @@ function GaitAnalysisCard({
             </div>
 
             {/* نوع مفصل القدم */}
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.footJointType")}</div>
               <div className="px-3 py-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
                 {FOOT_TYPE_OPTS.map((o) => (
@@ -1705,9 +1705,9 @@ function GaitAnalysisCard({
             </div>
 
             {/* شكاوى المريض */}
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.patientComplaints")}</div>
-              <div className="px-3 py-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
+              <div className="px-3 py-2.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
                 {COMPLAINT_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.patientComplaints.includes(o.v)} onChange={() => toggleMulti("patientComplaints", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
@@ -1715,12 +1715,12 @@ function GaitAnalysisCard({
                   </label>
                 ))}
                 <Input value={form.patientComplaintsOtherNotes} onChange={(e) => setForm((f) => ({ ...f, patientComplaintsOtherNotes: e.target.value }))}
-                  placeholder={t("gait.otherComplaintDetails")} className="h-7 text-xs mt-1 col-span-2" />
+                  placeholder={t("gait.otherComplaintDetails")} className="h-7 text-xs mt-1 col-span-1 sm:col-span-2" />
               </div>
             </div>
 
             {/* شدة الألم */}
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.painIntensity")}</div>
               <div className="px-3 py-2.5 flex gap-3 items-center flex-wrap">
                 {[1,2,3,4,5,6,7,8,9,10].map((n) => (
@@ -1735,7 +1735,7 @@ function GaitAnalysisCard({
             </div>
 
             {/* فحص الضبط + المدى الحركي */}
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.alignmentExam")}</div>
               <div className="px-3 py-2.5 flex gap-4">
                 {[{ v: "GOOD", l: "gait.o.good" }, { v: "NEEDS_ADJUSTMENT", l: "gait.o.needsAdjust" }].map((o) => (
@@ -1748,7 +1748,7 @@ function GaitAnalysisCard({
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.rangeOfMotion")}</div>
               <div className="px-3 py-2.5 flex gap-4">
                 {([true, false] as const).map((v) => (
@@ -1761,7 +1761,7 @@ function GaitAnalysisCard({
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b">
+            <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b">
               <div className="bg-muted/40 px-3 py-2.5 text-xs font-semibold flex items-center">{t("gait.notesLabel")}</div>
               <div className="px-3 py-1.5">
                 <Input value={form.otherWeakness} onChange={(e) => setForm((f) => ({ ...f, otherWeakness: e.target.value }))} placeholder="..." className="h-7 text-xs border-0 shadow-none px-0 focus-visible:ring-0" />
@@ -1831,7 +1831,7 @@ function GaitAnalysisCard({
                 ["abdominalControl", "gait.abdominalControl"],
                 ["pelvicControl", "gait.pelvicControl"],
               ] as const).map(([fld, lbl]) => (
-                <div key={fld} className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
+                <div key={fld} className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-t">
                   <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{tl(t, lbl)}</div>
                   <div className="px-3 py-2.5 flex gap-4">
                     {GFP_OPTS.map((o) => (
@@ -1849,7 +1849,7 @@ function GaitAnalysisCard({
 
             {/* Balance */}
             <div className="mt-4">
-              <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-b border-t">
+              <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-b border-t">
                 <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t("gait.sittingBalance")}</div>
                 <div className="px-3 py-2.5 flex gap-4">
                   {[{ v: "INDEPENDENT", l: "gait.o.independent" }, { v: "ASSISTED", l: "gait.o.assisted" }].map((o) => (
@@ -1862,7 +1862,7 @@ function GaitAnalysisCard({
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse">
+              <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0">
                 <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t("gait.standingBalance")}</div>
                 <div className="px-3 py-2.5 flex gap-4">
                   {[{ v: "STABLE", l: "gait.o.stable" }, { v: "UNSTABLE", l: "gait.o.unstable" }].map((o) => (
@@ -1882,7 +1882,7 @@ function GaitAnalysisCard({
               <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold text-foreground border-t">{t("gait.gaitAssessment")}</div>
 
               {/* التماثل */}
-              <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
+              <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-t">
                 <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t("gait.symmetry")}</div>
                 <div className="px-3 py-2.5 flex gap-4">
                   {[{ v: "GOOD", l: "gait.o.good" }, { v: "FAIR", l: "gait.o.fair" }, { v: "POOR", l: "gait.o.poor" }].map((o) => (
@@ -1897,7 +1897,7 @@ function GaitAnalysisCard({
               </div>
 
               {/* وسيلة المساعدة */}
-              <div className="grid grid-cols-[160px_1fr] divide-x divide-x-reverse border-t">
+              <div className="grid grid-cols-1 divide-y sm:grid-cols-[160px_1fr] sm:divide-x sm:divide-x-reverse sm:divide-y-0 border-t">
                 <div className="bg-muted/40 px-3 py-2.5 text-xs flex items-center">{t("gait.assistiveDevice")}</div>
                 <div className="px-3 py-2.5 flex gap-4 flex-wrap">
                   {GAIT_DEVICE_OPTS.map((o) => (
@@ -1957,7 +1957,7 @@ function GaitAnalysisCard({
             <div key={phase.key} className="rounded-lg border overflow-hidden">
               <div className="bg-muted/40 px-3 py-2 text-sm font-semibold flex items-center gap-2"><span>•</span>{tl(t, phase.label)}</div>
               <div className="p-3 space-y-2">
-                <div className="grid grid-cols-2 gap-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                   {phase.deviations.map((d) => (
                     <label key={d.v} className="flex items-center gap-2 cursor-pointer py-0.5">
                       <input type="checkbox"
@@ -1989,7 +1989,7 @@ function GaitAnalysisCard({
             {/* مشاكل خاصة بالطرف */}
             <div>
               <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>{t("gait.prostheticIssues")}</div>
-              <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+              <div className="px-3 py-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
                 {PROSTHETIC_ISSUE_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.prostheticIssues.includes(o.v)} onChange={() => toggleMulti("prostheticIssues", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
@@ -2017,7 +2017,7 @@ function GaitAnalysisCard({
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">{t("gait.likelyCause")}</Label>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
                     {LIKELY_CAUSE_OPTS.map((o) => (
                       <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={form.likelyCauses.includes(o.v)} onChange={() => toggleMulti("likelyCauses", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
@@ -2036,7 +2036,7 @@ function GaitAnalysisCard({
             {/* التوصيات */}
             <div className="border-t">
               <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold flex items-center gap-2"><span>•</span>{t("gait.recommendations")}</div>
-              <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+              <div className="px-3 py-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
                 {RECOMMENDATION_OPTS.map((o) => (
                   <label key={o.v} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.recommendations.includes(o.v)} onChange={() => toggleMulti("recommendations", o.v)} className="w-[15px] h-[15px] checkbox-orange rounded-sm shrink-0" />
@@ -2075,7 +2075,7 @@ function GaitAnalysisCard({
 
         {/* ── Tab 5: التوقيعات ── */}
         <TabsContent value="signatures" className="mt-4 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {([
               ["prosto",t("gait.prosthetistName"),"examinerProsthetistId","prosthetistSignatureUrl"],
             ] as const).map(([role,lbl,idField,sigField]) => (
@@ -2122,7 +2122,7 @@ function GaitAnalysisCard({
       </fieldset>
 
       {!isSaved && (
-        <div className="flex gap-2 pt-2 border-t">
+        <div className="flex flex-wrap gap-2 pt-2 border-t">
           <Button onClick={handleSave} disabled={isSaving} className="flex-1 gap-1">
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {isNew ? t("gait.addSession") : t("gait.saveFinal")}
@@ -2455,7 +2455,7 @@ function BalanceAssessmentCard({
     return (
       <div className="rounded-lg border p-3 space-y-1 transition-colors cursor-pointer hover:bg-muted/30"
         onClick={() => setEditing(true)}>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap gap-2 justify-between items-center">
           <div className="flex gap-2 items-center flex-wrap">
             <Badge variant="secondary" className="font-bold">#{(idx ?? 0) + 1}</Badge>
             {session.assessmentDate && <span className="text-sm">{new Date(session.assessmentDate).toLocaleDateString("en-GB")}</span>}
@@ -2532,7 +2532,7 @@ function BalanceAssessmentCard({
   return (
     <div className="rounded-lg border p-4 space-y-5">
       {!isNew && (
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap gap-2 justify-between items-center">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold">
               {isSaved ? t("bal.details") : t("bal.edit")} {t("bal.session")} #{(idx ?? 0) + 1}
@@ -2650,7 +2650,7 @@ function BalanceAssessmentCard({
         <p className="text-[12px] font-semibold text-foreground">
           {t("bal.staticTitle")}
         </p>
-        <div className="rounded-lg overflow-hidden border">
+        <div className="rounded-lg border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
@@ -2695,7 +2695,7 @@ function BalanceAssessmentCard({
         <p className="text-[12px] font-semibold text-foreground">
           {t("bal.dynamicTitle")}
         </p>
-        <div className="rounded-lg overflow-hidden border">
+        <div className="rounded-lg border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
@@ -2740,7 +2740,7 @@ function BalanceAssessmentCard({
         <p className="text-[12px] font-semibold text-foreground">
           {t("bal.activityTitle")}
         </p>
-        <div className="rounded-lg overflow-hidden border">
+        <div className="rounded-lg border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
@@ -2789,7 +2789,7 @@ function BalanceAssessmentCard({
         <p className="text-[12px] font-semibold text-foreground">
           {t("bal.fallRiskTitle")}
         </p>
-        <div className="rounded-lg overflow-hidden border">
+        <div className="rounded-lg border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
@@ -2941,7 +2941,7 @@ function BalanceAssessmentCard({
         <p className="text-[12px] font-semibold text-foreground">
           {t("bal.exerciseProgramTitle")}
         </p>
-        <div className="rounded-lg overflow-hidden border overflow-x-auto">
+        <div className="rounded-lg border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#2563eb] text-white">
@@ -3106,7 +3106,7 @@ function BalanceAssessmentCard({
         </div>
 
         {/* Signatures */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {(
             [
               [
@@ -3236,7 +3236,7 @@ function BalanceAssessmentCard({
       </fieldset>
 
       {!isSaved && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleSave}
             disabled={isSaving}
@@ -3301,7 +3301,7 @@ function Section({ title, children, action }: { title: string; children: React.R
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
           <CardTitle className="text-base">{title}</CardTitle>
           {action}
         </div>
@@ -3489,7 +3489,7 @@ function MeasurementHistoryList({
           <div key={r.id} className="rounded-lg border overflow-hidden">
             <button
               type="button"
-              className="w-full flex items-center justify-between gap-3 p-3 text-sm hover:bg-muted/40 text-right"
+              className="w-full flex flex-wrap items-center justify-between gap-3 p-3 text-sm hover:bg-muted/40 text-right"
               onClick={() => hasDetails && setExpandedId(expanded ? null : r.id)}
             >
               <div className="flex items-center gap-2 flex-wrap">
@@ -3521,9 +3521,9 @@ function MeasurementHistoryList({
                     {affectedEntries.length > 0 && (
                       <div>
                         <p className="font-semibold mb-1">{t("page.affectedLimb")}</p>
-                        <div className="grid grid-cols-2 gap-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                           {affectedEntries.map(([k, v]) => (
-                            <div key={k} className="flex justify-between border-b py-0.5">
+                            <div key={k} className="flex flex-wrap gap-2 justify-between border-b py-0.5">
                               <span className="text-muted-foreground">{k}</span>
                               <span className="font-mono">{v}</span>
                             </div>
@@ -3534,9 +3534,9 @@ function MeasurementHistoryList({
                     {soundEntries.length > 0 && (
                       <div>
                         <p className="font-semibold mb-1">{t("page.soundLimb")}</p>
-                        <div className="grid grid-cols-2 gap-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                           {soundEntries.map(([k, v]) => (
-                            <div key={k} className="flex justify-between border-b py-0.5">
+                            <div key={k} className="flex flex-wrap gap-2 justify-between border-b py-0.5">
                               <span className="text-muted-foreground">{k}</span>
                               <span className="font-mono">{v}</span>
                             </div>
@@ -4887,7 +4887,7 @@ export default function ProstheticsCasePage() {
             {patientName}
             {c.patient?.patientNumber && <span className="font-mono">— {c.patient.patientNumber}</span>}
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h1 className="text-xl font-bold">{t("page.pageTitle")}</h1>
             <CaseStatusBadge status={c.status} />
             {caseLocked && <SavedBadge />}
@@ -4896,7 +4896,7 @@ export default function ProstheticsCasePage() {
           </div>
           <StepIndicator status={c.status} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCasePdf} disabled={casePdfExporting}>
             {casePdfExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {casePdfExporting ? "جاري التصدير..." : "تصدير PDF"}
@@ -4960,7 +4960,7 @@ export default function ProstheticsCasePage() {
                 const val = intakeForm.hasChronicDiseases ?? c.hasChronicDiseases ?? false;
                 return (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
                       <Label className="text-base">{t("intake.hasChronic")}</Label>
                       <Switch checked={!!val} onCheckedChange={(v) => setIntakeForm((f) => ({ ...f, hasChronicDiseases: v, chronicDiseases: v ? f.chronicDiseases : "" }))} />
                     </div>
@@ -4977,7 +4977,7 @@ export default function ProstheticsCasePage() {
               <Separator />
 
               {/* 2. سبب الإصابة + تاريخ البتر */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("intake.injuryCause")}</Label>
                   <Select
@@ -5133,7 +5133,7 @@ export default function ProstheticsCasePage() {
                 const val = intakeForm.hasPhysicalTherapy ?? c.hasPhysicalTherapy ?? false;
                 return (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
                       <Label className="text-base">{t("intake.hadPhysio")}</Label>
                       <Switch checked={!!val} onCheckedChange={(v) => setIntakeForm((f) => ({ ...f, hasPhysicalTherapy: v, physicalTherapyDetails: v ? f.physicalTherapyDetails : "" }))} />
                     </div>
@@ -5152,7 +5152,7 @@ export default function ProstheticsCasePage() {
                 const val = intakeForm.hasPreviousProsthesis ?? c.hasPreviousProsthesis ?? false;
                 return (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
                       <Label className="text-base">{t("intake.hadProsthesis")}</Label>
                       <Switch checked={!!val} onCheckedChange={(v) => setIntakeForm((f) => ({ ...f, hasPreviousProsthesis: v, previousProsthesisDetails: v ? f.previousProsthesisDetails : "", previousProsthesisWhen: v ? f.previousProsthesisWhen : "", previousProsthesisWhere: v ? f.previousProsthesisWhere : "", previousProsthesisType: v ? f.previousProsthesisType : "" }))} />
                     </div>
@@ -5162,7 +5162,7 @@ export default function ProstheticsCasePage() {
                           <Label className="text-sm text-muted-foreground">{t("intake.clarification")}</Label>
                           <Input value={intakeForm.previousProsthesisDetails || c.previousProsthesisDetails || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisDetails: e.target.value }))} placeholder={t("intake.prevProsthesisPlaceholder")} />
                         </div>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           <div className="space-y-1.5">
                             <Label className="text-sm text-muted-foreground">{t("intake.when")}</Label>
                             <Input value={intakeForm.previousProsthesisWhen || c.previousProsthesisWhen || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, previousProsthesisWhen: e.target.value }))} placeholder={t("intake.yearOrDate")} />
@@ -5187,7 +5187,7 @@ export default function ProstheticsCasePage() {
                 const val = intakeForm.hasRevisionSurgery ?? c.hasRevisionSurgery ?? false;
                 return (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
                       <Label className="text-base">{t("intake.hadRevision")}</Label>
                       <Switch checked={!!val} onCheckedChange={(v) => setIntakeForm((f) => ({ ...f, hasRevisionSurgery: v, revisionDetails: v ? f.revisionDetails : "" }))} />
                     </div>
@@ -5206,7 +5206,7 @@ export default function ProstheticsCasePage() {
               {/* تاريخ ووقت الموعد */}
               <div className="space-y-1.5">
                 <Label className="text-base">{t("intake.appointmentDateTime")}</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm text-muted-foreground">{t("intake.date")}</Label>
                     <Input type="date" value={intakeForm.appointmentDate || (c as any).appointmentDate || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, appointmentDate: e.target.value }))} />
@@ -5218,7 +5218,7 @@ export default function ProstheticsCasePage() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-wrap gap-3 pt-2">
                 <Button onClick={handleSaveIntake} disabled={updateCase.isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white">
                   {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
                   {t("intake.save")}
@@ -5268,7 +5268,7 @@ export default function ProstheticsCasePage() {
               {/* بيانات المريض — يمين */}
               <div className="flex-1">
                 {patientEditMode ? (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">{t("patientInfo.firstName")}</Label>
                       <Input className="h-8 text-sm" value={patientEditForm.firstName} onChange={(e) => setPatientEditForm((f) => ({ ...f, firstName: e.target.value }))} />
@@ -5295,13 +5295,13 @@ export default function ProstheticsCasePage() {
                       <Label className="text-xs">{t("patientInfo.weightKg")}</Label>
                       <Input type="number" className="h-8 text-sm" value={patientEditForm.weightKg} onChange={(e) => setPatientEditForm((f) => ({ ...f, weightKg: e.target.value }))} />
                     </div>
-                    <Button onClick={handleSavePatient} disabled={updatePatient.isPending} className="col-span-2 h-8">
+                    <Button onClick={handleSavePatient} disabled={updatePatient.isPending} className="col-span-1 sm:col-span-2 h-8">
                       {updatePatient.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-2" />}
                       {t("patientInfo.saveChanges")}
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
                     <div className="space-y-0.5">
                       <p className="text-xs font-medium">{t("patientInfo.patientNumber")}</p>
                       <p className="text-muted-foreground">{patientFull?.patientNumber ?? c.patient?.patientNumber ?? "—"}</p>
@@ -5365,7 +5365,7 @@ export default function ProstheticsCasePage() {
           <Section title={t("assess.staff.title")}>
             {/* Staff is a case-level field (updateCase) with its own save button,
                 editable independently of the frozen assessment records. */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {([
                 { key: "prosthetistIds" as const,     label: t("assess.staff.prosthetist") },
                 { key: "physiotherapistIds" as const, label: t("assess.staff.physio") },
@@ -5383,7 +5383,7 @@ export default function ProstheticsCasePage() {
                     <div className="relative">
                       <button
                         type="button"
-                        className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm hover:bg-muted/40 transition-colors"
+                        className="flex flex-wrap gap-2 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm hover:bg-muted/40 transition-colors"
                         onClick={(e) => { e.stopPropagation(); setOpenStaffKey(isOpen ? null : key); }}
                       >
                         <span className={selected.length === 0 ? "text-muted-foreground" : "text-foreground font-medium"}>
@@ -5634,7 +5634,7 @@ export default function ProstheticsCasePage() {
 
                   {/* أسئلة خاصة بالجانب — تُعرض مرتين عند الثنائي */}
                   {isBilateral ? (
-                    <div className="grid grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
                       <div className="divide-y divide-border/30 border-l border-border/30 pl-4">
                         <PfDivider label={t("assess.right")} />
                         {renderSideBlock(upperAssessForm, setUpperAssessForm, true)}
@@ -6192,7 +6192,7 @@ export default function ProstheticsCasePage() {
                   </PfRow>
 
                   {isBilateral ? (
-                    <div className="grid grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 border-t border-border/30 pt-1">
                       <div className="divide-y divide-border/30 border-l border-border/30 pl-4">
                         <PfDivider label={t("assess.right")} />
                         {renderSideBlock(lowerAssessForm, setLowerAssessForm, true)}
@@ -6563,6 +6563,7 @@ export default function ProstheticsCasePage() {
               {/* جدول الأجزاء */}
               <div className="space-y-2">
                 <p className="text-sm font-semibold">{t("fitting.partsWithCode")}</p>
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="bg-muted/60">
@@ -6594,6 +6595,7 @@ export default function ProstheticsCasePage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               <Button
@@ -6609,7 +6611,7 @@ export default function ProstheticsCasePage() {
               {components.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-muted-foreground">{t("fitting.addedParts")}</p>
-                  <div className="rounded-lg border">
+                  <div className="rounded-lg border overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50">
                         <tr>
@@ -7495,7 +7497,7 @@ export default function ProstheticsCasePage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("finalEval.socksLinersCount")}</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground shrink-0">{t("finalEval.socks")}</span>
                     <Input type="number" min={0} value={finalEvalForm.socksDelivered ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, socksDelivered: e.target.value === "" ? undefined : Number(e.target.value) }))} className="h-8 text-xs" />
@@ -7646,8 +7648,8 @@ export default function ProstheticsCasePage() {
             }
           >
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5 col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5 col-span-1 sm:col-span-2">
                   <Label className="text-xs">{t("delivered.dischargeDate")}</Label>
                   <Input type="date" value={proDeliveryHeader.inspectionDate} onChange={(e) => setProDeliveryHeader((f) => ({ ...f, inspectionDate: e.target.value }))} />
                 </div>
@@ -7686,7 +7688,7 @@ export default function ProstheticsCasePage() {
                       {items.length === 0 ? (
                         <p className="text-sm text-muted-foreground text-center py-2">{t("delivered.noPartsYet")}</p>
                       ) : (
-                        <div className="rounded-lg border overflow-hidden">
+                        <div className="rounded-lg border overflow-x-auto">
                           <table className="w-full text-sm">
                             <thead className="bg-muted/50">
                               <tr>
@@ -7723,7 +7725,7 @@ export default function ProstheticsCasePage() {
               </div>
 
 
-              <div className="space-y-1.5 col-span-2">
+              <div className="space-y-1.5 col-span-1 sm:col-span-2">
                 <Label className="text-xs">{t("delivered.medicalDirector")}</Label>
                 <Select value={proDeliveryHeader.medicalDirectorId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, medicalDirectorId: v === "none" ? "" : v, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))}>
                   <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
@@ -7791,8 +7793,8 @@ export default function ProstheticsCasePage() {
           ) : (
             <Section title={t("finalDelivery.finalTitle")}>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5 col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5 col-span-1 sm:col-span-2">
                     <Label className="text-xs">{t("delivered.dischargeDate")}</Label>
                     <Input type="date" value={finalDeliveryHeader.inspectionDate}
                       onChange={(e) => setFinalDeliveryHeader((f) => ({ ...f, inspectionDate: e.target.value }))} />
@@ -7830,7 +7832,7 @@ export default function ProstheticsCasePage() {
                         {items.length === 0 ? (
                           <p className="text-sm text-muted-foreground text-center py-2">{t("finalDelivery.noParts")}</p>
                         ) : (
-                          <div className="rounded-lg border overflow-hidden">
+                          <div className="rounded-lg border overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead className="bg-muted/50">
                                 <tr>
@@ -7860,7 +7862,7 @@ export default function ProstheticsCasePage() {
                   })()}
                 </div>
 
-                <div className="space-y-1.5 col-span-2">
+                <div className="space-y-1.5 col-span-1 sm:col-span-2">
                   <Label className="text-xs">{t("finalDelivery.ceo")}</Label>
                   <Select value={finalDeliveryHeader.ceoId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, ceoId: v === "none" ? "" : v, ceoSignatureUrl: "" }))}>
                     <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
@@ -7948,7 +7950,7 @@ export default function ProstheticsCasePage() {
                 <p className="text-muted-foreground">{t("finalDelivery.pledge.finalStatement")}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 border-t pt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-3">
                 <div className="space-y-1">
                   <Label className="text-xs">{t("finalDelivery.pledge.fullName")}</Label>
                   <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
@@ -7979,7 +7981,7 @@ export default function ProstheticsCasePage() {
                   <div key={ev.id} className="relative flex gap-3">
                     <div className="absolute -right-4 top-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
                     <div className="flex-1 rounded-lg border p-3 space-y-1">
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-wrap gap-2 justify-between items-start">
                         <p className="font-medium text-sm">{ev.title}</p>
                         <span className="text-xs text-muted-foreground">{new Date(ev.date).toLocaleDateString("ar")}</span>
                       </div>

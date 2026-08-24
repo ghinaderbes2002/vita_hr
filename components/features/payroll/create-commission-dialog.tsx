@@ -112,7 +112,7 @@ export function CreateCommissionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>إضافة عمولة مبيعات</DialogTitle>
         </DialogHeader>
@@ -143,7 +143,7 @@ export function CreateCommissionDialog({
               )} />
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="year" render={({ field }) => (
                 <FormItem>
                   <FormLabel>السنة</FormLabel>

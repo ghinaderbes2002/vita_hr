@@ -100,7 +100,7 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]" dir="rtl">
+      <DialogContent className="sm:max-w-lg flex flex-col max-h-[90dvh]" dir="rtl">
         <DialogHeader>
           <DialogTitle>نقل / تحويل الموظف</DialogTitle>
         </DialogHeader>
@@ -166,8 +166,8 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
           </div>
 
           {/* Salary */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2 space-y-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="col-span-1 sm:col-span-2 space-y-1.5">
               <Label>الراتب الأساسي الجديد</Label>
               <Input
                 type="number" min={0} placeholder="— لا تغيير —"

@@ -247,7 +247,7 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
                   type="button"
                   onClick={toggleSelectAll}
                   className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 text-sm font-medium border-b hover:bg-muted transition-colors text-right",
+                    "w-full flex flex-wrap gap-2 items-center justify-between px-3 py-2 text-sm font-medium border-b hover:bg-muted transition-colors text-right",
                     allVisibleSelected && "bg-primary/5",
                   )}
                 >
@@ -263,7 +263,7 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
                       type="button"
                       onClick={() => toggle(opt.id)}
                       className={cn(
-                        "w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted transition-colors text-right",
+                        "w-full flex flex-wrap gap-2 items-center justify-between px-3 py-2 text-sm hover:bg-muted transition-colors text-right",
                         selected && "bg-primary/5",
                       )}
                     >

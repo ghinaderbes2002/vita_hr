@@ -116,7 +116,7 @@ export function PodiatryAssessmentPanel({
                 <span className="text-xs text-muted-foreground">عبّأ النموذج: {session.createdByName}</span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {!editing && actions}
               {editing ? (
                 <>
@@ -151,7 +151,7 @@ export function PodiatryAssessmentPanel({
             <div className="space-y-4">
               <PodiatryAssessmentFields value={shown} onChange={setForm} readOnly={!editing} />
 
-              <div className="grid grid-cols-2 gap-3 rounded-lg border p-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border p-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">اسم الأخصائي</Label>
                   {editing ? (

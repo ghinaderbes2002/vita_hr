@@ -85,7 +85,7 @@ function CandidateCard({
             ${snapshot.isDragging ? "shadow-lg rotate-1 opacity-90" : ""}
           `}
         >
-          <div className="flex items-start justify-between gap-1">
+          <div className="flex flex-wrap items-start justify-between gap-1">
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{app.fullName}</p>
               <p className="text-xs text-muted-foreground truncate">{app.email}</p>
@@ -114,7 +114,7 @@ function CandidateCard({
             </div>
           )}
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center justify-between">
             <span className="text-xs text-muted-foreground">
               {format(new Date(app.createdAt), "yyyy/MM/dd")}
             </span>
@@ -155,13 +155,13 @@ function PipelineBoard({
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-4 min-h-[60vh]">
+      <div className="flex gap-3 overflow-x-auto pb-4 min-h-[60dvh]">
         {PIPELINE_COLUMNS.map((col) => {
           const cards = grouped[col.id] ?? [];
           return (
             <div key={col.id} className="shrink-0 w-64 flex flex-col">
               {/* Column header */}
-              <div className={`rounded-t-lg border px-3 py-2.5 ${col.headerBg} flex items-center justify-between`}>
+              <div className={`rounded-t-lg border px-3 py-2.5 ${col.headerBg} flex flex-wrap gap-2 items-center justify-between`}>
                 <div className="flex items-center gap-2">
                   <span
                     className="h-2.5 w-2.5 rounded-full"
@@ -481,7 +481,7 @@ export default function JobApplicationsPage() {
           </div>
 
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 {t("common.of")} {pagination.total} {t("jobApplications.fields.application")}
               </p>

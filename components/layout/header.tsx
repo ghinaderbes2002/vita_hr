@@ -7,7 +7,7 @@ import {
   Clock, AlertCircle, RotateCcw, FileText, AlertOctagon, Coffee, DollarSign,
   Mail, Trophy, CheckCircle2, XCircle, ClipboardList, FileWarning,
   Cake, UserPlus, FileCheck, UserX, ListTodo, Briefcase,
-  Settings, Users, Building2, GraduationCap, Shield, UserCog,
+  Settings, Users, Building2, GraduationCap, Shield, UserCog, Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import { useRouter, usePathname } from "@/i18n/navigation";
 import { useUnreadCount, useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/lib/hooks/use-notifications";
 import { resolveNotificationLink } from "@/lib/notifications/notification-links";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useUIStore } from "@/lib/stores/ui-store";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -31,6 +32,7 @@ export function Header() {
   const t = useTranslations();
   const { theme, setTheme } = useTheme();
   const { user, logout, isAdmin, hasRole } = useAuthStore();
+  const toggleMobileSidebar = useUIStore((s) => s.toggleMobileSidebar);
   const showManagement = isAdmin() || hasRole("CEO") || hasRole("مدير تنفيذي") || hasRole("CFO");
   const locale = useLocale();
   const router = useRouter();
@@ -114,14 +116,21 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between px-5">
-      {/* START (right in RTL) — ERP Workspace */}
+    <header className="sticky top-0 z-30 flex flex-wrap h-14 items-center justify-between gap-2 px-3 sm:px-5">
+      {/* START (right in RTL) — drawer trigger on mobile */}
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        {/* <span className="text-xs font-medium hidden sm:inline">ERP Workspace</span>
-        <Settings className="h-4 w-4" /> */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleMobileSidebar}
+          aria-label="فتح القائمة"
+          className="lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-0.5 sm:gap-2">
         {/* Language */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -150,7 +159,7 @@ export function Header() {
         {showManagement && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="hidden sm:inline-flex">
                 <Settings className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -199,8 +208,8 @@ export function Header() {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 p-0">
-            <div className="flex items-center justify-between px-4 py-3 border-b">
+          <DropdownMenuContent align="end" className="w-[calc(100vw-1.5rem)] max-w-sm sm:w-80 p-0">
+            <div className="flex flex-wrap gap-2 items-center justify-between px-4 py-3 border-b">
               <p className="text-sm font-semibold">الإشعارات</p>
               {(unreadCount as number) > 0 && (
                 <Button
@@ -235,7 +244,7 @@ export function Header() {
                         <NotifIcon className={`h-4 w-4 ${cfg.iconClass} shrink-0 mt-0.5`} />
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className={`text-sm leading-snug ${!notif.isRead ? "font-medium" : "text-muted-foreground"}`}>
                             {notif.titleAr || notif.titleEn || notif.title}
                           </p>
@@ -273,9 +282,9 @@ export function Header() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent transition-colors outline-none">
-              <div className="hidden sm:block text-start leading-tight">
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
-                <p className="text-sm font-semibold">{user?.fullName || "User"}</p>
+              <div className="hidden md:block text-start leading-tight max-w-[10rem]">
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                <p className="text-sm font-semibold truncate">{user?.fullName || "User"}</p>
               </div>
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.profileImage} />

@@ -1406,7 +1406,7 @@ export default function PhysioCasePage() {
             )}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {/* A PT case can only be opened by converting a doctor exam. */}
           {isDoctorExam && (
             <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
@@ -1489,7 +1489,7 @@ export default function PhysioCasePage() {
                 {t("intake.patient")} <strong>{patientName}</strong>
               </p>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("intake.complaintType")}</Label>
                   <Input
@@ -1520,7 +1520,7 @@ export default function PhysioCasePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("intake.complaintDuration")}</Label>
                   <Input
@@ -1680,7 +1680,7 @@ export default function PhysioCasePage() {
               </div>
 
               {canEdit && (
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   <Button
                     onClick={handleSaveIntake}
                     disabled={
@@ -1716,7 +1716,7 @@ export default function PhysioCasePage() {
         {/* ── PATIENT INFO ───────────────────────────────────────────────── */}
         <TabsContent value="patient_info" className="mt-4">
           <Section title={t("patientInfo.title")}>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">{t("patientInfo.name")}</p>
                 <p className="text-sm font-medium">{patientName}</p>
@@ -2116,7 +2116,7 @@ export default function PhysioCasePage() {
             <div className="space-y-4">
               {/* الأدوية الموصوفة حالياً */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.prescriptionDrugs")}</Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2137,7 +2137,7 @@ export default function PhysioCasePage() {
 
               {/* 2. المستحضرات العشبية / الفيتامينات */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.herbalSupplements")}</Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2152,7 +2152,7 @@ export default function PhysioCasePage() {
 
               {/* 3. مشاكل صحية أخرى */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.hasOtherHealthProblems")}</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2167,7 +2167,7 @@ export default function PhysioCasePage() {
 
               {/* 4. قيود الطبيب */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.hasDoctorRestrictions")}</Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2182,7 +2182,7 @@ export default function PhysioCasePage() {
 
               {/* 5. هل تدخن */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.smokes")}</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2200,7 +2200,7 @@ export default function PhysioCasePage() {
 
               {/* 6. هل سبق لك أن دخنت */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.hasSmokedBefore")}</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2218,7 +2218,7 @@ export default function PhysioCasePage() {
 
               {/* 7. جهاز تنظيم ضربات القلب */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.hasPacemaker")}</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2234,7 +2234,7 @@ export default function PhysioCasePage() {
               {/* 8. للإناث: الحمل */}
               {patientFull?.gender === "FEMALE" && (
                 <>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <Label>{t("medicalHistory.isPregnant")}</Label>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2280,7 +2280,7 @@ export default function PhysioCasePage() {
 
               {/* 11. حساسية المواد اللاصقة / اللاتكس / لسعات النحل */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.adhesiveAllergy")}</Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2301,7 +2301,7 @@ export default function PhysioCasePage() {
 
               {/* 13. هل خضعت لأي عمليات جراحية */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.hadSurgeries")}</Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2317,7 +2317,7 @@ export default function PhysioCasePage() {
             <Section title={t("medicalHistory.surgeriesTitle")}>
               <div className="space-y-3">
                 {surgeries.map((s, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-2 items-end">
+                  <div key={i} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 items-end">
                     <div className="space-y-1">
                       <Label className="text-xs">{t("medicalHistory.surgeryName")} {i + 1}</Label>
                       <Input value={s.name} onChange={(e) => setSurgeries((arr) => arr.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} placeholder={t("medicalHistory.surgeryNamePlaceholder")} />
@@ -2339,7 +2339,7 @@ export default function PhysioCasePage() {
           <Section title={t("medicalHistory.ptOtherTreatmentsTitle")}>
             <div className="space-y-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.hadPTSameProblem")}</Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2352,7 +2352,7 @@ export default function PhysioCasePage() {
                 )}
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.receivingOtherTreatment")}</Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2385,7 +2385,7 @@ export default function PhysioCasePage() {
                 <Textarea rows={2} value={history.testResults} onChange={(e) => setHistory((h) => ({ ...h, testResults: e.target.value }))} disabled={!canEdit} />
               </div>
               <Label className="block font-medium">{t("medicalHistory.analysisTitle")}</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-sm">{t("medicalHistory.newAnalysis")}</Label>
                   <Input value={history.newAnalysis} onChange={(e) => setHistory((h) => ({ ...h, newAnalysis: e.target.value }))} disabled={!canEdit} />
@@ -2403,7 +2403,7 @@ export default function PhysioCasePage() {
                   <Input value={history.oldAnalysisDate} onChange={(e) => setHistory((h) => ({ ...h, oldAnalysisDate: e.target.value }))} disabled={!canEdit} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(["new", "old"] as const).map((kind) => {
                   const label = kind === "new" ? t("medicalHistory.newAttachment") : t("medicalHistory.oldAttachment");
                   const attachKey = kind === "new" ? "newAnalysisAttachment" : "oldAnalysisAttachment";
@@ -2414,7 +2414,7 @@ export default function PhysioCasePage() {
                     <div key={kind} className="space-y-1.5">
                       <Label className="text-sm">{label}</Label>
                       {docId ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
                             disabled={isDownloading}
@@ -2467,7 +2467,7 @@ export default function PhysioCasePage() {
                 })}
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.boneDensityTest")}</Label>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2480,7 +2480,7 @@ export default function PhysioCasePage() {
                 )}
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <Label>{t("medicalHistory.hospitalizedLastYear")}</Label>
                   <div className="flex items-center gap-2 shrink-0 mr-2">
                     <span className="text-xs text-muted-foreground">{t("no")}</span>
@@ -2577,7 +2577,7 @@ export default function PhysioCasePage() {
 
               <div>
                 <p className="mb-3 text-xs text-muted-foreground">{t("goals.checkboxHint")}</p>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm whitespace-nowrap">{t("goals.standLonger")}</span>
                     <Input className="h-8 w-24 text-sm" value={goalsExtra.standLonger} onChange={(e) => setGoalsExtra((f) => ({ ...f, standLonger: e.target.value }))} disabled={!canEdit} />
@@ -2673,7 +2673,7 @@ export default function PhysioCasePage() {
                   <span className="text-sm">{lbl}</span>
                 </label>
               ))}
-              <div className="flex items-center justify-between py-0.5">
+              <div className="flex flex-wrap gap-2 items-center justify-between py-0.5">
                 <span className="text-sm">{t("posturalAssessment.lateralFlexion")}</span>
                 <div className="flex items-center gap-4">
                   {(
@@ -2699,7 +2699,7 @@ export default function PhysioCasePage() {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center justify-between py-0.5">
+              <div className="flex flex-wrap gap-2 items-center justify-between py-0.5">
                 <span className="text-sm">{t("posturalAssessment.rotation")}</span>
                 <div className="flex items-center gap-4">
                   {(["headRotatedL", "headRotatedR"] as const).map((k, i) => (
@@ -2741,7 +2741,7 @@ export default function PhysioCasePage() {
               ).map(([kL, kR, lbl]) => (
                 <div
                   key={kL}
-                  className="flex items-center justify-between py-0.5"
+                  className="flex flex-wrap gap-2 items-center justify-between py-0.5"
                 >
                   <span className="text-sm">{lbl}</span>
                   <div className="flex items-center gap-4">
@@ -2798,7 +2798,7 @@ export default function PhysioCasePage() {
               ).map(([kL, kR, lbl]) => (
                 <div
                   key={kL}
-                  className="flex items-center justify-between py-0.5"
+                  className="flex flex-wrap gap-2 items-center justify-between py-0.5"
                 >
                   <span className="text-sm">{lbl}</span>
                   <div className="flex items-center gap-4">
@@ -2848,7 +2848,7 @@ export default function PhysioCasePage() {
               ).map(([kL, kR, lbl]) => (
                 <div
                   key={kL}
-                  className="flex items-center justify-between py-0.5"
+                  className="flex flex-wrap gap-2 items-center justify-between py-0.5"
                 >
                   <span className="text-sm">{lbl}</span>
                   <div className="flex items-center gap-4">
@@ -2911,7 +2911,7 @@ export default function PhysioCasePage() {
                   <span className="text-sm">{lbl}</span>
                 </label>
               ))}
-              <div className="flex items-center justify-between py-0.5">
+              <div className="flex flex-wrap gap-2 items-center justify-between py-0.5">
                 <span className="text-sm">{t("posturalAssessment.scoliosis")}</span>
                 <div className="flex items-center gap-4">
                   {(
@@ -2967,7 +2967,7 @@ export default function PhysioCasePage() {
                   <span className="text-sm">{lbl}</span>
                 </label>
               ))}
-              <div className="flex items-center justify-between py-0.5">
+              <div className="flex flex-wrap gap-2 items-center justify-between py-0.5">
                 <span className="text-sm">{t("posturalAssessment.oblique")}</span>
                 <div className="flex items-center gap-4">
                   {(["pelvisObliqueL", "pelvisObliqueR"] as const).map(
@@ -3023,7 +3023,7 @@ export default function PhysioCasePage() {
               ).map(([kL, kR, lbl]) => (
                 <div
                   key={kL}
-                  className="flex items-center justify-between py-0.5"
+                  className="flex flex-wrap gap-2 items-center justify-between py-0.5"
                 >
                   <span className="text-sm">{lbl}</span>
                   <div className="flex items-center gap-4">
@@ -3069,7 +3069,7 @@ export default function PhysioCasePage() {
               ).map(([kL, kR, lbl]) => (
                 <div
                   key={kL}
-                  className="flex items-center justify-between py-0.5"
+                  className="flex flex-wrap gap-2 items-center justify-between py-0.5"
                 >
                   <span className="text-sm">{lbl}</span>
                   <div className="flex items-center gap-4">
@@ -3117,7 +3117,7 @@ export default function PhysioCasePage() {
               ).map(([kL, kR, lbl]) => (
                 <div
                   key={kL}
-                  className="flex items-center justify-between py-0.5"
+                  className="flex flex-wrap gap-2 items-center justify-between py-0.5"
                 >
                   <span className="text-sm">{lbl}</span>
                   <div className="flex items-center gap-4">
@@ -3193,7 +3193,7 @@ export default function PhysioCasePage() {
         <TabsContent value="treatment_plan" className="mt-4 space-y-4">
           {/* Header */}
           <Section title={t("treatmentPlan.headerTitle")}>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-sm">{t("treatmentPlan.from")}</Label>
                 <div className="flex gap-1.5">
@@ -3288,7 +3288,7 @@ export default function PhysioCasePage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5 col-span-2">
+              <div className="space-y-1.5 col-span-1 sm:col-span-2">
                 <Label className="text-sm">{t("treatmentPlan.caseManager")}</Label>
                 <Select value={planHeader.caseManagerId || ""} onValueChange={(v) => canEdit && setPlanHeader((h) => ({ ...h, caseManagerId: v }))} disabled={!canEdit}>
                   <SelectTrigger>
@@ -3303,7 +3303,7 @@ export default function PhysioCasePage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-2 flex items-center justify-between rounded-md border px-4 py-3">
+              <div className="col-span-1 sm:col-span-2 flex flex-wrap gap-2 items-center justify-between rounded-md border px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">{t("treatmentPlan.patientStatus")}</p>
                   <p className="text-xs text-muted-foreground">
@@ -3323,7 +3323,7 @@ export default function PhysioCasePage() {
 
           {/* Modalities — 2-col checkbox grid */}
           <Section title={t("treatmentPlan.modalitiesTitle")}>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
               {THERAPY_MODALITY_PAIRS.flatMap(([right, left]) =>
                 (left ? [right, left] : [right]).map((m) => (
                   <label key={m} className="flex items-center gap-2 cursor-pointer">
@@ -3368,7 +3368,7 @@ export default function PhysioCasePage() {
 
           <Section title={t("evaluation.appliedTreatmentTitle")}>
             {/* Modalities grid — 2 columns matching paper form */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
               {EVAL_MODALITY_PAIRS.flatMap(([right, left]) =>
                 (left ? [right, left] : [right]).map((m) => (
                   <label
@@ -3434,7 +3434,7 @@ export default function PhysioCasePage() {
           {canEdit && (
             <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SESSIONS_CREATE}>
               <Section title={t("sessions.addTitle")}>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm">{t("sessions.date")}</Label>
                     <Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm((f) => ({ ...f, date: e.target.value }))} />
@@ -3489,20 +3489,20 @@ export default function PhysioCasePage() {
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div className="space-y-1.5 col-span-2">
+                  <div className="space-y-1.5 col-span-1 sm:col-span-2">
                     <Label className="text-sm">{t("sessions.notes")}</Label>
                     <Textarea rows={2} value={sessionForm.notes} onChange={(e) => { setSessionForm((f) => ({ ...f, notes: e.target.value })); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }} className="resize-none overflow-hidden" placeholder={t("sessions.notesPlaceholder")} />
                   </div>
-                  <div className="space-y-1.5 col-span-2">
+                  <div className="space-y-1.5 col-span-1 sm:col-span-2">
                     <Label className="text-sm">{t("sessions.supervisorOpinion")}</Label>
                     <Textarea rows={2} value={sessionForm.supervisorOpinion} onChange={(e) => { setSessionForm((f) => ({ ...f, supervisorOpinion: e.target.value })); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }} className="resize-none overflow-hidden" placeholder={t("sessions.supervisorOpinionPlaceholder")} />
                   </div>
-                  <div className="space-y-1.5 col-span-2">
+                  <div className="space-y-1.5 col-span-1 sm:col-span-2">
                     <Label className="text-sm">{t("sessions.doctorDecision")}</Label>
                     <Textarea rows={2} value={sessionForm.doctorDecision} onChange={(e) => { setSessionForm((f) => ({ ...f, doctorDecision: e.target.value })); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }} className="resize-none overflow-hidden" placeholder={t("sessions.doctorDecisionPlaceholder")} />
                   </div>
                 </div>
-                <div className="flex gap-2 mt-3">
+                <div className="flex flex-wrap gap-2 mt-3">
                   <Button onClick={handleAddSession} disabled={!sessionForm.date || addSession.isPending} className="flex-1 gap-2">
                     {addSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     {t("sessions.addSession")}
@@ -3522,7 +3522,7 @@ export default function PhysioCasePage() {
                   <div key={s.id} className="rounded-lg border p-3 space-y-2">
                     {editingSession?.id === s.id ? (
                       <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs">{t("sessions.date")}</Label>
                             <Input type="date" value={editingSession.sessionDate} onChange={(e) => setEditingSession((v) => v && { ...v, sessionDate: e.target.value })} />
@@ -3577,20 +3577,20 @@ export default function PhysioCasePage() {
                               </PopoverContent>
                             </Popover>
                           </div>
-                          <div className="space-y-1 col-span-2">
+                          <div className="space-y-1 col-span-1 sm:col-span-2">
                             <Label className="text-xs">{t("sessions.notes")}</Label>
                             <Textarea rows={2} value={editingSession.notes} onChange={(e) => setEditingSession((v) => v && { ...v, notes: e.target.value })} />
                           </div>
-                          <div className="space-y-1 col-span-2">
+                          <div className="space-y-1 col-span-1 sm:col-span-2">
                             <Label className="text-xs">{t("sessions.supervisorOpinion")}</Label>
                             <Textarea rows={2} value={editingSession.supervisorOpinion} onChange={(e) => setEditingSession((v) => v && { ...v, supervisorOpinion: e.target.value })} placeholder={t("sessions.supervisorOpinionPlaceholder")} />
                           </div>
-                          <div className="space-y-1 col-span-2">
+                          <div className="space-y-1 col-span-1 sm:col-span-2">
                             <Label className="text-xs">{t("sessions.doctorDecision")}</Label>
                             <Textarea rows={2} value={editingSession.doctorDecision} onChange={(e) => setEditingSession((v) => v && { ...v, doctorDecision: e.target.value })} placeholder={t("sessions.doctorDecisionPlaceholder")} />
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button size="sm" onClick={handleUpdateSession} disabled={updateSessionMut.isPending} className="gap-1">
                             {updateSessionMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                             {t("sessions.save")}
@@ -3602,13 +3602,13 @@ export default function PhysioCasePage() {
                       </div>
                     ) : (
                       <>
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-wrap gap-2 justify-between items-start">
                           <div className="flex gap-2 items-center flex-wrap">
                             <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{s.sessionNumber}</Badge>
                             <span className="font-medium text-sm">{new Date(s.sessionDate).toLocaleDateString("en-GB")}</span>
                             {s.sessionTime && <span className="text-xs text-muted-foreground">{s.sessionTime}</span>}
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap gap-1">
                             {canEdit && (
                               <button
                                 onClick={() => setEditingSession({ id: s.id, sessionDate: s.sessionDate?.slice(0, 10) ?? "", sessionTime: s.sessionTime ?? "", notes: s.notes ?? "", supervisorOpinion: s.supervisorOpinion ?? "", doctorDecision: s.doctorDecision ?? "", modalities: s.modalities ?? [] })}
@@ -3633,7 +3633,7 @@ export default function PhysioCasePage() {
                             </div>
                           )}
                           {(s.supervisorOpinion || s.doctorDecision) && (
-                            <div className="grid grid-cols-2 gap-3 border-t pt-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-2">
                               {s.supervisorOpinion && (
                                 <div className="space-y-0.5">
                                   <p className="text-[11px] font-medium text-muted-foreground">{t("sessions.supervisorOpinion")}</p>
@@ -3817,7 +3817,7 @@ export default function PhysioCasePage() {
                   {(myAlerts as any[]).map((alert: any) => (
                     <div
                       key={alert.id}
-                      className="flex items-start justify-between rounded-lg border p-3 gap-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                      className="flex flex-wrap items-start justify-between rounded-lg border p-3 gap-3 cursor-pointer hover:bg-muted/40 transition-colors"
                       onClick={() => setSelectedAlertNote(alert.senderNote ?? null)}
                     >
                       <div className="space-y-0.5 flex-1">
@@ -3875,7 +3875,7 @@ export default function PhysioCasePage() {
                 <div className="space-y-3">
                   {(incomingAlerts as any[]).map((alert: any) => (
                     <div key={alert.id} className="rounded-lg border p-4 space-y-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap gap-2 items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Bell className="h-4 w-4 text-destructive" />
                           <span className="font-medium text-sm">تنبيه طارئ</span>
@@ -3908,7 +3908,7 @@ export default function PhysioCasePage() {
                               rows={3}
                               className="text-sm"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button
                                 size="sm"
                                 onClick={async () => {
@@ -3962,7 +3962,7 @@ export default function PhysioCasePage() {
                   <div key={ev.id} className="relative flex gap-3">
                     <div className="absolute -right-4 top-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
                     <div className="flex-1 rounded-lg border p-3 space-y-1">
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-wrap gap-2 justify-between items-start">
                         <p className="font-medium text-sm">{ev.title}</p>
                         <span className="text-xs text-muted-foreground">{new Date(ev.date).toLocaleDateString(locale)}</span>
                       </div>

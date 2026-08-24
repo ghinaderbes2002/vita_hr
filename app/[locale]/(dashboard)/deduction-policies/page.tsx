@@ -231,28 +231,28 @@ export default function DeductionPoliciesPage() {
                 {!policy.isActive && <Badge variant="secondary" className="w-fit text-xs">{t("disabled")}</Badge>}
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
+                <div className="flex flex-wrap gap-2 justify-between">
                   <span className="text-muted-foreground">{t("card.lateTolerance")}</span>
                   <span className="font-medium">{t("card.minutesUnit", { count: policy.lateToleranceMinutes })}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-wrap gap-2 justify-between">
                   <span className="text-muted-foreground">{t("card.lateDeduction")}</span>
                   <span className="font-medium">{t(`deductionType.${policy.lateDeductionType}`)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-wrap gap-2 justify-between">
                   <span className="text-muted-foreground">{t("card.earlyLeaveTolerance")}</span>
                   <span className="font-medium">{t("card.minutesUnit", { count: policy.earlyLeaveToleranceMinutes ?? 0 })}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-wrap gap-2 justify-between">
                   <span className="text-muted-foreground">{t("card.earlyLeaveDeduction")}</span>
                   <span className="font-medium">{t(`deductionType.${policy.earlyLeaveDeductionType}`)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-wrap gap-2 justify-between">
                   <span className="text-muted-foreground">{t("card.absenceDeduction")}</span>
                   <span className="font-medium">{t("card.dayPerDay", { days: policy.absenceDeductionDays })}</span>
                 </div>
                 {policy.repeatLateThreshold && (
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap gap-2 justify-between">
                     <span className="text-muted-foreground">{t("card.repeatPenalty")}</span>
                     <span className="font-medium text-xs">
                       {t("card.repeatPenaltyValue", { threshold: policy.repeatLateThreshold ?? 0, days: policy.repeatLatePenaltyDays ?? 0 })}
@@ -290,19 +290,19 @@ export default function DeductionPoliciesPage() {
                   </div>
                 )}
                 {policy.holidayOvertimeMultiplier != null && (
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap gap-2 justify-between">
                     <span className="text-muted-foreground">{t("card.holidayMultiplier")}</span>
                     <span className="font-medium">{policy.holidayOvertimeMultiplier}×</span>
                   </div>
                 )}
                 {policy.internalMissionDailyRate != null && (
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap gap-2 justify-between">
                     <span className="text-muted-foreground">{t("card.internalMission")}</span>
                     <span className="font-medium">{policy.internalMissionDailyRate} $</span>
                   </div>
                 )}
                 {policy.externalMissionDailyRate != null && (
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap gap-2 justify-between">
                     <span className="text-muted-foreground">{t("card.externalMission")}</span>
                     <span className="font-medium">{policy.externalMissionDailyRate} $</span>
                   </div>
@@ -335,7 +335,7 @@ export default function DeductionPoliciesPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedPolicy ? t("form.editTitle") : t("form.createTitle")}</DialogTitle>
           </DialogHeader>
@@ -351,11 +351,11 @@ export default function DeductionPoliciesPage() {
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="flex items-center justify-between flex-1 rounded-lg border p-3">
+              <div className="flex flex-wrap gap-2 items-center justify-between flex-1 rounded-lg border p-3">
                 <Label className="cursor-pointer">{t("form.activate")}</Label>
                 <Switch checked={form.isActive} onCheckedChange={(v) => setForm({ ...form, isActive: v })} />
               </div>
-              <div className="flex items-center justify-between flex-1 rounded-lg border p-3">
+              <div className="flex flex-wrap gap-2 items-center justify-between flex-1 rounded-lg border p-3">
                 <Label className="cursor-pointer">{t("form.default")}</Label>
                 <Switch checked={form.isDefault} onCheckedChange={(v) => setForm({ ...form, isDefault: v })} />
               </div>

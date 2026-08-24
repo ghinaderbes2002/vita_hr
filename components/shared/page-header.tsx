@@ -11,7 +11,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, actions, count }: PageHeaderProps) {
   return (
-    <div className="relative flex items-start justify-between gap-4 rounded-xl overflow-hidden px-5 py-4 mb-2"
+    <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 rounded-xl overflow-hidden px-3 sm:px-5 py-3 sm:py-4 mb-2"
       style={{
         background: "linear-gradient(135deg, oklch(0.702 0.191 47.604 / 0.07) 0%, oklch(0.929 0.013 255 / 0.15) 50%, transparent 100%)",
         borderBottom: "1px solid oklch(0.929 0.013 255.508 / 0.8)",
@@ -32,10 +32,10 @@ export function PageHeader({ title, description, actions, count }: PageHeaderPro
         style={{ background: "oklch(0.702 0.191 47.604)" }}
       />
 
-      <div className="ps-3">
-        <div className="flex items-center gap-2.5">
+      <div className="ps-3 min-w-0">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <h1
-            className="text-2xl font-extrabold tracking-tight"
+            className="text-lg sm:text-2xl font-extrabold tracking-tight break-words"
             style={{
               background: "linear-gradient(135deg, oklch(0.208 0.042 265.755) 30%, oklch(0.372 0.044 257.287) 100%)",
               WebkitBackgroundClip: "text",
@@ -59,12 +59,12 @@ export function PageHeader({ title, description, actions, count }: PageHeaderPro
           )}
         </div>
         {description && (
-          <p className="text-muted-foreground text-sm mt-0.5">{description}</p>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">{description}</p>
         )}
       </div>
 
       {actions && (
-        <div className="flex items-center gap-2 shrink-0">{actions}</div>
+        <div className="flex flex-wrap items-center gap-2 ps-3 sm:ps-0 sm:shrink-0">{actions}</div>
       )}
     </div>
   );

@@ -155,7 +155,7 @@ export default function InterviewPositionDetailPage() {
           ) : (
             <div className="space-y-2">
               {pos.technicalQuestions.map((q: any, i: number) => (
-                <div key={q.id} className="flex items-start justify-between rounded-lg border p-3 gap-3">
+                <div key={q.id} className="flex flex-wrap items-start justify-between rounded-lg border p-3 gap-3">
                   <div className="flex gap-3 flex-1">
                     <span className="text-muted-foreground text-sm shrink-0 w-5">{i + 1}.</span>
                     <p className="text-sm">{q.question}</p>

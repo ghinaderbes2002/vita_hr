@@ -104,7 +104,9 @@ export default function ProbationEndingPage() {
               لا يوجد موظفون تنتهي فترة تجربتهم خلال {days} يوم القادمة
             </div>
           ) : (
-            <div className="divide-y">
+            /* A 7/8-column grid can't usefully reflow on a phone — let it scroll. */
+            <div className="overflow-x-auto">
+            <div className="divide-y min-w-[900px]">
               {/* Header */}
               <div className="grid grid-cols-8 gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/40">
                 <span>الرقم الوظيفي</span>
@@ -150,6 +152,7 @@ export default function ProbationEndingPage() {
                   )}
                 </div>
               ))}
+            </div>
             </div>
           )}
         </CardContent>

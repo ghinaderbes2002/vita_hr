@@ -138,7 +138,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-175 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-175 max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {schedule ? t("workSchedules.dialog.editTitle") : t("workSchedules.dialog.addTitle")}
@@ -193,7 +193,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="nameAr"
@@ -224,7 +224,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
 
             {!isFlexible && (
               <>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="workStartTime"
@@ -253,7 +253,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="lateToleranceMin"
@@ -324,7 +324,7 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
                   control={form.control}
                   name="requiresContinuousWork"
                   render={({ field }) => (
-                    <FormItem className="flex items-center justify-between">
+                    <FormItem className="flex flex-wrap gap-2 items-center justify-between">
                       <FormLabel className="text-sm">{t("workSchedules.dialog.continuousWork")}</FormLabel>
                       <FormControl>
                         <Switch

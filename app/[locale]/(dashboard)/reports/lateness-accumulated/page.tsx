@@ -42,7 +42,7 @@ export default function LatenessAccumulatedPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">التأخر التراكمي الشهري</h1>
           <p className="text-sm text-muted-foreground mt-0.5">تتبع دقائق التأخر والسماحية لكل موظف</p>

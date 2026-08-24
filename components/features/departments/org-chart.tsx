@@ -464,7 +464,7 @@ export function OrgChart({ departments, allDepartments }: OrgChartProps) {
         {/* ── Employee panel ── */}
         {selectedDept && (
           <div className="w-72 shrink-0 rounded-xl border bg-card shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+            <div className="flex flex-wrap gap-2 items-center justify-between px-4 py-3 border-b bg-muted/30">
               <div>
                 <p className="font-semibold text-sm">{selectedName}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">

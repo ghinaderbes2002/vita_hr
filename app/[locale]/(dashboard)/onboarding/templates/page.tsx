@@ -83,7 +83,7 @@ export default function OnboardingTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{t("description")}</p>
@@ -122,7 +122,7 @@ export default function OnboardingTemplatesPage() {
           {templateList.map((tmpl: any) => (
             <Card key={tmpl.id} className="relative">
               <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base leading-snug">{tmpl.nameAr}</CardTitle>
                     {tmpl.nameEn && <p className="text-xs text-muted-foreground mt-0.5">{tmpl.nameEn}</p>}
@@ -150,7 +150,7 @@ export default function OnboardingTemplatesPage() {
                 {tmpl.tasks?.length > 0 && (
                   <div className="mt-3 space-y-1.5">
                     {tmpl.tasks.slice(0, 3).map((task: any, i: number) => (
-                      <div key={task.id || i} className="flex items-center justify-between gap-2">
+                      <div key={task.id || i} className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-xs truncate flex-1">{task.titleAr}</p>
                         <Badge className={`text-[10px] shrink-0 ${ASSIGNEE_COLORS[task.assignedTo as TaskAssignee] || "bg-gray-100 text-gray-600"}`}>
                           {tAssignee(task.assignedTo)}
@@ -170,7 +170,7 @@ export default function OnboardingTemplatesPage() {
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("form.createTitle", { type: t(`tabs.${tab}`) })}</DialogTitle>
           </DialogHeader>
@@ -192,7 +192,7 @@ export default function OnboardingTemplatesPage() {
 
             {/* Tasks */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
                 <Label>{t("form.tasks", { count: tasks.length })}</Label>
                 <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addTask}>
                   <Plus className="h-3 w-3" />{t("form.addTask")}
@@ -200,7 +200,7 @@ export default function OnboardingTemplatesPage() {
               </div>
               {tasks.map((task, i) => (
                 <div key={i} className="rounded-lg border p-3 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <span className="text-xs text-muted-foreground font-medium">{t("form.taskNumber", { number: i + 1 })}</span>
                     {tasks.length > 1 && (
                       <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeTask(i)}>

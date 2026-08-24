@@ -158,7 +158,7 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
               )}
 
               {/* Summary */}
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 {[
                   { label: "الدخول",      val: (record as any).clockInTime  ? format(new Date((record as any).clockInTime), "HH:mm")  : "—" },
                   { label: "الخروج",      val: (record as any).clockOutTime ? format(new Date((record as any).clockOutTime), "HH:mm") : "—" },
@@ -185,7 +185,7 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
                         key={stamp.id}
                         className={`rounded-lg border p-3 space-y-2 ${isExcluded ? "opacity-50 bg-muted/20" : "bg-card"}`}
                       >
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
                             <span className="text-sm font-medium">
                               {format(new Date(stamp.timestamp), "HH:mm:ss")}

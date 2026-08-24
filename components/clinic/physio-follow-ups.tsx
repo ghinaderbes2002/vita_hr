@@ -54,7 +54,7 @@ const dtoOf = (f: FormState) => ({
 
 function Fields({ value, onChange, t }: { value: FormState; onChange: (v: FormState) => void; t: ReturnType<typeof useTranslations> }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div className="space-y-1">
         <Label className="text-xs">{t("followUps.date")}</Label>
         <Input type="date" value={value.sessionDate} onChange={(e) => onChange({ ...value, sessionDate: e.target.value })} />
@@ -63,17 +63,17 @@ function Fields({ value, onChange, t }: { value: FormState; onChange: (v: FormSt
         <Label className="text-xs">{t("followUps.time")}</Label>
         <Input type="time" value={value.sessionTime} onChange={(e) => onChange({ ...value, sessionTime: e.target.value })} />
       </div>
-      <div className="space-y-1 col-span-2">
+      <div className="space-y-1 col-span-1 sm:col-span-2">
         <Label className="text-xs">{t("followUps.notes")}</Label>
         <Textarea rows={2} value={value.notes} placeholder={t("followUps.notesPlaceholder")}
           onChange={(e) => onChange({ ...value, notes: e.target.value })} />
       </div>
-      <div className="space-y-1 col-span-2">
+      <div className="space-y-1 col-span-1 sm:col-span-2">
         <Label className="text-xs">{t("followUps.supervisorOpinion")}</Label>
         <Textarea rows={2} value={value.supervisorOpinion} placeholder={t("followUps.supervisorOpinionPlaceholder")}
           onChange={(e) => onChange({ ...value, supervisorOpinion: e.target.value })} />
       </div>
-      <div className="space-y-1 col-span-2">
+      <div className="space-y-1 col-span-1 sm:col-span-2">
         <Label className="text-xs">{t("followUps.doctorDecision")}</Label>
         <Textarea rows={2} value={value.doctorDecision} placeholder={t("followUps.doctorDecisionPlaceholder")}
           onChange={(e) => onChange({ ...value, doctorDecision: e.target.value })} />
@@ -130,7 +130,7 @@ export function PhysioFollowUps({ caseId, canEdit }: { caseId: string; canEdit: 
               {editing?.id === f.id ? (
                 <div className="space-y-3">
                   <Fields value={editing.form} onChange={(v) => setEditing({ id: f.id, form: v })} t={t} />
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={handleUpdate} disabled={updateFollowUp.isPending} className="gap-1">
                       {updateFollowUp.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                       {t("followUps.save")}
@@ -140,7 +140,7 @@ export function PhysioFollowUps({ caseId, canEdit }: { caseId: string; canEdit: 
                 </div>
               ) : (
                 <>
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">
                         {f.sessionDate ? new Date(f.sessionDate).toLocaleDateString("en-GB") : "—"}
@@ -161,7 +161,7 @@ export function PhysioFollowUps({ caseId, canEdit }: { caseId: string; canEdit: 
                   </div>
                   {f.notes && <p className="text-xs text-muted-foreground">{f.notes}</p>}
                   {(f.supervisorOpinion || f.doctorDecision) && (
-                    <div className="grid grid-cols-2 gap-3 border-t pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t pt-2">
                       {f.supervisorOpinion && (
                         <div className="space-y-0.5">
                           <p className="text-[11px] font-medium text-muted-foreground">{t("followUps.supervisorOpinion")}</p>

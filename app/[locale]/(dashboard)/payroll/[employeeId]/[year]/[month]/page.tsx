@@ -33,7 +33,7 @@ function Row({
   sub?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-2">
+    <div className="flex flex-wrap gap-2 items-center justify-between py-2">
       <div>
         <span className="text-sm text-muted-foreground">{label}</span>
         {sub && <p className="text-xs text-muted-foreground/70">{sub}</p>}
@@ -233,7 +233,7 @@ export default function PayslipPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="text-sm">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <span className="text-muted-foreground">{t("slip.employeeInfo.name")}</span>{" "}
               <span className="font-medium">{data.employee.firstNameAr} {data.employee.lastNameAr}</span>
@@ -272,7 +272,7 @@ export default function PayslipPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {[
                 { label: t("slip.rates.day"),    val: `${formatUSD(monthly.dailyRate)}` },
                 { label: t("slip.rates.hour"),   val: `${formatUSD(monthly.hourlyRate)}` },
@@ -518,7 +518,7 @@ export default function PayslipPage() {
               variant="positive"
             />
           )}
-          <div className="flex items-center justify-between py-2">
+          <div className="flex flex-wrap gap-2 items-center justify-between py-2">
             <span className="text-sm font-semibold">{t("slip.salaryBreakdown.grossSalary")}</span>
             <span className="text-sm font-bold">{formatUSD(s.grossSalary)}</span>
           </div>
@@ -528,7 +528,7 @@ export default function PayslipPage() {
           {/* Bonuses */}
           {bonusAmount > 0 && (
             <div>
-              <div className="flex items-center justify-between py-2">
+              <div className="flex flex-wrap gap-2 items-center justify-between py-2">
                 <span className="text-sm text-green-700 font-medium flex items-center gap-1">
                   <TrendingUp className="h-3.5 w-3.5" />
                   {t("slip.salaryBreakdown.bonuses")}
@@ -540,7 +540,7 @@ export default function PayslipPage() {
               {bonusDetails.length > 0 && (
                 <div className="pr-4 pb-2 space-y-1">
                   {bonusDetails.map((b: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between text-xs text-green-700">
+                    <div key={i} className="flex flex-wrap gap-2 items-center justify-between text-xs text-green-700">
                       <span>{b.reason}</span>
                       <span className="font-mono">+{formatUSD(b.amount)}</span>
                     </div>
@@ -552,7 +552,7 @@ export default function PayslipPage() {
 
           {/* Commission */}
           {commissionAmt > 0 && (
-            <div className="flex items-center justify-between py-2">
+            <div className="flex flex-wrap gap-2 items-center justify-between py-2">
               <span className="text-sm text-emerald-700 font-medium">{t("slip.salaryBreakdown.salesCommission")}</span>
               <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-mono text-xs">
                 +{formatUSD(commissionAmt)}
@@ -565,7 +565,7 @@ export default function PayslipPage() {
           {/* Deductions */}
           {totalDeduction > 0 && (
             <div className="py-2 space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
                 <span className="text-sm text-red-600 font-medium flex items-center gap-1">
                   <TrendingDown className="h-3.5 w-3.5" />
                   {t("slip.salaryBreakdown.attendanceDeductions")}
@@ -573,25 +573,25 @@ export default function PayslipPage() {
                 <span className="text-sm font-medium text-red-600">-{formatUSD(totalDeduction)}</span>
               </div>
               {Number(deductions?.attendanceDeduction) > 0 && (
-                <div className="flex justify-between text-xs text-red-600 pr-4">
+                <div className="flex flex-wrap gap-2 justify-between text-xs text-red-600 pr-4">
                   <span>{t("slip.salaryBreakdown.late")}</span>
                   <span>-{formatUSD(deductions?.attendanceDeduction)}</span>
                 </div>
               )}
               {Number(deductions?.absenceDeduction) > 0 && (
-                <div className="flex justify-between text-xs text-red-600 pr-4">
+                <div className="flex flex-wrap gap-2 justify-between text-xs text-red-600 pr-4">
                   <span>{t("slip.salaryBreakdown.absent")}</span>
                   <span>-{formatUSD(deductions?.absenceDeduction)}</span>
                 </div>
               )}
               {unpaidLeaveAmt > 0 && (
-                <div className="flex justify-between text-xs text-red-600 pr-4">
+                <div className="flex flex-wrap gap-2 justify-between text-xs text-red-600 pr-4">
                   <span>{t("slip.salaryBreakdown.unpaidLeave")}</span>
                   <span>-{formatUSD(unpaidLeaveAmt)}</span>
                 </div>
               )}
               {hourlyLeaveAmt > 0 && (
-                <div className="flex justify-between text-xs text-red-600 pr-4">
+                <div className="flex flex-wrap gap-2 justify-between text-xs text-red-600 pr-4">
                   <span>{t("slip.salaryBreakdown.hourlyLeave")}</span>
                   <span>-{formatUSD(hourlyLeaveAmt)}</span>
                 </div>
@@ -602,7 +602,7 @@ export default function PayslipPage() {
           {/* Penalties */}
           {penaltyAmount > 0 && (
             <div>
-              <div className="flex items-center justify-between py-2">
+              <div className="flex flex-wrap gap-2 items-center justify-between py-2">
                 <span className="text-sm text-red-600 font-medium flex items-center gap-1">
                   <TrendingDown className="h-3.5 w-3.5" />
                   {t("slip.salaryBreakdown.penalties")}
@@ -614,7 +614,7 @@ export default function PayslipPage() {
               {penaltyDetails.length > 0 && (
                 <div className="pr-4 pb-2 space-y-1">
                   {penaltyDetails.map((p: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between text-xs text-red-700">
+                    <div key={i} className="flex flex-wrap gap-2 items-center justify-between text-xs text-red-700">
                       <span>{p.description}</span>
                       <span className="font-mono">-{formatUSD(p.amount)}</span>
                     </div>
@@ -626,7 +626,7 @@ export default function PayslipPage() {
 
           {/* Advance Deduction */}
           {advanceDeduction > 0 && (
-            <div className="flex items-center justify-between py-2">
+            <div className="flex flex-wrap gap-2 items-center justify-between py-2">
               <span className="text-sm text-orange-700 font-medium">{t("slip.salaryBreakdown.advanceDeduction")}</span>
               <Badge className="bg-orange-50 text-orange-700 border-orange-200 font-mono text-xs">
                 -{formatUSD(advanceDeduction)}
@@ -636,7 +636,7 @@ export default function PayslipPage() {
 
           {/* Other Deduction */}
           {otherDeduction > 0 && (
-            <div className="flex items-center justify-between py-2">
+            <div className="flex flex-wrap gap-2 items-center justify-between py-2">
               <div>
                 <span className="text-sm text-red-600 font-medium">{t("slip.salaryBreakdown.otherDeduction")}</span>
                 {deductions?.otherDeductionNotes && (
@@ -652,7 +652,7 @@ export default function PayslipPage() {
           <Separator className="my-1" />
 
           {/* Net Salary */}
-          <div className="flex items-center justify-between py-3">
+          <div className="flex flex-wrap gap-2 items-center justify-between py-3">
             <span className="text-base font-bold">{t("slip.salaryBreakdown.netSalary")}</span>
             <span className="text-lg font-bold text-primary">{netDisplay}</span>
           </div>
@@ -717,7 +717,7 @@ export default function PayslipPage() {
                 variant="negative"
               />
             )}
-            <div className="flex items-center justify-between py-2 border-t">
+            <div className="flex flex-wrap gap-2 items-center justify-between py-2 border-t">
               <span className="text-sm font-semibold">{t("slip.deductionBreakdown.total")}</span>
               <span className="text-sm font-bold text-red-700">{formatUSD(breakdown.totalDeduction)}</span>
             </div>
@@ -728,7 +728,7 @@ export default function PayslipPage() {
       {/* Notes */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center justify-between">
+          <CardTitle className="text-base flex flex-wrap gap-2 items-center justify-between">
             <span className="flex items-center gap-2">
               <FileEdit className="h-4 w-4" />
               {t("slip.notes.title")}

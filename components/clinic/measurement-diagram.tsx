@@ -46,15 +46,19 @@ export function MeasurementSheet({
         />
         {mirrored ? "الرسم معكوس — الجهة اليسرى" : "الجهة اليمنى"}
       </div>
-      <MeasurementDiagram
-        imageSrc={image}
-        fields={fields}
-        sound={sound}
-        affected={affected}
-        onChange={onChange}
-        disabled={disabled}
-        mirrored={mirrored}
-      />
+      <div className="overflow-x-auto">
+        <div className="min-w-[680px] sm:min-w-0">
+          <MeasurementDiagram
+            imageSrc={image}
+            fields={fields}
+            sound={sound}
+            affected={affected}
+            onChange={onChange}
+            disabled={disabled}
+            mirrored={mirrored}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -102,7 +106,7 @@ export function MeasurementDiagram({
               inputMode="decimal"
               title={f.key}
               // Saved sheets render disabled; keep the numbers fully legible there.
-              className="absolute rounded bg-transparent text-center text-[11px] font-semibold text-foreground outline-none focus:bg-primary/10 disabled:cursor-default disabled:opacity-100"
+              className="measurement-field absolute rounded bg-transparent text-center text-[11px] font-semibold text-foreground outline-none focus:bg-primary/10 disabled:cursor-default disabled:opacity-100"
               style={{
                 left: `${f.cx}%`,
                 top: `${f.cy}%`,

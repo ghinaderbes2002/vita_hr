@@ -162,7 +162,7 @@ export default function AttendanceMonthlySummaryPage() {
 
       {/* Summary stats */}
       {isLoading ? (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
         </div>
       ) : (
@@ -238,7 +238,7 @@ export default function AttendanceMonthlySummaryPage() {
       {/* Needs review */}
       {needsReviewTotal > 0 && (
         <div className="rounded-lg border p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap gap-2 items-center justify-between mb-3">
             <p className="text-sm font-semibold flex items-center gap-1.5">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               سجلات بحاجة لمراجعة ({needsReviewTotal})
@@ -261,7 +261,7 @@ export default function AttendanceMonthlySummaryPage() {
               return (
                 <div
                   key={record.id}
-                  className="flex items-center justify-between text-sm rounded-md bg-amber-50/50 border border-amber-100 px-3 py-2"
+                  className="flex flex-wrap gap-2 items-center justify-between text-sm rounded-md bg-amber-50/50 border border-amber-100 px-3 py-2"
                 >
                   <span>{empName}</span>
                   <span className="text-xs text-muted-foreground">

@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
   return (
-    <div className="flex items-start justify-between py-2">
+    <div className="flex flex-wrap gap-2 items-start justify-between py-2">
       <span className="text-sm text-muted-foreground shrink-0 w-40">{label}</span>
       <span className="text-sm font-medium text-end flex-1">{value}</span>
     </div>
@@ -147,7 +147,7 @@ export default function MyProfilePage() {
             <InfoRow label={t("employees.fields.phone")} value={employee.phone} />
             <InfoRow label={t("employees.fields.mobile")} value={employee.mobile} />
             {emp.currentAddress && (
-              <div className="flex items-start justify-between py-2">
+              <div className="flex flex-wrap gap-2 items-start justify-between py-2">
                 <span className="text-sm text-muted-foreground shrink-0 w-40">{t("employees.fields.currentAddress")}</span>
                 <span className="text-sm font-medium text-end flex-1 flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -187,7 +187,7 @@ export default function MyProfilePage() {
                 value={`${(employee.manager as any).firstNameAr} ${(employee.manager as any).lastNameAr}`}
               />
             )}
-            <div className="flex items-center justify-between py-2">
+            <div className="flex flex-wrap gap-2 items-center justify-between py-2">
               <span className="text-sm text-muted-foreground shrink-0 w-40">{t("employees.fields.status")}</span>
               <Badge variant={employee.employmentStatus === "ACTIVE" ? "default" : "secondary"} className="text-xs">
                 {statusLabel}
@@ -228,22 +228,22 @@ export default function MyProfilePage() {
 
                     {isHourly ? (
                       <div className="text-xs space-y-1">
-                        <div className="flex justify-between">
+                        <div className="flex flex-wrap gap-2 justify-between">
                           <span className="text-muted-foreground">✅ {t("myProfile.hourly.paid")}</span>
                           <span className="font-medium text-green-600">{monthlyLimit} {t("myProfile.hourly.hourPerMonth")}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex flex-wrap gap-2 justify-between">
                           <span className="text-muted-foreground">📊 {t("myProfile.hourly.used")}</span>
                           <span className="font-medium">{stats ? stats.usedHours.toFixed(1) : (b.usedHours ?? 0)}</span>
                         </div>
                         {(stats ? stats.pendingHours : (b.pendingHours ?? 0)) > 0 && (
-                          <div className="flex justify-between">
+                          <div className="flex flex-wrap gap-2 justify-between">
                             <span className="text-muted-foreground">⏳ {t("myProfile.hourly.pending")}</span>
                             <span className="font-medium text-amber-600">{stats ? stats.pendingHours.toFixed(1) : b.pendingHours}</span>
                           </div>
                         )}
                         {(stats?.deductedHours ?? 0) > 0 && (
-                          <div className="flex justify-between">
+                          <div className="flex flex-wrap gap-2 justify-between">
                             <span className="text-muted-foreground">⚠️ {t("myProfile.hourly.deducted")}</span>
                             <span className="font-medium text-red-600">{stats!.deductedHours.toFixed(1)} {t("myProfile.hourly.fromSalary")}</span>
                           </div>
@@ -253,7 +253,7 @@ export default function MyProfilePage() {
                       <div className="text-xs text-blue-600 font-medium">{t("myProfile.hourly.unlimited")}</div>
                     ) : (
                       <>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex flex-wrap gap-2 items-center justify-between text-xs text-muted-foreground">
                           <span>{t("myProfile.hourly.remaining")}</span>
                           <span className={`font-semibold text-sm ${b.remainingDays > 0 ? "text-green-600" : "text-red-500"}`}>
                             {b.remainingDays} / {b.totalDays}
@@ -294,7 +294,7 @@ export default function MyProfilePage() {
               const isLow = !isDepleted && remMin > 0 && remMin < 30;
               return (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-center">
                     <div className="rounded-lg border bg-muted/30 p-3">
                       <p className="text-xs text-muted-foreground mb-1">{t("myProfile.hourly.max")}</p>
                       <p className="text-sm font-semibold">{fmt(maxMin)}</p>
@@ -310,7 +310,7 @@ export default function MyProfilePage() {
                   </div>
                   <div className="space-y-1">
                     <Progress value={pct} className="h-2" />
-                    <div className="flex justify-between text-xs text-muted-foreground">
+                    <div className="flex flex-wrap gap-2 justify-between text-xs text-muted-foreground">
                       <span>{t("myProfile.hourly.leavesLabel", { value: fmt(hourlyMonthly.usedByRequestsMinutes) })}</span>
                       <span>{t("myProfile.hourly.tardinessLabel", { value: fmt(hourlyMonthly.usedByTardinessMinutes) })}</span>
                       <span>{t("myProfile.hourly.percentUsed", { pct })}</span>

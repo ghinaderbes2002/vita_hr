@@ -121,7 +121,7 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
   return (
     <div className={`rounded-lg border p-4 space-y-2 ${meta.color}`}>
       {/* header row */}
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className={`${meta.textColor}`}>{meta.icon}</span>
           <span className={`font-semibold text-sm ${meta.textColor}`}>{meta.label}</span>

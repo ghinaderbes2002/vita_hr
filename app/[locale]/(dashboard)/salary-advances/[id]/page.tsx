@@ -105,7 +105,7 @@ export default function SalaryAdvanceDetailPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">ملخص السلفة</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4 text-sm">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">المبلغ الإجمالي</p>
             <p className="font-semibold text-base font-mono">{formatUSD(data.totalAmount)}</p>
@@ -123,13 +123,13 @@ export default function SalaryAdvanceDetailPage() {
             <p className="font-medium">{data.paidInstallments} مدفوع / {data.totalInstallments} إجمالي</p>
           </div>
           {data.reason && (
-            <div className="col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <p className="text-muted-foreground">السبب</p>
               <p className="font-medium">{data.reason}</p>
             </div>
           )}
           {data.cancelReason && (
-            <div className="col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <p className="text-muted-foreground text-destructive">سبب الإلغاء</p>
               <p className="font-medium text-destructive">{data.cancelReason}</p>
             </div>

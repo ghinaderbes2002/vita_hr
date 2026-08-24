@@ -164,7 +164,7 @@ export default function ReferralSalesPage() {
                 </div>
 
                 <div className="flex flex-col justify-center gap-2">
-                  <div className="flex items-baseline justify-between">
+                  <div className="flex flex-wrap gap-2 items-baseline justify-between">
                     <span className="text-xs text-muted-foreground">نسبة من دخل خدمة فعلاً</span>
                     <span className="text-lg font-bold tabular-nums">
                       {conversion === null ? "—" : `${conversion}%`}
@@ -217,7 +217,7 @@ export default function ReferralSalesPage() {
 
           <Card>
             <CardContent className="space-y-3 pt-4">
-              <div className="flex items-baseline justify-between gap-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <p className="font-semibold">القنوات</p>
                 <p className="text-xs text-muted-foreground">
                   <span className="text-lg font-bold tabular-nums text-foreground">{totalSources}</span> مصدر
@@ -234,7 +234,7 @@ export default function ReferralSalesPage() {
                     const share = totalSources ? Math.round((n / totalSources) * 100) : 0;
                     return (
                       <div key={t} className="space-y-1">
-                        <div className="flex items-baseline justify-between gap-2 text-xs">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
                           <span className="flex items-center gap-1.5">
                             <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: TYPE_FILL[t] }} />
                             <span className="text-muted-foreground">{REFERRAL_SOURCE_TYPE_LABEL[t]}</span>
@@ -399,7 +399,7 @@ export default function ReferralSalesPage() {
             <button
               type="button"
               onClick={() => setTableOpen((v) => !v)}
-              className="flex w-full items-center justify-between gap-2 text-start"
+              className="flex flex-wrap w-full items-center justify-between gap-2 text-start"
             >
               <span className="text-sm font-semibold">عرض جدولي</span>
               {tableOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}

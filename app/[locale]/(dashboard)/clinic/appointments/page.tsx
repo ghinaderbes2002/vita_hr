@@ -287,7 +287,7 @@ export default function AppointmentsPage() {
         {/* Calendar */}
         <Card className="w-full md:w-80">
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronRight className="h-4 w-4" /></Button>
               <span className="font-semibold text-sm">
             {new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(new Date(viewYear, viewMonth))}
@@ -332,7 +332,7 @@ export default function AppointmentsPage() {
 
         {/* Day view — professional timeline */}
         <div className="space-y-3">
-          <div className="flex items-baseline justify-between gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-base font-semibold">
               {new Date(selectedDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
             </h2>
@@ -341,6 +341,9 @@ export default function AppointmentsPage() {
           {dayLoading ? (
             <Skeleton className="h-[560px] w-full rounded-xl" />
           ) : (
+            /* Two department columns beside a 56px time gutter don't fit a phone. */
+            <div className="overflow-x-auto">
+            <div className="min-w-[520px] sm:min-w-0">
             <AppointmentTimeline
               groups={timelineGroups}
               isToday={isSelectedToday}
@@ -355,6 +358,8 @@ export default function AppointmentsPage() {
                 return (a.therapistIds ?? []).map((id) => staffName(id)).filter(Boolean).join("، ") || null;
               }}
             />
+            </div>
+            </div>
           )}
         </div>
       </div>
@@ -400,7 +405,7 @@ export default function AppointmentsPage() {
             return (
               <dl className="divide-y text-sm">
                 {rows.map(([label, value]) => (
-                  <div key={label} className="flex items-start justify-between gap-3 py-2">
+                  <div key={label} className="flex flex-wrap items-start justify-between gap-3 py-2">
                     <dt className="text-muted-foreground shrink-0">{label}</dt>
                     <dd className="font-medium text-left">{value}</dd>
                   </div>
@@ -498,7 +503,7 @@ export default function AppointmentsPage() {
               <Label>{t("form.date")}</Label>
               <Input type="date" value={rsForm.date} onChange={(e) => setRsForm((f) => ({ ...f, date: e.target.value }))} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>{t("form.startTime")}</Label>
                 <Input type="time" value={rsForm.startTime} onChange={(e) => setRsForm((f) => ({ ...f, startTime: e.target.value }))} />
@@ -597,7 +602,7 @@ export default function AppointmentsPage() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>{t("form.appointmentType")}</Label>
                 <Select value={newForm.appointmentType} onValueChange={(v) => setNewForm((f) => ({ ...f, appointmentType: v as AppointmentType }))}>
@@ -674,7 +679,7 @@ export default function AppointmentsPage() {
               <Label>{t("form.date")}</Label>
               <Input type="date" value={newForm.date} onChange={(e) => setNewForm((f) => ({ ...f, date: e.target.value }))} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>{t("form.startTime")}</Label>
                 <Input type="time" value={newForm.startTime} onChange={(e) => setNewForm((f) => ({ ...f, startTime: e.target.value }))} />

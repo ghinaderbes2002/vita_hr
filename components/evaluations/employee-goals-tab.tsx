@@ -126,7 +126,7 @@ export function EmployeeGoalsTab({ formId }: EmployeeGoalsTabProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
             <div>
               <CardTitle>أهداف الموظف</CardTitle>
               <CardDescription>
@@ -169,7 +169,7 @@ export function EmployeeGoalsTab({ formId }: EmployeeGoalsTabProps) {
                       rows={3}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>تاريخ الإنجاز المستهدف *</Label>
                       <Input

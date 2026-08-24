@@ -103,7 +103,7 @@ export function PeerEvaluationsTab({ formId }: PeerEvaluationsTabProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
             <div>
               <CardTitle>تقييمات الزملاء</CardTitle>
               <CardDescription>
@@ -236,7 +236,7 @@ export function PeerEvaluationsTab({ formId }: PeerEvaluationsTabProps) {
                 <Card key={evaluation.id}>
                   <CardContent className="pt-6">
                     <div className="space-y-3">
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-wrap gap-2 justify-between items-start">
                         <div className="flex items-center gap-2">
                           <div className="p-2 bg-primary/10 rounded-full">
                             <UserRound className="h-4 w-4 text-primary" />
@@ -318,7 +318,7 @@ export function PeerEvaluationsTab({ formId }: PeerEvaluationsTabProps) {
               })}
             </div>
             <div className="mt-4 p-4 bg-muted rounded-lg">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap gap-2 justify-between items-center">
                 <span className="text-sm font-medium">إجمالي التقييمات</span>
                 <span className="text-2xl font-bold text-primary">
                   {evaluations.length}

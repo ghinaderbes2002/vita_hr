@@ -67,7 +67,7 @@ export default function MyEvaluationsPage() {
         </Card>
       ) : (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-wrap gap-2 flex-row items-center justify-between">
             <CardTitle className="text-lg">
               {form.period?.nameAr || form.period?.name || t("myEvaluations.fields.period")}
             </CardTitle>

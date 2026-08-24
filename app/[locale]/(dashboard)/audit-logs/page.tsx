@@ -270,7 +270,7 @@ export default function AuditLogsPage() {
 
       {/* Detail Dialog */}
       <Dialog open={!!detailLog} onOpenChange={(v) => !v && setDetailLog(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[80dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Badge className={METHOD_COLORS[detailLog?.method ?? ""] || "bg-gray-100 text-gray-700"}>
@@ -285,7 +285,7 @@ export default function AuditLogsPage() {
           {detailLog && (
             <div className="space-y-4 text-sm">
               {/* Basic info */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                 <div>
                   <p className="text-xs text-muted-foreground">{t("table.user")}</p>
                   <p className="font-medium">{detailLog.username || "—"}</p>

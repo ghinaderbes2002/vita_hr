@@ -200,7 +200,7 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("custodies.editCustody") : t("custodies.addCustody")}
@@ -217,7 +217,7 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId, 
               </FormItem>
             )} />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="category" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("custodies.fields.category")}</FormLabel>
@@ -290,7 +290,7 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId, 
 
             {/* Attachments */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
                 <span className="text-sm font-medium">المرفقات ({t("common.optional")})</span>
                 <Button
                   type="button"
@@ -313,7 +313,7 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId, 
               </div>
 
               {attachments.length > 0 && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {attachments.map((att, i) => (
                     <div key={i} className="relative group rounded-lg border overflow-hidden bg-muted aspect-square">
                       {att.fileUrl.startsWith("data:image") || att.fileUrl.startsWith("http") || att.fileUrl.startsWith("/app/") ? (

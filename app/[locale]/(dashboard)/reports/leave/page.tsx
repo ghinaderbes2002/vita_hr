@@ -71,7 +71,7 @@ export default function LeaveReportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{tLeave("title")}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{tLeave("description")}</p>
@@ -80,7 +80,7 @@ export default function LeaveReportsPage() {
       </div>
 
       {/* ─── 1. Summary ─────────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <BarChart2 className="h-5 w-5 text-primary" />
           {tLeave("summary.title")}
@@ -107,7 +107,7 @@ export default function LeaveReportsPage() {
             {(sum?.byStatus || []).map((s: any) => (
               <Card key={s.status}>
                 <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex flex-wrap gap-2 items-center justify-between mb-2">
                     <Badge className={`text-xs ${STATUS_COLORS[s.status] || "bg-gray-100 text-gray-600"}`}>
                       {tLeave(`status.${s.status}`) || s.status}
                     </Badge>
@@ -162,7 +162,7 @@ export default function LeaveReportsPage() {
       )}
 
       {/* ─── 2. Distribution ───────────────────────────────── */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex flex-wrap gap-2 items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <PieChartIcon className="h-5 w-5 text-primary" />
           {tLeave("distribution.title")}
@@ -228,7 +228,7 @@ export default function LeaveReportsPage() {
       )}
 
       {/* ─── 3. Balances ───────────────────────────────── */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex flex-wrap gap-2 items-center justify-between pt-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-primary" />
           {tLeave("balances.title")}
@@ -252,7 +252,7 @@ export default function LeaveReportsPage() {
             <Card key={tp.leaveTypeName}>
               <CardContent className="p-4">
                 <p className="font-medium text-sm">{tp.leaveTypeName}</p>
-                <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap gap-2 items-center justify-between mt-2 text-xs text-muted-foreground">
                   <span>{tLeave("balances.employees", { count: tp.totalEmployees })}</span>
                   <span className="font-semibold text-primary">{tLeave("balances.avgRemaining", { count: tp.avgRemaining })}</span>
                 </div>
@@ -265,7 +265,7 @@ export default function LeaveReportsPage() {
       {/* Details table */}
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="text-sm">
               {tLeave("balances.details")} {bal?.totalRecords ? tLeave("balances.records", { count: bal.totalRecords }) : ""}
             </CardTitle>

@@ -64,7 +64,7 @@ function stepOutcome(
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2">
+    <div className="flex flex-wrap items-start justify-between gap-4 py-2">
       <span className="shrink-0 text-sm text-muted-foreground">{label}</span>
       <div className="text-end text-sm font-medium">{children}</div>
     </div>
@@ -178,7 +178,7 @@ export default function JustificationDetailPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-between gap-3 text-base">
+            <CardTitle className="flex flex-wrap items-center justify-between gap-3 text-base">
               <span>{t("attendance.justificationTypeLabel")}</span>
               <Badge className={STATUS_CLASSES[item.status] || "bg-gray-100 text-gray-700"}>
                 {t(`attendance.justificationStatuses.${toCamelCase(item.status)}` as any, { defaultValue: item.status })}

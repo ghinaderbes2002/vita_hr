@@ -97,7 +97,7 @@ export function SelfEvaluationTab({ form }: SelfEvaluationTabProps) {
             const sectionData = sections[index];
             return (
               <div key={section.criteriaId} className="p-4 border rounded-lg space-y-3">
-                <div className="flex justify-between items-start">
+                <div className="flex flex-wrap gap-2 justify-between items-start">
                   <div className="flex-1">
                     <h4 className="font-semibold">{section.criteria?.nameAr}</h4>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -149,7 +149,7 @@ export function SelfEvaluationTab({ form }: SelfEvaluationTabProps) {
 
           {/* Summary */}
           <div className="p-4 bg-muted rounded-lg">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-2 justify-between items-center">
               <span className="text-sm font-medium">المجموع الكلي</span>
               <span className="text-2xl font-bold text-blue-600">
                 {form.totalSelfScore?.toFixed(1) || "0.0"}

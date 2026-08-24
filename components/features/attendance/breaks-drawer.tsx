@@ -261,7 +261,7 @@ export function BreaksDrawer({ record, open, onOpenChange, canManage = false }: 
 
             {/* Breaks */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
                 <p className="text-sm font-semibold flex items-center gap-1.5">
                   <Coffee className="h-4 w-4 text-amber-600" />
                   الاستراحات

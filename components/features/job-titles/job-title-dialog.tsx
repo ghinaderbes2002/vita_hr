@@ -129,7 +129,7 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[520px] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("jobTitles.editTitle") : t("jobTitles.addTitle")}
@@ -141,7 +141,7 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="nameAr"

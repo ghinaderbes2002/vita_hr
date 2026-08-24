@@ -264,7 +264,7 @@ export default function PodiatryReceptionPage() {
         <TabsContent value="reception" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="text-base">{t("receptionData")}</CardTitle>
                 <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.RECEPTION_EDIT}>
                   <Button

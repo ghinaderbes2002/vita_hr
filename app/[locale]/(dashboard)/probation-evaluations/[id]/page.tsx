@@ -222,7 +222,7 @@ function StatusBanner({
   if (!cfg) return null;
 
   return (
-    <div className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 ${cfg.color}`}>
+    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 ${cfg.color}`}>
       <div className="flex items-center gap-3">
         <AlertCircle className="h-5 w-5 shrink-0" />
         <span className="text-sm font-medium">{cfg.msg}</span>
@@ -512,7 +512,7 @@ export default function ProbationEvaluationDetailPage() {
                 .slice()
                 .sort((a: any, b: any) => (a.criteria?.displayOrder ?? 99) - (b.criteria?.displayOrder ?? 99))
                 .map((s: any) => (
-                  <div key={s.criteriaId} className="flex items-center justify-between rounded-lg border px-3 py-2 gap-3">
+                  <div key={s.criteriaId} className="flex flex-wrap items-center justify-between rounded-lg border px-3 py-2 gap-3">
                     <span className="text-sm flex-1">{s.criteria?.nameAr || s.criteriaId}</span>
                     <div className="flex gap-4 text-xs shrink-0">
                       {s.selfScore != null && (
@@ -747,7 +747,7 @@ export default function ProbationEvaluationDetailPage() {
                 <div key={i} className="flex items-start gap-3 rounded-lg border p-3">
                   <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
                   <div className="flex-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
                       <p className="text-sm font-medium">
                         {t(`historyActions.${h.action}`, { defaultValue: h.action })}
                       </p>
@@ -766,7 +766,7 @@ export default function ProbationEvaluationDetailPage() {
 
       {/* Action Dialog */}
       <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{actionType ? dialogTitles[actionType] : ""}</DialogTitle>
           </DialogHeader>
@@ -782,7 +782,7 @@ export default function ProbationEvaluationDetailPage() {
                       .slice()
                       .sort((a: any, b: any) => (a.criteria?.displayOrder ?? 99) - (b.criteria?.displayOrder ?? 99))
                       .map((s: any) => (
-                        <div key={s.criteriaId} className="flex items-center justify-between gap-2">
+                        <div key={s.criteriaId} className="flex flex-wrap items-center justify-between gap-2">
                           <Label className="text-xs flex-1">{s.criteria?.nameAr || s.criteriaId}</Label>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <ScoreInput
@@ -809,7 +809,7 @@ export default function ProbationEvaluationDetailPage() {
             {/* Senior approve: overallRating + recommendation + score per criterion */}
             {actionType === "approve" && (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>{t("actionDialog.overallRating")} * (1–5)</Label>
                     <input
@@ -847,7 +847,7 @@ export default function ProbationEvaluationDetailPage() {
                         .slice()
                         .sort((a: any, b: any) => (a.criteria?.displayOrder ?? 99) - (b.criteria?.displayOrder ?? 99))
                         .map((s: any) => (
-                          <div key={s.criteriaId} className="flex items-center justify-between gap-2">
+                          <div key={s.criteriaId} className="flex flex-wrap items-center justify-between gap-2">
                             <Label className="text-xs flex-1">{s.criteria?.nameAr || s.criteriaId}</Label>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <ScoreInput

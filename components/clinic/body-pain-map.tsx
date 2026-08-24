@@ -65,7 +65,7 @@ function HumanBodyMap({ points, onAreaClick, onPointClick, readonly = false, cus
   }, [readonly, onAreaClick]);
 
   return (
-    <div className="select-none mx-auto" style={{ width: "520px" }}>
+    <div className="select-none mx-auto w-full" style={{ maxWidth: "520px" }}>
       <div
         ref={containerRef}
         className={`relative ${readonly ? "" : "cursor-crosshair"}`}

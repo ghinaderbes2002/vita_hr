@@ -257,7 +257,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                <FormItem className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
                   <FormLabel className="cursor-pointer">
                     {t("users.fields.isActive")}
                   </FormLabel>

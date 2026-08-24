@@ -194,7 +194,7 @@ export default function InterviewPositionsPage() {
           {positions.map((pos) => (
             <Card key={pos.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex-1">
                     <CardTitle className="text-base leading-snug">{pos.jobTitle}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">{pos.department}</p>

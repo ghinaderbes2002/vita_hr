@@ -270,7 +270,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">المعلومات الأساسية</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>الاسم الأول <span className="text-destructive">*</span></Label>
                 <Input {...register("firstName")} />
@@ -282,7 +282,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
                 <FieldError msg={errors.lastName?.message} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>نوع الهوية</Label>
                 <Controller name="identityType" control={control} render={({ field }) => (
@@ -300,7 +300,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
                 <FieldError msg={errors.idNumber?.message} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>تاريخ الميلاد <span className="text-destructive">*</span></Label>
                 <Input type="date" {...register("dateOfBirth")} />
@@ -330,7 +330,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">التواصل والموقع</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>رقم الهاتف <span className="text-destructive">*</span></Label>
                 <Input dir="ltr" {...register("phone")} />
@@ -368,7 +368,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">البيانات الاجتماعية</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>الطول (سم)</Label>
                 <Input type="number" {...register("heightCm")} />
@@ -378,7 +378,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
                 <Input type="number" {...register("weightKg")} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>المستوى التعليمي</Label>
                 <Controller name="educationLevel" control={control} render={({ field }) => (
@@ -402,7 +402,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
                 )} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>الوضع المعيشي</Label>
                 <Controller name="livingCondition" control={control} render={({ field }) => (
@@ -451,7 +451,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
             so a consent can be reviewed and changed in the shape it was taken. */}
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <CardTitle className="text-base">الموافقات والملاحظات</CardTitle>
               <Button
                 type="button"
@@ -520,7 +520,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
           </CardContent>
         </Card>
 
-        <div className="flex justify-between pb-6">
+        <div className="flex flex-wrap gap-2 justify-between pb-6">
           <Button type="button" variant="outline" onClick={() => router.push(`/${locale}/clinic/patients/${id}`)}>
             إلغاء
           </Button>

@@ -16,7 +16,6 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const locale = useLocale();
-  const isRTL = locale === "ar";
   const { isAuthenticated } = useAuthStore();
   const [hydrated, setHydrated] = useState(false);
   useMailNotification();
@@ -40,14 +39,11 @@ export default function DashboardLayout({
     <AuthRefreshProvider>
       <div className="min-h-screen">
         <Sidebar />
-        <div
-          className="transition-all duration-300"
-          style={{
-            [isRTL ? 'marginRight' : 'marginLeft']: 'var(--sidebar-width, 16rem)'
-          }}
-        >
+        {/* `dashboard-shift` keeps the sidebar gutter on lg+ only — below that the
+            sidebar is an overlay drawer, so the content spans the full width. */}
+        <div className="dashboard-shift transition-all duration-300 min-w-0">
           <Header />
-          <main className="p-6 space-y-2">{children}</main>
+          <main className="p-3 sm:p-4 lg:p-6 space-y-2 min-w-0 overflow-x-clip">{children}</main>
         </div>
       </div>
     </AuthRefreshProvider>

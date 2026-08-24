@@ -174,7 +174,7 @@ export default function InventoryPage() {
         description="إدارة قطع الأطراف الصناعية والمستهلكات"
         actions={
           <ActionGuard permission={PERMISSIONS.CLINIC_INVENTORY.MANAGE}>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportFile} />
               <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importExcel.isPending} className="gap-2">
                 {importExcel.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -323,7 +323,7 @@ export default function InventoryPage() {
                         <TableCell className="text-sm">{item.minStockLevel}</TableCell>
                         <TableCell className="text-sm">{item.unitPrice != null && item.unitPrice > 0 ? `$${item.unitPrice.toLocaleString("en-US")}` : "—"}</TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap gap-1">
                             <Button variant="ghost" size="icon" className="h-7 w-7"
                               onClick={() => router.push(`/${locale}/clinic/inventory/${item.id}`)}>
                               <Eye className="h-3.5 w-3.5" />
@@ -469,7 +469,7 @@ export default function InventoryPage() {
               {lowStock.map((item) => (
                 <Card key={item.id} className="border-orange-200">
                   <CardContent className="pt-4">
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-wrap gap-2 justify-between items-start">
                       <div>
                         <p className="font-semibold">{item.name}</p>
                         <p className="text-xs text-muted-foreground font-mono">{item.code}</p>

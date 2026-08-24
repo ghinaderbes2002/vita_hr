@@ -365,7 +365,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-130 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-130 max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title || t("requests.newRequest")}</DialogTitle>
           {!defaultType && (
@@ -431,7 +431,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
             {/* ── TRANSFER ── */}
             {selectedType === "TRANSFER" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField control={form.control} name="currentDepartmentId" render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("requests.dialog.transfer.currentDept")}</FormLabel>
@@ -560,7 +560,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     <FormControl><Input {...field} type="date" /></FormControl>
                   </FormItem>
                 )} />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField control={form.control} name="startTime" render={({ field }) => (
                     <FormItem><FormLabel>{t("requests.dialog.overtime.startTime")}</FormLabel><FormControl><Input {...field} type="time" /></FormControl></FormItem>
                   )} />
@@ -583,7 +583,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
             {/* ── OVERTIME_MANAGER ── */}
             {selectedType === "OVERTIME_MANAGER" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField control={form.control} name="overtimeStartDate" render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("requests.dialog.overtime.startDate")}</FormLabel>
@@ -600,7 +600,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                 {previewOvertimeDays !== null && (
                   <p className="text-xs text-muted-foreground text-left">{t("requests.dialog.overtime.totalDays", { days: previewOvertimeDays })}</p>
                 )}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField control={form.control} name="startTime" render={({ field }) => (
                     <FormItem><FormLabel>{t("requests.dialog.overtime.startTime")}</FormLabel><FormControl><Input {...field} type="time" /></FormControl></FormItem>
                   )} />
@@ -667,7 +667,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     </Select>
                   </FormItem>
                 )} />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField control={form.control} name="missionStartDate" render={({ field }) => (
                     <FormItem><FormLabel>{t("requests.dialog.mission.startDate")}</FormLabel><FormControl><Input {...field} type="date" /></FormControl></FormItem>
                   )} />
@@ -708,7 +708,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                     </Select>
                   </FormItem>
                 )} />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField control={form.control} name="delegationStartDate" render={({ field }) => (
                     <FormItem><FormLabel>{t("requests.dialog.delegation.startDate")}</FormLabel><FormControl><Input {...field} type="date" /></FormControl></FormItem>
                   )} />
@@ -737,7 +737,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
             {/* ── HIRING_REQUEST ── */}
             {selectedType === "HIRING_REQUEST" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <p className="text-sm font-medium">{t("requests.dialog.hiring.positionsTitle")}</p>
                   {hiringPositions.length < 10 && (
                     <Button type="button" variant="outline" size="sm" className="gap-1"
@@ -754,7 +754,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     )}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <label className="text-xs font-medium">{t("requests.dialog.hiring.deptLabel")}</label>
                         <Select value={pos.departmentId} onValueChange={(v) => setHiringPositions((a) => a.map((x, j) => j === i ? { ...x, departmentId: v } : x))}>
@@ -786,7 +786,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
             {/* ── REWARD ── */}
             {selectedType === "REWARD" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">{t("requests.dialog.reward.employeesTitle")}</p>
                     <p className="text-xs text-muted-foreground mt-1">{t("requests.dialog.reward.autoAddNote")}</p>
@@ -827,7 +827,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                         ))}
                       </div>
                     </div>
-                    <div className={`grid gap-2 ${emp.category === "MATERIAL" ? "grid-cols-2" : "grid-cols-1"}`}>
+                    <div className={`grid gap-2 ${emp.category === "MATERIAL" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
                       <div className="space-y-1">
                         <label className="text-xs font-medium">{t("requests.dialog.reward.rewardTypeLabel")}</label>
                         <Input value={emp.rewardType} placeholder={t("requests.dialog.reward.rewardTypePlaceholder")}
@@ -898,7 +898,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
             {/* ── REMOTE_WORK ── */}
             {selectedType === "REMOTE_WORK" && (
               <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-medium">{t("requests.dialog.remoteWork.startDate")} *</label>
                     <Input type="date" value={remoteWork.startDate}

@@ -74,7 +74,7 @@ export function AttachmentList({ attachments }: ListProps) {
         {t("attachments", { count: attachments.length })}
       </div>
       {attachments.map((a) => (
-        <div key={a.id} className="flex items-center justify-between px-3 py-2">
+        <div key={a.id} className="flex flex-wrap gap-2 items-center justify-between px-3 py-2">
           <div className="flex items-center gap-2 min-w-0">
             <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className="text-sm truncate">{decodeFileName(a.fileName)}</span>

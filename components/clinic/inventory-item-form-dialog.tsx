@@ -76,7 +76,7 @@ export function InventoryItemFormDialog({ open, onOpenChange, initialCode, initi
           <DialogTitle>{isEdit ? "تعديل الصنف" : isRequest ? "طلب صنف جديد" : "إضافة صنف جديد"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>الكود <span className="text-destructive">*</span></Label>
               <Input value={form.code ?? ""} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} placeholder="PRO-001" className="font-mono" />
@@ -100,7 +100,7 @@ export function InventoryItemFormDialog({ open, onOpenChange, initialCode, initi
             <Label>اسم الشركة</Label>
             <Input value={form.companyName ?? ""} onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))} placeholder="اختياري" />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>الكمية الابتدائية</Label>
               <Input type="number" min={0} value={form.currentStock ?? ""} placeholder="0" onChange={(e) => setForm((f) => ({ ...f, currentStock: parseInt(e.target.value) || 0 }))} />

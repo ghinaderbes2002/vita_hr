@@ -90,7 +90,7 @@ function _DisciplinaryTab({ employeeId }: { employeeId: string }) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="h-4 w-4 text-primary" />
             السجل التأديبي والمكافآت
@@ -176,7 +176,7 @@ function _EmployeeFinancialTabs({ employeeId }: { employeeId: string }) {
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap gap-2 items-center justify-between mb-3">
           <TabsList>
             <TabsTrigger value="advances">
               السلف <Badge variant="secondary" className="mr-2 text-xs">{advances.length}</Badge>
@@ -307,7 +307,7 @@ const STATUS_COLORS: Record<string, string> = {
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
   return (
-    <div className="flex items-start justify-between py-2">
+    <div className="flex flex-wrap gap-2 items-start justify-between py-2">
       <span className="text-sm text-muted-foreground shrink-0 w-40">{label}</span>
       <span className="text-sm font-medium text-end flex-1">{value}</span>
     </div>
@@ -726,7 +726,7 @@ export default function EmployeeDetailsPage() {
               <InfoRow label="الحالة الاجتماعية" value={MARITAL_STATUS_LABELS[emp.maritalStatus] || emp.maritalStatus} />
             )}
             {emp.hasDrivingLicense !== undefined && (
-              <div className="flex items-center justify-between py-2">
+              <div className="flex flex-wrap gap-2 items-center justify-between py-2">
                 <span className="text-sm text-muted-foreground">رخصة قيادة</span>
                 <Badge variant={emp.hasDrivingLicense ? "default" : "secondary"}>
                   {emp.hasDrivingLicense ? "يمتلك" : "لا يمتلك"}
@@ -749,7 +749,7 @@ export default function EmployeeDetailsPage() {
             <InfoRow label={t("employees.fields.phone")} value={employee.phone} />
             <InfoRow label={t("employees.fields.mobile")} value={employee.mobile} />
             {emp.currentAddress && (
-              <div className="flex items-start justify-between py-2">
+              <div className="flex flex-wrap gap-2 items-start justify-between py-2">
                 <span className="text-sm text-muted-foreground shrink-0 w-40">{t("employees.fields.currentAddress")}</span>
                 <span className="text-sm font-medium text-end flex-1 flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -777,7 +777,7 @@ export default function EmployeeDetailsPage() {
               value={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("en-GB") : undefined}
             />
             <InfoRow label={t("employees.fields.contractType")} value={CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType} />
-            <div className="flex items-center justify-between py-2">
+            <div className="flex flex-wrap gap-2 items-center justify-between py-2">
               <span className="text-sm text-muted-foreground shrink-0 w-40">تاريخ انتهاء العقد</span>
               <div className="flex items-center gap-1.5">
                 {emp.contractEndDate ? (
@@ -802,13 +802,13 @@ export default function EmployeeDetailsPage() {
                   <span className="text-sm text-muted-foreground block mb-2">{t("employees.fields.commissions")}</span>
                   <div className="space-y-1">
                     {commissions.map((c, i) => (
-                      <div key={c.id ?? i} className="flex items-center justify-between text-sm gap-3">
+                      <div key={c.id ?? i} className="flex flex-wrap items-center justify-between text-sm gap-3">
                         <span className="text-muted-foreground truncate">{c.description || "—"}</span>
                         <span className="font-medium shrink-0">${Number(c.amount).toLocaleString("en-US")}</span>
                       </div>
                     ))}
                     {commissions.length > 1 && (
-                      <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
+                      <div className="flex flex-wrap gap-2 items-center justify-between text-sm border-t pt-1 mt-1">
                         <span className="text-muted-foreground">مجموع العمولات</span>
                         <span className="font-medium">${commissionsTotal.toLocaleString("en-US")}</span>
                       </div>
@@ -830,12 +830,12 @@ export default function EmployeeDetailsPage() {
                     <span className="text-sm text-muted-foreground block mb-2">البدلات</span>
                     <div className="space-y-1">
                       {allowances.map((al, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm">
+                        <div key={i} className="flex flex-wrap gap-2 items-center justify-between text-sm">
                           <span className="text-muted-foreground">{ALLOWANCE_TYPE_LABELS[al.type] || al.type}</span>
                           <span className="font-medium">${Number(al.amount).toLocaleString("en-US")}</span>
                         </div>
                       ))}
-                      <div className="flex items-center justify-between text-sm border-t pt-1 mt-1">
+                      <div className="flex flex-wrap gap-2 items-center justify-between text-sm border-t pt-1 mt-1">
                         <span className="text-muted-foreground">مجموع البدلات</span>
                         <span className="font-medium">
                           ${allowances.reduce((s, a) => s + Number(a.amount), 0).toLocaleString("en-US")}
@@ -845,7 +845,7 @@ export default function EmployeeDetailsPage() {
                   </div>
                 )}
                 {emp.basicSalary && (
-                  <div className="flex items-center justify-between text-sm border-t pt-2 mt-1">
+                  <div className="flex flex-wrap gap-2 items-center justify-between text-sm border-t pt-2 mt-1">
                     <span className="font-semibold">الراتب الإجمالي</span>
                     <span className="font-bold text-primary">
                       ${(Number(emp.basicSalary) + allowances.reduce((s, a) => s + Number(a.amount), 0)).toLocaleString("en-US")}
@@ -867,14 +867,14 @@ export default function EmployeeDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="divide-y divide-border/50">
-              <div className="flex items-start justify-between py-2">
+              <div className="flex flex-wrap gap-2 items-start justify-between py-2">
                 <span className="text-sm text-muted-foreground shrink-0 w-40">نتيجة التقييم</span>
                 <span className="text-sm font-semibold text-end flex-1">
                   {PROBATION_RECOMMENDATION_OPTIONS.find(o => o.value === emp.probationResult)?.labelAr || emp.probationResult}
                 </span>
               </div>
               {completedEval?.finalScorePercent != null && (
-                <div className="flex items-start justify-between py-2">
+                <div className="flex flex-wrap gap-2 items-start justify-between py-2">
                   <span className="text-sm text-muted-foreground shrink-0 w-40">النسبة النهائية</span>
                   <span className={`text-sm font-bold text-end flex-1 ${
                     completedEval.finalScorePercent >= 70 ? "text-green-700" :
@@ -885,14 +885,14 @@ export default function EmployeeDetailsPage() {
                 </div>
               )}
               {emp.probationCompletedAt && (
-                <div className="flex items-start justify-between py-2">
+                <div className="flex flex-wrap gap-2 items-start justify-between py-2">
                   <span className="text-sm text-muted-foreground shrink-0 w-40">تاريخ الإغلاق</span>
                   <span className="text-sm font-medium text-end flex-1">
                     {new Date(emp.probationCompletedAt).toLocaleDateString("en-GB")}
                   </span>
                 </div>
               )}
-              <div className="flex items-start justify-between py-2">
+              <div className="flex flex-wrap gap-2 items-start justify-between py-2">
                 <span className="text-sm text-muted-foreground shrink-0 w-40">حالة التوظيف</span>
                 <span className={`text-sm font-semibold text-end flex-1 ${
                   employee.employmentStatus === "ACTIVE" ? "text-green-700" :
@@ -916,7 +916,7 @@ export default function EmployeeDetailsPage() {
             </CardHeader>
             <CardContent className="divide-y divide-border/50">
               {bloodTypeLabel && (
-                <div className="flex items-center justify-between py-2">
+                <div className="flex flex-wrap gap-2 items-center justify-between py-2">
                   <span className="text-sm text-muted-foreground">{t("employees.fields.bloodType")}</span>
                   <Badge variant="outline" className="font-bold text-red-600 border-red-200">{bloodTypeLabel}</Badge>
                 </div>
@@ -927,7 +927,7 @@ export default function EmployeeDetailsPage() {
               )}
               <InfoRow label={t("employees.fields.religion")} value={emp.religion} />
               {emp.familyMembersCount !== undefined && emp.familyMembersCount !== null && (
-                <div className="flex items-center justify-between py-2">
+                <div className="flex flex-wrap gap-2 items-center justify-between py-2">
                   <span className="text-sm text-muted-foreground">{t("employees.fields.familyMembersCount")}</span>
                   <span className="text-sm font-medium flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" />
@@ -936,7 +936,7 @@ export default function EmployeeDetailsPage() {
                 </div>
               )}
               {emp.isSmoker !== undefined && emp.isSmoker !== null && (
-                <div className="flex items-center justify-between py-2">
+                <div className="flex flex-wrap gap-2 items-center justify-between py-2">
                   <span className="text-sm text-muted-foreground">{t("employees.fields.isSmoker")}</span>
                   <span className={`text-sm font-medium flex items-center gap-1 ${emp.isSmoker ? "text-amber-600" : "text-green-600"}`}>
                     {emp.isSmoker && <Cigarette className="h-3.5 w-3.5" />}
@@ -1022,7 +1022,7 @@ export default function EmployeeDetailsPage() {
             <CardContent>
               <div className="space-y-2">
                 {trainingCertificates.map((cert, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg border p-2.5">
+                  <div key={i} className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-2.5">
                     <span className="text-sm font-medium">{cert.name}</span>
                     {cert.attachmentUrl && (
                       <a
@@ -1090,7 +1090,7 @@ export default function EmployeeDetailsPage() {
               const isEditing = evalEditField === field;
               return (
                 <div key={field} className="rounded-lg border p-3 space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <p className="text-sm font-medium text-muted-foreground">{label}</p>
                     {!isEditing ? (
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEvalEdit(field)}>
@@ -1179,7 +1179,7 @@ export default function EmployeeDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border/50">
-            <div className="flex items-center justify-between py-2">
+            <div className="flex flex-wrap gap-2 items-center justify-between py-2">
               <span className="text-sm text-muted-foreground">{t("employees.linkedUser")}</span>
               {employee.userId ? (
                 <Badge variant="default" className="bg-green-600">{t("common.yes")}</Badge>
@@ -1213,7 +1213,7 @@ export default function EmployeeDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
               <div>
                 <p className="text-sm font-medium">مرتبط بالراتب</p>
                 <p className="text-xs text-muted-foreground">يُحسم على التأخر والغياب</p>
@@ -1273,7 +1273,7 @@ export default function EmployeeDetailsPage() {
                 {fpList.map((fp) => (
                   <div
                     key={fp.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3"
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-primary/10">
@@ -1330,7 +1330,7 @@ export default function EmployeeDetailsPage() {
           ) : (
             <div className="space-y-2">
               {scheduleList.map((es) => (
-                <div key={es.id} className="flex items-center justify-between rounded-lg border p-3">
+                <div key={es.id} className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-primary/10">
                       <Clock className="h-4 w-4 text-primary" />
@@ -1386,7 +1386,7 @@ export default function EmployeeDetailsPage() {
                 const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
                 return (
                   <div key={wf.id} className="rounded-lg border p-3 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Badge className={`text-xs ${wf.type === "ONBOARDING" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
                           {wf.type === "ONBOARDING" ? "استقبال" : "إنهاء خدمة"}
@@ -1481,7 +1481,7 @@ export default function EmployeeDetailsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>تاريخ البداية *</Label>
                 <Input type="date" value={wfForm.startDate} onChange={(e) => setWfForm({ ...wfForm, startDate: e.target.value })} />

@@ -604,7 +604,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-175 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-175 max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("employees.editEmployee") : t("employees.addEmployee")}
@@ -624,7 +624,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
 
               {/* ─── Personal Tab ─── */}
               <TabsContent value="personal" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="firstNameAr"
@@ -726,7 +726,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="phone"
@@ -803,7 +803,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="jobGradeId"
@@ -927,7 +927,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="hireDate"
@@ -1116,7 +1116,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
 
                 {/* Allowances */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <p className="text-sm font-medium">{t("employees.form.allowancesTitle")} ({t("common.optional")})</p>
                     <Button
                       type="button"
@@ -1174,7 +1174,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
 
               {/* ─── Qualifications Tab ─── */}
               <TabsContent value="qualifications" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="educationLevel"
@@ -1244,7 +1244,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                 {/* Certificate 1 */}
                 <div className="rounded-lg border p-3 space-y-3">
                   <p className="text-sm font-medium">{t("employees.form.firstDegree")} ({t("common.optional")})</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="certificate1"
@@ -1301,7 +1301,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                 {/* Certificate 2 */}
                 <div className="rounded-lg border p-3 space-y-3">
                   <p className="text-sm font-medium">{t("employees.form.secondDegree")} ({t("common.optional")})</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="certificate2"
@@ -1357,7 +1357,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
 
                 {/* Training Certificates */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <p className="text-sm font-medium">{t("employees.form.trainingCertificates")} ({t("common.optional")})</p>
                     <Button
                       type="button"
@@ -1430,7 +1430,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="bloodType"
@@ -1515,7 +1515,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   control={form.control}
                   name="isSmoker"
                   render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <FormItem className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
                       <FormLabel className="cursor-pointer">{t("employees.fields.isSmoker")}</FormLabel>
                       <FormControl>
                         <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
@@ -1528,7 +1528,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                   control={form.control}
                   name="hasDrivingLicense"
                   render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                    <FormItem className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
                       <FormLabel className="cursor-pointer">رخصة قيادة</FormLabel>
                       <FormControl>
                         <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
@@ -1564,7 +1564,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
 
                 {/* Attachments */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
                     <p className="text-sm font-medium">{t("employees.tabs.documents")} ({t("common.optional")})</p>
                     <Button
                       type="button"

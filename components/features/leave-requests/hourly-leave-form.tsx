@@ -103,7 +103,7 @@ export function HourlyLeaveForm({ onSuccess, onCancel }: HourlyLeaveFormProps) {
 
       {maxHoursPerMonth !== null && leaveTypeId && (
         <div className="rounded-md bg-muted/50 px-3 py-2 text-sm space-y-1">
-          <div className="flex justify-between text-muted-foreground">
+          <div className="flex flex-wrap gap-2 justify-between text-muted-foreground">
             <span>الإجازات الساعية هذا الشهر</span>
             <span>{usedHours + pendingHours} / {maxHoursPerMonth} ساعة</span>
           </div>
@@ -129,7 +129,7 @@ export function HourlyLeaveForm({ onSuccess, onCancel }: HourlyLeaveFormProps) {
       </div>
 
       {/* وقت البداية والنهاية */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label>وقت البداية</Label>
           <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />

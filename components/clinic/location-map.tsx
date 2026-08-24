@@ -155,7 +155,7 @@ export function LocationMap({ value, onChange, className, height = 280 }: Locati
               : "انقر على الخريطة لتحديد الموقع"}
         </p>
         {!readOnly && (
-          <div className="flex gap-1.5 ms-auto">
+          <div className="flex flex-wrap gap-1.5 ms-auto">
             <Button type="button" size="sm" variant="outline" className="h-7 gap-1.5 text-xs"
               onClick={useMyLocation} disabled={locating}>
               {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}

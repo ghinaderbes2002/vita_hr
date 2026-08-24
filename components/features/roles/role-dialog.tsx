@@ -196,7 +196,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[90dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("roles.editRole") : t("roles.addRole")}
@@ -277,7 +277,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
                 return (
                   <FormItem>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2 items-center justify-between">
                       <FormLabel>{t("roles.fields.permissions")}</FormLabel>
                       <div className="flex gap-2">
                         <Button

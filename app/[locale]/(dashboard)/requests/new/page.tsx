@@ -147,7 +147,7 @@ export default function NewRequestChoicePage() {
 
       {/* ديالوق طلب الإجازة */}
       <Dialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("leaves.newRequest")}</DialogTitle>
           </DialogHeader>

@@ -50,9 +50,11 @@ import {
   Footprints,
   Share2,
   Trophy,
+  X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useUIStore } from "@/lib/stores/ui-store";
 
 interface NavItem {
   title: string;
@@ -295,13 +297,20 @@ export function Sidebar() {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
+  const [isCollapsedPref, setIsCollapsedPref] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('sidebar-collapsed');
       return saved === 'true';
     }
     return false;
   });
+  // `lg` and up = permanent sidebar; below that it is an off-canvas drawer that
+  // is always shown expanded (icon-only mode makes no sense in a drawer).
+  const [isDesktop, setIsDesktop] = useState(true);
+  const isMobileOpen = useUIStore((s) => s.isMobileSidebarOpen);
+  const closeMobileSidebar = useUIStore((s) => s.closeMobileSidebar);
+  const isCollapsed = isDesktop && isCollapsedPref;
+  const setIsCollapsed = setIsCollapsedPref;
   const { hasPermission, isAdmin, hasRole } = usePermissions();
   const authUser = useAuthStore((s) => s.user);
   const { data: currentEmployee } = useMyEmployee();
@@ -315,15 +324,36 @@ export function Sidebar() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  // Navigating from inside the drawer should dismiss it.
+  useEffect(() => {
+    closeMobileSidebar();
+  }, [pathname, closeMobileSidebar]);
+
+  // Don't let the page scroll behind the open drawer.
+  useEffect(() => {
+    if (!isMobileOpen || isDesktop) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [isMobileOpen, isDesktop]);
+
   // Determine if the locale is RTL (Arabic)
   const isRTL = locale === "ar";
 
   // Update CSS variable when collapsed state changes
   useEffect(() => {
-    const width = isCollapsed ? '4rem' : '16rem';
+    const width = isCollapsedPref ? '4rem' : '16rem';
     document.documentElement.style.setProperty('--sidebar-width', width);
-    localStorage.setItem('sidebar-collapsed', String(isCollapsed));
-  }, [isCollapsed]);
+    localStorage.setItem('sidebar-collapsed', String(isCollapsedPref));
+  }, [isCollapsedPref]);
 
   const toggle = (title: string) => {
     setExpanded((prev) =>
@@ -429,10 +459,24 @@ export function Sidebar() {
   };
 
   return (
+    <>
+      {/* Scrim — mobile only */}
+      <div
+        onClick={closeMobileSidebar}
+        aria-hidden
+        className={cn(
+          "fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden",
+          isMobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        )}
+      />
+
     <aside className={cn(
-      "fixed top-0 z-40 h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300",
+      "fixed top-0 z-50 h-[100dvh] bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 lg:z-40",
       isCollapsed ? "w-16" : "w-64",
-      isRTL ? "right-0 border-l border-sidebar-border" : "left-0 border-r border-sidebar-border"
+      isRTL ? "right-0 border-l border-sidebar-border" : "left-0 border-r border-sidebar-border",
+      // Off-canvas below `lg`, always docked from `lg` up.
+      "lg:translate-x-0",
+      isMobileOpen ? "translate-x-0" : (isRTL ? "translate-x-full" : "-translate-x-full")
     )}>
 
       {/* Logo */}
@@ -455,11 +499,23 @@ export function Sidebar() {
             </div>
           </Link>
         )}
+        {/* Mobile: dismiss the drawer */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={closeMobileSidebar}
+          aria-label="إغلاق القائمة"
+          className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md lg:hidden"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+
+        {/* Desktop: collapse to icon rail */}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={cn("h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md", isCollapsed && "mx-auto mt-2")}
+          className={cn("hidden lg:inline-flex h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md", isCollapsed && "mx-auto mt-2")}
         >
           {isCollapsed ? (
             isRTL ? <ChevronsLeft className="h-3.5 w-3.5" /> : <ChevronsRight className="h-3.5 w-3.5" />
@@ -662,5 +718,6 @@ export function Sidebar() {
         })}
       </nav>
     </aside>
+    </>
   );
 }

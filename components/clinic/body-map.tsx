@@ -582,7 +582,7 @@ export function BodyMap({ markedBones = {}, onBoneClick, readonly = false }: Bod
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setShowBody(false)}
           className={`px-3 py-1 text-sm rounded-md border transition-colors ${!showBody ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border text-muted-foreground"}`}

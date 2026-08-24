@@ -77,7 +77,7 @@ export default function WorkScheduleDetailPage() {
       {/* بطاقة معلومات الوردية */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <CardTitle className="text-xl">{schedule.nameAr}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">{schedule.nameEn}</p>

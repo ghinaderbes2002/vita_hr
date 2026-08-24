@@ -292,14 +292,14 @@ export default function DepartmentsPage() {
               {orgDoc.type === "application/pdf" ? (
                 <iframe
                   src={orgDoc.url}
-                  className="w-full h-[70vh] rounded border"
+                  className="w-full h-[70dvh] rounded border"
                   title="وثيقة الهيكل التنظيمي"
                 />
               ) : (
                 <img
                   src={orgDoc.url}
                   alt="وثيقة الهيكل التنظيمي"
-                  className="max-w-full max-h-[70vh] object-contain rounded border"
+                  className="max-w-full max-h-[70dvh] object-contain rounded border"
                 />
               )}
             </div>

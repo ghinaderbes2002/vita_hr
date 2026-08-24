@@ -57,7 +57,7 @@ function StatCard({
         </div>
       )}
       <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-muted-foreground font-medium truncate">{title}</p>
             {value === null || value === undefined ? (
@@ -92,7 +92,7 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
       {selfEvalPending.map((ev: any) => (
         <div
           key={ev.id}
-          className="flex items-center justify-between gap-4 rounded-xl border-2 border-indigo-300 bg-indigo-50 px-5 py-4"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-xl border-2 border-indigo-300 bg-indigo-50 px-5 py-4"
         >
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-indigo-100 p-2.5 shrink-0">
@@ -123,7 +123,7 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
       {meetingPending.map((ev: any) => (
         <div
           key={ev.id}
-          className="flex items-center justify-between gap-4 rounded-xl border-2 border-orange-300 bg-orange-50 px-5 py-4"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-xl border-2 border-orange-300 bg-orange-50 px-5 py-4"
         >
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-orange-100 p-2.5 shrink-0">
@@ -231,7 +231,7 @@ function ManagerDashboard({ d, locale, router, employeeId }: { d: any; locale: s
             <CardContent>
               <div className="space-y-2">
                 {d.onLeaveThisWeek.map((emp: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+                  <div key={i} className="flex flex-wrap gap-2 items-center justify-between rounded-lg border px-3 py-2 text-sm">
                     <p className="font-medium">{emp.employeeName}</p>
                     <p className="text-xs text-muted-foreground">{emp.from} → {emp.to}</p>
                   </div>
@@ -372,7 +372,7 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
               <p className="text-sm text-muted-foreground text-center py-6">{t("hr.noProbationEmployees")}</p>
             ) : (
               probationEndingList.map((emp: any) => (
-                <div key={emp.id} className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm">
+                <div key={emp.id} className="flex flex-wrap gap-2 items-center justify-between rounded-lg border px-4 py-3 text-sm">
                   <div>
                     <p className="font-medium">{emp.fullNameAr ?? `${emp.firstNameAr ?? ""} ${emp.lastNameAr ?? ""}`.trim()}</p>
                     <p className="text-xs text-muted-foreground">{emp.employeeNumber}</p>
@@ -440,7 +440,7 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
 
       {d.finalStageCandidates?.length > 0 && (
         <Card>
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardHeader className="pb-3 flex flex-wrap gap-2 flex-row items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-primary" />
               {t("ceo.candidatesCEOStage")}
@@ -452,7 +452,7 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
           <CardContent>
             <div className="space-y-2">
               {d.finalStageCandidates.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+                <div key={c.id} className="flex flex-wrap gap-2 items-center justify-between rounded-lg border px-3 py-2 text-sm">
                   <div>
                     <p className="font-medium">{c.firstNameAr} {c.lastNameAr}</p>
                     <p className="text-xs text-muted-foreground">
@@ -498,7 +498,7 @@ function CFODashboard({ d, locale, router }: { d: any; locale: string; router: a
           <CardContent>
             <div className="space-y-2">
               {d.allowances.map((a: any, i: number) => (
-                <div key={i} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
+                <div key={i} className="flex flex-wrap gap-2 items-center justify-between text-sm border-b pb-2 last:border-0">
                   <span className="text-muted-foreground">{a.type}</span>
                   <span className="font-semibold">{fmt(a.total)}</span>
                 </div>
@@ -585,7 +585,7 @@ export default function DashboardPage() {
           }}
         />
 
-        <div className="relative z-10 flex items-center justify-between gap-4">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold text-white tracking-tight">{t("title")}</h1>
             <p className="mt-1 text-white/70 text-base">
@@ -620,7 +620,7 @@ export default function DashboardPage() {
             className="w-full text-right"
           >
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center justify-between gap-2">
+              <CardTitle className="text-base flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-4 w-4 text-primary" />
                   {t("jobTitle")}
@@ -658,7 +658,7 @@ export default function DashboardPage() {
 
       {/* Code of Conduct */}
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardHeader className="pb-3 flex flex-wrap gap-2 flex-row items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" />
             {t("codeOfConduct")}

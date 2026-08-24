@@ -144,7 +144,7 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[560px] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t("leaveTypes.editLeaveType") : t("leaveTypes.addLeaveType")}
@@ -155,7 +155,7 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
             {/* الاسمان */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="nameAr" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("leaveTypes.fields.nameAr")}</FormLabel>
@@ -173,7 +173,7 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
             </div>
 
             {/* الأيام واللون */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="defaultDays" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("leaveTypes.fields.defaultDays")}</FormLabel>
@@ -202,7 +202,7 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
             <div className="space-y-3">
               {(["isPaid", "requiresApproval", "allowHalfDay"] as const).map((name) => (
                 <FormField key={name} control={form.control} name={name} render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                  <FormItem className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
                     <FormLabel className="cursor-pointer">{t(`leaveTypes.fields.${name}`)}</FormLabel>
                     <FormControl>
                       <Switch checked={field.value as boolean} onCheckedChange={field.onChange} />
@@ -214,7 +214,7 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
 
             <div className="rounded-lg border p-3 space-y-3">
               <p className="text-sm font-medium">{t("leaveTypes.eligibilityConditions")}</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="minServiceMonths" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">{t("leaveTypes.fields.minServiceMonths")}</FormLabel>
@@ -258,7 +258,7 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
             </div>
 
             <div className="rounded-lg border p-3 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
                 <p className="text-sm font-medium">{t("leaveTypes.deductionRules")}</p>
                 <Button type="button" variant="outline" size="sm" onClick={addRule} className="gap-1">
                   <Plus className="h-3.5 w-3.5" />

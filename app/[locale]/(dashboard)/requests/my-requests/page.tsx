@@ -347,7 +347,7 @@ export default function MyRequestsPage() {
                 const sameDay = req.startDate.slice(0, 10) === req.endDate.slice(0, 10);
                 return (
                   <div key={req.id} className="bg-white rounded-md border p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-sm">{requesterName(req)}</span>

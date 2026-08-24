@@ -121,7 +121,7 @@ export function CreateSalaryAdvanceDialog({ open, onOpenChange, defaultEmployeeI
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>إضافة سلفة راتب</DialogTitle>
         </DialogHeader>
@@ -160,7 +160,7 @@ export function CreateSalaryAdvanceDialog({ open, onOpenChange, defaultEmployeeI
               </FormItem>
             )} />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="totalInstallments" render={({ field }) => (
                 <FormItem>
                   <FormLabel>عدد الأقساط</FormLabel>
@@ -189,7 +189,7 @@ export function CreateSalaryAdvanceDialog({ open, onOpenChange, defaultEmployeeI
               )} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="startYear" render={({ field }) => (
                 <FormItem>
                   <FormLabel>سنة البداية</FormLabel>

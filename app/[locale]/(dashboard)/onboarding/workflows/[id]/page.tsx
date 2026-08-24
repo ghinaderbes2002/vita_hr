@@ -110,7 +110,7 @@ export default function WorkflowDetailPage() {
       {/* Progress */}
       <Card>
         <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex flex-wrap gap-2 items-center justify-between text-sm">
             <span className="text-muted-foreground">{t("progress")}</span>
             <span className="font-bold text-primary">{progress}%</span>
           </div>

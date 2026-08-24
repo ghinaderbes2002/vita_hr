@@ -34,7 +34,7 @@ const formatDate = (iso?: string | null) =>
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   if (value == null || value === "") return null;
   return (
-    <div className="flex items-start justify-between gap-3 border-b py-2 last:border-0">
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b py-2 last:border-0">
       <span className="shrink-0 text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-medium text-end">{value}</span>
     </div>
@@ -114,7 +114,7 @@ export default function ReferralSourceDetailPage() {
           title={source.name}
           description={[REFERRAL_SOURCE_TYPE_LABEL[source.type], source.specialty].filter(Boolean).join(" — ")}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" className="gap-2"
                 onClick={() => router.push(`/${locale}/clinic/referrals`)}>
                 <ArrowRight className="h-4 w-4" />
@@ -231,7 +231,7 @@ export default function ReferralSourceDetailPage() {
         </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="flex flex-wrap gap-2 flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">الزيارات</CardTitle>
             <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.VISITS_ADD}>
               <Button size="sm" variant="outline" className="gap-1.5" onClick={openNewVisit}>
@@ -292,7 +292,7 @@ export default function ReferralSourceDetailPage() {
                           <TableCell className="max-w-52 truncate text-sm text-muted-foreground">{v.notes || "—"}</TableCell>
                           <TableCell>
                             <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.VISITS_ADD}>
-                              <div className="flex gap-1">
+                              <div className="flex flex-wrap gap-1">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditVisit(v)}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>

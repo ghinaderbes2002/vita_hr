@@ -318,7 +318,7 @@ export default function NewPatientPage() {
           {/* Step 1: Basic info */}
           {step === 0 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("fields.firstName")} <span className="text-destructive">*</span></Label>
                   <Input {...form1.register("firstName")} />
@@ -330,7 +330,7 @@ export default function NewPatientPage() {
                   {form1.formState.errors.lastName && <p className="text-xs text-destructive">{t("validation.required")}</p>}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("fields.identityType")} <span className="text-destructive">*</span></Label>
                   <Select value={form1.watch("identityType")} onValueChange={(v) => form1.setValue("identityType", v as any)}>
@@ -359,7 +359,7 @@ export default function NewPatientPage() {
                   </AlertDescription>
                 </Alert>
               )}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("fields.dateOfBirth")} <span className="text-destructive">*</span></Label>
                   <Input type="date" {...form1.register("dateOfBirth")} />
@@ -382,7 +382,7 @@ export default function NewPatientPage() {
               </div>
 
               {/* البيانات الاجتماعية */}
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
                 <div className="space-y-1.5">
                   <Label>{t("fields.height")}</Label>
                   <Input type="number" {...form3.register("heightCm")} placeholder="170" />
@@ -411,7 +411,7 @@ export default function NewPatientPage() {
                   </div>
                 );
               })()}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("fields.educationLevel")}</Label>
                   <Select value={form3.watch("educationLevel") ?? ""} onValueChange={(v) => form3.setValue("educationLevel", v)}>
@@ -431,7 +431,7 @@ export default function NewPatientPage() {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t("fields.livingCondition")}</Label>
                   <Select value={form3.watch("livingCondition") ?? ""} onValueChange={(v) => form3.setValue("livingCondition", v)}>
@@ -476,7 +476,7 @@ export default function NewPatientPage() {
           {/* Step 2: Contact */}
           {step === 1 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="gap-1.5">
                     <WhatsAppIcon className="h-3 w-3 text-muted-foreground" />
@@ -670,7 +670,7 @@ export default function NewPatientPage() {
               {/* Summary */}
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
                 <p className="font-semibold">{t("summary.title")}</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
                   <span>{t("summary.name")}:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
                   <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{s1.idNumber}</span>
                   <span>{t("summary.phone")}:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
@@ -684,7 +684,7 @@ export default function NewPatientPage() {
       </Card>
 
       {/* Navigation */}
-      <div className="flex justify-between">
+      <div className="flex flex-wrap gap-2 justify-between">
         <Button variant="outline" onClick={step === 0 ? () => router.back() : prevStep}>
           <ChevronRight className="h-4 w-4 ml-1" />
           {step === 0 ? t("nav.cancel") : t("nav.prev")}

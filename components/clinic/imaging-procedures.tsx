@@ -30,7 +30,7 @@ export function ImagingProcedures({ patientId, canEdit }: { patientId: string; c
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <Label>{t("medicalHistory.imagingProcedures")}</Label>
         {canEdit && (
           <label

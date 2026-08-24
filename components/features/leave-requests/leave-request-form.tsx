@@ -398,7 +398,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="startTime"
@@ -447,7 +447,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
             )}
           </>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="startDate"
@@ -536,7 +536,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
         )}
 
         {totalDaysPreview !== null && (
-          <div className="rounded-md bg-blue-50 border border-blue-100 px-4 py-2.5 flex items-center justify-between text-sm">
+          <div className="rounded-md bg-blue-50 border border-blue-100 px-4 py-2.5 flex flex-wrap gap-2 items-center justify-between text-sm">
             <span className="text-muted-foreground">عدد الأيام</span>
             <span className="font-semibold text-blue-700">{totalDaysPreview} {totalDaysPreview === 1 ? "يوم" : "أيام"}</span>
           </div>

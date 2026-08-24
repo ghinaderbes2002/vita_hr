@@ -2,6 +2,9 @@
 
 // The body of the podiatry assessment (نموذج تقييم القدم الاحترافي): the eight
 // clinical sections plus the insole choice and the notes.
+// Section titles, field labels and option wording are transcribed from the
+// printed VitaFoot sheet, bilingual like the paper — the Arabic reads the same
+// on screen as in the clinician's hand, with the English term beside it.
 // One component serves both the edit dialog and the read-only tab — `readOnly`
 // swaps the controls for plain marks, so the saved form reads back in exactly
 // the layout it was filled in.
@@ -143,19 +146,41 @@ const pick = <T extends string>(list: T[], v: T, single: boolean): T[] =>
     ? (list.includes(v) ? [] : [v])
     : (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** The Latin term the printed sheet sets beside the Arabic one. */
+function En({ t }: { t?: string }) {
+  if (!t) return null;
+  return <span dir="ltr" className="text-[10px] text-muted-foreground">({t})</span>;
+}
+
+function Section({ title, en, children }: { title: string; en: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border p-3 space-y-3">
-      <p className="text-sm font-semibold text-orange-600">{title}</p>
+      <div className="flex flex-wrap items-baseline gap-2 border-b pb-2">
+        <p className="text-sm font-semibold text-orange-600">{title}</p>
+        <span dir="ltr" className="text-[11px] font-medium uppercase tracking-wide text-orange-600/70">
+          {en}
+        </span>
+      </div>
       {children}
     </div>
   );
 }
 
+/** A label line: the sheet's Arabic wording with its English term beside it. */
+function FieldLabel({ ar, en }: { ar: string; en?: string }) {
+  return (
+    <p className="flex flex-wrap items-baseline gap-1.5 text-xs font-medium">
+      <span>{ar}</span>
+      <En t={en} />
+    </p>
+  );
+}
+
 function Chips<T extends string>({
-  label, opts, value, onChange, single = false, readOnly = false,
+  label, labelEn, opts, value, onChange, single = false, readOnly = false,
 }: {
   label?: string;
+  labelEn?: string;
   opts: Opt<T>[];
   value: T[];
   onChange: (v: T[]) => void;
@@ -165,15 +190,22 @@ function Chips<T extends string>({
 }) {
   return (
     <div className="space-y-1.5">
-      {label && <p className="text-xs font-medium">{label}</p>}
+      {label && <FieldLabel ar={label} en={labelEn} />}
       <div className="flex flex-wrap gap-1.5">
-        {opts.map(([v, ar]) => {
+        {opts.map(([v, ar, en]) => {
           const on = value.includes(v);
-          const cls = `rounded-full border px-3 py-1 text-xs transition-colors ${
+          const cls = `flex items-baseline gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
             on ? "border-orange-500 bg-orange-500 text-white" : "border-border text-muted-foreground"
           }`;
+          // The Latin term rides along except where it only repeats the Arabic
+          // (the VF insole codes), so the pill stays readable.
+          const latin = en && en !== ar ? (
+            <span dir="ltr" className={`text-[10px] ${on ? "text-white/75" : "text-muted-foreground/70"}`}>
+              {en}
+            </span>
+          ) : null;
           return readOnly ? (
-            <span key={v} className={cls}>{ar}</span>
+            <span key={v} className={cls}>{ar}{latin}</span>
           ) : (
             <button
               key={v}
@@ -181,7 +213,7 @@ function Chips<T extends string>({
               onClick={() => onChange(pick(value, v, single))}
               className={`${cls} ${on ? "" : "hover:bg-muted"}`}
             >
-              {ar}
+              {ar}{latin}
             </button>
           );
         })}
@@ -192,9 +224,10 @@ function Chips<T extends string>({
 
 /** A finding recorded per foot: the right foot first, matching the RTL sheet. */
 function SidePair<T extends string>({
-  label, opts, right, left, onRight, onLeft, single = true, readOnly = false, extra,
+  label, labelEn, opts, right, left, onRight, onLeft, single = true, readOnly = false, extra,
 }: {
   label: string;
+  labelEn?: string;
   opts: Opt<T>[];
   right: T[];
   left: T[];
@@ -207,12 +240,12 @@ function SidePair<T extends string>({
 }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-medium">{label}</p>
+      <FieldLabel ar={label} en={labelEn} />
       <div className="grid gap-2 sm:grid-cols-2">
         {(["right", "left"] as const).map((side) => (
           <div key={side} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
             <p className="text-[11px] text-muted-foreground">
-              {side === "right" ? "القدم اليمنى" : "القدم اليسرى"}
+              {side === "right" ? "اليمنى" : "اليسرى"}
             </p>
             <Chips
               opts={opts}
@@ -230,24 +263,26 @@ function SidePair<T extends string>({
 }
 
 function Check({
-  label, checked, onChange, readOnly = false,
+  label, en, checked, onChange, readOnly = false,
 }: {
   label: string;
+  en?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   readOnly?: boolean;
 }) {
   return (
-    <label className={`flex items-center gap-2.5 ${readOnly ? "" : "cursor-pointer"}`}>
+    <label className={`flex items-baseline gap-2.5 ${readOnly ? "" : "cursor-pointer"}`}>
       <input
         type="checkbox"
         checked={checked}
         readOnly={readOnly}
         tabIndex={readOnly ? -1 : undefined}
         onChange={readOnly ? undefined : () => onChange(!checked)}
-        className={`w-4 h-4 checkbox-orange rounded-sm ${readOnly ? "pointer-events-none" : ""}`}
+        className={`w-4 h-4 shrink-0 self-center checkbox-orange rounded-sm ${readOnly ? "pointer-events-none" : ""}`}
       />
       <span className="text-sm">{label}</span>
+      <En t={en} />
     </label>
   );
 }
@@ -262,9 +297,10 @@ function Val({ value }: { value?: string | null }) {
 }
 
 function Line({
-  label, value, onChange, readOnly = false, placeholder,
+  label, labelEn, value, onChange, readOnly = false, placeholder,
 }: {
   label: string;
+  labelEn?: string;
   value: string;
   onChange: (v: string) => void;
   readOnly?: boolean;
@@ -272,10 +308,20 @@ function Line({
 }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-medium">{label}</p>
+      <FieldLabel ar={label} en={labelEn} />
       {readOnly
         ? <Val value={value} />
         : <Input className="h-9" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />}
+    </div>
+  );
+}
+
+/** A titled group inside a section — the sheet's second-level bullets. */
+function Group({ title, en, children }: { title: string; en: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2.5">
+      <FieldLabel ar={title} en={en} />
+      <div className="space-y-2.5 ps-1">{children}</div>
     </div>
   );
 }
@@ -299,15 +345,17 @@ export function PodiatryAssessmentFields({
   const setDyn = (p: Partial<AssessmentValue["dynamicAnalysis"]>) =>
     onChange({ ...value, dynamicAnalysis: { ...dyn, ...p } });
 
-  // A deformity: the tick, then the follow-up field it unlocks.
-  const deformity = (
+  // A deformity or lesion: the tick, then the follow-up field it unlocks.
+  const finding = (
     label: string,
+    en: string,
     key: keyof AssessmentValue["visualInspection"],
     detail: React.ReactNode,
   ) => (
     <div className="space-y-1.5">
       <Check
         label={label}
+        en={en}
         checked={!!vis[key]}
         onChange={(v) => setVis({ [key]: v } as Partial<AssessmentValue["visualInspection"]>)}
         readOnly={readOnly}
@@ -318,14 +366,17 @@ export function PodiatryAssessmentFields({
 
   return (
     <div className="space-y-4">
-      <Section title="القصة المرضية">
-        <Chips label="السبب الرئيسي" opts={MAIN_CAUSE_OPTS} value={sub.mainCause} single
+      <Section title="التاريخ المرضي وتوصيف الألم" en="Subjective History & Pain Profiling">
+        <Chips label="السبب الرئيسي والأصل المرضي" labelEn="Main Cause"
+          opts={MAIN_CAUSE_OPTS} value={sub.mainCause} single
           onChange={(v) => setSub({ mainCause: v })} readOnly={readOnly} />
-        <Chips label="موضع الألم" opts={PAIN_LOCATION_OPTS} value={sub.painLocation}
+        <Chips label="موقع الألم" labelEn="Pain Location"
+          opts={PAIN_LOCATION_OPTS} value={sub.painLocation}
           onChange={(v) => setSub({ painLocation: v })} readOnly={readOnly} />
-        <div className="space-y-1.5">
-          <p className="text-xs font-medium">
-            شدة الألم (VAS){sub.vasScore ? ` — ${sub.vasScore}/10` : ""}
+        <div className="space-y-2.5">
+          <p className="flex flex-wrap items-baseline gap-1.5 text-xs font-medium">
+            <span>طبيعة الألم - درجة مقياس الألم</span>
+            <En t={`VAS Score ${sub.vasScore || "__"}/10`} />
           </p>
           <div className="flex flex-wrap gap-1.5">
             {Array.from({ length: 10 }, (_, i) => String(i + 1)).map((n) => {
@@ -343,70 +394,79 @@ export function PodiatryAssessmentFields({
               );
             })}
           </div>
+          {/* The sheet nests the pain descriptors under the VAS line, unlabelled. */}
+          <Chips opts={PAIN_CHARACTERISTIC_OPTS} value={sub.painCharacteristics}
+            onChange={(v) => setSub({ painCharacteristics: v })} readOnly={readOnly} />
         </div>
-        <Chips label="خصائص الألم" opts={PAIN_CHARACTERISTIC_OPTS} value={sub.painCharacteristics}
-          onChange={(v) => setSub({ painCharacteristics: v })} readOnly={readOnly} />
       </Section>
 
-      <Section title="الفحص البصري">
-        <SidePair label="محاذاة مؤخرة القدم" opts={REARFOOT_ALIGNMENT_OPTS}
+      <Section title="الفحص البصري وتحديد التشوهات" en="Visual Inspection & Deformity Mapping">
+        <SidePair label="استقامة الجزء الخلفي من القدم أثناء الوقوف" labelEn="Rearfoot Alignment"
+          opts={REARFOOT_ALIGNMENT_OPTS}
           right={vis.rightRearfootAlignment} left={vis.leftRearfootAlignment}
           onRight={(v) => setVis({ rightRearfootAlignment: v })}
           onLeft={(v) => setVis({ leftRearfootAlignment: v })} readOnly={readOnly} />
 
-        <SidePair label="علامة كثرة الأصابع الظاهرة" opts={TOO_MANY_TOES_OPTS}
+        <SidePair label="علامة «أصابع قدم كثيرة جداً» عند النظر من الخلف" labelEn="Too Many Toes Sign"
+          opts={TOO_MANY_TOES_OPTS}
           right={vis.rightTooManyToes} left={vis.leftTooManyToes}
           onRight={(v) => setVis({ rightTooManyToes: v })}
           onLeft={(v) => setVis({ leftTooManyToes: v })} readOnly={readOnly}
           extra={(side) => (
             <Line
-              label="عدد الأصابع"
+              label="عدد الأصابع الظاهرة"
               value={side === "right" ? vis.rightTooManyToesCount : vis.leftTooManyToesCount}
               onChange={(v) => setVis(side === "right" ? { rightTooManyToesCount: v } : { leftTooManyToesCount: v })}
               readOnly={readOnly}
             />
           )} />
 
-        <SidePair label="بنية القوس" opts={ARCH_ARCHITECTURE_OPTS}
+        <SidePair label="بنية قوس القدم" labelEn="Arch Architecture" opts={ARCH_ARCHITECTURE_OPTS}
           right={vis.rightArchArchitecture} left={vis.leftArchArchitecture}
           onRight={(v) => setVis({ rightArchArchitecture: v })}
           onLeft={(v) => setVis({ leftArchArchitecture: v })} readOnly={readOnly} />
 
-        <div className="space-y-2.5">
-          <p className="text-xs font-medium">التشوهات والآفات</p>
-          {deformity("إبهام أروح", "halluxValgus",
+        <Group title="تشوهات مقدمة القدم والأصابع" en="Forefoot &amp; Digital Deformities">
+          {finding("إبهام القدم الأفحج", "Hallux Valgus", "halluxValgus",
             <Chips opts={DEFORMITY_TYPE_OPTS} value={vis.halluxValgusType} single
               onChange={(v) => setVis({ halluxValgusType: v })} readOnly={readOnly} />)}
-          {deformity("ورم الخياط", "tailorsBunion",
+          {finding("ورم الخياط", "Tailor's Bunion", "tailorsBunion",
             <Chips opts={DEFORMITY_TYPE_OPTS} value={vis.tailorsBunionType} single
               onChange={(v) => setVis({ tailorsBunionType: v })} readOnly={readOnly} />)}
-          {deformity("أصابع مطرقية", "hammerToes",
+          {finding("أصابع مطرقية", "Hammer Toes", "hammerToes",
             <Line label="الأصابع المصابة" value={vis.hammerToesAffected}
               onChange={(v) => setVis({ hammerToesAffected: v })} readOnly={readOnly} placeholder="مثال: 2، 3" />)}
-          {deformity("أصابع مخلبية", "clawToes",
+          {finding("أصابع مخلبية", "Claw Toes", "clawToes",
             <Line label="الأصابع المصابة" value={vis.clawToesAffected}
               onChange={(v) => setVis({ clawToesAffected: v })} readOnly={readOnly} />)}
-          {deformity("أصابع مطرقية طرفية", "malletToes",
+          {finding("أصابع ماليت", "Mallet Toes", "malletToes",
             <Line label="الأصابع المصابة" value={vis.malletToesAffected}
               onChange={(v) => setVis({ malletToesAffected: v })} readOnly={readOnly} />)}
-          {deformity("فرط تقرّن أو كالو", "hyperkeratosisCallus",
-            <Line label="الموضع" value={vis.hyperkeratosisLocation}
+        </Group>
+
+        <Group title="حالة الجلد والأنسجة الرخوة" en="Dermatological / Soft Tissue Status">
+          {finding("موقع الفرط التقرن / المسامير الجلدية", "Hyperkeratosis / Callus Location", "hyperkeratosisCallus",
+            <Line label="الموقع" value={vis.hyperkeratosisLocation}
               onChange={(v) => setVis({ hyperkeratosisLocation: v })} readOnly={readOnly} />)}
-          {deformity("آفات ما قبل التقرّح", "preTrophicLesions",
+          {finding("الآفات الجلدية قبل التقرحية", "Pre-Ulcerative Lesions", "preTrophicLesions",
             <Line label="ملاحظات" value={vis.preTrophicLesionsNotes}
               onChange={(v) => setVis({ preTrophicLesionsNotes: v })} readOnly={readOnly} />)}
-          {deformity("وذمة", "edema",
+          {finding("الوذمة", "Edema", "edema",
             <Chips opts={EDEMA_TYPE_OPTS} value={vis.edemaType}
               onChange={(v) => setVis({ edemaType: v })} readOnly={readOnly} />)}
-        </div>
+        </Group>
       </Section>
 
-      <Section title="الجس">
-        <div className="flex flex-wrap gap-x-6 gap-y-2">
-          {PALPATION_POINTS.map(([key, ar]) => (
+      <Section title="نقاط الجس والمضض" en="Palpation &amp; Tenderness Points">
+        <p className="text-xs text-muted-foreground">
+          ضع علامة إذا كان الضغط على المنطقة يسبب ألماً أو حساسية:
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {PALPATION_POINTS.map(([key, ar, en]) => (
             <Check
               key={key}
               label={ar}
+              en={en}
               checked={value.palpation[key]}
               onChange={(v) => onChange({ ...value, palpation: { ...value.palpation, [key]: v } })}
               readOnly={readOnly}
@@ -415,45 +475,53 @@ export function PodiatryAssessmentFields({
         </div>
       </Section>
 
-      <Section title="المدى الحركي">
-        <Chips label="عطف ظهري للكاحل" opts={ROM_OPTS} value={value.rangeOfMotion.ankleDorsiflexion} single
+      <Section title="مدى الحركة والمرونة المقاسة" en="Range of Motion &amp; Measured Flexibility">
+        <Chips label="العطف الظهري للكاحل" labelEn="Ankle Dorsiflexion"
+          opts={ROM_OPTS} value={value.rangeOfMotion.ankleDorsiflexion} single
           onChange={(v) => onChange({ ...value, rangeOfMotion: { ...value.rangeOfMotion, ankleDorsiflexion: v } })}
           readOnly={readOnly} />
-        <Chips label="عطف أخمصي للكاحل" opts={ROM_OPTS} value={value.rangeOfMotion.anklePlantarflexion} single
+        <Chips label="العطف الأخمصي للكاحل" labelEn="Ankle Plantarflexion"
+          opts={ROM_OPTS} value={value.rangeOfMotion.anklePlantarflexion} single
           onChange={(v) => onChange({ ...value, rangeOfMotion: { ...value.rangeOfMotion, anklePlantarflexion: v } })}
           readOnly={readOnly} />
       </Section>
 
-      <Section title="التحليل الديناميكي">
-        <SidePair label="اختبار جاك" opts={JACK_TEST_OPTS}
+      <Section title="التحليل الديناميكي - المشي والحركة" en="Dynamic Analysis">
+        <SidePair label="اختبار جاك - رفع إبهام القدم ميكانيكياً" labelEn="Jack Test"
+          opts={JACK_TEST_OPTS}
           right={dyn.rightJackTest} left={dyn.leftJackTest}
           onRight={(v) => setDyn({ rightJackTest: v })}
           onLeft={(v) => setDyn({ leftJackTest: v })} readOnly={readOnly} />
-        <SidePair label="خط المشي" opts={WALKING_LINE_OPTS}
+        <SidePair label="خط ومسار المشي" labelEn="Walking Line" opts={WALKING_LINE_OPTS}
           right={dyn.rightWalkingLine} left={dyn.leftWalkingLine}
           onRight={(v) => setDyn({ rightWalkingLine: v })}
           onLeft={(v) => setDyn({ leftWalkingLine: v })} readOnly={readOnly} />
       </Section>
 
-      <Section title="الحذاء ونمط التآكل">
-        <Chips label="الحذاء الحالي" opts={FOOTWEAR_OPTS} value={value.shoeWearPattern.currentFootwear}
+      <Section title="نمط تآكل الحذاء وفحص التقويم" en="Shoe Wear Pattern &amp; Orthotic Audit">
+        <Chips label="الأحذية الحالية المستخدمة" labelEn="Current Footwear"
+          opts={FOOTWEAR_OPTS} value={value.shoeWearPattern.currentFootwear}
           onChange={(v) => onChange({ ...value, shoeWearPattern: { ...value.shoeWearPattern, currentFootwear: v } })}
           readOnly={readOnly} />
-        <Chips label="نمط تآكل النعل" opts={OUTSOLE_WEAR_OPTS} value={value.shoeWearPattern.outsoleWear}
+        <Chips label="خصائص تآكل النعل الخارجي للحذاء" labelEn="Outsole Wear"
+          opts={OUTSOLE_WEAR_OPTS} value={value.shoeWearPattern.outsoleWear}
           onChange={(v) => onChange({ ...value, shoeWearPattern: { ...value.shoeWearPattern, outsoleWear: v } })}
           readOnly={readOnly} />
       </Section>
 
-      <Section title="قياسات القدم (سم)">
+      <Section title="قياسات القدم وأبعادها" en="Foot Measurements">
         <div className="space-y-1.5">
           <div className="grid grid-cols-[1fr_5rem_5rem] gap-2 text-[11px] text-muted-foreground sm:grid-cols-[1fr_7rem_7rem]">
             <span />
             <span className="text-center">اليمنى</span>
             <span className="text-center">اليسرى</span>
           </div>
-          {FOOT_MEASUREMENT_ROWS.map(([key, ar]) => (
+          {FOOT_MEASUREMENT_ROWS.map(([key, ar, en]) => (
             <div key={key} className="grid grid-cols-[1fr_5rem_5rem] items-center gap-2 sm:grid-cols-[1fr_7rem_7rem]">
-              <span className="text-xs">{ar}</span>
+              <span className="flex flex-wrap items-baseline gap-1.5 text-xs">
+                {ar}
+                <En t={en} />
+              </span>
               {(["Right", "Left"] as const).map((side) => {
                 const field = `${key}${side}`;
                 return readOnly ? (
@@ -479,11 +547,12 @@ export function PodiatryAssessmentFields({
         </div>
       </Section>
 
-      <Section title="الضبانة والملاحظات">
-        <Chips label="نوع الضبانة" opts={INSOLE_TYPE_OPTS} value={value.insoleType} single
+      <Section title="الضبانة والملاحظات" en="Insole &amp; Notes">
+        <Chips label="نوع الضبانة" labelEn="Insole Type"
+          opts={INSOLE_TYPE_OPTS} value={value.insoleType} single
           onChange={(v) => onChange({ ...value, insoleType: v })} readOnly={readOnly} />
         <div className="space-y-1.5">
-          <p className="text-xs font-medium">ملاحظات</p>
+          <FieldLabel ar="ملاحظات" en="Notes" />
           {readOnly
             ? <Val value={value.notes} />
             : <Textarea rows={2} className="resize-none text-sm" value={value.notes}

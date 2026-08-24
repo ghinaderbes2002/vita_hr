@@ -444,7 +444,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <div className="flex flex-wrap items-center justify-between gap-2 mb-0.5">
                             <span className="text-sm font-semibold truncate">
                               {senderN ?? empNameById[m.senderId] ?? null}
                             </span>
@@ -524,7 +524,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
 
       {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
+        <DialogContent className="sm:max-w-lg flex flex-col max-h-[90dvh]">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-4 w-4" />
@@ -594,7 +594,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           <div className="space-y-3 py-2 max-h-80 overflow-y-auto">
             {activeHistory.map((h: any, i: number) => (
               <div key={i} className="rounded-lg border p-3 text-sm space-y-1">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center justify-between">
                   <span className="font-medium">{h.editedByName}</span>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(h.editedAt), "dd/MM/yyyy HH:mm", { locale: ar })}

@@ -134,7 +134,7 @@ export default function AttendanceReportsPage() {
       {/* ─── Most Absent ──────────────────────────────────── */}
       {activeTab === "absences" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center justify-between">
             <h2 className="text-base font-semibold">{tAtt("absences.title")}</h2>
             <div className="flex items-center gap-2">
               <YearMonthFilter year={absYear} setYear={setAbsYear} month={absMonth} setMonth={setAbsMonth} />
@@ -233,7 +233,7 @@ export default function AttendanceReportsPage() {
       {/* ─── Overtime ─────────────────────────────────────── */}
       {activeTab === "overtime" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center justify-between">
             <h2 className="text-base font-semibold">{tAtt("overtime.title")}</h2>
             <div className="flex items-center gap-2">
               <YearMonthFilter year={otYear} setYear={setOtYear} month={otMonth} setMonth={setOtMonth} />
@@ -310,7 +310,7 @@ export default function AttendanceReportsPage() {
       {/* ─── Daily ──────────────────────────────────── */}
       {activeTab === "daily" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center justify-between">
             <h2 className="text-base font-semibold">{tAtt("daily.title")}</h2>
             <div className="flex items-center gap-2">
               <input type="date" value={dailyDate} onChange={(e) => setDailyDate(e.target.value)}
@@ -402,7 +402,7 @@ export default function AttendanceReportsPage() {
       {/* ─── Monthly ──────────────────────────────────── */}
       {activeTab === "monthly" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center justify-between">
             <h2 className="text-base font-semibold">{tAtt("monthly.title")}</h2>
             <div className="flex items-center gap-2">
               <YearMonthFilter year={monthlyYear} setYear={setMonthlyYear}

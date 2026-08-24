@@ -384,29 +384,29 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
         </View>
 
         {/* The assessment, printed full width under the two columns. */}
-        <SecHead a="القصة المرضية" e="Subjective History" />
-        <Field a="السبب الرئيسي" e="Main Cause" value={labelsOf(MAIN_CAUSE_OPTS, sub.mainCause)} />
-        <Field a="موضع الألم" e="Pain Location" value={labelsOf(PAIN_LOCATION_OPTS, sub.painLocation)} />
-        <Field a="خصائص الألم" e="Pain Characteristics" value={labelsOf(PAIN_CHARACTERISTIC_OPTS, sub.painCharacteristics)} />
+        <SecHead a={["التاريخ المرضي", "وتوصيف الألم"]} e="Subjective History & Pain Profiling" />
+        <Field a={["السبب الرئيسي", "والأصل المرضي"]} e="Main Cause" value={labelsOf(MAIN_CAUSE_OPTS, sub.mainCause)} />
+        <Field a="موقع الألم" e="Pain Location" value={labelsOf(PAIN_LOCATION_OPTS, sub.painLocation)} />
+        <Field a="طبيعة الألم" e="Pain Characteristics" value={labelsOf(PAIN_CHARACTERISTIC_OPTS, sub.painCharacteristics)} />
 
-        <SecHead a="الفحص البصري" e="Visual Inspection" />
-        <Field a={["محاذاة", "مؤخرة القدم"]} e="Rearfoot Alignment" value={pair(
+        <SecHead a={["الفحص البصري", "وتحديد التشوهات"]} e="Visual Inspection & Deformity Mapping" />
+        <Field a={["استقامة", "الجزء الخلفي", "من القدم"]} e="Rearfoot Alignment" value={pair(
           labelsOf(REARFOOT_ALIGNMENT_OPTS, vis.rightRearfootAlignment),
           labelsOf(REARFOOT_ALIGNMENT_OPTS, vis.leftRearfootAlignment),
         )} />
-        <Field a={["كثرة", "الأصابع الظاهرة"]} e="Too Many Toes" value={pair(
+        <Field a={["علامة", "كثرة الأصابع", "الظاهرة"]} e="Too Many Toes Sign" value={pair(
           [labelsOf(TOO_MANY_TOES_OPTS, vis.rightTooManyToes), vis.rightTooManyToesCount].filter(Boolean).join(" "),
           [labelsOf(TOO_MANY_TOES_OPTS, vis.leftTooManyToes), vis.leftTooManyToesCount].filter(Boolean).join(" "),
         )} />
-        <Field a="بنية القوس" e="Arch Architecture" value={pair(
+        <Field a={["بنية", "قوس القدم"]} e="Arch Architecture" value={pair(
           labelsOf(ARCH_ARCHITECTURE_OPTS, vis.rightArchArchitecture),
           labelsOf(ARCH_ARCHITECTURE_OPTS, vis.leftArchArchitecture),
         )} />
-        <Chk on={!!vis.halluxValgus} a="إبهام أروح" e="Hallux Valgus" />
+        <Chk on={!!vis.halluxValgus} a={["إبهام القدم", "الأفحج"]} e="Hallux Valgus" />
         {vis.halluxValgus && vis.halluxValgusType?.length ? (
           <Field a="النوع" e="Type" value={labelsOf(DEFORMITY_TYPE_OPTS, vis.halluxValgusType)} />
         ) : null}
-        <Chk on={!!vis.tailorsBunion} a="ورم الخياط" e="Tailor Bunion" />
+        <Chk on={!!vis.tailorsBunion} a="ورم الخياط" e="Tailor's Bunion" />
         {vis.tailorsBunion && vis.tailorsBunionType?.length ? (
           <Field a="النوع" e="Type" value={labelsOf(DEFORMITY_TYPE_OPTS, vis.tailorsBunionType)} />
         ) : null}
@@ -418,57 +418,52 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
         {vis.clawToes && vis.clawToesAffected ? (
           <Field a="الأصابع المصابة" e="Affected" value={vis.clawToesAffected} />
         ) : null}
-        <Chk on={!!vis.malletToes} a={["أصابع مطرقية", "طرفية"]} e="Mallet Toes" />
+        <Chk on={!!vis.malletToes} a="أصابع ماليت" e="Mallet Toes" />
         {vis.malletToes && vis.malletToesAffected ? (
           <Field a="الأصابع المصابة" e="Affected" value={vis.malletToesAffected} />
         ) : null}
-        <Chk on={!!vis.hyperkeratosisCallus} a="فرط تقرن" e="Hyperkeratosis" />
+        <Chk on={!!vis.hyperkeratosisCallus} a={["الفرط التقرن", "والمسامير الجلدية"]} e="Hyperkeratosis / Callus" />
         {vis.hyperkeratosisCallus && vis.hyperkeratosisLocation ? (
-          <Field a="الموضع" e="Location" value={vis.hyperkeratosisLocation} />
+          <Field a="الموقع" e="Location" value={vis.hyperkeratosisLocation} />
         ) : null}
-        <Chk on={!!vis.preTrophicLesions} a={["آفات ما قبل", "التقرح"]} e="Pre-Trophic Lesions" />
+        <Chk on={!!vis.preTrophicLesions} a={["الآفات الجلدية", "قبل التقرحية"]} e="Pre-Ulcerative Lesions" />
         {vis.preTrophicLesions && vis.preTrophicLesionsNotes ? (
           <Field a="ملاحظات" e="Notes" value={vis.preTrophicLesionsNotes} />
         ) : null}
-        <Chk on={!!vis.edema} a="وذمة" e="Edema" />
+        <Chk on={!!vis.edema} a="الوذمة" e="Edema" />
         {vis.edema && vis.edemaType?.length ? (
           <Field a="النوع" e="Type" value={labelsOf(EDEMA_TYPE_OPTS, vis.edemaType)} />
         ) : null}
 
-        <SecHead a="الجس" e="Palpation" />
-        <View style={{ flexDirection: "row-reverse", gap: 12, flexWrap: "wrap" }}>
-          {PALPATION_POINTS.map(([k, a, e]) => (
-            <View key={k} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
-              <View style={pal[k] ? [s.box, s.boxOn] : s.box}>
-                {pal[k] && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
-              </View>
-              <Text style={s.chkAr}>{ar(a)}</Text>
-              <Text style={s.chkEn}>{e}</Text>
-            </View>
-          ))}
-        </View>
+        <SecHead a={["نقاط الجس", "والمضض"]} e="Palpation & Tenderness Points" />
+        <Text style={[s.chkAr, { marginBottom: 3 }]}>
+          {ar("ضع علامة إذا كان الضغط على المنطقة يسبب ألماً أو حساسية:")}
+        </Text>
+        {PALPATION_POINTS.map(([k, a, e]) => (
+          <Chk key={k} on={!!pal[k]} a={a} e={e} />
+        ))}
 
-        <SecHead a="المدى الحركي" e="Range of Motion" />
-        <Field a={["عطف ظهري", "للكاحل"]} e="Ankle Dorsiflexion" value={labelsOf(ROM_OPTS, rom.ankleDorsiflexion)} />
-        <Field a={["عطف أخمصي", "للكاحل"]} e="Ankle Plantarflexion" value={labelsOf(ROM_OPTS, rom.anklePlantarflexion)} />
+        <SecHead a={["مدى الحركة", "والمرونة المقاسة"]} e="Range of Motion & Measured Flexibility" />
+        <Field a={["العطف الظهري", "للكاحل"]} e="Ankle Dorsiflexion" value={labelsOf(ROM_OPTS, rom.ankleDorsiflexion)} />
+        <Field a={["العطف الأخمصي", "للكاحل"]} e="Ankle Plantarflexion" value={labelsOf(ROM_OPTS, rom.anklePlantarflexion)} />
 
-        <SecHead a="التحليل الديناميكي" e="Dynamic Analysis" />
-        <Field a="اختبار جاك" e="Jack Test" value={pair(
+        <SecHead a={["التحليل الديناميكي", "المشي والحركة"]} e="Dynamic Analysis" />
+        <Field a={["اختبار جاك", "رفع الإبهام"]} e="Jack Test" value={pair(
           labelsOf(JACK_TEST_OPTS, dyn.rightJackTest),
           labelsOf(JACK_TEST_OPTS, dyn.leftJackTest),
         )} />
-        <Field a="خط المشي" e="Walking Line" value={pair(
+        <Field a={["خط ومسار", "المشي"]} e="Walking Line" value={pair(
           labelsOf(WALKING_LINE_OPTS, dyn.rightWalkingLine),
           labelsOf(WALKING_LINE_OPTS, dyn.leftWalkingLine),
         )} />
 
-        <SecHead a={["الحذاء ونمط", "التآكل"]} e="Shoe Wear Pattern" />
-        <Field a="الحذاء الحالي" e="Current Footwear" value={labelsOf(FOOTWEAR_OPTS, shoe.currentFootwear)} />
-        <Field a={["نمط تآكل", "النعل"]} e="Outsole Wear" value={labelsOf(OUTSOLE_WEAR_OPTS, shoe.outsoleWear)} />
+        <SecHead a={["نمط تآكل الحذاء", "وفحص التقويم"]} e="Shoe Wear Pattern & Orthotic Audit" />
+        <Field a={["الأحذية الحالية", "المستخدمة"]} e="Current Footwear" value={labelsOf(FOOTWEAR_OPTS, shoe.currentFootwear)} />
+        <Field a={["خصائص تآكل", "النعل الخارجي"]} e="Outsole Wear" value={labelsOf(OUTSOLE_WEAR_OPTS, shoe.outsoleWear)} />
 
         {measRows.length > 0 && (
           <>
-            <SecHead a="قياسات القدم" e="Foot Measurements" />
+            <SecHead a={["قياسات القدم", "وأبعادها"]} e="Foot Measurements" />
             {measRows.map(([a, e, v]) => <Field key={e} a={a} e={e} value={v} />)}
           </>
         )}

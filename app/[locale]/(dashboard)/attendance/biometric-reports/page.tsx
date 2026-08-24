@@ -236,15 +236,15 @@ export default function BiometricReportsPage() {
             return (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t("lateness.lateEmployees")}</span>
                     <span className="text-2xl font-bold">{data.length}</span>
                   </CardContent></Card>
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t("lateness.totalInstances")}</span>
                     <span className="text-2xl font-bold text-amber-600">{totalInstances}</span>
                   </CardContent></Card>
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t("lateness.totalMinutes")}</span>
                     <span className="text-2xl font-bold text-red-600">{t("lateness.minutesUnit", { count: totalMinutes })}</span>
                   </CardContent></Card>
@@ -327,11 +327,11 @@ export default function BiometricReportsPage() {
             return (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t("absences.absentEmployees")}</span>
                     <span className="text-2xl font-bold">{data.length}</span>
                   </CardContent></Card>
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t("absences.totalDays")}</span>
                     <span className="text-2xl font-bold text-red-600">{totalDays}</span>
                   </CardContent></Card>
@@ -383,11 +383,11 @@ export default function BiometricReportsPage() {
             return (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t("tempExits.employeesWithExits")}</span>
                     <span className="text-2xl font-bold">{data.length}</span>
                   </CardContent></Card>
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t("tempExits.totalExcess")}</span>
                     <span className="text-2xl font-bold text-amber-600">{t("tempExits.minutesUnit", { count: totalExcess })}</span>
                   </CardContent></Card>
@@ -438,19 +438,19 @@ export default function BiometricReportsPage() {
             return (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-4">
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t("payroll.employeeCount")}</span>
                     <span className="text-2xl font-bold">{data.length}</span>
                   </CardContent></Card>
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">إجمالي أيام الغياب</span>
                     <span className="text-2xl font-bold text-red-600">{totalAbsent}</span>
                   </CardContent></Card>
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">إجمالي دقائق التأخر</span>
                     <span className="text-2xl font-bold text-amber-600">{totalLateMin}</span>
                   </CardContent></Card>
-                  <Card><CardContent className="py-4 flex justify-between items-center">
+                  <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                     <span className="text-sm text-muted-foreground">إجمالي دقائق الخصم</span>
                     <span className="text-2xl font-bold text-red-600">{totalDeductMin}</span>
                   </CardContent></Card>
@@ -518,13 +518,13 @@ export default function BiometricReportsPage() {
             const csvParams = `year=${year}&month=${month}`;
             return (
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap gap-2 justify-between items-center">
                   <div className="grid gap-4 sm:grid-cols-2 flex-1">
-                    <Card><CardContent className="py-4 flex justify-between items-center">
+                    <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                       <span className="text-sm text-muted-foreground">{t("topAbsences.topEmployees")}</span>
                       <span className="text-2xl font-bold">{items.length}</span>
                     </CardContent></Card>
-                    <Card><CardContent className="py-4 flex justify-between items-center">
+                    <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                       <span className="text-sm text-muted-foreground">{t("topAbsences.totalAbsences")}</span>
                       <span className="text-2xl font-bold text-red-600">{totalAbsences}</span>
                     </CardContent></Card>
@@ -584,13 +584,13 @@ export default function BiometricReportsPage() {
             const csvParams = `year=${year}&month=${month}`;
             return (
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap gap-2 justify-between items-center">
                   <div className="grid gap-4 sm:grid-cols-2 flex-1">
-                    <Card><CardContent className="py-4 flex justify-between items-center">
+                    <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                       <span className="text-sm text-muted-foreground">{t("overtime.employeesCount")}</span>
                       <span className="text-2xl font-bold">{items.length}</span>
                     </CardContent></Card>
-                    <Card><CardContent className="py-4 flex justify-between items-center">
+                    <Card><CardContent className="py-4 flex flex-wrap gap-2 justify-between items-center">
                       <span className="text-sm text-muted-foreground">{t("overtime.totalHours")}</span>
                       <span className="text-2xl font-bold text-blue-600">{t("overtime.hoursUnit", { count: Math.round(totalHours) })}</span>
                     </CardContent></Card>
@@ -653,7 +653,7 @@ export default function BiometricReportsPage() {
               <div className="space-y-4">
                 <Card className="max-w-2xl">
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle className="flex flex-wrap gap-2 items-center justify-between">
                       <span>{t("employeeCard.title")}</span>
                       <span className="text-sm font-normal text-muted-foreground">
                         {months[card.month - 1]} {card.year}
@@ -672,14 +672,14 @@ export default function BiometricReportsPage() {
                         { key: "breakMinutes", value: t("employeeCard.breakUnit", { actual: card.totalBreakMinutes, allowed: card.allowedBreakMinutes }), color: "" },
                         { key: "netWorkedMinutes", value: formatMinutes(card.netWorkedMinutes), color: "text-primary" },
                       ].map((item) => (
-                        <div key={item.key} className="flex items-center justify-between rounded-lg border p-3">
+                        <div key={item.key} className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
                           <span className="text-sm text-muted-foreground">{t(`employeeCard.${item.key}`)}</span>
                           <span className={`text-sm font-bold ${item.color}`}>{item.value}</span>
                         </div>
                       ))}
                     </div>
                     <div className="space-y-1.5">
-                      <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="flex flex-wrap gap-2 justify-between text-xs text-muted-foreground">
                         <span>{t("employeeCard.attendanceRate")}</span>
                         <span>{attendancePct}%</span>
                       </div>

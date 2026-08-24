@@ -180,7 +180,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-2xl max-h-[85vh] overflow-y-auto"
+        className="sm:max-w-2xl max-h-[85dvh] overflow-y-auto"
         dir="rtl"
       >
         <DialogHeader>

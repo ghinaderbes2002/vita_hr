@@ -49,7 +49,7 @@ export default function EvaluationFormDetailsPage({ params }: PageProps) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-10 w-32" />
         </div>
@@ -77,7 +77,7 @@ export default function EvaluationFormDetailsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowRight className="h-5 w-5" />
@@ -143,7 +143,7 @@ export default function EvaluationFormDetailsPage({ params }: PageProps) {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="w-full grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 h-auto">
           <TabsTrigger value="overview">{t("detail.tabs.overview")}</TabsTrigger>
           <TabsTrigger value="self">{t("detail.tabs.self")}</TabsTrigger>
           <TabsTrigger value="manager">{t("detail.tabs.manager")}</TabsTrigger>
@@ -159,19 +159,19 @@ export default function EvaluationFormDetailsPage({ params }: PageProps) {
             <Card>
               <CardContent className="pt-6 space-y-4">
                 <h3 className="font-semibold">{t("detail.overview.scoresSummary")}</h3>
-                <div className="flex justify-between items-center pb-2 border-b">
+                <div className="flex flex-wrap gap-2 justify-between items-center pb-2 border-b">
                   <span className="text-muted-foreground">{t("detail.overview.selfScore")}</span>
                   <span className="text-xl font-bold text-blue-600">
                     {form.totalSelfScore ? form.totalSelfScore.toFixed(1) : "-"}
                   </span>
                 </div>
-                <div className="flex justify-between items-center pb-2 border-b">
+                <div className="flex flex-wrap gap-2 justify-between items-center pb-2 border-b">
                   <span className="text-muted-foreground">{t("detail.overview.managerScore")}</span>
                   <span className="text-xl font-bold text-orange-600">
                     {form.totalManagerScore ? form.totalManagerScore.toFixed(1) : "-"}
                   </span>
                 </div>
-                <div className="flex justify-between items-center pb-2 border-b">
+                <div className="flex flex-wrap gap-2 justify-between items-center pb-2 border-b">
                   <span className="text-muted-foreground">{t("detail.overview.finalScore")}</span>
                   <span className="text-2xl font-bold text-green-600">
                     {form.finalScore ? form.finalScore.toFixed(1) : "-"}
@@ -186,7 +186,7 @@ export default function EvaluationFormDetailsPage({ params }: PageProps) {
                 {form.sections && form.sections.length > 0 ? (
                   <div className="space-y-3">
                     {form.sections.map((section) => (
-                      <div key={section.id} className="flex justify-between items-center text-sm">
+                      <div key={section.id} className="flex flex-wrap gap-2 justify-between items-center text-sm">
                         <span className="text-muted-foreground">
                           {section.criteria?.nameAr || t("detail.overview.noCriteria")}
                         </span>

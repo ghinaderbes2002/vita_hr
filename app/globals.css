@@ -342,6 +342,69 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Responsive shell
+   ───────────────────────────────────────────────────────────── */
+
+/* The sidebar only reserves a gutter from `lg` up; below that it is an
+   off-canvas drawer rendered above the content. `margin-inline-start` keeps
+   this correct in both LTR and RTL without any JS branching. */
+.dashboard-shift {
+  margin-inline-start: 0;
+}
+@media (min-width: 1024px) {
+  .dashboard-shift {
+    margin-inline-start: var(--sidebar-width, 16rem);
+  }
+}
+
+/* Nothing should be able to push the document sideways on a phone.
+   `clip` rather than `hidden` — `hidden` would turn these into scroll
+   containers and break `position: sticky` for the header. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (max-width: 640px) {
+  /* Wide, fixed-width popovers/menus would otherwise overflow the viewport. */
+  [data-slot="dropdown-menu-content"],
+  [data-slot="popover-content"],
+  [data-slot="select-content"] {
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  /* The tab strip scrolls horizontally rather than squashing its triggers.
+     (`overflow-x` itself is a utility on the component; these two can't be
+     expressed there.) */
+  [data-slot="tabs-list"] { scrollbar-width: none; }
+  [data-slot="tabs-list"]::-webkit-scrollbar { display: none; }
+
+  /* iOS zooms the page when focusing an input below 16px. `.measurement-field`
+     opts out: those boxes are sized as a percentage of a technical drawing and
+     16px text would overflow them. */
+  input:not(.measurement-field),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Filter bars: fixed-width triggers (w-48, w-56, …) don't fit a phone, so
+     every control takes the full row instead. */
+  .filter-bar {
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+  }
+  .filter-bar > * {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
 @media print {
   aside,
   header,
@@ -353,7 +416,8 @@
     background: white !important;
   }
 
-  main {
+  main,
+  .dashboard-shift {
     margin-inline-start: 0 !important;
     padding: 1rem !important;
   }

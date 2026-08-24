@@ -84,7 +84,7 @@ export function CommissionsEditor({ rows, onRowsChange }: Props) {
         </div>
       ))}
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Button type="button" variant="outline" size="sm" onClick={add} className="gap-1.5">
           <Plus className="h-3.5 w-3.5" />
           إضافة عمولة

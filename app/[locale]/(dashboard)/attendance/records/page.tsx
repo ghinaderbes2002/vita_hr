@@ -183,7 +183,7 @@ export default function AttendanceRecordsPage() {
                 <button
                   key={e.id}
                   type="button"
-                  className="w-full text-right px-3 py-2 text-sm hover:bg-muted transition-colors flex items-center justify-between"
+                  className="w-full text-right px-3 py-2 text-sm hover:bg-muted transition-colors flex flex-wrap gap-2 items-center justify-between"
                   onClick={() => {
                     setSelectedEmployeeId(e.id);
                     setSearch(`${e.firstNameAr} ${e.lastNameAr}`);

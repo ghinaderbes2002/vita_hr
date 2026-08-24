@@ -151,7 +151,7 @@ function renderDetailValue(value: any, employeeMap: Record<string, string> = {})
               }
               if (display === null) return null;
               return (
-                <div key={k} className="flex items-start justify-between gap-2 text-xs">
+                <div key={k} className="flex flex-wrap items-start justify-between gap-2 text-xs">
                   <span className="text-muted-foreground shrink-0">{formatDetailKey(k)}:</span>
                   <span className="font-medium text-right">{display}</span>
                 </div>
@@ -168,7 +168,7 @@ function renderDetailValue(value: any, employeeMap: Record<string, string> = {})
     return (
       <div className="space-y-1 w-full">
         {Object.entries(value).map(([k, v]) => (
-          <div key={k} className="flex items-start justify-between gap-2 text-xs">
+          <div key={k} className="flex flex-wrap items-start justify-between gap-2 text-xs">
             <span className="text-muted-foreground shrink-0">{formatDetailKey(k)}:</span>
             <span className="font-medium text-right">{String(v ?? "—")}</span>
           </div>
@@ -515,22 +515,22 @@ export default function RequestDetailPage() {
             <CardTitle>بيانات الطلب</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-2 justify-between items-center">
               <span className="text-muted-foreground text-sm">رقم الطلب</span>
               <span className="font-mono text-sm font-medium">{request.requestNumber}</span>
             </div>
             <Separator />
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-2 justify-between items-center">
               <span className="text-muted-foreground text-sm">نوع الطلب</span>
               <span className="text-sm font-medium">{t(`requests.types.${request.type}`)}</span>
             </div>
             <Separator />
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-2 justify-between items-center">
               <span className="text-muted-foreground text-sm">الحالة</span>
               <RequestStatusBadge status={request.status} />
             </div>
             <Separator />
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-2 justify-between items-center">
               <span className="text-muted-foreground text-sm">الموظف</span>
               <span className="text-sm">
                 {request.employee
@@ -539,7 +539,7 @@ export default function RequestDetailPage() {
               </span>
             </div>
             <Separator />
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-2 justify-between items-center">
               <span className="text-muted-foreground text-sm">تاريخ الإنشاء</span>
               <span className="text-sm text-muted-foreground">
                 {new Date(request.createdAt).toLocaleDateString("ar-SA")}
@@ -566,7 +566,7 @@ export default function RequestDetailPage() {
             {request.attachmentUrl && (
               <>
                 <Separator />
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap gap-2 justify-between items-center">
                   <span className="text-muted-foreground text-sm">المرفق</span>
                   <a
                     href={assetUrl(request.attachmentUrl)}
@@ -594,7 +594,7 @@ export default function RequestDetailPage() {
                 if (key === "totalHours" && value != null)
                   return (
                     <div key={key}>
-                      <div className="flex justify-between items-start gap-4">
+                      <div className="flex flex-wrap justify-between items-start gap-4">
                         <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
                         <span className="text-sm font-medium text-right">{String(value)} ساعة</span>
                       </div>
@@ -611,7 +611,7 @@ export default function RequestDetailPage() {
                     : value;
                   return (
                     <div key={key}>
-                      <div className="flex justify-between items-start gap-4">
+                      <div className="flex flex-wrap justify-between items-start gap-4">
                         <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
                         <span className="text-sm font-medium text-right">{String(days)} يوم</span>
                       </div>
@@ -631,7 +631,7 @@ export default function RequestDetailPage() {
                         <div className="text-sm">{rendered}</div>
                       </div>
                     ) : (
-                      <div className="flex justify-between items-start gap-4">
+                      <div className="flex flex-wrap justify-between items-start gap-4">
                         <span className="text-muted-foreground text-sm shrink-0">{formatDetailKey(key)}</span>
                         <span className="text-sm font-medium text-right">{rendered}</span>
                       </div>
@@ -656,7 +656,7 @@ export default function RequestDetailPage() {
           </CardHeader>
           <CardContent>
             {(request as any).hiringContractPdfUrl ? (
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <div>
@@ -707,14 +707,14 @@ export default function RequestDetailPage() {
             <CardTitle className="text-base">ملخص الجزاء المقترح</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <span className="text-muted-foreground">التصنيف</span>
               <Badge variant="outline" className={(request.details as any).category === "MATERIAL" ? "border-red-300 text-red-700" : "border-amber-300 text-amber-700"}>
                 {(request.details as any).category === "MATERIAL" ? "مادي" : "معنوي"}
               </Badge>
             </div>
             {(request.details as any).penaltyType && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
                 <span className="text-muted-foreground">نوع العقوبة</span>
                 <span className="font-medium">
                   {({ NOTICE: "لفت نظر", WARNING_1: "إنذار أول", WARNING_2: "إنذار ثانٍ", DAYS_DEDUCTION: "خصم أيام" } as any)[(request.details as any).penaltyType] ?? (request.details as any).penaltyType}
@@ -722,7 +722,7 @@ export default function RequestDetailPage() {
               </div>
             )}
             {(request.details as any).category === "MATERIAL" && (request.details as any).penaltyDays && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
                 <span className="text-muted-foreground">أيام الخصم</span>
                 <span className="font-semibold text-red-700">{(request.details as any).penaltyDays} يوم</span>
               </div>
@@ -789,7 +789,7 @@ export default function RequestDetailPage() {
                 <p className="text-sm font-medium text-green-700">تم تقديم استمارة الخروج</p>
                 <div className="space-y-1">
                   {Object.entries((request as any).details.exitInterview).map(([k, v]) => (
-                    <div key={k} className="flex justify-between text-sm">
+                    <div key={k} className="flex flex-wrap gap-2 justify-between text-sm">
                       <span className="text-muted-foreground">{DETAIL_KEY_LABELS[k] || k}:</span>
                       <span className="font-medium">
                         {k === "wouldRejoin" ? (v ? "نعم" : "لا") : String(v ?? "—")}
@@ -804,7 +804,7 @@ export default function RequestDetailPage() {
                   تمت الموافقات المطلوبة. يرجى تعبئة استمارة مقابلة الخروج.
                 </p>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label>تقييم بيئة العمل (1–5)</Label>
                       <Input

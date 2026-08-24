@@ -123,7 +123,7 @@ export function BulkTransferDialog({ open, onOpenChange, custodies, fromEmployee
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>تاريخ الاستلام من القديم</Label>
               <Input
@@ -154,7 +154,7 @@ export function BulkTransferDialog({ open, onOpenChange, custodies, fromEmployee
 
           {progress && (
             <div className="space-y-1.5">
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex flex-wrap gap-2 justify-between text-xs text-muted-foreground">
                 <span>جاري النقل...</span>
                 <span>{progress.done} / {progress.total}</span>
               </div>

@@ -163,7 +163,7 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-5 max-w-3xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">الإشعارات</h1>
           {unreadCount > 0 && (
@@ -272,7 +272,7 @@ export default function NotificationsPage() {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className={`text-sm leading-snug ${!notif.isRead ? "font-semibold" : "text-muted-foreground"}`}>
                         {notif.titleAr || notif.titleEn}
                       </p>

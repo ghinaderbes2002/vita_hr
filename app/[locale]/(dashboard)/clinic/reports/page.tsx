@@ -33,7 +33,7 @@ function StatCard({
   return (
     <Card>
       <CardContent className="pt-5 pb-4">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-wrap gap-2 items-start justify-between">
           <div>
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className={`text-3xl font-bold mt-1 ${color}`}>{value}</p>
@@ -54,7 +54,7 @@ function BarChart({ data }: { data: Array<{ label: string; value: number; color?
     <div className="space-y-2">
       {data.map((d) => (
         <div key={d.label} className="space-y-0.5">
-          <div className="flex justify-between text-sm">
+          <div className="flex flex-wrap gap-2 justify-between text-sm">
             <span>{d.label}</span>
             <span className="font-bold">{d.value}</span>
           </div>

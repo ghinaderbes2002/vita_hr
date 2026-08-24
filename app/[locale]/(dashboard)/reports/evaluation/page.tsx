@@ -143,7 +143,7 @@ export default function EvaluationReportsPage() {
           ) : (
             <>
               {/* KPI */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="pt-5 text-center">
                     <p className="text-3xl font-bold text-primary">{grades.totalForms ?? 0}</p>

@@ -21,8 +21,8 @@ export function Pagination({ page, totalPages, total, limit, onPageChange }: Pag
   const to = Math.min(page * limit, total);
 
   return (
-    <div className="flex items-center justify-between px-2 py-3">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-2 py-3">
+      <p className="text-xs sm:text-sm text-muted-foreground">
         {from}–{to} {t("of")} {total}
       </p>
       <div className="flex items-center gap-2">

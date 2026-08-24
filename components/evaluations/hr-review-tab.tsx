@@ -179,7 +179,7 @@ export function HrReviewTab({ form }: HrReviewTabProps) {
           {/* Current HR Review (if exists) */}
           {form.hrComments && (
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex flex-wrap gap-2 justify-between items-start mb-2">
                 <h4 className="font-semibold text-purple-900">المراجعة الحالية</h4>
                 {form.hrRecommendation && getRecommendationBadge(form.hrRecommendation)}
               </div>

@@ -104,15 +104,15 @@ export default function MyHourlyBalancePage() {
                   <span className="text-xs text-muted-foreground mt-0.5">متبقي</span>
                 </div>
                 <div className="flex-1 space-y-2 text-sm">
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap gap-2 justify-between">
                     <span className="text-muted-foreground">الحد الأقصى الشهري</span>
                     <span className="font-medium">{formatMinutes(maxMin)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap gap-2 justify-between">
                     <span className="text-muted-foreground">المستخدم</span>
                     <span className="font-medium">{formatMinutes(usedMin)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex flex-wrap gap-2 justify-between">
                     <span className="text-muted-foreground">المتبقي</span>
                     <span className={`font-medium ${isDepleted ? "text-destructive" : isLow ? "text-amber-600" : "text-green-600"}`}>
                       {formatMinutes(remainingMin)}

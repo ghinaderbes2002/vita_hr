@@ -62,7 +62,7 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
       />
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button size="sm" className="gap-1.5" disabled={saving || !draft.trim()} onClick={save}>
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           حفظ
@@ -112,7 +112,7 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
                           {r.createdByName && <span className="font-medium text-foreground">{r.createdByName}</span>}
                         </div>
                         {canEdit && editingId === undefined && (
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap gap-1">
                             <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" onClick={() => startEdit(r)}>
                               <Pencil className="h-3 w-3" />
                               تعديل

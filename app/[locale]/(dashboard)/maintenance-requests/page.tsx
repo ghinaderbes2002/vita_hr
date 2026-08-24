@@ -131,7 +131,7 @@ export default function MaintenanceRequestsPage() {
           {selected && (
             <Card>
               <CardContent className="pt-5 space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-muted-foreground">{t("requests.fields.requestNumber")}</p>
                     <p className="font-medium font-mono">{selected.requestNumber || "—"}</p>

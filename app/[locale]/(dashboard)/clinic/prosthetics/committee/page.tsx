@@ -60,7 +60,7 @@ export default function CommitteeCasesPage() {
         description={isLoading ? "جاري التحميل..." : `${reviewCount} بانتظار المراجعة — ${approvedCount} موافق عليها`}
       />
 
-      <div className="flex gap-3 items-center">
+      <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

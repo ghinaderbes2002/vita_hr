@@ -289,7 +289,7 @@ export function ReferralSourceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle>{source ? "تعديل المصدر" : "إضافة مصدر إحالة"}</DialogTitle>
         </DialogHeader>

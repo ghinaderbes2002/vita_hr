@@ -130,7 +130,7 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="nameAr"
@@ -174,7 +174,7 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="minSalary"
@@ -255,7 +255,7 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
               control={form.control}
               name="isActive"
               render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                <FormItem className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
                   <FormLabel className="cursor-pointer">{t("jobGrades.fields.isActive")}</FormLabel>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />

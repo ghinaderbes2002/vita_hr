@@ -90,7 +90,7 @@ export default function MailPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden rounded-lg border bg-background shadow-sm">
+    <div className="flex flex-col h-[calc(100dvh-11rem)] sm:h-[calc(100dvh-8rem)] overflow-hidden rounded-lg border bg-background shadow-sm">
       {/* Folder app bar */}
       <div className="flex items-center gap-1 px-3 py-2 border-b bg-muted/20">
         <nav className="flex-1 flex items-center gap-1 overflow-x-auto">

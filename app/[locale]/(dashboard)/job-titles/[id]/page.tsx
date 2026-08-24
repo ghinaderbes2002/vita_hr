@@ -62,7 +62,7 @@ export default function JobTitleDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 pb-4 border-b">
+      <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowRight className="h-5 w-5" />
@@ -131,7 +131,7 @@ export default function JobTitleDetailPage() {
                   <Row label="الراتب الأقصى" value={Number(jobTitle.grade.maxSalary).toLocaleString()} />
                 )}
                 {jobTitle.grade.color && (
-                  <div className="flex justify-between gap-4">
+                  <div className="flex flex-wrap justify-between gap-4">
                     <span className="text-muted-foreground shrink-0">اللون</span>
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: jobTitle.grade.color }} />
@@ -169,7 +169,7 @@ export default function JobTitleDetailPage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4">
+    <div className="flex flex-wrap justify-between gap-4">
       <span className="text-muted-foreground shrink-0">{label}</span>
       <span className="font-medium text-left">{value}</span>
     </div>

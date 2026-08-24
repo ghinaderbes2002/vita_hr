@@ -33,13 +33,19 @@ export function SignaturePadDialog({
   const [hasSignature, setHasSignature] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
 
+  // The canvas renders at `w-full`, so its CSS size rarely matches its 380x160
+  // bitmap. Scale the pointer into bitmap space, otherwise the stroke drifts
+  // away from the finger on narrow screens.
   const getPos = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    if ("touches" in e) {
-      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-    }
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const point = "touches" in e ? e.touches[0] : e;
+    return {
+      x: (point.clientX - rect.left) * scaleX,
+      y: (point.clientY - rect.top) * scaleY,
+    };
   };
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {

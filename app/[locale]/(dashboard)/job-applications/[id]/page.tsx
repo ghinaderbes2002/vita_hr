@@ -251,7 +251,7 @@ export default function JobApplicationDetailPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Skeleton className="h-64" />
           <Skeleton className="h-64" />
         </div>
@@ -709,7 +709,7 @@ export default function JobApplicationDetailPage() {
 
       {/* View Evaluation Dialog (read-only) */}
       <Dialog open={viewEvalOpen} onOpenChange={setViewEvalOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("jobApplications.evaluation.detailsTitle")}</DialogTitle>
           </DialogHeader>
@@ -777,7 +777,7 @@ export default function JobApplicationDetailPage() {
                   <p className="font-medium">{t("jobApplications.evaluation.personalTraits")}</p>
                   <div className="grid gap-1.5 sm:grid-cols-2">
                     {evalData.personalScores.map((s: any) => (
-                      <div key={s.criterionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
+                      <div key={s.criterionId} className="flex flex-wrap gap-2 justify-between border rounded px-3 py-1.5 text-xs">
                         <span className="text-muted-foreground">{s.criterion?.nameAr ?? s.criterionId}</span>
                         <span className="font-semibold">{s.score}</span>
                       </div>
@@ -791,7 +791,7 @@ export default function JobApplicationDetailPage() {
                   <p className="font-medium">{t("jobApplications.evaluation.technicalQuestions")}</p>
                   <div className="space-y-1.5">
                     {evalData.technicalScores.map((s: any) => (
-                      <div key={s.questionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
+                      <div key={s.questionId} className="flex flex-wrap gap-2 justify-between border rounded px-3 py-1.5 text-xs">
                         <span className="text-muted-foreground">{s.question?.question ?? s.questionId}</span>
                         <span className="font-semibold">{s.score}</span>
                       </div>
@@ -805,7 +805,7 @@ export default function JobApplicationDetailPage() {
                   <p className="font-medium">{t("jobApplications.evaluation.computerSkills")}</p>
                   <div className="grid gap-1.5 sm:grid-cols-2">
                     {evalData.computerScores.map((s: any) => (
-                      <div key={s.criterionId} className="flex justify-between border rounded px-3 py-1.5 text-xs">
+                      <div key={s.criterionId} className="flex flex-wrap gap-2 justify-between border rounded px-3 py-1.5 text-xs">
                         <span className="text-muted-foreground">{s.criterion?.nameAr ?? s.criterionId}</span>
                         <span className="font-semibold">{s.score}</span>
                       </div>
@@ -823,7 +823,7 @@ export default function JobApplicationDetailPage() {
 
       {/* Evaluation Dialog */}
       <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {evalData ? t("jobApplications.evaluation.editTitle") : t("jobApplications.evaluation.createTitle")}
@@ -866,7 +866,7 @@ export default function JobApplicationDetailPage() {
                   {pCriteria.map((c: any) => (
                     <div
                       key={c.id}
-                      className="flex items-center justify-between gap-2"
+                      className="flex flex-wrap items-center justify-between gap-2"
                     >
                       <Label className="text-xs flex-1">{c.nameAr}</Label>
                       <Input
@@ -908,7 +908,7 @@ export default function JobApplicationDetailPage() {
                     {techQuestions.map((q: any) => (
                       <div
                         key={q.id}
-                        className="flex items-center justify-between gap-2"
+                        className="flex flex-wrap items-center justify-between gap-2"
                       >
                         <Label className="text-xs flex-1">{q.question}</Label>
                         <span className="text-xs text-muted-foreground shrink-0">
@@ -947,7 +947,7 @@ export default function JobApplicationDetailPage() {
                   {cCriteria.map((c: any) => (
                     <div
                       key={c.id}
-                      className="flex items-center justify-between gap-2"
+                      className="flex flex-wrap items-center justify-between gap-2"
                     >
                       <Label className="text-xs flex-1">{c.nameAr}</Label>
                       <Input
