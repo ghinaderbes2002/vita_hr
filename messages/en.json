@@ -355,6 +355,9 @@
       "clinic_prosthetics": "Prosthetics",
       "clinic_podiatry": "Podiatry",
       "clinic_reports": "Clinic Reports",
+      "payroll_advances": "Salary Advances",
+      "payroll_commissions": "Commissions",
+      "onboarding": "Onboarding",
       "referrals": "Referral Sources",
       "sales": "Sales",
       "audit": "Audit Log"

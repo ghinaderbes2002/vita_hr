@@ -211,13 +211,11 @@ export function useEditMail() {
   });
 }
 
+/** الرفع صار مستقلاً عن الرسالة — لا رسالة نُبطل كاشها هنا. */
 export function useUploadAttachment(silentSuccess = false) {
-  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ messageId, file }: { messageId: string; file: File }) =>
-      mailApi.uploadAttachment(messageId, file),
-    onSuccess: (_, { messageId }) => {
-      qc.invalidateQueries({ queryKey: ["mail", "message", messageId] });
+    mutationFn: (file: File) => mailApi.uploadAttachment(file),
+    onSuccess: () => {
       if (!silentSuccess) toast.success("تم رفع المرفق");
     },
     onError: (error: any) => {

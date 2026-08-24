@@ -166,8 +166,8 @@ const navigation: NavItem[] = [
         icon: LayoutList,
         hiddenForRoles: ["DIRECT_MANAGER", "QS", "IT", "تقنية المعلومات", "CEO", "المدير التنفيذي", "General Manager", "المدير العام", "CFO"],
         children: [
-          { title: "nav.onboardingTemplates", href: "/onboarding/templates", icon: ClipboardList },
-          { title: "nav.onboardingWorkflows", href: "/onboarding/workflows", icon: LayoutList },
+          { title: "nav.onboardingTemplates", href: "/onboarding/templates", icon: ClipboardList, permission: "onboarding.view" },
+          { title: "nav.onboardingWorkflows", href: "/onboarding/workflows", icon: LayoutList, permission: "onboarding.view" },
         ],
       },
       {
@@ -201,8 +201,8 @@ const navigation: NavItem[] = [
         hiddenForRoles: ["DIRECT_MANAGER", "QS", "General Manager", "Follow-up official", "موظف", "HR_Specialist", "IT", "تقنية المعلومات"],
         children: [
           { title: "nav.payrollList", href: "/payroll", icon: Wallet, permission: "attendance.payroll.read" },
-          { title: "nav.salaryAdvances", href: "/salary-advances", icon: Banknote },
-          { title: "nav.salesCommissions", href: "/sales-commissions", icon: Award },
+          { title: "nav.salaryAdvances", href: "/salary-advances", icon: Banknote, permission: "payroll.advances.read" },
+          { title: "nav.salesCommissions", href: "/sales-commissions", icon: Award, permission: "payroll.commissions.read" },
         ],
       },
       {

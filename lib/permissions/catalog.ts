@@ -132,6 +132,26 @@ export const PERMISSIONS = {
     DELETE: "attendance.policies.delete",
   },
 
+  PAYROLL_ADVANCES: {
+    READ:   "payroll.advances.read",
+    CREATE: "payroll.advances.create",
+    UPDATE: "payroll.advances.update",
+    CANCEL: "payroll.advances.cancel",
+    DELETE: "payroll.advances.delete",
+  },
+  PAYROLL_COMMISSIONS: {
+    READ:    "payroll.commissions.read",
+    CREATE:  "payroll.commissions.create",
+    UPDATE:  "payroll.commissions.update",
+    CONFIRM: "payroll.commissions.confirm",
+    DELETE:  "payroll.commissions.delete",
+  },
+  ONBOARDING: {
+    VIEW:        "onboarding.view",
+    MANAGE:      "onboarding.manage",
+    UPDATE_TASK: "onboarding.update_task",
+  },
+
   EVALUATION_PERIODS: {
     READ: "evaluation:periods:read",
     CREATE: "evaluation:periods:create",

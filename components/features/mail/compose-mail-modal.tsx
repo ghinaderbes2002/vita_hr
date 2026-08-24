@@ -189,57 +189,59 @@ export function ComposeMailModal({
     }
 
     try {
-      let message: any;
+      // الرفع أولاً: المرفقات تُرفع مستقلة وتُربط بالرسالة عبر attachmentIds.
+      // لو فشل الرفع لا تُرسل الرسالة أصلاً، فلا تصل ناقصة المرفقات.
+      let uploadedIds: string[] = [];
+      if (pendingFiles.length > 0) {
+        try {
+          const uploaded = await Promise.all(
+            pendingFiles.map((file) => uploadAttachment.mutateAsync(file)),
+          );
+          uploadedIds = uploaded.map((a) => a.id);
+        } catch {
+          toast.error("فشل رفع المرفقات — لم تُرسل الرسالة. حاولي مرة أخرى.");
+          return;
+        }
+      }
 
       if (replyAllMessageId) {
-        message = await replyAllMail.mutateAsync({
+        await replyAllMail.mutateAsync({
           messageId: replyAllMessageId,
           dto: {
             subject,
             body: bodyRef.current?.innerHTML || undefined,
             recipients: buildRecipients(),
             ...(isHighImportance ? { importance: "HIGH" } : {}),
+            ...(uploadedIds.length > 0 ? { attachmentIds: uploadedIds } : {}),
           },
         });
       } else if (forwardMessageId) {
-        message = await forwardMail.mutateAsync({
+        await forwardMail.mutateAsync({
           messageId: forwardMessageId,
           dto: {
             recipients: buildRecipients(),
             subject: subject || undefined,
             body: bodyRef.current?.innerHTML || undefined,
-            ...(forwardAttachments.length > 0
-              ? { attachmentIds: forwardAttachments.map((a) => a.id) }
-              : {}),
+            ...((() => {
+              const ids = [...forwardAttachments.map((a) => a.id), ...uploadedIds];
+              return ids.length > 0 ? { attachmentIds: ids } : {};
+            })()),
           },
         });
       } else {
-        message = await sendMail.mutateAsync({
+        await sendMail.mutateAsync({
           subject,
           body: bodyRef.current?.innerHTML || undefined,
           recipients: buildRecipients(),
           ...(departmentIds.length > 0 ? { departmentIds } : {}),
           parentMessageId: replyToMessageId,
           ...(isHighImportance ? { importance: "HIGH" } : {}),
+          ...(uploadedIds.length > 0 ? { attachmentIds: uploadedIds } : {}),
         });
       }
 
-      if (pendingFiles.length > 0 && message?.id) {
-        try {
-          await Promise.all(
-            pendingFiles.map((file) =>
-              uploadAttachment.mutateAsync({ messageId: message.id, file }),
-            ),
-          );
-          toast.success("تم إرسال الرسالة مع المرفقات بنجاح");
-        } catch {
-          // الرسالة وصلت فعلاً — الفشل في المرفقات وحدها. لا نغلق النافذة حتى
-          // لا تُفقد الملفات المختارة، ونوضّح للمستخدم أين توقفت العملية.
-          toast.error(
-            "أُرسلت الرسالة لكن فشل رفع المرفقات. افتحي الرسالة من \"المرسلة\" وأرفقي الملفات مجدداً.",
-          );
-          return;
-        }
+      if (uploadedIds.length > 0) {
+        toast.success("تم إرسال الرسالة مع المرفقات بنجاح");
       }
 
       onClose();

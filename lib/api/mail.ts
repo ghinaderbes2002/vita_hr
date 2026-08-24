@@ -133,6 +133,8 @@ export interface SendMailDto {
   departmentIds?: string[];
   parentMessageId?: string;
   importance?: "NORMAL" | "HIGH";
+  /** معرّفات مرفقات رُفعت مسبقاً عبر uploadAttachment وتُربط بالرسالة عند الإرسال */
+  attachmentIds?: string[];
 }
 
 export interface SaveDraftDto {
@@ -262,14 +264,18 @@ export const mailApi = {
     await apiClient.delete(`/mail/archive-folders/${id}`);
   },
 
+  /**
+   * يرفع الملف مستقلاً عن أي رسالة ويرجّع معرّفه. يُمرَّر المعرّف بعدها في
+   * `attachmentIds` عند الإرسال. المرفق غير المرتبط برسالة يُحذف تلقائياً
+   * بعد 24 ساعة من طرف الباك.
+   */
   uploadAttachment: async (
-    messageId: string,
     file: File,
     onProgress?: (percent: number) => void,
   ): Promise<MailAttachment> => {
     const formData = new FormData();
     formData.append("file", file);
-    const res = await apiClient.post(`/mail/attachments/${messageId}`, formData, {
+    const res = await apiClient.post("/mail/attachments", formData, {
       headers: { "Content-Type": undefined },
       onUploadProgress: (e) => {
         if (onProgress && e.total) {

@@ -1,10 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { Paperclip, Upload, Loader2, ExternalLink, Download } from "lucide-react";
+import { Paperclip, ExternalLink, Download } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { useUploadAttachment } from "@/lib/hooks/use-mail";
 import type { MailAttachment } from "@/lib/api/mail";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
@@ -106,48 +103,6 @@ export function AttachmentList({ attachments }: ListProps) {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-interface UploadProps {
-  messageId: string;
-}
-
-export function AttachmentUpload({ messageId }: UploadProps) {
-  const t = useTranslations("mail");
-  const inputRef = useRef<HTMLInputElement>(null);
-  const upload = useUploadAttachment();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    upload.mutate({ messageId, file });
-    if (inputRef.current) inputRef.current.value = "";
-  };
-
-  return (
-    <div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-        onChange={handleChange}
-        className="hidden"
-      />
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="gap-1.5"
-        onClick={() => inputRef.current?.click()}
-        disabled={upload.isPending}
-      >
-        {upload.isPending
-          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          : <Upload className="h-3.5 w-3.5" />}
-        {upload.isPending ? t("uploading") : t("attachFile")}
-      </Button>
     </div>
   );
 }

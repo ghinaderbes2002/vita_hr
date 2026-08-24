@@ -1204,6 +1204,9 @@
       "clinic_reports": "تقارير العيادة",
       "clinic_inventory": "مخزون العيادة",
       "clinic_patients": "مرضى العيادة",
+      "payroll_advances": "السُلف",
+      "payroll_commissions": "العمولات",
+      "onboarding": "التعيين والإلحاق",
       "referrals": "مصادر الإحالة",
       "sales": "قسم المبيعات",
       "audit": "سجل التدقيق"
