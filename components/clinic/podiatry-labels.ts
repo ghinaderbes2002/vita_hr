@@ -1,41 +1,36 @@
-// Arabic labels for the reception enums, shared by the list and the reception
-// form. The assessment form has its own tables in podiatry-session-schema.
+"use client";
+
+// The reception enums: the stored values here, the words in
+// `clinic.podiatry.form.enums` so the list, the reception form and the printed
+// sheet all read in the user's locale. The assessment form's own option tables
+// live in podiatry-session-schema.
+import { useTranslations } from "next-intl";
 import {
   AffectedSide, FootSymptom, MedicalHistoryItem, VisitType,
 } from "@/lib/api/clinic-podiatry";
 
-export const AFFECTED_SIDE_LABEL: Record<AffectedSide, string> = {
-  R: "يمين",
-  L: "يسار",
-  BILATERAL: "الطرفان",
-};
+export const AFFECTED_SIDE_VALUES: AffectedSide[] = ["R", "L", "BILATERAL"];
 
-export const FOOT_SYMPTOM_LABEL: Record<FootSymptom, string> = {
-  PAIN: "ألم",
-  NUMBNESS: "تنميل",
-  SWELLING: "تورّم",
-  INSTABILITY: "عدم ثباته",
-  FATIGUE: "  تعب سريع",
-};
+export const FOOT_SYMPTOM_VALUES: FootSymptom[] = [
+  "PAIN", "NUMBNESS", "SWELLING", "INSTABILITY", "FATIGUE",
+];
 
-export const VISIT_TYPE_LABEL: Record<VisitType, string> = {
-  FOOT_PAIN: "ألم القدم",
-  FOOTBALANCE_ASSESSMENT: "تحليل  ",
-  CUSTOM_INSOLES: " ضبان مخصصة",
-  PERFORMANCE_OPTIMIZATION: "تحسين الأداء",
-  FOLLOW_UP: "متابعة",
-};
+export const VISIT_TYPE_VALUES: VisitType[] = [
+  "FOOT_PAIN", "FOOTBALANCE_ASSESSMENT", "CUSTOM_INSOLES",
+  "PERFORMANCE_OPTIMIZATION", "FOLLOW_UP",
+];
 
-export const MEDICAL_HISTORY_LABEL: Record<MedicalHistoryItem, string> = {
-  DIABETES: "سكري",
-  HYPERTENSION: "ارتفاع ضغط",
-  NEUROLOGICAL: "أمراض أعصاب",
-  VASCULAR: "أمراض أوعية",
-  ARTHRITIS: "التهاب مفاصل",
-  OTHER: "أخرى",
-};
+export const MEDICAL_HISTORY_VALUES: MedicalHistoryItem[] = [
+  "DIABETES", "HYPERTENSION", "NEUROLOGICAL", "VASCULAR", "ARTHRITIS", "OTHER",
+];
 
-export const AFFECTED_SIDE_VALUES = Object.keys(AFFECTED_SIDE_LABEL) as AffectedSide[];
-export const FOOT_SYMPTOM_VALUES = Object.keys(FOOT_SYMPTOM_LABEL) as FootSymptom[];
-export const VISIT_TYPE_VALUES = Object.keys(VISIT_TYPE_LABEL) as VisitType[];
-export const MEDICAL_HISTORY_VALUES = Object.keys(MEDICAL_HISTORY_LABEL) as MedicalHistoryItem[];
+/** One label function per reception enum, bound to the active locale. */
+export function usePodiatryEnumLabels() {
+  const t = useTranslations("clinic.podiatry.form.enums") as unknown as (k: string) => string;
+  return {
+    affectedSide: (v: AffectedSide) => t(`affectedSide.${v}`),
+    footSymptom: (v: FootSymptom) => t(`footSymptom.${v}`),
+    visitType: (v: VisitType) => t(`visitType.${v}`),
+    medicalHistory: (v: MedicalHistoryItem) => t(`medicalHistory.${v}`),
+  };
+}

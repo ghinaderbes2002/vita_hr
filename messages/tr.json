@@ -3104,6 +3104,246 @@
       }
     },
     "podiatry": {
+      "form": {
+        "sections": {
+          "subjective": "Hastalık Öyküsü ve Ağrı Tanımı",
+          "visual": "Görsel Muayene ve Deformite Haritalama",
+          "palpation": "Palpasyon ve Hassasiyet Noktaları",
+          "rom": "Hareket Açıklığı ve Ölçülen Esneklik",
+          "dynamic": "Dinamik Analiz - Yürüyüş ve Hareket",
+          "shoe": "Ayakkabı Aşınma Deseni ve Ortez Denetimi",
+          "measurements": "Ayak Ölçüleri ve Boyutları",
+          "insole": "Tabanlık ve Notlar"
+        },
+        "labels": {
+          "mainCause": "Ana Neden ve Patolojik Köken",
+          "painLocation": "Ağrı Yeri",
+          "painNature": "Ağrının Niteliği - Ağrı Skalası",
+          "rearfootAlignment": "Ayakta Arka Ayak Dizilimi",
+          "tooManyToes": "Arkadan Bakışta “Çok Fazla Parmak” Bulgusu",
+          "toesCount": "Görünen Parmak Sayısı",
+          "archArchitecture": "Ayak Kavis Yapısı",
+          "forefootDeformities": "Ön Ayak ve Parmak Deformiteleri",
+          "skinStatus": "Deri ve Yumuşak Doku Durumu",
+          "palpationHint": "Bölgeye basınç ağrı veya hassasiyet yaratıyorsa işaretleyin:",
+          "ankleDorsiflexion": "Ayak Bileği Dorsifleksiyonu",
+          "anklePlantarflexion": "Ayak Bileği Plantarfleksiyonu",
+          "jackTest": "Jack Testi - Mekanik Başparmak Kaldırma",
+          "walkingLine": "Yürüme Hattı ve Yönü",
+          "currentFootwear": "Kullanılan Mevcut Ayakkabılar",
+          "outsoleWear": "Dış Taban Aşınma Özellikleri",
+          "insoleType": "Tabanlık Tipi",
+          "notes": "Notlar",
+          "affectedToes": "Etkilenen Parmaklar",
+          "affectedToesExample": "örn. 2, 3",
+          "location": "Konum",
+          "type": "Tip",
+          "right": "Sağ",
+          "left": "Sol",
+          "rightFoot": "Sağ Ayak",
+          "leftFoot": "Sol Ayak"
+        },
+        "findings": {
+          "halluxValgus": "Halluks Valgus",
+          "tailorsBunion": "Terzi Çıkıntısı",
+          "hammerToes": "Çekiç Parmak",
+          "clawToes": "Pençe Parmak",
+          "malletToes": "Tokmak Parmak",
+          "hyperkeratosis": "Hiperkeratoz / Nasır Konumu",
+          "preUlcerative": "Ülser Öncesi Deri Lezyonları",
+          "edema": "Ödem"
+        },
+        "opts": {
+          "mainCause": {
+            "none": "Yok",
+            "unknown": "Bilinmiyor",
+            "acute_injury": "Akut Yaralanma",
+            "post_surgery": "Cerrahi Sonrası",
+            "chronic_overuse": "Kronik Aşırı Kullanım"
+          },
+          "painLocation": {
+            "forefoot": "Ön Ayak",
+            "midfoot": "Orta Ayak",
+            "rearfoot": "Arka Ayak"
+          },
+          "painCharacteristic": {
+            "morning_startup": "Sabah kalkışta / ilk adımda ağrı",
+            "eases_with_activity": "Hareketle azalır ve geçer",
+            "progressively_worse": "Aktivite sırasında giderek kötüleşir",
+            "night_pain": "Gece ağrısı",
+            "pain_at_rest": "İstirahatte ağrı"
+          },
+          "rearfootAlignment": {
+            "varus": "Varus",
+            "valgus": "Valgus",
+            "neutral": "Nötr"
+          },
+          "tooManyToes": {
+            "negative": "Negatif",
+            "positive": "Pozitif"
+          },
+          "archArchitecture": {
+            "normal": "Normal",
+            "low": "Düşük",
+            "high": "Yüksek"
+          },
+          "deformityType": {
+            "flexible": "Esnek",
+            "rigid": "Rijit"
+          },
+          "edemaType": {
+            "pitting": "Gode Bırakan",
+            "non_pitting": "Gode Bırakmayan",
+            "unilateral": "Tek Taraflı",
+            "bilateral": "İki Taraflı"
+          },
+          "rom": {
+            "normal": "Normal",
+            "limited": "Kısıtlı"
+          },
+          "jackTest": {
+            "arch_forms": "Kavis oluşur ve yükselir",
+            "arch_flat": "Kavis düz kalır"
+          },
+          "walkingLine": {
+            "normal": "Normal ve düz",
+            "inward": "İçe doğru yuvarlanır (pronasyon)",
+            "outward": "Dışa doğru yuvarlanır (supinasyon)"
+          },
+          "footwear": {
+            "stability_running": "Stabilite koşu ayakkabısı",
+            "minimalist": "Minimalist ayakkabı",
+            "high_heel": "Yüksek topuk",
+            "medical": "Medikal ayakkabı",
+            "custom_orthotic": "Kişiye özel ortez"
+          },
+          "outsoleWear": {
+            "normal": "Normal (dış topuktan iç ön ayağa)",
+            "lateral_supination": "Aşırı supinasyonla dış aşınma",
+            "medial_pronation": "Şiddetli pronasyonla iç aşınma"
+          }
+        },
+        "palpation": {
+          "plantar": "Ayak Tabanı / Plantar Fasya",
+          "medial": "Ayak veya Bileğin İç Yüzü",
+          "lateral": "Ayak veya Bileğin Dış Yüzü",
+          "posterior": "Topuk Arkası / Aşil Tendonu",
+          "dorsal": "Ayağın Üst (Dorsal) Yüzü"
+        },
+        "measurements": {
+          "footLength": "Ayak Uzunluğu",
+          "footWidth": "Ayak Genişliği",
+          "archHeight": "Kavis Yüksekliği",
+          "ballWidth": "Ön Ayak Genişliği",
+          "ballCircumference": "Ön Ayak Çevresi",
+          "heelWidth": "Topuk Genişliği",
+          "metatarsalBaseHeight": "Metatars Taban Yüksekliği",
+          "footAlignment": "Ayak Dizilimi ve Doğrultusu",
+          "navicularHeight": "Navikular Yüksekliği",
+          "navicularDrop": "Navikular Düşme Testi",
+          "navicularHeightWithOrthotic": "Ortezli Navikular Yüksekliği",
+          "navicularDropWithOrthotic": "Ortezli Navikular Düşme Testi"
+        },
+        "enums": {
+          "affectedSide": {
+            "R": "Sağ",
+            "L": "Sol",
+            "BILATERAL": "Her iki ayak"
+          },
+          "footSymptom": {
+            "PAIN": "Ağrı",
+            "NUMBNESS": "Uyuşma",
+            "SWELLING": "Şişlik",
+            "INSTABILITY": "Dengesizlik",
+            "FATIGUE": "Çabuk yorulma"
+          },
+          "visitType": {
+            "FOOT_PAIN": "Ayak ağrısı",
+            "FOOTBALANCE_ASSESSMENT": "FootBalance analizi",
+            "CUSTOM_INSOLES": "Kişiye özel tabanlık",
+            "PERFORMANCE_OPTIMIZATION": "Performans iyileştirme",
+            "FOLLOW_UP": "Takip"
+          },
+          "medicalHistory": {
+            "DIABETES": "Diyabet",
+            "HYPERTENSION": "Hipertansiyon",
+            "NEUROLOGICAL": "Nörolojik hastalık",
+            "VASCULAR": "Damar hastalığı",
+            "ARTHRITIS": "Artrit",
+            "OTHER": "Diğer"
+          }
+        },
+        "panel": {
+          "filledBy": "Formu dolduran",
+          "cancel": "İptal",
+          "save": "Kaydet",
+          "edit": "Düzenle",
+          "fill": "Formu doldur",
+          "notFilled": "Form henüz doldurulmadı",
+          "clinicianName": "Uzman adı",
+          "selectClinician": "Uzman seçin...",
+          "signature": "İmza",
+          "drawSignature": "İmza çiz",
+          "signatureTitle": "Uzman imzası"
+        },
+        "reception": {
+          "patient": "Hasta",
+          "editTitle": "Kabulü düzenle",
+          "newTitle": "Yeni kabul",
+          "searchPatient": "Ad veya hasta numarasıyla ara...",
+          "selectPatient": "Hasta seçin...",
+          "durationExample": "örn. iki yıl",
+          "detailsPlaceholder": "Ayrıntıları yazın...",
+          "saveEdits": "Değişiklikleri kaydet",
+          "create": "Kabul oluştur"
+        },
+        "review": {
+          "title": "İncelemeler",
+          "add": "İnceleme ekle",
+          "empty": "Henüz inceleme yok",
+          "decisionTitle": "Doktor Kararı",
+          "notifyDoctor": "Doktora bildir",
+          "saveDecision": "Kararı kaydet",
+          "notesPlaceholder": "İnceleme notları...",
+          "deleteTitle": "İncelemeyi sil",
+          "deleteDesc": "Bu inceleme kalıcı olarak silinecek.",
+          "decisionPlaceholder": "Doktor kararı metni..."
+        },
+        "pdf": {
+          "title": "Profesyonel Ayak Değerlendirme Formu",
+          "date": "Tarih",
+          "personalInfo": "Kişisel Bilgiler",
+          "patientName": "Hasta Adı",
+          "dateOfBirth": "Doğum Tarihi",
+          "gender": "Cinsiyet",
+          "male": "Erkek",
+          "female": "Kadın",
+          "phone": "Telefon",
+          "height": "Boy",
+          "weight": "Kilo",
+          "occupation": "Meslek",
+          "activities": "Aktiviteler",
+          "chiefComplaint": "Ana Şikayet",
+          "problemDesc": "Sorun Tanımı",
+          "symptomHistory": "Semptom Öyküsü",
+          "affectedFoot": "Etkilenen Ayak",
+          "footSymptoms": "Ayak Semptomları",
+          "visitType": "Ziyaret Tipi",
+          "medicalHistory": "Tıbbi Geçmiş",
+          "details": "Ayrıntılar",
+          "painScale": "Ağrı Skalası",
+          "painScore": "Ağrı Skoru",
+          "signature": "İmza",
+          "clinicianName": "Uzman Adı",
+          "filledBy": "Formu Dolduran",
+          "installedOn": "Takılma Tarihi",
+          "insoleDecision": "Tabanlık ve Karar",
+          "review": "İnceleme",
+          "doctorDecision": "Doktor Kararı",
+          "right": "Sağ",
+          "left": "Sol"
+        }
+      },
       "title": "Ayak Sağlığı",
       "description": "Ayak sağlığı kabulleri ve seansları",
       "newReception": "Yeni Kabul",

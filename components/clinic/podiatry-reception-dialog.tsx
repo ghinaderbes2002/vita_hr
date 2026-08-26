@@ -3,6 +3,7 @@
 // Reception form (فورم الاستقبال) — used both to create a reception for a
 // patient and to edit an existing one.
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -22,10 +23,8 @@ import {
   AffectedSide, FootSymptom, MedicalHistoryItem, PodiatryReception, VisitType,
 } from "@/lib/api/clinic-podiatry";
 import {
-  AFFECTED_SIDE_LABEL, AFFECTED_SIDE_VALUES,
-  FOOT_SYMPTOM_LABEL, FOOT_SYMPTOM_VALUES,
-  MEDICAL_HISTORY_LABEL, MEDICAL_HISTORY_VALUES,
-  VISIT_TYPE_LABEL, VISIT_TYPE_VALUES,
+  AFFECTED_SIDE_VALUES, FOOT_SYMPTOM_VALUES, MEDICAL_HISTORY_VALUES,
+  VISIT_TYPE_VALUES, usePodiatryEnumLabels,
 } from "./podiatry-labels";
 
 interface Props {
@@ -57,8 +56,8 @@ const EMPTY = {
 
 /** Right foot first, matching the RTL sheet. */
 const SIDES = [
-  { key: "Right", label: "القدم اليمنى" },
-  { key: "Left", label: "القدم اليسرى" },
+  { key: "Right", labelKey: "labels.rightFoot" },
+  { key: "Left", labelKey: "labels.leftFoot" },
 ] as const;
 
 // Multi-select rendered as a row of toggle chips — every one of these fields
@@ -93,6 +92,10 @@ function ChipGroup<T extends string>({
 }
 
 export function PodiatryReceptionDialog({ open, onOpenChange, reception, patientId, onCreated }: Props) {
+  const tf = useTranslations("clinic.podiatry.form") as unknown as (k: string) => string;
+  const td = useTranslations("clinic.podiatry.detail") as unknown as (k: string) => string;
+  const tc = useTranslations("common") as unknown as (k: string) => string;
+  const enumLabel = usePodiatryEnumLabels();
   const isEdit = !!reception;
   const fixedPatient = !!patientId;
   const [form, setForm] = useState({ ...EMPTY });
@@ -185,7 +188,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
       >
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "تعديل الاستقبال" : "استقبال جديد"}
+            {isEdit ? tf("reception.editTitle") : tf("reception.newTitle")}
           </DialogTitle>
         </DialogHeader>
 
@@ -193,12 +196,12 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           {!isEdit && !fixedPatient && (
             <div className="space-y-1.5">
               <Label>
-                المريض <span className="text-destructive">*</span>
+                {tf("reception.patient")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 value={patientSearch}
                 onChange={(e) => setPatientSearch(e.target.value)}
-                placeholder="ابحث بالاسم أو رقم المريض..."
+                placeholder={tf("reception.searchPatient")}
                 className="h-9"
               />
               <Select
@@ -206,7 +209,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
                 onValueChange={(v) => setForm((f) => ({ ...f, patientId: v }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر المريض..." />
+                  <SelectValue placeholder={tf("reception.selectPatient")} />
                 </SelectTrigger>
                 <SelectContent>
                   {patients.map((p) => (
@@ -221,7 +224,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           )}
 
           <div className="space-y-1.5">
-            <Label className="text-xs">النشاطات</Label>
+            <Label className="text-xs">{td("activities")}</Label>
             <Input
               className="h-9"
               value={form.activities}
@@ -232,7 +235,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">وصف المشكلة</Label>
+            <Label className="text-xs">{td("problemDescription")}</Label>
             <Textarea
               rows={2}
               className="resize-none"
@@ -244,23 +247,23 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">تاريخ الأعراض</Label>
+            <Label className="text-xs">{td("symptomHistory")}</Label>
             <Input
               className="h-9"
               value={form.historyOfSymptoms}
               onChange={(e) =>
                 setForm((f) => ({ ...f, historyOfSymptoms: e.target.value }))
               }
-              placeholder="مثال: سنتين"
+              placeholder={tf("reception.durationExample")}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">الجهة المصابة</Label>
+            <Label className="text-xs">{td("affectedFoot")}</Label>
             <ChipGroup
               values={AFFECTED_SIDE_VALUES}
               selected={form.affectedSide}
-              label={(v) => AFFECTED_SIDE_LABEL[v]}
+              label={enumLabel.affectedSide}
               onToggle={(v) => toggle("affectedSide", v)}
             />
           </div>
@@ -268,15 +271,15 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           {isBilateral ? (
             <>
               <div className="space-y-1.5">
-                <Label className="text-xs">أعراض القدم</Label>
+                <Label className="text-xs">{td("footSymptoms")}</Label>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {SIDES.map(({ key, label }) => (
+                  {SIDES.map(({ key, labelKey }) => (
                     <div key={key} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
-                      <p className="text-[11px] text-muted-foreground">{label}</p>
+                      <p className="text-[11px] text-muted-foreground">{tf(labelKey)}</p>
                       <ChipGroup
                         values={FOOT_SYMPTOM_VALUES}
                         selected={form[`footSymptoms${key}`]}
-                        label={(v) => FOOT_SYMPTOM_LABEL[v]}
+                        label={enumLabel.footSymptom}
                         onToggle={(v) => toggle(`footSymptoms${key}`, v)}
                       />
                     </div>
@@ -285,15 +288,15 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs">نوع الزيارة</Label>
+                <Label className="text-xs">{td("visitType")}</Label>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {SIDES.map(({ key, label }) => (
+                  {SIDES.map(({ key, labelKey }) => (
                     <div key={key} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
-                      <p className="text-[11px] text-muted-foreground">{label}</p>
+                      <p className="text-[11px] text-muted-foreground">{tf(labelKey)}</p>
                       <ChipGroup
                         values={VISIT_TYPE_VALUES}
                         selected={form[`visitTypes${key}`]}
-                        label={(v) => VISIT_TYPE_LABEL[v]}
+                        label={enumLabel.visitType}
                         onToggle={(v) => toggle(`visitTypes${key}`, v)}
                       />
                     </div>
@@ -304,21 +307,21 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           ) : (
             <>
               <div className="space-y-1.5">
-                <Label className="text-xs">أعراض القدم</Label>
+                <Label className="text-xs">{td("footSymptoms")}</Label>
                 <ChipGroup
                   values={FOOT_SYMPTOM_VALUES}
                   selected={form.footSymptoms}
-                  label={(v) => FOOT_SYMPTOM_LABEL[v]}
+                  label={enumLabel.footSymptom}
                   onToggle={(v) => toggle("footSymptoms", v)}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs">نوع الزيارة</Label>
+                <Label className="text-xs">{td("visitType")}</Label>
                 <ChipGroup
                   values={VISIT_TYPE_VALUES}
                   selected={form.visitTypes}
-                  label={(v) => VISIT_TYPE_LABEL[v]}
+                  label={enumLabel.visitType}
                   onToggle={(v) => toggle("visitTypes", v)}
                 />
               </div>
@@ -326,17 +329,17 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           )}
 
           <div className="space-y-1.5">
-            <Label className="text-xs">التاريخ الطبي</Label>
+            <Label className="text-xs">{td("medicalHistory")}</Label>
             <ChipGroup
               values={MEDICAL_HISTORY_VALUES}
               selected={form.medicalHistory}
-              label={(v) => MEDICAL_HISTORY_LABEL[v]}
+              label={enumLabel.medicalHistory}
               onToggle={(v) => toggle("medicalHistory", v)}
             />
             {form.medicalHistory.includes("OTHER") && (
               <Input
                 className="h-9 mt-1.5"
-                placeholder="اذكر التفاصيل..."
+                placeholder={tf("reception.detailsPlaceholder")}
                 value={form.medicalHistoryOther}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -351,7 +354,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            إلغاء
+            {tc("cancel")}
           </Button>
           <Button
             onClick={handleSave}
@@ -361,7 +364,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
             className="gap-2"
           >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isEdit ? "حفظ التعديلات" : "إنشاء الاستقبال"}
+            {isEdit ? tf("reception.saveEdits") : tf("reception.create")}
           </Button>
         </DialogFooter>
       </DialogContent>

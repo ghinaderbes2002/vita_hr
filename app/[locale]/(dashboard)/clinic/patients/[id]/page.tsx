@@ -28,7 +28,7 @@ import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
 import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
-import { VISIT_TYPE_LABEL } from "@/components/clinic/podiatry-labels";
+import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
 import {
   useClinicPatient, useDeleteClinicPatient,
   usePatientDocuments, useUploadPatientDocument, useDeletePatientDocument, useDownloadPatientDocument,
@@ -85,6 +85,7 @@ export default function PatientProfilePage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.patients.new");
+  const enumLabel = usePodiatryEnumLabels();
   const [deletePatientOpen, setDeletePatientOpen] = useState(false);
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
@@ -587,7 +588,7 @@ export default function PatientProfilePage() {
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap gap-1">
                         {(r.visitTypes ?? []).map((v) => (
-                          <Badge key={v} variant="outline" className="text-[10px]">{VISIT_TYPE_LABEL[v] ?? v}</Badge>
+                          <Badge key={v} variant="outline" className="text-[10px]">{enumLabel.visitType(v)}</Badge>
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground">

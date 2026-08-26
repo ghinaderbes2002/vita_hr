@@ -1,9 +1,13 @@
 // Client-only — imported via dynamic import() to avoid SSR issues.
-// Faithful copy of the printed VitaFoot sheet "نموذج تقييم القدم الاحترافي /
-// FootBalance Analysis System": bilingual labels, two columns of tick-boxes,
-// the 1-10 VAS strip and the signature block at the bottom.
+// The printed VitaFoot sheet "نموذج تقييم القدم الاحترافي", in the reader's
+// locale: same wording, same order and same tick-boxes as the on-screen tab.
 // One sheet per session — the reception data is the same on every copy, the
 // FootBalance analysis / clinical plan / signature come from that session.
+//
+// react-pdf applies no bidi algorithm and breaks long Arabic lines in the wrong
+// direction, so Arabic runs are pre-shaped by `ar()` and laid out word by word
+// right-to-left by flexbox instead of by the text engine. Latin locales take
+// the plain path: one Text node, rows running left to right.
 import React from "react";
 import { Document, Page, Text, View, Image, StyleSheet, pdf } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/types";
@@ -12,11 +16,9 @@ import {
   AffectedSide, FootSymptom, MedicalHistoryItem, PodiatrySession, VisitType,
 } from "@/lib/api/clinic-podiatry";
 import {
-  ARCH_ARCHITECTURE_OPTS, DEFORMITY_TYPE_OPTS, EDEMA_TYPE_OPTS, FOOTWEAR_OPTS,
-  FOOT_MEASUREMENT_ROWS, JACK_TEST_OPTS, MAIN_CAUSE_OPTS, OUTSOLE_WEAR_OPTS,
-  PAIN_CHARACTERISTIC_OPTS, PAIN_LOCATION_OPTS, PALPATION_POINTS,
-  REARFOOT_ALIGNMENT_OPTS, ROM_OPTS, TOO_MANY_TOES_OPTS, WALKING_LINE_OPTS,
-  labelsOf,
+  ARCH_ARCHITECTURE, DEFORMITY_TYPE, EDEMA_TYPE, FOOTWEAR, FOOT_MEASUREMENT_KEYS,
+  FormT, JACK_TEST, MAIN_CAUSE, OUTSOLE_WEAR, PAIN_CHARACTERISTIC, PAIN_LOCATION,
+  PALPATION_KEYS, REARFOOT_ALIGNMENT, ROM, TOO_MANY_TOES, WALKING_LINE, labelsOf,
 } from "./podiatry-session-schema";
 
 // ── VitaFoot theme (teal), distinct from the VitaSyr reports ──────────────────
@@ -32,39 +34,35 @@ const s = StyleSheet.create({
     paddingTop: 22,
     paddingBottom: 58,
     paddingHorizontal: 26,
-    direction: "rtl",
     backgroundColor: "#ffffff",
   },
   logoWrap: { alignItems: "center", marginBottom: 2 },
   logoText: { fontSize: 26, fontWeight: "bold", color: TEAL, letterSpacing: 0.5 },
-  logoTag: { fontSize: 6, color: TEAL, letterSpacing: 1 },
-  titleAr: { fontSize: 13, fontWeight: "bold", color: INK, textAlign: "center", marginTop: 8 },
-  titleEn: { fontSize: 11, color: INK, textAlign: "center", marginBottom: 8 },
-  dateRow: { flexDirection: "row-reverse", marginBottom: 6 },
+  title: { fontSize: 13, fontWeight: "bold", color: INK, textAlign: "center", marginTop: 8, marginBottom: 8 },
+  dateRow: { marginBottom: 6, gap: 3 },
   dateText: { fontSize: 8.5, color: INK },
 
-  columns: { flexDirection: "row-reverse", gap: 18 },
+  columns: { gap: 18 },
   col: { flex: 1 },
 
-  secHead: { flexDirection: "row-reverse", alignItems: "center", gap: 3, marginTop: 8, marginBottom: 4 },
-  secHeadAr: { fontSize: 9, fontWeight: "bold", color: TEAL },
-  secHeadEn: { fontSize: 8, color: TEAL },
+  // Section titles print black and bold, like the on-screen form.
+  secHead: { marginTop: 8, marginBottom: 4, borderBottomWidth: 0.5, borderBottomColor: LINE, paddingBottom: 2 },
+  secHeadText: { fontSize: 9.5, fontWeight: "bold", color: INK },
 
-  fieldRow: { flexDirection: "row-reverse", alignItems: "flex-end", marginBottom: 3.5, gap: 3 },
-  fieldLabelAr: { fontSize: 8, color: INK },
-  fieldLabelEn: { fontSize: 7.5, color: INK },
+  fieldRow: { alignItems: "flex-end", marginBottom: 3.5, gap: 3 },
+  fieldLabel: { fontSize: 8, color: INK },
   fieldValue: { fontSize: 8, color: INK, flex: 1, borderBottomWidth: 0.5, borderBottomColor: LINE, paddingBottom: 1 },
 
-  chkRow: { flexDirection: "row-reverse", alignItems: "center", gap: 4, marginBottom: 3.5 },
+  chkRow: { alignItems: "center", gap: 4, marginBottom: 3.5 },
   box: {
     width: 8, height: 8, borderWidth: 0.8, borderColor: INK,
     justifyContent: "center", alignItems: "center",
   },
   boxOn: { backgroundColor: TEAL, borderColor: TEAL },
-  chkAr: { fontSize: 8, color: INK },
-  chkEn: { fontSize: 7.5, color: INK },
+  tick: { fontSize: 5.5, color: "#ffffff", lineHeight: 1 },
+  chkText: { fontSize: 8, color: INK },
 
-  vasRow: { flexDirection: "row-reverse", alignItems: "center", gap: 3, marginBottom: 3.5, flexWrap: "wrap" },
+  vasRow: { alignItems: "center", gap: 3, marginBottom: 3.5, flexWrap: "wrap" },
   vasBox: {
     width: 11, height: 10, borderWidth: 0.8, borderColor: INK,
     justifyContent: "center", alignItems: "center",
@@ -73,131 +71,114 @@ const s = StyleSheet.create({
   vasNumOn: { color: "#ffffff" },
 
   signatureImage: { height: 26, width: 80, objectFit: "contain" },
-  imagingImage: { marginTop: 3, maxHeight: 150, width: "60%", objectFit: "contain", alignSelf: "flex-end" },
 
   footer: {
     position: "absolute", bottom: 10, left: 26, right: 26,
     borderTopWidth: 1, borderTopColor: TEAL, paddingTop: 5,
-    flexDirection: "row-reverse", justifyContent: "space-between",
+    justifyContent: "space-between",
   },
   footText: { fontSize: 6.5, color: TEAL },
 });
 
-// ── Bilingual building blocks ────────────────────────────────────────────────
-// react-pdf applies no bidi algorithm, so Arabic and Latin must never share a
-// Text node — "تحليل FootBalance" in one string comes out as "FootBalance تحليل".
-// Arabic labels are therefore passed as tokens and laid out right-to-left by
-// flexbox, with the "/" separator as its own node so it spaces evenly.
-type ArLabel = string | string[];
+// ── Direction-aware building blocks ──────────────────────────────────────────
+// Every row's direction comes from the sheet's locale, so one set of components
+// prints both an RTL Arabic sheet and an LTR English or Turkish one.
+interface Dir {
+  rtl: boolean;
+  /** The flex direction a row of this sheet runs in. */
+  row: "row" | "row-reverse";
+}
 
-const isArabic = (t: string) => /[؀-ۿ]/.test(t);
-
-const ArText = ({ t, style }: { t: ArLabel; style: Style }) => {
-  const parts = Array.isArray(t) ? t : [t];
-  if (parts.length === 1) return <Text style={style}>{isArabic(parts[0]) ? ar(parts[0]) : parts[0]}</Text>;
+const Txt = ({ t: text, style, dir }: { t: string; style: Style | Style[]; dir: Dir }) => {
+  if (!dir.rtl || !text) return <Text style={style}>{text}</Text>;
+  // Arabic never joins across a space, so shaping word by word is lossless —
+  // and it lets flexbox, not react-pdf, decide the reading order.
   return (
-    <View style={{ flexDirection: "row-reverse", gap: 2.5 }}>
-      {parts.map((p, i) => (
-        <Text key={i} style={style}>{isArabic(p) ? ar(p) : p}</Text>
+    <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 2.5 }}>
+      {text.split(" ").filter(Boolean).map((w, i) => (
+        <Text key={i} style={style}>{ar(w)}</Text>
       ))}
     </View>
   );
 };
 
-const SecHead = ({ a, e }: { a: ArLabel; e: string }) => (
-  <View style={s.secHead}>
-    <ArText t={a} style={s.secHeadAr} />
-    <Text style={s.secHeadEn}>{"/"}</Text>
-    <Text style={s.secHeadEn}>{e}</Text>
+const SecHead = ({ label, dir }: { label: string; dir: Dir }) => (
+  <View style={[s.secHead, { flexDirection: dir.row }]}>
+    <Txt t={label} style={s.secHeadText} dir={dir} />
   </View>
 );
 
 // Children of a row-reverse row are placed right-to-left in source order, so
-// the colon must be its own node AFTER the English label — appended to that
-// string it would render at the label's right edge, jammed against the "/".
-const Field = ({ a, e, value }: { a: ArLabel; e: string; value?: string | number | null }) => {
+// the colon must be its own node AFTER the label — appended to the string it
+// would render at the label's right edge instead of its left.
+const Field = ({
+  label, value, dir,
+}: {
+  label: string;
+  value?: string | number | null;
+  dir: Dir;
+}) => {
   const v = value == null ? "" : String(value).trim();
   return (
-    <View style={s.fieldRow} wrap={false}>
-      <ArText t={a} style={s.fieldLabelAr} />
-      <Text style={s.fieldLabelEn}>{"/"}</Text>
-      <Text style={s.fieldLabelEn}>{e}</Text>
-      <Text style={[s.fieldLabelEn, { marginRight: -2 }]}>{":"}</Text>
-      <Text style={s.fieldValue}>{isArabic(v) ? ar(v) : v}</Text>
+    <View style={[s.fieldRow, { flexDirection: dir.row }]} wrap={false}>
+      <Txt t={label} style={s.fieldLabel} dir={dir} />
+      <Text style={[s.fieldLabel, dir.rtl ? { marginRight: -2 } : { marginLeft: -2 }]}>{":"}</Text>
+      <View style={s.fieldValue}>
+        <Txt t={v} style={s.fieldLabel} dir={dir} />
+      </View>
     </View>
   );
 };
 
-const Chk = ({ on, a, e }: { on: boolean; a: ArLabel; e: string }) => (
-  <View style={s.chkRow} wrap={false}>
-    <View style={on ? [s.box, s.boxOn] : s.box}>
-      {on && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
-    </View>
-    <ArText t={a} style={s.chkAr} />
-    <Text style={s.chkEn}>{"/"}</Text>
-    <Text style={s.chkEn}>{e}</Text>
+const Box = ({ on }: { on: boolean }) => (
+  <View style={on ? [s.box, s.boxOn] : s.box}>
+    {on && <Text style={s.tick}>{"✓"}</Text>}
   </View>
 );
 
-/** Right foot first, matching the sheet. */
-const SIDES = [
-  ["Right", "القدم اليمنى", "Right Foot"],
-  ["Left", "القدم اليسرى", "Left Foot"],
-] as const;
-
-// Sub-heading for a per-foot block inside a section.
-const SideHead = ({ a, e }: { a: string; e: string }) => (
-  <View style={{ flexDirection: "row-reverse", gap: 3, marginTop: 2, marginBottom: 2 }}>
-    <Text style={[s.chkAr, { fontWeight: "bold" }]}>{ar(a)}</Text>
-    <Text style={s.chkEn}>{e}</Text>
+const Chk = ({ on, label, dir }: { on: boolean; label: string; dir: Dir }) => (
+  <View style={[s.chkRow, { flexDirection: dir.row }]} wrap={false}>
+    <Box on={on} />
+    <Txt t={label} style={s.chkText} dir={dir} />
   </View>
 );
 
-// The sheet ticks the affected side inline on one row (R / L / Bilateral).
-const SideRow = ({ sides }: { sides: AffectedSide[] }) => (
-  <View style={s.fieldRow} wrap={false}>
-    <Text style={s.fieldLabelAr}>{ar("القدم المصابة")}</Text>
-    <Text style={s.fieldLabelEn}>{"/"}</Text>
-    <Text style={s.fieldLabelEn}>{"Affected Side"}</Text>
-    <Text style={[s.fieldLabelEn, { marginRight: -2 }]}>{":"}</Text>
-    <View style={{ flexDirection: "row-reverse", gap: 8, flex: 1 }}>
-      {([["R", "R"], ["L", "L"], ["BILATERAL", "Bilateral"]] as const).map(([v, l]) => (
-        <View key={v} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
-          <View style={sides.includes(v) ? [s.box, s.boxOn] : s.box}>
-            {sides.includes(v) && <Text style={{ fontSize: 5.5, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
-          </View>
-          <Text style={s.chkEn}>{l}</Text>
+/** Right foot first on the Arabic sheet, left first on the Latin ones. */
+const SIDE_KEYS = ["Right", "Left"] as const;
+
+const SideHead = ({ label, dir }: { label: string; dir: Dir }) => (
+  <View style={{ flexDirection: dir.row, marginTop: 2, marginBottom: 2 }}>
+    <Txt t={label} style={[s.chkText, { fontWeight: "bold" }]} dir={dir} />
+  </View>
+);
+
+const AFFECTED_SIDE_KEYS: AffectedSide[] = ["R", "L", "BILATERAL"];
+const VISIT_TYPE_KEYS: VisitType[] = [
+  "FOOT_PAIN", "FOOTBALANCE_ASSESSMENT", "CUSTOM_INSOLES",
+  "PERFORMANCE_OPTIMIZATION", "FOLLOW_UP",
+];
+const MEDICAL_HISTORY_KEYS: MedicalHistoryItem[] = [
+  "DIABETES", "HYPERTENSION", "NEUROLOGICAL", "VASCULAR", "ARTHRITIS", "OTHER",
+];
+const FOOT_SYMPTOM_KEYS: FootSymptom[] = [
+  "PAIN", "NUMBNESS", "SWELLING", "INSTABILITY", "FATIGUE",
+];
+
+// The sheet ticks the affected side inline on one row.
+const SideRow = ({ sides, t, dir }: { sides: AffectedSide[]; t: FormT; dir: Dir }) => (
+  <View style={[s.fieldRow, { flexDirection: dir.row }]} wrap={false}>
+    <Txt t={t("pdf.affectedFoot")} style={s.fieldLabel} dir={dir} />
+    <Text style={[s.fieldLabel, dir.rtl ? { marginRight: -2 } : { marginLeft: -2 }]}>{":"}</Text>
+    <View style={{ flexDirection: dir.row, gap: 8, flex: 1 }}>
+      {AFFECTED_SIDE_KEYS.map((v) => (
+        <View key={v} style={{ flexDirection: dir.row, alignItems: "center", gap: 3 }}>
+          <Box on={sides.includes(v)} />
+          <Txt t={t(`enums.affectedSide.${v}`)} style={s.chkText} dir={dir} />
         </View>
       ))}
     </View>
   </View>
 );
-
-// ── Option tables, in the printed sheet's order ──────────────────────────────
-const VISIT_TYPES: [VisitType, ArLabel, string][] = [
-  ["FOOT_PAIN", "ألم قدم", "Foot Pain"],
-  ["FOOTBALANCE_ASSESSMENT", ["تحليل", "FootBalance"], "FootBalance Assessment"],
-  ["CUSTOM_INSOLES", "ضبان مخصص", "Custom Insoles"],
-  ["PERFORMANCE_OPTIMIZATION", "تحسين الأداء", "Performance Optimization"],
-  ["FOLLOW_UP", "متابعة", "Follow-up"],
-];
-
-const MEDICAL_HISTORY: [MedicalHistoryItem, ArLabel, string][] = [
-  ["DIABETES", "سكري", "Diabetes"],
-  ["HYPERTENSION", "ارتفاع ضغط", "Hypertension"],
-  ["NEUROLOGICAL", "أمراض أعصاب", "Neurological"],
-  ["VASCULAR", "أمراض أوعية", "Vascular"],
-  ["ARTHRITIS", "التهاب مفاصل", "Arthritis"],
-  ["OTHER", "أخرى", "Other"],
-];
-
-const FOOT_SYMPTOMS: [FootSymptom, ArLabel, string][] = [
-  ["PAIN", "ألم", "Pain"],
-  ["NUMBNESS", "تنميل", "Numbness"],
-  ["SWELLING", "تورم", "Swelling"],
-  ["INSTABILITY", "عدم ثباته", "Instability"],
-  ["FATIGUE", "تعب سريع", "Fatigue"],
-];
 
 export interface PodiatryFormPdfData {
   /** Sheet date — defaults to the session's date, else today. */
@@ -232,7 +213,13 @@ export interface PodiatryFormPdfData {
 
 const d = (v?: string | null) => (v ? new Date(v).toLocaleDateString("en-GB") : "");
 
-const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
+const PodiatryFormPdfDoc = ({
+  data, t, dir,
+}: {
+  data: PodiatryFormPdfData;
+  t: FormT;
+  dir: Dir;
+}) => {
   const se = data.session;
   const sub = se?.subjectiveHistory ?? {};
   const vis = se?.visualInspection ?? {};
@@ -245,13 +232,18 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
   // The VAS lives on the assessment now; older receptions still carry their own.
   const vasScore = Number(sub.vasScore) || data.vasScore || 0;
 
+  const sep = dir.rtl ? "، " : ", ";
+  const list = <T extends string>(o: Parameters<typeof labelsOf<T>>[1], vs?: readonly string[] | null) =>
+    labelsOf(t, o, vs, sep);
+
   // Every per-foot finding prints on one line, right foot first like the sheet.
   const pair = (r?: string, l?: string) =>
-    [r ? `يمين: ${r}` : "", l ? `يسار: ${l}` : ""].filter(Boolean).join("   —   ");
+    [r ? `${t("pdf.right")}: ${r}` : "", l ? `${t("pdf.left")}: ${l}` : ""]
+      .filter(Boolean).join("   —   ");
 
-  const measRows = FOOT_MEASUREMENT_ROWS
-    .map(([k, a, e]) => [a, e, pair(meas[`${k}Right`], meas[`${k}Left`])] as const)
-    .filter(([, , v]) => v);
+  const measRows = FOOT_MEASUREMENT_KEYS
+    .map((k) => [k, pair(meas[`${k}Right`], meas[`${k}Left`])] as const)
+    .filter(([, v]) => v);
 
   // Both feet affected → the symptoms and the visit types print per foot.
   const bilateral = (data.affectedSide ?? []).includes("BILATERAL");
@@ -259,106 +251,105 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
   const sig = se?.clinicianSignature ?? "";
   const sigIsImage = sig.startsWith("data:") || sig.startsWith("http");
 
+  const sideLabel = (side: "Right" | "Left") =>
+    t(side === "Right" ? "labels.rightFoot" : "labels.leftFoot");
+
   return (
     <Document>
-      <Page size="A4" style={s.page}>
+      <Page size="A4" style={[s.page, { direction: dir.rtl ? "rtl" : "ltr" }]}>
         {/* Masthead — text stand-in for the VitaFoot logo until the artwork is supplied. */}
         <View style={s.logoWrap}>
           <Text style={s.logoText}>VitaFoot</Text>
-          {/* <Text style={s.logoTag}>Foot Health Diagnostic Solutions</Text> */}
         </View>
-        <Text style={s.titleAr}>{ar("نموذج تقييم القدم الاحترافي")}</Text>
-        <Text style={s.titleEn}>FootBalance Analysis System</Text>
+        <View style={{ alignItems: "center", marginTop: 8, marginBottom: 8 }}>
+          <Txt t={t("pdf.title")} style={s.title} dir={dir} />
+        </View>
 
-        <View style={[s.dateRow, { gap: 3 }]}>
-          <Text style={s.dateText}>{ar("التاريخ")}</Text>
-          <Text style={s.dateText}>{"/"}</Text>
-          <Text style={s.dateText}>{"Date"}</Text>
-          <Text style={[s.dateText, { marginRight: -2 }]}>{":"}</Text>
+        <View style={[s.dateRow, { flexDirection: dir.row }]}>
+          <Txt t={t("pdf.date")} style={s.dateText} dir={dir} />
+          <Text style={[s.dateText, dir.rtl ? { marginRight: -2 } : { marginLeft: -2 }]}>{":"}</Text>
           <Text style={s.dateText}>{d(data.date) || new Date().toLocaleDateString("en-GB")}</Text>
         </View>
 
-        <View style={s.columns}>
-          {/* ── Right column ─────────────────────────────────────────────── */}
+        <View style={[s.columns, { flexDirection: dir.row }]}>
+          {/* ── Leading column ───────────────────────────────────────────── */}
           <View style={s.col}>
-            <SecHead a="البيانات الشخصية" e="Personal Information" />
-            <Field a="اسم المريض" e="Patient Name" value={data.patientName} />
-            <Field a="تاريخ الميلاد" e="Date of Birth" value={d(data.dateOfBirth)} />
+            <SecHead label={t("pdf.personalInfo")} dir={dir} />
+            <Field label={t("pdf.patientName")} value={data.patientName} dir={dir} />
+            <Field label={t("pdf.dateOfBirth")} value={d(data.dateOfBirth)} dir={dir} />
             <Field
-              a="الجنس"
-              e="Gender"
-              value={data.gender === "MALE" ? "ذكر" : data.gender === "FEMALE" ? "أنثى" : ""}
+              label={t("pdf.gender")}
+              value={data.gender === "MALE" ? t("pdf.male") : data.gender === "FEMALE" ? t("pdf.female") : ""}
+              dir={dir}
             />
-            <Field a="رقم الهاتف" e="Phone" value={data.phone} />
-            <Field a="الطول" e="Height" value={data.heightCm ?? ""} />
-            <Field a="الوزن" e="Weight" value={data.weightKg ?? ""} />
-            <Field a="المهنة" e="Occupation" value={data.occupation} />
-            <Field a="نشاطات" e="Activities" value={data.activities} />
+            <Field label={t("pdf.phone")} value={data.phone} dir={dir} />
+            <Field label={t("pdf.height")} value={data.heightCm ?? ""} dir={dir} />
+            <Field label={t("pdf.weight")} value={data.weightKg ?? ""} dir={dir} />
+            <Field label={t("pdf.occupation")} value={data.occupation} dir={dir} />
+            <Field label={t("pdf.activities")} value={data.activities} dir={dir} />
 
-            <SecHead a="الشكوى الرئيسية" e="Chief Complaint" />
-            <Field a="وصف المشكلة" e="Problem Description" value={data.problemDescription} />
-            <Field a="التاريخ العرضي" e="History of Symptoms" value={data.historyOfSymptoms} />
-            <SideRow sides={data.affectedSide ?? []} />
+            <SecHead label={t("pdf.chiefComplaint")} dir={dir} />
+            <Field label={t("pdf.problemDesc")} value={data.problemDescription} dir={dir} />
+            <Field label={t("pdf.symptomHistory")} value={data.historyOfSymptoms} dir={dir} />
+            <SideRow sides={data.affectedSide ?? []} t={t} dir={dir} />
 
-            <SecHead a="أعراض القدم" e="Foot Symptoms" />
+            <SecHead label={t("pdf.footSymptoms")} dir={dir} />
             {bilateral ? (
-              SIDES.map(([side, sa, se_]) => (
+              SIDE_KEYS.map((side) => (
                 <View key={side} wrap={false}>
-                  <SideHead a={sa} e={se_} />
-                  {FOOT_SYMPTOMS.map(([v, a, e]) => (
+                  <SideHead label={sideLabel(side)} dir={dir} />
+                  {FOOT_SYMPTOM_KEYS.map((v) => (
                     <Chk
                       key={v}
                       on={((side === "Right" ? data.footSymptomsRight : data.footSymptomsLeft) ?? []).includes(v)}
-                      a={a}
-                      e={e}
+                      label={t(`enums.footSymptom.${v}`)}
+                      dir={dir}
                     />
                   ))}
                 </View>
               ))
             ) : (
-              FOOT_SYMPTOMS.map(([v, a, e]) => (
-                <Chk key={v} on={(data.footSymptoms ?? []).includes(v)} a={a} e={e} />
+              FOOT_SYMPTOM_KEYS.map((v) => (
+                <Chk key={v} on={(data.footSymptoms ?? []).includes(v)} label={t(`enums.footSymptom.${v}`)} dir={dir} />
               ))
             )}
           </View>
 
-          {/* ── Left column ──────────────────────────────────────────────── */}
+          {/* ── Trailing column ──────────────────────────────────────────── */}
           <View style={s.col}>
-            <SecHead a="نوع الزيارة" e="Visit Type" />
+            <SecHead label={t("pdf.visitType")} dir={dir} />
             {bilateral ? (
-              SIDES.map(([side, sa, se_]) => (
+              SIDE_KEYS.map((side) => (
                 <View key={side} wrap={false}>
-                  <SideHead a={sa} e={se_} />
-                  {VISIT_TYPES.map(([v, a, e]) => (
+                  <SideHead label={sideLabel(side)} dir={dir} />
+                  {VISIT_TYPE_KEYS.map((v) => (
                     <Chk
                       key={v}
                       on={((side === "Right" ? data.visitTypesRight : data.visitTypesLeft) ?? []).includes(v)}
-                      a={a}
-                      e={e}
+                      label={t(`enums.visitType.${v}`)}
+                      dir={dir}
                     />
                   ))}
                 </View>
               ))
             ) : (
-              VISIT_TYPES.map(([v, a, e]) => (
-                <Chk key={v} on={(data.visitTypes ?? []).includes(v)} a={a} e={e} />
+              VISIT_TYPE_KEYS.map((v) => (
+                <Chk key={v} on={(data.visitTypes ?? []).includes(v)} label={t(`enums.visitType.${v}`)} dir={dir} />
               ))
             )}
 
-            <SecHead a="التاريخ المرضي" e="Medical History" />
-            {MEDICAL_HISTORY.map(([v, a, e]) => (
-              <Chk key={v} on={(data.medicalHistory ?? []).includes(v)} a={a} e={e} />
+            <SecHead label={t("pdf.medicalHistory")} dir={dir} />
+            {MEDICAL_HISTORY_KEYS.map((v) => (
+              <Chk key={v} on={(data.medicalHistory ?? []).includes(v)} label={t(`enums.medicalHistory.${v}`)} dir={dir} />
             ))}
             {data.medicalHistoryOther && (
-              <Field a="التفاصيل" e="Details" value={data.medicalHistoryOther} />
+              <Field label={t("pdf.details")} value={data.medicalHistoryOther} dir={dir} />
             )}
 
-            <SecHead a="شدة الألم" e="Pain Scale" />
-            <View style={s.vasRow}>
-              <Text style={s.chkAr}>{ar("درجة الألم")}</Text>
-              <Text style={s.chkEn}>{"/"}</Text>
-              <Text style={s.chkEn}>{"VAS Score"}</Text>
-              <Text style={[s.chkEn, { marginRight: -2 }]}>{":"}</Text>
+            <SecHead label={t("pdf.painScale")} dir={dir} />
+            <View style={[s.vasRow, { flexDirection: dir.row }]}>
+              <Txt t={t("pdf.painScore")} style={s.chkText} dir={dir} />
+              <Text style={[s.chkText, dir.rtl ? { marginRight: -2 } : { marginLeft: -2 }]}>{":"}</Text>
               {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                 <View key={n} style={vasScore === n ? [s.vasBox, s.boxOn] : s.vasBox}>
                   <Text style={vasScore === n ? [s.vasNum, s.vasNumOn] : s.vasNum}>{n}</Text>
@@ -366,130 +357,130 @@ const PodiatryFormPdfDoc = ({ data }: { data: PodiatryFormPdfData }) => {
               ))}
             </View>
 
-            <SecHead a="التوقيع" e="Signature" />
-            <Field a="اسم الأخصائي" e="Clinician Name" value={se?.clinicianName} />
-            <Field a={["عبّأ", "النموذج"]} e="Filled By" value={se?.createdByName} />
-            <Field a={["تاريخ", "التركيب"]} e="Installed On" value={d(se?.installedAt)} />
-            <View style={s.fieldRow} wrap={false}>
-              <Text style={s.fieldLabelAr}>{ar("التوقيع")}</Text>
-              <Text style={s.fieldLabelEn}>{"/"}</Text>
-              <Text style={s.fieldLabelEn}>{"Signature"}</Text>
-              <Text style={[s.fieldLabelEn, { marginRight: -2 }]}>{":"}</Text>
+            <SecHead label={t("pdf.signature")} dir={dir} />
+            <Field label={t("pdf.clinicianName")} value={se?.clinicianName} dir={dir} />
+            <Field label={t("pdf.filledBy")} value={se?.createdByName} dir={dir} />
+            <Field label={t("pdf.installedOn")} value={d(se?.installedAt)} dir={dir} />
+            <View style={[s.fieldRow, { flexDirection: dir.row }]} wrap={false}>
+              <Txt t={t("pdf.signature")} style={s.fieldLabel} dir={dir} />
+              <Text style={[s.fieldLabel, dir.rtl ? { marginRight: -2 } : { marginLeft: -2 }]}>{":"}</Text>
               <View style={s.fieldValue}>
                 {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image, not an <img> */}
-                {sigIsImage ? <Image src={sig} style={s.signatureImage} /> : <Text>{ar(sig)}</Text>}
+                {sigIsImage ? <Image src={sig} style={s.signatureImage} /> : <Txt t={sig} style={s.fieldLabel} dir={dir} />}
               </View>
             </View>
           </View>
         </View>
 
         {/* The assessment, printed full width under the two columns. */}
-        <SecHead a={["التاريخ المرضي", "وتوصيف الألم"]} e="Subjective History & Pain Profiling" />
-        <Field a={["السبب الرئيسي", "والأصل المرضي"]} e="Main Cause" value={labelsOf(MAIN_CAUSE_OPTS, sub.mainCause)} />
-        <Field a="موقع الألم" e="Pain Location" value={labelsOf(PAIN_LOCATION_OPTS, sub.painLocation)} />
-        <Field a="طبيعة الألم" e="Pain Characteristics" value={labelsOf(PAIN_CHARACTERISTIC_OPTS, sub.painCharacteristics)} />
+        <SecHead label={t("sections.subjective")} dir={dir} />
+        <Field label={t("labels.mainCause")} value={list(MAIN_CAUSE, sub.mainCause)} dir={dir} />
+        <Field label={t("labels.painLocation")} value={list(PAIN_LOCATION, sub.painLocation)} dir={dir} />
+        <Field label={t("labels.painNature")} value={list(PAIN_CHARACTERISTIC, sub.painCharacteristics)} dir={dir} />
 
-        <SecHead a={["الفحص البصري", "وتحديد التشوهات"]} e="Visual Inspection & Deformity Mapping" />
-        <Field a={["استقامة", "الجزء الخلفي", "من القدم"]} e="Rearfoot Alignment" value={pair(
-          labelsOf(REARFOOT_ALIGNMENT_OPTS, vis.rightRearfootAlignment),
-          labelsOf(REARFOOT_ALIGNMENT_OPTS, vis.leftRearfootAlignment),
+        <SecHead label={t("sections.visual")} dir={dir} />
+        <Field label={t("labels.rearfootAlignment")} dir={dir} value={pair(
+          list(REARFOOT_ALIGNMENT, vis.rightRearfootAlignment),
+          list(REARFOOT_ALIGNMENT, vis.leftRearfootAlignment),
         )} />
-        <Field a={["علامة", "كثرة الأصابع", "الظاهرة"]} e="Too Many Toes Sign" value={pair(
-          [labelsOf(TOO_MANY_TOES_OPTS, vis.rightTooManyToes), vis.rightTooManyToesCount].filter(Boolean).join(" "),
-          [labelsOf(TOO_MANY_TOES_OPTS, vis.leftTooManyToes), vis.leftTooManyToesCount].filter(Boolean).join(" "),
+        <Field label={t("labels.tooManyToes")} dir={dir} value={pair(
+          [list(TOO_MANY_TOES, vis.rightTooManyToes), vis.rightTooManyToesCount].filter(Boolean).join(" "),
+          [list(TOO_MANY_TOES, vis.leftTooManyToes), vis.leftTooManyToesCount].filter(Boolean).join(" "),
         )} />
-        <Field a={["بنية", "قوس القدم"]} e="Arch Architecture" value={pair(
-          labelsOf(ARCH_ARCHITECTURE_OPTS, vis.rightArchArchitecture),
-          labelsOf(ARCH_ARCHITECTURE_OPTS, vis.leftArchArchitecture),
+        <Field label={t("labels.archArchitecture")} dir={dir} value={pair(
+          list(ARCH_ARCHITECTURE, vis.rightArchArchitecture),
+          list(ARCH_ARCHITECTURE, vis.leftArchArchitecture),
         )} />
-        <Chk on={!!vis.halluxValgus} a={["إبهام القدم", "الأفحج"]} e="Hallux Valgus" />
+        <Chk on={!!vis.halluxValgus} label={t("findings.halluxValgus")} dir={dir} />
         {vis.halluxValgus && vis.halluxValgusType?.length ? (
-          <Field a="النوع" e="Type" value={labelsOf(DEFORMITY_TYPE_OPTS, vis.halluxValgusType)} />
+          <Field label={t("labels.type")} value={list(DEFORMITY_TYPE, vis.halluxValgusType)} dir={dir} />
         ) : null}
-        <Chk on={!!vis.tailorsBunion} a="ورم الخياط" e="Tailor's Bunion" />
+        <Chk on={!!vis.tailorsBunion} label={t("findings.tailorsBunion")} dir={dir} />
         {vis.tailorsBunion && vis.tailorsBunionType?.length ? (
-          <Field a="النوع" e="Type" value={labelsOf(DEFORMITY_TYPE_OPTS, vis.tailorsBunionType)} />
+          <Field label={t("labels.type")} value={list(DEFORMITY_TYPE, vis.tailorsBunionType)} dir={dir} />
         ) : null}
-        <Chk on={!!vis.hammerToes} a="أصابع مطرقية" e="Hammer Toes" />
+        <Chk on={!!vis.hammerToes} label={t("findings.hammerToes")} dir={dir} />
         {vis.hammerToes && vis.hammerToesAffected ? (
-          <Field a="الأصابع المصابة" e="Affected" value={vis.hammerToesAffected} />
+          <Field label={t("labels.affectedToes")} value={vis.hammerToesAffected} dir={dir} />
         ) : null}
-        <Chk on={!!vis.clawToes} a="أصابع مخلبية" e="Claw Toes" />
+        <Chk on={!!vis.clawToes} label={t("findings.clawToes")} dir={dir} />
         {vis.clawToes && vis.clawToesAffected ? (
-          <Field a="الأصابع المصابة" e="Affected" value={vis.clawToesAffected} />
+          <Field label={t("labels.affectedToes")} value={vis.clawToesAffected} dir={dir} />
         ) : null}
-        <Chk on={!!vis.malletToes} a="أصابع ماليت" e="Mallet Toes" />
+        <Chk on={!!vis.malletToes} label={t("findings.malletToes")} dir={dir} />
         {vis.malletToes && vis.malletToesAffected ? (
-          <Field a="الأصابع المصابة" e="Affected" value={vis.malletToesAffected} />
+          <Field label={t("labels.affectedToes")} value={vis.malletToesAffected} dir={dir} />
         ) : null}
-        <Chk on={!!vis.hyperkeratosisCallus} a={["الفرط التقرن", "والمسامير الجلدية"]} e="Hyperkeratosis / Callus" />
+        <Chk on={!!vis.hyperkeratosisCallus} label={t("findings.hyperkeratosis")} dir={dir} />
         {vis.hyperkeratosisCallus && vis.hyperkeratosisLocation ? (
-          <Field a="الموقع" e="Location" value={vis.hyperkeratosisLocation} />
+          <Field label={t("labels.location")} value={vis.hyperkeratosisLocation} dir={dir} />
         ) : null}
-        <Chk on={!!vis.preTrophicLesions} a={["الآفات الجلدية", "قبل التقرحية"]} e="Pre-Ulcerative Lesions" />
+        <Chk on={!!vis.preTrophicLesions} label={t("findings.preUlcerative")} dir={dir} />
         {vis.preTrophicLesions && vis.preTrophicLesionsNotes ? (
-          <Field a="ملاحظات" e="Notes" value={vis.preTrophicLesionsNotes} />
+          <Field label={t("labels.notes")} value={vis.preTrophicLesionsNotes} dir={dir} />
         ) : null}
-        <Chk on={!!vis.edema} a="الوذمة" e="Edema" />
+        <Chk on={!!vis.edema} label={t("findings.edema")} dir={dir} />
         {vis.edema && vis.edemaType?.length ? (
-          <Field a="النوع" e="Type" value={labelsOf(EDEMA_TYPE_OPTS, vis.edemaType)} />
+          <Field label={t("labels.type")} value={list(EDEMA_TYPE, vis.edemaType)} dir={dir} />
         ) : null}
 
-        <SecHead a={["نقاط الجس", "والمضض"]} e="Palpation & Tenderness Points" />
-        <Text style={[s.chkAr, { marginBottom: 3 }]}>
-          {ar("ضع علامة إذا كان الضغط على المنطقة يسبب ألماً أو حساسية:")}
-        </Text>
-        {PALPATION_POINTS.map(([k, a, e]) => (
-          <Chk key={k} on={!!pal[k]} a={a} e={e} />
+        <SecHead label={t("sections.palpation")} dir={dir} />
+        <View style={{ marginBottom: 3, flexDirection: dir.row }}>
+          <Txt t={t("labels.palpationHint")} style={s.chkText} dir={dir} />
+        </View>
+        {PALPATION_KEYS.map((k) => (
+          <Chk key={k} on={!!pal[k]} label={t(`palpation.${k}`)} dir={dir} />
         ))}
 
-        <SecHead a={["مدى الحركة", "والمرونة المقاسة"]} e="Range of Motion & Measured Flexibility" />
-        <Field a={["العطف الظهري", "للكاحل"]} e="Ankle Dorsiflexion" value={labelsOf(ROM_OPTS, rom.ankleDorsiflexion)} />
-        <Field a={["العطف الأخمصي", "للكاحل"]} e="Ankle Plantarflexion" value={labelsOf(ROM_OPTS, rom.anklePlantarflexion)} />
+        <SecHead label={t("sections.rom")} dir={dir} />
+        <Field label={t("labels.ankleDorsiflexion")} value={list(ROM, rom.ankleDorsiflexion)} dir={dir} />
+        <Field label={t("labels.anklePlantarflexion")} value={list(ROM, rom.anklePlantarflexion)} dir={dir} />
 
-        <SecHead a={["التحليل الديناميكي", "المشي والحركة"]} e="Dynamic Analysis" />
-        <Field a={["اختبار جاك", "رفع الإبهام"]} e="Jack Test" value={pair(
-          labelsOf(JACK_TEST_OPTS, dyn.rightJackTest),
-          labelsOf(JACK_TEST_OPTS, dyn.leftJackTest),
+        <SecHead label={t("sections.dynamic")} dir={dir} />
+        <Field label={t("labels.jackTest")} dir={dir} value={pair(
+          list(JACK_TEST, dyn.rightJackTest),
+          list(JACK_TEST, dyn.leftJackTest),
         )} />
-        <Field a={["خط ومسار", "المشي"]} e="Walking Line" value={pair(
-          labelsOf(WALKING_LINE_OPTS, dyn.rightWalkingLine),
-          labelsOf(WALKING_LINE_OPTS, dyn.leftWalkingLine),
+        <Field label={t("labels.walkingLine")} dir={dir} value={pair(
+          list(WALKING_LINE, dyn.rightWalkingLine),
+          list(WALKING_LINE, dyn.leftWalkingLine),
         )} />
 
-        <SecHead a={["نمط تآكل الحذاء", "وفحص التقويم"]} e="Shoe Wear Pattern & Orthotic Audit" />
-        <Field a={["الأحذية الحالية", "المستخدمة"]} e="Current Footwear" value={labelsOf(FOOTWEAR_OPTS, shoe.currentFootwear)} />
-        <Field a={["خصائص تآكل", "النعل الخارجي"]} e="Outsole Wear" value={labelsOf(OUTSOLE_WEAR_OPTS, shoe.outsoleWear)} />
+        <SecHead label={t("sections.shoe")} dir={dir} />
+        <Field label={t("labels.currentFootwear")} value={list(FOOTWEAR, shoe.currentFootwear)} dir={dir} />
+        <Field label={t("labels.outsoleWear")} value={list(OUTSOLE_WEAR, shoe.outsoleWear)} dir={dir} />
 
         {measRows.length > 0 && (
           <>
-            <SecHead a={["قياسات القدم", "وأبعادها"]} e="Foot Measurements" />
-            {measRows.map(([a, e, v]) => <Field key={e} a={a} e={e} value={v} />)}
+            <SecHead label={t("sections.measurements")} dir={dir} />
+            {measRows.map(([k, v]) => (
+              <Field key={k} label={t(`measurements.${k}`)} value={v} dir={dir} />
+            ))}
           </>
         )}
 
-        <SecHead a="الضبانة والقرار" e="Insole and Decision" />
-        <Field a="نوع الضبانة" e="Insole Type" value={(se?.insoleType ?? []).join(" / ")} />
-        <Field a="ملاحظات" e="Notes" value={se?.notes} />
+        <SecHead label={t("pdf.insoleDecision")} dir={dir} />
+        <Field label={t("labels.insoleType")} value={(se?.insoleType ?? []).join(" / ")} dir={dir} />
+        <Field label={t("labels.notes")} value={se?.notes} dir={dir} />
         {(data.reviews ?? []).length > 0 ? (
           (data.reviews ?? []).map((r, i) => (
-            <Field key={i} a={["مراجعة", String(i + 1)]} e={`Review ${i + 1}`} value={r} />
+            <Field key={i} label={`${t("pdf.review")} ${i + 1}`} value={r} dir={dir} />
           ))
         ) : (
-          <Field a="المراجعة" e="Review" value="" />
+          <Field label={t("pdf.review")} value="" dir={dir} />
         )}
-        <Field a="قرار الطبيب" e="Doctor Decision" value={data.doctorDecision} />
+        <Field label={t("pdf.doctorDecision")} value={data.doctorDecision} dir={dir} />
 
-        <Footer />
+        <Footer dir={dir} />
       </Page>
-
     </Document>
   );
 };
 
-// Shared footer used on every sheet.
-const Footer = () => (
-  <View style={s.footer} fixed>
+// Shared footer used on every sheet. The address is the clinic's own, so it
+// stays Arabic whatever the sheet's locale is.
+const Footer = ({ dir }: { dir: Dir }) => (
+  <View style={[s.footer, { flexDirection: dir.row }]} fixed>
     <View style={{ alignItems: "flex-end", gap: 1.5 }}>
       <Text style={s.footText}>{ar("سوريا - حلب - حي حلب الجديدة شمالي")}</Text>
       <Text style={s.footText}>{ar("خلف فيلا العقاد - شارع إيكاردا")}</Text>
@@ -505,9 +496,19 @@ const Footer = () => (
 );
 
 // ── Public export ────────────────────────────────────────────────────────────
-export async function downloadPodiatryFormPdf(data: PodiatryFormPdfData): Promise<void> {
+/**
+ * @param t      a translator scoped to `clinic.podiatry.form`
+ * @param locale the sheet's locale — only Arabic prints right-to-left
+ */
+export async function downloadPodiatryFormPdf(
+  data: PodiatryFormPdfData,
+  t: FormT,
+  locale: string,
+): Promise<void> {
   ensureAmiriFonts();
-  const blob = await pdf(<PodiatryFormPdfDoc data={data} />).toBlob();
+  const rtl = locale === "ar";
+  const dir: Dir = { rtl, row: rtl ? "row-reverse" : "row" };
+  const blob = await pdf(<PodiatryFormPdfDoc data={data} t={t} dir={dir} />).toBlob();
   const tag = (data.patientName ?? "").trim().replace(/\s+/g, "-") || "patient";
   saveBlob(blob, `footbalance-${tag}.pdf`);
 }

@@ -5,6 +5,7 @@
 // while it is being filled in. POST upserts, so the first save creates the form
 // and later ones patch it.
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, PenLine, Pencil, Plus, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,7 @@ export function PodiatryAssessmentPanel({
   const [clinicianName, setClinicianName] = useState("");
   const [clinicianSignature, setClinicianSignature] = useState("");
   const [padOpen, setPadOpen] = useState(false);
+  const t = useTranslations("clinic.podiatry.form.panel");
 
   const create = useCreatePodiatrySession();
   const update = useUpdatePodiatrySession();
@@ -113,7 +115,7 @@ export function PodiatryAssessmentPanel({
               )}
               {/* Who typed the form in — not necessarily the clinician signing it. */}
               {!editing && session?.createdByName && (
-                <span className="text-xs text-muted-foreground">عبّأ النموذج: {session.createdByName}</span>
+                <span className="text-xs text-muted-foreground">{t("filledBy")}: {session.createdByName}</span>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -122,11 +124,11 @@ export function PodiatryAssessmentPanel({
                 <>
                   <Button size="sm" variant="outline" className="gap-1.5" disabled={saving} onClick={() => setEditing(false)}>
                     <X className="h-3.5 w-3.5" />
-                    إلغاء
+                    {t("cancel")}
                   </Button>
                   <Button size="sm" className="gap-1.5" disabled={saving} onClick={handleSave}>
                     {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                    حفظ
+                    {t("save")}
                   </Button>
                 </>
               ) : (
@@ -137,7 +139,7 @@ export function PodiatryAssessmentPanel({
                 >
                   <Button size="sm" className="gap-1.5" onClick={startEditing}>
                     {session ? <Pencil className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                    {session ? "تعديل" : "تعبئة النموذج"}
+                    {session ? t("edit") : t("fill")}
                   </Button>
                 </ActionGuard>
               )}
@@ -146,17 +148,17 @@ export function PodiatryAssessmentPanel({
         </CardHeader>
         <CardContent>
           {!session && !editing ? (
-            <p className="text-sm text-muted-foreground text-center py-6">لم يُعبّأ النموذج بعد</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t("notFilled")}</p>
           ) : (
             <div className="space-y-4">
               <PodiatryAssessmentFields value={shown} onChange={setForm} readOnly={!editing} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border p-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">اسم الأخصائي</Label>
+                  <Label className="text-xs">{t("clinicianName")}</Label>
                   {editing ? (
                     <Select value={clinicianName || undefined} onValueChange={setClinicianName}>
-                      <SelectTrigger className="h-9"><SelectValue placeholder="اختر الأخصائي..." /></SelectTrigger>
+                      <SelectTrigger className="h-9"><SelectValue placeholder={t("selectClinician")} /></SelectTrigger>
                       <SelectContent>
                         {medicalStaff.map((e) => {
                           const name = `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim();
@@ -169,11 +171,11 @@ export function PodiatryAssessmentPanel({
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">التوقيع</Label>
+                  <Label className="text-xs">{t("signature")}</Label>
                   {shownSignature && signatureIsImage ? (
                     <div className="relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={shownSignature} alt="التوقيع" className="h-16 w-full object-contain border rounded bg-white" />
+                      <img src={shownSignature} alt={t("signature")} className="h-16 w-full object-contain border rounded bg-white" />
                       {editing && (
                         <button
                           type="button"
@@ -187,7 +189,7 @@ export function PodiatryAssessmentPanel({
                   ) : editing ? (
                     <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 text-xs" onClick={() => setPadOpen(true)}>
                       <PenLine className="h-3.5 w-3.5" />
-                      رسم التوقيع
+                      {t("drawSignature")}
                     </Button>
                   ) : (
                     <Val value={shownSignature} />
@@ -202,7 +204,7 @@ export function PodiatryAssessmentPanel({
       <SignaturePadDialog
         open={padOpen}
         onOpenChange={setPadOpen}
-        title="توقيع الأخصائي"
+        title={t("signatureTitle")}
         signerName={clinicianName || undefined}
         onSign={async (base64) => setClinicianSignature(base64)}
       />

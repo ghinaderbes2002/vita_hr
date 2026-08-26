@@ -18,8 +18,8 @@ import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { PatientPhoto } from "@/components/clinic/patient-photo";
 import { PodiatrySession } from "@/lib/api/clinic-podiatry";
 import {
-  AFFECTED_SIDE_LABEL, AFFECTED_SIDE_VALUES, FOOT_SYMPTOM_LABEL, FOOT_SYMPTOM_VALUES,
-  MEDICAL_HISTORY_LABEL, MEDICAL_HISTORY_VALUES, VISIT_TYPE_LABEL, VISIT_TYPE_VALUES,
+  AFFECTED_SIDE_VALUES, FOOT_SYMPTOM_VALUES, MEDICAL_HISTORY_VALUES,
+  VISIT_TYPE_VALUES, usePodiatryEnumLabels,
 } from "@/components/clinic/podiatry-labels";
 import { PodiatryAssessmentPanel } from "@/components/clinic/podiatry-assessment-panel";
 import {
@@ -34,8 +34,8 @@ const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—"
 
 /** Right foot first, matching the RTL sheet. */
 const SIDES = [
-  { key: "Right", label: "القدم اليمنى" },
-  { key: "Left", label: "القدم اليسرى" },
+  { key: "Right", labelKey: "labels.rightFoot" },
+  { key: "Left", labelKey: "labels.leftFoot" },
 ] as const;
 
 // Age in completed years, derived from the stored date of birth.
@@ -112,6 +112,8 @@ export default function PodiatryReceptionPage() {
   const locale = useLocale();
   const isRtl = locale === "ar";
   const t = useTranslations("clinic.podiatry.detail");
+  const tf = useTranslations("clinic.podiatry.form") as unknown as (k: string) => string;
+  const enumLabel = usePodiatryEnumLabels();
 
   // The assessment (sessions) tab is a clinical activity: a supervisor who can
   // only receive patients sees the reception + patient info only.
@@ -176,7 +178,7 @@ export default function PodiatryReceptionPage() {
         session,
         reviews: reviews.map((r) => r.notes).filter((n): n is string => !!n),
         doctorDecision: doctorDecision?.decision,
-      });
+      }, tf, locale);
     } catch {
       toast.error(t("exportFailed"));
     } finally {
@@ -288,7 +290,7 @@ export default function PodiatryReceptionPage() {
                   <ReadOnlyChips
                     values={AFFECTED_SIDE_VALUES}
                     selected={reception.affectedSide ?? []}
-                    label={(v) => AFFECTED_SIDE_LABEL[v]}
+                    label={enumLabel.affectedSide}
                   />
                 </Field>
 
@@ -297,13 +299,13 @@ export default function PodiatryReceptionPage() {
                   <>
                     <Field label={t("footSymptoms")}>
                       <div className="grid gap-2 sm:grid-cols-2">
-                        {SIDES.map(({ key, label }) => (
+                        {SIDES.map(({ key, labelKey }) => (
                           <div key={key} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
-                            <p className="text-[11px] text-muted-foreground">{label}</p>
+                            <p className="text-[11px] text-muted-foreground">{tf(labelKey)}</p>
                             <ReadOnlyChips
                               values={FOOT_SYMPTOM_VALUES}
                               selected={(key === "Right" ? reception.footSymptomsRight : reception.footSymptomsLeft) ?? []}
-                              label={(v) => FOOT_SYMPTOM_LABEL[v]}
+                              label={enumLabel.footSymptom}
                             />
                           </div>
                         ))}
@@ -312,13 +314,13 @@ export default function PodiatryReceptionPage() {
 
                     <Field label={t("visitType")}>
                       <div className="grid gap-2 sm:grid-cols-2">
-                        {SIDES.map(({ key, label }) => (
+                        {SIDES.map(({ key, labelKey }) => (
                           <div key={key} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
-                            <p className="text-[11px] text-muted-foreground">{label}</p>
+                            <p className="text-[11px] text-muted-foreground">{tf(labelKey)}</p>
                             <ReadOnlyChips
                               values={VISIT_TYPE_VALUES}
                               selected={(key === "Right" ? reception.visitTypesRight : reception.visitTypesLeft) ?? []}
-                              label={(v) => VISIT_TYPE_LABEL[v]}
+                              label={enumLabel.visitType}
                             />
                           </div>
                         ))}
@@ -331,7 +333,7 @@ export default function PodiatryReceptionPage() {
                       <ReadOnlyChips
                         values={FOOT_SYMPTOM_VALUES}
                         selected={reception.footSymptoms ?? []}
-                        label={(v) => FOOT_SYMPTOM_LABEL[v]}
+                        label={enumLabel.footSymptom}
                       />
                     </Field>
 
@@ -339,7 +341,7 @@ export default function PodiatryReceptionPage() {
                       <ReadOnlyChips
                         values={VISIT_TYPE_VALUES}
                         selected={reception.visitTypes ?? []}
-                        label={(v) => VISIT_TYPE_LABEL[v]}
+                        label={enumLabel.visitType}
                       />
                     </Field>
                   </>
@@ -349,7 +351,7 @@ export default function PodiatryReceptionPage() {
                   <ReadOnlyChips
                     values={MEDICAL_HISTORY_VALUES}
                     selected={reception.medicalHistory ?? []}
-                    label={(v) => MEDICAL_HISTORY_LABEL[v]}
+                    label={enumLabel.medicalHistory}
                   />
                   {reception.medicalHistoryOther && (
                     <div className="mt-1.5"><TextBox value={reception.medicalHistoryOther} /></div>

@@ -4012,6 +4012,246 @@
       }
     },
     "podiatry": {
+      "form": {
+        "sections": {
+          "subjective": "Subjective History & Pain Profiling",
+          "visual": "Visual Inspection & Deformity Mapping",
+          "palpation": "Palpation & Tenderness Points",
+          "rom": "Range of Motion & Measured Flexibility",
+          "dynamic": "Dynamic Analysis — Gait & Movement",
+          "shoe": "Shoe Wear Pattern & Orthotic Audit",
+          "measurements": "Foot Measurements & Dimensions",
+          "insole": "Insole & Notes"
+        },
+        "labels": {
+          "mainCause": "Main Cause & Pathological Origin",
+          "painLocation": "Pain Location",
+          "painNature": "Pain Nature — VAS Score",
+          "rearfootAlignment": "Rearfoot Alignment in Stance",
+          "tooManyToes": "“Too Many Toes” Sign Viewed from Behind",
+          "toesCount": "Number of Visible Toes",
+          "archArchitecture": "Arch Architecture",
+          "forefootDeformities": "Forefoot & Digital Deformities",
+          "skinStatus": "Dermatological / Soft Tissue Status",
+          "palpationHint": "Tick if pressure on the area causes pain or tenderness:",
+          "ankleDorsiflexion": "Ankle Dorsiflexion",
+          "anklePlantarflexion": "Ankle Plantarflexion",
+          "jackTest": "Jack Test — Mechanical Hallux Lift",
+          "walkingLine": "Walking Line & Path",
+          "currentFootwear": "Current Footwear in Use",
+          "outsoleWear": "Outsole Wear Characteristics",
+          "insoleType": "Insole Type",
+          "notes": "Notes",
+          "affectedToes": "Affected Toes",
+          "affectedToesExample": "e.g. 2, 3",
+          "location": "Location",
+          "type": "Type",
+          "right": "Right",
+          "left": "Left",
+          "rightFoot": "Right Foot",
+          "leftFoot": "Left Foot"
+        },
+        "findings": {
+          "halluxValgus": "Hallux Valgus",
+          "tailorsBunion": "Tailor’s Bunion",
+          "hammerToes": "Hammer Toes",
+          "clawToes": "Claw Toes",
+          "malletToes": "Mallet Toes",
+          "hyperkeratosis": "Hyperkeratosis / Callus Location",
+          "preUlcerative": "Pre-Ulcerative Skin Lesions",
+          "edema": "Edema"
+        },
+        "opts": {
+          "mainCause": {
+            "none": "None",
+            "unknown": "Unknown",
+            "acute_injury": "Acute Injury",
+            "post_surgery": "Post-Surgery",
+            "chronic_overuse": "Chronic Overuse"
+          },
+          "painLocation": {
+            "forefoot": "Forefoot",
+            "midfoot": "Midfoot",
+            "rearfoot": "Rearfoot"
+          },
+          "painCharacteristic": {
+            "morning_startup": "Morning startup pain / first step",
+            "eases_with_activity": "Eases and clears with activity",
+            "progressively_worse": "Progressively worse during activity",
+            "night_pain": "Night pain",
+            "pain_at_rest": "Pain at rest"
+          },
+          "rearfootAlignment": {
+            "varus": "Varus",
+            "valgus": "Valgus",
+            "neutral": "Neutral"
+          },
+          "tooManyToes": {
+            "negative": "Negative",
+            "positive": "Positive"
+          },
+          "archArchitecture": {
+            "normal": "Normal",
+            "low": "Low",
+            "high": "High"
+          },
+          "deformityType": {
+            "flexible": "Flexible",
+            "rigid": "Rigid"
+          },
+          "edemaType": {
+            "pitting": "Pitting",
+            "non_pitting": "Non-Pitting",
+            "unilateral": "Unilateral",
+            "bilateral": "Bilateral"
+          },
+          "rom": {
+            "normal": "Normal",
+            "limited": "Limited"
+          },
+          "jackTest": {
+            "arch_forms": "Arch forms and rises",
+            "arch_flat": "Arch stays flat"
+          },
+          "walkingLine": {
+            "normal": "Normal and straight",
+            "inward": "Rolls inward (pronation)",
+            "outward": "Rolls outward (supination)"
+          },
+          "footwear": {
+            "stability_running": "Stability running shoe",
+            "minimalist": "Minimalist shoe",
+            "high_heel": "High heel",
+            "medical": "Medical shoe",
+            "custom_orthotic": "Custom orthotic"
+          },
+          "outsoleWear": {
+            "normal": "Normal (outer heel to inner forefoot)",
+            "lateral_supination": "Lateral wear with excessive supination",
+            "medial_pronation": "Medial wear with severe pronation"
+          }
+        },
+        "palpation": {
+          "plantar": "Sole / Plantar Fascia",
+          "medial": "Medial Foot or Ankle",
+          "lateral": "Lateral Foot or Ankle",
+          "posterior": "Behind the Heel / Achilles Tendon",
+          "dorsal": "Dorsal / Top of the Foot"
+        },
+        "measurements": {
+          "footLength": "Foot Length",
+          "footWidth": "Foot Width",
+          "archHeight": "Arch Height",
+          "ballWidth": "Ball Width",
+          "ballCircumference": "Ball Circumference",
+          "heelWidth": "Heel Width",
+          "metatarsalBaseHeight": "Metatarsal Base Height",
+          "footAlignment": "Foot Alignment",
+          "navicularHeight": "Navicular Height",
+          "navicularDrop": "Navicular Drop Test",
+          "navicularHeightWithOrthotic": "Navicular Height with Orthotic",
+          "navicularDropWithOrthotic": "Navicular Drop with Orthotic"
+        },
+        "enums": {
+          "affectedSide": {
+            "R": "Right",
+            "L": "Left",
+            "BILATERAL": "Both feet"
+          },
+          "footSymptom": {
+            "PAIN": "Pain",
+            "NUMBNESS": "Numbness",
+            "SWELLING": "Swelling",
+            "INSTABILITY": "Instability",
+            "FATIGUE": "Quick fatigue"
+          },
+          "visitType": {
+            "FOOT_PAIN": "Foot pain",
+            "FOOTBALANCE_ASSESSMENT": "FootBalance analysis",
+            "CUSTOM_INSOLES": "Custom insoles",
+            "PERFORMANCE_OPTIMIZATION": "Performance optimisation",
+            "FOLLOW_UP": "Follow-up"
+          },
+          "medicalHistory": {
+            "DIABETES": "Diabetes",
+            "HYPERTENSION": "Hypertension",
+            "NEUROLOGICAL": "Neurological disease",
+            "VASCULAR": "Vascular disease",
+            "ARTHRITIS": "Arthritis",
+            "OTHER": "Other"
+          }
+        },
+        "panel": {
+          "filledBy": "Filled in by",
+          "cancel": "Cancel",
+          "save": "Save",
+          "edit": "Edit",
+          "fill": "Fill in the form",
+          "notFilled": "The form has not been filled in yet",
+          "clinicianName": "Clinician name",
+          "selectClinician": "Select clinician...",
+          "signature": "Signature",
+          "drawSignature": "Draw signature",
+          "signatureTitle": "Clinician signature"
+        },
+        "reception": {
+          "patient": "Patient",
+          "editTitle": "Edit reception",
+          "newTitle": "New reception",
+          "searchPatient": "Search by name or patient number...",
+          "selectPatient": "Select patient...",
+          "durationExample": "e.g. two years",
+          "detailsPlaceholder": "Enter the details...",
+          "saveEdits": "Save changes",
+          "create": "Create reception"
+        },
+        "review": {
+          "title": "Reviews",
+          "add": "Add review",
+          "empty": "No reviews yet",
+          "decisionTitle": "Doctor’s Decision",
+          "notifyDoctor": "Notify the doctor",
+          "saveDecision": "Save decision",
+          "notesPlaceholder": "Review notes...",
+          "deleteTitle": "Delete review",
+          "deleteDesc": "This review will be permanently deleted.",
+          "decisionPlaceholder": "Doctor’s decision..."
+        },
+        "pdf": {
+          "title": "Professional Foot Assessment Form",
+          "date": "Date",
+          "personalInfo": "Personal Information",
+          "patientName": "Patient Name",
+          "dateOfBirth": "Date of Birth",
+          "gender": "Gender",
+          "male": "Male",
+          "female": "Female",
+          "phone": "Phone",
+          "height": "Height",
+          "weight": "Weight",
+          "occupation": "Occupation",
+          "activities": "Activities",
+          "chiefComplaint": "Chief Complaint",
+          "problemDesc": "Problem Description",
+          "symptomHistory": "History of Symptoms",
+          "affectedFoot": "Affected Foot",
+          "footSymptoms": "Foot Symptoms",
+          "visitType": "Visit Type",
+          "medicalHistory": "Medical History",
+          "details": "Details",
+          "painScale": "Pain Scale",
+          "painScore": "Pain Score",
+          "signature": "Signature",
+          "clinicianName": "Clinician Name",
+          "filledBy": "Filled In By",
+          "installedOn": "Installed On",
+          "insoleDecision": "Insole & Decision",
+          "review": "Review",
+          "doctorDecision": "Doctor’s Decision",
+          "right": "Right",
+          "left": "Left"
+        }
+      },
       "title": "Podiatry",
       "description": "Podiatry receptions and sessions",
       "newReception": "New Reception",

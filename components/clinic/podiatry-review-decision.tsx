@@ -5,6 +5,7 @@
 // confirmation. The decision also carries the button that pings the clinic
 // doctors that something is waiting for them.
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { BellRing, Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +30,8 @@ function Note({ value }: { value?: string | null }) {
 }
 
 export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: string; canEdit: boolean }) {
+  const tf = useTranslations("clinic.podiatry.form") as unknown as (k: string) => string;
+  const tc = useTranslations("common") as unknown as (k: string) => string;
   const { data: reviews = [], isLoading } = usePodiatryReviews(receptionId);
   const create = useCreatePodiatryReview();
   const update = useUpdatePodiatryReview();
@@ -58,18 +61,18 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
         rows={3}
         autoFocus
         className="resize-none text-sm"
-        placeholder="ملاحظات المراجعة..."
+        placeholder={tf("review.notesPlaceholder")}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
       />
       <div className="flex flex-wrap gap-2">
         <Button size="sm" className="gap-1.5" disabled={saving || !draft.trim()} onClick={save}>
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          حفظ
+          {tc("save")}
         </Button>
         <Button size="sm" variant="outline" className="gap-1.5" disabled={saving} onClick={cancel}>
           <X className="h-3.5 w-3.5" />
-          إلغاء
+          {tc("cancel")}
         </Button>
       </div>
     </div>
@@ -81,12 +84,12 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <CardTitle className="text-base">
-              المراجعات{reviews.length > 0 ? ` (${reviews.length})` : ""}
+              {tf("review.title")}{reviews.length > 0 ? ` (${reviews.length})` : ""}
             </CardTitle>
             {canEdit && editingId === undefined && (
               <Button size="sm" className="gap-1.5" onClick={startNew}>
                 <Plus className="h-3.5 w-3.5" />
-                إضافة مراجعة
+                {tf("review.add")}
               </Button>
             )}
           </div>
@@ -99,7 +102,7 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
               {editingId === null && editor}
 
               {reviews.length === 0 && editingId === undefined ? (
-                <p className="text-sm text-muted-foreground text-center py-6">لا توجد مراجعات</p>
+                <p className="text-sm text-muted-foreground text-center py-6">{tf("review.empty")}</p>
               ) : (
                 reviews.map((r) =>
                   editingId === r.id ? (
@@ -115,7 +118,7 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
                           <div className="flex flex-wrap gap-1">
                             <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" onClick={() => startEdit(r)}>
                               <Pencil className="h-3 w-3" />
-                              تعديل
+                              {tc("edit")}
                             </Button>
                             <Button
                               size="sm"
@@ -124,7 +127,7 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
                               onClick={() => setDeleteTarget(r)}
                             >
                               <Trash2 className="h-3 w-3" />
-                              حذف
+                              {tc("delete")}
                             </Button>
                           </div>
                         )}
@@ -142,8 +145,8 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
-        title="حذف المراجعة"
-        description="سيتم حذف هذه المراجعة نهائياً."
+        title={tf("review.deleteTitle")}
+        description={tf("review.deleteDesc")}
         onConfirm={() => {
           if (deleteTarget) remove.mutate({ receptionId, reviewId: deleteTarget.id });
           setDeleteTarget(null);
@@ -154,6 +157,7 @@ export function PodiatryReviewCard({ receptionId, canEdit }: { receptionId: stri
 }
 
 export function PodiatryDoctorDecisionCard({ receptionId, canEdit }: { receptionId: string; canEdit: boolean }) {
+  const tf = useTranslations("clinic.podiatry.form") as unknown as (k: string) => string;
   const { data: decision, isLoading } = usePodiatryDoctorDecision(receptionId);
   const save = useSavePodiatryDoctorDecision();
   const notify = useNotifyPodiatryDoctorDecision();
@@ -166,7 +170,7 @@ export function PodiatryDoctorDecisionCard({ receptionId, canEdit }: { reception
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <CardTitle className="text-base">قرار الطبيب</CardTitle>
+          <CardTitle className="text-base">{tf("review.decisionTitle")}</CardTitle>
           {canEdit && (
             <Button
               size="sm"
@@ -176,7 +180,7 @@ export function PodiatryDoctorDecisionCard({ receptionId, canEdit }: { reception
               onClick={() => notify.mutate(receptionId)}
             >
               {notify.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellRing className="h-3.5 w-3.5" />}
-              إرسال الإشعار للطبيب
+              {tf("review.notifyDoctor")}
             </Button>
           )}
         </div>
@@ -189,7 +193,7 @@ export function PodiatryDoctorDecisionCard({ receptionId, canEdit }: { reception
             <Textarea
               rows={3}
               className="resize-none text-sm"
-              placeholder="نص قرار الطبيب..."
+              placeholder={tf("review.decisionPlaceholder")}
               value={value}
               onChange={(e) => setDraft(e.target.value)}
             />
@@ -200,7 +204,7 @@ export function PodiatryDoctorDecisionCard({ receptionId, canEdit }: { reception
               onClick={() => save.mutate({ receptionId, decision: value })}
             >
               {save.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-              حفظ القرار
+              {tf("review.saveDecision")}
             </Button>
           </>
         ) : (

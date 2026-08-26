@@ -4146,6 +4146,246 @@
       }
     },
     "podiatry": {
+      "form": {
+        "sections": {
+          "subjective": "التاريخ المرضي وتوصيف الألم",
+          "visual": "الفحص البصري وتحديد التشوهات",
+          "palpation": "نقاط الجس والمضض",
+          "rom": "مدى الحركة والمرونة المقاسة",
+          "dynamic": "التحليل الديناميكي - المشي والحركة",
+          "shoe": "نمط تآكل الحذاء وفحص التقويم",
+          "measurements": "قياسات القدم وأبعادها",
+          "insole": "الضبانة والملاحظات"
+        },
+        "labels": {
+          "mainCause": "السبب الرئيسي والأصل المرضي",
+          "painLocation": "موقع الألم",
+          "painNature": "طبيعة الألم - درجة مقياس الألم",
+          "rearfootAlignment": "استقامة الجزء الخلفي من القدم أثناء الوقوف",
+          "tooManyToes": "علامة «أصابع قدم كثيرة جداً» عند النظر من الخلف",
+          "toesCount": "عدد الأصابع الظاهرة",
+          "archArchitecture": "بنية قوس القدم",
+          "forefootDeformities": "تشوهات مقدمة القدم والأصابع",
+          "skinStatus": "حالة الجلد والأنسجة الرخوة",
+          "palpationHint": "ضع علامة إذا كان الضغط على المنطقة يسبب ألماً أو حساسية:",
+          "ankleDorsiflexion": "العطف الظهري للكاحل",
+          "anklePlantarflexion": "العطف الأخمصي للكاحل",
+          "jackTest": "اختبار جاك - رفع إبهام القدم ميكانيكياً",
+          "walkingLine": "خط ومسار المشي",
+          "currentFootwear": "الأحذية الحالية المستخدمة",
+          "outsoleWear": "خصائص تآكل النعل الخارجي للحذاء",
+          "insoleType": "نوع الضبانة",
+          "notes": "ملاحظات",
+          "affectedToes": "الأصابع المصابة",
+          "affectedToesExample": "مثال: 2، 3",
+          "location": "الموقع",
+          "type": "النوع",
+          "right": "اليمنى",
+          "left": "اليسرى",
+          "rightFoot": "القدم اليمنى",
+          "leftFoot": "القدم اليسرى"
+        },
+        "findings": {
+          "halluxValgus": "إبهام القدم الأفحج",
+          "tailorsBunion": "ورم الخياط",
+          "hammerToes": "أصابع مطرقية",
+          "clawToes": "أصابع مخلبية",
+          "malletToes": "أصابع ماليت",
+          "hyperkeratosis": "موقع الفرط التقرن / المسامير الجلدية",
+          "preUlcerative": "الآفات الجلدية قبل التقرحية",
+          "edema": "الوذمة"
+        },
+        "opts": {
+          "mainCause": {
+            "none": "لا يوجد",
+            "unknown": "غير معروف",
+            "acute_injury": "إصابة حادة",
+            "post_surgery": "بعد الجراحة",
+            "chronic_overuse": "إجهاد مفرط مزمن"
+          },
+          "painLocation": {
+            "forefoot": "مقدمة القدم",
+            "midfoot": "منتصف القدم",
+            "rearfoot": "الجزء الخلفي من القدم"
+          },
+          "painCharacteristic": {
+            "morning_startup": "ألم عند الاستيقاظ صباحاً / الخطوة الأولى",
+            "eases_with_activity": "يقل الألم ويزول مع النشاط والحركة",
+            "progressively_worse": "يزداد الألم سوءاً تدريجياً أثناء النشاط",
+            "night_pain": "ألم ليلي",
+            "pain_at_rest": "ألم أثناء الراحة الساكنة"
+          },
+          "rearfootAlignment": {
+            "varus": "انحراف إنسي",
+            "valgus": "انحراف وحشي",
+            "neutral": "محايد"
+          },
+          "tooManyToes": {
+            "negative": "سلبية",
+            "positive": "إيجابية"
+          },
+          "archArchitecture": {
+            "normal": "طبيعي",
+            "low": "منخفض",
+            "high": "عالي"
+          },
+          "deformityType": {
+            "flexible": "مرن",
+            "rigid": "قاس"
+          },
+          "edemaType": {
+            "pitting": "انطباعية",
+            "non_pitting": "غير انطباعية",
+            "unilateral": "أحادية الجانب",
+            "bilateral": "ثنائية الجانب"
+          },
+          "rom": {
+            "normal": "طبيعي",
+            "limited": "محدود"
+          },
+          "jackTest": {
+            "arch_forms": "تتشكل القوس وترتفع",
+            "arch_flat": "تظل القوس مسطحة"
+          },
+          "walkingLine": {
+            "normal": "طبيعي ومستقيم",
+            "inward": "يميل وينكفئ للداخل (كبّ)",
+            "outward": "يميل وينكفئ للخارج (استلقاء)"
+          },
+          "footwear": {
+            "stability_running": "حذاء ركض ثباتي داعم",
+            "minimalist": "حذاء بسيط",
+            "high_heel": "كعب عالي",
+            "medical": "حذاء طبي",
+            "custom_orthotic": "ضبان طبي مخصص"
+          },
+          "outsoleWear": {
+            "normal": "طبيعي (من الكعب الخارجي إلى مقدمة القدم الداخلية)",
+            "lateral_supination": "تآكل خارجي واستلقاء مفرط",
+            "medial_pronation": "تآكل داخلي وكبّ شديد"
+          }
+        },
+        "palpation": {
+          "plantar": "أسفل القدم / اللفافة الأخمصية",
+          "medial": "الجانب الداخلي للقدم أو الكاحل",
+          "lateral": "الجانب الخارجي للقدم أو الكاحل",
+          "posterior": "خلف الكعب / وتر أخيل",
+          "dorsal": "الجانب الظهري العلوي للقدم"
+        },
+        "measurements": {
+          "footLength": "طول القدم",
+          "footWidth": "عرض القدم",
+          "archHeight": "ارتفاع القوس",
+          "ballWidth": "عرض كرة القدم",
+          "ballCircumference": "محيط كرة القدم",
+          "heelWidth": "عرض الكعب",
+          "metatarsalBaseHeight": "ارتفاع قاعدة أمشاط القدم",
+          "footAlignment": "محاذاة واستقامة القدم",
+          "navicularHeight": "ارتفاع العظم الزورقي",
+          "navicularDrop": "اختبار هبوط الزورقي",
+          "navicularHeightWithOrthotic": "ارتفاع العظم الزورقي بالضبان",
+          "navicularDropWithOrthotic": "اختبار هبوط الزورقي بالضبان"
+        },
+        "enums": {
+          "affectedSide": {
+            "R": "يمين",
+            "L": "يسار",
+            "BILATERAL": "الطرفان"
+          },
+          "footSymptom": {
+            "PAIN": "ألم",
+            "NUMBNESS": "تنميل",
+            "SWELLING": "تورّم",
+            "INSTABILITY": "عدم ثبات",
+            "FATIGUE": "تعب سريع"
+          },
+          "visitType": {
+            "FOOT_PAIN": "ألم القدم",
+            "FOOTBALANCE_ASSESSMENT": "تحليل FootBalance",
+            "CUSTOM_INSOLES": "ضبان مخصصة",
+            "PERFORMANCE_OPTIMIZATION": "تحسين الأداء",
+            "FOLLOW_UP": "متابعة"
+          },
+          "medicalHistory": {
+            "DIABETES": "سكري",
+            "HYPERTENSION": "ارتفاع ضغط",
+            "NEUROLOGICAL": "أمراض أعصاب",
+            "VASCULAR": "أمراض أوعية",
+            "ARTHRITIS": "التهاب مفاصل",
+            "OTHER": "أخرى"
+          }
+        },
+        "panel": {
+          "filledBy": "عبّأ النموذج",
+          "cancel": "إلغاء",
+          "save": "حفظ",
+          "edit": "تعديل",
+          "fill": "تعبئة النموذج",
+          "notFilled": "لم يُعبّأ النموذج بعد",
+          "clinicianName": "اسم الأخصائي",
+          "selectClinician": "اختر الأخصائي...",
+          "signature": "التوقيع",
+          "drawSignature": "رسم التوقيع",
+          "signatureTitle": "توقيع الأخصائي"
+        },
+        "reception": {
+          "patient": "المريض",
+          "editTitle": "تعديل الاستقبال",
+          "newTitle": "استقبال جديد",
+          "searchPatient": "ابحث بالاسم أو رقم المريض...",
+          "selectPatient": "اختر المريض...",
+          "durationExample": "مثال: سنتين",
+          "detailsPlaceholder": "اذكر التفاصيل...",
+          "saveEdits": "حفظ التعديلات",
+          "create": "إنشاء الاستقبال"
+        },
+        "review": {
+          "title": "المراجعات",
+          "add": "إضافة مراجعة",
+          "empty": "لا توجد مراجعات",
+          "decisionTitle": "قرار الطبيب",
+          "notifyDoctor": "إرسال الإشعار للطبيب",
+          "saveDecision": "حفظ القرار",
+          "notesPlaceholder": "ملاحظات المراجعة...",
+          "deleteTitle": "حذف المراجعة",
+          "deleteDesc": "سيتم حذف هذه المراجعة نهائياً.",
+          "decisionPlaceholder": "نص قرار الطبيب..."
+        },
+        "pdf": {
+          "title": "نموذج تقييم القدم الاحترافي",
+          "date": "التاريخ",
+          "personalInfo": "البيانات الشخصية",
+          "patientName": "اسم المريض",
+          "dateOfBirth": "تاريخ الميلاد",
+          "gender": "الجنس",
+          "male": "ذكر",
+          "female": "أنثى",
+          "phone": "رقم الهاتف",
+          "height": "الطول",
+          "weight": "الوزن",
+          "occupation": "المهنة",
+          "activities": "نشاطات",
+          "chiefComplaint": "الشكوى الرئيسية",
+          "problemDesc": "وصف المشكلة",
+          "symptomHistory": "التاريخ العرضي",
+          "affectedFoot": "القدم المصابة",
+          "footSymptoms": "أعراض القدم",
+          "visitType": "نوع الزيارة",
+          "medicalHistory": "التاريخ المرضي",
+          "details": "التفاصيل",
+          "painScale": "شدة الألم",
+          "painScore": "درجة الألم",
+          "signature": "التوقيع",
+          "clinicianName": "اسم الأخصائي",
+          "filledBy": "عبّأ النموذج",
+          "installedOn": "تاريخ التركيب",
+          "insoleDecision": "الضبانة والقرار",
+          "review": "المراجعة",
+          "doctorDecision": "قرار الطبيب",
+          "right": "يمين",
+          "left": "يسار"
+        }
+      },
       "title": "طب الأقدام",
       "description": "استقبالات وجلسات طب الأقدام",
       "newReception": "استقبال جديد",

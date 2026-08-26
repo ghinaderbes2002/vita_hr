@@ -1,10 +1,9 @@
-// Option tables for the podiatry assessment form (نموذج تقييم القدم الاحترافي).
-// The wording is transcribed verbatim from the printed VitaFoot sheet — the web
-// form and the PDF must read exactly like the paper the clinician fills in.
-// Each option is [value, Arabic label, English label] — the web form shows the
-// Arabic with the English underneath, the printed sheet prints both columns.
-// Arabic labels never contain Latin characters: react-pdf has no bidi pass, so
-// a mixed string prints scrambled — the Latin half belongs in the English column.
+// The option tables for the podiatry assessment form (نموذج تقييم القدم
+// الاحترافي). Only the stored values live here — every label the user reads
+// comes from `clinic.podiatry.form` in messages/{ar,en,tr}.json, so the web
+// form and the printed sheet both follow the reader's locale.
+// The Arabic wording in those files is transcribed verbatim from the printed
+// VitaFoot sheet and is the source the other two are translated from.
 import {
   PodiatryArchArchitecture, PodiatryDeformityType, PodiatryEdemaType, PodiatryFootwear,
   PodiatryInsoleType, PodiatryJackTest, PodiatryMainCause, PodiatryOutsoleWear,
@@ -12,125 +11,85 @@ import {
   PodiatryRomState, PodiatryTooManyToes, PodiatryWalkingLine,
 } from "@/lib/api/clinic-podiatry";
 
-export type Opt<T extends string> = readonly [T, string, string];
+/** A translator scoped to `clinic.podiatry.form`. */
+export type FormT = (key: string) => string;
 
-export const MAIN_CAUSE_OPTS: Opt<PodiatryMainCause>[] = [
-  ["none", "لا يوجد", "None"],
-  ["unknown", "غير معروف", "Unknown"],
-  ["acute_injury", "إصابة حادة", "Acute Injury"],
-  ["post_surgery", "بعد الجراحة", "Post Surgery"],
-  ["chronic_overuse", "إجهاد مفرط مزمن", "Chronic Overuse"],
-];
+/** An option group: the stored values plus the message sub-key they live under. */
+export interface OptGroup<T extends string> {
+  group: string;
+  values: readonly T[];
+}
 
-export const PAIN_LOCATION_OPTS: Opt<PodiatryPainLocation>[] = [
-  ["forefoot", "مقدمة القدم", "Forefoot"],
-  ["midfoot", "منتصف القدم", "Midfoot"],
-  ["rearfoot", "الجزء الخلفي من القدم", "Rearfoot"],
-];
+const g = <T extends string>(group: string, values: readonly T[]): OptGroup<T> => ({ group, values });
 
-export const PAIN_CHARACTERISTIC_OPTS: Opt<PodiatryPainCharacteristic>[] = [
-  ["morning_startup", "ألم عند الاستيقاظ صباحاً / الخطوة الأولى", "Morning startup pain"],
-  ["eases_with_activity", "يقل الألم ويزول مع النشاط والحركة", "Eases with activity"],
-  ["progressively_worse", "يزداد الألم سوءاً تدريجياً أثناء النشاط", "Progressively worse during activity"],
-  ["night_pain", "ألم ليلي", "Night pain"],
-  ["pain_at_rest", "ألم أثناء الراحة الساكنة", "Pain at rest"],
-];
+export const MAIN_CAUSE = g<PodiatryMainCause>("mainCause", [
+  "none", "unknown", "acute_injury", "post_surgery", "chronic_overuse",
+]);
 
-export const REARFOOT_ALIGNMENT_OPTS: Opt<PodiatryRearfootAlignment>[] = [
-  ["varus", "انحراف إنسي", "Varus"],
-  ["valgus", "انحراف وحشي", "Valgus"],
-  ["neutral", "محايد", "Neutral"],
-];
+export const PAIN_LOCATION = g<PodiatryPainLocation>("painLocation", [
+  "forefoot", "midfoot", "rearfoot",
+]);
 
-export const TOO_MANY_TOES_OPTS: Opt<PodiatryTooManyToes>[] = [
-  ["negative", "سلبية", "Negative"],
-  ["positive", "إيجابية", "Positive"],
-];
+export const PAIN_CHARACTERISTIC = g<PodiatryPainCharacteristic>("painCharacteristic", [
+  "morning_startup", "eases_with_activity", "progressively_worse", "night_pain", "pain_at_rest",
+]);
 
-export const ARCH_ARCHITECTURE_OPTS: Opt<PodiatryArchArchitecture>[] = [
-  ["normal", "طبيعي", "Normal"],
-  ["low", "منخفض", "Low"],
-  ["high", "عالي", "High"],
-];
+export const REARFOOT_ALIGNMENT = g<PodiatryRearfootAlignment>("rearfootAlignment", [
+  "varus", "valgus", "neutral",
+]);
 
-export const DEFORMITY_TYPE_OPTS: Opt<PodiatryDeformityType>[] = [
-  ["flexible", "مرن", "Flexible"],
-  ["rigid", "قاس", "Rigid"],
-];
+export const TOO_MANY_TOES = g<PodiatryTooManyToes>("tooManyToes", ["negative", "positive"]);
 
-export const EDEMA_TYPE_OPTS: Opt<PodiatryEdemaType>[] = [
-  ["pitting", "انطباعية", "Pitting"],
-  ["non_pitting", "غير انطباعية", "Non-Pitting"],
-  ["unilateral", "أحادية الجانب", "Unilateral"],
-  ["bilateral", "ثنائية الجانب", "Bilateral"],
-];
+export const ARCH_ARCHITECTURE = g<PodiatryArchArchitecture>("archArchitecture", [
+  "normal", "low", "high",
+]);
 
-export const ROM_OPTS: Opt<PodiatryRomState>[] = [
-  ["normal", "طبيعي", "Normal"],
-  ["limited", "محدود", "Limited"],
-];
+export const DEFORMITY_TYPE = g<PodiatryDeformityType>("deformityType", ["flexible", "rigid"]);
 
-export const JACK_TEST_OPTS: Opt<PodiatryJackTest>[] = [
-  ["arch_forms", "تتشكل القوس وترتفع", "Arch forms and rises"],
-  ["arch_flat", "تظل القوس مسطحة", "Arch stays flat"],
-];
+export const EDEMA_TYPE = g<PodiatryEdemaType>("edemaType", [
+  "pitting", "non_pitting", "unilateral", "bilateral",
+]);
 
-export const WALKING_LINE_OPTS: Opt<PodiatryWalkingLine>[] = [
-  ["normal", "طبيعي ومستقيم", "Normal and straight"],
-  ["inward", "يميل وينكفئ للداخل (كبّ)", "Inward (pronation)"],
-  ["outward", "يميل وينكفئ للخارج (استلقاء)", "Outward (supination)"],
-];
+export const ROM = g<PodiatryRomState>("rom", ["normal", "limited"]);
 
-export const FOOTWEAR_OPTS: Opt<PodiatryFootwear>[] = [
-  ["stability_running", "حذاء ركض ثباتي داعم", "Stability Running"],
-  ["minimalist", "حذاء بسيط", "Minimalist"],
-  ["high_heel", "كعب عالي", "High Heel"],
-  ["medical", "حذاء طبي", "Medical"],
-  ["custom_orthotic", "ضبان طبي مخصص", "Custom Orthotic"],
-];
+export const JACK_TEST = g<PodiatryJackTest>("jackTest", ["arch_forms", "arch_flat"]);
 
-export const OUTSOLE_WEAR_OPTS: Opt<PodiatryOutsoleWear>[] = [
-  ["normal", "طبيعي (من الكعب الخارجي إلى مقدمة القدم الداخلية)", "Normal"],
-  ["lateral_supination", "تآكل خارجي واستلقاء مفرط", "Lateral wear / Excessive supination"],
-  ["medial_pronation", "تآكل داخلي وكبّ شديد", "Medial wear / Severe pronation"],
-];
+export const WALKING_LINE = g<PodiatryWalkingLine>("walkingLine", ["normal", "inward", "outward"]);
 
-export const INSOLE_TYPE_OPTS: Opt<PodiatryInsoleType>[] = [
+export const FOOTWEAR = g<PodiatryFootwear>("footwear", [
+  "stability_running", "minimalist", "high_heel", "medical", "custom_orthotic",
+]);
+
+export const OUTSOLE_WEAR = g<PodiatryOutsoleWear>("outsoleWear", [
+  "normal", "lateral_supination", "medial_pronation",
+]);
+
+/** Product codes, not words — the same in every locale. */
+export const INSOLE_TYPE_VALUES = [
   "VF01", "VF02", "VF03", "VF04", "VF05", "VF06", "VF07", "VF08", "VF09", "VF10", "VF11",
-].map((v) => [v, v, v] as Opt<PodiatryInsoleType>);
+] as unknown as readonly PodiatryInsoleType[];
 
 /** The palpation points, in the order the printed sheet lists them. */
-export const PALPATION_POINTS = [
-  ["plantar", "أسفل القدم / اللفافة الأخمصية", "Plantar"],
-  ["medial", "الجانب الداخلي للقدم أو الكاحل", "Medial"],
-  ["lateral", "الجانب الخارجي للقدم أو الكاحل", "Lateral"],
-  ["posterior", "خلف الكعب / وتر أخيل", "Posterior"],
-  ["dorsal", "الجانب الظهري العلوي للقدم", "Dorsal"],
-] as const;
+export const PALPATION_KEYS = ["plantar", "medial", "lateral", "posterior", "dorsal"] as const;
 
 /**
- * The measurement rows. `key` is the field prefix — the payload appends
+ * The measurement rows. Each key is the field prefix — the payload appends
  * `Left` / `Right` to it (footLength → footLengthLeft / footLengthRight).
  */
-export const FOOT_MEASUREMENT_ROWS = [
-  ["footLength", "طول القدم", "Foot Length"],
-  ["footWidth", "عرض القدم", "Foot Width"],
-  ["archHeight", "ارتفاع القوس", "Arch Height"],
-  ["ballWidth", "عرض كرة القدم", "Ball Width"],
-  ["ballCircumference", "محيط كرة القدم", "Ball Circumference"],
-  ["heelWidth", "عرض الكعب", "Heel Width"],
-  ["metatarsalBaseHeight", "ارتفاع قاعدة أمشاط القدم", "Metatarsal Base Height"],
-  ["footAlignment", "محاذاة واستقامة القدم", "Foot Alignment"],
-  ["navicularHeight", "ارتفاع العظم الزورقي", "Navicular Height"],
-  ["navicularDrop", "اختبار هبوط الزورقي", "Navicular Drop Test"],
-  ["navicularHeightWithOrthotic", "ارتفاع العظم الزورقي بالضبان", "Navicular Height w/ Orthotic"],
-  ["navicularDropWithOrthotic", "اختبار هبوط الزورقي بالضبان", "Navicular Drop w/ Orthotic"],
+export const FOOT_MEASUREMENT_KEYS = [
+  "footLength", "footWidth", "archHeight", "ballWidth", "ballCircumference", "heelWidth",
+  "metatarsalBaseHeight", "footAlignment", "navicularHeight", "navicularDrop",
+  "navicularHeightWithOrthotic", "navicularDropWithOrthotic",
 ] as const;
 
-/** Arabic labels for the option values, for read-only rendering and the PDF. */
-export const labelOf = <T extends string>(opts: Opt<T>[], v?: string | null): string =>
-  opts.find((o) => o[0] === v)?.[1] ?? (v ?? "");
+/** The label one picked value reads as. */
+export const labelOf = <T extends string>(t: FormT, o: OptGroup<T>, v?: string | null): string =>
+  (v ? t(`opts.${o.group}.${v}`) : "");
 
-/** Joins the picked values of a group into one Arabic line ("، " separated). */
-export const labelsOf = <T extends string>(opts: Opt<T>[], vs?: readonly string[] | null): string =>
-  (vs ?? []).map((v) => labelOf(opts, v)).filter(Boolean).join("، ");
+/** Joins the picked values of a group into one line, in the reader's script. */
+export const labelsOf = <T extends string>(
+  t: FormT,
+  o: OptGroup<T>,
+  vs?: readonly string[] | null,
+  sep = ", ",
+): string => (vs ?? []).map((v) => labelOf(t, o, v)).filter(Boolean).join(sep);

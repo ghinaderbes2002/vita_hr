@@ -15,7 +15,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
-import { VISIT_TYPE_LABEL } from "@/components/clinic/podiatry-labels";
+import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
@@ -23,6 +23,7 @@ export default function PodiatryListPage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.podiatry");
+  const enumLabel = usePodiatryEnumLabels();
   const [search, setSearch] = useState("");
 
   const { data: receptions = [], isLoading } = usePodiatryReceptions();
@@ -82,7 +83,7 @@ export default function PodiatryListPage() {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {(r.visitTypes ?? []).map((v) => (
-                        <Badge key={v} variant="outline" className="text-[10px]">{VISIT_TYPE_LABEL[v] ?? v}</Badge>
+                        <Badge key={v} variant="outline" className="text-[10px]">{enumLabel.visitType(v)}</Badge>
                       ))}
                       {(r.visitTypes ?? []).length === 0 && <span className="text-muted-foreground text-xs">—</span>}
                     </div>
