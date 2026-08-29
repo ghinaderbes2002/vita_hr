@@ -87,6 +87,8 @@ export function DepartmentDialog({ open, onOpenChange, department, onGradeMapped
     },
   });
 
+  // Keyed on the record, not the object: the list behind this dialog refetches
+  // in the background, and reset() was firing over half-typed input.
   useEffect(() => {
     if (department) {
       form.reset({
@@ -109,7 +111,8 @@ export function DepartmentDialog({ open, onOpenChange, department, onGradeMapped
         gradeId: "",
       });
     }
-  }, [department, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [department?.id, form]);
 
   const onSubmit = async (data: FormData) => {
     try {

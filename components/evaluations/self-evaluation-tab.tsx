@@ -30,7 +30,9 @@ export function SelfEvaluationTab({ form }: SelfEvaluationTabProps) {
   );
   const [comments, setComments] = useState(form.selfComments || "");
 
-  // Update local state when form data changes
+  // Re-seed only when the stored record actually changes: the queries refetch
+  // every 60s and on window focus, and keying this on `form` let a background
+  // refetch wipe the boxes mid-typing.
   useEffect(() => {
     setSections(
       form.sections.map((section) => ({
@@ -40,7 +42,8 @@ export function SelfEvaluationTab({ form }: SelfEvaluationTabProps) {
       }))
     );
     setComments(form.selfComments || "");
-  }, [form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.updatedAt, form.id]);
 
   const handleScoreChange = (criteriaId: string, score: number) => {
     setSections((prev) =>

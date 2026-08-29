@@ -30,7 +30,9 @@ export function ManagerEvaluationTab({ form }: ManagerEvaluationTabProps) {
   const [weaknesses, setWeaknesses] = useState(form.managerWeaknesses || "");
   const [recommendations, setRecommendations] = useState(form.managerRecommendations || "");
 
-  // Update local state when form data changes
+  // Re-seed only when the stored record actually changes: the queries refetch
+  // every 60s and on window focus, and keying this on `form` let a background
+  // refetch wipe the boxes mid-typing.
   useEffect(() => {
     setSections(
       form.sections.map((section) => ({
@@ -43,7 +45,8 @@ export function ManagerEvaluationTab({ form }: ManagerEvaluationTabProps) {
     setStrengths(form.managerStrengths || "");
     setWeaknesses(form.managerWeaknesses || "");
     setRecommendations(form.managerRecommendations || "");
-  }, [form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.updatedAt, form.id]);
 
   const handleScoreChange = (criteriaId: string, score: number) => {
     setSections((prev) =>

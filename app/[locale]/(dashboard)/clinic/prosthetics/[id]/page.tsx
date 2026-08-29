@@ -97,7 +97,19 @@ import {
   AmputationType, AmputationSide, AmputationCause, KLevel, CommitteeDecision, ProstheticType,
   AnkleDisarticulationDto, KneeDisarticulationDto, TransfemoralDto, TranstibialDto, HemipelvectomyDto, ElbowDisarticulationDto, TranshumeralDto, TransradialDto, TreatmentProgramDto, ProstheticDeliveryDto, DeliveryItemDto, FinalEvaluationDto,
   MeasurementAssessment, AssessmentResult,
+  amputationCauseOf,
+  amputationCountOf,
+  amputationDateOf,
 } from "@/lib/api/clinic-prosthetics";
+
+// Every query in the app refetches on a 60s interval and on window focus
+// (query-provider.tsx). A sync effect keyed on the query object therefore
+// re-runs mid-typing and overwrites the field being edited — key it on the
+// record's identity instead, so it only re-seeds after a real save.
+const recordKey = (r: unknown): string | null => {
+  const o = r as { updatedAt?: string | null; id?: string | null } | null | undefined;
+  return o?.updatedAt ?? o?.id ?? null;
+};
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
@@ -3684,7 +3696,6 @@ export default function ProstheticsCasePage() {
   const [intakeForm, setIntakeForm] = useState({
     amputationType: "", amputationSide: "", amputationLevels: [] as string[],
     amputationYear: "", amputationMonth: "0", amputationCause: "", amputationCauseOtherDetail: "", amputationCount: "1",
-    appointmentDate: "", appointmentTime: "",
     hasChronicDiseases: null as boolean | null,
     chronicDiseases: "",
     hasPhysicalTherapy: null as boolean | null,
@@ -3827,12 +3838,16 @@ export default function ProstheticsCasePage() {
     managerId: "", managerSignatureUrl: "",
   };
   const [finalEvalForm, setFinalEvalForm] = useState({ ...INITIAL_FINAL_EVAL });
+  // Keyed on the record, not on the query object: the queries refetch every 60s
+  // and on window focus, and depending on the object let a background refetch
+  // wipe whatever was being typed at that moment.
+  const finalEvalKey = recordKey(finalEvalData);
   useEffect(() => {
     if (finalEvalData) {
-      setFinalEvalForm((prev) => ({ ...INITIAL_FINAL_EVAL, ...finalEvalData }));
+      setFinalEvalForm({ ...INITIAL_FINAL_EVAL, ...finalEvalData });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finalEvalData]);
+  }, [finalEvalKey]);
   // Once the final evaluation has been saved it is locked: the whole tab turns
   // read-only so a recorded committee decision can't be altered afterwards.
   const finalEvalLocked = !!(finalEvalData as any)?.id || submitFinalEval.isSuccess;
@@ -3932,7 +3947,8 @@ export default function ProstheticsCasePage() {
     ? staffData
     : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
 
-  // sync Pro-019 header from server
+  // sync Pro-019 header from server — keyed on the record, see finalEvalKey.
+  const deliveryKey19 = recordKey(deliveryData19);
   useEffect(() => {
     if (!deliveryData19) return;
     setProDeliveryHeader({
@@ -3944,8 +3960,10 @@ export default function ProstheticsCasePage() {
       medicalDirectorSignedAt: (deliveryData19 as any)?.medicalDirectorSignedAt ?? "",
       signatureDate: (deliveryData19 as any)?.signatureDate?.slice(0, 10) ?? "",
     });
-  }, [deliveryData19]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveryKey19]);
 
+  const finalDeliveryKey = recordKey(finalDelivery);
   useEffect(() => {
     if (!finalDelivery) return;
     const fd = finalDelivery as any;
@@ -3957,7 +3975,8 @@ export default function ProstheticsCasePage() {
       ceoSignatureUrl: fd?.ceoSignatureUrl ?? "",
       signatureDate: fd?.signatureDate?.slice(0, 10) ?? "",
     });
-  }, [finalDelivery]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalDeliveryKey]);
 
   // يمنع إعادة تهيئة الفورم مباشرة بعد الحفظ
   const justSavedRef = useRef(false);
@@ -3995,15 +4014,14 @@ export default function ProstheticsCasePage() {
       })(),
       amputationSide: caseData.amputationSide ?? "",
       amputationLevels: toAmputationLevels(caseData.amputationLevel),
-      amputationYear: caseData.dateOfAmputation ? caseData.dateOfAmputation.slice(0, 4) : "",
-      amputationMonth: caseData.dateOfAmputation && caseData.dateOfAmputation.length >= 7
-        ? String(parseInt(caseData.dateOfAmputation.slice(5, 7)))
-        : "0",
-      amputationCause: caseData.causeOfAmputation ?? "",
+      amputationYear: amputationDateOf(caseData)?.slice(0, 4) ?? "",
+      amputationMonth: (() => {
+        const d = amputationDateOf(caseData);
+        return d && d.length >= 7 ? String(parseInt(d.slice(5, 7))) : "0";
+      })(),
+      amputationCause: amputationCauseOf(caseData) ?? "",
       amputationCauseOtherDetail: caseData.amputationCauseOtherDetail ?? "",
-      amputationCount: caseData.numberOfAmputations?.toString() ?? "1",
-      appointmentDate: (caseData as any).appointmentDate ?? "",
-      appointmentTime: (caseData as any).appointmentTime ?? "",
+      amputationCount: amputationCountOf(caseData)?.toString() ?? "1",
       hasChronicDiseases: caseData.hasChronicDiseases ?? null,
       chronicDiseases: caseData.chronicDiseases ?? "",
       hasPhysicalTherapy: caseData.hasPhysicalTherapy ?? null,
@@ -4182,8 +4200,8 @@ export default function ProstheticsCasePage() {
           romData: a.romData ?? null, muscleMotionNotes: a.muscleMotionNotes ?? null,
           // Case-level fields the website shows inside the assessment tab.
           clinicalHistory: (c as any).clinicalHistory ?? null,
-          amputationCause: c.causeOfAmputation ?? (c as any).amputationCause ?? null,
-          amputationDate: c.dateOfAmputation ?? null,
+          amputationCause: amputationCauseOf(c),
+          amputationDate: amputationDateOf(c),
           currentlyUsingProsthesis: c.currentlyUsingProsthesis,
           previouslyUsedProsthesis: c.previouslyUsedProsthesis,
           previousProsthesisSystemDetail: c.previousProsthesisSystemDetail,
@@ -4210,10 +4228,10 @@ export default function ProstheticsCasePage() {
           types: ampTypes,
           side: c.amputationSide,
           level: Array.isArray(c.amputationLevel) ? c.amputationLevel.join("، ") : c.amputationLevel,
-          date: c.dateOfAmputation,
-          cause: c.causeOfAmputation ?? (c as any).amputationCause,
+          date: amputationDateOf(c) ?? undefined,
+          cause: amputationCauseOf(c) ?? undefined,
           causeOther: c.amputationCauseOtherDetail,
-          count: c.numberOfAmputations,
+          count: amputationCountOf(c) ?? undefined,
         },
         currentlyUsingProsthesis: c.currentlyUsingProsthesis,
         previouslyUsedProsthesis: c.previouslyUsedProsthesis,
@@ -4335,15 +4353,13 @@ export default function ProstheticsCasePage() {
       })(),
       amputationDate: (() => {
         const y = intakeForm.amputationYear;
-        if (!y) return c.dateOfAmputation ? c.dateOfAmputation.slice(0, 10) : undefined;
+        if (!y) return amputationDateOf(c)?.slice(0, 10) ?? undefined;
         const m = intakeForm.amputationMonth && intakeForm.amputationMonth !== "0" ? intakeForm.amputationMonth.padStart(2, "0") : "01";
         return `${y}-${m}-01`;
       })(),
-      amputationCause: (intakeForm.amputationCause || c.causeOfAmputation || undefined) as AmputationCause | undefined,
+      amputationCause: (intakeForm.amputationCause || amputationCauseOf(c) || undefined) as AmputationCause | undefined,
       amputationCauseOtherDetail: intakeForm.amputationCause === "OTHER" ? intakeForm.amputationCauseOtherDetail || undefined : undefined,
-      amputationCount: intakeForm.amputationCount ? parseInt(intakeForm.amputationCount) : (c.numberOfAmputations ?? undefined),
-      appointmentDate: intakeForm.appointmentDate || (c as any).appointmentDate || undefined,
-      appointmentTime: intakeForm.appointmentTime || (c as any).appointmentTime || undefined,
+      amputationCount: intakeForm.amputationCount ? parseInt(intakeForm.amputationCount) : (amputationCountOf(c) ?? undefined),
       hasChronicDiseases: hcd,
       chronicDiseases: hcd ? (intakeForm.chronicDiseases || c.chronicDiseases || undefined) : undefined,
       hasPhysicalTherapy: hpt,
@@ -4981,7 +4997,7 @@ export default function ProstheticsCasePage() {
                 <div className="space-y-1.5">
                   <Label>{t("intake.injuryCause")}</Label>
                   <Select
-                    value={intakeForm.amputationCause || c.causeOfAmputation || ""}
+                    value={intakeForm.amputationCause || amputationCauseOf(c) || ""}
                     onValueChange={(v) => setIntakeForm((f) => ({ ...f, amputationCause: v, amputationCauseOtherDetail: "" }))}
                   >
                     <SelectTrigger><SelectValue placeholder={t("intake.chooseCause")} /></SelectTrigger>
@@ -4997,7 +5013,7 @@ export default function ProstheticsCasePage() {
                       <SelectItem value="OTHER">{t("intake.cause.OTHER")}</SelectItem>
                     </SelectContent>
                   </Select>
-                  {(intakeForm.amputationCause || c.causeOfAmputation) === "OTHER" && (
+                  {(intakeForm.amputationCause || amputationCauseOf(c)) === "OTHER" && (
                     <Input
                       className="mt-1"
                       placeholder={t("intake.pleaseSpecify")}
@@ -5201,22 +5217,14 @@ export default function ProstheticsCasePage() {
                 );
               })()}
 
-              <Separator />
-
-              {/* تاريخ ووقت الموعد */}
-              <div className="space-y-1.5">
-                <Label className="text-base">{t("intake.appointmentDateTime")}</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">{t("intake.date")}</Label>
-                    <Input type="date" value={intakeForm.appointmentDate || (c as any).appointmentDate || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, appointmentDate: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">{t("intake.time")}</Label>
-                    <Input type="time" value={intakeForm.appointmentTime || (c as any).appointmentTime || ""} onChange={(e) => setIntakeForm((f) => ({ ...f, appointmentTime: e.target.value }))} />
-                  </div>
-                </div>
-              </div>
+              {/*
+                The appointment date/time pair used to sit here. The case has no
+                column for either, so the values were dropped on save while the
+                form still showed them — the reception thought a slot had been
+                booked when nothing had. Booking belongs to the appointments
+                module, which already links an appointment to a case through
+                caseId + caseType: "PROSTHETICS". Suspended until that is wired.
+              */}
 
               <div className="flex flex-wrap gap-3 pt-2">
                 <Button onClick={handleSaveIntake} disabled={updateCase.isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white">

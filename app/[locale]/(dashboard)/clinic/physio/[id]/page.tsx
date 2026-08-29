@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { usePhysioLabels } from "@/components/clinic/physio-labels";
 import {
   ArrowRight,
   Plus,
@@ -79,13 +80,13 @@ import {
   PhysioStatus,
   PainRegion,
   TherapyModality,
-  THERAPY_MODALITY_LABELS,
+  THERAPY_MODALITY_VALUES,
   EvaluationModality,
-  EVALUATION_MODALITY_LABELS,
+  EVALUATION_MODALITY_VALUES,
   ChronicCondition,
-  CHRONIC_CONDITION_LABELS,
+  CHRONIC_CONDITION_VALUES,
   PhysioGoal,
-  PHYSIO_GOAL_LABELS,
+  PHYSIO_GOAL_VALUES,
   TestType,
   isDoctorExamCase,
 } from "@/lib/api/clinic-physio";
@@ -184,12 +185,8 @@ function RLToggle({
   );
 }
 
-const THERAPY_MODALITIES = Object.keys(
-  THERAPY_MODALITY_LABELS,
-) as TherapyModality[];
-const EVALUATION_MODALITIES = Object.keys(
-  EVALUATION_MODALITY_LABELS,
-) as EvaluationModality[];
+const THERAPY_MODALITIES: TherapyModality[] = THERAPY_MODALITY_VALUES;
+const EVALUATION_MODALITIES: EvaluationModality[] = EVALUATION_MODALITY_VALUES;
 // Paper form 2-col order: [right-col (ESWT side), left-col (MANUAL_THERAPY side)]
 const THERAPY_MODALITY_PAIRS: [TherapyModality, TherapyModality?][] = [
   ["ESWT",       "MANUAL_THERAPY"],
@@ -217,10 +214,8 @@ const EVAL_MODALITY_PAIRS: [EvaluationModality, EvaluationModality?][] = [
   ["SIS"],
   ["EXERCISES", "OTHER"],
 ];
-const CHRONIC_CONDITIONS = Object.keys(
-  CHRONIC_CONDITION_LABELS,
-) as ChronicCondition[];
-const PHYSIO_GOALS = Object.keys(PHYSIO_GOAL_LABELS) as PhysioGoal[];
+const CHRONIC_CONDITIONS: ChronicCondition[] = CHRONIC_CONDITION_VALUES;
+const PHYSIO_GOALS: PhysioGoal[] = PHYSIO_GOAL_VALUES;
 
 // The two nested form tab groups, in the order the therapist fills them in. Each
 // "save and next" button walks to the following visible tab of its own group.
@@ -242,6 +237,7 @@ export default function PhysioCasePage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.physio.case");
+  const physioLabel = usePhysioLabels();
   const isRtl = locale === "ar";
 
   const { user } = useAuthStore();
@@ -1311,7 +1307,7 @@ export default function PhysioCasePage() {
         supervisorGaze,
         doctorGaze,
         finalSummary,
-      });
+      }, physioLabel.t, locale);
       toast.success(t("sessions.pdfExported"));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -2503,7 +2499,7 @@ export default function PhysioCasePage() {
               {CHRONIC_CONDITIONS.map((cond) => (
                 <label key={cond} htmlFor={`cc-${cond}`} className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" id={`cc-${cond}`} checked={chronicConditions.includes(cond)} onChange={() => toggleArr(chronicConditions, cond, setChronicConditions)} disabled={!canEdit} className="mt-0.5 h-4 w-4 accent-primary shrink-0" />
-                  <span className="text-sm leading-snug">{CHRONIC_CONDITION_LABELS[cond]}</span>
+                  <span className="text-sm leading-snug">{physioLabel.chronic(cond)}</span>
                 </label>
               ))}
             </div>
@@ -2558,7 +2554,7 @@ export default function PhysioCasePage() {
                 <Label className="mb-3 block text-sm font-medium">{t("goals.question")}</Label>
                 <div className="flex flex-wrap gap-2">
                   {PHYSIO_GOALS.map((g) => (
-                    <ToggleChip key={g} label={PHYSIO_GOAL_LABELS[g]} active={goals.includes(g)} onClick={() => canEdit && toggleArr(goals, g, setGoals)} />
+                    <ToggleChip key={g} label={physioLabel.goal(g)} active={goals.includes(g)} onClick={() => canEdit && toggleArr(goals, g, setGoals)} />
                   ))}
                   <ToggleChip label={t("goals.decreasePain")} active={goalsExtra.decreasePain} onClick={() => canEdit && setGoalsExtra((f) => ({ ...f, decreasePain: !f.decreasePain }))} />
                   <ToggleChip label={t("goals.improveStrength")} active={goalsExtra.improveStrength} onClick={() => canEdit && setGoalsExtra((f) => ({ ...f, improveStrength: !f.improveStrength }))} />
@@ -3328,7 +3324,7 @@ export default function PhysioCasePage() {
                 (left ? [right, left] : [right]).map((m) => (
                   <label key={m} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" className="h-4 w-4 shrink-0 rounded border-border accent-primary" checked={planModalities.includes(m)} onChange={(e) => { if (!canEdit) return; setPlanModalities((prev) => e.target.checked ? [...prev, m] : prev.filter((x) => x !== m)); }} disabled={!canEdit} />
-                    <span className="text-sm leading-tight">{THERAPY_MODALITY_LABELS[m]}</span>
+                    <span className="text-sm leading-tight">{physioLabel.modality(m)}</span>
                   </label>
                 )),
               )}
@@ -3390,7 +3386,7 @@ export default function PhysioCasePage() {
                       disabled={!canEdit}
                     />
                     <span className="text-sm leading-tight">
-                      {EVALUATION_MODALITY_LABELS[m]}
+                      {physioLabel.modality(m)}
                     </span>
                   </label>
                 )),
@@ -3628,7 +3624,7 @@ export default function PhysioCasePage() {
                           {s.modalities && s.modalities.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {s.modalities.map((m) => (
-                                <Badge key={m} variant="outline" className="text-[10px] px-1.5 py-0">{THERAPY_MODALITY_LABELS[m]}</Badge>
+                                <Badge key={m} variant="outline" className="text-[10px] px-1.5 py-0">{physioLabel.modality(m)}</Badge>
                               ))}
                             </div>
                           )}

@@ -80,6 +80,8 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
     },
   });
 
+  // Keyed on the record, not the object: the list behind this dialog refetches
+  // in the background, and reset() was firing over half-typed input.
   useEffect(() => {
     if (holiday) {
       form.reset({
@@ -104,7 +106,8 @@ export function HolidayDialog({ open, onOpenChange, holiday }: HolidayDialogProp
         isActive: true,
       });
     }
-  }, [holiday, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holiday?.id, form]);
 
   const onSubmit = async (data: FormData) => {
     try {

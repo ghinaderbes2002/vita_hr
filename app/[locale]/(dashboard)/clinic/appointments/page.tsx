@@ -123,6 +123,9 @@ export default function AppointmentsPage() {
   const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
   const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatientLabel, setSelectedPatientLabel] = useState("");
+  // A walk-in who has no patient record yet: the name rides along on the
+  // appointment itself, so nothing is written to the patients list.
+  const [unregisteredName, setUnregisteredName] = useState("");
   const [newForm, setNewForm] = useState({
     patientId: "",
     appointmentType: "ASSESSMENT" as AppointmentType,
@@ -205,11 +208,12 @@ export default function AppointmentsPage() {
   };
 
   const handleCreateAppt = async () => {
-    if (!newForm.patientId) return;
+    const walkIn = unregisteredName.trim();
+    if (!newForm.patientId && !walkIn) return;
     const startISO = new Date(`${newForm.date}T${newForm.startTime}:00`).toISOString();
     const endISO = new Date(`${newForm.date}T${newForm.endTime}:00`).toISOString();
     await createAppt.mutateAsync({
-      patientId: newForm.patientId,
+      ...(newForm.patientId ? { patientId: newForm.patientId } : { patientName: walkIn }),
       practitionerId: (myEmployee as any)?.userId ?? "",
       appointmentType: newForm.appointmentType,
       departmentId: newForm.departmentId || undefined,
@@ -219,7 +223,7 @@ export default function AppointmentsPage() {
       therapistIds: newForm.therapistIds.length ? newForm.therapistIds : undefined,
       // Auto-linked prosthetics case (hidden from reception). Omitted when the
       // patient has no active case → no auto-session is created.
-      ...(activeProstheticsCase
+      ...(newForm.patientId && activeProstheticsCase
         ? { caseId: activeProstheticsCase.id, caseType: "PROSTHETICS" as const }
         : {}),
     });
@@ -228,6 +232,7 @@ export default function AppointmentsPage() {
     setSelectedDate(newForm.date);
     setPatientSearch("");
     setSelectedPatientLabel("");
+    setUnregisteredName("");
     setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "" });
   };
 
@@ -553,26 +558,42 @@ export default function AppointmentsPage() {
                     setPatientSearch(e.target.value);
                     setNewForm((f) => ({ ...f, patientId: "" }));
                     setSelectedPatientLabel("");
+                    setUnregisteredName("");
                     setPatientPopoverOpen(true);
                   }}
                   onFocus={() => setPatientPopoverOpen(true)}
                   onBlur={() => setTimeout(() => setPatientPopoverOpen(false), 150)}
                   className="pl-9"
                 />
-                {selectedPatientLabel && (
-                  <div className="mt-1 flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-1.5">
-                    <UserRound className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-sm font-medium text-primary">{selectedPatientLabel}</span>
+                {(selectedPatientLabel || unregisteredName) && (
+                  <div className={`mt-1 flex items-center gap-2 rounded-md border px-3 py-1.5 ${
+                    selectedPatientLabel ? "bg-primary/5" : "bg-muted/50 border-dashed"
+                  }`}>
+                    <UserRound className={`h-4 w-4 shrink-0 ${selectedPatientLabel ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-sm font-medium ${selectedPatientLabel ? "text-primary" : ""}`}>
+                      {selectedPatientLabel || unregisteredName}
+                    </span>
+                    {!selectedPatientLabel && (
+                      <span className="rounded-full border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                        {t("form.unregistered")}
+                      </span>
+                    )}
                     <button
                       type="button"
                       className="mr-auto text-muted-foreground hover:text-destructive"
-                      onClick={() => { setSelectedPatientLabel(""); setPatientSearch(""); setNewForm((f) => ({ ...f, patientId: "" })); }}
+                      onClick={() => {
+                        setSelectedPatientLabel("");
+                        setUnregisteredName("");
+                        setPatientSearch("");
+                        setNewForm((f) => ({ ...f, patientId: "" }));
+                      }}
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 )}
-                {patientPopoverOpen && patientsList.length > 0 && !selectedPatientLabel && (
+                {patientPopoverOpen && !selectedPatientLabel && !unregisteredName
+                  && (patientsList.length > 0 || patientSearch.trim()) && (
                   <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md">
                     <div className="max-h-52 overflow-y-auto py-1">
                       {patientsList.map((p) => (
@@ -597,6 +618,27 @@ export default function AppointmentsPage() {
                           </div>
                         </button>
                       ))}
+                      {/* Whoever is being booked need not be in the list yet. */}
+                      {patientSearch.trim() && (
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-3 border-t px-3 py-2 text-right hover:bg-accent transition-colors"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setUnregisteredName(patientSearch.trim());
+                            setNewForm((f) => ({ ...f, patientId: "" }));
+                            setPatientSearch("");
+                            setPatientPopoverOpen(false);
+                          }}
+                        >
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed shrink-0">
+                            <UserRound className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <span className="flex-1 min-w-0 text-right text-sm text-muted-foreground">
+                            {t("form.useUnregistered", { name: patientSearch.trim() })}
+                          </span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -696,7 +738,7 @@ export default function AppointmentsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewApptOpen(false)}>{t("form.cancel")}</Button>
-            <Button onClick={handleCreateAppt} disabled={!newForm.patientId || !(myEmployee as any)?.userId || createAppt.isPending}>
+            <Button onClick={handleCreateAppt} disabled={(!newForm.patientId && !unregisteredName.trim()) || !(myEmployee as any)?.userId || createAppt.isPending}>
               {createAppt.isPending ? t("form.saving") : t("form.create")}
             </Button>
           </DialogFooter>

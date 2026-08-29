@@ -112,6 +112,8 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     },
   });
 
+  // Keyed on the record, not the object: the list behind this dialog refetches
+  // in the background, and reset() was firing over half-typed input.
   useEffect(() => {
     if (roleToUse) {
       form.reset({
@@ -131,7 +133,8 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
       });
     }
     // idByName لازم ضمن الاعتماديات: بذرة الصلاحيات تُحلّ عبره عند وصول القائمة
-  }, [roleToUse, form, idByName]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleToUse?.id, form, idByName]);
 
   const onSubmit = async (data: FormData) => {
     // حارس: الباك يتحقق من permissionIds كـ UUIDs. أي قيمة غير صالحة تُسقط هنا

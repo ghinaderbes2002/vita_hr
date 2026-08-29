@@ -35,7 +35,13 @@ export interface Appointment {
 }
 
 export interface CreateAppointmentDto {
-  patientId: string;
+  /**
+   * Omitted for a walk-in who is not in the patients list yet — send
+   * `patientName` instead. Exactly one of the two is required.
+   */
+  patientId?: string;
+  /** Free-text name for an unregistered patient; creates no patient record. */
+  patientName?: string;
   caseId?: string;
   caseType?: "PROSTHETICS" | "PHYSIO" | "GENERAL";
   practitionerId: string;

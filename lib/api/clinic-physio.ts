@@ -40,95 +40,31 @@ export type EvaluationModality =
   | "TRACTION" | "EXERCISES" | "ESWT" | "US" | "TENS" | "EMS"
   | "LASER" | "CPM" | "PNF" | "INFRARED" | "SIS" | "OTHER";
 
-// ─── Display labels ────────────────────────────────────────────────────────────
-export const THERAPY_MODALITY_LABELS: Record<TherapyModality, string> = {
-  MANUAL_THERAPY: "العلاج اليدوي / MANUAL THERAPY",
-  MASSAGE:        "التدليك العلاجي / MASSAGE",
-  KINESIO_TAPING: "الشريط اللاصق العلاجي / KINESIO TAPING",
-  COMPRESSION:    "العالج بالضغط / COMPRESSION",
-  PARAFFIN:       "علاج البارافين / PARAFIN",
-  GRASTON:        "غراستون / GRASTON",
-  MET:            "تقنية طاقة العضلات / MET",
-  HOT_PACKS:      "كمادات ساخنة / Hot PACKS",
-  COLD_PACKS:     "كمادات باردة / COLD PACKS",
-  TRACTION:       "الشد العلاجي / TRACTION",
-  EXERCISES:      "تمارين علاجية / EXERCISES",
-  ESWT:           "العلاج بالموجات التصادمية / ESWT",
-  US:             "الموجات فوق الصوتية / US",
-  TENS:           "التحفيز الكهربائي للأعصاب عبر الجلد / TENS",
-  EMS:            "التحفيز الكهربائي للعضلات / EMS",
-  LASER:          "العالج بالليزر / LASER",
-  CPM:            "الحركة السلبية المستمرة / CPM",
-  PNF:            "التسهيل العصبي العضلي الحسي / PNF",
-  INFRARED:       "الأشعة تحت الحمراء / INFRARED",
-  SIS:            "التحفيز الكهرومغناطيسي / SIS",
-  OTHER:          "أخرى / Other",
-};
+// ─── Option orders ────────────────────────────────────────────────────────────
+// The display words live in `clinic.physio.sheet` (messages/{ar,en,tr}.json) so
+// the case screens and the printed sheet read in the user's locale; only the
+// stored values and the order they are shown in belong here.
+export const THERAPY_MODALITY_VALUES: TherapyModality[] = [
+  "MANUAL_THERAPY", "MASSAGE", "KINESIO_TAPING", "COMPRESSION", "PARAFFIN",
+  "GRASTON", "MET", "HOT_PACKS", "COLD_PACKS", "TRACTION", "EXERCISES", "ESWT",
+  "US", "TENS", "EMS", "LASER", "CPM", "PNF", "INFRARED", "SIS", "OTHER",
+];
 
-export const CHRONIC_CONDITION_LABELS: Record<ChronicCondition, string> = {
-  LIVER_PROBLEMS:         "مشاكل الكبد / Liver Problems",
-  PNEUMONIA:              "التهاب رئوي / Pneumonia",
-  URINARY_INFECTION:      "التهاب المسالك البولية / Urinary Infection",
-  DIABETES:               "السكري / Diabetes",
-  HEMOPHILIA:             "الناعور / Hemophilia",
-  LUNG_ISSUES:            "مشاكل الرئة / Lung Issues",
-  STROKE:                 "جلطة / Stroke",
-  KIDNEY_PROBLEMS:        "مشاكل الكلى / Kidney Problems",
-  ANEMIA:                 "فقر الدم / Anemia",
-  ASTHMA:                 "الربو / Asthma",
-  CHEMICAL_DEPENDENCY:    "الإدمان الكيميائي / Chemical Dependency",
-  EPILEPSY:               "الصرع / Epilepsy",
-  HYPERTENSION:           "ارتفاع /انخفاض ضغط الدم/ High/Low Blood Pressure",
-  AIDS_HIV:               "الإيدز / AIDS/HIV",
-  ARTHRITIS:              "التهاب المفاصل / Arthritis",
-  CANCER:                 "السرطان / Cancer",
-  MULTIPLE_SCLEROSIS:     "التصلب المتعدد / Multiple Sclerosis",
-  STDS:                   "الأمراض المنقولة جنسياً / STD",
-  ANGINA:                 "ذبحة / Angina",
-  BLOOD_CLOTS:            "جلطات دم / Blood Clots",
-  CIRCULATION_PROBLEMS:   "مشاكل الدورة الدموية / Circulation Problems",
-  EYE_INFECTION:          "التهاب العين / Eye Infection",
-  JOINT_BONE_INFECTION:   "عدوى المفاصل / العظام / Joint/Bone Infection",
-  MUSCULOSKELETAL:        "مشاكل الجهاز العضلي الهيكلي/Musculoskeletal Problems",
-  TUBERCULOSIS:           "مرض السل / Tuberculosis",
-  ARTERIOSCLEROSIS:       "تصلب الشرايين / Arteriosclerosis",
-  BONE_INFECTION:         "التهاب نقي العظم / Bone Infection",
-  DEPRESSION:             "اكتئاب / Depression",
-  HEART_PROBLEMS:         "مشاكل القلب / Heart Problems",
-  OTHER:                  "آخر / Other",
-};
+export const EVALUATION_MODALITY_VALUES: EvaluationModality[] = [...THERAPY_MODALITY_VALUES];
 
-export const EVALUATION_MODALITY_LABELS: Record<EvaluationModality, string> = {
-  MANUAL_THERAPY: "العلاج اليدوي / MANUAL THERAPY",
-  MASSAGE:        "التدليك العلاجي / MASSAGE",
-  KINESIO_TAPING: "الشريط اللاصق العلاجي / KINESIO TAPING",
-  COMPRESSION:    "العالج بالضغط / COMPRESSION",
-  PARAFFIN:       "علاج البارافين / PARAFIN",
-  GRASTON:        "غراستون / GRASTON",
-  MET:            "تقنية طاقة العضلات / MET",
-  HOT_PACKS:      "كمادات ساخنة / Hot PACKS",
-  COLD_PACKS:     "كمادات باردة / COLD PACKS",
-  TRACTION:       "الشد العلاجي / TRACTION",
-  EXERCISES:      "تمارين علاجية / EXERCISES",
-  ESWT:           "العلاج بالموجات التصادمية / ESWT",
-  US:             "الموجات فوق الصوتية / US",
-  TENS:           "التحفيز الكهربائي للأعصاب عبر الجلد / TENS",
-  EMS:            "التحفيز الكهربائي للعضلات / EMS",
-  LASER:          "العالج بالليزر / LASER",
-  CPM:            "الحركة السلبية المستمرة / CPM",
-  PNF:            "التسهيل العصبي العضلي الحسي / PNF",
-  INFRARED:       "الأشعة تحت الحمراء / INFRARED",
-  SIS:            "التحفيز الكهرومغناطيسي / SIS",
-  OTHER:          "أخرى / Other",
-};
+export const CHRONIC_CONDITION_VALUES: ChronicCondition[] = [
+  "LIVER_PROBLEMS", "PNEUMONIA", "URINARY_INFECTION", "DIABETES", "HEMOPHILIA",
+  "LUNG_ISSUES", "STROKE", "KIDNEY_PROBLEMS", "ANEMIA", "ASTHMA",
+  "CHEMICAL_DEPENDENCY", "EPILEPSY", "HYPERTENSION", "AIDS_HIV", "ARTHRITIS",
+  "CANCER", "MULTIPLE_SCLEROSIS", "STDS", "ANGINA", "BLOOD_CLOTS",
+  "CIRCULATION_PROBLEMS", "EYE_INFECTION", "JOINT_BONE_INFECTION",
+  "MUSCULOSKELETAL", "TUBERCULOSIS", "ARTERIOSCLEROSIS", "BONE_INFECTION",
+  "DEPRESSION", "HEART_PROBLEMS", "OTHER",
+];
 
-export const PHYSIO_GOAL_LABELS: Record<PhysioGoal, string> = {
-  BACK_TO_SPORTS: "العودة للرياضة / Back to sports",
-  BACK_TO_WORK:   "العودة للعمل / Back to work",
-  SIMPLE_WORKS:   "القيام بالأعمال البسيطة / Doing simple works",
-  PAIN_RELIEF:    " تسكين الألم فقط/ Pain relief only",
-  OTHER:          "أي شيء أخرى / Anything else",
-};
+export const PHYSIO_GOAL_VALUES: PhysioGoal[] = [
+  "BACK_TO_SPORTS", "BACK_TO_WORK", "SIMPLE_WORKS", "PAIN_RELIEF", "OTHER",
+];
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 /**

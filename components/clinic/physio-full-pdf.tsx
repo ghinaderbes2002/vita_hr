@@ -10,6 +10,7 @@ import {
   Font,
   pdf,
 } from "@react-pdf/renderer";
+import type { Style } from "@react-pdf/types";
 import type {
   TherapyModality,
   EvaluationModality,
@@ -20,11 +21,12 @@ import type {
   PhysioSession,
 } from "@/lib/api/clinic-physio";
 import {
-  THERAPY_MODALITY_LABELS,
-  EVALUATION_MODALITY_LABELS,
-  CHRONIC_CONDITION_LABELS,
-  PHYSIO_GOAL_LABELS,
+  CHRONIC_CONDITION_VALUES,
+  EVALUATION_MODALITY_VALUES,
+  PHYSIO_GOAL_VALUES,
+  THERAPY_MODALITY_VALUES,
 } from "@/lib/api/clinic-physio";
+import type { SheetT } from "./physio-labels";
 
 // ── Theme ──────────────────────────────────────────────────────────────────────
 const BRAND       = "#346180";
@@ -316,11 +318,49 @@ function ar(s: string): string {
   return out.join('');
 }
 
+// ── Sheet context ─────────────────────────────────────────────────────────────
+// react-pdf applies no bidi algorithm and breaks long Arabic lines in the wrong
+// direction, so Arabic runs are pre-shaped by `ar()` and laid out word by word
+// right-to-left by flexbox. Latin locales take the plain path: one Text node,
+// rows running left to right. The helpers read the direction off a context so
+// the call sites stay as they were.
+export interface SheetDir {
+  rtl: boolean;
+  /** The flex direction a row of this sheet runs in. */
+  row: "row" | "row-reverse";
+  /** The edge text aligns to. */
+  align: "right" | "left";
+}
+
+const SheetCtx = React.createContext<SheetDir>({ rtl: true, row: "row-reverse", align: "right" });
+const useDir = () => React.useContext(SheetCtx);
+
+// The translator reaches the leaf helpers the same way the direction does.
+const TCtx = React.createContext<SheetT>(((k: string) => k) as SheetT);
+const useSheetT = () => React.useContext(TCtx);
+
+/** One text run, laid out in the sheet's own direction. */
+const Txt = ({ t: text, style }: { t?: string | number | null; style?: Style | Style[] }) => {
+  const dir = useDir();
+  const v = text == null ? "" : String(text);
+  if (!dir.rtl || !v) return <Text style={style}>{v}</Text>;
+  // Arabic never joins across a space, so shaping word by word is lossless —
+  // and it lets flexbox, not react-pdf, decide the reading order.
+  return (
+    <View style={{ flexDirection: dir.row, flexWrap: "wrap", gap: 2.5 }}>
+      {v.split(" ").filter(Boolean).map((w, i) => (
+        <Text key={i} style={style}>{ar(w)}</Text>
+      ))}
+    </View>
+  );
+};
+
 const SecHead = ({ label, break: brk }: { label: string; break?: boolean }) => (
   <View style={S.sectionHeader} break={brk}>
     <Text style={S.sectionHeaderText}>{ar(label)}</Text>
   </View>
 );
+
 
 const SubHead = ({ label, break: brk }: { label: string; break?: boolean }) => (
   <View style={S.subHeader} break={brk}>
@@ -330,17 +370,22 @@ const SubHead = ({ label, break: brk }: { label: string; break?: boolean }) => (
 
 // ── Postural checkbox helpers ───────────────────────────────────────────────────
 const BOX = { width: 9, height: 9, borderWidth: 0.8, borderColor: BRAND, justifyContent: "center" as const, alignItems: "center" as const };
-const Chk = ({ checked, label }: { checked: boolean; label: string }) => (
-  <View wrap={false} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 4, marginBottom: 3 }}>
+const Chk = ({ checked, label }: { checked: boolean; label: string }) => {
+  const dir = useDir();
+  return (
+  <View wrap={false} style={{ flexDirection: dir.row, alignItems: "center", gap: 4, marginBottom: 3 }}>
     <View style={{ ...BOX, backgroundColor: checked ? BRAND : "transparent" }}>
       {checked && <Text style={{ fontSize: 6, color: "#ffffff", lineHeight: 1 }}>{"✓"}</Text>}
     </View>
-    <Text style={{ fontSize: 8.5, color: TEXT }}>{ar(label)}</Text>
+    <Txt t={label} style={{ fontSize: 8.5, color: TEXT }} />
   </View>
-);
-const LRChk = ({ left, right, label }: { left: boolean; right: boolean; label: string }) => (
-  <View wrap={false} style={{ flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-    <Text style={{ fontSize: 8.5, color: TEXT, flex: 1 }}>{ar(label)}</Text>
+  );
+};
+const LRChk = ({ left, right, label }: { left: boolean; right: boolean; label: string }) => {
+  const dir = useDir();
+  return (
+  <View wrap={false} style={{ flexDirection: dir.row, alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+    <View style={{ flex: 1 }}><Txt t={label} style={{ fontSize: 8.5, color: TEXT }} /></View>
     <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
       <Text style={{ fontSize: 7.5, color: MUTED }}>R</Text>
       <View style={{ ...BOX, backgroundColor: right ? BRAND : "transparent" }}>
@@ -352,43 +397,64 @@ const LRChk = ({ left, right, label }: { left: boolean; right: boolean; label: s
       </View>
     </View>
   </View>
-);
-const PostSec = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  );
+};
+const PostSec = ({ title, children }: { title: string; children: React.ReactNode }) => {
+  const dir = useDir();
+  return (
   <View wrap={false} style={{ borderWidth: 0.5, borderColor: BORDER, borderRadius: 4, padding: 7, marginBottom: 5 }}>
-    <Text style={{ fontSize: 9, fontWeight: "bold", color: BRAND, marginBottom: 5, textAlign: "right" }}>{ar(title)}</Text>
+    <View style={{ flexDirection: dir.row, marginBottom: 5 }}>
+      <Txt t={title} style={{ fontSize: 9, fontWeight: "bold", color: BRAND }} />
+    </View>
     {children}
   </View>
-);
+  );
+};
 
 const F = ({ label, value }: { label: string; value?: string | number | null }) => {
+  const dir = useDir();
   const v = value == null ? "" : String(value).trim();
   return (
-    <View style={S.fieldRow} wrap={false}>
-      <Text style={S.fieldLabel}>{ar(label)}</Text>
-      <Text style={S.fieldValue}>{ar(v) || "—"}</Text>
+    <View style={[S.fieldRow, { flexDirection: dir.row }]} wrap={false}>
+      <View style={{ width: 190, flexShrink: 0 }}>
+        <Txt t={label} style={S.fieldLabel} />
+      </View>
+      <View style={{ flex: 1, paddingRight: dir.rtl ? 12 : 0, paddingLeft: dir.rtl ? 0 : 12 }}>
+        <Txt t={v || "—"} style={{ fontSize: 8.5, color: MUTED }} />
+      </View>
     </View>
   );
 };
 
 const Bool = ({ label, value, showNo = true }: { label: string; value: boolean; showNo?: boolean }) => {
+  const dir = useDir();
+  const t = useSheetT();
   if (!value && !showNo) return null;
   return (
-    <View style={S.fieldRow} wrap={false}>
-      <Text style={S.fieldLabel}>{ar(label)}</Text>
-      <Text style={[S.fieldValue, value ? S.yes : S.no]}>
-        {value ? `✓ ${ar("نعم")}` : `✗ ${ar("لا")}`}
-      </Text>
+    <View style={[S.fieldRow, { flexDirection: dir.row }]} wrap={false}>
+      <View style={{ width: 190, flexShrink: 0 }}>
+        <Txt t={label} style={S.fieldLabel} />
+      </View>
+      <View style={{ flex: 1, flexDirection: dir.row, gap: 3, paddingRight: dir.rtl ? 12 : 0, paddingLeft: dir.rtl ? 0 : 12 }}>
+        <Text style={[{ fontSize: 8.5 }, value ? S.yes : S.no]}>{value ? "✓" : "✗"}</Text>
+        <Txt t={value ? t("word.yes") : t("word.no")} style={[{ fontSize: 8.5 }, value ? S.yes : S.no]} />
+      </View>
     </View>
   );
 };
 
 // Card-style field: label small above, value bold below
 const FC = ({ label, value }: { label: string; value?: string | number | null }) => {
+  const dir = useDir();
   const v = value == null ? "" : String(value).trim();
   return (
     <View style={{ marginBottom: 6 }} wrap={false}>
-      <Text style={{ fontSize: 7.5, color: TEXT, marginBottom: 2 }}>{ar(label)}</Text>
-      <Text style={{ fontSize: 10, color: MUTED, fontWeight: "bold" }}>{ar(v) || "—"}</Text>
+      <View style={{ flexDirection: dir.row, marginBottom: 2 }}>
+        <Txt t={label} style={{ fontSize: 7.5, color: TEXT }} />
+      </View>
+      <View style={{ flexDirection: dir.row }}>
+        <Txt t={v || "—"} style={{ fontSize: 10, color: MUTED, fontWeight: "bold" }} />
+      </View>
     </View>
   );
 };
@@ -409,36 +475,24 @@ const PAIN_COLORS: Record<string, string> = {
   OTHER:          "#3b82f6",
 };
 
-const PAIN_LABELS_AR: Record<string, string> = {
-  NORMAL: "عادي", NUMBNESS: "خدر", DULL_ACHE: "ألم خفيف",
-  HOT_BURNING: "حارق", SHARP_STABBING: "حاد", PINS: "واخز", OTHER: "أخرى",
-};
+const PAIN_LABEL_KEYS = [
+  "NORMAL", "NUMBNESS", "DULL_ACHE", "HOT_BURNING", "SHARP_STABBING", "PINS", "OTHER",
+] as const;
 
 // Pain type and pain level are both multi-select in the complaint form and are
 // stored as a comma-separated list of codes.
-const PAIN_TYPE_AR: Record<string, string> = {
-  INTERMITTENT: "متقطع", CONSTANT: "مستمر", WITH_CERTAIN_MOTIONS: "مع حركات معينة",
-};
-const PAIN_LEVEL_AR: Record<string, string> = {
-  MILD: "خفيف", MODERATE: "متوسط", SEVERE: "شديد", EXCRUCIATING: "لا يُحتمل",
-};
-const codeList = (value: string | null | undefined, labels: Record<string, string>) =>
+/** Pain type and level are stored as a comma-separated list of codes. */
+const codeList = (value: string | null | undefined, t: SheetT, group: string) =>
   value
-    ? value.split(",").filter(Boolean).map((c) => labels[c.trim()] ?? c.trim()).join(" - ")
+    ? value.split(",").filter(Boolean)
+        .map((c) => t(`opts.${group}.${c.trim()}`) || c.trim()).join(" - ")
     : undefined;
 
-const TEST_LABELS_PDF: Record<string, string> = {
-  MRI:       "التصوير بالرنين المغناطيسي / MRI",
-  MYELOGRAM: "تصوير النخاع / Scan Myelogram",
-  XRAY:      "الأشعة السينية / X-Ray",
-  CT:        "التصوير المقطعي المحوسب / CT",
-  OTHER:     "أخرى / Other",
-};
+const TEST_KEYS = ["MRI", "MYELOGRAM", "XRAY", "CT", "OTHER"] as const;
 
-const FACTOR_LABELS_AR: Record<string, string> = {
-  SITTING: "الجلوس", HEAT: "الحرارة", COLD: "البرد", COUGHING: "السعال",
-  WALKING: "المشي", EXERCISE: "التمرين", LYING_DOWN: "الاستلقاء", OTHER: "أخرى",
-};
+const FACTOR_KEYS = [
+  "SITTING", "HEAT", "COLD", "COUGHING", "WALKING", "EXERCISE", "LYING_DOWN", "OTHER",
+] as const;
 
 const EVAL_PDF_PAIRS: [EvaluationModality, EvaluationModality?][] = [
   ["ESWT",       "MANUAL_THERAPY"],
@@ -468,8 +522,10 @@ const PLAN_PDF_PAIRS: [TherapyModality, TherapyModality?][] = [
   ["OTHER"],
 ];
 
-const AllTagChips = ({ options, selected }: { options: { key: string; label: string }[]; selected: string[] }) => (
-  <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 6, marginTop: 4, marginBottom: 4 }}>
+const AllTagChips = ({ options, selected }: { options: { key: string; label: string }[]; selected: string[] }) => {
+  const dir = useDir();
+  return (
+  <View style={{ flexDirection: dir.row, flexWrap: "wrap", gap: 6, marginTop: 4, marginBottom: 4 }}>
     {options.map(({ key, label }) => {
       const active = selected.includes(key);
       return (
@@ -481,17 +537,24 @@ const AllTagChips = ({ options, selected }: { options: { key: string; label: str
           paddingHorizontal: 7,
           paddingVertical: 2.5,
         }}>
-          <Text style={{ fontSize: 7.5, color: active ? "#ffffff" : MUTED }}>{ar(label)}</Text>
+          <Txt t={label} style={{ fontSize: 7.5, color: active ? "#ffffff" : MUTED }} />
         </View>
       );
     })}
   </View>
-);
+  );
+};
 
 // Standalone label style — right-aligned, no fixed width (different from fieldLabel in fieldRow)
 const SL = { fontSize: 8.5, color: TEXT, marginBottom: 2, textAlign: "right" as const };
+/** The same standalone label style, pointed at the sheet's own edge. */
+const useSL = () => {
+  const dir = useDir();
+  return { ...SL, textAlign: dir.align };
+};
 
-const BodyMapPdf = ({ regions, origin, otherColor, otherLabel }: { regions: PainRegion[]; origin: string; otherColor?: string; otherLabel?: string }) => {
+const BodyMapPdf = ({ regions, origin, otherColor, otherLabel, t }: { regions: PainRegion[]; origin: string; otherColor?: string; otherLabel?: string; t: SheetT }) => {
+  const dir = useDir();
   const uniqueTypes = [...new Set(regions.map((r) => r.painType ?? "OTHER"))];
 
   function getPainColor(type: string) {
@@ -501,7 +564,7 @@ const BodyMapPdf = ({ regions, origin, otherColor, otherLabel }: { regions: Pain
 
   function getPainLabel(type: string) {
     if (type === "OTHER" && otherLabel) return otherLabel;
-    return PAIN_LABELS_AR[type] ?? type;
+    return t(`opts.painLabel.${type}`) || type;
   }
 
   return (
@@ -536,11 +599,11 @@ const BodyMapPdf = ({ regions, origin, otherColor, otherLabel }: { regions: Pain
       </View>
       {/* مفتاح الألوان */}
       {uniqueTypes.length > 0 && (
-        <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 6, marginTop: 6, justifyContent: "center" }}>
+        <View style={{ flexDirection: dir.row, flexWrap: "wrap", gap: 6, marginTop: 6, justifyContent: "center" }}>
           {uniqueTypes.map((type) => (
-            <View key={type} style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
+            <View key={type} style={{ flexDirection: dir.row, alignItems: "center", gap: 3 }}>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: getPainColor(type) }} />
-              <Text style={{ fontSize: 7.5, color: MUTED }}>{ar(getPainLabel(type))}</Text>
+              <Txt t={getPainLabel(type)} style={{ fontSize: 7.5, color: MUTED }} />
             </View>
           ))}
         </View>
@@ -560,8 +623,10 @@ const PH = (_: { patient: PhysioCasePdfData["patient"]; caseId: string; generate
   </View>
 );
 
-const PF = (_: { patient: PhysioCasePdfData["patient"] }) => (
-  <View style={S.pageFooter} fixed>
+const PF = (_: { patient: PhysioCasePdfData["patient"] }) => {
+  const dir = useDir();
+  return (
+  <View style={[S.pageFooter, { flexDirection: dir.row }]} fixed>
     {/* يمين: العنوان */}
     <View style={{ alignItems: "flex-end", gap: 2 }}>
       <Text style={S.pageFooterText}>{ar("سوريا - حلب - حي حلب الجديدة شمالي")}</Text>
@@ -578,52 +643,64 @@ const PF = (_: { patient: PhysioCasePdfData["patient"] }) => (
       <Text style={S.pageFooterText}>TEL: +963 21 5226391  |  FAX: +963 21 5226392</Text>
     </View>
   </View>
-);
+  );
+};
 
 // ── PDF Document ──────────────────────────────────────────────────────────────
 
-const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: string }) => {
+const PhysioPdfDoc = ({
+  data, origin, t, dir, locale,
+}: {
+  data: PhysioCasePdfData;
+  origin: string;
+  t: SheetT;
+  dir: SheetDir;
+  locale: string;
+}) => {
   const { patient, complaint, history, postural, sessions, goals, goalsExtra,
     chronicConditions, testsHad, surgeries, painRegions, painTypes,
     aggravatingFactors, alleviatingFactors } = data;
 
   const generatedAt = new Date().toLocaleDateString("en-GB");
+  const sl = { ...SL, textAlign: dir.align };
 
 
 
   return (
     <Document
-      title={`حالة فيزيائي — ${patient.firstName} ${patient.lastName}`}
+      title={`${t("word.title")} — ${patient.firstName} ${patient.lastName}`}
       author="Vita HR System"
-      language="ar"
+      language={locale}
     >
-      <Page size="A4" style={S.page}>
+      <Page size="A4" style={[S.page, { direction: dir.rtl ? "rtl" : "ltr", textAlign: dir.align }]}>
+        <SheetCtx.Provider value={dir}>
+        <TCtx.Provider value={t}>
         <PH patient={patient} caseId={data.caseId} generatedAt={generatedAt} />
         <PF patient={patient} />
 
         {/* ── 1. معلومات المريض ── */}
-        <SecHead label="معلومات المريض" />
+        <SecHead label={t("sections.patientInfo")} />
         <View
-          style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: 0 }}
+          style={{ flexDirection: dir.row, flexWrap: "wrap", gap: 0 }}
         >
           {[
             {
-              label: "الاسم",
+              label: t("patient.name"),
               value: `${patient.firstName} ${patient.lastName}`,
             },
             {
-              label: "العمر",
+              label: t("patient.age"),
               value: patient.dateOfBirth
-                ? `${Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} سنة`
+                ? `${Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} ${t("patient.years")}`
                 : "—",
             },
             {
-              label: "التاريخ",
+              label: t("patient.date"),
               value: new Date(data.caseCreatedAt).toLocaleDateString("en-GB"),
             },
-            { label: "رقم تعريف المريض", value: patient.patientNumber },
-            { label: "الوظيفة الحالية", value: patient.occupation || "—" },
-            { label: "مقدم الرعاية", value: patient.receivesAid || "—" },
+            { label: t("patient.patientNumber"), value: patient.patientNumber },
+            { label: t("patient.currentJob"), value: patient.occupation || "—" },
+            { label: t("patient.caregiver"), value: patient.receivesAid || "—" },
           ].map((f) => (
             <View
               key={f.label}
@@ -641,185 +718,167 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         </View>
 
         {/* ── 2. الشكوى ── */}
-        <SecHead label="الشكوى" />
+        <SecHead label={t("sections.complaint")} />
         <F
-          label="  ماهي شكواك الرئيسية؟ /ماهي الأعراض التي تعاني منها؟"
+          label={t("complaint.major")}
           value={complaint.majorComplaint}
         />
-        <F label=":تاريخ البدء" value={complaint.complaintStartDate} />
-        <F label="السبب المحتمل" value={complaint.possibleCause} />
+        <F label={t("complaint.startDate")} value={complaint.complaintStartDate} />
+        <F label={t("complaint.possibleCause")} value={complaint.possibleCause} />
         <F
-          label="تمت زيارة الطبيب السابق بسبب الشكوى"
+          label={t("complaint.previousDoctor")}
           value={complaint.previousDoctorSeen}
         />
-        <F label="العلاج السابق للشكوى" value={complaint.previousTreatment} />
+        <F label={t("complaint.previousTreatment")} value={complaint.previousTreatment} />
         <F
-          label="في أي وقت تكون الأعراض أكثر إزعاجاً"
+          label={t("complaint.worstTime")}
           value={complaint.worstTimeOfDay}
         />
         <F
-          label="في أي وقت تكون الأعراض أقل إزعاجاً"
+          label={t("complaint.bestTime")}
           value={complaint.bestTimeOfDay}
         />
-        <F label="نوع الألم" value={codeList(complaint.painDuration, PAIN_TYPE_AR)} />
-        <F label="مستوى الألم الحالي" value={codeList(complaint.painLevel, PAIN_LEVEL_AR)} />
+        <F label={t("complaint.painType")} value={codeList(complaint.painDuration, t, "painType")} />
+        <F label={t("complaint.painLevel")} value={codeList(complaint.painLevel, t, "painLevel")} />
         <F
-          label="هل يتحسن الألم أم يزداد سوءاً؟"
+          label={t("complaint.painProgression")}
           value={
-            complaint.painProgression === "BETTER"
-              ? "يتحسن"
-              : complaint.painProgression === "WORSE"
-                ? "يزداد سوءاً"
-                : complaint.painProgression === "SAME"
-                  ? "ثابت"
-                  : complaint.painProgression || undefined
+            complaint.painProgression
+              ? t(`opts.painProgression.${complaint.painProgression}`) || complaint.painProgression
+              : undefined
           }
         />
         <F
-          label="هل سبق التعرض لهذه الإصابة؟"
+          label={t("complaint.previousInjury")}
           value={complaint.hadPreviousInjury}
         />
 
         {/* ── 3. خريطة الألم ── */}
-        <SecHead label="حدد أماكن الألم" break />
+        <SecHead label={t("sections.painMap")} break />
         <BodyMapPdf
           regions={painRegions}
           origin={origin}
           otherColor={data.painTypeOtherColor}
           otherLabel={data.painTypeOther || undefined}
+          t={t}
         />
         <View style={{ marginBottom: 4 }}>
-          <Text style={SL}>{ar("أنواع الألم")}</Text>
+          <Text style={sl}>{ar(t("painMap.painTypes"))}</Text>
           <AllTagChips
-            options={Object.entries(PAIN_LABELS_AR).map(([key, label]) => ({
-              key,
-              label,
-            }))}
+            options={PAIN_LABEL_KEYS.map((key) => ({ key, label: t(`opts.painLabel.${key}`) }))}
             selected={painTypes}
           />
-          {data.painTypeOther && <F label="أخرى" value={data.painTypeOther} />}
+          {data.painTypeOther && <F label={t("word.other")} value={data.painTypeOther} />}
         </View>
         <View style={{ marginBottom: 4 }}>
-          <Text style={SL}>{ar("العوامل المحرضة")}</Text>
+          <Text style={sl}>{ar(t("painMap.aggravating"))}</Text>
           <AllTagChips
-            options={Object.entries(FACTOR_LABELS_AR).map(([key, label]) => ({
-              key,
-              label,
-            }))}
+            options={FACTOR_KEYS.map((key) => ({ key, label: t(`opts.factor.${key}`) }))}
             selected={aggravatingFactors}
           />
           {data.aggravatingOther && (
-            <F label="أخرى" value={data.aggravatingOther} />
+            <F label={t("word.other")} value={data.aggravatingOther} />
           )}
         </View>
         <View style={{ marginBottom: 4 }}>
-          <Text style={SL}>{ar("العوامل المخففة")}</Text>
+          <Text style={sl}>{ar(t("painMap.alleviating"))}</Text>
           <AllTagChips
-            options={Object.entries(FACTOR_LABELS_AR).map(([key, label]) => ({
-              key,
-              label,
-            }))}
+            options={FACTOR_KEYS.map((key) => ({ key, label: t(`opts.factor.${key}`) }))}
             selected={alleviatingFactors}
           />
           {data.alleviatingOther && (
-            <F label="أخرى" value={data.alleviatingOther} />
+            <F label={t("word.other")} value={data.alleviatingOther} />
           )}
         </View>
 
         {/* ── 4. التاريخ الطبي ── */}
-        <SecHead label="التاريخ الطبي" break />
+        <SecHead label={t("sections.medicalHistory")} break />
         <F
-          label="نمط الحياة"
+          label={t("history.lifeType")}
           value={
-            history.lifeType === "SEDENTARY"
-              ? "الحياة الخاملة"
-              : history.lifeType === "NORMAL"
-                ? "الحياة الطبيعية"
-                : history.lifeType === "ABNORMAL"
-                  ? "غير اعتيادي / غير صحي"
-                  : history.lifeType === "PROFESSIONAL"
-                    ? "رياضي"
-                    : history.lifeType || undefined
+            history.lifeType
+              ? t(`opts.lifeType.${history.lifeType}`) || history.lifeType
+              : undefined
           }
         />
-        <Bool label="هل تدخن؟" value={history.smokes} />
+        <Bool label={t("history.smokes")} value={history.smokes} />
         {history.smokes && (
-          <F label="عدد المرات" value={history.smokingFrequency} />
+          <F label={t("history.smokeCount")} value={history.smokingFrequency} />
         )}
-        <Bool label="هل سبق لك أن دخنت؟" value={history.hasSmokedBefore} />
+        <Bool label={t("history.smokedBefore")} value={history.hasSmokedBefore} />
         {!history.smokes && history.hasSmokedBefore && (
-          <F label="عدد المرات" value={history.smokingFrequency} />
+          <F label={t("history.smokeCount")} value={history.smokingFrequency} />
         )}
         <Bool
-          label="هل لديك جهاز تنظيم ضربات القلب؟"
+          label={t("history.pacemaker")}
           value={history.hasPacemaker}
         />
         {history.hasPacemaker && (
-          <F label="نوع الجهاز" value={history.pacemakerDetail} />
+          <F label={t("history.deviceType")} value={history.pacemakerDetail} />
         )}
-        <F label="الحساسية" value={history.allergies} />
+        <F label={t("history.allergies")} value={history.allergies} />
 
         {patient.gender === "FEMALE" && (
           <>
-            <Bool label="هل أنتِ حامل؟" value={history.isPregnant} />
-            <F label="الحالة الاجتماعية" value={history.maritalStatus} />
-            <F label="آخر دورة شهرية" value={history.lastMenstrualPeriod} />
+            <Bool label={t("history.pregnant")} value={history.isPregnant} />
+            <F label={t("history.maritalStatus")} value={history.maritalStatus} />
+            <F label={t("history.lastPeriod")} value={history.lastMenstrualPeriod} />
           </>
         )}
 
         <F
-          label="التشخيصات السابقة / الأدوية السابقة"
+          label={t("history.previousDiagnoses")}
           value={history.previousDiagnoses}
         />
         <Bool
-          label="هل تعاني من مشاكل صحية أخرى؟"
+          label={t("history.otherHealthProblems")}
           value={history.hasOtherHealthProblems}
         />
         {history.hasOtherHealthProblems && (
-          <F label="التفاصيل" value={history.otherConditions} />
+          <F label={t("word.details")} value={history.otherConditions} />
         )}
         <Bool
-          label="هل هناك أي شيء نصحك طبيبك بعدم القيام به؟"
+          label={t("history.doctorRestrictions")}
           value={history.hasDoctorRestrictions}
         />
         {history.hasDoctorRestrictions && (
-          <F label="التعليمات" value={history.doctorRestrictions} />
+          <F label={t("history.instructions")} value={history.doctorRestrictions} />
         )}
         <Bool
-          label="هل تتناول حالياً أي أدوية بوصفة طبية أو بدون وصفة؟"
+          label={t("history.prescriptionDrugs")}
           value={history.prescriptionDrugs}
         />
         {history.prescriptionDrugs && (
-          <F label="الأدوية" value={history.currentMedications} />
+          <F label={t("history.medications")} value={history.currentMedications} />
         )}
         <Bool
-          label="هل تتناول حالياً أي مستحضرات عشبية أو فيتامينات؟"
+          label={t("history.herbal")}
           value={history.herbalSupplements}
         />
         {history.herbalSupplements && (
-          <F label="التفاصيل" value={history.supplementsList} />
+          <F label={t("word.details")} value={history.supplementsList} />
         )}
         <Bool
-          label="هل لديك حساسية من المواد اللاصقة أو اللاتكس أو لسعات النحل؟"
+          label={t("history.adhesiveAllergy")}
           value={history.adhesiveAllergy}
         />
         {history.adhesiveAllergy && (
-          <F label="التفاصيل" value={history.adhesiveAllergyDetail} />
+          <F label={t("word.details")} value={history.adhesiveAllergyDetail} />
         )}
         <F
-          label="الشكاوى والعمليات السابقة"
+          label={t("history.previousComplaints")}
           value={history.previousComplaintsSurgeries}
         />
-        <Bool label="هل خضعت لأي عمليات جراحية؟" value={history.hadSurgeries} />
+        <Bool label={t("history.hadSurgeries")} value={history.hadSurgeries} />
 
         {history.hadSurgeries && surgeries.some((s) => s.name) && (
           <View style={{ marginTop: 6 }}>
-            <SubHead label="العمليات الجراحية (حتى 5)" />
+            <SubHead label={t("sub.surgeries")} />
             <View style={S.table}>
               <View style={S.tableHeaderRow}>
-                <Text style={S.tableCellHead}>اسم العملية</Text>
-                <Text style={S.tableCellHead}>النوع</Text>
-                <Text style={S.tableCellHead}>التاريخ</Text>
+                <Text style={S.tableCellHead}>{ar(t("surgeryTable.name"))}</Text>
+                <Text style={S.tableCellHead}>{ar(t("surgeryTable.type"))}</Text>
+                <Text style={S.tableCellHead}>{ar(t("surgeryTable.date"))}</Text>
               </View>
               {surgeries
                 .filter((s) => s.name)
@@ -837,87 +896,82 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
           </View>
         )}
 
-        <SubHead label="العلاج الطبيعي والعلاجات الأخرى" break />
+        <SubHead label={t("sub.ptAndOther")} break />
         <Bool
-          label="هل خضعت للعلاج الطبيعي لنفس المشكلة؟"
+          label={t("history.hadPTSame")}
           value={history.hadPTSameProblem}
         />
         {history.hadPTSameProblem && (
-          <F label="التفاصيل" value={history.ptSameProblemDetail} />
+          <F label={t("word.details")} value={history.ptSameProblemDetail} />
         )}
         <Bool
-          label="هل تتلقى علاجات أخرى لهذه المشكلة في هذا الوقت؟"
+          label={t("history.otherTreatment")}
           value={history.receivingOtherTreatment}
         />
         {history.receivingOtherTreatment && (
-          <F label="التفاصيل" value={history.otherTreatmentDetail} />
+          <F label={t("word.details")} value={history.otherTreatmentDetail} />
         )}
 
-        <SubHead label="الفحوصات والتحاليل" />
+        <SubHead label={t("sub.testsAnalyses")} />
         <View style={{ marginBottom: 4 }}>
-          <Text style={SL}>{ar("ما هو نوع التصوير الشعاعي الذي قمت به؟")}</Text>
+          <Text style={sl}>{ar(t("history.imagingType"))}</Text>
           <View
             style={{
-              flexDirection: "row-reverse",
+              flexDirection: dir.row,
               flexWrap: "wrap",
               gap: 2,
               marginTop: 3,
             }}
           >
-            {(Object.entries(TEST_LABELS_PDF) as [TestType, string][]).map(
-              ([key, label]) => (
-                <View key={key} style={{ width: "48%" }}>
-                  <Chk checked={testsHad.includes(key)} label={label} />
-                </View>
-              ),
-            )}
+            {TEST_KEYS.map((key) => (
+              <View key={key} style={{ width: "48%" }}>
+                <Chk checked={testsHad.includes(key as TestType)} label={t(`opts.test.${key}`)} />
+              </View>
+            ))}
           </View>
           {history.testsOther && (
-            <F label="تفاصيل أخرى" value={history.testsOther} />
+            <F label={t("history.otherDetails")} value={history.testsOther} />
           )}
         </View>
-        <F label="نتائج / Results" value={history.testResults} />
-        <Text style={[SL, { marginTop: 4 }]}>
-          {ar("ما هي التحاليلات التي تم إجراؤها؟")}
+        <F label={t("history.results")} value={history.testResults} />
+        <Text style={[sl, { marginTop: 4 }]}>
+          {ar(t("history.analysesDone"))}
         </Text>
         <View style={S.twoCol}>
           <View style={S.col}>
-            <F label="تحليل جديد" value={history.newAnalysis} />
-            <F label="تاريخ التحليل الجديد" value={history.newAnalysisDate} />
+            <F label={t("history.newAnalysis")} value={history.newAnalysis} />
+            <F label={t("history.newAnalysisDate")} value={history.newAnalysisDate} />
           </View>
           <View style={S.col}>
-            <F label="تحليل قديم" value={history.oldAnalysis} />
-            <F label="تاريخ التحليل القديم" value={history.oldAnalysisDate} />
+            <F label={t("history.oldAnalysis")} value={history.oldAnalysis} />
+            <F label={t("history.oldAnalysisDate")} value={history.oldAnalysisDate} />
           </View>
         </View>
-        <Bool label="قياس كثافة العظام" value={history.boneDensityTest} />
+        <Bool label={t("history.boneDensity")} value={history.boneDensityTest} />
         {history.boneDensityTest && (
-          <F label="التفاصيل" value={history.boneDensityDetail} />
+          <F label={t("word.details")} value={history.boneDensityDetail} />
         )}
         <Bool
-          label="هل سبق لك أن دخلت المستشفى خلال العام الماضي بسبب هذه الحالة؟"
+          label={t("history.hospitalized")}
           value={history.hospitalizedLastYear}
         />
         {history.hospitalizedLastYear && (
-          <F label="التفاصيل" value={history.hospitalizedDetail} />
+          <F label={t("word.details")} value={history.hospitalizedDetail} />
         )}
 
-        <SubHead label="هل لديك أي مما يلي؟ (ضع علامة إذا نعم)" />
+        <SubHead label={t("sub.chronicList")} />
         {(() => {
-          const entries = Object.entries(CHRONIC_CONDITION_LABELS) as [
-            ChronicCondition,
-            string,
-          ][];
-          const rows: [ChronicCondition, string][][] = [];
+          const entries = CHRONIC_CONDITION_VALUES;
+          const rows: ChronicCondition[][] = [];
           for (let i = 0; i < entries.length; i += 3)
             rows.push(entries.slice(i, i + 3));
           return rows.map((row, ri) => (
-            <View key={ri} style={{ flexDirection: "row-reverse", gap: 4 }}>
-              {row.map(([key, label]) => (
+            <View key={ri} style={{ flexDirection: dir.row, gap: 4 }}>
+              {row.map((key) => (
                 <View key={key} style={{ flex: 1 }}>
                   <Chk
                     checked={chronicConditions.includes(key)}
-                    label={label}
+                    label={t(`chronic.${key}`)}
                   />
                 </View>
               ))}
@@ -929,54 +983,52 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
           ));
         })()}
         {history.chronicConditionsOther && (
-          <F label="أخرى" value={history.chronicConditionsOther} />
+          <F label={t("word.other")} value={history.chronicConditionsOther} />
         )}
 
         {/* ── 5. أهداف العلاج ── */}
-        <SecHead label="أهداف العلاج" break />
+        <SecHead label={t("sections.goals")} break />
         {/* All goal checkboxes — 2 columns */}
         <View
           style={{
-            flexDirection: "row-reverse",
+            flexDirection: dir.row,
             flexWrap: "wrap",
             gap: 2,
             marginBottom: 6,
           }}
         >
-          {(Object.entries(PHYSIO_GOAL_LABELS) as [PhysioGoal, string][]).map(
-            ([key, label]) => (
-              <View key={key} style={{ width: "48%" }}>
-                <Chk checked={goals.includes(key)} label={label} />
-              </View>
-            ),
-          )}
+          {PHYSIO_GOAL_VALUES.map((key) => (
+            <View key={key} style={{ width: "48%" }}>
+              <Chk checked={goals.includes(key)} label={t(`goal.${key}`)} />
+            </View>
+          ))}
           <View style={{ width: "48%" }}>
             <Chk
               checked={goalsExtra.decreasePain}
-              label="تخفيف الألم / Decrease Pain"
+              label={t("goals.decreasePain")}
             />
           </View>
           <View style={{ width: "48%" }}>
             <Chk
               checked={goalsExtra.improveStrength}
-              label="تحسين القوة / Improve Strength"
+              label={t("goals.improveStrength")}
             />
           </View>
           <View style={{ width: "48%" }}>
             <Chk
               checked={goalsExtra.lessDifficultyWork}
-              label="القيام ببعض الأنشطة / Less Difficulty"
+              label={t("goals.lessDifficulty")}
             />
           </View>
           <View style={{ width: "48%" }}>
             <Chk
               checked={goalsExtra.improveMovement}
-              label="تحسين الحركة / Improve Movement"
+              label={t("goals.improveMovement")}
             />
           </View>
         </View>
         {/* Duration fields — always shown */}
-        <View style={{ flexDirection: "row-reverse", gap: 8, marginBottom: 4 }}>
+        <View style={{ flexDirection: dir.row, gap: 8, marginBottom: 4 }}>
           <View
             style={{
               flex: 1,
@@ -990,13 +1042,13 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
               style={{
                 fontSize: 8,
                 color: MUTED,
-                textAlign: "right",
+                textAlign: dir.align,
                 marginBottom: 3,
               }}
             >
-              {ar("أطول فترة وقوف (ساعات/دقائق)")}
+              {ar(t("goals.standLonger"))}
             </Text>
-            <Text style={{ fontSize: 9, color: TEXT, textAlign: "right" }}>
+            <Text style={{ fontSize: 9, color: TEXT, textAlign: dir.align }}>
               {ar(goalsExtra.standLonger || "—")}
             </Text>
           </View>
@@ -1013,13 +1065,13 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
               style={{
                 fontSize: 8,
                 color: MUTED,
-                textAlign: "right",
+                textAlign: dir.align,
                 marginBottom: 3,
               }}
             >
-              {ar("أطول فترة نوم (ساعات/دقائق)")}
+              {ar(t("goals.sleepLonger"))}
             </Text>
-            <Text style={{ fontSize: 9, color: TEXT, textAlign: "right" }}>
+            <Text style={{ fontSize: 9, color: TEXT, textAlign: dir.align }}>
               {ar(goalsExtra.sleepLonger || "—")}
             </Text>
           </View>
@@ -1036,195 +1088,195 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
               style={{
                 fontSize: 8,
                 color: MUTED,
-                textAlign: "right",
+                textAlign: dir.align,
                 marginBottom: 3,
               }}
             >
-              {ar("أطول فترة جلوس (ساعات/دقائق)")}
+              {ar(t("goals.sitLonger"))}
             </Text>
-            <Text style={{ fontSize: 9, color: TEXT, textAlign: "right" }}>
+            <Text style={{ fontSize: 9, color: TEXT, textAlign: dir.align }}>
               {ar(goalsExtra.sitLonger || "—")}
             </Text>
           </View>
         </View>
         {goalsExtra.customGoal && (
-          <F label="هدف مخصص" value={goalsExtra.customGoal} />
+          <F label={t("goals.customGoal")} value={goalsExtra.customGoal} />
         )}
         {goalsExtra.otherGoals && (
-          <F label="أهداف أخرى" value={goalsExtra.otherGoals} />
+          <F label={t("goals.otherGoals")} value={goalsExtra.otherGoals} />
         )}
 
         {/* ── 6. خطة التقييم ── */}
-        <SecHead label="خطة التقييم" break />
+        <SecHead label={t("sections.evalPlan")} break />
         <F
-          label="الوضعية الحالية للجلوس (حسب أفضل تقييم مع ملاحظة الوضعيات الثابتة)"
+          label={t("postural.seatedPosition")}
           value={postural.seatedPosition}
         />
-        <F label="التحكم في التوازن / الجذع" value={postural.trunkControl} />
+        <F label={t("postural.trunkControl")} value={postural.trunkControl} />
 
         <View style={{ marginTop: 4 }}>
-          <PostSec title="الرأس">
-            <Chk checked={postural.headNeutral} label="حيادي" />
-            <Chk checked={postural.headHyperextended} label="فرط البسط" />
-            <Chk checked={postural.headFwdFlexed} label="تقدم للأمام" />
+          <PostSec title={t("region.head")}>
+            <Chk checked={postural.headNeutral} label={t("pos.neutral")} />
+            <Chk checked={postural.headHyperextended} label={t("pos.hyperextended")} />
+            <Chk checked={postural.headFwdFlexed} label={t("pos.fwdFlexed")} />
             <LRChk
               left={postural.headLaterallyFlexedL}
               right={postural.headLaterallyFlexedR}
-              label="عطف جانبي"
+              label={t("pos.laterallyFlexed")}
             />
             <LRChk
               left={postural.headRotatedL}
               right={postural.headRotatedR}
-              label="دوران"
+              label={t("pos.rotated")}
             />
           </PostSec>
 
-          <PostSec title="الأكتاف">
-            <Chk checked={postural.shouldersLevel} label="مستوية" />
+          <PostSec title={t("region.shoulders")}>
+            <Chk checked={postural.shouldersLevel} label={t("pos.level")} />
             <LRChk
               left={postural.shouldersElevatedL}
               right={postural.shouldersElevatedR}
-              label="مرتفعة"
+              label={t("pos.elevatedPlural")}
             />
             <LRChk
               left={postural.shouldersSublaxedL}
               right={postural.shouldersSublaxedR}
-              label="متصلبة"
+              label={t("pos.sublaxed")}
             />
           </PostSec>
 
-          <PostSec title="المرفق">
-            <Chk checked={postural.elbowHyperextended} label="فرط البسط" />
-            <Chk checked={postural.elbowFlexed} label="عطف" />
+          <PostSec title={t("region.elbow")}>
+            <Chk checked={postural.elbowHyperextended} label={t("pos.hyperextended")} />
+            <Chk checked={postural.elbowFlexed} label={t("pos.flexed")} />
           </PostSec>
 
-          <PostSec title="القفص الصدري">
-            <Chk checked={postural.ribCageNeutral} label="حيادي" />
+          <PostSec title={t("region.ribCage")}>
+            <Chk checked={postural.ribCageNeutral} label={t("pos.neutral")} />
             <LRChk
               left={postural.ribCageElevatedL}
               right={postural.ribCageElevatedR}
-              label="مرتفع"
+              label={t("pos.elevated")}
             />
           </PostSec>
 
-          <PostSec title="العمود الفقري">
-            <Chk checked={postural.spineNeutral} label="حيادي" />
-            <Chk checked={postural.spineKyphosis} label="كيفوز" />
-            <Chk checked={postural.spineFlatLumbar} label="قعس مسطح" />
-            <Chk checked={postural.spineNormalLumbar} label="قعس طبيعي" />
-            <Chk checked={postural.spineHyperLordotic} label="قعس زائد" />
+          <PostSec title={t("region.spine")}>
+            <Chk checked={postural.spineNeutral} label={t("pos.neutral")} />
+            <Chk checked={postural.spineKyphosis} label={t("pos.kyphosis")} />
+            <Chk checked={postural.spineFlatLumbar} label={t("pos.flatLumbar")} />
+            <Chk checked={postural.spineNormalLumbar} label={t("pos.normalLumbar")} />
+            <Chk checked={postural.spineHyperLordotic} label={t("pos.hyperLordotic")} />
             <LRChk
               left={postural.spineScoliosisApexL}
               right={postural.spineScoliosisApexR}
-              label="جنف قمة"
+              label={t("pos.scoliosisApex")}
             />
           </PostSec>
 
-          <PostSec title="الحوض">
-            <Chk checked={postural.pelvisNeutral} label="حيادي" />
-            <Chk checked={postural.pelvisAnteriorTilt} label="ميل أمامي" />
-            <Chk checked={postural.pelvisPosteriorTilt} label="ميل خلفي" />
+          <PostSec title={t("region.pelvis")}>
+            <Chk checked={postural.pelvisNeutral} label={t("pos.neutral")} />
+            <Chk checked={postural.pelvisAnteriorTilt} label={t("pos.anteriorTilt")} />
+            <Chk checked={postural.pelvisPosteriorTilt} label={t("pos.posteriorTilt")} />
             <LRChk
               left={postural.pelvisObliqueL}
               right={postural.pelvisObliqueR}
-              label="مائل"
+              label={t("pos.oblique")}
             />
             {postural.pelvisOther && (
-              <F label="أخرى" value={postural.pelvisOther} />
+              <F label={t("word.other")} value={postural.pelvisOther} />
             )}
           </PostSec>
 
-          <PostSec title="الوركين">
+          <PostSec title={t("region.hips")}>
             <LRChk
               left={postural.hipsAbductedL}
               right={postural.hipsAbductedR}
-              label="مبعد"
+              label={t("pos.abducted")}
             />
             <LRChk
               left={postural.hipsAdductedL}
               right={postural.hipsAdductedR}
-              label="مقرب"
+              label={t("pos.adducted")}
             />
             <LRChk
               left={postural.hipsFlexedL}
               right={postural.hipsFlexedR}
-              label="عطف"
+              label={t("pos.flexed")}
             />
           </PostSec>
 
-          <PostSec title="الركبتين">
+          <PostSec title={t("region.knees")}>
             <LRChk
               left={postural.kneesFlexedBeyond90L}
               right={postural.kneesFlexedBeyond90R}
-              label="عطف > 90"
+              label={t("pos.flexedBeyond90")}
             />
             <LRChk
               left={postural.kneesExtendedBeyond90L}
               right={postural.kneesExtendedBeyond90R}
-              label="بسط > 90"
+              label={t("pos.extendedBeyond90")}
             />
           </PostSec>
 
-          <PostSec title="القدمان">
+          <PostSec title={t("region.feet")}>
             <LRChk
               left={postural.feetPronateEvertL}
               right={postural.feetPronateEvertR}
-              label="انبساط خارجي"
+              label={t("pos.pronateEvert")}
             />
             <LRChk
               left={postural.feetSupinateInvL}
               right={postural.feetSupinateInvR}
-              label="تقوس داخلي"
+              label={t("pos.supinateInv")}
             />
             <LRChk
               left={postural.feetDorsiflexedL}
               right={postural.feetDorsiflexedR}
-              label="دورسيفلكس"
+              label={t("pos.dorsiflexed")}
             />
             <LRChk
               left={postural.feetPlantarflexedL}
               right={postural.feetPlantarflexedR}
-              label="بلانتارفلكس"
+              label={t("pos.plantarflexed")}
             />
             {postural.feetOther && (
-              <F label="أخرى" value={postural.feetOther} />
+              <F label={t("word.other")} value={postural.feetOther} />
             )}
           </PostSec>
         </View>
 
         <F
-          label="التشنج/ ردود الفعل / التوتر العضلي"
+          label={t("postural.spasticity")}
           value={postural.spasticityNotes}
         />
-        <F label="تعليقات" value={postural.generalNotes} />
-        <F label="تشخيص" value={postural.diagnosis} />
+        <F label={t("postural.comments")} value={postural.generalNotes} />
+        <F label={t("postural.diagnosis")} value={postural.diagnosis} />
 
         {/* ── 7. خطة العلاج ── */}
-        <SecHead label="خطة العلاج" break />
+        <SecHead label={t("sections.treatmentPlan")} break />
         {/* Header row */}
         <View style={S.twoCol}>
           <View style={S.col}>
-            <F label="من تاريخ" value={data.planHeader.treatmentFrom} />
-            <F label="إلى تاريخ" value={data.planHeader.treatmentTo} />
-            <F label="عدد الزيارات" value={data.planHeader.anticipatedVisits} />
+            <F label={t("plan.from")} value={data.planHeader.treatmentFrom} />
+            <F label={t("plan.to")} value={data.planHeader.treatmentTo} />
+            <F label={t("plan.visits")} value={data.planHeader.anticipatedVisits} />
           </View>
           <View style={S.col}>
             <F
-              label="اسم أخصائي العلاج الفيزيائي"
+              label={t("plan.physiotherapist")}
               value={data.planHeader.physiotherapistName}
             />
-            <F label="مدير الحالة" value={data.planHeader.caseManagerName} />
+            <F label={t("plan.caseManager")} value={data.planHeader.caseManagerName} />
           </View>
         </View>
         {/* Modalities — 2-col checkbox grid, ALL options */}
-        <SubHead label="خطة علاج المريض" />
-        <View style={{ flexDirection: "row-reverse", gap: 8, marginBottom: 4 }}>
+        <SubHead label={t("sub.patientPlan")} />
+        <View style={{ flexDirection: dir.row, gap: 8, marginBottom: 4 }}>
           <View style={{ flex: 1 }}>
             {PLAN_PDF_PAIRS.map(([right]) => (
               <Chk
                 key={right}
                 checked={data.planModalities.includes(right)}
-                label={THERAPY_MODALITY_LABELS[right] ?? right}
+                label={t(`modality.${right}`)}
               />
             ))}
           </View>
@@ -1234,7 +1286,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
                 <Chk
                   key={left}
                   checked={data.planModalities.includes(left)}
-                  label={THERAPY_MODALITY_LABELS[left] ?? left}
+                  label={t(`modality.${left}`)}
                 />
               ) : (
                 <View key="_gap" style={{ marginBottom: 3, height: 12 }} />
@@ -1243,22 +1295,22 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
           </View>
         </View>
         {data.planOtherModality && (
-          <F label="أخرى / Other" value={data.planOtherModality} />
+          <F label={t("word.other")} value={data.planOtherModality} />
         )}
-        <F label="الملاحظات" value={data.planObservation} />
-        <F label="الملخص" value={data.planRemarks} />
+        <F label={t("plan.observation")} value={data.planObservation} />
+        <F label={t("plan.summary")} value={data.planRemarks} />
 
         {/* ── 8. الملاحظات والتقييم ── */}
-        <SecHead label="الملاحظات والتقييم" break />
-        <F label="التشخيص" value={data.postural.diagnosis} />
-        <SubHead label="العلاج المطبق" />
-        <View style={{ flexDirection: "row-reverse", gap: 8, marginBottom: 4 }}>
+        <SecHead label={t("sections.notesEval")} break />
+        <F label={t("postural.diagnosis")} value={data.postural.diagnosis} />
+        <SubHead label={t("sub.appliedTreatment")} />
+        <View style={{ flexDirection: dir.row, gap: 8, marginBottom: 4 }}>
           <View style={{ flex: 1 }}>
             {EVAL_PDF_PAIRS.map(([right]) => (
               <Chk
                 key={right}
                 checked={data.evalModalities.includes(right)}
-                label={EVALUATION_MODALITY_LABELS[right] ?? right}
+                label={t(`modality.${right}`)}
               />
             ))}
           </View>
@@ -1268,7 +1320,7 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
                 <Chk
                   key={left}
                   checked={data.evalModalities.includes(left)}
-                  label={EVALUATION_MODALITY_LABELS[left] ?? left}
+                  label={t(`modality.${left}`)}
                 />
               ) : (
                 <View key="_gap" style={{ marginBottom: 3, height: 12 }} />
@@ -1277,31 +1329,31 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
           </View>
         </View>
         {data.evalOtherModality && (
-          <F label="أخرى / Other" value={data.evalOtherModality} />
+          <F label={t("word.other")} value={data.evalOtherModality} />
         )}
 
         {/* ── 9. الجلسات العلاجية ── */}
-        <SecHead label="الجلسات العلاجية" break />
+        <SecHead label={t("sections.sessions")} break />
         {sessions.length === 0 ? (
-          <Text style={S.note}>{ar("لا توجد جلسات مسجلة")}</Text>
+          <Text style={S.note}>{ar(t("sessionTable.empty"))}</Text>
         ) : (
           <View style={S.table}>
             <View style={S.tableHeaderRow} fixed>
               <Text style={[S.tableCellHead, { flex: 0.4 }]}>#</Text>
               <Text style={[S.tableCellHead, { flex: 0.9 }]}>
-                {ar("التاريخ")}
+                {ar(t("patient.date"))}
               </Text>
               <Text style={[S.tableCellHead, { flex: 0.7 }]}>
-                {ar("الوقت")}
+                {ar(t("sessionTable.time"))}
               </Text>
               <Text style={[S.tableCellHead, { flex: 2 }]}>
-                {ar("ملاحظات")}
+                {ar(t("sessionTable.notes"))}
               </Text>
               <Text style={[S.tableCellHead, { flex: 1.5 }]}>
-                {ar("رأي رئيس القسم")}
+                {ar(t("sections.supervisorOpinion"))}
               </Text>
               <Text style={[S.tableCellHead, { flex: 1.5 }]}>
-                {ar("قرار الطبيب")}
+                {ar(t("sessionTable.doctorDecision"))}
               </Text>
             </View>
             {[...sessions]
@@ -1336,26 +1388,26 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
         )}
         {data.finalSummary && (
           <>
-            <SecHead label="الملخص النهائي" />
+            <SecHead label={t("sections.finalSummary")} />
             <Text style={S.fieldValue}>{ar(data.finalSummary)}</Text>
           </>
         )}
 
         {/* ── 10. رأي رئيس القسم ورأي الطبيب ── */}
-        <SecHead label="رأي رئيس القسم" break />
+        <SecHead label={t("sections.supervisorOpinion")} break />
         <Text style={S.fieldValue}>{ar(data.supervisorGaze ?? "") || "—"}</Text>
-        <SecHead label="رأي الطبيب" />
+        <SecHead label={t("sections.doctorOpinion")} />
         <Text style={S.fieldValue}>{ar(data.doctorGaze ?? "") || "—"}</Text>
 
         {/* ── توقيعات ── */}
         <View
           style={{
             marginTop: 30,
-            flexDirection: "row-reverse",
+            flexDirection: dir.row,
             justifyContent: "space-around",
           }}
         >
-          {["توقيع المعالج الفيزيائي", "توقيع المريض", "توقيع رئيس القسم"].map(
+          {["physiotherapist", "patient", "supervisor"].map(
             (label, i) => (
               <View key={i} style={{ alignItems: "center", gap: 6 }}>
                 <View
@@ -1368,12 +1420,14 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
                 <Text
                   style={{ fontSize: 8.5, color: MUTED, textAlign: "center" }}
                 >
-                  {ar(label)}
+                  {ar(t(`signature.${label}`))}
                 </Text>
               </View>
             ),
           )}
         </View>
+        </TCtx.Provider>
+        </SheetCtx.Provider>
       </Page>
     </Document>
   );
@@ -1383,7 +1437,15 @@ const PhysioPdfDoc = ({ data, origin }: { data: PhysioCasePdfData; origin: strin
 
 let fontsRegistered = false;
 
-export async function downloadPhysioCasePdf(data: PhysioCasePdfData): Promise<void> {
+/**
+ * @param t      a translator scoped to `clinic.physio.sheet`
+ * @param locale the sheet's locale — only Arabic prints right-to-left
+ */
+export async function downloadPhysioCasePdf(
+  data: PhysioCasePdfData,
+  t: SheetT,
+  locale: string,
+): Promise<void> {
   if (!fontsRegistered) {
     const origin = window.location.origin;
     Font.register({
@@ -1399,7 +1461,11 @@ export async function downloadPhysioCasePdf(data: PhysioCasePdfData): Promise<vo
   }
 
   const origin = window.location.origin;
-  const blob = await pdf(<PhysioPdfDoc data={data} origin={origin} />).toBlob();
+  const rtl = locale === "ar";
+  const dir: SheetDir = { rtl, row: rtl ? "row-reverse" : "row", align: rtl ? "right" : "left" };
+  const blob = await pdf(
+    <PhysioPdfDoc data={data} origin={origin} t={t} dir={dir} locale={locale} />,
+  ).toBlob();
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement("a");
   a.href     = url;

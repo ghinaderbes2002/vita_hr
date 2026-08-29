@@ -21,10 +21,14 @@ export function GmApprovalTab({ form }: GmApprovalTabProps) {
   const [status, setStatus] = useState<GmStatus>(form.gmStatus || "APPROVED");
   const [comments, setComments] = useState(form.gmComments || "");
 
+  // Re-seed only when the stored record actually changes: the queries refetch
+  // every 60s and on window focus, and keying this on `form` let a background
+  // refetch wipe the boxes mid-typing.
   useEffect(() => {
     setStatus(form.gmStatus || "APPROVED");
     setComments(form.gmComments || "");
-  }, [form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.updatedAt, form.id]);
 
   const handleSubmit = () => {
     mutation.mutate({

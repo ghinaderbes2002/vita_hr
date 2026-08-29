@@ -78,6 +78,8 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
     },
   });
 
+  // Keyed on the record, not the object: the list behind this dialog refetches
+  // in the background, and reset() was firing over half-typed input.
   useEffect(() => {
     if (jobTitle) {
       form.reset({
@@ -100,7 +102,8 @@ export function JobTitleDialog({ open, onOpenChange, jobTitle }: JobTitleDialogP
         order: undefined,
       });
     }
-  }, [jobTitle, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobTitle?.id, form]);
 
   const onSubmit = async (data: FormData) => {
     try {

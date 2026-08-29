@@ -96,9 +96,12 @@ export function WorkScheduleDialog({ open, onOpenChange, schedule }: WorkSchedul
   const shiftType = form.watch("shiftType");
   const isFlexible = shiftType === "FLEXIBLE";
 
+  // Keyed on the record, not the object: the list behind this dialog refetches
+  // in the background, and reset() was firing over half-typed input.
   useEffect(() => {
     if (open) form.reset(defaultValues);
-  }, [open, schedule]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, schedule?.id]);
 
   const onSubmit = async (data: FormData) => {
     try {

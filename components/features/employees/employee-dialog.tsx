@@ -443,7 +443,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       setTrainingCertificates([]);
       setAllowances([]);
     }
-  }, [open, employee, defaultInterviewEvaluation, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, employee?.id, defaultInterviewEvaluation, form]);
 
   const onSubmit = async (data: FormData) => {
     try {

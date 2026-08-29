@@ -111,7 +111,8 @@ export function CustodyDialog({ open, onOpenChange, custody, defaultEmployeeId, 
         resetForm(false);
       }
     }
-  }, [open, custody, defaultEmployeeId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, custody?.id, defaultEmployeeId]);
 
   const compressImage = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {

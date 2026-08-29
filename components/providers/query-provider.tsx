@@ -13,8 +13,12 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         queries: {
           staleTime: 30 * 1000,
           refetchOnWindowFocus: true,
-          refetchInterval: 60 * 1000,
-          refetchIntervalInBackground: false,
+          // No blanket refetchInterval: polling every query in the app kept
+          // re-seeding open forms over what was being typed, and put a request
+          // per query per minute on the server for every open tab. Screens that
+          // genuinely need live data set their own interval (notifications,
+          // mail, dashboard); everything else refreshes on window focus and
+          // after its own mutations.
         },
       },
     });

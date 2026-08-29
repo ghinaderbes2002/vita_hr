@@ -29,13 +29,16 @@ export function AssignRolesDialog({ open, onOpenChange, user }: AssignRolesDialo
   const { data: roles, isLoading: rolesLoading } = useRoles();
   const assignRoles = useAssignRoles();
 
+  // Re-seed when the dialog opens on a record, not when the list behind it
+  // refetches — the object's identity changes on every background refetch.
   useEffect(() => {
     if (user?.roles && user.roles.length > 0) {
       setSelectedRoles(user.roles.map((r: any) => r.role?.id ?? r.id).filter(Boolean));
     } else {
       setSelectedRoles([]);
     }
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const toggle = (id: string) => {
     setSelectedRoles((prev) =>

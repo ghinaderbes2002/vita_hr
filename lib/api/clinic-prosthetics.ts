@@ -80,9 +80,15 @@ export interface ProstheticsCase {
   status: ProstheticsStatus;
   amputationType?: AmputationType | AmputationType[] | null;
   amputationSide?: AmputationSide | null;
-  amputationLevel?: string | null;
+  /** The API returns an array of level codes; older records may hold one string. */
+  amputationLevel?: string | string[] | null;
+  amputationDate?: string | null;
+  amputationCount?: number | null;
+  /** @deprecated the API returns amputationDate — read through amputationDateOf. */
   dateOfAmputation?: string | null;
+  /** @deprecated the API returns amputationCause — read through amputationCauseOf. */
   causeOfAmputation?: string | null;
+  /** @deprecated the API returns amputationCount — read through amputationCountOf. */
   numberOfAmputations?: number | null;
   // General assessment fields
   amputationCause?: AmputationCause | null;
@@ -156,6 +162,25 @@ export interface MeasurementAssessment {
   soundLimb?: Record<string, string> | null;
   affectedLimb?: Record<string, string> | null;
 }
+
+/**
+ * The case API returns `amputationDate` / `amputationCause` / `amputationCount`,
+ * but older payloads carried `dateOfAmputation` / `causeOfAmputation` /
+ * `numberOfAmputations`. Reading the wrong one silently blanks the field, so
+ * every screen reads through these.
+ */
+type AmputationFields = Pick<ProstheticsCase,
+  "amputationDate" | "dateOfAmputation" | "amputationCause" | "causeOfAmputation"
+  | "amputationCount" | "numberOfAmputations">;
+
+export const amputationDateOf = (c?: AmputationFields | null): string | null =>
+  c?.amputationDate ?? c?.dateOfAmputation ?? null;
+
+export const amputationCauseOf = (c?: AmputationFields | null): string | null =>
+  c?.amputationCause ?? c?.causeOfAmputation ?? null;
+
+export const amputationCountOf = (c?: AmputationFields | null): number | null =>
+  c?.amputationCount ?? c?.numberOfAmputations ?? null;
 
 export interface CreateProstheticsCaseDto {
   patientId: string;

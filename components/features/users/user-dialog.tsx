@@ -63,6 +63,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     },
   });
 
+  // Keyed on the record, not the object: the list behind this dialog refetches
+  // in the background, and reset() was firing over half-typed input.
   useEffect(() => {
     if (open) {
       // Clear form completely first
@@ -97,7 +99,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         status: "ACTIVE",
       });
     }
-  }, [user, form, open]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, form, open]);
 
   const onSubmit = async (data: FormData) => {
     try {

@@ -107,7 +107,8 @@ export function LeaveTypeDialog({ open, onOpenChange, leaveType }: LeaveTypeDial
       });
       setDeductionRules([]);
     }
-  }, [leaveType, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaveType?.id, form]);
 
   const addRule = () =>
     setDeductionRules((prev) => [...prev, { fromDay: 1, toDay: 30, deductionPercent: 0 }]);

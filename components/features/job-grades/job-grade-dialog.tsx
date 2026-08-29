@@ -70,6 +70,8 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
     },
   });
 
+  // Keyed on the record, not the object: the list behind this dialog refetches
+  // in the background, and reset() was firing over half-typed input.
   useEffect(() => {
     if (jobGrade) {
       form.reset({
@@ -96,7 +98,8 @@ export function JobGradeDialog({ open, onOpenChange, jobGrade }: JobGradeDialogP
         order: undefined,
       });
     }
-  }, [jobGrade, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobGrade?.id, form]);
 
   const onSubmit = async (data: FormData) => {
     try {

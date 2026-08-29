@@ -23,10 +23,14 @@ export function HrReviewTab({ form }: HrReviewTabProps) {
     form.hrRecommendation || "NO_ACTION"
   );
 
+  // Re-seed only when the stored record actually changes: the queries refetch
+  // every 60s and on window focus, and keying this on `form` let a background
+  // refetch wipe the boxes mid-typing.
   useEffect(() => {
     setComments(form.hrComments || "");
     setRecommendation(form.hrRecommendation || "NO_ACTION");
-  }, [form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.updatedAt, form.id]);
 
   const handleSubmit = () => {
     mutation.mutate({

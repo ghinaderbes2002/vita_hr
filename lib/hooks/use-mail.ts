@@ -11,10 +11,14 @@ import {
   MailFolder,
 } from "@/lib/api/mail";
 
+// New mail arrives on its own, so the inbox keeps polling — it used to ride
+// on the global default that has since been removed.
 export function useInbox(params?: MailQueryParams) {
   return useQuery({
     queryKey: ["mail", "inbox", params],
     queryFn: () => mailApi.getInbox(params),
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
   });
 }
 
