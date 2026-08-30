@@ -7,9 +7,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
 
-const DEFAULT_START = 10 * 60; // 10:00 — the window never narrows past clinic hours
+// The axis is always the clinic day, whatever the bookings say.
+const DEFAULT_START = 10 * 60; // 10:00
 const DEFAULT_END = 18 * 60;   // 18:00
-const MIN_SPAN = 6 * 60;
 const HOUR_H = 72;             // px per hour
 const SLOT_MIN = 30;           // gridline / label granularity (half-hour)
 const SLOT_H = HOUR_H / 2;     // px per half-hour
@@ -51,27 +51,11 @@ const patientOf = (a: Appointment) =>
   a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : (a.patientName || "—");
 
 /**
- * The axis grows to cover every booking on screen — an early or late
- * appointment must never be drawn at the wrong hour just to fit the grid.
+ * The axis is fixed to the clinic day. It deliberately does not stretch to reach
+ * an out-of-hours booking: one 2 a.m. entry used to blow the grid out to sixteen
+ * hours and push the working day below the fold.
  */
-function windowOf(groups: TimelineGroup[]): Win {
-  let lo = Infinity;
-  let hi = -Infinity;
-  for (const g of groups) {
-    for (const a of g.appointments) {
-      const s = toMinutes(a.startTime);
-      if (s == null) continue;
-      const e = Math.max(toMinutes(a.endTime) ?? 0, s + 30);
-      lo = Math.min(lo, s);
-      hi = Math.max(hi, e);
-    }
-  }
-  if (!Number.isFinite(lo)) return { start: DEFAULT_START, end: DEFAULT_END };
-  const start = Math.max(0, Math.min(DEFAULT_START, Math.floor(lo / 60) * 60));
-  let end = Math.min(24 * 60, Math.max(DEFAULT_END, Math.ceil(hi / 60) * 60));
-  if (end - start < MIN_SPAN) end = Math.min(24 * 60, start + MIN_SPAN);
-  return { start, end };
-}
+const CLINIC_WINDOW: Win = { start: DEFAULT_START, end: DEFAULT_END };
 
 type Placed = { a: Appointment; start: number; end: number; lane: number; lanes: number };
 
@@ -164,7 +148,7 @@ function Column({
             key={a.id}
             type="button"
             onClick={() => onSelect(a)}
-            title={`${fmtTime(a.startTime)} — ${fmtTime(a.endTime)} · ${patientOf(a)}`}
+            title={`${fmtTime(a.startTime)} — ${a.isOpenEnded ? t("form.openEnded") : fmtTime(a.endTime)} · ${patientOf(a)}`}
             className={cn(
               "absolute cursor-pointer overflow-hidden rounded-md border border-black/5 px-2 py-1 text-start shadow-sm transition-all",
               "hover:z-10 hover:shadow-md focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -180,7 +164,11 @@ function Column({
           >
             <div className="flex items-center gap-1 font-mono text-[10px] font-semibold leading-tight opacity-90">
               {fmtTime(a.startTime)}
-              {height > 56 && a.endTime && <span className="opacity-70">— {fmtTime(a.endTime)}</span>}
+              {/* An open-ended booking's endTime is the server's 15-minute buffer,
+                  not a finish time — mark it rather than printing it. */}
+              {a.isOpenEnded
+                ? <span className="opacity-70">→</span>
+                : height > 56 && a.endTime && <span className="opacity-70">— {fmtTime(a.endTime)}</span>}
             </div>
             <div className={cn("truncate text-xs font-semibold leading-tight", cancelled && "line-through")}>
               {patientOf(a)}
@@ -212,7 +200,7 @@ export function AppointmentTimeline({
   const locale = useLocale();
   const isRtl = locale === "ar";
   const t = useTranslations("clinic.appointments");
-  const win = windowOf(groups);
+  const win = CLINIC_WINDOW;
   const slots = Array.from({ length: (win.end - win.start) / SLOT_MIN + 1 }, (_, i) => win.start + i * SLOT_MIN);
 
   const now = new Date();

@@ -19,13 +19,22 @@ import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment } from "@/lib/hooks/use-clinic-appointments";
-import { Appointment, AppointmentType, AppointmentStatus } from "@/lib/api/clinic-appointments";
+import {
+  Appointment, AppointmentType, AppointmentStatus,
+  ALL_APPOINTMENT_TYPES, PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
+  MEDICAL_ADMIN_APPOINTMENT_TYPES, PHYSIO_APPOINTMENT_TYPES,
+} from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
 import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+
+// Medical Administration doesn't read as a clinical department by name, so it is
+// admitted to the appointment pickers by code and labelled with what it books.
+const MEDICAL_ADMIN_DEPT_CODE = "VTX-DEP-000007";
+const MEDICAL_ADMIN_DEPT_ALIAS = "المعاينات العظمية";
 
 // Clinical departments whose staff can be assigned as the specialist therapist
 // (both spellings — with and without hamza — are accepted).
@@ -77,17 +86,35 @@ export default function AppointmentsPage() {
   const { hasPermission, isAdmin } = usePermissions();
   const canCreateAppt = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CREATE);
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
-  const departments: { id: string; nameAr: string; nameEn?: string }[] =
+  const departments: { id: string; code?: string; nameAr: string; nameEn?: string }[] =
     (depsData as any)?.data?.items ?? (depsData as any)?.items ?? [];
   // The department picker/filter only offers the clinical departments:
   // Physiotherapy and Prosthetics & Podiatry (both spellings accepted).
   const APPT_DEPT_NAMES = ["العلاج الفيزيائي", "الأطراف الصناعية", "الاطراف الصناعية", "طب الأقدام", "طب الاقدام"];
   const clinicDepartments = departments.filter((dep) =>
-    APPT_DEPT_NAMES.some((n) => dep.nameAr?.includes(n)),
+    dep.code === MEDICAL_ADMIN_DEPT_CODE || APPT_DEPT_NAMES.some((n) => dep.nameAr?.includes(n)),
   );
+  // Medical Administration books one kind of appointment, so the picker says
+  // which one rather than leaving the reader to infer it from the department.
+  const deptName = (dep: { code?: string; nameAr: string; nameEn?: string }) => {
+    const base = locale === "ar" ? dep.nameAr : (dep.nameEn ?? dep.nameAr);
+    return dep.code === MEDICAL_ADMIN_DEPT_CODE ? `${base} (${MEDICAL_ADMIN_DEPT_ALIAS})` : base;
+  };
   const deptLabel = (id: string) => {
     const dep = departments.find((x) => x.id === id);
-    return dep ? (locale === "ar" ? dep.nameAr : (dep.nameEn ?? dep.nameAr)) : id;
+    return dep ? deptName(dep) : id;
+  };
+  // Each clinical department books its own set of appointment types; anything
+  // else (including "no department") is unrestricted server-side, so the picker
+  // offers the full catalogue there.
+  const typesForDepartment = (departmentId: string): AppointmentType[] => {
+    const dep = departments.find((x) => x.id === departmentId);
+    if (!dep) return ALL_APPOINTMENT_TYPES;
+    if (dep.code === MEDICAL_ADMIN_DEPT_CODE) return MEDICAL_ADMIN_APPOINTMENT_TYPES;
+    if (dep.nameAr?.includes("العلاج الفيزيائي")) return PHYSIO_APPOINTMENT_TYPES;
+    const prosth = ["الأطراف الصناعية", "الاطراف الصناعية", "طب الأقدام", "طب الاقدام"];
+    if (prosth.some((n) => dep.nameAr?.includes(n))) return PROSTHETICS_PODIATRY_APPOINTMENT_TYPES;
+    return ALL_APPOINTMENT_TYPES;
   };
   // Specialist-therapist pool: active staff across all clinical departments.
   const { data: staffData } = useEmployeesBasicList();
@@ -117,7 +144,7 @@ export default function AppointmentsPage() {
   const [cancelTargetId, setCancelTargetId] = useState<string>("");
   const [cancelReason, setCancelReason] = useState("");
   const [rescheduleFor, setRescheduleFor] = useState<Appointment | null>(null);
-  const [rsForm, setRsForm] = useState({ date: "", startTime: "", endTime: "" });
+  const [rsForm, setRsForm] = useState({ date: "", startTime: "", endTime: "", isOpenEnded: false });
   const [newApptOpen, setNewApptOpen] = useState(false);
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
@@ -132,7 +159,9 @@ export default function AppointmentsPage() {
     departmentId: "",
     therapistIds: [] as string[],
     date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "",
+    isOpenEnded: false,
   });
+  const allowedTypes = typesForDepartment(newForm.departmentId);
 
   // Calendar range: first and last day of viewed month
   const from = toISO(startOfMonth(viewYear, viewMonth));
@@ -180,11 +209,18 @@ export default function AppointmentsPage() {
   const isPhysio = (n: string) => n.includes("العلاج الفيزيائي");
   const isProsth = (n: string) =>
     n.includes("الأطراف الصناعية") || n.includes("الاطراف الصناعية") || n.includes("طب الأقدام") || n.includes("طب الاقدام");
+  const medicalAdminDept = departments.find((d) => d.code === MEDICAL_ADMIN_DEPT_CODE);
+  const isMedicalAdmin = (a: Appointment) =>
+    !!medicalAdminDept &&
+    (a.departmentId === medicalAdminDept.id || deptNameOf(a) === medicalAdminDept.nameAr);
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const isSelectedToday = selectedDate === todayIso;
   const timelineGroups = [
     { title: t("board.physioDept"), color: "#10b981", appointments: dayScoped.filter((a: Appointment) => isPhysio(deptNameOf(a))) },
     { title: t("board.prosthDept"), color: "#6366f1", appointments: dayScoped.filter((a: Appointment) => isProsth(deptNameOf(a))) },
+    ...(medicalAdminDept
+      ? [{ title: MEDICAL_ADMIN_DEPT_ALIAS, color: "#f59e0b", appointments: dayScoped.filter(isMedicalAdmin) }]
+      : []),
   ];
 
   // Group appointments by date for calendar dots
@@ -218,7 +254,9 @@ export default function AppointmentsPage() {
       appointmentType: newForm.appointmentType,
       departmentId: newForm.departmentId || undefined,
       startTime: startISO,
-      endTime: endISO,
+      // An open-ended booking sends no finish time — the server reserves a
+      // 15-minute buffer and the next slot opens after it.
+      ...(newForm.isOpenEnded ? { isOpenEnded: true } : { endTime: endISO }),
       notes: newForm.notes || undefined,
       therapistIds: newForm.therapistIds.length ? newForm.therapistIds : undefined,
       // Auto-linked prosthetics case (hidden from reception). Omitted when the
@@ -233,7 +271,7 @@ export default function AppointmentsPage() {
     setPatientSearch("");
     setSelectedPatientLabel("");
     setUnregisteredName("");
-    setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "" });
+    setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "", isOpenEnded: false });
   };
 
   // Build calendar grid
@@ -281,7 +319,7 @@ export default function AppointmentsPage() {
             <SelectItem value="ALL">{t("filter.allDepartments")}</SelectItem>
             {clinicDepartments.map((dep) => (
               <SelectItem key={dep.id} value={dep.id}>
-                {locale === "ar" ? dep.nameAr : (dep.nameEn ?? dep.nameAr)}
+                {deptName(dep)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -348,7 +386,7 @@ export default function AppointmentsPage() {
           ) : (
             /* Two department columns beside a 56px time gutter don't fit a phone. */
             <div className="overflow-x-auto">
-            <div className="min-w-[520px] sm:min-w-0">
+            <div className="min-w-[680px] sm:min-w-0">
             <AppointmentTimeline
               groups={timelineGroups}
               isToday={isSelectedToday}
@@ -385,14 +423,20 @@ export default function AppointmentsPage() {
             const durMin = detailAppt.startTime && detailAppt.endTime && detailAppt.startTime.length > 5 && detailAppt.endTime.length > 5
               ? Math.round((new Date(detailAppt.endTime).getTime() - new Date(detailAppt.startTime).getTime()) / 60000)
               : (detailAppt.durationMinutes ?? null);
+            // On an open-ended booking `endTime` is only the server's 15-minute
+            // buffer, so showing it — or a duration derived from it — would state
+            // a finish time nobody agreed to.
+            const openEnded = detailAppt.isOpenEnded === true;
             const rows: [string, ReactNode][] = [
               ["المريض", detailAppt.patient ? `${detailAppt.patient.firstName} ${detailAppt.patient.lastName}` : (detailAppt.patientName || "—")],
               ["رقم المريض", detailAppt.patientNumber ?? detailAppt.patient?.patientNumber ?? "—"],
               ["نوع الموعد", t(`types.${detailAppt.appointmentType}`)],
               ["الحالة", <Badge key="s" className={cn("text-xs", STATUS_COLOR[detailAppt.status])} variant="outline">{t(`statuses.${detailAppt.status}`)}</Badge>],
               ["التاريخ", dateStr],
-              ["الوقت", `${fmtT(detailAppt.startTime)} — ${fmtT(detailAppt.endTime)}`],
-              ["المدة", durMin != null && durMin > 0 ? `${durMin} دقيقة` : "—"],
+              ["الوقت", openEnded
+                ? `${fmtT(detailAppt.startTime)} — ${t("form.openEnded")}`
+                : `${fmtT(detailAppt.startTime)} — ${fmtT(detailAppt.endTime)}`],
+              ["المدة", openEnded ? "—" : (durMin != null && durMin > 0 ? `${durMin} دقيقة` : "—")],
               ["القسم", detailAppt.department?.nameAr ?? (detailAppt.departmentId ? deptLabel(detailAppt.departmentId) : "—")],
               ["ملاحظات", detailAppt.notes || "—"],
             ];
@@ -440,6 +484,7 @@ export default function AppointmentsPage() {
                         date: dObj ? `${dObj.getFullYear()}-${pad(dObj.getMonth() + 1)}-${pad(dObj.getDate())}` : (detailAppt.date ?? ""),
                         startTime: dObj ? `${pad(dObj.getHours())}:${pad(dObj.getMinutes())}` : "",
                         endTime: eObj ? `${pad(eObj.getHours())}:${pad(eObj.getMinutes())}` : "",
+                        isOpenEnded: detailAppt.isOpenEnded === true,
                       });
                       setRescheduleFor(detailAppt);
                       setDetailAppt(null);
@@ -513,23 +558,50 @@ export default function AppointmentsPage() {
                 <Label>{t("form.startTime")}</Label>
                 <Input type="time" value={rsForm.startTime} onChange={(e) => setRsForm((f) => ({ ...f, startTime: e.target.value }))} />
               </div>
-              <div className="space-y-1.5">
-                <Label>{t("form.endTime")}</Label>
-                <Input type="time" value={rsForm.endTime} onChange={(e) => setRsForm((f) => ({ ...f, endTime: e.target.value }))} />
-              </div>
+              {!rsForm.isOpenEnded && (
+                <div className="space-y-1.5">
+                  <Label>{t("form.endTime")}</Label>
+                  <Input type="time" value={rsForm.endTime} onChange={(e) => setRsForm((f) => ({ ...f, endTime: e.target.value }))} />
+                </div>
+              )}
             </div>
+            <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border p-3">
+              <Checkbox
+                checked={rsForm.isOpenEnded}
+                onCheckedChange={(v) => setRsForm((f) => ({ ...f, isOpenEnded: v === true }))}
+                className="mt-0.5"
+              />
+              <span className="space-y-0.5">
+                <span className="block text-sm font-medium">{t("form.openEnded")}</span>
+                <span className="block text-xs text-muted-foreground">{t("form.openEndedHint")}</span>
+              </span>
+            </label>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setRescheduleFor(null)} disabled={rescheduleAppt.isPending}>
               {t("form.cancel")}
             </Button>
             <Button
-              disabled={rescheduleAppt.isPending || !rsForm.date || !rsForm.startTime || !rsForm.endTime}
+              disabled={
+                rescheduleAppt.isPending || !rsForm.date || !rsForm.startTime ||
+                (!rsForm.isOpenEnded && !rsForm.endTime)
+              }
               onClick={async () => {
                 if (!rescheduleFor) return;
                 const startISO = new Date(`${rsForm.date}T${rsForm.startTime}:00`).toISOString();
-                const endISO = new Date(`${rsForm.date}T${rsForm.endTime}:00`).toISOString();
-                await rescheduleAppt.mutateAsync({ id: rescheduleFor.id, dto: { date: rsForm.date, startTime: startISO, endTime: endISO } });
+                // Open-ended sends no finish time. Turning one back into a fixed
+                // slot has to say so explicitly — otherwise the flag survives the
+                // reschedule and the endTime is ignored.
+                const timing = rsForm.isOpenEnded
+                  ? { isOpenEnded: true }
+                  : {
+                      endTime: new Date(`${rsForm.date}T${rsForm.endTime}:00`).toISOString(),
+                      ...(rescheduleFor.isOpenEnded ? { isOpenEnded: false } : {}),
+                    };
+                await rescheduleAppt.mutateAsync({
+                  id: rescheduleFor.id,
+                  dto: { startTime: startISO, ...timing },
+                });
                 setRescheduleFor(null);
               }}
             >
@@ -650,7 +722,7 @@ export default function AppointmentsPage() {
                 <Select value={newForm.appointmentType} onValueChange={(v) => setNewForm((f) => ({ ...f, appointmentType: v as AppointmentType }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(["ASSESSMENT", "FITTING", "SESSION", "FOLLOW_UP", "COMMITTEE", "EXAMINATION"] as AppointmentType[]).map((k) => (
+                    {allowedTypes.map((k) => (
                       <SelectItem key={k} value={k}>{t(`types.${k}`)}</SelectItem>
                     ))}
                   </SelectContent>
@@ -658,12 +730,22 @@ export default function AppointmentsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>{t("form.department")}</Label>
-                <Select value={newForm.departmentId} onValueChange={(v) => setNewForm((f) => ({ ...f, departmentId: v }))}>
+                <Select
+                  value={newForm.departmentId}
+                  onValueChange={(v) => setNewForm((f) => {
+                    const allowed = typesForDepartment(v);
+                    return {
+                      ...f,
+                      departmentId: v,
+                      appointmentType: allowed.includes(f.appointmentType) ? f.appointmentType : allowed[0],
+                    };
+                  })}
+                >
                   <SelectTrigger><SelectValue placeholder={t("form.departmentPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {clinicDepartments.map((dep) => (
                       <SelectItem key={dep.id} value={dep.id}>
-                        {locale === "ar" ? dep.nameAr : (dep.nameEn ?? dep.nameAr)}
+                        {deptName(dep)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -726,11 +808,24 @@ export default function AppointmentsPage() {
                 <Label>{t("form.startTime")}</Label>
                 <Input type="time" value={newForm.startTime} onChange={(e) => setNewForm((f) => ({ ...f, startTime: e.target.value }))} />
               </div>
-              <div className="space-y-1.5">
-                <Label>{t("form.endTime")}</Label>
-                <Input type="time" value={newForm.endTime} onChange={(e) => setNewForm((f) => ({ ...f, endTime: e.target.value }))} />
-              </div>
+              {!newForm.isOpenEnded && (
+                <div className="space-y-1.5">
+                  <Label>{t("form.endTime")}</Label>
+                  <Input type="time" value={newForm.endTime} onChange={(e) => setNewForm((f) => ({ ...f, endTime: e.target.value }))} />
+                </div>
+              )}
             </div>
+            <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border p-3">
+              <Checkbox
+                checked={newForm.isOpenEnded}
+                onCheckedChange={(v) => setNewForm((f) => ({ ...f, isOpenEnded: v === true }))}
+                className="mt-0.5"
+              />
+              <span className="space-y-0.5">
+                <span className="block text-sm font-medium">{t("form.openEnded")}</span>
+                <span className="block text-xs text-muted-foreground">{t("form.openEndedHint")}</span>
+              </span>
+            </label>
             <div className="space-y-1.5">
               <Label>{t("form.notes")}</Label>
               <Textarea rows={2} value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />

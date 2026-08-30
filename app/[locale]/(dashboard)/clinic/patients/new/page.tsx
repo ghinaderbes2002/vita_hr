@@ -52,7 +52,7 @@ const step2Schema = z.object({
   phone:          z.string().min(7),
   whatsapp:       z.string().optional(),
   email:          z.string().email().optional().or(z.literal("")),
-  cityId:         z.string().optional(),
+  cityId:         z.string().min(1),
   addressDetails: z.string().optional(),
 });
 
@@ -496,8 +496,9 @@ export default function NewPatientPage() {
                 {form2.formState.errors.email && <p className="text-xs text-destructive">{t("validation.invalidEmail")}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label>{t("fields.city")}</Label>
-                <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)}>
+                <Label>{t("fields.city")} <span className="text-destructive">*</span></Label>
+                {/* `shouldValidate` so the error clears the moment a city is picked. */}
+                <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v, { shouldValidate: true })}>
                   <SelectTrigger><SelectValue placeholder={t("fields.cityPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {cities.map((c) => (
@@ -507,6 +508,7 @@ export default function NewPatientPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {form2.formState.errors.cityId && <p className="text-xs text-destructive">{t("validation.required")}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>{t("fields.address")}</Label>

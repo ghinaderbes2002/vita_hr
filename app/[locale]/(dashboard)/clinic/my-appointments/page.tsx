@@ -280,7 +280,8 @@ export default function MyAppointmentsPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-base font-bold">{patientOf(detailAppt)}</p>
                   <p className="mt-0.5 font-mono text-sm text-muted-foreground tabular-nums">
-                    {fmtTime(detailAppt.startTime)} — {fmtTime(detailAppt.endTime)}
+                    {/* An open-ended visit's endTime is only the server's buffer. */}
+                    {fmtTime(detailAppt.startTime)} — {detailAppt.isOpenEnded ? t("form.openEnded") : fmtTime(detailAppt.endTime)}
                   </p>
                 </div>
                 <Badge variant="outline" className={cn("shrink-0 text-[10px]", STATUS_COLOR[detailAppt.status])}>

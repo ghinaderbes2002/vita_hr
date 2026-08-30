@@ -2,10 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clinicPatientsApi, CreatePatientDto, UpdatePatientDto, PatientListParams, DocumentType } from "@/lib/api/clinic-patients";
 import { toast } from "sonner";
 
-export function useClinicPatients(params?: PatientListParams) {
+export function useClinicPatients(params?: PatientListParams, enabled = true) {
   return useQuery({
     queryKey: ["clinic-patients", params],
     queryFn: () => clinicPatientsApi.list(params),
+    enabled,
   });
 }
 

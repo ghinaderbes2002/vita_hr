@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Activity } from "lucide-react";
+import { Search, Eye, Activity, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,9 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
+import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { useProstheticsCases } from "@/lib/hooks/use-clinic-prosthetics";
+import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { ProstheticsCase, ProstheticsStatus } from "@/lib/api/clinic-prosthetics";
 
 const LIMIT = 15;
@@ -57,11 +59,29 @@ export default function ProstheticsListPage() {
   const totalPages = data?.totalPages ?? 0;
   const total = data?.total ?? 0;
 
+  // The table lists cases, so the patient head-count has to come from the
+  // patients endpoint — `total` above would double-count anyone with two files.
+  const { data: patientsData, isLoading: patientsLoading } = useClinicPatients({
+    page: 1,
+    limit: 1,
+    caseType: "prosthetics",
+  });
+  const patientCount = patientsData?.total;
+
   return (
     <div className="space-y-4">
       <PageHeader
         title={t("title")}
         description={t("description")}
+        actions={
+          <ClinicCountChips
+            isLoading={isLoading || patientsLoading}
+            counts={[
+              { icon: Users, label: tCommon("patients"), value: patientCount },
+              { icon: Activity, label: tCommon("cases"), value: total },
+            ]}
+          />
+        }
       />
 
       <div className="flex flex-wrap gap-3">

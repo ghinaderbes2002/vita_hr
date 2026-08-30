@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Footprints } from "lucide-react";
+import { Search, Eye, Footprints, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
 import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
@@ -23,6 +24,7 @@ export default function PodiatryListPage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.podiatry");
+  const tCommon = useTranslations("clinic.common");
   const enumLabel = usePodiatryEnumLabels();
   const [search, setSearch] = useState("");
 
@@ -35,11 +37,26 @@ export default function PodiatryListPage() {
     return name.includes(q) || (r.patient?.patientNumber ?? "").toLowerCase().includes(q);
   });
 
+  // This list isn't paginated, so the distinct patients are countable right here
+  // — no second request, and exact rather than an estimate off one page.
+  const patientCount = new Set(
+    (receptions as PodiatryReception[]).map((r) => r.patientId),
+  ).size;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title={t("title")}
         description={t("description")}
+        actions={
+          <ClinicCountChips
+            isLoading={isLoading}
+            counts={[
+              { icon: Users, label: tCommon("patients"), value: patientCount },
+              { icon: Footprints, label: tCommon("receptions"), value: (receptions as PodiatryReception[]).length },
+            ]}
+          />
+        }
       />
 
       <div className="relative">

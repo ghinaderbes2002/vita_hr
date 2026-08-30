@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Heart } from "lucide-react";
+import { Search, Eye, Heart, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,7 +15,9 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
+import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { usePhysioCases } from "@/lib/hooks/use-clinic-physio";
+import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
 import { usePractitionerPatients } from "@/lib/hooks/use-clinic-appointments";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
@@ -37,6 +39,7 @@ export default function PhysioListPage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.physio");
+  const tCommon = useTranslations("clinic.common");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PhysioStatus | "all">("all");
@@ -76,11 +79,33 @@ export default function PhysioListPage() {
   const totalPages = data?.totalPages ?? 0;
   const total = data?.total ?? 0;
 
+  // The table lists cases, so the patient head-count comes from the patients
+  // endpoint — `total` above would double-count anyone with two files open.
+  // A practitioner who only sees their own patients gets counted from that same
+  // list instead, and their case total is withheld: the server's `total` covers
+  // the whole department and would overstate what they can actually see.
+  const { data: patientsData, isLoading: patientsCountLoading } = useClinicPatients(
+    { page: 1, limit: 1, caseType: "physio" },
+    !shouldFilter,
+  );
+  const counts = shouldFilter
+    ? [{ icon: Users, label: tCommon("patients"), value: practitionerPatientIds?.length }]
+    : [
+        { icon: Users, label: tCommon("patients"), value: patientsData?.total },
+        { icon: Heart, label: tCommon("cases"), value: total },
+      ];
+
   return (
     <div className="space-y-4">
       <PageHeader
         title={t("title")}
         description={t("description")}
+        actions={
+          <ClinicCountChips
+            isLoading={isLoading || (shouldFilter && patientsLoading) || patientsCountLoading}
+            counts={counts}
+          />
+        }
       />
 
       <div className="flex flex-wrap gap-3">

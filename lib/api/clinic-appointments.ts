@@ -1,7 +1,43 @@
 import { apiClient } from "./client";
 
 export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "RESCHEDULED";
-export type AppointmentType = "ASSESSMENT" | "FITTING" | "SESSION" | "FOLLOW_UP" | "COMMITTEE" | "EXAMINATION";
+export type AppointmentType =
+  // Prosthetics & Podiatry
+  | "COMPANY_EXAMINATION" | "REFERRAL_EXAMINATION" | "TRIAL_DELIVERY" | "FINAL_DELIVERY"
+  | "REVIEW" | "IMPRESSION_TAKING" | "MEASUREMENT_TAKING" | "WHEELCHAIR_DELIVERY"
+  | "WARRANTY_DELIVERY" | "COSMETIC_DELIVERY" | "ANALYSIS" | "INSTALLATION"
+  // Medical Administration (orthopaedic)
+  | "ORTHOPEDIC_EXAMINATION" | "FOOT_ANALYSIS_EXAMINATION" | "LIMB_PATIENT_EXAMINATION"
+  // Physiotherapy
+  | "SESSION" | "ASSESSMENT" | "FOLLOW_UP"
+  // Older values, still returned on existing records
+  | "FITTING" | "COMMITTEE" | "EXAMINATION";
+
+/**
+ * Which appointment types each clinical department accepts. A department that
+ * appears in none of these has no restriction — the server takes any type.
+ */
+export const PROSTHETICS_PODIATRY_APPOINTMENT_TYPES: AppointmentType[] = [
+  "COMPANY_EXAMINATION", "REFERRAL_EXAMINATION", "TRIAL_DELIVERY", "FINAL_DELIVERY",
+  "REVIEW", "IMPRESSION_TAKING", "MEASUREMENT_TAKING", "WHEELCHAIR_DELIVERY",
+  "WARRANTY_DELIVERY", "COSMETIC_DELIVERY", "ANALYSIS", "INSTALLATION",
+];
+
+export const MEDICAL_ADMIN_APPOINTMENT_TYPES: AppointmentType[] = [
+  "ORTHOPEDIC_EXAMINATION", "FOOT_ANALYSIS_EXAMINATION", "LIMB_PATIENT_EXAMINATION",
+];
+
+export const PHYSIO_APPOINTMENT_TYPES: AppointmentType[] = [
+  "SESSION", "ASSESSMENT", "FOLLOW_UP",
+];
+
+/** Everything the picker may offer when no department narrows the choice. */
+export const ALL_APPOINTMENT_TYPES: AppointmentType[] = [
+  ...PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
+  ...MEDICAL_ADMIN_APPOINTMENT_TYPES,
+  ...PHYSIO_APPOINTMENT_TYPES,
+  "FITTING", "COMMITTEE", "EXAMINATION",
+];
 export type PractitionerRole = "PROSTHETIST" | "PHYSIOTHERAPIST" | "DOCTOR" | "TECHNICIAN";
 
 export interface Appointment {
@@ -19,7 +55,13 @@ export interface Appointment {
   status: AppointmentStatus;
   date: string;
   startTime: string;
+  /**
+   * Still returned for an open-ended booking, where it is the 15-minute buffer
+   * the server reserves rather than a real finish time — don't show it as one.
+   */
   endTime: string;
+  /** The visit runs until the practitioner is done; `endTime` is only a buffer. */
+  isOpenEnded?: boolean;
   durationMinutes?: number;
   notes?: string | null;
   cancelReason?: string | null;
@@ -50,10 +92,26 @@ export interface CreateAppointmentDto {
   physiotherapistId?: string;
   appointmentType: AppointmentType;
   startTime: string;
-  endTime: string;
+  /** Required unless `isOpenEnded` is true, where the server picks the buffer. */
+  endTime?: string;
+  /** Book without a finish time; the server reserves 15 minutes after the start. */
+  isOpenEnded?: boolean;
   notes?: string;
   /** Additional therapist user IDs; each is notified. Send [] to clear all. */
   therapistIds?: string[];
+}
+
+export interface RescheduleAppointmentDto {
+  /** Full ISO timestamp — it carries the date, so none is sent separately. */
+  startTime: string;
+  /** Required unless `isOpenEnded` is true, where the server picks the buffer. */
+  endTime?: string;
+  /**
+   * Send `true` to keep (or make) the booking open-ended, and `false` to turn an
+   * open-ended one back into a fixed slot — alongside an `endTime`. Omit it when
+   * a fixed booking stays fixed.
+   */
+  isOpenEnded?: boolean;
 }
 
 export interface UpdateAppointmentDto extends Partial<CreateAppointmentDto> {
@@ -147,7 +205,7 @@ export const clinicAppointmentsApi = {
     return data?.data ?? data;
   },
 
-  reschedule: async (id: string, dto: { date: string; startTime: string; endTime: string }): Promise<Appointment> => {
+  reschedule: async (id: string, dto: RescheduleAppointmentDto): Promise<Appointment> => {
     const { data } = await apiClient.put(`/appointments/${id}/reschedule`, dto);
     return data?.data ?? data;
   },
