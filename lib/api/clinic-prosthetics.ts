@@ -444,6 +444,21 @@ export const clinicProstheticsApi = {
     };
   },
 
+  /**
+   * Cases the employee is attached to as either the prosthetist or the
+   * physiotherapist. `practitionerId` is an EMPLOYEE id — the same one stored in
+   * `prosthetistId` / `physiotherapistId` — not a user id.
+   *
+   * Unlike `list`, this returns a plain array: no paging, no server-side filters.
+   */
+  listByPractitioner: async (practitionerId: string): Promise<ProstheticsCase[]> => {
+    const { data } = await apiClient.get("/prosthetics/cases/by-practitioner", {
+      params: { practitionerId },
+    });
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
   getById: async (id: string): Promise<ProstheticsCase> => {
     const { data } = await apiClient.get(`/prosthetics/cases/${id}`);
     return data?.data ?? data;

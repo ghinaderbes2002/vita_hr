@@ -40,6 +40,7 @@ import { Separator } from "@/components/ui/separator";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { BodyPainMap } from "@/components/clinic/body-pain-map";
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
+import { ConvertToPhysioDialog } from "@/components/clinic/convert-to-physio-dialog";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -289,6 +290,7 @@ export default function PhysioCasePage() {
   const submitComplaint = useSubmitComplaint();
   const submitPainMap = useSubmitPainMap();
   const convertToPhysio = useConvertToPhysio();
+  const [convertOpen, setConvertOpen] = useState(false);
   const submitHistory = useSubmitMedicalHistory();
   const addSurgery = useAddPhysioSurgery();
   const submitGoals = useSubmitPhysioGoals();
@@ -1361,8 +1363,11 @@ export default function PhysioCasePage() {
   const canEdit = !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status);
   const isDoctorExam = isDoctorExamCase(c);
 
-  const handleConvertToPhysio = async () => {
-    const { convertedCaseId } = await convertToPhysio.mutateAsync({ id, patientId: c.patientId });
+  const handleConvertToPhysio = async (physiotherapistId?: string) => {
+    const { convertedCaseId } = await convertToPhysio.mutateAsync({
+      id, patientId: c.patientId, physiotherapistId,
+    });
+    setConvertOpen(false);
     if (convertedCaseId) router.push(`/${locale}/clinic/physio/${convertedCaseId}`);
   };
 
@@ -1407,7 +1412,7 @@ export default function PhysioCasePage() {
           {isDoctorExam && (
             <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
               <Button size="sm" className="gap-2" disabled={convertToPhysio.isPending}
-                onClick={handleConvertToPhysio}>
+                onClick={() => setConvertOpen(true)}>
                 {convertToPhysio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeftRight className="h-4 w-4" />}
                 {t("convertToPhysio")}
               </Button>
@@ -4030,6 +4035,13 @@ export default function PhysioCasePage() {
         legalNotice={t("sign.legalNotice")}
         onSign={handleSign}
         isLoading={signPlan.isPending}
+      />
+
+      <ConvertToPhysioDialog
+        open={convertOpen}
+        onOpenChange={setConvertOpen}
+        onConfirm={handleConvertToPhysio}
+        isPending={convertToPhysio.isPending}
       />
     </div>
   );

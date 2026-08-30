@@ -40,6 +40,7 @@ import { usePatientAppointments } from "@/lib/hooks/use-clinic-appointments";
 import { AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { useProstheticsCasesByPatient, useCreateProstheticsCase } from "@/lib/hooks/use-clinic-prosthetics";
 import { usePhysioCasesByPatient, useCreatePhysioCase, useConvertToPhysio } from "@/lib/hooks/use-clinic-physio";
+import { ConvertToPhysioDialog } from "@/components/clinic/convert-to-physio-dialog";
 import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
 import { PhysioCase } from "@/lib/api/clinic-physio";
 import { referralSourceLabel, REFERRAL_DETAILS_LABEL, ReferralSource } from "@/lib/clinic/referral-sources";
@@ -142,6 +143,8 @@ export default function PatientProfilePage() {
   const createProst = useCreateProstheticsCase();
   const createPhysio = useCreatePhysioCase();
   const convertToPhysio = useConvertToPhysio();
+  // Which exam the therapist picker is open for — the button sits inside a list.
+  const [convertExamId, setConvertExamId] = useState<string | null>(null);
 
   // Attendance record: how many of the patient's appointments were actually
   // honoured versus missed or called off.
@@ -209,8 +212,12 @@ export default function PatientProfilePage() {
     router.push(`/${locale}/clinic/prosthetics/${c.id}`);
   };
 
-  const handleConvertToPhysio = async (examId: string) => {
-    const { convertedCaseId } = await convertToPhysio.mutateAsync({ id: examId, patientId: id });
+  const handleConvertToPhysio = async (physiotherapistId?: string) => {
+    if (!convertExamId) return;
+    const { convertedCaseId } = await convertToPhysio.mutateAsync({
+      id: convertExamId, patientId: id, physiotherapistId,
+    });
+    setConvertExamId(null);
     if (convertedCaseId) router.push(`/${locale}/clinic/physio/${convertedCaseId}`);
   };
 
@@ -637,7 +644,7 @@ export default function PatientProfilePage() {
                       <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
                         <Button size="sm" variant="outline" className="gap-1.5"
                           disabled={convertToPhysio.isPending}
-                          onClick={(e) => { e.stopPropagation(); handleConvertToPhysio(c.id); }}>
+                          onClick={(e) => { e.stopPropagation(); setConvertExamId(c.id); }}>
                           {convertToPhysio.isPending && convertToPhysio.variables?.id === c.id
                             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             : <ArrowLeftRight className="h-3.5 w-3.5" />}
@@ -786,6 +793,13 @@ export default function PatientProfilePage() {
         onOpenChange={setPodiatryDialogOpen}
         patientId={id}
         onCreated={(receptionId) => router.push(`/${locale}/clinic/podiatry/${receptionId}`)}
+      />
+
+      <ConvertToPhysioDialog
+        open={!!convertExamId}
+        onOpenChange={(o) => { if (!o) setConvertExamId(null); }}
+        onConfirm={handleConvertToPhysio}
+        isPending={convertToPhysio.isPending}
       />
 
       <ConfirmDialog

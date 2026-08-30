@@ -31,10 +31,19 @@ import {
 } from "@/lib/api/clinic-prosthetics";
 import { toast } from "sonner";
 
-export function useProstheticsCases(params?: ProstheticsCaseListParams) {
+export function useProstheticsCases(params?: ProstheticsCaseListParams, enabled = true) {
   return useQuery({
     queryKey: ["clinic-prosthetics-cases", params],
     queryFn: () => clinicProstheticsApi.list(params),
+    enabled,
+  });
+}
+
+export function useProstheticsCasesByPractitioner(practitionerId?: string, enabled = true) {
+  return useQuery({
+    queryKey: ["clinic-prosthetics-cases-practitioner", practitionerId],
+    queryFn: () => clinicProstheticsApi.listByPractitioner(practitionerId!),
+    enabled: enabled && !!practitionerId,
   });
 }
 

@@ -62,7 +62,8 @@ export function useCreatePhysioCase() {
 export function useConvertToPhysio() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id }: { id: string; patientId?: string }) => clinicPhysioApi.convertToPhysio(id),
+    mutationFn: ({ id, physiotherapistId }: { id: string; patientId?: string; physiotherapistId?: string }) =>
+      clinicPhysioApi.convertToPhysio(id, physiotherapistId),
     onSuccess: (_, { patientId }) => {
       qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
       if (patientId) qc.invalidateQueries({ queryKey: ["clinic-physio-cases-patient", patientId] });

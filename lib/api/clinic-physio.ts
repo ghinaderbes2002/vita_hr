@@ -479,8 +479,15 @@ export const clinicPhysioApi = {
    * The only way to open a PT case: the backend rejects creating one directly,
    * so a doctor exam is converted once it is done.
    */
-  convertToPhysio: async (id: string): Promise<{ convertedCaseId: string; caseNumber?: string }> => {
-    const { data } = await apiClient.post(`/physio/cases/${id}/convert-to-physio`);
+  convertToPhysio: async (
+    id: string,
+    /** Employee id of the therapist to assign; omitted, the case opens unassigned. */
+    physiotherapistId?: string,
+  ): Promise<{ convertedCaseId: string; caseNumber?: string }> => {
+    const { data } = await apiClient.post(
+      `/physio/cases/${id}/convert-to-physio`,
+      physiotherapistId ? { physiotherapistId } : undefined,
+    );
     const d = data?.data ?? data;
     return { convertedCaseId: d?.convertedCaseId ?? d?.id, caseNumber: d?.caseNumber };
   },

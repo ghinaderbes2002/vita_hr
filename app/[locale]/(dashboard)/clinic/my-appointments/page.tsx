@@ -38,6 +38,9 @@ const deptDot = (name: string) =>
 const localIso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+/** `Date#getDay()` for Friday — the clinic is closed, so it gets no column. */
+const CLINIC_DAY_OFF = 5;
+
 // Week starts on Saturday.
 const startOfWeek = (ref: Date) => {
   const d = new Date(ref); d.setHours(0, 0, 0, 0);
@@ -99,7 +102,11 @@ export default function MyAppointmentsPage() {
   const today = new Date();
   const todayKey = localIso(today);
   const weekStart = startOfWeek(addDays(today, weekOffset * 7));
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  // Friday is the clinic's day off, so the grid runs Saturday → Thursday. Every
+  // other week figure is derived from `weekDays`, which keeps the columns, the
+  // header range and the status counts describing the same six days.
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+    .filter((d) => d.getDay() !== CLINIC_DAY_OFF);
   const weekKeys = new Set(weekDays.map(localIso));
   const weekAppts = items.filter((a) => weekKeys.has(dayKeyOf(a)));
 
@@ -129,7 +136,7 @@ export default function MyAppointmentsPage() {
     isToday: localIso(d) === todayKey,
     appointments: visibleAppts.filter((a) => dayKeyOf(a) === localIso(d)),
   }));
-  const weekLabel = `${weekStart.toLocaleDateString(locale, { day: "numeric", month: "short" })} — ${addDays(weekStart, 6).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}`;
+  const weekLabel = `${weekDays[0].toLocaleDateString(locale, { day: "numeric", month: "short" })} — ${weekDays[weekDays.length - 1].toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}`;
 
   // ── Dashboard stats (this week) ───────────────────────────────────────────
   const countBy = (s: AppointmentStatus) => weekAppts.filter((a) => a.status === s).length;
