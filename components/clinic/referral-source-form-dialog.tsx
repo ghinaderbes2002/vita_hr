@@ -42,6 +42,7 @@ interface FormState {
   mobile: string;
   clinicRating: number | null;
   patientDensityRating: number | null;
+  doctorRating: number | null;
   interests: string[];
   visitDays: string;
   visitTimes: string;
@@ -75,6 +76,7 @@ const emptyForm = (): FormState => ({
   mobile: "",
   clinicRating: null,
   patientDensityRating: null,
+  doctorRating: null,
   interests: [],
   visitDays: "",
   visitTimes: "",
@@ -96,6 +98,7 @@ const formOf = (s: ReferralSource): FormState => ({
   mobile: s.mobile ?? "",
   clinicRating: s.clinicRating ?? null,
   patientDensityRating: s.patientDensityRating ?? null,
+  doctorRating: s.doctorRating ?? null,
   interests: s.interests ?? [],
   visitDays: s.visitDays ?? "",
   visitTimes: s.visitTimes ?? "",
@@ -261,6 +264,7 @@ export function ReferralSourceFormDialog({
       mobile: text(form.mobile),
       clinicRating: form.clinicRating ?? undefined,
       patientDensityRating: form.patientDensityRating ?? undefined,
+      doctorRating: form.doctorRating ?? undefined,
       interests: form.interests.length ? form.interests : undefined,
       visitDays: text(form.visitDays),
       visitTimes: text(form.visitTimes),
@@ -450,6 +454,10 @@ export function ReferralSourceFormDialog({
                 <div className="space-y-1.5">
                   <Label>كثافة المرضى</Label>
                   <StarRating value={form.patientDensityRating} onChange={(v) => set("patientDensityRating", v)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>تقييم الطبيب</Label>
+                  <StarRating value={form.doctorRating} onChange={(v) => set("doctorRating", v)} />
                 </div>
               </div>
               <div className="space-y-1.5">

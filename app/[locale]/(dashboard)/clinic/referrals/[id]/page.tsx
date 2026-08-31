@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
-  ArrowRight, CalendarClock, MapPin, Pencil, Phone, Plus, Smartphone, Star, Trash2, Users,
+  ArrowRight, CalendarClock, MapPin, Pencil, Phone, Plus, Star, Trash2, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { WhatsAppLink } from "@/components/shared/whatsapp-link";
 import { ActionGuard, PageGuard } from "@/components/permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -190,13 +191,10 @@ export default function ReferralSourceDetailPage() {
                   <Phone className="h-3.5 w-3.5 text-muted-foreground" />{source.clinicPhone}
                 </span>
               )} />
-              <InfoRow label="الجوال" value={source.mobile && (
-                <span className="inline-flex items-center gap-1.5" dir="ltr">
-                  <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />{source.mobile}
-                </span>
-              )} />
+              <InfoRow label="الجوال" value={source.mobile && <WhatsAppLink phone={source.mobile} />} />
               <InfoRow label="تقييم العيادة" value={source.clinicRating ? <Stars value={source.clinicRating} /> : null} />
               <InfoRow label="كثافة المرضى" value={source.patientDensityRating ? <Stars value={source.patientDensityRating} /> : null} />
+              <InfoRow label="تقييم الطبيب" value={source.doctorRating ? <Stars value={source.doctorRating} /> : null} />
               <InfoRow label="أوقات الزيارة" value={source.visitTimes} />
               <InfoRow label="الاهتمامات" value={source.interests?.length ? (
                 <span className="flex flex-wrap justify-end gap-1">

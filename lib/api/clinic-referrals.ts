@@ -57,6 +57,7 @@ export interface ReferralSource {
   mobile?: string | null;
   clinicRating?: number | null;
   patientDensityRating?: number | null;
+  doctorRating?: number | null;
   interests?: string[] | null;
   visitDays?: string | null;
   visitTimes?: string | null;
@@ -95,6 +96,7 @@ export interface CreateReferralSourceDto {
   mobile?: string;
   clinicRating?: number;
   patientDensityRating?: number;
+  doctorRating?: number;
   interests?: string[];
   visitDays?: string;
   visitTimes?: string;
@@ -140,6 +142,8 @@ export interface PaginatedReferralSources {
 export interface ReferralStats {
   byType: { type: ReferralSourceType; _count: { id: number } }[];
   topSources: ReferralSource[];
+  /** Every visit the team logged, centre-wide — not just the top sources. */
+  totalVisits: number;
 }
 
 const BASE = "/referrals/sources";
@@ -163,7 +167,11 @@ export const clinicReferralsApi = {
   getStats: async (): Promise<ReferralStats> => {
     const { data } = await apiClient.get(`${BASE}/stats`);
     const d = data?.data ?? data;
-    return { byType: d?.byType ?? [], topSources: d?.topSources ?? [] };
+    return {
+      byType: d?.byType ?? [],
+      topSources: d?.topSources ?? [],
+      totalVisits: d?.totalVisits ?? 0,
+    };
   },
 
   getById: async (id: string): Promise<ReferralSource> => {

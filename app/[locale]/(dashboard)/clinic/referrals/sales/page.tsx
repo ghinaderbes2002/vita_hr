@@ -122,11 +122,16 @@ export default function ReferralSalesPage() {
   const maxPatients = Math.max(1, ...rows.map((s) => s.patientCount ?? 0));
   const maxVisits = Math.max(1, ...rows.map((s) => visitsOf(s.id, visitsCountOf(s))));
 
-  // The API only returns the leading sources, so the summary is explicitly about
-  // those rather than pretending to be a centre-wide total.
+  // The API only returns the leading sources, so the patient figures are
+  // explicitly about those rather than pretending to be centre-wide.
   const sumRegistered = rows.reduce((n, s) => n + (s.patientCount ?? 0), 0);
   const sumActual = rows.reduce((n, s) => n + (s.realPatientCount ?? 0), 0);
-  const sumVisits = rows.reduce((n, s) => n + visitsOf(s.id, visitsCountOf(s)), 0);
+  // Visits are the exception: the API totals them centre-wide, so the figure no
+  // longer under-reports by counting only the ten rows below. A staff filter
+  // still has to be counted here — the total knows nothing of who visited.
+  const sumVisits = staffFilter === "all"
+    ? stats?.totalVisits ?? 0
+    : rows.reduce((n, s) => n + visitsOf(s.id, visitsCountOf(s)), 0);
   const conversion = sumRegistered ? Math.round((sumActual / sumRegistered) * 100) : null;
 
   const countOfType = (t: ReferralSourceType) =>

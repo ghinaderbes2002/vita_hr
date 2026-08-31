@@ -3638,7 +3638,7 @@ export default function ProstheticsCasePage() {
   // case.view; every clinical tab needs its own action permission, so a user
   // who can create+view a case (e.g. the centre supervisor) reaches the intake
   // form but not assessment, committee, delivery, etc.
-  const { hasPermission, hasAnyPermission, isAdmin } = usePermissions();
+  const { hasPermission, hasAnyPermission, hasRole, isAdmin } = usePermissions();
   const P = PERMISSIONS.CLINIC_PROSTHETICS;
   // Every clinical action permission — anyone holding at least one is more than a
   // pure "reception only" supervisor, so the read-only timeline is shown to them.
@@ -3663,7 +3663,22 @@ export default function ProstheticsCasePage() {
     final_evaluation: [P.DELIVERY_APPROVE],
     final_delivery: [P.DELIVERY_APPROVE],
   };
-  const showTab = (key: string) => canTab(tabPerm[key] ?? null);
+  // A physiotherapist attached to a prosthetics case takes part in the clinical
+  // review only — the fitting, measurement, follow-up and delivery tabs belong to
+  // the prosthetics team. Recognised by holding the PT role without any of the
+  // permissions that drive those tabs, so nobody who actually does that work is
+  // caught by it.
+  const PROSTHETICS_WORK_PERMS = [P.COMPONENTS_ADD, P.GAIT_CREATE, P.DELIVERY_CREATE];
+  const PHYSIO_ROLE_TABS = [
+    "intake", "patient_info", "assessment", "committee_review", "final_evaluation",
+  ];
+  const isPhysioOnly =
+    !isAdmin() && hasRole("PT" as any) && !hasAnyPermission(PROSTHETICS_WORK_PERMS);
+
+  // The role narrows what is on offer; the permission still decides each tab, so
+  // granting nothing extra changes nothing.
+  const showTab = (key: string) =>
+    (!isPhysioOnly || PHYSIO_ROLE_TABS.includes(key)) && canTab(tabPerm[key] ?? null);
 
   const { data: caseData, isLoading } = useProstheticsCase(id);
   const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
@@ -4626,11 +4641,22 @@ export default function ProstheticsCasePage() {
     "assistiveDeviceTypes", "canClimbStairs", "canBalanceOneSide",
   ];
 
-  /** `side` rides in the URL, so it never belongs in a PATCH body. */
+  /**
+   * Keys the PATCH body must never carry. `side` travels in the URL, and the
+   * examiner id arrays belong to the create payload — they are always empty
+   * here and a stricter partial-update DTO rejects the whole request over them.
+   * `undefined` entries are dropped too, so the body is exactly the fields the
+   * Section means to write and nothing else.
+   */
+  const NEVER_PATCH = ["side", "examinerProsthetistIds", "examinerPhysioIds", "examinerSupervisorIds"];
+  const patchBody = (dto: Record<string, any>, keep: (k: string) => boolean) =>
+    Object.fromEntries(
+      Object.entries(dto).filter(([k, v]) => !NEVER_PATCH.includes(k) && v !== undefined && keep(k)),
+    );
   const pickKeys = (dto: Record<string, any>, keys: string[]) =>
-    Object.fromEntries(Object.entries(dto).filter(([k]) => k !== "side" && keys.includes(k)));
+    patchBody(dto, (k) => keys.includes(k));
   const dropKeys = (dto: Record<string, any>, keys: string[]) =>
-    Object.fromEntries(Object.entries(dto).filter(([k]) => k !== "side" && !keys.includes(k)));
+    patchBody(dto, (k) => !keys.includes(k));
 
   /** A bilateral case owns one record per side; anything else owns exactly one. */
   const sidesOf = (form: { amputationSide: string; side: string }): ("LEFT" | "RIGHT")[] =>
