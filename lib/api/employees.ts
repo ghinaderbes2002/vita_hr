@@ -27,12 +27,22 @@ export interface SalaryChangeDto {
 
 export interface DossierEvent {
   id?: string;
-  category: "HISTORY" | "PENALTY" | "REWARD" | "SALARY_ADVANCE" | "LEAVE_REQUEST" | "REQUEST";
+  category:
+    | "HISTORY"
+    | "PENALTY"
+    | "REWARD"
+    | "SALARY_ADVANCE"
+    | "LEAVE_REQUEST"
+    | "REQUEST"
+    | "COMMISSION";
   type: string;
+  /** For COMMISSION this is the first day of the commission month (not the entry date — see createdAt). */
   date: string;
+  createdAt?: string;
   fromValue?: Record<string, any>;
   toValue?: Record<string, any>;
-  amount?: number;
+  /** Backend may send a decimal string (e.g. "150.00") for COMMISSION. */
+  amount?: number | string;
   penaltyDays?: number;
   reason?: string;
   status?: string;
@@ -46,6 +56,11 @@ export interface DossierEvent {
   totalDays?: number;
   // REQUEST fields
   requestNumber?: string;
+  // COMMISSION fields
+  year?: number;
+  month?: number;
+  description?: string;
+  salesReference?: string;
 }
 
 export interface DossierResponse {

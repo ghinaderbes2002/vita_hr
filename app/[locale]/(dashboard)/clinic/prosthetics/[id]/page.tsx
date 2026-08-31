@@ -4452,11 +4452,16 @@ export default function ProstheticsCasePage() {
 
   const handleSaveStaff = async () => {
     justSavedRef.current = true;
-    // The case stores one staff member per role in singular id fields
-    // (prosthetistId …) — send those, not the plural arrays the backend ignores.
+    // Both shapes go out together: the plural arrays hold the full assignment,
+    // and the singular fields keep the first member so a backend that has not
+    // picked up the arrays yet still stores something. Once the arrays land,
+    // hydration prefers them (see `asIds` above) and the extra members survive.
     await updateCase.mutateAsync({
       id,
       dto: {
+        prosthetistIds: staffForm.prosthetistIds,
+        physiotherapistIds: staffForm.physiotherapistIds,
+        supervisingDoctorIds: staffForm.supervisingDoctorIds,
         prosthetistId: staffForm.prosthetistIds[0] || null,
         physiotherapistId: staffForm.physiotherapistIds[0] || null,
         supervisingDoctorId: staffForm.supervisingDoctorIds[0] || null,

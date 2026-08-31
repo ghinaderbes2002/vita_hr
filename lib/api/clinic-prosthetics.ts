@@ -110,6 +110,13 @@ export interface ProstheticsCase {
   hasRevisionSurgery?: boolean | null;
   revisionDetails?: string | null;
   // Staff IDs
+  /**
+   * Full assignment per role. The singular `*Id` fields below carry the first
+   * member only and are kept for records written before the arrays existed.
+   */
+  prosthetistIds?: string[] | null;
+  physiotherapistIds?: string[] | null;
+  supervisingDoctorIds?: string[] | null;
   prosthetistId?: string | null;
   physiotherapistId?: string | null;
   assignedProsthetistId?: string | null;

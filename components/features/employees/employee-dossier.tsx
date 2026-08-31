@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeftRight, TrendingUp, DollarSign, AlertTriangle,
   Gift, CreditCard, FileText, ChevronDown, ChevronUp,
-  CalendarDays, ClipboardList
+  CalendarDays, ClipboardList, Percent
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ALLOWANCE_AR } from "./allowances-editor";
@@ -18,9 +18,21 @@ function fmtDate(d: string) {
   catch { return d; }
 }
 
-function fmtMoney(amount?: number, _currency?: string) {
-  if (!amount) return "—";
-  return `${amount.toLocaleString("en-US")} $`;
+function fmtMoney(amount?: number | string, _currency?: string) {
+  const n = typeof amount === "string" ? Number(amount) : amount;
+  if (n === undefined || n === null || Number.isNaN(n)) return "—";
+  return `${n.toLocaleString("en-US")} $`;
+}
+
+const MONTHS_AR = [
+  "كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران",
+  "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول",
+];
+
+/** COMMISSION events carry year/month; show the month they belong to, not a full date. */
+function fmtMonth(ev: DossierEvent) {
+  if (ev.year && ev.month) return `${MONTHS_AR[ev.month - 1] ?? ev.month} ${ev.year}`;
+  return fmtDate(ev.date);
 }
 
 // ─── event meta ───────────────────────────────────────────────────────────────
@@ -59,6 +71,10 @@ function eventMeta(ev: DossierEvent): {
   if (ev.category === "LEAVE_REQUEST") return {
     icon: <CalendarDays className="h-4 w-4" />, label: "طلب إجازة",
     color: "bg-sky-50 border-sky-200", textColor: "text-sky-700",
+  };
+  if (ev.category === "COMMISSION") return {
+    icon: <Percent className="h-4 w-4" />, label: "عمولة",
+    color: "bg-teal-50 border-teal-200", textColor: "text-teal-700",
   };
   if (ev.category === "REQUEST") return {
     icon: <ClipboardList className="h-4 w-4" />, label: "طلب",
@@ -130,7 +146,9 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
           {ev.performedBy && (
             <span className="text-xs text-muted-foreground hidden sm:inline">بواسطة: {resolveUser(ev.performedBy)}</span>
           )}
-          <span className="text-xs text-muted-foreground">{fmtDate(ev.date)}</span>
+          <span className="text-xs text-muted-foreground">
+            {ev.category === "COMMISSION" ? fmtMonth(ev) : fmtDate(ev.date)}
+          </span>
           {hasChanges && (
             <button onClick={() => setExpanded(v => !v)} className="text-muted-foreground hover:text-foreground">
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -253,6 +271,22 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
         </div>
       )}
 
+      {/* COMMISSION */}
+      {ev.category === "COMMISSION" && (
+        <div className="text-sm space-y-1">
+          {ev.amount !== undefined && <p>المبلغ: <span className="font-medium">{fmtMoney(ev.amount)}</span></p>}
+          {ev.description && <p className="text-muted-foreground">{ev.description}</p>}
+          {ev.salesReference && (
+            <p className="text-xs text-muted-foreground">المرجع: <span className="font-mono">{ev.salesReference}</span></p>
+          )}
+          {ev.status && (
+            <Badge variant={ev.status === "CONFIRMED" ? "default" : "outline"} className="text-xs">
+              {{ DRAFT: "مسودة", CONFIRMED: "معتمدة" }[ev.status] ?? ev.status}
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* REQUEST */}
       {ev.category === "REQUEST" && (
         <div className="text-sm space-y-1">
@@ -279,7 +313,11 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
 export function EmployeeDossier({ employeeId }: { employeeId: string }) {
   const { data, isLoading, isError }   = useEmployeeDossier(employeeId);
   const { data: empData }              = useEmployees({ limit: 500 });
-  const timeline: DossierEvent[] = (data?.timeline ?? []).filter(ev => ev.status !== "DRAFT");
+  // Drafts stay hidden, except commissions — draft commissions are visible
+  // on the /sales-commissions screen, so hiding them here would be inconsistent.
+  const timeline: DossierEvent[] = (data?.timeline ?? []).filter(
+    ev => ev.status !== "DRAFT" || ev.category === "COMMISSION"
+  );
 
   const userMap = useMemo(() => {
     const m: Record<string, string> = {};
