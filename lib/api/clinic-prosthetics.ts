@@ -150,6 +150,13 @@ export interface AssessmentResult {
   side: "LEFT" | "RIGHT";
   residualLimbLength?: string | null;
   residualLimbShape?: string | null;
+  /**
+   * One row holds two on-screen sections, each stamped as it is written:
+   * `limbSavedAt` for the limb sheet, `romSavedAt` for the muscle sheet. A
+   * stamped section is read-only.
+   */
+  limbSavedAt?: string | null;
+  romSavedAt?: string | null;
   [key: string]: any;
 }
 
@@ -214,6 +221,8 @@ export interface CreateProstheticsCaseDto {
   proposedProsthesisType?: string | null;
   notes?: string;
 }
+
+export type AssessmentSide = "LEFT" | "RIGHT";
 
 export interface AssessmentUpperDto {
   side: "LEFT" | "RIGHT";
@@ -478,6 +487,21 @@ export const clinicProstheticsApi = {
     const { data } = await apiClient.get(`/prosthetics/cases/by-patient/${patientId}`);
     const d = data?.data ?? data;
     return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  /**
+   * Partial upsert of one limb sheet: creates the case+side record if it is
+   * missing, otherwise writes only the keys present in `dto`. Anything omitted
+   * keeps its stored value, so a section can be saved without touching the rest.
+   */
+  patchAssessmentUpper: async (id: string, side: AssessmentSide, dto: Partial<AssessmentUpperDto>) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${id}/assessment-upper/${side}`, dto);
+    return data?.data ?? data;
+  },
+
+  patchAssessmentLower: async (id: string, side: AssessmentSide, dto: Partial<AssessmentLowerDto>) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${id}/assessment-lower/${side}`, dto);
+    return data?.data ?? data;
   },
 
   submitAssessmentUpper: async (id: string, dto: AssessmentUpperDto) => {

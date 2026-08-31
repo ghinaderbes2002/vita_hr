@@ -4042,6 +4042,7 @@ export default function PhysioCasePage() {
         onOpenChange={setConvertOpen}
         onConfirm={handleConvertToPhysio}
         isPending={convertToPhysio.isPending}
+        patientGender={(patientFull as any)?.gender ?? (c.patient as any)?.gender}
       />
     </div>
   );

@@ -28,12 +28,15 @@ export function ConvertToPhysioDialog({
   onOpenChange,
   onConfirm,
   isPending,
+  patientGender,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** `undefined` converts without assigning anyone, which the API allows. */
   onConfirm: (physiotherapistId?: string) => void;
   isPending?: boolean;
+  /** Patients are treated by a therapist of their own gender. Unknown = no filter. */
+  patientGender?: "MALE" | "FEMALE" | null;
 }) {
   const [selected, setSelected] = useState<string>(UNASSIGNED);
   const { data, isLoading } = useEmployeesByDepartment(PHYSIO_DEPT_ID);
@@ -41,11 +44,19 @@ export function ConvertToPhysioDialog({
   const active = therapists.filter((e) =>
     e?.employmentStatus ? e.employmentStatus === "ACTIVE" : true,
   );
+  // Same-gender care: only therapists matching the patient are offered. A
+  // therapist whose record carries no gender is left out rather than shown —
+  // offering the wrong one would break the rule, while missing one is visible
+  // and fixable from the employee record.
+  const matching = patientGender
+    ? active.filter((e) => e?.gender === patientGender)
+    : active;
+  const hiddenByGender = active.length - matching.length;
 
   // Don't carry the previous pick into the next conversion.
   useEffect(() => {
     if (open) setSelected(UNASSIGNED);
-  }, [open]);
+  }, [open, patientGender]);
 
   const nameOf = (e: any) =>
     `${e.firstNameAr ?? e.firstName ?? ""} ${e.lastNameAr ?? e.lastName ?? ""}`.trim() || "—";
@@ -68,14 +79,22 @@ export function ConvertToPhysioDialog({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={UNASSIGNED}>بدون تعيين</SelectItem>
-              {active.map((e) => (
+              {matching.map((e) => (
                 <SelectItem key={e.id} value={e.id}>{nameOf(e)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {!isLoading && active.length === 0 && (
+          {!isLoading && matching.length === 0 && (
             <p className="text-xs text-muted-foreground">
-              لا يوجد معالجون فيزيائيون متاحون — يمكنك التحويل بدون تعيين.
+              {patientGender && active.length > 0
+                ? `لا يوجد معالج ${patientGender === "FEMALE" ? "أنثى" : "ذكر"} متاح — يمكنك التحويل بدون تعيين.`
+                : "لا يوجد معالجون فيزيائيون متاحون — يمكنك التحويل بدون تعيين."}
+            </p>
+          )}
+          {!isLoading && matching.length > 0 && hiddenByGender > 0 && (
+            <p className="text-xs text-muted-foreground">
+              القائمة مقتصرة على المعالجين من نفس جنس المريض
+              {patientGender === "FEMALE" ? " (أنثى)" : " (ذكر)"}.
             </p>
           )}
         </div>

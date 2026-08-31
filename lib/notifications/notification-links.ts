@@ -20,6 +20,13 @@ export function resolveNotificationLink(
 ): string | null {
   const d = (notif.data ?? {}) as Record<string, any>;
 
+  // A link the server put on the notification wins over everything below: the
+  // backend knows where its own notification belongs, and a new type starts
+  // working without a frontend release. Only an internal absolute path is
+  // followed — "//host" is protocol-relative and would navigate off the app.
+  const link = typeof d.link === "string" ? d.link.trim() : "";
+  if (link.startsWith("/") && !link.startsWith("//")) return link;
+
   // Appointment notifications (created / reminder / cancelled …) all carry an
   // `appointmentId` regardless of their type → open the therapist's own list.
   // There is no dedicated appointment detail route (appointments open in a

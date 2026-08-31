@@ -800,6 +800,7 @@ export default function PatientProfilePage() {
         onOpenChange={(o) => { if (!o) setConvertExamId(null); }}
         onConfirm={handleConvertToPhysio}
         isPending={convertToPhysio.isPending}
+        patientGender={patient?.gender}
       />
 
       <ConfirmDialog

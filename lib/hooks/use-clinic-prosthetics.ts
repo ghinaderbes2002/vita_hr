@@ -3,6 +3,7 @@ import {
   clinicProstheticsApi,
   CreateProstheticsCaseDto,
   ProstheticsStatus,
+  AssessmentSide,
   AssessmentUpperDto,
   AssessmentLowerDto,
   CommitteeOpinionDto,
@@ -99,6 +100,30 @@ export function useUpdateProstheticsStatus() {
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-cases"] });
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تغيير الحالة"),
+  });
+}
+
+/**
+ * One section of a limb sheet. The PATCH is an upsert, so unlike the POST it can
+ * be repeated and it leaves keys it wasn't given alone.
+ */
+export function usePatchAssessmentUpper() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, side, dto }: { id: string; side: AssessmentSide; dto: Partial<AssessmentUpperDto> }) =>
+      clinicProstheticsApi.patchAssessmentUpper(id, side, dto),
+    onSuccess: (_, { id }) => qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] }),
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حفظ التقييم"),
+  });
+}
+
+export function usePatchAssessmentLower() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, side, dto }: { id: string; side: AssessmentSide; dto: Partial<AssessmentLowerDto> }) =>
+      clinicProstheticsApi.patchAssessmentLower(id, side, dto),
+    onSuccess: (_, { id }) => qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] }),
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حفظ التقييم"),
   });
 }
 

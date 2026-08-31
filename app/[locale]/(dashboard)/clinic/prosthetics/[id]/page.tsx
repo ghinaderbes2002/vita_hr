@@ -7,7 +7,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowRight, User, Clock, Trash2, Plus, Download, Loader2,
-  CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera, Archive, Bell, Reply,
+  CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera, Archive, Bell, Reply, Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,8 @@ import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import {
   useProstheticsCase, useUpdateProstheticsCase, useUpdateProstheticsStatus,
+  usePatchAssessmentUpper,
+  usePatchAssessmentLower,
   useSubmitAssessmentUpper, useSubmitAssessmentLower,
   useSubmitCommitteeOpinion, useSubmitCommitteeDecision, useSignCommitteeDecision,
   useCaseComponents, useAddCaseComponent, useDeleteCaseComponent,
@@ -3420,6 +3422,26 @@ function toAmputationLevels(raw: unknown): string[] {
   return [];
 }
 
+/**
+ * The API stamps each half of a limb sheet as it is written: `limbSavedAt` for
+ * the limb Section, `romSavedAt` for the muscle Section. One row, two Sections,
+ * two flags — so "saved" is read straight from the record instead of being
+ * guessed from which fields happen to be filled.
+ */
+const sectionSavedAt = (records: any[] | undefined, stamp: "limbSavedAt" | "romSavedAt") =>
+  (records ?? []).some((r) => !!r?.[stamp]);
+
+/**
+ * HIDDEN 2026-08-31 — director sign-off is off screen on request and expected
+ * back. Flip a flag to true to restore that block; nothing else has to change,
+ * and the code inside stays type-checked meanwhile.
+ */
+const SHOW_MEDICAL_DIRECTOR = false;        // التسليم التجريبي
+const SHOW_FINAL_EVAL_MANAGER_SIG = false;  // التقييم النهائي
+const SHOW_FINAL_DELIVERY_CEO = false;      // التسليم النهائي — المدير التنفيذي وتوقيعه
+const SHOW_FINAL_DELIVERY_PHYSIO = false;   // التسليم النهائي — المعالج الفيزيائي
+const SHOW_PRO_DELIVERY_PHYSIO = false;     // التسليم التجريبي — المعالج الفيزيائي
+
 // Which case status each workflow tab corresponds to. The tab name no longer
 // matches the status name, so the mapping is explicit in both directions:
 //   الاستقبال…التركيب → معاينة, ورق القياس → أخذ قياس, التسليم التجريبي → تسليم
@@ -3656,6 +3678,9 @@ export default function ProstheticsCasePage() {
   const updateStatus = useUpdateProstheticsStatus();
   const updatePatient = useUpdateClinicPatient();
   const submitAssessmentUpper = useSubmitAssessmentUpper();
+  const [justSavedSections, setJustSavedSections] = useState<Set<string>>(new Set());
+  const patchUpper = usePatchAssessmentUpper();
+  const patchLower = usePatchAssessmentLower();
   const submitAssessmentLower = useSubmitAssessmentLower();
   const submitOpinion = useSubmitCommitteeOpinion();
   const submitDecision = useSubmitCommitteeDecision();
@@ -4102,6 +4127,17 @@ export default function ProstheticsCasePage() {
   // hydrated from these same records.
   const upperSaved = (c.upperAssessment ?? []).length > 0;
   const lowerSaved = (c.lowerAssessment ?? []).length > 0;
+  // Saved is final: a Section goes read-only once the API has stamped it.
+  // `justSavedSections` only bridges the moment between a successful save and
+  // the refetch that brings the stamp back.
+  const upperLimbSaved = justSavedSections.has("upperLimb")
+    || sectionSavedAt(c.upperAssessment, "limbSavedAt");
+  const upperMuscleSaved = justSavedSections.has("upperMuscle")
+    || sectionSavedAt(c.upperAssessment, "romSavedAt");
+  const lowerLimbSaved = justSavedSections.has("lowerLimb")
+    || sectionSavedAt(c.lowerAssessment, "limbSavedAt");
+  const lowerMuscleSaved = justSavedSections.has("lowerMuscle")
+    || sectionSavedAt(c.lowerAssessment, "romSavedAt");
 
   // A committee opinion can be submitted only once; once its *ReviewedAt is set it
   // renders read-only (the backend rejects re-submission with 409).
@@ -4457,7 +4493,7 @@ export default function ProstheticsCasePage() {
       closureNotes: f.closureNotes || undefined,
       generalHealthNotes: f.generalHealthNotes || undefined,
       otherLimbCondition: f.otherLimbCondition || undefined,
-      canBalanceOneSide: f.canBalanceOneSide,
+      canBalanceOneSide: upperAssessForm.canBalanceOneSide,
       usesCompressionBandage: f.usesCompressionBandage,
       jointsRangeOfMotion: (f.jointsRangeOfMotion as any) || undefined,
       activityLevel: (f.activityLevel as any) || undefined,
@@ -4480,6 +4516,9 @@ export default function ProstheticsCasePage() {
     };
   };
 
+  // Mobility answers (assistive devices, stairs, one-side balance) describe the
+  // patient rather than a limb, so they are asked once on the muscle sheet and
+  // read from the primary form for both sides of a bilateral case.
   const buildLowerDto = (form = lowerAssessForm, overrideSide?: "RIGHT" | "LEFT") => {
     const f = form;
     const side = overrideSide ?? (f.amputationSide === "BILATERAL" ? f.side : (f.amputationSide as "LEFT" | "RIGHT") || f.side);
@@ -4514,10 +4553,12 @@ export default function ProstheticsCasePage() {
       graftArea: f.hasSkinGrafts ? f.graftArea || undefined : undefined,
       generalHealthNotes: f.generalHealthNotes || undefined,
       otherLimbCondition: f.otherLimbCondition || undefined,
-      usesAssistiveDevices: f.usesAssistiveDevices ?? undefined,
-      assistiveDeviceTypes: f.usesAssistiveDevices ? f.assistiveDeviceTypes || undefined : undefined,
-      canClimbStairs: f.canClimbStairs ?? undefined,
-      canBalanceOneSide: f.canBalanceOneSide ?? undefined,
+      usesAssistiveDevices: lowerAssessForm.usesAssistiveDevices ?? undefined,
+      assistiveDeviceTypes: lowerAssessForm.usesAssistiveDevices
+        ? lowerAssessForm.assistiveDeviceTypes || undefined
+        : undefined,
+      canClimbStairs: lowerAssessForm.canClimbStairs ?? undefined,
+      canBalanceOneSide: lowerAssessForm.canBalanceOneSide ?? undefined,
       jointsRangeOfMotion: (ampTypes.includes("UPPER") ? (upperAssessForm.jointsRangeOfMotion as any) : (f.jointsRangeOfMotion as any)) || undefined,
       activityLevel: (ampTypes.includes("UPPER") ? (upperAssessForm.activityLevel as any) : (f.activityLevel as any)) || undefined,
       usesProstheticLimb: genAssessForm.currentlyUsingProsthesis ?? undefined,
@@ -4559,6 +4600,83 @@ export default function ProstheticsCasePage() {
         previousProsthesisSystemDetail: genAssessForm.previouslyUsedProsthesis === true ? genAssessForm.previousProsthesisSystemDetail || undefined : undefined,
       },
     });
+  };
+
+  /**
+   * Foot-of-Section save. Disappears once the Section is saved — saved data is
+   * read-only, so there is nothing left to submit from it.
+   */
+  const SectionSaveButton = ({ onSave, busy, saved }: { onSave: () => void; busy: boolean; saved: boolean }) => {
+    if (saved) return null;
+    return (
+      <Button onClick={onSave} disabled={busy} className="w-full gap-2 mt-4">
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+        {t("assess.saveSection")}
+      </Button>
+    );
+  };
+
+  // ─── Per-section saving ──────────────────────────────────────────────────
+  // The limb sheet and the muscle sheet are two Sections on screen but one row
+  // in the database. The PATCH upsert writes only the keys it is given, so each
+  // Section can be saved on its own without disturbing the other.
+  const UPPER_MUSCLE_KEYS = ["romData", "canBalanceOneSide"];
+  const LOWER_MUSCLE_KEYS = [
+    "romData", "muscleMotionNotes", "usesAssistiveDevices",
+    "assistiveDeviceTypes", "canClimbStairs", "canBalanceOneSide",
+  ];
+
+  /** `side` rides in the URL, so it never belongs in a PATCH body. */
+  const pickKeys = (dto: Record<string, any>, keys: string[]) =>
+    Object.fromEntries(Object.entries(dto).filter(([k]) => k !== "side" && keys.includes(k)));
+  const dropKeys = (dto: Record<string, any>, keys: string[]) =>
+    Object.fromEntries(Object.entries(dto).filter(([k]) => k !== "side" && !keys.includes(k)));
+
+  /** A bilateral case owns one record per side; anything else owns exactly one. */
+  const sidesOf = (form: { amputationSide: string; side: string }): ("LEFT" | "RIGHT")[] =>
+    form.amputationSide === "BILATERAL"
+      ? ["RIGHT", "LEFT"]
+      : [((form.amputationSide as "LEFT" | "RIGHT") || form.side) as "LEFT" | "RIGHT"];
+
+  const handleSaveUpperLimb = async () => {
+    for (const side of sidesOf(upperAssessForm)) {
+      const form = side === "LEFT" && upperAssessForm.amputationSide === "BILATERAL"
+        ? upperAssessFormLeft
+        : upperAssessForm;
+      await patchUpper.mutateAsync({ id, side, dto: dropKeys(buildUpperDto(form, side), UPPER_MUSCLE_KEYS) });
+    }
+    setJustSavedSections((prev) => new Set(prev).add("upperLimb"));
+    toast.success(t("assess.savedLimbUpper"));
+  };
+
+  const handleSaveUpperMuscle = async () => {
+    // One muscle sheet for the patient, so both side records get the same answers.
+    const dto = pickKeys(buildUpperDto(upperAssessForm), UPPER_MUSCLE_KEYS);
+    for (const side of sidesOf(upperAssessForm)) {
+      await patchUpper.mutateAsync({ id, side, dto });
+    }
+    setJustSavedSections((prev) => new Set(prev).add("upperMuscle"));
+    toast.success(t("assess.savedMuscle"));
+  };
+
+  const handleSaveLowerLimb = async () => {
+    for (const side of sidesOf(lowerAssessForm)) {
+      const form = side === "LEFT" && lowerAssessForm.amputationSide === "BILATERAL"
+        ? lowerAssessFormLeft
+        : lowerAssessForm;
+      await patchLower.mutateAsync({ id, side, dto: dropKeys(buildLowerDto(form, side), LOWER_MUSCLE_KEYS) });
+    }
+    setJustSavedSections((prev) => new Set(prev).add("lowerLimb"));
+    toast.success(t("assess.savedLimbLower"));
+  };
+
+  const handleSaveLowerMuscle = async () => {
+    const dto = pickKeys(buildLowerDto(lowerAssessForm), LOWER_MUSCLE_KEYS);
+    for (const side of sidesOf(lowerAssessForm)) {
+      await patchLower.mutateAsync({ id, side, dto });
+    }
+    setJustSavedSections((prev) => new Set(prev).add("lowerMuscle"));
+    toast.success(t("assess.savedMuscle"));
   };
 
   const handleSubmitUpperAssessment = async () => {
@@ -5599,13 +5717,6 @@ export default function ProstheticsCasePage() {
                       </PfRow>
                     )}
                   </>}
-                  <PfRow label={t("assess.balanceOneSide")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch checked={sf.canBalanceOneSide} onCheckedChange={(v) => setS({ canBalanceOneSide: v })} />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                    </div>
-                  </PfRow>
                   <PfRow label={t("assess.compressionBandage")}>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
@@ -5629,8 +5740,11 @@ export default function ProstheticsCasePage() {
             };
 
             return (
-              <Section title={t("assess.upperTitle")} action={upperSaved ? <SavedBadge /> : undefined}>
-                <fieldset disabled={upperSaved} className="contents">
+              <Section
+                title={t("assess.upperTitle")}
+                action={upperLimbSaved ? <SavedBadge /> : undefined}
+              >
+                <fieldset disabled={caseLocked || upperLimbSaved} className="contents">
                 <div className="divide-y divide-border/30">
 
                   {/* جانب البتر */}
@@ -5658,6 +5772,7 @@ export default function ProstheticsCasePage() {
 
 
                 </div>
+                <SectionSaveButton onSave={handleSaveUpperLimb} busy={patchUpper.isPending} saved={upperLimbSaved} />
                 </fieldset>
               </Section>
             );
@@ -5671,8 +5786,11 @@ export default function ProstheticsCasePage() {
             const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
             const groups = [...new Set(UPPER_ROM_MOVES.map((m) => m.groupKey))];
             return (
-              <Section title={t("assess.muscleTitle")} action={upperSaved ? <SavedBadge /> : undefined}>
-                <fieldset disabled={upperSaved} className="contents">
+              <Section
+                title={t("assess.muscleTitle")}
+                action={upperMuscleSaved ? <SavedBadge /> : undefined}
+              >
+                <fieldset disabled={caseLocked || upperMuscleSaved} className="contents">
                 <div className="divide-y divide-border/30">
                   {groups.map((group) => (
                     <PfRow key={group} label={t(`assess.rom.${group}`)}>
@@ -5704,7 +5822,16 @@ export default function ProstheticsCasePage() {
                       </div>
                     </PfRow>
                   ))}
+                  {/* Whole-body questions: asked once here rather than per side. */}
+                  <PfRow label={t("assess.balanceOneSide")}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                      <Switch checked={f.canBalanceOneSide} onCheckedChange={(v) => set({ canBalanceOneSide: v })} />
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                    </div>
+                  </PfRow>
                 </div>
+                <SectionSaveButton onSave={handleSaveUpperMuscle} busy={patchUpper.isPending} saved={upperMuscleSaved} />
                 </fieldset>
               </Section>
             );
@@ -6077,48 +6204,6 @@ export default function ProstheticsCasePage() {
                       )}
                     </PfRow>
                   )}
-                  <PfRow label={t("assess.assistiveDevices")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch
-                        checked={sf.usesAssistiveDevices === true}
-                        onCheckedChange={(v) =>
-                          setS({ usesAssistiveDevices: v })
-                        }
-                      />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                    </div>
-                    {sf.usesAssistiveDevices && (
-                      <Input
-                        className="h-7 text-sm w-64 mt-1"
-                        placeholder={t("assess.assistiveType")}
-                        value={sf.assistiveDeviceTypes}
-                        onChange={(e) =>
-                          setS({ assistiveDeviceTypes: e.target.value })
-                        }
-                      />
-                    )}
-                  </PfRow>
-                  <PfRow label={t("assess.stairs")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch
-                        checked={sf.canClimbStairs === true}
-                        onCheckedChange={(v) => setS({ canClimbStairs: v })}
-                      />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                    </div>
-                  </PfRow>
-                  <PfRow label={t("assess.balanceOneSide")}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
-                      <Switch
-                        checked={sf.canBalanceOneSide === true}
-                        onCheckedChange={(v) => setS({ canBalanceOneSide: v })}
-                      />
-                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
-                    </div>
-                  </PfRow>
                   {!ampTypes.includes("UPPER") && <>
                     <PfRow label={t("assess.normalState")}>
                       {[["ACTIVE", "active"], ["SEDENTARY", "inactive"]].map(([val, lbl]) => (
@@ -6136,8 +6221,11 @@ export default function ProstheticsCasePage() {
             };
 
             return (
-              <Section title={t("assess.lowerTitle")} action={lowerSaved ? <SavedBadge /> : undefined}>
-                <fieldset disabled={lowerSaved} className="contents">
+              <Section
+                title={t("assess.lowerTitle")}
+                action={lowerLimbSaved ? <SavedBadge /> : undefined}
+              >
+                <fieldset disabled={caseLocked || lowerLimbSaved} className="contents">
                 <div className="divide-y divide-border/30">
 
                   <PfRow label={t("assess.side")}>
@@ -6215,6 +6303,7 @@ export default function ProstheticsCasePage() {
                   )}
 
                 </div>
+                <SectionSaveButton onSave={handleSaveLowerLimb} busy={patchLower.isPending} saved={lowerLimbSaved} />
                 </fieldset>
               </Section>
             );
@@ -6228,8 +6317,11 @@ export default function ProstheticsCasePage() {
             const setRom = (key: string, val: RomEntry) => set({ romData: { ...f.romData, [key]: val } });
             const groups = [...new Set(LOWER_ROM_MOVES.map((m) => m.groupKey))];
             return (
-              <Section title={t("assess.muscleTitle")} action={lowerSaved ? <SavedBadge /> : undefined}>
-                <fieldset disabled={lowerSaved} className="contents">
+              <Section
+                title={t("assess.muscleTitle")}
+                action={lowerMuscleSaved ? <SavedBadge /> : undefined}
+              >
+                <fieldset disabled={caseLocked || lowerMuscleSaved} className="contents">
                 <div className="divide-y divide-border/30">
                   {groups.map((group) => (
                     <PfRow key={group} label={t(`assess.rom.${group}`)}>
@@ -6261,10 +6353,41 @@ export default function ProstheticsCasePage() {
                       </div>
                     </PfRow>
                   ))}
+                  {/* Whole-body questions: asked once here rather than per side. */}
+                  <PfRow label={t("assess.assistiveDevices")}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                      <Switch checked={f.usesAssistiveDevices === true} onCheckedChange={(v) => set({ usesAssistiveDevices: v })} />
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                    </div>
+                    {f.usesAssistiveDevices && (
+                      <Input
+                        className="h-7 text-sm w-64 mt-1"
+                        placeholder={t("assess.assistiveType")}
+                        value={f.assistiveDeviceTypes}
+                        onChange={(e) => set({ assistiveDeviceTypes: e.target.value })}
+                      />
+                    )}
+                  </PfRow>
+                  <PfRow label={t("assess.stairs")}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                      <Switch checked={f.canClimbStairs === true} onCheckedChange={(v) => set({ canClimbStairs: v })} />
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                    </div>
+                  </PfRow>
+                  <PfRow label={t("assess.balanceOneSide")}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                      <Switch checked={f.canBalanceOneSide === true} onCheckedChange={(v) => set({ canBalanceOneSide: v })} />
+                      <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                    </div>
+                  </PfRow>
                   <PfRow label={t("assess.notes")}>
                     <Textarea rows={2} className="text-sm w-full" value={f.muscleMotionNotes} onChange={(e) => set({ muscleMotionNotes: e.target.value })} />
                   </PfRow>
                 </div>
+                <SectionSaveButton onSave={handleSaveLowerMuscle} busy={patchLower.isPending} saved={lowerMuscleSaved} />
                 </fieldset>
               </Section>
             );
@@ -7606,6 +7729,8 @@ export default function ProstheticsCasePage() {
                   </label>
                 </div>
               </div>
+              {/* HIDDEN 2026-08-31 — see SHOW_FINAL_EVAL_MANAGER_SIG. */}
+              {SHOW_FINAL_EVAL_MANAGER_SIG && (
               <div className="rounded-lg border p-3 space-y-2">
                 <p className="text-xs font-semibold">{t("finalEval.managerSignature")}</p>
                 <Select value={finalEvalForm.managerId || "none"}
@@ -7627,6 +7752,7 @@ export default function ProstheticsCasePage() {
                 )}
                 <input ref={finalEvalManagerSigRef} type="file" accept="image/*" className="hidden" onChange={handleFinalEvalManagerSigFileChange} />
               </div>
+              )}
             </div>
           </Section>
 
@@ -7671,6 +7797,8 @@ export default function ProstheticsCasePage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* HIDDEN 2026-08-31 — see SHOW_PRO_DELIVERY_PHYSIO. */}
+                {SHOW_PRO_DELIVERY_PHYSIO && (
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t("delivered.physiotherapist")}</Label>
                   <Select value={proDeliveryHeader.physiotherapistId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, physiotherapistId: v === "none" ? "" : v }))}>
@@ -7681,6 +7809,7 @@ export default function ProstheticsCasePage() {
                     </SelectContent>
                   </Select>
                 </div>
+                )}
               </div>
 
               {/* ── القطع المُسلَّمة — يزامنها الباك تلقائيًا من القطع المعتمدة بالمخزون (قراءة فقط) ── */}
@@ -7733,31 +7862,39 @@ export default function ProstheticsCasePage() {
               </div>
 
 
-              <div className="space-y-1.5 col-span-1 sm:col-span-2">
-                <Label className="text-xs">{t("delivered.medicalDirector")}</Label>
-                <Select value={proDeliveryHeader.medicalDirectorId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, medicalDirectorId: v === "none" ? "" : v, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))}>
-                  <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("delivered.notSpecified")}</SelectItem>
-                    {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الادارة الطبية") || e.department?.nameAr?.includes("الإدارة الطبية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Medical director signature */}
-              <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-semibold">{t("delivered.medicalDirectorSignature")}</p>
-                {proDeliveryHeader.medicalDirectorSignatureUrl ? (
-                  <div className="relative inline-block">
-                    <img src={proDeliveryHeader.medicalDirectorSignatureUrl} alt={t("delivered.medicalDirectorSignature")} className="h-20 object-contain border rounded bg-white" />
-                    <button onClick={() => setProDeliveryHeader((f) => ({ ...f, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+              {/* HIDDEN 2026-08-31 — the medical director and their signature are
+                  off screen on request and will come back. Kept behind a flag rather
+                  than deleted so restoring is one edit, and so the block stays
+                  type-checked instead of rotting. The stored values still ride along
+                  in the save below, so an existing signature is never wiped. */}
+              {SHOW_MEDICAL_DIRECTOR && (
+                <>
+                  <div className="space-y-1.5 col-span-1 sm:col-span-2">
+                    <Label className="text-xs">{t("delivered.medicalDirector")}</Label>
+                    <Select value={proDeliveryHeader.medicalDirectorId || "none"} onValueChange={(v) => setProDeliveryHeader((f) => ({ ...f, medicalDirectorId: v === "none" ? "" : v, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))}>
+                      <SelectTrigger><SelectValue placeholder={t("delivered.choose")} /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("delivered.notSpecified")}</SelectItem>
+                        {staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الادارة الطبية") || e.department?.nameAr?.includes("الإدارة الطبية"))).map((e: any) => <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ) : (
-                  <Button type="button" size="sm" variant="outline" onClick={handleMedicalDirectorSignatureClick} disabled={!proDeliveryHeader.medicalDirectorId}>
-                    {proDeliveryHeader.medicalDirectorId ? t("delivered.fetchUploadSignature") : t("delivered.chooseMedicalDirectorFirst")}
-                  </Button>
-                )}
-              </div>
+
+                  <div className="rounded-lg border p-3 space-y-2">
+                    <p className="text-xs font-semibold">{t("delivered.medicalDirectorSignature")}</p>
+                    {proDeliveryHeader.medicalDirectorSignatureUrl ? (
+                      <div className="relative inline-block">
+                        <img src={proDeliveryHeader.medicalDirectorSignatureUrl} alt={t("delivered.medicalDirectorSignature")} className="h-20 object-contain border rounded bg-white" />
+                        <button onClick={() => setProDeliveryHeader((f) => ({ ...f, medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
+                      </div>
+                    ) : (
+                      <Button type="button" size="sm" variant="outline" onClick={handleMedicalDirectorSignatureClick} disabled={!proDeliveryHeader.medicalDirectorId}>
+                        {proDeliveryHeader.medicalDirectorId ? t("delivered.fetchUploadSignature") : t("delivered.chooseMedicalDirectorFirst")}
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("delivered.date")}</Label>
@@ -7817,6 +7954,8 @@ export default function ProstheticsCasePage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* HIDDEN 2026-08-31 — see SHOW_FINAL_DELIVERY_PHYSIO. */}
+                  {SHOW_FINAL_DELIVERY_PHYSIO && (
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("delivered.physiotherapist")}</Label>
                     <Select value={finalDeliveryHeader.physiotherapistId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, physiotherapistId: v === "none" ? "" : v }))}>
@@ -7827,6 +7966,7 @@ export default function ProstheticsCasePage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  )}
                 </div>
 
                 {/* القطع — نُسخت عند الإنشاء (قراءة فقط) */}
@@ -7870,6 +8010,9 @@ export default function ProstheticsCasePage() {
                   })()}
                 </div>
 
+                {/* HIDDEN 2026-08-31 — see SHOW_FINAL_DELIVERY_CEO. */}
+                {SHOW_FINAL_DELIVERY_CEO && (
+                <>
                 <div className="space-y-1.5 col-span-1 sm:col-span-2">
                   <Label className="text-xs">{t("finalDelivery.ceo")}</Label>
                   <Select value={finalDeliveryHeader.ceoId || "none"} onValueChange={(v) => setFinalDeliveryHeader((f) => ({ ...f, ceoId: v === "none" ? "" : v, ceoSignatureUrl: "" }))}>
@@ -7894,6 +8037,8 @@ export default function ProstheticsCasePage() {
                     </Button>
                   )}
                 </div>
+                </>
+                )}
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t("delivered.date")}</Label>
