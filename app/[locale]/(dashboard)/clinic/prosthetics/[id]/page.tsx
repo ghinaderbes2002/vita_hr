@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
@@ -3680,6 +3681,8 @@ export default function ProstheticsCasePage() {
   const showTab = (key: string) =>
     (!isPhysioOnly || PHYSIO_ROLE_TABS.includes(key)) && canTab(tabPerm[key] ?? null);
 
+  const { data: myEmployee } = useMyEmployee();
+  const myEmployeeId: string | undefined = (myEmployee as any)?.id;
   const { data: caseData, isLoading } = useProstheticsCase(id);
   const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
   const { data: patientDocs = [] } = usePatientDocuments(caseData?.patientId ?? "");
@@ -4469,6 +4472,18 @@ export default function ProstheticsCasePage() {
       .map((empId) => { const e = staffList.find((x) => x.id === empId); return e ? `${e.firstNameAr} ${e.lastNameAr}` : null; })
       .filter(Boolean)
       .join("، ");
+
+  /**
+   * A committee box belongs to the member the case assigned to that role —
+   * everyone else can read it but not type in it. A box with nobody assigned
+   * stays open, so an opinion is never blocked just because the assignment was
+   * skipped.
+   */
+  const canWriteOpinion = (key: keyof typeof staffForm) => {
+    const assigned = staffForm[key] as string[];
+    if (isAdmin() || assigned.length === 0) return true;
+    return !!myEmployeeId && assigned.includes(myEmployeeId);
+  };
 
   // Who actually filled a committee opinion — the backend returns the author with
   // each opinion, which is more accurate than the staff assigned to the case.
@@ -5572,6 +5587,17 @@ export default function ProstheticsCasePage() {
                 );
               })}
             </div>
+
+            {/* The team lives on the case itself, not on the frozen assessment
+                records — so it saves on its own and stays editable afterwards. */}
+            <Button
+              onClick={handleSaveStaff}
+              disabled={updateCase.isPending}
+              className="w-full gap-2 mt-4"
+            >
+              {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {t("assess.saveSection")}
+            </Button>
           </Section>
 
           {/* ─── Upper Assessment ───────────────────────────────────────────── */}
@@ -6419,9 +6445,9 @@ export default function ProstheticsCasePage() {
             );
           })()}
 
-          {/* ─── زر واحد: يحفظ الفريق والتقييم ثم يرسل للجنة ──────────────────── */}
-          {/* Hidden once every limb sheet the case needs has been saved — a saved
-              assessment is read-only, so there is nothing left to submit. */}
+          {/* Saves the team, the general assessment and any unsaved limb sheet,
+              then moves the case to committee review. Kept apart from the
+              per-Section saves above: this one ends the assessment stage. */}
           {(() => {
             const pending = (ampTypes.includes("UPPER") && !upperSaved)
               || (ampTypes.includes("LOWER") && !lowerSaved);
@@ -6439,6 +6465,7 @@ export default function ProstheticsCasePage() {
               </Button>
             );
           })()}
+
           {/* ── صور البتر ── */}
           <Section
             title={attachments.length > 0 ? t("assess.attachmentsCount", { count: attachments.length }) : t("assess.attachments")}
@@ -6526,7 +6553,16 @@ export default function ProstheticsCasePage() {
                   )}
                   {prosthetistOpinionSaved && <SavedBadge />}
                 </div>
-                <Textarea rows={3} disabled={prosthetistOpinionSaved} value={prosthetistOpinion} onChange={(e) => setProsthetistOpinion(e.target.value)} placeholder={t("committee.prosthetistOpinionPlaceholder")} />
+                <Textarea
+                  rows={3}
+                  disabled={prosthetistOpinionSaved || !canWriteOpinion("prosthetistIds")}
+                  value={prosthetistOpinion}
+                  onChange={(e) => setProsthetistOpinion(e.target.value)}
+                  placeholder={t("committee.prosthetistOpinionPlaceholder")}
+                />
+                {!prosthetistOpinionSaved && !canWriteOpinion("prosthetistIds") && (
+                  <p className="text-xs text-muted-foreground">{t("committee.assignedToSomeoneElse")}</p>
+                )}
               </div>
 
               {/* المعالج الفيزيائي */}
@@ -6540,7 +6576,16 @@ export default function ProstheticsCasePage() {
                   )}
                   {physioOpinionSaved && <SavedBadge />}
                 </div>
-                <Textarea rows={3} disabled={physioOpinionSaved} value={physioOpinion} onChange={(e) => setPhysioOpinion(e.target.value)} placeholder={t("committee.physioOpinionPlaceholder")} />
+                <Textarea
+                  rows={3}
+                  disabled={physioOpinionSaved || !canWriteOpinion("physiotherapistIds")}
+                  value={physioOpinion}
+                  onChange={(e) => setPhysioOpinion(e.target.value)}
+                  placeholder={t("committee.physioOpinionPlaceholder")}
+                />
+                {!physioOpinionSaved && !canWriteOpinion("physiotherapistIds") && (
+                  <p className="text-xs text-muted-foreground">{t("committee.assignedToSomeoneElse")}</p>
+                )}
               </div>
 
               {/* الطبيب المختص */}
@@ -6554,7 +6599,16 @@ export default function ProstheticsCasePage() {
                   )}
                   {doctorOpinionSaved && <SavedBadge />}
                 </div>
-                <Textarea rows={3} disabled={doctorOpinionSaved} value={doctorOpinion} onChange={(e) => setDoctorOpinion(e.target.value)} placeholder={t("committee.doctorOpinionPlaceholder")} />
+                <Textarea
+                  rows={3}
+                  disabled={doctorOpinionSaved || !canWriteOpinion("supervisingDoctorIds")}
+                  value={doctorOpinion}
+                  onChange={(e) => setDoctorOpinion(e.target.value)}
+                  placeholder={t("committee.doctorOpinionPlaceholder")}
+                />
+                {!doctorOpinionSaved && !canWriteOpinion("supervisingDoctorIds") && (
+                  <p className="text-xs text-muted-foreground">{t("committee.assignedToSomeoneElse")}</p>
+                )}
               </div>
 
 

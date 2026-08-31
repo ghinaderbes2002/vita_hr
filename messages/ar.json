@@ -4063,6 +4063,7 @@
         "savedReadOnly": "محفوظ — للقراءة فقط",
         "committee": {
           "membersTitle": "أعضاء لجنة القبول وتقييماتهم",
+        "assignedToSomeoneElse": "هذا الحقل مخصّص لعضو اللجنة المعيَّن له.",
           "prosthetistOpinion": "تقييم فني الأطراف الصناعية",
           "prosthetistOpinionPlaceholder": "رأي فني الأطراف الصناعية...",
           "physioOpinion": "تقييم المعالج الفيزيائي",

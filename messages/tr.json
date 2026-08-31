@@ -3021,6 +3021,7 @@
         "savedReadOnly": "Kaydedildi — salt okunur",
         "committee": {
           "membersTitle": "Kabul Komitesi Üyeleri ve Değerlendirmeleri",
+        "assignedToSomeoneElse": "Bu alan, atanmış komite üyesine aittir.",
           "prosthetistOpinion": "Protez Teknisyeni Değerlendirmesi",
           "prosthetistOpinionPlaceholder": "Protez teknisyeninin görüşü...",
           "physioOpinion": "Fizyoterapist Değerlendirmesi",

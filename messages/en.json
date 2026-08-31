@@ -3929,6 +3929,7 @@
         "savedReadOnly": "Saved — read only",
         "committee": {
           "membersTitle": "Admission Committee Members & Assessments",
+        "assignedToSomeoneElse": "This field belongs to the committee member assigned to it.",
           "prosthetistOpinion": "Prosthetist Assessment",
           "prosthetistOpinionPlaceholder": "Prosthetist's opinion...",
           "physioOpinion": "Physiotherapist Assessment",
