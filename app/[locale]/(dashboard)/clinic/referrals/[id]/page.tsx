@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
@@ -63,6 +64,7 @@ export default function ReferralSourceDetailPage() {
   const [visitOpen, setVisitOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<ReferralVisit | null>(null);
   const [deleteVisitTarget, setDeleteVisitTarget] = useState<ReferralVisit | null>(null);
+  const [viewingVisit, setViewingVisit] = useState<ReferralVisit | null>(null);
 
   const { data: source, isLoading } = useReferralSource(id);
   const { data: visitsData } = useReferralVisits(id);
@@ -279,7 +281,11 @@ export default function ReferralSourceDetailPage() {
                     {shownVisits
                       .sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime())
                       .map((v) => (
-                        <TableRow key={v.id} className="hover:bg-muted/50">
+                        <TableRow
+                          key={v.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setViewingVisit(v)}
+                        >
                           <TableCell className="font-medium">{formatDate(v.visitDate)}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs">{REFERRAL_VISIT_TYPE_LABEL[v.visitType]}</Badge>
@@ -290,7 +296,8 @@ export default function ReferralSourceDetailPage() {
                           <TableCell className="max-w-52 truncate text-sm text-muted-foreground">{v.notes || "—"}</TableCell>
                           <TableCell>
                             <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.VISITS_ADD}>
-                              <div className="flex flex-wrap gap-1">
+                              {/* The row itself opens the visit, so the buttons keep the click. */}
+                              <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditVisit(v)}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
@@ -318,6 +325,44 @@ export default function ReferralSourceDetailPage() {
         </Card>
 
         <ReferralSourceFormDialog open={editOpen} onOpenChange={setEditOpen} source={source} />
+
+        <Dialog open={!!viewingVisit} onOpenChange={(o) => !o && setViewingVisit(null)}>
+          <DialogContent className="max-w-md" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>تفاصيل الزيارة</DialogTitle>
+            </DialogHeader>
+            {viewingVisit && (
+              <div className="space-y-0.5">
+                <InfoRow label="التاريخ" value={formatDate(viewingVisit.visitDate)} />
+                <InfoRow
+                  label="النوع"
+                  value={<Badge variant="outline" className="text-xs">
+                    {REFERRAL_VISIT_TYPE_LABEL[viewingVisit.visitType]}
+                  </Badge>}
+                />
+                <InfoRow label="بواسطة" value={visitedByNameOf(viewingVisit)} />
+                <InfoRow
+                  label="الزيارة المرتقبة"
+                  value={viewingVisit.nextVisitDate ? formatDate(viewingVisit.nextVisitDate) : null}
+                />
+                {/* The table truncates these two, which is the whole reason the
+                    row opens — so here they wrap in full. */}
+                <InfoRow
+                  label="المحاور"
+                  value={viewingVisit.topics && (
+                    <span className="whitespace-pre-wrap">{viewingVisit.topics}</span>
+                  )}
+                />
+                <InfoRow
+                  label="ملاحظات"
+                  value={viewingVisit.notes && (
+                    <span className="whitespace-pre-wrap">{viewingVisit.notes}</span>
+                  )}
+                />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <ReferralVisitDialog
           open={visitOpen}
