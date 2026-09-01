@@ -19,8 +19,9 @@ import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { usePhysioCases } from "@/lib/hooks/use-clinic-physio";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
-import { usePractitionerPatients } from "@/lib/hooks/use-clinic-appointments";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const LIMIT = 15;
 
@@ -45,53 +46,82 @@ export default function PhysioListPage() {
   const [statusFilter, setStatusFilter] = useState<PhysioStatus | "all">("all");
 
   const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
+  const { hasPermission } = usePermissions();
   const { data: myEmployee } = useMyEmployee();
   const isPhysioDept = (myEmployee as any)?.departmentId === PHYSIO_DEPT_ID;
   const deptManagerId: string | undefined = (myEmployee as any)?.department?.managerId;
   const isDeptHead = isPhysioDept && !!deptManagerId && (myEmployee as any)?.id === deptManagerId;
   const shouldFilter = isPhysioDept && !isDeptHead;
 
-  const { data: practitionerPatientsData, isLoading: patientsLoading } = usePractitionerPatients(
-    undefined,
-    shouldFilter
-  );
-  const practitionerPatientIds: string[] | undefined = shouldFilter ? practitionerPatientsData : undefined;
+  const myEmployeeId: string | undefined = (myEmployee as any)?.id;
 
-  // While searching, pull a larger page so results are found across ALL records
-  // (not just the current page), then filter client-side below. The backend does
-  // not accept a `search` param, so we don't send one.
+  /**
+   * "Mine" is the case's own assignment — `physiotherapistIds` on the record,
+   * with the older singular field as a fallback. The previous filter went
+   * through `/appointments/practitioner-patients`, which answers a different
+   * question (patients I have appointments with) and hid every case from a
+   * therapist who had not booked any.
+   */
+  const isMyCase = (c: PhysioCase) => {
+    const ids = (c as any).physiotherapistIds as string[] | undefined;
+    if (ids?.length) return !!myEmployeeId && ids.includes(myEmployeeId);
+    const single = (c as any).physiotherapistId as string | null | undefined;
+    return !!myEmployeeId && single === myEmployeeId;
+  };
+
+  // Filtering and paging both happen here whenever the list is narrowed, so the
+  // page has to hold every record rather than one server page — otherwise page 1
+  // of 41 might contain none of this therapist's cases. Same trick the search
+  // path already uses; the backend accepts neither a search nor a therapist filter.
+  // 100 is the server's ceiling for `limit` — asking for more is a 400.
   const trimmedSearch = search.trim();
+  const clientPaged = shouldFilter || !!trimmedSearch;
   const { data, isLoading } = usePhysioCases({
-    page: trimmedSearch ? 1 : page,
-    limit: trimmedSearch ? 100 : LIMIT,
+    page: clientPaged ? 1 : page,
+    limit: clientPaged ? 100 : LIMIT,
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
-  const cases = (data?.items ?? []).filter((c: PhysioCase) => {
-    // انتظر حتى يكتمل تحميل قائمة المرضى قبل الفلترة
-    if (practitionerPatientIds !== undefined && !practitionerPatientIds.includes(c.patientId)) return false;
+  const filtered = (data?.items ?? []).filter((c: PhysioCase) => {
+    if (shouldFilter && !isMyCase(c)) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     const name = c.patient ? `${c.patient.firstName} ${c.patient.lastName}`.toLowerCase() : "";
     const num = c.patient?.patientNumber?.toLowerCase() ?? "";
     return name.includes(q) || num.includes(q);
   });
-  const totalPages = data?.totalPages ?? 0;
-  const total = data?.total ?? 0;
+
+  const total = clientPaged ? filtered.length : (data?.total ?? 0);
+  const totalPages = clientPaged ? Math.ceil(filtered.length / LIMIT) : (data?.totalPages ?? 0);
+  // Filtering can shrink the list under the current page — clamp rather than
+  // leaving the user on an empty screen with no way back.
+  const safePage = clientPaged ? Math.min(page, Math.max(1, totalPages)) : page;
+  const cases = clientPaged
+    ? filtered.slice((safePage - 1) * LIMIT, safePage * LIMIT)
+    : filtered;
 
   // The table lists cases, so the patient head-count comes from the patients
   // endpoint — `total` above would double-count anyone with two files open.
   // A practitioner who only sees their own patients gets counted from that same
   // list instead, and their case total is withheld: the server's `total` covers
   // the whole department and would overstate what they can actually see.
+  // Not everyone who may read cases may list patients — a therapist without
+  // `clinic.patients.view` gets a 403, and the retries used to leave the chips
+  // stuck on their skeletons. Ask only when allowed, and drop the chip when not.
+  const canListPatients = hasPermission(PERMISSIONS.CLINIC_PATIENTS.VIEW);
   const { data: patientsData, isLoading: patientsCountLoading } = useClinicPatients(
     { page: 1, limit: 1, caseType: "physio" },
-    !shouldFilter,
+    !shouldFilter && canListPatients,
   );
   const counts = shouldFilter
-    ? [{ icon: Users, label: tCommon("patients"), value: practitionerPatientIds?.length }]
+    ? [
+        { icon: Users, label: tCommon("patients"), value: new Set(filtered.map((c: PhysioCase) => c.patientId)).size },
+        { icon: Heart, label: tCommon("cases"), value: filtered.length },
+      ]
     : [
-        { icon: Users, label: tCommon("patients"), value: patientsData?.total },
+        ...(canListPatients
+          ? [{ icon: Users, label: tCommon("patients"), value: patientsData?.total }]
+          : []),
         { icon: Heart, label: tCommon("cases"), value: total },
       ];
 
@@ -102,7 +132,7 @@ export default function PhysioListPage() {
         description={t("description")}
         actions={
           <ClinicCountChips
-            isLoading={isLoading || (shouldFilter && patientsLoading) || patientsCountLoading}
+            isLoading={isLoading || patientsCountLoading}
             counts={counts}
           />
         }
@@ -144,7 +174,7 @@ export default function PhysioListPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading || (shouldFilter && patientsLoading) ? (
+            {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
                   {Array.from({ length: 5 }).map((_, j) => (
@@ -204,7 +234,7 @@ export default function PhysioListPage() {
       </div>
 
       {!trimmedSearch && totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
+        <Pagination page={safePage} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
       )}
     </div>
   );

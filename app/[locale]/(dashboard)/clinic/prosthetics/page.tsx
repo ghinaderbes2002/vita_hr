@@ -20,6 +20,7 @@ import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { useProstheticsCases, useProstheticsCasesByPractitioner } from "@/lib/hooks/use-clinic-prosthetics";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { ProstheticsCase, ProstheticsStatus } from "@/lib/api/clinic-prosthetics";
 
@@ -55,7 +56,7 @@ export default function ProstheticsListPage() {
   // Only the overseeing job titles and system admins get the whole caseload.
   // Everyone else — including a physiotherapist from another department who is
   // attached to some of these cases — sees just the cases carrying their own id.
-  const { isAdmin } = usePermissions();
+  const { isAdmin, hasPermission } = usePermissions();
   const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
@@ -100,9 +101,12 @@ export default function ProstheticsListPage() {
   // patients endpoint — `total` above would double-count anyone with two files.
   // In "my cases" mode that endpoint would report the whole clinic, so the count
   // is derived from the loaded cases instead: same set as the table, exactly.
+  // Same guard as the physio list: reading cases does not imply permission to
+  // list patients, and a 403 here would hang the chips on their skeletons.
+  const canListPatients = hasPermission(PERMISSIONS.CLINIC_PATIENTS.VIEW);
   const { data: patientsData, isLoading: patientsLoading } = useClinicPatients(
     { page: 1, limit: 1, caseType: "prosthetics" },
-    !mineOnly,
+    !mineOnly && canListPatients,
   );
   const patientCount = mineOnly
     ? new Set(filtered.map((c) => c.patientId)).size
@@ -117,7 +121,9 @@ export default function ProstheticsListPage() {
           <ClinicCountChips
             isLoading={isLoading || patientsLoading}
             counts={[
-              { icon: Users, label: tCommon("patients"), value: patientCount },
+              ...(mineOnly || canListPatients
+                ? [{ icon: Users, label: tCommon("patients"), value: patientCount }]
+                : []),
               { icon: Activity, label: tCommon("cases"), value: total },
             ]}
           />
