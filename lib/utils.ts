@@ -74,3 +74,29 @@ export function assetUrl(url: string | null | undefined): string {
   if (url.startsWith("http") || url.startsWith("blob:") || url.startsWith("data:")) return url;
   return `${SERVER_ORIGIN}/${url.replace(/^\//, "")}`;
 }
+
+/**
+ * A clinic time as it is spoken: "1:30", not "13:30". The clinic day runs
+ * 10:00–18:00, so the hour alone is unambiguous and needs no AM/PM marker —
+ * which also keeps it short enough to fit inside a timeline block.
+ *
+ * Accepts either a full ISO timestamp or a bare "HH:mm".
+ */
+export function formatClinicTime(value?: string | null): string {
+  if (!value) return "";
+  let hours: number;
+  let minutes: number;
+  if (value.length > 5) {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "";
+    hours = d.getHours();
+    minutes = d.getMinutes();
+  } else {
+    const parsed = /^(\d{1,2}):(\d{2})/.exec(value);
+    if (!parsed) return value;
+    hours = Number(parsed[1]);
+    minutes = Number(parsed[2]);
+  }
+  const h12 = hours % 12 === 0 ? 12 : hours % 12;
+  return `${h12}:${String(minutes).padStart(2, "0")}`;
+}

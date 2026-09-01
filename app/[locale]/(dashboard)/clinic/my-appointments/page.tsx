@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
-import { cn } from "@/lib/utils";
+import { cn, formatClinicTime } from "@/lib/utils";
 import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment } from "@/lib/hooks/use-clinic-appointments";
 import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { useDepartments } from "@/lib/hooks/use-departments";
@@ -94,8 +94,7 @@ export default function MyAppointmentsPage() {
     }
   };
 
-  const fmtTime = (v?: string | null) =>
-    v ? (v.length > 5 ? new Date(v).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : v) : "—";
+  const fmtTime = (v?: string | null) => formatClinicTime(v) || "—";
   const dayKeyOf = (a: Appointment) => (a.startTime && a.startTime.length > 5 ? localIso(new Date(a.startTime)) : (a.date ?? ""));
 
   // ── Week model ────────────────────────────────────────────────────────────
@@ -260,7 +259,7 @@ export default function MyAppointmentsPage() {
         <Skeleton className="h-[520px] w-full rounded-xl" />
       ) : (
         <div className="overflow-x-auto">
-          <div className="min-w-[720px]">
+          <div className="w-max min-w-full">
             <AppointmentTimeline
               groups={timelineGroups}
               isToday={weekDays.some((d) => localIso(d) === todayKey)}

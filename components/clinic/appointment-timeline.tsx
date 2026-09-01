@@ -4,13 +4,17 @@
 // positioned blocks per column. Free gaps read at a glance, a live "now" line
 // marks the current time, overlapping bookings split side-by-side.
 import { useLocale, useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
+import { cn, formatClinicTime } from "@/lib/utils";
 import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
 
 // The axis is always the clinic day, whatever the bookings say.
 const DEFAULT_START = 10 * 60; // 10:00
 const DEFAULT_END = 18 * 60;   // 18:00
-const HOUR_H = 72;             // px per hour
+const HOUR_H = 88;             // px per hour — a 30-min booking still fits two lines
+/** A lane narrower than this truncates the patient's name to nothing useful. */
+const MIN_LANE_W = 96;         // px
+/** Floor for a column with no crowding, so quiet days don't look stretched. */
+const MIN_COL_W = 150;         // px
 const SLOT_MIN = 30;           // gridline / label granularity (half-hour)
 const SLOT_H = HOUR_H / 2;     // px per half-hour
 const PAD = 16;                // top/bottom breathing room so the edges aren't clipped
@@ -44,8 +48,7 @@ function toMinutes(v?: string | null): number | null {
   const m = /^(\d{1,2}):(\d{2})/.exec(v);
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
-const fmtTime = (v?: string | null) =>
-  v ? (v.length > 5 ? new Date(v).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : v) : "";
+const fmtTime = formatClinicTime;
 
 const patientOf = (a: Appointment) =>
   a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : (a.patientName || "—");
@@ -58,6 +61,14 @@ const patientOf = (a: Appointment) =>
 const CLINIC_WINDOW: Win = { start: DEFAULT_START, end: DEFAULT_END };
 
 type Placed = { a: Appointment; start: number; end: number; lane: number; lanes: number };
+
+/**
+ * Widest stack of overlapping bookings in a column. Splitting a fixed column
+ * between four of them leaves ~55px each and every name truncates, so instead
+ * the grid grows and the page scrolls — nothing is hidden behind anything.
+ */
+const maxLanesIn = (appts: Appointment[], win: Win) =>
+  layout(appts, win).reduce((mx, p) => Math.max(mx, p.lanes), 1);
 
 // Split a column's appointments into overlap clusters and assign side-by-side
 // lanes so concurrent bookings never cover each other.
@@ -203,13 +214,26 @@ export function AppointmentTimeline({
   const win = CLINIC_WINDOW;
   const slots = Array.from({ length: (win.end - win.start) / SLOT_MIN + 1 }, (_, i) => win.start + i * SLOT_MIN);
 
+  // Each column is sized by its own crowding, not by the busiest day on screen:
+  // one packed Monday would otherwise stretch every quiet day with it and push
+  // the week far off the edge.
+  const columnWidths = groups.map((g) =>
+    Math.max(MIN_COL_W, maxLanesIn(g.appointments, win) * MIN_LANE_W),
+  );
+  const gridTemplate = `56px ${columnWidths.map((w) => `${w}px`).join(" ")}`;
+  const gridMinWidth = 56 + columnWidths.reduce((a, b) => a + b, 0);
+
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const showNow = isToday && nowMin >= win.start && nowMin <= win.end;
   const nowTop = PAD + ((nowMin - win.start) / 60) * HOUR_H;
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-sm" dir={isRtl ? "rtl" : "ltr"}>
+    <div
+      className="overflow-hidden rounded-xl border bg-card shadow-sm"
+      dir={isRtl ? "rtl" : "ltr"}
+      style={{ minWidth: gridMinWidth }}
+    >
       {/* status colour legend */}
       {!hideLegend && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/20 px-3 py-2">
@@ -223,7 +247,7 @@ export function AppointmentTimeline({
       )}
 
       {/* column headers */}
-      <div className="grid border-b bg-muted/30" style={{ gridTemplateColumns: `56px repeat(${groups.length}, 1fr)` }}>
+      <div className="grid border-b bg-muted/30" style={{ gridTemplateColumns: gridTemplate }}>
         <div />
         {groups.map((g) => {
           const count = g.appointments.filter((a) => a.status !== "CANCELLED").length;
@@ -254,7 +278,7 @@ export function AppointmentTimeline({
       </div>
 
       {/* timeline body */}
-      <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${groups.length}, 1fr)` }}>
+      <div className="relative grid" style={{ gridTemplateColumns: gridTemplate }}>
         {/* time gutter */}
         <div className="relative" style={{ height: bodyHeight(win) }}>
           {slots.map((min, i) => (

@@ -17,7 +17,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
 import { PageHeader } from "@/components/shared/page-header";
-import { cn } from "@/lib/utils";
+import { cn, formatClinicTime } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment } from "@/lib/hooks/use-clinic-appointments";
 import {
   Appointment, AppointmentType, AppointmentStatus,
@@ -386,7 +386,7 @@ export default function AppointmentsPage() {
           ) : (
             /* Two department columns beside a 56px time gutter don't fit a phone. */
             <div className="overflow-x-auto">
-            <div className="min-w-[680px] sm:min-w-0">
+            <div className="w-max min-w-full">
             <AppointmentTimeline
               groups={timelineGroups}
               isToday={isSelectedToday}
@@ -414,7 +414,7 @@ export default function AppointmentsPage() {
             <DialogTitle>تفاصيل الموعد</DialogTitle>
           </DialogHeader>
           {detailAppt && (() => {
-            const fmtT = (v?: string | null) => v ? (v.length > 5 ? new Date(v).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : v) : "—";
+            const fmtT = (v?: string | null) => formatClinicTime(v) || "—";
             const dateStr = detailAppt.startTime && detailAppt.startTime.length > 5
               ? new Date(detailAppt.startTime).toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })
               : (detailAppt.date ?? "—");
