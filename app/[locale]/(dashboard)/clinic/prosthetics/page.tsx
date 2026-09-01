@@ -28,6 +28,7 @@ const LIMIT = 15;
 /** Job titles that oversee the whole caseload instead of just their own cases. */
 const FULL_CASELOAD_JOB_CODES = [
   "VTX-JTL-000035", // رئيس قسم الأطراف الصناعية وطب الأقدام
+  "VTX-JTL-000011", // مشرف المركز
   "VTX-JTL-000007",
 ];
 
