@@ -25,6 +25,16 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const LIMIT = 15;
 
+/**
+ * Job titles that oversee the whole physio caseload instead of just their own.
+ * Seeing the list is separate from opening a file: مشرف المركز follows every
+ * case from here, but the case page still limits them to the intake tab.
+ */
+const FULL_CASELOAD_JOB_CODES = [
+  "VTX-JTL-000034", // رئيس قسم العلاج الفيزيائي
+  "VTX-JTL-000011", // مشرف المركز
+];
+
 const STATUS_VALUES: PhysioStatus[] = [
   "INTAKE", "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "GOALS",
   "POSTURAL_ASSESSMENT", "TREATMENT_PLAN", "EVALUATION",
@@ -45,13 +55,15 @@ export default function PhysioListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PhysioStatus | "all">("all");
 
-  const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
-  const { hasPermission } = usePermissions();
+  const { hasPermission, isAdmin } = usePermissions();
   const { data: myEmployee } = useMyEmployee();
-  const isPhysioDept = (myEmployee as any)?.departmentId === PHYSIO_DEPT_ID;
-  const deptManagerId: string | undefined = (myEmployee as any)?.department?.managerId;
-  const isDeptHead = isPhysioDept && !!deptManagerId && (myEmployee as any)?.id === deptManagerId;
-  const shouldFilter = isPhysioDept && !isDeptHead;
+  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
+  // Everyone else — inside the department or outside it — sees only the cases
+  // carrying their own id. The old rule read `department.managerId` and applied
+  // only to members of the physio department, so changing someone's job title
+  // left them supervising, and anyone outside the department saw everything.
+  const seesAll = isAdmin() || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
+  const shouldFilter = !seesAll;
 
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
 
