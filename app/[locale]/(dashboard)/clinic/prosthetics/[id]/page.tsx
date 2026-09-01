@@ -3640,6 +3640,9 @@ export default function ProstheticsCasePage() {
   // who can create+view a case (e.g. the centre supervisor) reaches the intake
   // form but not assessment, committee, delivery, etc.
   const { hasPermission, hasAnyPermission, hasRole, isAdmin } = usePermissions();
+  const { data: myEmployee } = useMyEmployee();
+  const myEmployeeId: string | undefined = (myEmployee as any)?.id;
+  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
   const P = PERMISSIONS.CLINIC_PROSTHETICS;
   // Every clinical action permission — anyone holding at least one is more than a
   // pure "reception only" supervisor, so the read-only timeline is shown to them.
@@ -3676,13 +3679,22 @@ export default function ProstheticsCasePage() {
   const isPhysioOnly =
     !isAdmin() && hasRole("PT" as any) && !hasAnyPermission(PROSTHETICS_WORK_PERMS);
 
-  // The role narrows what is on offer; the permission still decides each tab, so
-  // granting nothing extra changes nothing.
-  const showTab = (key: string) =>
-    (!isPhysioOnly || PHYSIO_ROLE_TABS.includes(key)) && canTab(tabPerm[key] ?? null);
+  /**
+   * مشرف المركز registers cases and follows the whole caseload from the list,
+   * but the clinical file itself is not theirs to fill — only the intake sheet.
+   * The physiotherapy case page applies the same rule to this job title.
+   */
+  const CENTER_SUPERVISOR_JOB_CODE = "VTX-JTL-000011";
+  const isCenterSupervisor = !isAdmin() && myJobTitleCode === CENTER_SUPERVISOR_JOB_CODE;
 
-  const { data: myEmployee } = useMyEmployee();
-  const myEmployeeId: string | undefined = (myEmployee as any)?.id;
+  // Permission decides first; a role can only narrow what is left, never widen it.
+  const showTab = (key: string) => {
+    if (!canTab(tabPerm[key] ?? null)) return false;
+    if (isCenterSupervisor) return key === "intake";
+    if (isPhysioOnly) return PHYSIO_ROLE_TABS.includes(key);
+    return true;
+  };
+
   const { data: caseData, isLoading } = useProstheticsCase(id);
   const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
   const { data: patientDocs = [] } = usePatientDocuments(caseData?.patientId ?? "");
