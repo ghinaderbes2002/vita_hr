@@ -9,6 +9,7 @@ import "leaflet/dist/leaflet.css";
 import type { LeafletMouseEvent, Map as LeafletMap, Marker } from "leaflet";
 import { Crosshair, Loader2, MapPin, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export interface LatLng {
@@ -118,14 +119,29 @@ export function LocationMap({ value, onChange, className, height = 280 }: Locati
   }, [value, ready]);
 
   const useMyLocation = () => {
-    if (!navigator.geolocation) return;
+    // Browsers hand out geolocation only in a secure context — HTTPS, or
+    // localhost during development. Served over plain HTTP the API is simply
+    // absent, and failing silently here made the button look broken.
+    if (!window.isSecureContext || !navigator.geolocation) {
+      toast.error("تحديد الموقع يتطلب اتصالاً آمناً (HTTPS). افتح النظام عبر https أو حدّد الموقع بالنقر على الخريطة.");
+      return;
+    }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
         onChangeRef.current?.({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
       },
-      () => setLocating(false),
+      (err) => {
+        setLocating(false);
+        toast.error(
+          err.code === err.PERMISSION_DENIED
+            ? "تم رفض إذن الموقع — فعّله من إعدادات المتصفح لهذا الموقع."
+            : err.code === err.TIMEOUT
+            ? "انتهت مهلة تحديد الموقع — حاول مجدداً أو انقر على الخريطة."
+            : "تعذّر تحديد الموقع — انقر على الخريطة لتحديده يدوياً.",
+        );
+      },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
