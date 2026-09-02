@@ -19,7 +19,8 @@ export interface LatLng {
 }
 
 /** Where the map opens when nothing has been picked yet. */
-const DEFAULT_CENTER: [number, number] = [24.7136, 46.6753];
+/** The clinic itself — where the map opens and where the pin starts. */
+const DEFAULT_CENTER: [number, number] = [36.206234, 37.135343];
 const DEFAULT_ZOOM = 11;
 const PICKED_ZOOM = 15;
 
@@ -50,6 +51,8 @@ export function LocationMap({ value, onChange, className, height = 280 }: Locati
   const [ready, setReady] = useState(false);
   const [locating, setLocating] = useState(false);
   const readOnly = !onChange;
+  /** Guards the seeding below so "إزالة" isn't undone on the next render. */
+  const seededRef = useRef(false);
 
   // onChange is read through a ref: the click handler is registered once, and
   // re-registering it on every parent render would leak listeners.
@@ -118,6 +121,16 @@ export function LocationMap({ value, onChange, className, height = 280 }: Locati
     }
     map.setView(pos, Math.max(map.getZoom(), PICKED_ZOOM));
   }, [value, ready]);
+
+  // The pin starts at the clinic, so placing a nearby address is a short drag
+  // rather than a hunt across the world map. It only ever fills an empty value,
+  // and only once per mount — an address that arrives from the record later is
+  // never overwritten, and clearing the pin keeps it cleared.
+  useEffect(() => {
+    if (!ready || readOnly || value || seededRef.current) return;
+    seededRef.current = true;
+    onChangeRef.current?.({ latitude: DEFAULT_CENTER[0], longitude: DEFAULT_CENTER[1] });
+  }, [ready, readOnly, value]);
 
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
