@@ -7,8 +7,9 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type { LeafletMouseEvent, Map as LeafletMap, Marker } from "leaflet";
-import { Crosshair, Loader2, MapPin, X } from "lucide-react";
+import { Crosshair, Loader2, MapPin, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +119,40 @@ export function LocationMap({ value, onChange, className, height = 280 }: Locati
     map.setView(pos, Math.max(map.getZoom(), PICKED_ZOOM));
   }, [value, ready]);
 
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+
+  /**
+   * Looking the address up by name, rather than asking the device where it is.
+   * Device geolocation needs a secure context, which plain HTTP is not — this
+   * path has no such requirement, so it is the one that works on the server as
+   * it stands. Nominatim is OpenStreetMap's own geocoder, same source as the
+   * tiles already on screen.
+   */
+  const searchAddress = async () => {
+    const q = query.trim();
+    if (!q || searching) return;
+    setSearching(true);
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers: { "Accept-Language": "ar" } });
+      if (!res.ok) throw new Error(String(res.status));
+      const results = (await res.json()) as { lat: string; lon: string }[];
+      if (!results.length) {
+        toast.error("لم يُعثر على هذا العنوان — جرّب صياغة أوضح أو انقر على الخريطة.");
+        return;
+      }
+      onChangeRef.current?.({
+        latitude: Number(results[0].lat),
+        longitude: Number(results[0].lon),
+      });
+    } catch {
+      toast.error("تعذّر البحث عن العنوان — تحقّق من الاتصال أو انقر على الخريطة.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const useMyLocation = () => {
     // Browsers hand out geolocation only in a secure context — HTTPS, or
     // localhost during development. Served over plain HTTP the API is simply
@@ -152,6 +187,23 @@ export function LocationMap({ value, onChange, className, height = 280 }: Locati
           values up to 1000, and without a stacking context here they paint over
           anything layered above the map — dialogs, popovers and the like sit at
           z-50. Isolating keeps those values inside this box. */}
+      {!readOnly && (
+        <div className="flex gap-2">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); searchAddress(); } }}
+            placeholder="ابحث عن العنوان — مثال: حلب، شارع النيل"
+            className="h-8 text-sm"
+          />
+          <Button type="button" size="sm" variant="outline" className="h-8 shrink-0 gap-1.5 text-xs"
+            onClick={searchAddress} disabled={searching || !query.trim()}>
+            {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+            بحث
+          </Button>
+        </div>
+      )}
+
       <div className="relative isolate overflow-hidden rounded-lg border" style={{ height }}>
         <div ref={containerRef} className="h-full w-full" />
         {!ready && (
