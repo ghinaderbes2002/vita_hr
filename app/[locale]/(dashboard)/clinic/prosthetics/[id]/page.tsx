@@ -6629,9 +6629,13 @@ export default function ProstheticsCasePage() {
               </div>
 
 
-              {/* The committee stage now reads as "معاينة"; COMMITTEE_REVIEW is
-                  still accepted for cases saved before the statuses changed. */}
-              {(c.status === STATUS_BY_TAB.committee_review || c.status === "COMMITTEE_REVIEW") && !allOpinionsSaved && (
+              {/* Not tied to the case stage: an opinion is often written after the
+                  case has already moved on to measurement or fitting, and gating
+                  the button on "معاينة" left those members with no way to save.
+                  What still limits it is the work itself — the button goes once
+                  every opinion is in, each box locks on its own once saved, and
+                  the whole tab is frozen with the case at `caseLocked`. */}
+              {!allOpinionsSaved && (
                 <div className="pt-4">
                   <Button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
