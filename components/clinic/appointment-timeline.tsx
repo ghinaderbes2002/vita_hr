@@ -220,7 +220,11 @@ export function AppointmentTimeline({
   const columnWidths = groups.map((g) =>
     Math.max(MIN_COL_W, maxLanesIn(g.appointments, win) * MIN_LANE_W),
   );
-  const gridTemplate = `56px ${columnWidths.map((w) => `${w}px`).join(" ")}`;
+  // A floor, not a fixed size: `minmax(…, 1fr)` keeps a crowded column wide
+  // enough to read while still letting the columns share whatever space is
+  // left. Pinning them to exact pixels left a dead gap beside the board and
+  // truncated the department names for no reason.
+  const gridTemplate = `56px ${columnWidths.map((w) => `minmax(${w}px, 1fr)`).join(" ")}`;
   const gridMinWidth = 56 + columnWidths.reduce((a, b) => a + b, 0);
 
   const now = new Date();

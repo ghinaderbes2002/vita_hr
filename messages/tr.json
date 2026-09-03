@@ -2626,7 +2626,8 @@
         "height": "Boy",
         "weight": "Kilo",
         "bmi": "VKİ",
-        "noPhoto": "Fotoğraf yok"
+        "noPhoto": "Fotoğraf yok",
+        "arrivalMethod": "Geliş Yöntemi"
       },
       "measurement": {
         "selectType": {
@@ -3433,7 +3434,8 @@
         "pressureNotes": "Basınç Notları",
         "asymmetry": "Asimetri",
         "archiveSessionTitle": "Seans arşivlensin mi?",
-        "archiveSessionDesc": "Seans, verileri korunarak listeden gizlenir ve daha sonra \"Arşivlenenleri Göster\" düğmesinden görüntülenebilir."
+        "archiveSessionDesc": "Seans, verileri korunarak listeden gizlenir ve daha sonra \"Arşivlenenleri Göster\" düğmesinden görüntülenebilir.",
+        "arrivalMethod": "Geliş Yöntemi"
       }
     },
     "physio": {
@@ -3842,7 +3844,8 @@
           "date": "Tarih",
           "patientId": "Hasta Kimlik No",
           "currentJob": "Mevcut Meslek",
-          "careProvider": "Bakım Sağlayıcı"
+          "careProvider": "Bakım Sağlayıcı",
+          "arrivalMethod": "Geliş Yöntemi"
         },
         "complaint": {
           "title": "Şikayet",

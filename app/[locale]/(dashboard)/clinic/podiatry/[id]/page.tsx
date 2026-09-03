@@ -29,6 +29,7 @@ import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
@@ -378,6 +379,7 @@ export default function PodiatryReceptionPage() {
                 <Row label={t("height")} value={patient?.heightCm ? `${patient.heightCm} cm` : null} />
                 <Row label={t("weight")} value={patient?.weightKg ? `${patient.weightKg} kg` : null} />
                 <Row label={t("bmi")} value={patient?.bmi ? patient.bmi.toFixed(1) : null} />
+                <Row label={t("arrivalMethod")} value={arrivalMethodText(patient)} />
                 </div>
                 <PatientPhoto patientId={reception.patientId} className="h-32 w-32 shrink-0" />
               </div>

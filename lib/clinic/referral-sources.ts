@@ -46,3 +46,20 @@ export const referralSourceLabel = (s?: string | null): string | null =>
 /** A stored value the dropdown no longer offers must be re-picked, not resent. */
 export const asCurrentReferralSource = (s?: string | null): ReferralSource | "" =>
   REFERRAL_SOURCES.includes(s as ReferralSource) ? (s as ReferralSource) : "";
+
+/**
+ * How the patient reached the clinic, ready to print: the source itself plus the
+ * name it carries — "طبيب — د. أحمد" rather than a bare "طبيب" that leaves the
+ * reader wondering which one. Returns null when nothing was recorded.
+ */
+export function arrivalMethodText(patient?: {
+  referralSource?: string | null;
+  referralDetails?: string | null;
+  referralStaff?: { fullName?: string } | null;
+} | null): string | null {
+  const source = referralSourceLabel(patient?.referralSource);
+  if (!source) return null;
+  const detail =
+    patient?.referralStaff?.fullName?.trim() || patient?.referralDetails?.trim() || "";
+  return detail ? `${source} — ${detail}` : source;
+}

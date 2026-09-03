@@ -95,6 +95,7 @@ import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { ImagingProcedures } from "@/components/clinic/imaging-procedures";
 import { PhysioFollowUps } from "@/components/clinic/physio-follow-ups";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
+import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import {
   Dialog,
   DialogContent,
@@ -1755,6 +1756,10 @@ export default function PhysioCasePage() {
                 <p className="text-sm font-medium">
                   {patientFull?.receivesAid || "—"}
                 </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">{t("patientInfo.arrivalMethod")}</p>
+                <p className="text-sm font-medium">{arrivalMethodText(patientFull) ?? "—"}</p>
               </div>
             </div>
           </Section>

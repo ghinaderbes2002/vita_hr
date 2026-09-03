@@ -3534,7 +3534,8 @@
         "height": "Height",
         "weight": "Weight",
         "bmi": "BMI",
-        "noPhoto": "No photo"
+        "noPhoto": "No photo",
+        "arrivalMethod": "Arrival Method"
       },
       "measurement": {
         "selectType": {
@@ -4341,7 +4342,8 @@
         "pressureNotes": "Pressure Notes",
         "asymmetry": "Asymmetry",
         "archiveSessionTitle": "Archive session?",
-        "archiveSessionDesc": "The session will be hidden from the list while its data is kept, and can be shown later via the \"Show Archived\" button."
+        "archiveSessionDesc": "The session will be hidden from the list while its data is kept, and can be shown later via the \"Show Archived\" button.",
+        "arrivalMethod": "Arrival Method"
       }
     },
     "physio": {
@@ -4751,7 +4753,8 @@
           "date": "Date",
           "patientId": "Patient ID",
           "currentJob": "Current Occupation",
-          "careProvider": "Care Provider"
+          "careProvider": "Care Provider",
+          "arrivalMethod": "Arrival Method"
         },
         "complaint": {
           "title": "Complaint",

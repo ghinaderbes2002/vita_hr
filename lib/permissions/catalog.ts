@@ -280,6 +280,13 @@ export const PERMISSIONS = {
     CREATE: "clinic.appointments.create",
     CANCEL: "clinic.appointments.cancel",
   },
+  /** قائمة انتظار العيادة — مرضى بانتظار جدولة موعد. */
+  CLINIC_WAITING_LIST: {
+    VIEW:   "clinic.waiting_list.view",
+    CREATE: "clinic.waiting_list.create",
+    EDIT:   "clinic.waiting_list.edit",
+    DELETE: "clinic.waiting_list.delete",
+  },
   CLINIC_INVENTORY: {
     VIEW:   "clinic.inventory.view",
     MANAGE: "clinic.inventory.manage",

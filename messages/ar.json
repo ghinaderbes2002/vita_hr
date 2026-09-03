@@ -3668,7 +3668,8 @@
         "height": "الطول",
         "weight": "الوزن",
         "bmi": "مؤشر كتلة الجسم",
-        "noPhoto": "لا توجد صورة"
+        "noPhoto": "لا توجد صورة",
+        "arrivalMethod": "طريقة الوصول"
       },
       "measurement": {
         "selectType": {
@@ -4475,7 +4476,8 @@
         "pressureNotes": "ملاحظات الضغط",
         "asymmetry": "عدم التماثل",
         "archiveSessionTitle": "أرشفة الجلسة؟",
-        "archiveSessionDesc": "ستُخفى الجلسة من القائمة مع الاحتفاظ ببياناتها، ويمكن عرضها لاحقاً من زر «عرض المؤرشفة»."
+        "archiveSessionDesc": "ستُخفى الجلسة من القائمة مع الاحتفاظ ببياناتها، ويمكن عرضها لاحقاً من زر «عرض المؤرشفة».",
+        "arrivalMethod": "طريقة الوصول"
       }
     },
     "physio": {
@@ -4911,7 +4913,8 @@
           "date": "التاريخ",
           "patientId": "رقم تعريف المريض",
           "currentJob": "الوظيفة الحالية",
-          "careProvider": "مقدم الرعاية"
+          "careProvider": "مقدم الرعاية",
+          "arrivalMethod": "طريقة الوصول"
         },
         "complaint": {
           "title": "الشكوى",

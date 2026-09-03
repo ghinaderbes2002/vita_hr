@@ -51,6 +51,7 @@ import {
   Share2,
   Trophy,
   X,
+  ListOrdered,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -266,6 +267,7 @@ const navigation: NavItem[] = [
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
       { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
       { title: "nav.clinicPodiatry", href: "/clinic/podiatry", icon: Footprints, permission: "clinic.podiatry.reception.view" },
+      { title: "nav.clinicWaitingList", href: "/clinic/waiting-list", icon: ListOrdered, permission: "clinic.waiting_list.view" },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
       { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permission: "clinic.appointments.view_own" },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },

@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
+import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
@@ -5517,6 +5518,10 @@ export default function ProstheticsCasePage() {
                     <div className="space-y-0.5">
                       <p className="text-xs font-medium">{t("patientInfo.bmi")}</p>
                       <p className="text-muted-foreground">{patientFull?.bmi ? patientFull.bmi.toFixed(1) : "—"}</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium">{t("patientInfo.arrivalMethod")}</p>
+                      <p className="text-muted-foreground">{arrivalMethodText(patientFull) ?? "—"}</p>
                     </div>
                   </div>
                 )}
