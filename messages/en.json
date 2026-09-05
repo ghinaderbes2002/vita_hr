@@ -4019,6 +4019,23 @@
       }
     },
     "podiatry": {
+      "myPatients": {
+        "description": "Podiatry cases you are assigned to as a practitioner",
+        "empty": {
+          "title": "No cases assigned to you",
+          "description": "Cases appear here as soon as you are assigned to them"
+        }
+      },
+      "practitioners": {
+        "title": "Practitioner Team",
+        "assign": "Assign practitioner",
+        "searchPlaceholder": "Search by name or employee number...",
+        "noResults": "No matching employee",
+        "save": "Save",
+        "empty": "No practitioner is assigned to this case",
+        "remove": "Remove",
+        "unsaved": "Unsaved changes — press Save to apply"
+      },
       "form": {
         "sections": {
           "subjective": "Subjective History & Pain Profiling",

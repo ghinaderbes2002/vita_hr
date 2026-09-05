@@ -12,10 +12,11 @@ const errMsg = (e: unknown, fallback: string) => {
   return d?.error?.message || d?.message || fallback;
 };
 
-export function usePodiatryReceptions(patientId?: string) {
+export function usePodiatryReceptions(patientId?: string, enabled = true) {
   return useQuery({
     queryKey: ["podiatry-receptions", patientId ?? "all"],
     queryFn: () => clinicPodiatryApi.getReceptions(patientId),
+    enabled,
   });
 }
 
@@ -54,10 +55,11 @@ export function useUpdatePodiatryReception() {
 }
 
 /** الحالات التي عُيّن المستخدم الحالي معالجاً فيها. */
-export function usePodiatryMyPatients() {
+export function usePodiatryMyPatients(enabled = true) {
   return useQuery({
     queryKey: ["podiatry-my-patients"],
     queryFn: () => clinicPodiatryApi.getMyPatients(),
+    enabled,
   });
 }
 

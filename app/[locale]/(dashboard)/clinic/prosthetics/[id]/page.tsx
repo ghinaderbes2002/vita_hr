@@ -3544,7 +3544,7 @@ function MeasurementHistoryList({
                   <div className="rounded-lg bg-white">
                     <MeasurementSheet
                       sheet={sheet}
-                      mirrored={r.side === "LEFT"}
+                      side={r.side}
                       sound={r.soundLimb ?? {}}
                       affected={r.affectedLimb ?? {}}
                       onChange={() => {}}
@@ -7075,7 +7075,7 @@ export default function ProstheticsCasePage() {
                     {/* Interactive measurement diagram — write inside each box/oval */}
                     <MeasurementSheet
                       sheet="ankle_disarticulation"
-                      mirrored={ankleForm.side === "LEFT"}
+                      side={ankleForm.side}
                       sound={ankleForm.soundLimb}
                       affected={ankleForm.affectedLimb}
                       onChange={(map, k, v) =>
@@ -7157,7 +7157,7 @@ export default function ProstheticsCasePage() {
                     {/* Interactive measurement diagram — write inside each box/oval */}
                     <MeasurementSheet
                       sheet="knee_disarticulation"
-                      mirrored={kneeForm.side === "LEFT"}
+                      side={kneeForm.side}
                       sound={kneeForm.soundLimb}
                       affected={kneeForm.affectedLimb}
                       onChange={(map, k, v) =>
@@ -7238,7 +7238,7 @@ export default function ProstheticsCasePage() {
                     {/* Interactive measurement diagram — write inside each box/oval */}
                     <MeasurementSheet
                       sheet="above_knee"
-                      mirrored={transfemoralForm.side === "LEFT"}
+                      side={transfemoralForm.side}
                       sound={transfemoralForm.soundLimb}
                       affected={transfemoralForm.affectedLimb}
                       onChange={(map, k, v) =>
@@ -7319,7 +7319,7 @@ export default function ProstheticsCasePage() {
                     {/* Interactive measurement diagram — write inside each box/oval */}
                     <MeasurementSheet
                       sheet="below_knee"
-                      mirrored={transtibialForm.side === "LEFT"}
+                      side={transtibialForm.side}
                       sound={transtibialForm.soundLimb}
                       affected={transtibialForm.affectedLimb}
                       onChange={(map, k, v) =>
@@ -7396,7 +7396,7 @@ export default function ProstheticsCasePage() {
                     {/* Interactive measurement diagram — write inside each box/oval */}
                     <MeasurementSheet
                       sheet="transradial"
-                      mirrored={transradialForm.side === "LEFT"}
+                      side={transradialForm.side}
                       sound={transradialForm.soundLimb}
                       affected={transradialForm.affectedLimb}
                       onChange={(map, k, v) =>
@@ -7472,7 +7472,7 @@ export default function ProstheticsCasePage() {
                     {/* Interactive measurement diagram — write inside each box/oval */}
                     <MeasurementSheet
                       sheet="transhumeral"
-                      mirrored={transhumeralForm.side === "LEFT"}
+                      side={transhumeralForm.side}
                       sound={transhumeralForm.soundLimb}
                       affected={transhumeralForm.affectedLimb}
                       onChange={(map, k, v) =>
@@ -7548,7 +7548,7 @@ export default function ProstheticsCasePage() {
                     {/* Interactive measurement diagram — write inside each box/oval */}
                     <MeasurementSheet
                       sheet="elbow_disarticulation"
-                      mirrored={elbowForm.side === "LEFT"}
+                      side={elbowForm.side}
                       sound={elbowForm.soundLimb}
                       affected={elbowForm.affectedLimb}
                       onChange={(map, k, v) =>
@@ -7628,7 +7628,7 @@ export default function ProstheticsCasePage() {
                     {/* Interactive measurement diagram — write inside each box/oval */}
                     <MeasurementSheet
                       sheet="hemipelvectomy"
-                      mirrored={hemipelvectomyForm.side === "LEFT"}
+                      side={hemipelvectomyForm.side}
                       sound={hemipelvectomyForm.soundLimb}
                       affected={hemipelvectomyForm.affectedLimb}
                       onChange={(map, k, v) =>

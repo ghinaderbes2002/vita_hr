@@ -33,6 +33,7 @@ const LIMIT = 15;
 const FULL_CASELOAD_JOB_CODES = [
   "VTX-JTL-000034", // رئيس قسم العلاج الفيزيائي
   "VTX-JTL-000011", // مشرف المركز
+  "VTX-JTL-000007", // المدير الطبي
 ];
 
 const STATUS_VALUES: PhysioStatus[] = [

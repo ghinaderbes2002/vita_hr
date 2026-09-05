@@ -248,11 +248,6 @@ export default function PodiatryReceptionPage() {
         )}
       </div>
 
-      <PodiatryPractitionersCard
-        receptionId={id}
-        practitionerIds={reception.practitionerIds ?? []}
-      />
-
       <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
         <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
           <TabsTrigger value="reception" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabReception")}</TabsTrigger>
@@ -393,7 +388,12 @@ export default function PodiatryReceptionPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="sessions" className="mt-4">
+        <TabsContent value="sessions" className="mt-4 space-y-4">
+          <PodiatryPractitionersCard
+            receptionId={id}
+            practitionerIds={reception.practitionerIds ?? []}
+          />
+
           <PodiatryAssessmentPanel
             receptionId={id}
             session={session}

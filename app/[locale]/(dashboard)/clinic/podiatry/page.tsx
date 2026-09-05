@@ -14,21 +14,49 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
-import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
+import { usePodiatryReceptions, usePodiatryMyPatients } from "@/lib/hooks/use-clinic-podiatry";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
 import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
+/**
+ * المسميات التي تشرف على مرضى القسم كاملاً. غيرها يرى فقط الحالات المعيَّن
+ * عليها كمعالج. Kept in step with the same list on the prosthetics page.
+ */
+const FULL_CASELOAD_JOB_CODES = [
+  "VTX-JTL-000035", // رئيس قسم الأطراف الصناعية وطب الأقدام
+  "VTX-JTL-000011", // مشرف المركز
+  "VTX-JTL-000007", // المدير الطبي
+];
+
 export default function PodiatryListPage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.podiatry");
+  const tMine = useTranslations("clinic.podiatry.myPatients");
   const tCommon = useTranslations("clinic.common");
   const enumLabel = usePodiatryEnumLabels();
   const [search, setSearch] = useState("");
 
-  const { data: receptions = [], isLoading } = usePodiatryReceptions();
+  // المشرفون يرون كل مرضى القسم؛ من عداهم يرى حالاته المعيَّن عليها فقط.
+  const { isAdmin } = usePermissions();
+  const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
+  const seesAll = isAdmin() || FULL_CASELOAD_JOB_CODES.includes(myEmployee?.jobTitle?.code ?? "");
+  const mineOnly = !seesAll;
+
+  // Exactly one of the two runs: the mode is unknown until the profile
+  // lands, so neither fires before then and a therapist never pulls the
+  // whole clinic list.
+  const { data: allReceptions = [], isLoading: allLoading } =
+    usePodiatryReceptions(undefined, !meLoading && seesAll);
+  const { data: myReceptions = [], isLoading: mineLoading } =
+    usePodiatryMyPatients(!meLoading && mineOnly);
+
+  const receptions = mineOnly ? myReceptions : allReceptions;
+  const isLoading = meLoading || (mineOnly ? mineLoading : allLoading);
 
   const filtered = (receptions as PodiatryReception[]).filter((r) => {
     if (!search.trim()) return true;
@@ -47,7 +75,7 @@ export default function PodiatryListPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("title")}
-        description={t("description")}
+        description={mineOnly ? tMine("description") : t("description")}
         actions={
           <ClinicCountChips
             isLoading={isLoading}
@@ -77,8 +105,8 @@ export default function PodiatryListPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<Footprints className="h-8 w-8 text-muted-foreground" />}
-            title={t("empty.title")}
-            description={t("empty.description")}
+            title={mineOnly ? tMine("empty.title") : t("empty.title")}
+            description={mineOnly ? tMine("empty.description") : t("empty.description")}
           />
         ) : (
           <Table>

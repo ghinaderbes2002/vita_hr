@@ -3111,6 +3111,23 @@
       }
     },
     "podiatry": {
+      "myPatients": {
+        "description": "Uygulayıcı olarak atandığınız podoloji vakaları",
+        "empty": {
+          "title": "Size atanmış vaka yok",
+          "description": "Bir vakaya atandığınızda burada görünecektir"
+        }
+      },
+      "practitioners": {
+        "title": "Uygulayıcı Ekibi",
+        "assign": "Uygulayıcı ata",
+        "searchPlaceholder": "Ada veya personel numarasına göre ara...",
+        "noResults": "Eşleşen personel yok",
+        "save": "Kaydet",
+        "empty": "Bu vakaya atanmış uygulayıcı yok",
+        "remove": "Kaldır",
+        "unsaved": "Kaydedilmemiş değişiklikler — uygulamak için Kaydet"
+      },
       "form": {
         "sections": {
           "subjective": "Hastalık Öyküsü ve Ağrı Tanımı",

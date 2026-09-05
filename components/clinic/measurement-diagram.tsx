@@ -25,16 +25,18 @@ export interface DiagramField {
  * sitting inside every box and oval the drawing already has.
  */
 export function MeasurementSheet({
-  sheet, sound, affected, onChange, disabled, mirrored,
+  sheet, sound, affected, onChange, disabled, side,
 }: {
   sheet: MeasureSheetKey;
   sound: Record<string, string>;
   affected: Record<string, string>;
   onChange: (map: "sound" | "affected", key: string, value: string) => void;
   disabled?: boolean;
-  /** Drawings depict the right side; a left-side case flips the whole sheet. */
-  mirrored?: boolean;
+  /** The limb this sheet records. The drawings depict the left side, so a
+   *  right-side case is the one that gets flipped. */
+  side?: "LEFT" | "RIGHT";
 }) {
+  const mirrored = side === "RIGHT";
   const image = measurementSheetImage(sheet);
   const fields = MEASUREMENT_SHEET_FIELDS[sheet];
   if (!image || !fields) return null;
@@ -44,7 +46,7 @@ export function MeasurementSheet({
         <FlipHorizontal
           className={`h-3.5 w-3.5 transition-transform duration-500 ${mirrored ? "-scale-x-100" : ""}`}
         />
-        {mirrored ? "الرسم معكوس — الجهة اليسرى" : "الجهة اليمنى"}
+        {mirrored ? "الرسم معكوس — الجهة اليمنى" : "الجهة اليسرى"}
       </div>
       <div className="overflow-x-auto">
         <div className="min-w-[680px] sm:min-w-0">
