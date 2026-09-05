@@ -76,6 +76,8 @@ interface NavItem {
   showForDepartments?: string[];
   /** إظهار العنصر دائماً إذا كود المسمى الوظيفي ضمن القائمة */
   showForJobTitleCodes?: string[];
+  /** إخفاء العنصر إذا كود المسمى الوظيفي ضمن القائمة — يتقدّم على الصلاحيات و showForRoles */
+  hiddenForJobTitleCodes?: string[];
   children?: NavItem[];
 }
 
@@ -279,6 +281,8 @@ const navigation: NavItem[] = [
     icon: Share2,
     separator: true,
     permission: "clinic.referrals.view",
+    // مشرف المركز لا يرى قسم المبيعات حتى لو كان يملك clinic.referrals.view
+    hiddenForJobTitleCodes: ["VTX-JTL-000011"],
     children: [
       { title: "nav.clinicContacts", href: "/clinic/referrals", icon: Users, permission: "clinic.referrals.view" },
       { title: "nav.clinicSalesOverview", href: "/clinic/referrals/sales", icon: Trophy, permission: "clinic.referrals.view" },
@@ -426,6 +430,14 @@ export function Sidebar() {
     return false;
   };
 
+  // إخفاء صريح حسب كود المسمى الوظيفي. يُفحص قبل أي منطق آخر حتى لا تعيد
+  // الصلاحية أو showForRoles إظهار عنصر مقصود إخفاؤه عن مسمى بعينه.
+  const isHiddenByJobTitle = (item: NavItem): boolean =>
+    !!item.hiddenForJobTitleCodes &&
+    !isAdmin() &&
+    !!currentJobTitleCode &&
+    item.hiddenForJobTitleCodes.includes(currentJobTitleCode);
+
   // التحقق من صلاحية عنصر نهائي (بدون أطفال)
   const hasItemPermission = (item: NavItem): boolean => {
     if (!item.permission && !item.permissions) return true;
@@ -436,6 +448,8 @@ export function Sidebar() {
 
   // التحقق recursive — يشتغل على أي عمق من التداخل
   const hasSectionPermission = (item: NavItem): boolean => {
+    // الإخفاء بالمسمى الوظيفي يتقدّم على كل شيء — الصلاحيات و showForRoles
+    if (isHiddenByJobTitle(item)) return false;
     // إذا العنصر مجبر على الظهور لدور معين، نظهره — حتى لو المستخدم عنده كمان
     // دور تاني مدرج بـ hiddenForRoles (شخص ممكن يكون عنده أكتر من دور)
     if (item.showForRoles && item.showForRoles.some((role) => hasRole(role))) return true;
@@ -568,6 +582,8 @@ export function Sidebar() {
             );
             // فلترة العناصر الفرعية حسب الصلاحيات (recursive)
             const visibleChildren = item.children.filter((child) => {
+              // الإخفاء بالمسمى الوظيفي يتقدّم حتى على parentAllowedByJobTitle
+              if (isHiddenByJobTitle(child)) return false;
               // إذا الـ child عنده showForJobTitleCodes والمستخدم عنده مسمى وظيفي، المسمى يأخذ الأولوية على الصلاحيات
               if (currentJobTitleCode && child.showForJobTitleCodes) {
                 return child.showForJobTitleCodes.includes(currentJobTitleCode);

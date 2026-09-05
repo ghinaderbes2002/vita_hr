@@ -39,6 +39,8 @@ export function resolveNotificationLink(
         if (d.alertId) return `/clinic/physio/emergency/${d.alertId}`;
         return "/clinic/physio";
       }
+      // تعيين معالج على حالة طب أقدام: { receptionId, patientId }.
+      if (d.receptionId) return `/clinic/podiatry/${d.receptionId}`;
       if (d.messageId) return `/mail?messageId=${d.messageId}`;
       if (d.requestId) return `/requests/${d.requestId}`;
       return null;

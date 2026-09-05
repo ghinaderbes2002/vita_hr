@@ -53,6 +53,34 @@ export function useUpdatePodiatryReception() {
   });
 }
 
+/** الحالات التي عُيّن المستخدم الحالي معالجاً فيها. */
+export function usePodiatryMyPatients() {
+  return useQuery({
+    queryKey: ["podiatry-my-patients"],
+    queryFn: () => clinicPodiatryApi.getMyPatients(),
+  });
+}
+
+/**
+ * تعيين فريق المعالجين. القائمة المرسلة تستبدل الموجودة بالكامل — على المستدعي
+ * أن يرسل القدامى مع الجديد عند الإضافة.
+ */
+export function useAssignPodiatryPractitioners() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, practitionerIds }: { id: string; practitionerIds: string[] }) =>
+      clinicPodiatryApi.assignPractitioners(id, practitionerIds),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["podiatry-reception", id] });
+      qc.invalidateQueries({ queryKey: ["podiatry-receptions"] });
+      // المعالج المضاف يرى الحالة فوراً في "مرضاي".
+      qc.invalidateQueries({ queryKey: ["podiatry-my-patients"] });
+      toast.success("تم حفظ فريق المعالجين");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل حفظ فريق المعالجين")),
+  });
+}
+
 export function usePodiatrySessions(receptionId: string) {
   return useQuery({
     queryKey: ["podiatry-sessions", receptionId],

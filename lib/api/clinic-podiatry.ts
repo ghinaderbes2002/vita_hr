@@ -173,6 +173,8 @@ export interface PodiatryReception {
   medicalHistory?: MedicalHistoryItem[] | null;
   medicalHistoryOther?: string | null;
   vasScore?: number | null;
+  /** Employee ids of the therapists assigned to this case. */
+  practitionerIds?: string[] | null;
   sessions?: PodiatrySession[];
   createdAt?: string;
 }
@@ -244,6 +246,22 @@ export const clinicPodiatryApi = {
   updateReception: async (id: string, dto: PodiatryReceptionDto): Promise<PodiatryReception> => {
     const { data } = await apiClient.patch(`/podiatry/receptions/${id}`, dto);
     return unwrap(data) as PodiatryReception;
+  },
+
+  /**
+   * Replaces the practitioner team wholesale — the API does not append, so
+   * adding one therapist means sending the existing ids plus the new one.
+   * Answers with the updated reception.
+   */
+  assignPractitioners: async (id: string, practitionerIds: string[]): Promise<PodiatryReception> => {
+    const { data } = await apiClient.patch(`/podiatry/receptions/${id}/practitioners`, { practitionerIds });
+    return unwrap(data) as PodiatryReception;
+  },
+
+  /** Receptions the caller is assigned to; the token identifies them, no id is sent. */
+  getMyPatients: async (): Promise<PodiatryReception[]> => {
+    const { data } = await apiClient.get("/podiatry/receptions/my-patients");
+    return asArray<PodiatryReception>(unwrap(data));
   },
 
   // Returns at most one session — the reception's assessment form.

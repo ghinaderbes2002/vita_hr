@@ -26,6 +26,7 @@ import {
   PodiatryDoctorDecisionCard, PodiatryReviewCard,
 } from "@/components/clinic/podiatry-review-decision";
 import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
+import { PodiatryPractitionersCard } from "@/components/clinic/podiatry-practitioners-card";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -246,6 +247,11 @@ export default function PodiatryReceptionPage() {
           )
         )}
       </div>
+
+      <PodiatryPractitionersCard
+        receptionId={id}
+        practitionerIds={reception.practitionerIds ?? []}
+      />
 
       <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
         <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
