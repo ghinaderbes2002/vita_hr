@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useDepartments } from "@/lib/hooks/use-departments";
 import { useAssignPodiatryPractitioners } from "@/lib/hooks/use-clinic-podiatry";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -21,9 +22,19 @@ interface StaffRow {
   firstNameAr: string;
   lastNameAr: string;
   employeeNumber?: string;
-  department?: { nameAr?: string };
+  department?: { id?: string; nameAr?: string; parent?: { id?: string } | null } | null;
   employmentStatus?: string;
 }
+
+interface DeptRow {
+  id: string;
+  code?: string;
+  nameAr?: string;
+  parent?: { id?: string } | null;
+}
+
+/** قسم الإدارة الطبية. Matched by code — names get re-spelled, codes do not. */
+const MEDICAL_ADMIN_DEPT_CODE = "VTX-DEP-000007";
 type StaffEnvelope = { data?: { items?: StaffRow[] }; items?: StaffRow[] };
 
 const sortedKey = (ids: string[]) => [...ids].sort().join(",");
@@ -61,17 +72,29 @@ export function PodiatryPractitionersCard({
   const { data: staffData } = useEmployeesBasicList();
   const staff = staffData as StaffRow[] | StaffEnvelope | undefined;
   const staffList: StaffRow[] = Array.isArray(staff) ? staff : staff?.data?.items ?? staff?.items ?? [];
-  // Anyone who has not left. Two earlier versions of this list came up empty
-  // in the running system — first a hardcoded set of clinical department
-  // names that matched none of the real ones, then `employmentStatus ===
-  // "ACTIVE"`, which excludes every row where the field is absent or spelled
-  // some other way. So the test is inverted: only a status that positively
-  // says the person is gone removes them, and an unknown status keeps them.
-  // The department shows on each row and the search box covers a long list.
+  const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
+  const departments: DeptRow[] =
+    (depsData as { data?: { items?: DeptRow[] }; items?: DeptRow[] } | undefined)?.data?.items ??
+    (depsData as { items?: DeptRow[] } | undefined)?.items ??
+    [];
+  const medicalAdmin = departments.find((d) => d.code === MEDICAL_ADMIN_DEPT_CODE);
+
+  // Only الإدارة الطبية — the department itself and anything filed under it.
+  const inMedicalAdmin = (e: StaffRow) =>
+    !!medicalAdmin &&
+    (e.department?.id === medicalAdmin.id || e.department?.parent?.id === medicalAdmin.id);
+
+  // Only a status that positively says the person has left removes them: an
+  // absent or differently spelled status keeps them, since requiring
+  // "ACTIVE" once emptied this list entirely.
   const GONE = ["TERMINATED", "RESIGNED", "INACTIVE", "SUSPENDED", "RETIRED"];
-  const assignableStaff = staffList.filter(
+  const onStaff = staffList.filter(
     (e) => !GONE.includes((e.employmentStatus ?? "").toUpperCase()),
   );
+  // Until the departments land — or if that department is ever renumbered —
+  // fall back to the whole roster rather than an empty picker that silently
+  // blocks the assignment.
+  const assignableStaff = medicalAdmin ? onStaff.filter(inMedicalAdmin) : onStaff;
 
   // Assigned ids are employee ids. Anyone who has since left the clinical pool
   // still shows — by name when we can resolve them, by id when we cannot.
