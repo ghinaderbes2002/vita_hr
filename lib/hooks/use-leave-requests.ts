@@ -12,6 +12,10 @@ import {
   RejectData,
   CancelData,
 } from "@/lib/api/leave-requests";
+import {
+  isDuplicateRequestError, apiErrorMessage,
+  DUPLICATE_REQUEST_FALLBACK, DUPLICATE_REQUEST_HINT,
+} from "@/lib/api/api-errors";
 
 // Get my leave requests
 export function useMyLeaveRequests(params?: { status?: LeaveRequestStatus; year?: number }) {
@@ -98,6 +102,13 @@ export function useCreateLeaveRequest() {
       toast.success(t("messages.saveSuccess"));
     },
     onError: (error: any) => {
+      // ليس فشلاً: الطلب الأول محفوظ، وهذا صدّ لضغطة إرسال مكررة.
+      if (isDuplicateRequestError(error)) {
+        return toast.warning(apiErrorMessage(error, DUPLICATE_REQUEST_FALLBACK), {
+          description: DUPLICATE_REQUEST_HINT,
+          duration: 8000,
+        });
+      }
       const msg = error.response?.data?.error?.message
         || error.response?.data?.message
         || t("messages.saveError");
@@ -333,6 +344,13 @@ export function useCreateHourlyLeave() {
       toast.success("تم تقديم طلب الإجازة الساعية بنجاح");
     },
     onError: (error: any) => {
+      // ليس فشلاً: الطلب الأول محفوظ، وهذا صدّ لضغطة إرسال مكررة.
+      if (isDuplicateRequestError(error)) {
+        return toast.warning(apiErrorMessage(error, DUPLICATE_REQUEST_FALLBACK), {
+          description: DUPLICATE_REQUEST_HINT,
+          duration: 8000,
+        });
+      }
       const msg = error.response?.data?.error?.message
         || error.response?.data?.message
         || "فشل تقديم طلب الإجازة الساعية";

@@ -7,6 +7,10 @@ export async function GET(
   { params }: { params: Promise<{ attachmentId: string }> }
 ) {
   const { attachmentId } = await params;
+  // The viewer below wraps an image in a styled page, which is right for
+  // opening it in a tab and wrong for saving it — a download would land as
+  // HTML under a .jpg name. `raw=1` asks for the bytes themselves.
+  const wantsRaw = request.nextUrl.searchParams.get("raw") === "1";
 
   const token =
     request.cookies.get("wso-token")?.value ||
@@ -30,9 +34,9 @@ export async function GET(
 
   const contentType = res.headers.get("content-type") || "application/octet-stream";
   const buffer = await res.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString("base64");
 
-  if (contentType.startsWith("image/")) {
+  if (contentType.startsWith("image/") && !wantsRaw) {
+    const base64 = Buffer.from(buffer).toString("base64");
     const html = `<!DOCTYPE html>
 <html>
 <head>

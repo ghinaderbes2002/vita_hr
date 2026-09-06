@@ -38,10 +38,21 @@ export function decodeFileName(name: string): string {
   return name;
 }
 
-function fileUrl(attachmentId: string): string {
+/**
+ * Same-origin proxy route, which forwards to the API's
+ * `/mail/attachments/:id/file` with the bearer token attached — a plain
+ * <a href> cannot set that header itself.
+ *
+ * `raw` skips the image viewer and asks for the bytes, so a saved file is
+ * the image and not the page that displays it.
+ */
+function fileUrl(attachmentId: string, opts?: { raw?: boolean }): string {
   const token = useAuthStore.getState().accessToken || "";
-  const base = `/api/mail-file/${attachmentId}`;
-  return token ? `${base}?t=${encodeURIComponent(token)}` : base;
+  const params = new URLSearchParams();
+  if (opts?.raw) params.set("raw", "1");
+  if (token) params.set("t", token);
+  const qs = params.toString();
+  return `/api/mail-file/${attachmentId}${qs ? `?${qs}` : ""}`;
 }
 
 async function downloadFile(url: string, fileName: string) {
@@ -95,7 +106,7 @@ export function AttachmentList({ attachments }: ListProps) {
             <button
               type="button"
               className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors"
-              onClick={() => downloadFile(fileUrl(a.id), decodeFileName(a.fileName))}
+              onClick={() => downloadFile(fileUrl(a.id, { raw: true }), decodeFileName(a.fileName))}
             >
               <Download className="h-3.5 w-3.5" />
               {t("download")}

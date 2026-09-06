@@ -85,6 +85,25 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Payload too large (413) — the file exceeded the server's body limit
+    // (nginx `client_max_body_size`, or the API's own cap). axios's default
+    // message is English and meaningless to the people using this app, and a
+    // 413 from nginx carries an HTML page as its body, which is worse still.
+    // Both are replaced here so every handler downstream — they all fall back
+    // to `error.message` — shows the same readable sentence.
+    // TODO: drop this once the server limit is raised, and validate the size
+    // before uploading instead, once we know what that limit is.
+    if (error.response?.status === 413) {
+      const tooLarge = "حجم الملف كبير جداً ولم يقبله السيرفر. الرجاء ضغط الملف أو رفع نسخة أصغر منه.";
+      error.message = tooLarge;
+      if (error.response.data && typeof error.response.data === "object") {
+        error.response.data.message = tooLarge;
+      } else {
+        error.response.data = { message: tooLarge };
+      }
+      return Promise.reject(error);
+    }
+
     // Endpoints that return 403 silently (background polling, not user-initiated)
     const SILENT_403_PATHS = ["/physio/emergency/incoming"];
     // A GET that 403s is a page auto-fetching data the user can't see (its UI is

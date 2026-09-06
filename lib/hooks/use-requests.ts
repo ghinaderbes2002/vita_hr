@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { requestsApi, CreateRequestData } from "@/lib/api/requests";
+import {
+  isDuplicateRequestError, apiErrorMessage,
+  DUPLICATE_REQUEST_FALLBACK, DUPLICATE_REQUEST_HINT,
+} from "@/lib/api/api-errors";
 import { toast } from "sonner";
 
 export function useRequests(params?: {
@@ -39,6 +43,13 @@ export function useCreateRequest() {
       toast.success("تم إنشاء الطلب بنجاح");
     },
     onError: (error: any) => {
+      // ليس فشلاً: الطلب الأول محفوظ، وهذا صدّ لضغطة إرسال مكررة.
+      if (isDuplicateRequestError(error)) {
+        return toast.warning(apiErrorMessage(error, DUPLICATE_REQUEST_FALLBACK), {
+          description: DUPLICATE_REQUEST_HINT,
+          duration: 8000,
+        });
+      }
       const msg = error.response?.data?.error?.message
         || error.response?.data?.message
         || error.response?.data?.errors?.[0]?.message
