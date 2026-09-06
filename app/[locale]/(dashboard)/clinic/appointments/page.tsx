@@ -17,6 +17,8 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
 import { PageHeader } from "@/components/shared/page-header";
+import { WhatsappConfirmButton } from "@/components/clinic/whatsapp-confirm-button";
+import { CLINIC_WHATSAPP_NUMBER } from "@/lib/clinic/whatsapp";
 import { cn, formatClinicTime } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment } from "@/lib/hooks/use-clinic-appointments";
 import {
@@ -150,6 +152,13 @@ export default function AppointmentsPage() {
   const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
   const [patientSearch, setPatientSearch] = useState("");
   const [selectedPatientLabel, setSelectedPatientLabel] = useState("");
+  // Kept alongside the label so the confirmation can be sent straight after booking,
+  // without re-fetching the patient.
+  const [selectedPatientPhone, setSelectedPatientPhone] = useState("");
+  // Shown once a booking is made, offering to send the patient their confirmation.
+  const [whatsappPrompt, setWhatsappPrompt] = useState<
+    { name: string; phone: string; date: string; time: string } | null
+  >(null);
   // A walk-in who has no patient record yet: the name rides along on the
   // appointment itself, so nothing is written to the patients list.
   const [unregisteredName, setUnregisteredName] = useState("");
@@ -283,11 +292,40 @@ export default function AppointmentsPage() {
     // New appointments start as SCHEDULED (مجدول); confirmed manually afterwards.
     setNewApptOpen(false);
     setSelectedDate(newForm.date);
+    // Offer to send the patient their confirmation while the details are still to hand.
+    setWhatsappPrompt({
+      name: selectedPatientLabel || walkIn,
+      phone: selectedPatientPhone,
+      date: new Date(startISO).toLocaleDateString(locale, {
+        weekday: "long", year: "numeric", month: "long", day: "numeric",
+      }),
+      time: formatClinicTime(startISO) || newForm.startTime,
+    });
     setPatientSearch("");
     setSelectedPatientLabel("");
+    setSelectedPatientPhone("");
     setUnregisteredName("");
     setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "", isOpenEnded: false });
   };
+
+  // Same wording as the rows inside the details dialog, reused by its WhatsApp button.
+  const detailPatientName = !detailAppt
+    ? ""
+    : detailAppt.patient
+      ? `${detailAppt.patient.firstName} ${detailAppt.patient.lastName}`
+      : (detailAppt.patientName || "");
+  const detailDateLabel = !detailAppt
+    ? ""
+    : detailAppt.startTime && detailAppt.startTime.length > 5
+      ? new Date(detailAppt.startTime).toLocaleDateString(locale, {
+          weekday: "long", year: "numeric", month: "long", day: "numeric",
+        })
+      : (detailAppt.date ?? "");
+  const detailTimeLabel = detailAppt ? formatClinicTime(detailAppt.startTime) : "";
+
+  // The appointment carries the registered patient's phone; a walk-in booked by
+  // name has no record behind it, so the field comes back empty.
+  const detailPatientPhone = detailAppt?.phone || "";
 
   // Build calendar grid
   const firstDayOfWeek = startOfMonth(viewYear, viewMonth).getDay();
@@ -422,6 +460,46 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
+      {/* Send the patient their confirmation right after booking */}
+      <Dialog open={!!whatsappPrompt} onOpenChange={(o) => { if (!o) setWhatsappPrompt(null); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تم إنشاء الموعد</DialogTitle>
+          </DialogHeader>
+          {whatsappPrompt && (
+            <div className="space-y-3">
+              <dl className="divide-y text-sm">
+                {([
+                  ["المريض", whatsappPrompt.name || "—"],
+                  ["التاريخ", whatsappPrompt.date],
+                  ["الوقت", whatsappPrompt.time],
+                ] as [string, string][]).map(([label, value]) => (
+                  <div key={label} className="flex items-start justify-between gap-3 py-2">
+                    <dt className="text-muted-foreground shrink-0">{label}</dt>
+                    <dd className="font-medium text-left">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <WhatsappConfirmButton
+                phone={whatsappPrompt.phone}
+                patientName={whatsappPrompt.name}
+                date={whatsappPrompt.date}
+                time={whatsappPrompt.time}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                {whatsappPrompt.phone
+                  ? `يُفتح واتساب برسالة جاهزة — تأكد أنك مسجّل الدخول بحساب المركز ${CLINIC_WHATSAPP_NUMBER} قبل الإرسال.`
+                  : "لا يوجد رقم هاتف محفوظ لهذا المريض، فلا يمكن إرسال التأكيد."}
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWhatsappPrompt(null)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Appointment details dialog */}
       <Dialog open={!!detailAppt} onOpenChange={(o) => { if (!o) setDetailAppt(null); }}>
         <DialogContent className="max-w-md" dir="rtl">
@@ -444,7 +522,6 @@ export default function AppointmentsPage() {
             const openEnded = detailAppt.isOpenEnded === true;
             const rows: [string, ReactNode][] = [
               ["المريض", detailAppt.patient ? `${detailAppt.patient.firstName} ${detailAppt.patient.lastName}` : (detailAppt.patientName || "—")],
-              ["رقم المريض", detailAppt.patientNumber ?? detailAppt.patient?.patientNumber ?? "—"],
               ["نوع الموعد", t(`types.${detailAppt.appointmentType}`)],
               ["الحالة", <Badge key="s" className={cn("text-xs", STATUS_COLOR[detailAppt.status])} variant="outline">{t(`statuses.${detailAppt.status}`)}</Badge>],
               ["التاريخ", dateStr],
@@ -453,6 +530,7 @@ export default function AppointmentsPage() {
                 : `${fmtT(detailAppt.startTime)} — ${fmtT(detailAppt.endTime)}`],
               ["المدة", openEnded ? "—" : (durMin != null && durMin > 0 ? `${durMin} دقيقة` : "—")],
               ["القسم", detailAppt.department?.nameAr ?? (detailAppt.departmentId ? deptLabel(detailAppt.departmentId) : "—")],
+              ["الهاتف", detailPatientPhone || "—"],
               ["ملاحظات", detailAppt.notes || "—"],
             ];
             const therapistNames = (detailAppt.therapists?.length
@@ -517,6 +595,19 @@ export default function AppointmentsPage() {
                   </SelectContent>
                 </Select>
               </div>
+            )}
+            {detailAppt && (
+              <WhatsappConfirmButton
+                phone={detailPatientPhone}
+                patientName={detailPatientName}
+                date={detailDateLabel}
+                time={detailTimeLabel}
+                disabledReason={
+                  detailAppt.patientId
+                    ? "لا يوجد رقم هاتف محفوظ في ملف هذا المريض"
+                    : "الموعد محجوز باسم غير مسجّل — لا يوجد ملف مريض ولا رقم"
+                }
+              />
             )}
             <Button variant="outline" className="ms-auto" onClick={() => setDetailAppt(null)}>{t("form.cancel")}</Button>
           </DialogFooter>
@@ -645,6 +736,7 @@ export default function AppointmentsPage() {
                     setPatientSearch(e.target.value);
                     setNewForm((f) => ({ ...f, patientId: "" }));
                     setSelectedPatientLabel("");
+                    setSelectedPatientPhone("");
                     setUnregisteredName("");
                     setPatientPopoverOpen(true);
                   }}
@@ -670,6 +762,7 @@ export default function AppointmentsPage() {
                       className="mr-auto text-muted-foreground hover:text-destructive"
                       onClick={() => {
                         setSelectedPatientLabel("");
+                        setSelectedPatientPhone("");
                         setUnregisteredName("");
                         setPatientSearch("");
                         setNewForm((f) => ({ ...f, patientId: "" }));
@@ -692,6 +785,7 @@ export default function AppointmentsPage() {
                             e.preventDefault();
                             setNewForm((f) => ({ ...f, patientId: p.id }));
                             setSelectedPatientLabel(`${p.firstName} ${p.lastName}`);
+                            setSelectedPatientPhone(p.whatsapp || p.phone || "");
                             setPatientSearch("");
                             setPatientPopoverOpen(false);
                           }}

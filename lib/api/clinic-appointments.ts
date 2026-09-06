@@ -72,6 +72,8 @@ export interface Appointment {
   therapists?: { id: string; firstName?: string; lastName?: string; firstNameAr?: string; lastNameAr?: string }[] | null;
   patientName?: string | null;
   patientNumber?: string | null;
+  /** The registered patient's phone; empty string for a walk-in with no record. */
+  phone?: string | null;
   createdAt: string;
   updatedAt: string;
 }

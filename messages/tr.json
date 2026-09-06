@@ -1,11 +1,26 @@
 {
   "auth": {
     "welcomeBack": "Tekrar Hoşgeldiniz",
+    "brandStrap": "Merkez ve İK Yönetimi",
+    "heroTitle": "Merkez yönetim platformuna hoş geldiniz",
+    "heroSubtitle": "Merkezinizin tamamını yöneten tek sistem.",
     "username": "Kullanıcı Adı",
     "password": "Şifre",
     "login": "Giriş Yap",
     "loginFailed": "Giriş Başarısız",
-    "forgotPassword": "Şifremi Unuttum?"
+    "forgotPassword": "Şifremi Unuttum?",
+    "signInSubtitle": "Hesabınıza erişmek için bilgilerinizi girin",
+    "usernamePlaceholder": "Kullanıcı adınızı girin",
+    "passwordPlaceholder": "Şifrenizi girin",
+    "signingIn": "Giriş yapılıyor...",
+    "footer": "Merkez Yönetim Platformu © {year}",
+    "required": "Zorunlu",
+    "passwordMin": "En az 6 karakter",
+    "errorGeneric": "Giriş hatası",
+    "errorNetwork": "Sunucuya ulaşılamıyor — internet bağlantınızı kontrol edin",
+    "errorTooMany": "Çok fazla deneme. Tekrar denemeden önce bir dakika bekleyin.",
+    "errorInactive": "Bu hesap aktif değil. Lütfen yöneticinizle iletişime geçin.",
+    "errorCredentials": "Kullanıcı adı veya şifre hatalı"
   },
   "dashboard": {
     "title": "Kontrol Paneli",

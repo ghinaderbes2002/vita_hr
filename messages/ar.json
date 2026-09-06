@@ -33,11 +33,26 @@
   },
   "auth": {
     "welcomeBack": "مرحباً بعودتك",
+    "brandStrap": "إدارة المركز والموارد البشرية",
+    "heroTitle": "مرحباً بك في منصة إدارة المركز",
+    "heroSubtitle": "نظام واحد يدير مركزك بالكامل.",
     "username": "اسم المستخدم",
     "password": "كلمة المرور",
     "login": "تسجيل الدخول",
     "loginFailed": "فشل تسجيل الدخول",
-    "forgotPassword": "نسيت كلمة المرور؟"
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "signInSubtitle": "أدخل بياناتك للوصول إلى حسابك",
+    "usernamePlaceholder": "أدخل اسم المستخدم",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "signingIn": "جاري تسجيل الدخول...",
+    "footer": "منصة إدارة المركز © {year}",
+    "required": "مطلوب",
+    "passwordMin": "6 أحرف على الأقل",
+    "errorGeneric": "خطأ في تسجيل الدخول",
+    "errorNetwork": "لا يمكن الاتصال بالخادم — تحقق من الاتصال بالإنترنت",
+    "errorTooMany": "محاولات كثيرة. انتظر دقيقة قبل المحاولة مرة أخرى.",
+    "errorInactive": "الحساب غير نشط. يرجى التواصل مع المسؤول.",
+    "errorCredentials": "اسم المستخدم أو كلمة المرور غير صحيحة"
   },
   "nav": {
     "dashboard": "لوحة التحكم",

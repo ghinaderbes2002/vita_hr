@@ -94,9 +94,14 @@ export function PodiatryPractitionersCard({
   const assignableStaff = useMemo(() => {
     const onStaff = staffList.filter((e) => !GONE.includes((e.employmentStatus ?? "").toUpperCase()));
     if (!medicalAdminId) return onStaff;
-    return onStaff.filter(
+    const inMedicalAdmin = onStaff.filter(
       (e) => e.department?.id === medicalAdminId || e.department?.parent?.id === medicalAdminId,
     );
+    // /employees/basic does not always carry the department tree — with `parent`
+    // missing, nobody filed *under* الإدارة الطبية matches and the picker empties
+    // out, silently blocking the assignment. Prefer the department when it
+    // resolves anyone at all, and otherwise offer the whole roster.
+    return inMedicalAdmin.length ? inMedicalAdmin : onStaff;
   }, [staffList, medicalAdminId]);
 
   const byId = useMemo(() => new Map(staffList.map((e) => [e.id, e])), [staffList]);

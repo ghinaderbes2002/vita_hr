@@ -1,11 +1,26 @@
 {
   "auth": {
     "welcomeBack": "Welcome Back",
+    "brandStrap": "Center & HR Management",
+    "heroTitle": "Welcome to your center management platform",
+    "heroSubtitle": "One system to run your entire center.",
     "username": "Username",
     "password": "Password",
     "login": "Login",
     "loginFailed": "Login Failed",
-    "forgotPassword": "Forgot Password?"
+    "forgotPassword": "Forgot Password?",
+    "signInSubtitle": "Enter your details to access your account",
+    "usernamePlaceholder": "Enter your username",
+    "passwordPlaceholder": "Enter your password",
+    "signingIn": "Signing in...",
+    "footer": "Center Management Platform © {year}",
+    "required": "Required",
+    "passwordMin": "At least 6 characters",
+    "errorGeneric": "Sign-in error",
+    "errorNetwork": "Cannot reach the server — check your internet connection",
+    "errorTooMany": "Too many attempts. Wait a minute before trying again.",
+    "errorInactive": "This account is inactive. Please contact your administrator.",
+    "errorCredentials": "Incorrect username or password"
   },
   "dashboard": {
     "title": "Dashboard",
