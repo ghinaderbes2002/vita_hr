@@ -215,13 +215,28 @@ export default function AppointmentsPage() {
     (a.departmentId === medicalAdminDept.id || deptNameOf(a) === medicalAdminDept.nameAr);
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const isSelectedToday = selectedDate === todayIso;
+  // The board drew all three columns whatever the filter said, so choosing a
+  // department only emptied the other two instead of narrowing the view.
+  // Resolve the chosen department to the column that represents it, and keep
+  // only that one. An unrecognised choice falls back to showing everything.
+  const selectedDept =
+    departmentFilter !== "ALL" ? departments.find((d) => d.id === departmentFilter) : undefined;
+  const selectedColumn = !selectedDept
+    ? null
+    : selectedDept.code === MEDICAL_ADMIN_DEPT_CODE
+    ? "medicalAdmin"
+    : isPhysio(selectedDept.nameAr)
+    ? "physio"
+    : isProsth(selectedDept.nameAr)
+    ? "prosth"
+    : null;
   const timelineGroups = [
-    { title: t("board.physioDept"), color: "#10b981", appointments: dayScoped.filter((a: Appointment) => isPhysio(deptNameOf(a))) },
-    { title: t("board.prosthDept"), color: "#6366f1", appointments: dayScoped.filter((a: Appointment) => isProsth(deptNameOf(a))) },
+    { key: "physio", title: t("board.physioDept"), color: "#10b981", appointments: dayScoped.filter((a: Appointment) => isPhysio(deptNameOf(a))) },
+    { key: "prosth", title: t("board.prosthDept"), color: "#6366f1", appointments: dayScoped.filter((a: Appointment) => isProsth(deptNameOf(a))) },
     ...(medicalAdminDept
-      ? [{ title: MEDICAL_ADMIN_DEPT_ALIAS, color: "#f59e0b", appointments: dayScoped.filter(isMedicalAdmin) }]
+      ? [{ key: "medicalAdmin", title: MEDICAL_ADMIN_DEPT_ALIAS, color: "#f59e0b", appointments: dayScoped.filter(isMedicalAdmin) }]
       : []),
-  ];
+  ].filter((g) => !selectedColumn || g.key === selectedColumn);
 
   // Group appointments by date for calendar dots
   const apptsByDate = useMemo(() => {

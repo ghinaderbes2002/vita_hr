@@ -4064,6 +4064,7 @@
         }
       },
         "savedReadOnly": "محفوظ — للقراءة فقط",
+        "filledBy": "عبّأ النموذج",
         "committee": {
           "membersTitle": "أعضاء لجنة القبول وتقييماتهم",
         "assignedToSomeoneElse": "هذا الحقل مخصّص لعضو اللجنة المعيَّن له.",

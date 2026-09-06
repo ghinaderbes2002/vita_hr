@@ -3930,6 +3930,7 @@
         }
       },
         "savedReadOnly": "Saved — read only",
+        "filledBy": "Filled in by",
         "committee": {
           "membersTitle": "Admission Committee Members & Assessments",
         "assignedToSomeoneElse": "This field belongs to the committee member assigned to it.",
