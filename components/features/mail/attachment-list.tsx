@@ -2,8 +2,8 @@
 
 import { Paperclip, ExternalLink, Download } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { MailAttachment } from "@/lib/api/mail";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { toast } from "sonner";
+import { mailApi, type MailAttachment } from "@/lib/api/mail";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -38,35 +38,37 @@ export function decodeFileName(name: string): string {
   return name;
 }
 
-/**
- * Same-origin proxy route, which forwards to the API's
- * `/mail/attachments/:id/file` with the bearer token attached — a plain
- * <a href> cannot set that header itself.
- *
- * `raw` skips the image viewer and asks for the bytes, so a saved file is
- * the image and not the page that displays it.
- */
-function fileUrl(attachmentId: string, opts?: { raw?: boolean }): string {
-  const token = useAuthStore.getState().accessToken || "";
-  const params = new URLSearchParams();
-  if (opts?.raw) params.set("raw", "1");
-  if (token) params.set("t", token);
-  const qs = params.toString();
-  return `/api/mail-file/${attachmentId}${qs ? `?${qs}` : ""}`;
+/** Long enough for the tab or the save dialog to have read the blob. */
+const BLOB_TTL_MS = 60_000;
+
+async function openAttachment(attachmentId: string, onError: () => void) {
+  // The tab has to be opened inside the click itself — opening it after the
+  // await below counts as a popup and browsers block it. It sits blank until
+  // the bytes land.
+  const tab = window.open("", "_blank");
+  try {
+    const blob = await mailApi.getAttachmentFile(attachmentId);
+    const url = URL.createObjectURL(blob);
+    if (tab) tab.location.href = url;
+    else window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), BLOB_TTL_MS);
+  } catch {
+    tab?.close();
+    onError();
+  }
 }
 
-async function downloadFile(url: string, fileName: string) {
+async function downloadAttachment(attachmentId: string, fileName: string, onError: () => void) {
   try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
+    const blob = await mailApi.getAttachmentFile(attachmentId);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = blobUrl;
+    a.href = url;
     a.download = fileName;
     a.click();
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    setTimeout(() => URL.revokeObjectURL(url), BLOB_TTL_MS);
   } catch {
-    window.open(url, "_blank");
+    onError();
   }
 }
 
@@ -93,20 +95,19 @@ export function AttachmentList({ attachments }: ListProps) {
           </div>
           <div className="flex items-center gap-1 shrink-0">
             {!/\.(xlsx?|csv|docx?)$/i.test(a.fileName) && (
-              <a
-                href={fileUrl(a.id)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
                 className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors"
+                onClick={() => openAttachment(a.id, () => toast.error(t("attachmentError")))}
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 {t("open")}
-              </a>
+              </button>
             )}
             <button
               type="button"
               className="inline-flex items-center gap-1 text-xs h-7 px-2 rounded-md hover:bg-accent transition-colors"
-              onClick={() => downloadFile(fileUrl(a.id, { raw: true }), decodeFileName(a.fileName))}
+              onClick={() => downloadAttachment(a.id, decodeFileName(a.fileName), () => toast.error(t("attachmentError")))}
             >
               <Download className="h-3.5 w-3.5" />
               {t("download")}

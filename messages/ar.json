@@ -516,6 +516,7 @@
     "close": "إغلاق",
     "previousSubject": "الموضوع السابق:",
     "previousBody": "النص السابق:",
+    "attachmentError": "تعذّر فتح المرفق — حاول مرة أخرى",
     "attachments": "المرفقات ({count})",
     "open": "فتح",
     "download": "تحميل",

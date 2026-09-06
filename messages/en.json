@@ -658,6 +658,7 @@
     "close": "Close",
     "previousSubject": "Previous subject:",
     "previousBody": "Previous body:",
+    "attachmentError": "Could not open the attachment — please try again",
     "attachments": "Attachments ({count})",
     "open": "Open",
     "download": "Download",

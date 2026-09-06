@@ -655,6 +655,7 @@
     "close": "Kapat",
     "previousSubject": "Önceki konu:",
     "previousBody": "Önceki içerik:",
+    "attachmentError": "Ek açılamadı — lütfen tekrar deneyin",
     "attachments": "Ekler ({count})",
     "open": "Aç",
     "download": "İndir",

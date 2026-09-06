@@ -158,6 +158,18 @@ export interface ArchiveFolder {
 }
 
 export const mailApi = {
+  /**
+   * The attachment's bytes. The route needs the bearer token, which a plain
+   * <a href> or window.open cannot carry — so the caller fetches the blob
+   * and opens that instead of linking straight at the API.
+   */
+  getAttachmentFile: async (attachmentId: string): Promise<Blob> => {
+    const res = await apiClient.get(`/mail/attachments/${attachmentId}/file`, {
+      responseType: "blob",
+    });
+    return res.data as Blob;
+  },
+
   send: async (dto: SendMailDto): Promise<MailMessage> => {
     const res = await apiClient.post("/mail/send", dto);
     return res.data.data;
