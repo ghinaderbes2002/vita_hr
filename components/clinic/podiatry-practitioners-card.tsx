@@ -26,14 +26,6 @@ interface StaffRow {
 }
 type StaffEnvelope = { data?: { items?: StaffRow[] }; items?: StaffRow[] };
 
-// The same clinical pool the assessment form draws "اسم الأخصائي" from.
-const CLINICAL_DEPTS = [
-  "الإدارة الطبية", "الادارة الطبية",
-  "العلاج الفيزيائي",
-  "الأطراف الصناعية", "الاطراف الصناعية",
-  "طب الأقدام", "طب الاقدام",
-];
-
 const sortedKey = (ids: string[]) => [...ids].sort().join(",");
 
 /**
@@ -69,10 +61,16 @@ export function PodiatryPractitionersCard({
   const { data: staffData } = useEmployeesBasicList();
   const staff = staffData as StaffRow[] | StaffEnvelope | undefined;
   const staffList: StaffRow[] = Array.isArray(staff) ? staff : staff?.data?.items ?? staff?.items ?? [];
-  const clinicalStaff = staffList.filter(
-    (e) =>
-      e.employmentStatus === "ACTIVE" &&
-      CLINICAL_DEPTS.some((d) => e.department?.nameAr?.includes(d)),
+  // Anyone who has not left. Two earlier versions of this list came up empty
+  // in the running system — first a hardcoded set of clinical department
+  // names that matched none of the real ones, then `employmentStatus ===
+  // "ACTIVE"`, which excludes every row where the field is absent or spelled
+  // some other way. So the test is inverted: only a status that positively
+  // says the person is gone removes them, and an unknown status keeps them.
+  // The department shows on each row and the search box covers a long list.
+  const GONE = ["TERMINATED", "RESIGNED", "INACTIVE", "SUSPENDED", "RETIRED"];
+  const assignableStaff = staffList.filter(
+    (e) => !GONE.includes((e.employmentStatus ?? "").toUpperCase()),
   );
 
   // Assigned ids are employee ids. Anyone who has since left the clinical pool
@@ -110,13 +108,13 @@ export function PodiatryPractitionersCard({
                         <span className="py-2 block text-sm text-muted-foreground">{t("noResults")}</span>
                       </CommandEmpty>
                       <CommandGroup>
-                        {clinicalStaff.map((e) => {
+                        {assignableStaff.map((e) => {
                           const label = `${e.firstNameAr} ${e.lastNameAr}`.trim();
                           const checked = selected.includes(e.id);
                           return (
                             <CommandItem
                               key={e.id}
-                              value={`${label} ${e.employeeNumber ?? ""}`}
+                              value={`${label} ${e.employeeNumber ?? ""} ${e.department?.nameAr ?? ""}`}
                               onSelect={() => toggle(e.id)}
                             >
                               <Check className={cn("me-2 h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
