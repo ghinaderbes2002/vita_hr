@@ -89,6 +89,17 @@ export function useLeaveRequest(id: string) {
   });
 }
 
+// Approval path for a leave request. Not permission-gated on the frontend —
+// anyone who can open the request can see who it is waiting on.
+export function useLeaveRequestApprovalSteps(id: string) {
+  return useQuery({
+    queryKey: ["leave-request-approval-steps", id],
+    queryFn: () => leaveRequestsApi.getApprovalSteps(id),
+    enabled: !!id,
+    retry: false,
+  });
+}
+
 // Create leave request
 export function useCreateLeaveRequest() {
   const queryClient = useQueryClient();

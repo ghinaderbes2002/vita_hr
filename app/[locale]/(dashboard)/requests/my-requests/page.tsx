@@ -244,12 +244,14 @@ export default function MyRequestsPage() {
               <TableCell>
                 {request.isHourlyLeave && request.equivalentDays != null
                   ? `${request.equivalentDays.toFixed(2)} ${t("common.day")}`
-                  : (() => {
-                      const days = request.totalDays > 0
-                        ? request.totalDays
-                        : Math.max(1, Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1);
-                      return `${days} ${t("common.days")}`;
-                    })()}
+                  : request.isHalfDay || request.totalDays === 0.5
+                    ? t("leaves.form.halfDay")
+                    : (() => {
+                        const days = request.totalDays > 0
+                          ? request.totalDays
+                          : Math.max(1, Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1);
+                        return `${days} ${t("common.days")}`;
+                      })()}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {request.isHourlyLeave && request.startTime
@@ -368,7 +370,9 @@ export default function MyRequestsPage() {
                           {" — "}
                           {req.isHourlyLeave && req.startTime && req.endTime
                             ? `${req.startTime} - ${req.endTime}`
-                            : `${calcDays} ${t("common.days")}`}
+                            : req.isHalfDay || req.totalDays === 0.5
+                              ? t("leaves.form.halfDay")
+                              : `${calcDays} ${t("common.days")}`}
                         </p>
                       </div>
                       <div className="flex gap-2 shrink-0">

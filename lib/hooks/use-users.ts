@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usersApi, CreateUserData, UpdateUserData } from "@/lib/api/users";
 import { PaginationParams } from "@/types";
@@ -29,20 +28,6 @@ export function useAllUsers() {
     queryFn: () => usersApi.getAll({ page: 1, limit: 500 }),
     staleTime: 5 * 60 * 1000,
   });
-}
-
-// user id → full name, for records that carry only the author's UUID
-// (e.g. the prosthetics final delivery / final evaluation `createdBy`).
-export function useUserNameById() {
-  const { data } = useAllUsers();
-  return useMemo(() => {
-    const map: Record<string, string> = {};
-    const users = (data as any)?.data?.items ?? (data as any)?.data ?? [];
-    for (const u of users) {
-      if (u?.id && u.fullName) map[u.id] = u.fullName;
-    }
-    return map;
-  }, [data]);
 }
 
 export function useCreateUser() {

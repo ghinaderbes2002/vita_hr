@@ -3125,6 +3125,7 @@
         "assign": "Uygulayıcı ata",
         "searchPlaceholder": "Ada veya personel numarasına göre ara...",
         "noResults": "Eşleşen personel yok",
+        "noDepartment": "Bölüm yok",
         "save": "Kaydet",
         "empty": "Bu vakaya atanmış uygulayıcı yok",
         "remove": "Kaldır",

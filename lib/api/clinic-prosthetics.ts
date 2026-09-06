@@ -643,8 +643,8 @@ export const clinicProstheticsApi = {
     return data?.data ?? data;
   },
 
-  // The record carries `createdBy` — the user id the backend stamps from the JWT
-  // of whoever POSTed it. Resolve it to a name via useUserNameById().
+  // The record carries `createdBy` + `createdByName` — stamped by the backend from
+  // the JWT of whoever POSTed it. `createdByName` is null on older records.
   getFinalEvaluation: async (id: string) => {
     const { data } = await apiClient.get(`/prosthetics/cases/${id}/final-evaluation`);
     return data?.data ?? data;
@@ -901,8 +901,9 @@ export const clinicProstheticsApi = {
     return data?.data ?? data;
   },
   // ── Final delivery — a record independent from the trial delivery ──────────
-  // Returns null when it hasn't been created yet. Carries `createdBy` — the user
-  // id stamped from the JWT of whoever POSTed it (resolve via useUserNameById()).
+  // Returns null when it hasn't been created yet. Carries `createdBy` +
+  // `createdByName`, stamped from the JWT of whoever POSTed it (name is null on
+  // older records).
   getFinalDelivery: async (caseId: string) => {
     const { data } = await apiClient.get(`/prosthetics/cases/${caseId}/final-delivery`);
     return data?.data ?? data ?? null;

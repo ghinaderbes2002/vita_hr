@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, ChevronsUpDown, Loader2, Save, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ interface StaffRow {
   department?: { id?: string; nameAr?: string; parent?: { id?: string } | null } | null;
   employmentStatus?: string;
 }
+type StaffEnvelope = { data?: { items?: StaffRow[] }; items?: StaffRow[] };
 
 interface DeptRow {
   id: string;
@@ -35,9 +36,12 @@ interface DeptRow {
 
 /** قسم الإدارة الطبية. Matched by code — names get re-spelled, codes do not. */
 const MEDICAL_ADMIN_DEPT_CODE = "VTX-DEP-000007";
-type StaffEnvelope = { data?: { items?: StaffRow[] }; items?: StaffRow[] };
+
+/** Only a status that positively says the person has left removes them. */
+const GONE = ["TERMINATED", "RESIGNED", "INACTIVE", "SUSPENDED", "RETIRED"];
 
 const sortedKey = (ids: string[]) => [...ids].sort().join(",");
+const fullName = (e: StaffRow) => `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim();
 
 /**
  * فريق المعالجين المعيّنين على حالة طب الأقدام.
@@ -70,37 +74,37 @@ export function PodiatryPractitionersCard({
   }, [savedKey]);
 
   const { data: staffData } = useEmployeesBasicList();
-  const staff = staffData as StaffRow[] | StaffEnvelope | undefined;
-  const staffList: StaffRow[] = Array.isArray(staff) ? staff : staff?.data?.items ?? staff?.items ?? [];
+  // Memoised because the filter below keys off it — a fresh array each render
+  // would defeat the memo.
+  const staffList: StaffRow[] = useMemo(() => {
+    const staff = staffData as StaffRow[] | StaffEnvelope | undefined;
+    return Array.isArray(staff) ? staff : staff?.data?.items ?? staff?.items ?? [];
+  }, [staffData]);
+
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
   const departments: DeptRow[] =
     (depsData as { data?: { items?: DeptRow[] }; items?: DeptRow[] } | undefined)?.data?.items ??
     (depsData as { items?: DeptRow[] } | undefined)?.items ??
     [];
-  const medicalAdmin = departments.find((d) => d.code === MEDICAL_ADMIN_DEPT_CODE);
+  const medicalAdminId = departments.find((d) => d.code === MEDICAL_ADMIN_DEPT_CODE)?.id;
 
-  // Only الإدارة الطبية — the department itself and anything filed under it.
-  const inMedicalAdmin = (e: StaffRow) =>
-    !!medicalAdmin &&
-    (e.department?.id === medicalAdmin.id || e.department?.parent?.id === medicalAdmin.id);
+  // الإدارة الطبية and anything filed under it. Until the departments land — or
+  // if that department is ever renumbered — fall back to the whole roster
+  // rather than an empty picker that silently blocks the assignment.
+  const assignableStaff = useMemo(() => {
+    const onStaff = staffList.filter((e) => !GONE.includes((e.employmentStatus ?? "").toUpperCase()));
+    if (!medicalAdminId) return onStaff;
+    return onStaff.filter(
+      (e) => e.department?.id === medicalAdminId || e.department?.parent?.id === medicalAdminId,
+    );
+  }, [staffList, medicalAdminId]);
 
-  // Only a status that positively says the person has left removes them: an
-  // absent or differently spelled status keeps them, since requiring
-  // "ACTIVE" once emptied this list entirely.
-  const GONE = ["TERMINATED", "RESIGNED", "INACTIVE", "SUSPENDED", "RETIRED"];
-  const onStaff = staffList.filter(
-    (e) => !GONE.includes((e.employmentStatus ?? "").toUpperCase()),
-  );
-  // Until the departments land — or if that department is ever renumbered —
-  // fall back to the whole roster rather than an empty picker that silently
-  // blocks the assignment.
-  const assignableStaff = medicalAdmin ? onStaff.filter(inMedicalAdmin) : onStaff;
-
-  // Assigned ids are employee ids. Anyone who has since left the clinical pool
-  // still shows — by name when we can resolve them, by id when we cannot.
+  const byId = useMemo(() => new Map(staffList.map((e) => [e.id, e])), [staffList]);
+  // Anyone already assigned still shows — by name when we can resolve them, by
+  // id when the roster no longer carries them.
   const nameOf = (id: string) => {
-    const e = staffList.find((x) => x.id === id);
-    return e ? `${e.firstNameAr} ${e.lastNameAr}`.trim() || id : id;
+    const e = byId.get(id);
+    return e ? fullName(e) || id : id;
   };
 
   const toggle = (id: string) =>
@@ -123,30 +127,35 @@ export function PodiatryPractitionersCard({
                     <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-72 p-0" align="start">
+                {/* Wide enough for a full name and its department side by side. */}
+                <PopoverContent className="w-md max-w-[calc(100vw-2rem)] p-0" align="start">
                   <Command filter={(v, s) => (v.toLowerCase().includes(s.toLowerCase()) ? 1 : 0)}>
-                    <CommandInput placeholder={t("searchPlaceholder")} />
+                    {/* The global input focus ring carries a 2px offset, which on a
+                        10-height input inside a 9-height row spills past the popover
+                        corner. Match the row and let the ring hug the field. */}
+                    <CommandInput
+                      placeholder={t("searchPlaceholder")}
+                      className="h-9 focus-visible:ring-offset-0"
+                    />
                     <CommandList>
                       <CommandEmpty>
-                        <span className="py-2 block text-sm text-muted-foreground">{t("noResults")}</span>
+                        <span className="block py-2 text-sm text-muted-foreground">{t("noResults")}</span>
                       </CommandEmpty>
                       <CommandGroup>
                         {assignableStaff.map((e) => {
-                          const label = `${e.firstNameAr} ${e.lastNameAr}`.trim();
+                          const label = fullName(e) || e.id;
+                          const dept = e.department?.nameAr ?? t("noDepartment");
                           const checked = selected.includes(e.id);
                           return (
                             <CommandItem
                               key={e.id}
-                              value={`${label} ${e.employeeNumber ?? ""} ${e.department?.nameAr ?? ""}`}
+                              value={`${label} ${e.employeeNumber ?? ""} ${dept}`}
                               onSelect={() => toggle(e.id)}
+                              className="gap-2"
                             >
-                              <Check className={cn("me-2 h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
+                              <Check className={cn("h-4 w-4 shrink-0", checked ? "opacity-100" : "opacity-0")} />
                               <span className="flex-1 truncate">{label}</span>
-                              {e.department?.nameAr && (
-                                <span className="text-[10px] text-muted-foreground truncate max-w-24">
-                                  {e.department.nameAr}
-                                </span>
-                              )}
+                              <span className="shrink-0 text-xs text-muted-foreground">{dept}</span>
                             </CommandItem>
                           );
                         })}

@@ -12,8 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/features/leave-requests/status-badge";
+import { ApprovalTimeline } from "@/components/features/requests/approval-timeline";
 import {
   useLeaveRequest,
+  useLeaveRequestApprovalSteps,
   useSubmitLeaveRequest,
   useCancelLeaveRequest,
   useApproveHr,
@@ -50,6 +52,9 @@ export default function ViewLeaveRequestPage() {
   const [rejectNotes, setRejectNotes] = useState("");
 
   const { data: request, isLoading } = useLeaveRequest(id);
+  // Visible to everyone who can open the request — no extra permission check here.
+  const { data: approvalSteps = [], isLoading: stepsLoading, isError: stepsError } =
+    useLeaveRequestApprovalSteps(id);
   const submitRequest = useSubmitLeaveRequest();
   const cancelRequest = useCancelLeaveRequest();
   const approveHr = useApproveHr();
@@ -195,9 +200,14 @@ export default function ViewLeaveRequestPage() {
               <Label>عدد الأيام</Label>
               <div className="text-sm">
                 {(request as any).isHourlyLeave && (request as any).equivalentDays != null
-                  ? `${(request as any).equivalentDays.toFixed(2)}`
-                  : Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1
-                } {t("common.days")}
+                  ? `${(request as any).equivalentDays.toFixed(2)} ${t("common.days")}`
+                  : request.isHalfDay || request.totalDays === 0.5
+                    ? "نصف يوم (0.5)"
+                    : `${
+                        request.totalDays > 0
+                          ? request.totalDays
+                          : Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1
+                      } ${t("common.days")}`}
               </div>
             </div>
 
@@ -261,6 +271,24 @@ export default function ViewLeaveRequestPage() {
           <p className="text-sm whitespace-pre-wrap">{request.reason}</p>
         </CardContent>
       </Card>
+
+      {/* Same component and step shape as the administrative requests path. The
+          number of steps varies: no SUBSTITUTE step without a substitute, no
+          DIRECT_MANAGER step when the manager is HR, and no steps at all when the
+          leave type needs no approval. There is no CEO step on this path. */}
+      <ApprovalTimeline
+        steps={approvalSteps}
+        isLoading={stepsLoading}
+        emptyMessage={
+          stepsError
+            ? "تعذّر جلب مسار الموافقة"
+            : request.leaveType?.requiresApproval === false
+              ? "هذا النوع من الإجازات لا يتطلب اعتماد"
+              : request.status === "DRAFT"
+                ? "لم يُرسل الطلب للاعتماد بعد"
+                : "لا يوجد مسار موافقة لهذا الطلب"
+        }
+      />
 
       {request.attachmentUrl && (
         <Card>

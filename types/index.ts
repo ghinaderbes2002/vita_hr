@@ -28,6 +28,8 @@ export type RequestStatus =
   | "DONE";
 
 export type ApproverRole =
+  // leave requests only — present when the request names a substitute
+  | "SUBSTITUTE"
   | "DIRECT_MANAGER"
   | "DEPARTMENT_MANAGER"
   | "TARGET_MANAGER"

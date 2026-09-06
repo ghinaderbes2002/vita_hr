@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import { ApiResponse } from "@/types";
+import { ApiResponse, ApprovalStep } from "@/types";
 
 export interface LeaveRequest {
   id: string;
@@ -22,6 +22,7 @@ export interface LeaveRequest {
     nameAr: string;
     nameEn: string;
     color?: string;
+    requiresApproval?: boolean;
   };
   startDate: string;
   endDate: string;
@@ -235,6 +236,17 @@ export const leaveRequestsApi = {
   substituteResponse: async (id: string, data: { approved: boolean; notes?: string }): Promise<LeaveRequest> => {
     const response = await apiClient.post(`/leave-requests/${id}/substitute-response`, data);
     return response.data?.data ?? response.data;
+  },
+
+  // Approval path — same step shape as /requests/:id/approval-steps, so it renders
+  // through the shared <ApprovalTimeline />. The step count varies per request:
+  // SUBSTITUTE only when a substitute is named, DIRECT_MANAGER dropped when the
+  // manager is HR themselves, and [] when the leave type needs no approval at all.
+  // There is no CEO step on this path.
+  getApprovalSteps: async (id: string): Promise<ApprovalStep[]> => {
+    const response = await apiClient.get(`/leave-requests/${id}/approval-steps`);
+    const data = response.data?.data ?? response.data;
+    return Array.isArray(data) ? data : [];
   },
 
   // Create hourly leave request

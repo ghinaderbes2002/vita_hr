@@ -4033,6 +4033,7 @@
         "assign": "Assign practitioner",
         "searchPlaceholder": "Search by name or employee number...",
         "noResults": "No matching employee",
+        "noDepartment": "No department",
         "save": "Save",
         "empty": "No practitioner is assigned to this case",
         "remove": "Remove",

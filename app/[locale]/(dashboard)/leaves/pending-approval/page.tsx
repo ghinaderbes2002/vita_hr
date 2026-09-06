@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/features/leave-requests/status-badge";
+import { ApprovalTimeline } from "@/components/features/requests/approval-timeline";
 import {
   useLeaveRequests,
   usePendingManagerLeaveRequests,
@@ -44,6 +45,7 @@ import {
   useRejectManager,
   useApproveHr,
   useRejectHr,
+  useLeaveRequestApprovalSteps,
 } from "@/lib/hooks/use-leave-requests";
 import { LeaveRequest } from "@/lib/api/leave-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,6 +74,9 @@ export default function PendingApprovalPage() {
   const [notes, setNotes] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [actionType, setActionType] = useState<"manager" | "hr">("manager");
+  // Approval path of the request open in the details dialog — fetched only while it is open.
+  const { data: detailsSteps = [], isLoading: detailsStepsLoading, isError: detailsStepsError } =
+    useLeaveRequestApprovalSteps(detailsDialogOpen && selectedRequest ? selectedRequest.id : "");
 
   const searchParams = useSearchParams();
   const { hasPermission, hasRole, isAdmin } = usePermissions();
@@ -600,7 +605,7 @@ export default function PendingApprovalPage() {
 
       {/* Details Dialog */}
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>تفاصيل طلب الإجازة</DialogTitle>
           </DialogHeader>
@@ -671,6 +676,20 @@ export default function PendingApprovalPage() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Same timeline as the administrative requests — shown to anyone who
+                  can open the request, with no extra permission check. */}
+              <ApprovalTimeline
+                steps={detailsSteps}
+                isLoading={detailsStepsLoading}
+                emptyMessage={
+                  detailsStepsError
+                    ? "تعذّر جلب مسار الموافقة"
+                    : selectedRequest.leaveType?.requiresApproval === false
+                      ? "هذا النوع من الإجازات لا يتطلب اعتماد"
+                      : "لا يوجد مسار موافقة لهذا الطلب"
+                }
+              />
             </div>
           )}
           <DialogFooter>

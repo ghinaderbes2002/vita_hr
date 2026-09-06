@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -43,6 +44,7 @@ const formSchema = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   reason: z.string().optional(),
+  isHalfDay: z.boolean().optional(),
   halfDayPeriod: z.enum(["MORNING", "AFTERNOON"]).optional(),
   substituteId: z.string().optional(),
   attachmentUrl: z.string().optional(),
@@ -172,6 +174,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
       startTime: "09:00",
       endTime: "11:00",
       reason: initialData?.reason || "",
+      isHalfDay: initialData?.isHalfDay ?? false,
       halfDayPeriod: initialData?.halfDayPeriod || undefined,
       substituteId: initialData?.substituteId || "",
       attachmentUrl: (initialData as any)?.attachmentUrl || "",
@@ -186,13 +189,19 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
   const isBereavement = selectedLeaveType?.code === "BEREAVEMENT";
   const isHourlyType = selectedLeaveType != null && selectedLeaveType.maxHoursPerMonth != null;
   const isAnnualLeave = selectedLeaveType?.code === "ANNUAL" || selectedLeaveType?.nameAr?.includes("سنوية");
+  // A dedicated half-day type is always half a day; annual leave opts in per request
+  // (backend: isHalfDay + halfDayPeriod on the same start/end date → 0.5 day deducted).
   const isHalfDayType = selectedLeaveType?.allowHalfDay === true && !isHourlyType && !isAnnualLeave;
+  const canOptInHalfDay = isAnnualLeave && !isHourlyType;
+  const halfDayOptIn = form.watch("isHalfDay") === true;
+  const isHalfDayRequest = isHalfDayType || (canOptInHalfDay && halfDayOptIn);
 
   const watchedStartDate = form.watch("startDate");
   const watchedEndDate = form.watch("endDate");
 
   const totalDaysPreview = (() => {
-    if (isHourlyType || isHalfDayType) return null;
+    if (isHourlyType) return null;
+    if (isHalfDayRequest) return watchedStartDate ? 0.5 : null;
     if (!watchedStartDate || !watchedEndDate) return null;
     const diff = Math.round((watchedEndDate.getTime() - watchedStartDate.getTime()) / 86400000) + 1;
     return diff > 0 ? diff : null;
@@ -210,11 +219,11 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
     if (code === "SICK")     return "يمكن التقديم يوماً مسبقاً أو استرجاعياً حتى 7 أيام";
 
     // سنوية / ساعية / نصف يوم / غير مدفوعة → نافذة 7 أيام بالاتجاهين
-    if (isHourlyType || isAnnualLeave || isHalfDayType) {
+    if (isHourlyType || isAnnualLeave || isHalfDayRequest) {
       if (totalDaysPreview && totalDaysPreview > 4) {
         return "الإجازة تتجاوز 4 أيام — يجب التقديم قبل 7 أيام على الأقل ولا يجوز استرجاعياً";
       }
-      if (isHourlyType || isHalfDayType) {
+      if (isHourlyType || isHalfDayRequest) {
         return "يمكن التقديم مسبقاً أو استرجاعياً حتى 7 أيام";
       }
       return "يمكن التقديم مسبقاً أو استرجاعياً حتى 7 أيام · إذا تجاوزت 4 أيام → 7 أيام إشعار مسبق إلزامي";
@@ -271,16 +280,28 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
       form.setError("startDate", { message: "تاريخ البداية مطلوب" });
       return;
     }
-    if (!data.endDate) {
+    if (isHalfDayRequest && !data.halfDayPeriod) {
+      form.setError("halfDayPeriod", { message: "اختر فترة نصف اليوم" });
+      return;
+    }
+    // Half a day is always one date — the backend expects startDate === endDate.
+    const endDate = isHalfDayRequest ? data.startDate : data.endDate;
+    if (!endDate) {
       form.setError("endDate", { message: "تاريخ الانتهاء مطلوب" });
       return;
     }
     const submitData: CreateLeaveRequestData = {
       leaveTypeId: data.leaveTypeId,
       startDate: format(data.startDate, "yyyy-MM-dd"),
-      endDate: format(data.endDate, "yyyy-MM-dd"),
+      endDate: format(endDate, "yyyy-MM-dd"),
       ...(data.reason && { reason: data.reason }),
-      ...(isHalfDayType && { isHalfDay: true, halfDayPeriod: data.halfDayPeriod }),
+      // Sent as false when the opt-in is turned off, so editing an existing
+      // half-day annual request back to a full day actually clears the flag.
+      ...(isHalfDayRequest
+        ? { isHalfDay: true, halfDayPeriod: data.halfDayPeriod }
+        : canOptInHalfDay
+          ? { isHalfDay: false }
+          : {}),
       ...(data.substituteId && { substituteId: data.substituteId }),
       ...(data.attachmentUrl && { attachmentUrl: data.attachmentUrl }),
       ...(isBereavement && data.deceasedRelation && { deceasedRelation: data.deceasedRelation }),
@@ -475,7 +496,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
                         selected={field.value}
                         onSelect={(d) => {
                           field.onChange(d);
-                          if (isHalfDayType && d) form.setValue("endDate", d);
+                          if (isHalfDayRequest && d) form.setValue("endDate", d);
                         }}
                         disabled={(date) => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - 7); return date < d; }}
                         initialFocus
@@ -487,7 +508,7 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
               )}
             />
 
-            {!isHalfDayType && (
+            {!isHalfDayRequest && (
               <FormField
                 control={form.control}
                 name="endDate"
@@ -535,14 +556,49 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
           </div>
         )}
 
+        {canOptInHalfDay && (
+          <FormField
+            control={form.control}
+            name="isHalfDay"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start gap-3 rounded-md border p-3">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value === true}
+                    onCheckedChange={(checked) => {
+                      const on = checked === true;
+                      field.onChange(on);
+                      // Half a day is a single date; clear the period when switching back.
+                      if (on) {
+                        if (watchedStartDate) form.setValue("endDate", watchedStartDate);
+                      } else {
+                        form.setValue("halfDayPeriod", undefined);
+                      }
+                    }}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="space-y-0.5">
+                  <FormLabel className="font-normal cursor-pointer">{t("leaves.form.halfDay")}</FormLabel>
+                  <p className="text-xs text-muted-foreground">{t("leaves.form.halfDayDescription")}</p>
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
+
         {totalDaysPreview !== null && (
           <div className="rounded-md bg-blue-50 border border-blue-100 px-4 py-2.5 flex flex-wrap gap-2 items-center justify-between text-sm">
             <span className="text-muted-foreground">عدد الأيام</span>
-            <span className="font-semibold text-blue-700">{totalDaysPreview} {totalDaysPreview === 1 ? "يوم" : "أيام"}</span>
+            <span className="font-semibold text-blue-700">
+              {totalDaysPreview === 0.5
+                ? `${t("leaves.form.halfDay")} (0.5)`
+                : `${totalDaysPreview} ${totalDaysPreview === 1 ? "يوم" : "أيام"}`}
+            </span>
           </div>
         )}
 
-        {isHalfDayType && (
+        {isHalfDayRequest && (
           <FormField
             control={form.control}
             name="halfDayPeriod"

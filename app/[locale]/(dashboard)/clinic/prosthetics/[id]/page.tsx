@@ -44,7 +44,6 @@ import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
-import { useUserNameById } from "@/lib/hooks/use-users";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import {
@@ -3328,15 +3327,13 @@ function Section({ title, children, action }: { title: string; children: React.R
   );
 }
 
-// The backend stamps `createdBy` from the JWT of whoever POSTed the form, so it
-// names the person who typed it in — not necessarily the one signing it. Prefers
-// a `createdByName` when the endpoint sends one (as the podiatry ones do), and
-// otherwise resolves the UUID against the users list; renders nothing when the
-// name can't be resolved (e.g. the user has no access to /users).
-function FilledByLine({ userId, userName }: { userId?: string | null; userName?: string | null }) {
+// The backend stamps `createdBy`/`createdByName` from the JWT of whoever POSTed
+// the form, so it names the person who typed it in — not necessarily the one
+// signing it. `createdByName` is null for records written before the backend
+// started saving it (and for sessions still on a pre-change JWT), so render
+// nothing rather than a bare UUID.
+function FilledByLine({ name }: { name?: string | null }) {
   const t = useTranslations("clinic.prosthetics.case");
-  const userNameById = useUserNameById();
-  const name = userName || (userId ? userNameById[userId] : undefined);
   if (!name) return null;
   return (
     <span className="text-xs text-muted-foreground">
@@ -7744,7 +7741,7 @@ export default function ProstheticsCasePage() {
             title={t("finalEval.medicalInfoTitle")}
             action={
               <div className="flex items-center gap-2">
-                <FilledByLine userId={(finalEvalData as any)?.createdBy} userName={(finalEvalData as any)?.createdByName} />
+                <FilledByLine name={(finalEvalData as any)?.createdByName} />
                 {finalEvalLocked ? <SavedBadge /> : null}
               </div>
             }
@@ -8070,7 +8067,7 @@ export default function ProstheticsCasePage() {
           ) : (
             <Section
               title={t("finalDelivery.finalTitle")}
-              action={<FilledByLine userId={(finalDelivery as any)?.createdBy} userName={(finalDelivery as any)?.createdByName} />}
+              action={<FilledByLine name={(finalDelivery as any)?.createdByName} />}
             >
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
