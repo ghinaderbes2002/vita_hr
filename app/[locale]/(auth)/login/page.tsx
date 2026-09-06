@@ -83,14 +83,16 @@ export default function LoginPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold">Vita HR</h1>
-              <p className="text-sm text-slate-300">نظام إدارة الموارد البشرية</p>
+              <p className="text-sm text-slate-300">نظام إدارة المركز الطبي والموارد البشرية</p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">مرحباً بك في نظام إدارة الموارد البشرية</h2>
+            <h2 className="text-2xl font-semibold">مرحباً بك في منصة إدارة المركز المتكاملة</h2>
             <p className="text-slate-300 leading-relaxed">
-              نظام شامل ومتكامل لإدارة شؤون الموظفين، الحضور والانصراف، الإجازات، والرواتب
+              منصة واحدة تجمع إدارة الموارد البشرية والعيادة الطبية — من شؤون الموظفين
+              والحضور والإجازات والرواتب، إلى ملفات المرضى والمواعيد والأطراف الصناعية
+              والعلاج الفيزيائي وطب الأقدام والمخزون الطبي.
             </p>
           </div>
 
