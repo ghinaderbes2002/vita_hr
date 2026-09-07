@@ -3649,6 +3649,8 @@
         "fittingDate": "Fitting Date",
         "generalNotes": "General Notes",
         "committeeFinalTitle": "Committee's Final Opinion",
+        "saveOpinion": "Save opinion",
+        "opinionSavedBy": "Saved by",
         "opinion": {
           "physioOpinion": "Physiotherapist's opinion",
           "departmentHeadOpinion": "Department head's opinion",

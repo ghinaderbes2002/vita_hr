@@ -655,6 +655,14 @@ export const clinicProstheticsApi = {
     return data?.data ?? data;
   },
 
+  // Saves only the fields sent, leaving the rest of the record untouched — this
+  // is what lets each committee member store their own opinion without wiping
+  // anyone else's. Rejected with 409 once the medical director has signed.
+  patchFinalEvaluation: async (id: string, dto: Partial<FinalEvaluationDto>) => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${id}/final-evaluation`, dto);
+    return data?.data ?? data;
+  },
+
   signFinalEvaluation: async (id: string, dto: DirectorSignDto) => {
     const { data } = await apiClient.post(`/prosthetics/cases/${id}/final-evaluation/director-sign`, dto);
     return data?.data ?? data;
@@ -1164,6 +1172,17 @@ export interface GaitAnalysisFormDto {
   suspensionSystemOtherNotes?: string;
   prostheticIssuesOtherNotes?: string;
   likelyCausesOtherNotes?: string;
+}
+
+/** Per-opinion authorship the backend stamps on a PATCH. */
+export interface FinalEvaluationRecord extends FinalEvaluationDto {
+  id?: string;
+  /** True once the medical director has signed — every PATCH then returns 409. */
+  isLocked?: boolean;
+  createdBy?: string | null;
+  createdByName?: string | null;
+  /** Each opinion also comes back as `<field>ByName` and `<field>At`. */
+  [key: string]: unknown;
 }
 
 export interface FinalEvaluationDto {

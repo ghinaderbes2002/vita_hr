@@ -3783,6 +3783,8 @@
         "fittingDate": "تاريخ التركيب",
         "generalNotes": "ملاحظات عامة",
         "committeeFinalTitle": "الرأي النهائي للجنة",
+        "saveOpinion": "حفظ الرأي",
+        "opinionSavedBy": "حُفظ بواسطة",
         "opinion": {
           "physioOpinion": "رأي المعالج الفيزيائي",
           "departmentHeadOpinion": "رأي رئيس القسم",

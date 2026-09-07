@@ -2741,6 +2741,8 @@
         "fittingDate": "Uygulama Tarihi",
         "generalNotes": "Genel Notlar",
         "committeeFinalTitle": "Komitenin Nihai Görüşü",
+        "saveOpinion": "Görüşü kaydet",
+        "opinionSavedBy": "Kaydeden",
         "opinion": {
           "physioOpinion": "Fizyoterapist görüşü",
           "departmentHeadOpinion": "Bölüm başkanı görüşü",

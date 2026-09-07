@@ -72,7 +72,11 @@ export interface Appointment {
   therapists?: { id: string; firstName?: string; lastName?: string; firstNameAr?: string; lastNameAr?: string }[] | null;
   patientName?: string | null;
   patientNumber?: string | null;
-  /** The registered patient's phone; empty string for a walk-in with no record. */
+  /**
+   * The patient's WhatsApp number, falling back to their plain phone. Sent by
+   * both /appointments and /appointments/calendar; empty for a booking made by
+   * name, which has no patient record behind it.
+   */
   phone?: string | null;
   createdAt: string;
   updatedAt: string;

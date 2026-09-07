@@ -94,6 +94,7 @@ import {
   useSaveGaitAnalysisForm,
   useArchiveGaitAnalysisForm,
   useFinalEvaluation,
+  usePatchFinalEvaluation,
 } from "@/lib/hooks/use-clinic-prosthetics";
 import {
   clinicProstheticsApi,
@@ -3609,12 +3610,19 @@ function MeasurementHistoryList({
 // Opinion field that stays collapsed to just its label until clicked — keeps the
 // committee section short when most opinions are left empty.
 function CollapsibleOpinionField({
-  label, value, onChange,
+  label, value, onChange, onSave, saving = false, dirty = false, savedByName, savedAt,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  /** Saves this one opinion on its own; omitted while the evaluation is locked. */
+  onSave?: () => void;
+  saving?: boolean;
+  dirty?: boolean;
+  savedByName?: string | null;
+  savedAt?: string | null;
 }) {
+  const t = useTranslations("clinic.prosthetics.case");
   const [open, setOpen] = useState(false);
   return (
     <div className="space-y-2">
@@ -3634,7 +3642,24 @@ function CollapsibleOpinionField({
         {!open && value && <span className="truncate text-xs text-muted-foreground">— {value}</span>}
       </div>
       {open && (
-        <Textarea autoFocus rows={2} className="resize-none text-xs" value={value} onChange={(e) => onChange(e.target.value)} />
+        <>
+          <Textarea autoFocus rows={2} className="resize-none text-xs" value={value} onChange={(e) => onChange(e.target.value)} />
+          <div className="flex flex-wrap items-center gap-2">
+            {onSave && (
+              <Button type="button" size="sm" variant="outline" className="h-7 gap-1.5 text-xs"
+                onClick={onSave} disabled={saving || !dirty}>
+                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                {t("finalEval.saveOpinion")}
+              </Button>
+            )}
+            {savedByName && (
+              <span className="text-[11px] text-muted-foreground">
+                {t("finalEval.opinionSavedBy")}: {savedByName}
+                {savedAt ? ` — ${new Date(savedAt).toLocaleDateString("en-GB")}` : ""}
+              </span>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -3739,6 +3764,9 @@ export default function ProstheticsCasePage() {
   const addConsumable = useAddConsumable();
   const { data: finalEvalData } = useFinalEvaluation(id);
   const submitFinalEval = useSubmitFinalEvaluation();
+  const patchFinalEval = usePatchFinalEvaluation();
+  // Which opinion's save button is spinning — the mutation is shared by all six.
+  const [savingOpinion, setSavingOpinion] = useState<string | null>(null);
   const signFinalEval = useSignFinalEvaluation();
   const submitDelivery = useSubmitDelivery();
   const signDelivery = useSignDelivery();
@@ -3921,7 +3949,10 @@ export default function ProstheticsCasePage() {
   }, [finalEvalKey]);
   // Once the final evaluation has been saved it is locked: the whole tab turns
   // read-only so a recorded committee decision can't be altered afterwards.
-  const finalEvalLocked = !!(finalEvalData as any)?.id || submitFinalEval.isSuccess;
+  // Editable until the medical director signs — the backend reports that with
+  // `isLocked`. It used to freeze as soon as a record existed, which stopped the
+  // rest of the committee from ever entering their opinions.
+  const finalEvalLocked = (finalEvalData as any)?.isLocked === true;
   const [finalSignOpen, setFinalSignOpen] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({ deliveryDate: new Date().toISOString().slice(0, 10), notes: "" });
   const [deliverySignOpen, setDeliverySignOpen] = useState(false);
@@ -4955,13 +4986,20 @@ export default function ProstheticsCasePage() {
 
   const handleSubmitFinalEval = async () => {
     const { managerNotes, patientFileComplete, ...dto } = finalEvalForm;
-    await submitFinalEval.mutateAsync({ id, dto: {
+    const payload = {
       ...dto,
       supervisorId: dto.supervisorId || undefined,
       fittingDate: dto.fittingDate || undefined,
       socksDelivered: dto.socksDelivered ?? undefined,
       linersDelivered: dto.linersDelivered ?? undefined,
-    }});
+    };
+    // The record is created once and patched from then on — the form stays open
+    // for the rest of the committee, so this button can be pressed again.
+    if ((finalEvalData as any)?.id) {
+      await patchFinalEval.mutateAsync({ id, dto: payload });
+    } else {
+      await submitFinalEval.mutateAsync({ id, dto: payload });
+    }
   };
 
   const handleSignFinalEval = async (sig: string) => {
@@ -7795,6 +7833,17 @@ export default function ProstheticsCasePage() {
                   label={t(`finalEval.opinion.${fld}`)}
                   value={(finalEvalForm as any)[fld] ?? ""}
                   onChange={(v) => setFinalEvalForm((f) => ({ ...f, [fld]: v }))}
+                  onSave={finalEvalLocked ? undefined : () => {
+                    setSavingOpinion(fld);
+                    patchFinalEval.mutate(
+                      { id, dto: { [fld]: (finalEvalForm as any)[fld] ?? "" } },
+                      { onSettled: () => setSavingOpinion(null) },
+                    );
+                  }}
+                  saving={savingOpinion === fld}
+                  dirty={((finalEvalForm as any)[fld] ?? "") !== ((finalEvalData as any)?.[fld] ?? "")}
+                  savedByName={(finalEvalData as any)?.[`${fld}ByName`] ?? null}
+                  savedAt={(finalEvalData as any)?.[`${fld}At`] ?? null}
                 />
               ))}
             </div>
@@ -7888,8 +7937,12 @@ export default function ProstheticsCasePage() {
           {/* ── الأزرار ── */}
           {!finalEvalLocked && (
             <div className="flex gap-2">
-              <Button onClick={handleSubmitFinalEval} disabled={submitFinalEval.isPending} className="flex-1 gap-2">
-                {submitFinalEval.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Button
+                onClick={handleSubmitFinalEval}
+                disabled={submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)}
+                className="flex-1 gap-2"
+              >
+                {(submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)) && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t("finalEval.saveEval")}
               </Button>
             </div>

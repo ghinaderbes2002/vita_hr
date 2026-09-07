@@ -352,6 +352,27 @@ export function useSubmitFinalEvaluation() {
   });
 }
 
+// Saves a single field of the final evaluation — used by the per-opinion save
+// buttons, so two committee members editing different opinions never collide.
+export function usePatchFinalEvaluation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: Partial<FinalEvaluationDto> }) =>
+      clinicProstheticsApi.patchFinalEvaluation(id, dto),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-final-eval", id] });
+      toast.success("تم حفظ الرأي");
+    },
+    onError: (e: any) => {
+      if (e?.response?.status === 409) {
+        toast.error("التقييم مقفل بعد توقيع المدير الطبي — لا يمكن التعديل");
+        return;
+      }
+      toast.error(e?.response?.data?.message || "فشل حفظ الرأي");
+    },
+  });
+}
+
 export function useSignFinalEvaluation() {
   const qc = useQueryClient();
   return useMutation({
