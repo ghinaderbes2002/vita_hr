@@ -26,7 +26,7 @@ import {
   ALL_APPOINTMENT_TYPES, PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
   MEDICAL_ADMIN_APPOINTMENT_TYPES, PHYSIO_APPOINTMENT_TYPES,
 } from "@/lib/api/clinic-appointments";
-import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
+import { useClinicPatients, useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
 import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
@@ -323,9 +323,33 @@ export default function AppointmentsPage() {
       : (detailAppt.date ?? "");
   const detailTimeLabel = detailAppt ? formatClinicTime(detailAppt.startTime) : "";
 
-  // The appointment carries the registered patient's phone; a walk-in booked by
-  // name has no record behind it, so the field comes back empty.
-  const detailPatientPhone = detailAppt?.phone || "";
+  // `phone` on the appointment is the quick path, but the list endpoint does not
+  // always carry it, and a booking made by name has no patientId either. So fall
+  // back to the patient record: by id, then by patient number, then by exact name.
+  const detailApptPhone = detailAppt?.phone || "";
+  const detailPatientNumber =
+    detailAppt?.patientNumber || detailAppt?.patient?.patientNumber || "";
+  const needsPatientLookup = !!detailAppt && !detailApptPhone;
+  const { data: detailPatientById } = useClinicPatient(
+    needsPatientLookup ? (detailAppt?.patientId ?? "") : "",
+  );
+  // Searched by first name rather than the full one: the backend matches a single
+  // field, so "ابتسام دنيا" finds nobody while "ابتسام" does. The exact full-name
+  // check below is what keeps the wrong patient out.
+  const detailLookupTerm = needsPatientLookup && !detailPatientById
+    ? (detailPatientNumber || detailPatientName.trim().split(/\s+/)[0] || "")
+    : "";
+  const { data: detailPatientSearch } = useClinicPatients(
+    { search: detailLookupTerm, limit: 50 },
+    !!detailLookupTerm,
+  );
+  const detailPatient = detailPatientById ?? (detailPatientSearch?.items ?? []).find((p) =>
+    detailPatientNumber
+      ? p.patientNumber === detailPatientNumber
+      : `${p.firstName} ${p.lastName}`.trim() === detailPatientName.trim(),
+  );
+  const detailPatientPhone =
+    detailApptPhone || detailPatient?.whatsapp || detailPatient?.phone || "";
 
   // Build calendar grid
   const firstDayOfWeek = startOfMonth(viewYear, viewMonth).getDay();
@@ -603,9 +627,9 @@ export default function AppointmentsPage() {
                 date={detailDateLabel}
                 time={detailTimeLabel}
                 disabledReason={
-                  detailAppt.patientId
+                  detailPatient || detailAppt.patientId
                     ? "لا يوجد رقم هاتف محفوظ في ملف هذا المريض"
-                    : "الموعد محجوز باسم غير مسجّل — لا يوجد ملف مريض ولا رقم"
+                    : "لم يُعثر على ملف المريض — الموعد محجوز باسم غير مسجّل"
                 }
               />
             )}

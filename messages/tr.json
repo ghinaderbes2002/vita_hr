@@ -3140,6 +3140,8 @@
         "assign": "Uygulayıcı ata",
         "searchPlaceholder": "Ada veya personel numarasına göre ara...",
         "noResults": "Eşleşen personel yok",
+        "staffLoading": "Personel listesi yükleniyor...",
+        "staffUnavailable": "Personel listesi yüklenemedi — sunucu bağlantısını kontrol edin",
         "noDepartment": "Bölüm yok",
         "save": "Kaydet",
         "empty": "Bu vakaya atanmış uygulayıcı yok",

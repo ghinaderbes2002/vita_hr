@@ -73,7 +73,7 @@ export function PodiatryPractitionersCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedKey]);
 
-  const { data: staffData } = useEmployeesBasicList();
+  const { data: staffData, isLoading: staffLoading } = useEmployeesBasicList();
   // Memoised because the filter below keys off it — a fresh array each render
   // would defeat the memo.
   const staffList: StaffRow[] = useMemo(() => {
@@ -146,6 +146,11 @@ export function PodiatryPractitionersCard({
                       <CommandEmpty>
                         <span className="block py-2 text-sm text-muted-foreground">{t("noResults")}</span>
                       </CommandEmpty>
+                      {assignableStaff.length === 0 && (
+                        <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                          {staffLoading ? t("staffLoading") : t("staffUnavailable")}
+                        </div>
+                      )}
                       <CommandGroup>
                         {assignableStaff.map((e) => {
                           const label = fullName(e) || e.id;
