@@ -265,7 +265,12 @@ export default function PodiatryReceptionPage() {
           )}
         </TabsList>
 
-        <TabsContent value="reception" className="mt-4">
+        <TabsContent value="reception" className="mt-4 space-y-4">
+          <PodiatryPractitionersCard
+            receptionId={id}
+            practitionerIds={reception.practitionerIds ?? []}
+          />
+
           <Card>
             <CardHeader className="pb-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -389,11 +394,6 @@ export default function PodiatryReceptionPage() {
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-4 space-y-4">
-          <PodiatryPractitionersCard
-            receptionId={id}
-            practitionerIds={reception.practitionerIds ?? []}
-          />
-
           <PodiatryAssessmentPanel
             receptionId={id}
             session={session}
