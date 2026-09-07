@@ -3947,12 +3947,11 @@ export default function ProstheticsCasePage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalEvalKey]);
-  // Once the final evaluation has been saved it is locked: the whole tab turns
-  // read-only so a recorded committee decision can't be altered afterwards.
   // Editable until the medical director signs — the backend reports that with
-  // `isLocked`. It used to freeze as soon as a record existed, which stopped the
-  // rest of the committee from ever entering their opinions.
-  const finalEvalLocked = (finalEvalData as any)?.isLocked === true;
+  // `isLocked`, and rejects a later PATCH with 409. It used to freeze as soon as
+  // a record existed, which stopped the rest of the committee from ever entering
+  // their opinions.
+  const finalEvalLocked = finalEvalData?.isLocked === true;
   const [finalSignOpen, setFinalSignOpen] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({ deliveryDate: new Date().toISOString().slice(0, 10), notes: "" });
   const [deliverySignOpen, setDeliverySignOpen] = useState(false);
@@ -4985,17 +4984,32 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSubmitFinalEval = async () => {
-    const { managerNotes, patientFileComplete, ...dto } = finalEvalForm;
-    const payload = {
-      ...dto,
-      supervisorId: dto.supervisorId || undefined,
-      fittingDate: dto.fittingDate || undefined,
-      socksDelivered: dto.socksDelivered ?? undefined,
-      linersDelivered: dto.linersDelivered ?? undefined,
+    const f = finalEvalForm;
+    // Built field by field on purpose: the form state is seeded by spreading the
+    // whole server record, so it also carries `isLocked`, `id` and the per-opinion
+    // `…ByName`/`…At` stamps — none of which belong in the payload.
+    const payload: FinalEvaluationDto = {
+      supervisorId: f.supervisorId || undefined,
+      residualLimbCondition: f.residualLimbCondition,
+      suspensionSystemUsed: f.suspensionSystemUsed,
+      socksDelivered: f.socksDelivered ?? undefined,
+      linersDelivered: f.linersDelivered ?? undefined,
+      fittingDate: f.fittingDate || undefined,
+      generalNotes: f.generalNotes,
+      physioOpinion: f.physioOpinion,
+      departmentHeadOpinion: f.departmentHeadOpinion,
+      prosthetistOpinion: f.prosthetistOpinion,
+      prosthetistSupervisorOpinion: f.prosthetistSupervisorOpinion,
+      committeeHeadOpinion: f.committeeHeadOpinion,
+      expertOpinion: f.expertOpinion,
+      readyForDelivery: f.readyForDelivery,
+      needsFollowUp: f.needsFollowUp,
+      followUpPlan: f.followUpPlan,
+      medicalDirectorNotes: f.medicalDirectorNotes,
     };
     // The record is created once and patched from then on — the form stays open
     // for the rest of the committee, so this button can be pressed again.
-    if ((finalEvalData as any)?.id) {
+    if (finalEvalData?.id) {
       await patchFinalEval.mutateAsync({ id, dto: payload });
     } else {
       await submitFinalEval.mutateAsync({ id, dto: payload });
@@ -7841,9 +7855,9 @@ export default function ProstheticsCasePage() {
                     );
                   }}
                   saving={savingOpinion === fld}
-                  dirty={((finalEvalForm as any)[fld] ?? "") !== ((finalEvalData as any)?.[fld] ?? "")}
-                  savedByName={(finalEvalData as any)?.[`${fld}ByName`] ?? null}
-                  savedAt={(finalEvalData as any)?.[`${fld}At`] ?? null}
+                  dirty={((finalEvalForm as any)[fld] ?? "") !== (finalEvalData?.[fld] ?? "")}
+                  savedByName={finalEvalData?.[`${fld}ByName`] ?? null}
+                  savedAt={finalEvalData?.[`${fld}At`] ?? null}
                 />
               ))}
             </div>
