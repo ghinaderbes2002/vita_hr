@@ -1545,7 +1545,7 @@
       "SERVICE_PROVIDER": "مزود خدمة"
     },
     "maritalStatuses": {
-      "SINGLE": "أعزب",
+      "SINGLE": "عازب",
       "MARRIED": "متزوج",
       "DIVORCED": "مطلق",
       "WIDOWED": "أرمل"

@@ -302,7 +302,7 @@ const GENDER_OPTIONS = [
   { value: "FEMALE", label: "أنثى" },
 ];
 const MARITAL_STATUS_OPTIONS = [
-  { value: "SINGLE", label: "أعزب" },
+  { value: "SINGLE", label: "عازب" },
   { value: "MARRIED", label: "متزوج" },
   { value: "DIVORCED", label: "مطلق" },
   { value: "WIDOWED", label: "أرمل" },
@@ -793,7 +793,7 @@ export default function EmployeeDetailsPage() {
   };
 
   const MARITAL_STATUS_LABELS: Record<string, string> = {
-    SINGLE: "أعزب",
+    SINGLE: "عازب",
     MARRIED: "متزوج",
     DIVORCED: "مطلق",
     WIDOWED: "أرمل",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X, AlertCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { mailApi } from "@/lib/api/mail";
 import {
   useUpdateRead, useUpdateStar, useMoveMail,
@@ -42,10 +42,19 @@ export function MailList({
   const [selected, setSelected] = useState<string[]>([]);
   const [showDateFilter, setShowDateFilter] = useState(false);
 
+  // The input stays on `search` so typing is instant; the query runs on the
+  // settled value, so a request is sent once the user pauses instead of on
+  // every keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(id);
+  }, [search]);
+
   const params = {
     page,
     limit: LIMIT,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     archiveFolderId: archiveFolderId || undefined,
@@ -63,6 +72,7 @@ export function MailList({
         case "TRASH":   return mailApi.getTrash(params);
       }
     },
+    placeholderData: keepPreviousData,
   });
 
   const updateRead = useUpdateRead();
@@ -132,21 +142,19 @@ export function MailList({
     }
   };
 
-  if (activeQuery.isLoading) {
-    return (
-      <div className="divide-y">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3">
-            <Skeleton className="h-4 w-4 rounded" />
-            <Skeleton className="h-4 w-4 rounded-full" />
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-4 flex-1" />
-            <Skeleton className="h-4 w-12" />
-          </div>
-        ))}
-      </div>
-    );
-  }
+  const listSkeleton = (
+    <div className="divide-y">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-3">
+          <Skeleton className="h-4 w-4 rounded" />
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 flex-1" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -247,7 +255,9 @@ export function MailList({
 
       {/* List */}
       <div className="flex-1 overflow-y-auto divide-y">
-        {items.length === 0 ? (
+        {activeQuery.isLoading ? (
+          listSkeleton
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-muted-foreground text-sm gap-2">
             <MailOpen className="h-10 w-10 opacity-30" />
             {t("noMessages")}

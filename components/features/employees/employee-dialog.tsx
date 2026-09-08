@@ -1009,7 +1009,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     name="workType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>نوع العمل ({t("common.optional")})</FormLabel>
+                        <FormLabel>نمط الدوام ({t("common.optional")})</FormLabel>
                         <Select onValueChange={(v) => field.onChange(v === "UNSPECIFIED" ? undefined : v)} value={field.value || "UNSPECIFIED"}>
                           <FormControl>
                             <SelectTrigger><SelectValue placeholder="غير محدد" /></SelectTrigger>
@@ -1552,7 +1552,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
-                          <SelectItem value="SINGLE">أعزب</SelectItem>
+                          <SelectItem value="SINGLE">عازب</SelectItem>
                           <SelectItem value="MARRIED">متزوج</SelectItem>
                           <SelectItem value="DIVORCED">مطلق</SelectItem>
                           <SelectItem value="WIDOWED">أرمل</SelectItem>

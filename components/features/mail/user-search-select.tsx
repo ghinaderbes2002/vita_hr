@@ -1,16 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Search, X, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { assetUrl, cn } from "@/lib/utils";
 import { useEmployees, useEmployeesBasicList, useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { employeesApi } from "@/lib/api/employees";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useAllUsers } from "@/lib/hooks/use-users";
+import type { Employee } from "@/types";
 import {
   Select,
   SelectContent,
@@ -37,6 +41,24 @@ function isExcludedTitle(jobTitle: any): boolean {
     .filter(Boolean)
     .map((s: string) => s.trim().toLowerCase());
   return candidates.some((c) => SELECT_ALL_EXCLUDED_TITLES.has(c));
+}
+
+/** Card footprint used when placing the hover preview. */
+const PREVIEW_W = 112;
+const PREVIEW_H = 130;
+
+/**
+ * Centres the preview under the hovered chip, clamped to the viewport, and
+ * flips above the chip when there is no room below.
+ */
+function previewPosition(p: { top: number; bottom: number; left: number; right: number }): React.CSSProperties {
+  const vw = typeof window === "undefined" ? PREVIEW_W + 16 : window.innerWidth;
+  const vh = typeof window === "undefined" ? PREVIEW_H + 16 : window.innerHeight;
+  const centered = p.left + (p.right - p.left) / 2 - PREVIEW_W / 2;
+  const left = Math.min(Math.max(8, centered), vw - PREVIEW_W - 8);
+  const below = p.bottom + 6;
+  const top = below + PREVIEW_H > vh - 8 ? Math.max(8, p.top - PREVIEW_H - 6) : below;
+  return { top, left };
 }
 
 interface Props {
@@ -100,6 +122,42 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
     }
     return set;
   }, [fullEmployeesData, excludedJobTitleIds]);
+  // Photo per employee, read off the full list this component already fetches.
+  const photoById = useMemo(() => {
+    const map: Record<string, string> = {};
+    const payload = (fullEmployeesData as { data?: Employee[] | { items?: Employee[] } } | undefined)?.data;
+    const emps: Employee[] = Array.isArray(payload) ? payload : payload?.items ?? [];
+    for (const e of emps) {
+      if (e?.id && e.profilePhoto) map[e.id] = e.profilePhoto;
+    }
+    return map;
+  }, [fullEmployeesData]);
+
+  // Hovering a chosen recipient's chip shows that employee's photo. Position is
+  // taken from the chip's own rect and rendered fixed, so no ancestor's overflow
+  // can clip the preview.
+  const [preview, setPreview] = useState<
+    { id: string; label: string; top: number; bottom: number; left: number; right: number } | null
+  >(null);
+
+  // Falls back to fetching the one hovered employee when the list response
+  // carries no photo field. Cached forever and never retried: an employee record
+  // is heavy (the photo travels inline) and the preview is a nicety — it must not
+  // turn a hover into a burst of retries against a struggling server.
+  const fallbackId = preview && !photoById[preview.id] ? preview.id : "";
+  const { data: hoveredEmployee } = useQuery({
+    queryKey: ["employee-photo", fallbackId],
+    queryFn: () => employeesApi.getById(fallbackId),
+    enabled: !!fallbackId,
+    staleTime: Infinity,
+    gcTime: 30 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const previewPhoto = preview
+    ? photoById[preview.id] ?? hoveredEmployee?.profilePhoto ?? null
+    : null;
+
   const { data: deptData2, isLoading: deptLoading } = useEmployeesByDepartment(
     selectedDeptId !== "__all__" ? selectedDeptId : ""
   );
@@ -178,8 +236,21 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
             {value.map((id) => {
               const opt = selectedOptions.find((o) => o.id === id || o.userId === id);
               const label = opt?.label ?? userIdToName[id] ?? id;
+              const employeeId = opt?.id ?? id;
               return (
-                <Badge key={id} variant="secondary" className="gap-1 text-xs">
+                <Badge
+                  key={id}
+                  variant="secondary"
+                  className="gap-1 text-xs"
+                  onMouseEnter={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setPreview({
+                      id: employeeId, label,
+                      top: r.top, bottom: r.bottom, left: r.left, right: r.right,
+                    });
+                  }}
+                  onMouseLeave={() => setPreview((p) => (p?.id === employeeId ? null : p))}
+                >
                   {label}
                   <button
                     type="button"
@@ -275,6 +346,28 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
               </>
             )}
           </div>
+        )}
+
+        {preview && typeof document !== "undefined" && createPortal(
+          <div
+            className="fixed z-[200] pointer-events-none rounded-lg border bg-popover shadow-lg p-1.5 flex flex-col items-center gap-1"
+            style={previewPosition(preview)}
+          >
+            {previewPhoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={assetUrl(previewPhoto)}
+                alt={preview.label}
+                className="h-24 w-24 rounded-md object-cover bg-muted"
+              />
+            ) : (
+              <div className="h-24 w-24 rounded-md bg-primary/10 text-primary flex items-center justify-center text-3xl font-bold">
+                {preview.label.trim()[0] ?? "?"}
+              </div>
+            )}
+            <span className="text-[11px] text-muted-foreground max-w-24 truncate">{preview.label}</span>
+          </div>,
+          document.body,
         )}
       </div>
     </div>

@@ -74,6 +74,23 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     }
     return map;
   }, [allUsersData]);
+  // Every id that stands for the current user. A recipient may be stored as a
+  // userId or an employeeId, and `user.employeeId` is only set when the account
+  // was linked, so comparing against one of them alone let the sender's own name
+  // survive into a reply-all. Collect them all and match against the set.
+  const myIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (user?.id) {
+      ids.add(user.id);
+      const linked = userIdToEmpId[user.id] ?? empBasicByUserId[user.id]?.id;
+      if (linked) ids.add(linked);
+    }
+    if (user?.employeeId) ids.add(user.employeeId);
+    return ids;
+  }, [user?.id, user?.employeeId, userIdToEmpId, empBasicByUserId]);
+
+  const isMe = (empId: string) => !!empId && myIds.has(empId);
+
   const [replyOpen, setReplyOpen]       = useState(false);
   const [replyAll, setReplyAll]         = useState(false);
   const [forwardOpen, setForwardOpen]   = useState(false);
@@ -161,30 +178,28 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   };
 
   const defaultToIds = replyAll
-    ? toRecipients.map(getRecipientEmpId).filter(Boolean)
+    ? toRecipients.map(getRecipientEmpId).filter((id: string) => id && !isMe(id))
     : isSender
       ? toRecipients.map(getRecipientEmpId).filter(Boolean)
       : [(senderInfo as any)?.employeeId ?? message.senderId].filter(Boolean);
 
   const defaultCcIds = replyAll
-    ? ccRecipients.map(getRecipientEmpId).filter(Boolean)
+    ? ccRecipients.map(getRecipientEmpId).filter((id: string) => id && !isMe(id))
     : [];
 
-  const replyAllRecipients: { employeeId: string; type: "TO" | "CC" }[] = isSender
+  // Reply-all never addresses the message back to the person writing it, in TO
+  // or in CC — hence the isMe filter on every branch below.
+  const replyAllRecipients: { employeeId: string; type: "TO" | "CC" }[] = (isSender
     ? [
-        ...toRecipients.map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "TO" as const })),
-        ...ccRecipients.map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "CC" as const })),
-      ].filter((r) => !!r.employeeId)
+        ...toRecipients.map((r) => ({ employeeId: getRecipientEmpId(r), type: "TO" as const })),
+        ...ccRecipients.map((r) => ({ employeeId: getRecipientEmpId(r), type: "CC" as const })),
+      ]
     : [
         ...((senderInfo as any)?.employeeId ? [{ employeeId: (senderInfo as any).employeeId, type: "TO" as const }] : []),
-        ...toRecipients
-          .filter((r: any) => {
-            const empId = getRecipientEmpId(r);
-            return empId && empId !== user?.employeeId && empId !== user?.id;
-          })
-          .map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "TO" as const })),
-        ...ccRecipients.map((r: any) => ({ employeeId: getRecipientEmpId(r), type: "CC" as const })).filter((r) => !!r.employeeId),
-      ];
+        ...toRecipients.map((r) => ({ employeeId: getRecipientEmpId(r), type: "TO" as const })),
+        ...ccRecipients.map((r) => ({ employeeId: getRecipientEmpId(r), type: "CC" as const })),
+      ]
+  ).filter((r) => !!r.employeeId && !isMe(r.employeeId));
 
   const forwardSenderLine = senderName
     ? `${t("forwardFrom")}: ${senderName}`
