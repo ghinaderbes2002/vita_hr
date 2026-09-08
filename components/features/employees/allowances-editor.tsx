@@ -15,6 +15,7 @@ export const ALLOWANCE_TYPES = [
   { value: "WORK_NATURE",         label: "طبيعة عمل" },
   { value: "RESPONSIBILITY",      label: "مسؤولية" },
   { value: "RESIDENCE",           label: "سكن" },
+  { value: "ACTING_POSITION",     label: "شغل منصب آخر" },
 ] as const;
 
 export const ALLOWANCE_AR: Record<string, string> = Object.fromEntries(

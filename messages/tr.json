@@ -428,7 +428,8 @@
         "ACADEMIC_DEGREE": "Akademik Derece Ödeneği",
         "WORK_NATURE": "İş Doğası Ödeneği",
         "RESPONSIBILITY": "Sorumluluk Ödeneği",
-        "RESIDENCE": "Konut Ödeneği"
+        "RESIDENCE": "Konut Ödeneği",
+        "ACTING_POSITION": "Vekâleten Görev Ödeneği"
       }
     },
     "filterByDepartment": "Departmana Göre Filtrele",

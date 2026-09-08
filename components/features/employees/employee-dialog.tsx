@@ -214,6 +214,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     { value: "WORK_NATURE", label: t("employees.form.allowances.WORK_NATURE") },
     { value: "RESPONSIBILITY", label: t("employees.form.allowances.RESPONSIBILITY") },
     { value: "RESIDENCE", label: t("employees.form.allowances.RESIDENCE") },
+    { value: "ACTING_POSITION", label: t("employees.form.allowances.ACTING_POSITION") },
   ];
 
   const formSchema = z.object({

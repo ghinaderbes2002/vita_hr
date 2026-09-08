@@ -431,7 +431,8 @@
         "ACADEMIC_DEGREE": "Academic Degree Allowance",
         "WORK_NATURE": "Work Nature Allowance",
         "RESPONSIBILITY": "Responsibility Allowance",
-        "RESIDENCE": "Residence Allowance"
+        "RESIDENCE": "Residence Allowance",
+        "ACTING_POSITION": "Acting Position Allowance"
       }
     },
     "filterByDepartment": "Filter by Department",

@@ -801,6 +801,7 @@ export default function EmployeeDetailsPage() {
     WORK_NATURE: "بدل طبيعة عمل",
     RESPONSIBILITY: "بدل مسؤولية",
     RESIDENCE: "بدل سكن",
+    ACTING_POSITION: "بدل شغل منصب آخر",
   };
 
   const MARITAL_STATUS_LABELS: Record<string, string> = {

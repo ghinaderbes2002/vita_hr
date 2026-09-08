@@ -170,7 +170,9 @@ export type AllowanceType =
   | "PREVIOUS_EXPERIENCE"
   | "ACADEMIC_DEGREE"
   | "WORK_NATURE"
-  | "RESPONSIBILITY";
+  | "RESPONSIBILITY"
+  | "RESIDENCE"
+  | "ACTING_POSITION";
 
 export interface EmployeeAllowance {
   id: string;

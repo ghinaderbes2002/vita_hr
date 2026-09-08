@@ -314,7 +314,8 @@
         "ACADEMIC_DEGREE": "بدل شهادة علمية",
         "WORK_NATURE": "بدل طبيعة عمل",
         "RESPONSIBILITY": "بدل مسؤولية",
-        "RESIDENCE": "بدل سكن"
+        "RESIDENCE": "بدل سكن",
+        "ACTING_POSITION": "بدل شغل منصب آخر"
       }
     },
     "filterByDepartment": "تصفية حسب القسم",
