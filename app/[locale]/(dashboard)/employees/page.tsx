@@ -52,6 +52,7 @@ export default function EmployeesPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [exemptFilter, setExemptFilter] = useState<"all" | "exempt" | "linked">("all");
   const [companyFilter, setCompanyFilter] = useState<"" | "VITAXIR" | "VITASYR">("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "ACTIVE" | "INACTIVE">("all");
   const [view, setView] = useState<"list" | "tree">("list");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -59,7 +60,12 @@ export default function EmployeesPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
   const LIMIT = 10;
-  const { data: allEmployeesData, isLoading: allEmployeesLoading } = useEmployees({ search, page: companyFilter ? 1 : page, limit: companyFilter ? 500 : LIMIT });
+  const { data: allEmployeesData, isLoading: allEmployeesLoading } = useEmployees({
+    search,
+    page: companyFilter ? 1 : page,
+    limit: companyFilter ? 500 : LIMIT,
+    employmentStatus: statusFilter !== "all" ? statusFilter : undefined,
+  });
   const { data: departmentEmployees, isLoading: departmentEmployeesLoading } = useEmployeesByDepartment(selectedDepartment);
   const { data: departmentsData } = useDepartments({ limit: 500 });
   const deleteEmployee = useDeleteEmployee();
@@ -81,6 +87,9 @@ export default function EmployeesPage() {
     : ((allEmployeesData as any)?.data?.items || []);
 
   const employees = rawEmployees.filter((e: any) => {
+    // The department endpoint ignores the list query, so the status filter is
+    // re-applied here for that branch; on the main list the server already did it.
+    if (selectedDepartment && statusFilter !== "all" && e.employmentStatus !== statusFilter) return false;
     const linked = e.attendanceConfig?.salaryLinked ?? true;
     if (exemptFilter === "exempt") return linked === false;
     if (exemptFilter === "linked") return linked === true;
@@ -187,6 +196,17 @@ export default function EmployeesPage() {
             <SelectItem value="all">كل الموظفين</SelectItem>
             <SelectItem value="exempt">المعفيون من البصمة</SelectItem>
             <SelectItem value="linked">مرتبطون بالراتب</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as any); setPage(1); }}>
+          <SelectTrigger className="w-44 bg-background">
+            <Power className="h-4 w-4 ml-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("employees.allStatuses")}</SelectItem>
+            <SelectItem value="ACTIVE">{t("employees.statuses.active")}</SelectItem>
+            <SelectItem value="INACTIVE">{t("employees.statuses.inactive")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={selectedDepartment || "all"} onValueChange={(v) => { setSelectedDepartment(v === "all" ? "" : v); setPage(1); }}>

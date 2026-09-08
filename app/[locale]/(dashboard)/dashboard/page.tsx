@@ -294,10 +294,23 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
   const justificationsPendingHR =
     (pendingHrJustifications as any)?.data?.total ?? (pendingHrJustifications as any)?.total ?? 0;
 
+  // Headcount currently on staff, next to the all-time total. Only the count is
+  // needed, so a single row is fetched and the meta total read off it.
+  const { data: activeEmployeesCount } = useQuery({
+    queryKey: ["employees-count", "ACTIVE"],
+    queryFn: async () => {
+      const { apiClient } = await import("@/lib/api/client");
+      const res = await apiClient.get("/employees", { params: { employmentStatus: "ACTIVE", limit: 1 } });
+      const body = res.data;
+      return body?.meta?.total ?? body?.data?.meta?.total ?? body?.data?.total ?? null;
+    },
+    staleTime: 60_000,
+  });
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title={t("hr.totalEmployees")} value={d.totalEmployees ?? "—"} icon={Users}
+        <StatCard title={t("hr.activeEmployees")} value={activeEmployeesCount ?? "—"} icon={Users}
           iconBg="bg-blue-500" onClick={() => router.push(`/${locale}/employees`)} />
         <StatCard title={t("hr.probationEndingSoon")} value={probationEndingCount} icon={FileWarning}
           iconBg="bg-red-500" onClick={() => setProbationDialogOpen(true)} />
@@ -305,9 +318,6 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
           iconBg="bg-orange-500" onClick={() => router.push(`/${locale}/attendance/justifications?status=PENDING_HR`)} />
         <StatCard title={t("hr.leavesAwaitingHR")} value={d.pendingLeaveHRCount ?? 0} icon={Hourglass}
           iconBg="bg-amber-500" onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
         <StatCard title={t("hr.probationEvaluationsHR")} value={d.probationsPendingHR ?? 0} icon={ShieldCheck}
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
         <StatCard title={t("hr.performanceEvaluationsHR")} value={d.probationsPendingHR ?? 0} icon={BarChart3}
@@ -315,28 +325,6 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
         <StatCard title={t("hr.adminRequestsPending")} value={pendingCount} icon={Briefcase}
           iconBg="bg-green-500" onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
       </div>
-
-      {d.payrollStatus && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary" />
-              {t("hr.payrollStatus")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <Badge variant={d.payrollStatus.status === "PENDING" ? "outline" : "default"}>
-                {d.payrollStatus.status === "PENDING" ? t("hr.payrollPending") : t("hr.payrollCompleted")}
-              </Badge>
-              <span className="text-sm text-muted-foreground">{d.payrollStatus.month}</span>
-              <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/payroll`)}>
-                {t("hr.viewPayroll")}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {d.candidatesByStage?.length > 0 && (
         <Card>
@@ -665,11 +653,16 @@ export default function DashboardPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30">
+          <a
+            href={conductDoc.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30 transition-colors hover:bg-muted hover:border-primary/40"
+          >
             <FileText className="h-8 w-8 text-primary shrink-0" />
             <p className="text-sm font-medium flex-1">{t("codeOfConduct")}</p>
-            <a href={conductDoc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">{t("open")}</a>
-          </div>
+            <span className="text-xs text-primary shrink-0">{t("open")}</span>
+          </a>
         </CardContent>
       </Card>
 
@@ -682,11 +675,16 @@ export default function DashboardPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30">
+          <a
+            href="/assets/images/هيكل.jpg"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30 transition-colors hover:bg-muted hover:border-primary/40"
+          >
             <ExternalLink className="h-5 w-5 text-primary shrink-0" />
             <p className="text-sm font-medium flex-1">{t("orgChart")}</p>
-            <a href="/assets/images/هيكل.jpg" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">{t("open")}</a>
-          </div>
+            <span className="text-xs text-primary shrink-0">{t("open")}</span>
+          </a>
         </CardContent>
       </Card>
 

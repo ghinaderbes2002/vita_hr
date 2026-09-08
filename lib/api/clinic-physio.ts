@@ -439,6 +439,46 @@ export interface PhysioCaseListParams {
   caseType?: PhysioCaseType;
 }
 
+/** The four statuses a doctor exam can be filtered by on its own list. */
+export type DoctorExamStatus = Extract<
+  PhysioStatus,
+  "INTAKE" | "COMPLAINT" | "COMPLETED" | "CANCELLED"
+>;
+
+export const DOCTOR_EXAM_STATUS_VALUES: DoctorExamStatus[] = [
+  "INTAKE", "COMPLAINT", "COMPLETED", "CANCELLED",
+];
+
+export interface DoctorExamListParams {
+  page?: number;
+  /** The endpoint caps this at 100. */
+  limit?: number;
+  status?: DoctorExamStatus;
+}
+
+/**
+ * A row of the doctor-exam list. It is a PhysioCase trimmed to what the list
+ * endpoint returns — the patient carries `idNumber` and no `id`, so it is
+ * spelled out here rather than reusing PhysioCase's patient.
+ */
+export interface DoctorExamListItem {
+  id: string;
+  caseNumber?: string;
+  caseType: PhysioCaseType;
+  status: PhysioStatus;
+  majorComplaint?: string | null;
+  patientId: string;
+  physiotherapistId?: string | null;
+  supervisingDoctorId?: string | null;
+  createdAt: string;
+  patient?: {
+    firstName: string;
+    lastName: string;
+    patientNumber: string;
+    idNumber?: string | null;
+  };
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────────
 export const clinicPhysioApi = {
   create: async (dto: CreatePhysioCaseDto): Promise<PhysioCase> => {
@@ -455,6 +495,23 @@ export const clinicPhysioApi = {
       items: d?.items ?? d?.data ?? (Array.isArray(d) ? d : []) as PhysioCase[],
       total,
       totalPages: d?.totalPages ?? (total > 0 ? Math.ceil(total / limit) : 0),
+    };
+  },
+
+  /**
+   * Patients seen for a doctor exam who have not been converted to a physio
+   * case yet. A separate endpoint rather than `list({ caseType })` because the
+   * server also drops the ones already carried over into treatment.
+   */
+  listDoctorExams: async (params?: DoctorExamListParams) => {
+    const { data } = await apiClient.get("/physio/cases/doctor-exam", { params });
+    const d = data?.data ?? data;
+    const total = d?.total ?? 0;
+    const limit = d?.limit ?? params?.limit ?? 20;
+    return {
+      items: (d?.items ?? (Array.isArray(d) ? d : [])) as DoctorExamListItem[],
+      total,
+      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
     };
   },
 

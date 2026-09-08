@@ -153,6 +153,7 @@
     "clinicProsthetics": "الأطراف الصناعية",
     "clinicPhysio": "العلاج الفيزيائي",
     "clinicPodiatry": "طب الأقدام",
+    "clinicDoctorExams": "معاينات الطبيب",
     "clinicWaitingList": "قائمة الانتظار",
     "clinicAppointments": "المواعيد",
     "clinicMyAppointments": "مواعيدي",
@@ -192,7 +193,7 @@
     "open": "فتح",
     "myLeaves": "إجازاتي",
     "payroll": "الرواتب",
-    "jobTitle": "المسمى الوظيفي",
+    "jobTitle": "التوصيف الوظيفي",
     "codeOfConduct": "مدونة السلوك",
     "orgChart": "الهيكل التنظيمي",
     "deleteConductTitle": "حذف مدونة السلوك",
@@ -227,17 +228,13 @@
       "teamAlerts": "تنبيهات الفريق"
     },
     "hr": {
-      "totalEmployees": "إجمالي الموظفين",
+      "activeEmployees": "الموظفون النشطون",
       "probationEndingSoon": "شارفت فترة التجربة على الانتهاء",
       "employeeJustifications": "تبريرات الموظفين",
       "leavesAwaitingHR": "إجازات بانتظار HR",
       "probationEvaluationsHR": "تقييمات تجربة بانتظار HR",
       "performanceEvaluationsHR": "تقييمات التجربة بانتظار موافقتي",
       "adminRequestsPending": "طلبات إدارية بانتظار موافقتي",
-      "payrollStatus": "حالة الرواتب",
-      "payrollPending": "معلق",
-      "payrollCompleted": "مكتمل",
-      "viewPayroll": "عرض الرواتب",
       "candidatesByStage": "المرشحون حسب المرحلة",
       "probationDialogTitle": "موظفون تنتهي فترتهم التجريبية خلال 30 يوماً",
       "noProbationEmployees": "لا يوجد موظفون في هذه الفترة",
@@ -321,6 +318,7 @@
     },
     "filterByDepartment": "تصفية حسب القسم",
     "allDepartments": "جميع الأقسام",
+    "allStatuses": "كل الحالات",
     "subordinates": {
       "title": "المرؤوسين",
       "description": "عرض الموظفين التابعين لمدير معين",
@@ -3078,7 +3076,7 @@
         "prosthetics": "أطراف صناعية",
         "physio": "علاج فيزيائي",
         "podiatry": "طب الأقدام",
-        "both": "كلاهما"
+        "doctorExam": "معاينة الطبيب"
       },
       "table": {
         "name": "الاسم",
@@ -4518,6 +4516,33 @@
         "archiveSessionTitle": "أرشفة الجلسة؟",
         "archiveSessionDesc": "ستُخفى الجلسة من القائمة مع الاحتفاظ ببياناتها، ويمكن عرضها لاحقاً من زر «عرض المؤرشفة».",
         "arrivalMethod": "طريقة الوصول"
+      }
+    },
+    "doctorExams": {
+      "title": "معاينات الطبيب",
+      "description": "المرضى الذين لديهم معاينة طبية ولم يُحوّلوا إلى العلاج الفيزيائي بعد",
+      "searchPlaceholder": "ابحث بالاسم أو رقم المريض...",
+      "filter": {
+        "all": "جميع الحالات"
+      },
+      "statuses": {
+        "INTAKE": "الاستقبال",
+        "COMPLAINT": "الشكوى",
+        "COMPLETED": "منتهية",
+        "CANCELLED": "ملغاة"
+      },
+      "table": {
+        "caseNumber": "رقم المعاينة",
+        "patientNumber": "رقم المريض",
+        "patient": "المريض",
+        "idNumber": "رقم الهوية",
+        "complaint": "الشكوى الرئيسية",
+        "status": "الحالة",
+        "createdAt": "تاريخ الإنشاء"
+      },
+      "empty": {
+        "title": "لا توجد معاينات",
+        "description": "ستظهر هنا معاينات الطبيب التي لم تُحوّل إلى علاج فيزيائي"
       }
     },
     "physio": {

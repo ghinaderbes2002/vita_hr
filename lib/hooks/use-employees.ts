@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { employeesApi, TransferDto, SalaryChangeDto } from "@/lib/api/employees";
+import { employeesApi, EmployeeListParams, TransferDto, SalaryChangeDto } from "@/lib/api/employees";
 import { PaginationParams } from "@/types";
 import { toast } from "sonner";
 
-export function useEmployees(params?: PaginationParams) {
+export function useEmployees(params?: EmployeeListParams) {
   return useQuery({
     queryKey: ["employees", params],
     queryFn: () => employeesApi.getAll(params),

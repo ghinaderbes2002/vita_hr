@@ -269,6 +269,9 @@ const navigation: NavItem[] = [
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
       { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
       { title: "nav.clinicPodiatry", href: "/clinic/podiatry", icon: Footprints, permission: "clinic.podiatry.reception.view" },
+      // Only the medical director gets this tab; showForJobTitleCodes hides it
+      // from every other job title even when they hold the physio permission.
+      { title: "nav.clinicDoctorExams", href: "/clinic/doctor-exams", icon: Stethoscope, permission: "clinic.physio.case.view", showForJobTitleCodes: ["VTX-JTL-000007"] },
       { title: "nav.clinicWaitingList", href: "/clinic/waiting-list", icon: ListOrdered, permission: "clinic.waiting_list.view" },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
       { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permission: "clinic.appointments.view_own" },
@@ -410,6 +413,7 @@ export function Sidebar() {
         "/clinic/prosthetics",
         "/clinic/physio",
         "/clinic/podiatry",
+        "/clinic/doctor-exams",
         "/clinic/appointments",
         "/clinic/my-appointments",
         "/clinic/inventory",
@@ -459,10 +463,11 @@ export function Sidebar() {
     }
     // الأدمن يتجاوز كل قيود المسمى الوظيفي
     if (item.showForJobTitleCodes && isAdmin()) return true;
-    // إذا كود المسمى الوظيفي مطابق، نظهره
-    if (item.showForJobTitleCodes && currentJobTitleCode && item.showForJobTitleCodes.includes(currentJobTitleCode)) return true;
-    // إذا showForJobTitleCodes موجود والمسمى مش فيه، نخفيه بغض النظر عن الصلاحيات
-    if (item.showForJobTitleCodes && currentJobTitleCode && !item.showForJobTitleCodes.includes(currentJobTitleCode)) return false;
+    // المسمى الوظيفي وحده يقرر: مطابق ← يظهر، غير مطابق أو غير موجود ← يختفي
+    // بغض النظر عن الصلاحيات. موظف بلا مسمى لا يرى عنصراً محصوراً بمسمى.
+    if (item.showForJobTitleCodes) {
+      return !!currentJobTitleCode && item.showForJobTitleCodes.includes(currentJobTitleCode);
+    }
     // صلاحية العنصر نفسه شرط لازم — حتى لو كان قسماً له أبناء. بدون هذا السطر
     // كان أي ابن بلا صلاحية (مثل "مواعيدي") يفتح القسم المحمي كله للجميع.
     if (!hasItemPermission(item)) return false;
@@ -585,8 +590,8 @@ export function Sidebar() {
               // الإخفاء بالمسمى الوظيفي يتقدّم حتى على parentAllowedByJobTitle
               if (isHiddenByJobTitle(child)) return false;
               // إذا الـ child عنده showForJobTitleCodes والمستخدم عنده مسمى وظيفي، المسمى يأخذ الأولوية على الصلاحيات
-              if (currentJobTitleCode && child.showForJobTitleCodes) {
-                return child.showForJobTitleCodes.includes(currentJobTitleCode);
+              if (child.showForJobTitleCodes) {
+                return isAdmin() || (!!currentJobTitleCode && child.showForJobTitleCodes.includes(currentJobTitleCode));
               }
               if (parentAllowedByJobTitle) return true;
               return hasSectionPermission(child);

@@ -18,6 +18,7 @@ import {
   PhysioFollowUpDto,
   FinalSummaryDto,
   PhysioCaseListParams,
+  DoctorExamListParams,
   PhysioCaseType,
   EmergencyAlert,
 } from "@/lib/api/clinic-physio";
@@ -27,6 +28,15 @@ export function usePhysioCases(params?: PhysioCaseListParams) {
   return useQuery({
     queryKey: ["clinic-physio-cases", params],
     queryFn: () => clinicPhysioApi.list(params),
+  });
+}
+
+/** `enabled` keeps the request from firing before the caller knows it may ask. */
+export function useDoctorExamCases(params?: DoctorExamListParams, enabled = true) {
+  return useQuery({
+    queryKey: ["clinic-doctor-exam-cases", params],
+    queryFn: () => clinicPhysioApi.listDoctorExams(params),
+    enabled,
   });
 }
 

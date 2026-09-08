@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -8,7 +8,7 @@ import {
   Paperclip, Heart, GraduationCap, MapPin, Users, FileDown,
   BadgeCheck, Cigarette, Award, ExternalLink,
   Fingerprint, Plus, Trash2, Settings, Save, ClipboardList, Pencil, X,
-  Clock, CalendarDays, AlertTriangle, CheckCircle2,
+  Clock, CalendarDays, AlertTriangle, CheckCircle2, Check, Loader2, Camera,
   ArrowLeftRight, DollarSign, FolderOpen, Percent,
 } from "lucide-react";
 import { PROBATION_RECOMMENDATION_OPTIONS } from "@/lib/api/probation-evaluations";
@@ -296,6 +296,28 @@ function _EmployeeFinancialTabs({ employeeId }: { employeeId: string }) {
 }
 
 
+// Option lists for the inline field editors. Values mirror the employee enums.
+const GENDER_OPTIONS = [
+  { value: "MALE", label: "ذكر" },
+  { value: "FEMALE", label: "أنثى" },
+];
+const MARITAL_STATUS_OPTIONS = [
+  { value: "SINGLE", label: "أعزب" },
+  { value: "MARRIED", label: "متزوج" },
+  { value: "DIVORCED", label: "مطلق" },
+  { value: "WIDOWED", label: "أرمل" },
+];
+const CONTRACT_TYPE_OPTIONS = [
+  "FIXED_TERM", "INDEFINITE", "TEMPORARY", "TRAINEE", "CONSULTANT", "SERVICE_PROVIDER",
+];
+const BLOOD_TYPE_VALUES = [
+  "A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE",
+  "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE",
+];
+const EDUCATION_LEVEL_VALUES = [
+  "PRIMARY", "INTERMEDIATE", "SECONDARY", "DIPLOMA", "BACHELOR", "POSTGRADUATE",
+];
+
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800 border-green-200",
   INACTIVE: "bg-gray-100 text-gray-700 border-gray-200",
@@ -310,6 +332,119 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
     <div className="flex flex-wrap gap-2 items-start justify-between py-2">
       <span className="text-sm text-muted-foreground shrink-0 w-40">{label}</span>
       <span className="text-sm font-medium text-end flex-1">{value}</span>
+    </div>
+  );
+}
+
+type EditableRowOption = { value: string; label: string };
+
+/**
+ * A field that is edited in place: the pencil swaps the value for an input and
+ * the tick writes it straight through, so filling one field never means opening
+ * the whole employee form. Empty fields still render (as "—") — those are the
+ * ones most likely to need filling in.
+ */
+function EditableRow({
+  label, value, display, type = "text", options, canEdit, onSave,
+}: {
+  label: string;
+  /** Raw value handed to the editor. Dates must already be yyyy-mm-dd. */
+  value?: string | number | boolean | null;
+  /** What to show when idle; falls back to the raw value. */
+  display?: React.ReactNode;
+  type?: "text" | "number" | "date" | "select" | "boolean";
+  options?: EditableRowOption[];
+  canEdit: boolean;
+  onSave: (raw: string) => Promise<unknown>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const start = () => {
+    setDraft(value === null || value === undefined ? "" : String(value));
+    setEditing(true);
+  };
+
+  const commit = async () => {
+    setSaving(true);
+    try {
+      await onSave(draft);
+      setEditing(false);
+    } catch {
+      // The mutation surfaces the error as a toast; stay open so the value is not lost.
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const isEmpty = value === null || value === undefined || value === "";
+
+  if (!editing) {
+    return (
+      <div className="flex flex-wrap gap-2 items-center justify-between py-2">
+        <span className="text-sm text-muted-foreground shrink-0 w-40">{label}</span>
+        <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+          <span className={`text-sm text-end truncate ${isEmpty ? "text-muted-foreground italic" : "font-medium"}`}>
+            {display ?? (isEmpty ? "—" : String(value))}
+          </span>
+          {canEdit && (
+            <Button
+              variant="ghost" size="icon"
+              className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={start} aria-label={`تعديل ${label}`}
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const selectOptions: EditableRowOption[] =
+    type === "boolean"
+      ? [{ value: "true", label: "نعم" }, { value: "false", label: "لا" }]
+      : options ?? [];
+
+  return (
+    <div className="flex flex-wrap gap-2 items-center justify-between py-2">
+      <span className="text-sm text-muted-foreground shrink-0 w-40">{label}</span>
+      <div className="flex items-center gap-1 flex-1 justify-end min-w-0">
+        {type === "select" || type === "boolean" ? (
+          <Select value={draft} onValueChange={setDraft}>
+            <SelectTrigger className="h-8 w-44 text-sm">
+              <SelectValue placeholder="—" />
+            </SelectTrigger>
+            <SelectContent>
+              {selectOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            autoFocus
+            type={type === "number" ? "number" : type === "date" ? "date" : "text"}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") setEditing(false);
+            }}
+            className="h-8 w-44 text-sm"
+          />
+        )}
+        <Button size="icon" className="h-6 w-6 shrink-0" onClick={commit} disabled={saving} aria-label="حفظ">
+          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+        </Button>
+        <Button
+          variant="ghost" size="icon" className="h-6 w-6 shrink-0"
+          onClick={() => setEditing(false)} disabled={saving} aria-label="إلغاء"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -360,6 +495,57 @@ export default function EmployeeDetailsPage() {
   const { hasPermission, isAdmin } = usePermissions();
   const canExport = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.EXPORT);
   const canEditNotes = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.UPDATE);
+  const canEditFields = canEditNotes;
+
+  // ── Inline field editing ───────────────────────────────────────────────────
+  /** yyyy-mm-dd, the shape a date input wants. */
+  const dateInputValue = (v?: string | null) =>
+    v ? new Date(v).toISOString().split("T")[0] : "";
+
+  /**
+   * Builds the save handler for one field. Empty input clears the field (null)
+   * rather than writing an empty string, so the backend sees a real "unset".
+   */
+  const saveField =
+    (field: string, cast: "text" | "number" | "boolean" = "text") =>
+    (raw: string) => {
+      const value =
+        raw === ""
+          ? null
+          : cast === "number"
+          ? Number(raw)
+          : cast === "boolean"
+          ? raw === "true"
+          : raw;
+      return updateEmployee.mutateAsync({ id: employeeId, data: { [field]: value } });
+    };
+
+  // Profile photo — picked straight off the avatar and stored as a data URL,
+  // the same shape the employee form sends.
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+
+  function handlePhotoPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoUploading(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        await updateEmployee.mutateAsync({
+          id: employeeId,
+          data: { profilePhoto: reader.result as string },
+        });
+      } catch {
+        // the mutation already reports the failure
+      } finally {
+        setPhotoUploading(false);
+      }
+    };
+    reader.onerror = () => setPhotoUploading(false);
+    reader.readAsDataURL(file);
+  }
 
   // HR notes
   const [notesEditing, setNotesEditing] = useState(false);
@@ -654,14 +840,43 @@ export default function EmployeeDetailsPage() {
         <CardContent className="relative pt-0 pb-6 px-6">
           {/* Avatar */}
           <div className="absolute -top-12 start-6">
-            <div className="w-24 h-24 rounded-full border-4 border-background overflow-hidden bg-muted shadow-md">
-              {emp.profilePhoto ? (
-                <img src={assetUrl(emp.profilePhoto)} alt="profile" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-3xl font-bold">
-                  {employee.firstNameAr?.[0]}
-                </div>
-              )}
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full border-4 border-background overflow-hidden bg-muted shadow-md">
+                {emp.profilePhoto ? (
+                  <img src={assetUrl(emp.profilePhoto)} alt="profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-3xl font-bold">
+                    {employee.firstNameAr?.[0]}
+                  </div>
+                )}
+              </div>
+              <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+                <>
+                  <Button
+                    size="icon"
+                    className="absolute -bottom-1 -end-1 h-8 w-8 rounded-full border-2 border-background shadow-md"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={photoUploading}
+                    aria-label={emp.profilePhoto ? "تغيير الصورة" : "إضافة صورة"}
+                    title={emp.profilePhoto ? "تغيير الصورة" : "إضافة صورة"}
+                  >
+                    {photoUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : emp.profilePhoto ? (
+                      <Camera className="h-4 w-4" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoPick}
+                  />
+                </>
+              </ActionGuard>
             </div>
           </div>
 
@@ -712,27 +927,50 @@ export default function EmployeeDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border/50">
-            <InfoRow label={t("employees.fields.firstNameAr")} value={employee.firstNameAr} />
-            <InfoRow label={t("employees.fields.lastNameAr")} value={employee.lastNameAr} />
-            <InfoRow label={t("employees.fields.firstNameEn")} value={employee.firstNameEn} />
-            <InfoRow label={t("employees.fields.lastNameEn")} value={employee.lastNameEn} />
-            <InfoRow label={t("employees.fields.nationalId")} value={employee.nationalId} />
-            <InfoRow label={t("employees.fields.gender")} value={t(`employees.genders.${employee.gender.toLowerCase()}`)} />
-            <InfoRow
-              label={t("employees.fields.dateOfBirth")}
-              value={employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString("en-GB") : undefined}
+            <EditableRow label={t("employees.fields.firstNameAr")} value={employee.firstNameAr}
+              canEdit={canEditFields} onSave={saveField("firstNameAr")} />
+            <EditableRow label={t("employees.fields.lastNameAr")} value={employee.lastNameAr}
+              canEdit={canEditFields} onSave={saveField("lastNameAr")} />
+            <EditableRow label={t("employees.fields.firstNameEn")} value={employee.firstNameEn}
+              canEdit={canEditFields} onSave={saveField("firstNameEn")} />
+            <EditableRow label={t("employees.fields.lastNameEn")} value={employee.lastNameEn}
+              canEdit={canEditFields} onSave={saveField("lastNameEn")} />
+            <EditableRow label={t("employees.fields.nationalId")} value={employee.nationalId}
+              canEdit={canEditFields} onSave={saveField("nationalId")} />
+            <EditableRow
+              label={t("employees.fields.gender")}
+              value={employee.gender}
+              display={employee.gender ? t(`employees.genders.${employee.gender.toLowerCase()}`) : undefined}
+              type="select" options={GENDER_OPTIONS}
+              canEdit={canEditFields} onSave={saveField("gender")}
             />
-            {emp.maritalStatus && (
-              <InfoRow label="الحالة الاجتماعية" value={MARITAL_STATUS_LABELS[emp.maritalStatus] || emp.maritalStatus} />
-            )}
-            {emp.hasDrivingLicense !== undefined && (
-              <div className="flex flex-wrap gap-2 items-center justify-between py-2">
-                <span className="text-sm text-muted-foreground">رخصة قيادة</span>
-                <Badge variant={emp.hasDrivingLicense ? "default" : "secondary"}>
-                  {emp.hasDrivingLicense ? "يمتلك" : "لا يمتلك"}
-                </Badge>
-              </div>
-            )}
+            <EditableRow
+              label={t("employees.fields.dateOfBirth")}
+              value={dateInputValue(employee.dateOfBirth)}
+              display={employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString("en-GB") : undefined}
+              type="date"
+              canEdit={canEditFields} onSave={saveField("dateOfBirth")}
+            />
+            <EditableRow
+              label="الحالة الاجتماعية"
+              value={emp.maritalStatus}
+              display={emp.maritalStatus ? MARITAL_STATUS_LABELS[emp.maritalStatus] || emp.maritalStatus : undefined}
+              type="select" options={MARITAL_STATUS_OPTIONS}
+              canEdit={canEditFields} onSave={saveField("maritalStatus")}
+            />
+            <EditableRow
+              label="رخصة قيادة"
+              value={emp.hasDrivingLicense === undefined || emp.hasDrivingLicense === null ? null : emp.hasDrivingLicense}
+              display={
+                emp.hasDrivingLicense === undefined || emp.hasDrivingLicense === null ? undefined : (
+                  <Badge variant={emp.hasDrivingLicense ? "default" : "secondary"}>
+                    {emp.hasDrivingLicense ? "يمتلك" : "لا يمتلك"}
+                  </Badge>
+                )
+              }
+              type="boolean"
+              canEdit={canEditFields} onSave={saveField("hasDrivingLicense", "boolean")}
+            />
           </CardContent>
         </Card>
 
@@ -745,18 +983,25 @@ export default function EmployeeDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border/50">
-            <InfoRow label={t("employees.fields.email")} value={employee.email} />
-            <InfoRow label={t("employees.fields.phone")} value={employee.phone} />
-            <InfoRow label={t("employees.fields.mobile")} value={employee.mobile} />
-            {emp.currentAddress && (
-              <div className="flex flex-wrap gap-2 items-start justify-between py-2">
-                <span className="text-sm text-muted-foreground shrink-0 w-40">{t("employees.fields.currentAddress")}</span>
-                <span className="text-sm font-medium text-end flex-1 flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  {emp.currentAddress}
-                </span>
-              </div>
-            )}
+            <EditableRow label={t("employees.fields.email")} value={employee.email}
+              canEdit={canEditFields} onSave={saveField("email")} />
+            <EditableRow label={t("employees.fields.phone")} value={employee.phone}
+              canEdit={canEditFields} onSave={saveField("phone")} />
+            <EditableRow label={t("employees.fields.mobile")} value={employee.mobile}
+              canEdit={canEditFields} onSave={saveField("mobile")} />
+            <EditableRow
+              label={t("employees.fields.currentAddress")}
+              value={emp.currentAddress}
+              display={
+                emp.currentAddress ? (
+                  <span className="flex items-center gap-1 justify-end">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    {emp.currentAddress}
+                  </span>
+                ) : undefined
+              }
+              canEdit={canEditFields} onSave={saveField("currentAddress")}
+            />
           </CardContent>
         </Card>
 
@@ -772,11 +1017,21 @@ export default function EmployeeDetailsPage() {
             <InfoRow label={t("employees.fields.department")} value={(employee.department as any)?.nameAr} />
             <InfoRow label={t("employees.fields.jobTitle")} value={emp.jobTitle?.nameAr} />
             <InfoRow label={t("employees.fields.jobGrade")} value={emp.jobGrade?.nameAr} />
-            <InfoRow
+            <EditableRow
               label={t("employees.fields.hireDate")}
-              value={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("en-GB") : undefined}
+              value={dateInputValue(employee.hireDate)}
+              display={employee.hireDate ? new Date(employee.hireDate).toLocaleDateString("en-GB") : undefined}
+              type="date"
+              canEdit={canEditFields} onSave={saveField("hireDate")}
             />
-            <InfoRow label={t("employees.fields.contractType")} value={CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType} />
+            <EditableRow
+              label={t("employees.fields.contractType")}
+              value={employee.contractType}
+              display={employee.contractType ? CONTRACT_TYPE_LABELS[employee.contractType] || employee.contractType : undefined}
+              type="select"
+              options={CONTRACT_TYPE_OPTIONS.map((v) => ({ value: v, label: CONTRACT_TYPE_LABELS[v] || v }))}
+              canEdit={canEditFields} onSave={saveField("contractType")}
+            />
             <div className="flex flex-wrap gap-2 items-center justify-between py-2">
               <span className="text-sm text-muted-foreground shrink-0 w-40">تاريخ انتهاء العقد</span>
               <div className="flex items-center gap-1.5">
@@ -906,108 +1161,137 @@ export default function EmployeeDetailsPage() {
         )}
 
         {/* ─── Additional Info ───────────────────────────────── */}
-        {(bloodTypeLabel || educationLabel || emp.religion || emp.familyMembersCount || emp.chronicDiseases || emp.isSmoker !== undefined) && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Heart className="h-4 w-4 text-primary" />
-                {t("employees.additionalInfo")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y divide-border/50">
-              {bloodTypeLabel && (
-                <div className="flex flex-wrap gap-2 items-center justify-between py-2">
-                  <span className="text-sm text-muted-foreground">{t("employees.fields.bloodType")}</span>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Heart className="h-4 w-4 text-primary" />
+              {t("employees.additionalInfo")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-border/50">
+            <EditableRow
+              label={t("employees.fields.bloodType")}
+              value={emp.bloodType}
+              display={
+                bloodTypeLabel ? (
                   <Badge variant="outline" className="font-bold text-red-600 border-red-200">{bloodTypeLabel}</Badge>
-                </div>
-              )}
-              <InfoRow label={t("employees.fields.educationLevel")} value={educationLabel} />
-              {emp.educationLevel === "UNIVERSITY" && emp.universityYear && (
-                <InfoRow label={t("employees.fields.universityYear")} value={emp.universityYear} />
-              )}
-              <InfoRow label={t("employees.fields.religion")} value={emp.religion} />
-              {emp.familyMembersCount !== undefined && emp.familyMembersCount !== null && (
-                <div className="flex flex-wrap gap-2 items-center justify-between py-2">
-                  <span className="text-sm text-muted-foreground">{t("employees.fields.familyMembersCount")}</span>
-                  <span className="text-sm font-medium flex items-center gap-1">
+                ) : undefined
+              }
+              type="select"
+              options={BLOOD_TYPE_VALUES.map((v) => ({ value: v, label: t(`employees.bloodTypes.${v}`) }))}
+              canEdit={canEditFields} onSave={saveField("bloodType")}
+            />
+            <EditableRow
+              label={t("employees.fields.educationLevel")}
+              value={emp.educationLevel}
+              display={educationLabel ?? undefined}
+              type="select"
+              options={EDUCATION_LEVEL_VALUES.map((v) => ({ value: v, label: t(`employees.educationLevels.${v}`) }))}
+              canEdit={canEditFields} onSave={saveField("educationLevel")}
+            />
+            <EditableRow
+              label={t("employees.fields.universityYear")}
+              value={emp.universityYear}
+              type="number"
+              canEdit={canEditFields} onSave={saveField("universityYear", "number")}
+            />
+            <EditableRow label={t("employees.fields.religion")} value={emp.religion}
+              canEdit={canEditFields} onSave={saveField("religion")} />
+            <EditableRow
+              label={t("employees.fields.familyMembersCount")}
+              value={emp.familyMembersCount}
+              display={
+                emp.familyMembersCount !== undefined && emp.familyMembersCount !== null ? (
+                  <span className="flex items-center gap-1 justify-end">
                     <Users className="h-3.5 w-3.5" />
                     {emp.familyMembersCount}
                   </span>
-                </div>
-              )}
-              {emp.isSmoker !== undefined && emp.isSmoker !== null && (
-                <div className="flex flex-wrap gap-2 items-center justify-between py-2">
-                  <span className="text-sm text-muted-foreground">{t("employees.fields.isSmoker")}</span>
-                  <span className={`text-sm font-medium flex items-center gap-1 ${emp.isSmoker ? "text-amber-600" : "text-green-600"}`}>
+                ) : undefined
+              }
+              type="number"
+              canEdit={canEditFields} onSave={saveField("familyMembersCount", "number")}
+            />
+            <EditableRow
+              label={t("employees.fields.isSmoker")}
+              value={emp.isSmoker === undefined || emp.isSmoker === null ? null : emp.isSmoker}
+              display={
+                emp.isSmoker === undefined || emp.isSmoker === null ? undefined : (
+                  <span className={`flex items-center gap-1 justify-end ${emp.isSmoker ? "text-amber-600" : "text-green-600"}`}>
                     {emp.isSmoker && <Cigarette className="h-3.5 w-3.5" />}
                     {emp.isSmoker ? t("common.yes") : t("common.no")}
                   </span>
-                </div>
-              )}
-              {emp.chronicDiseases && (
-                <div className="py-2">
-                  <span className="text-sm text-muted-foreground block mb-1">{t("employees.fields.chronicDiseases")}</span>
-                  <span className="text-sm font-medium">{emp.chronicDiseases}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                )
+              }
+              type="boolean"
+              canEdit={canEditFields} onSave={saveField("isSmoker", "boolean")}
+            />
+            <EditableRow label={t("employees.fields.chronicDiseases")} value={emp.chronicDiseases}
+              canEdit={canEditFields} onSave={saveField("chronicDiseases")} />
+          </CardContent>
+        </Card>
 
         {/* ─── Qualifications ────────────────────────────────── */}
-        {(emp.yearsOfExperience !== undefined || emp.certificate1 || emp.certificate2) && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <GraduationCap className="h-4 w-4 text-primary" />
-                المؤهلات والخبرة
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y divide-border/50">
-              {emp.yearsOfExperience !== undefined && emp.yearsOfExperience !== null && (
-                <InfoRow label="سنوات الخبرة" value={`${emp.yearsOfExperience} سنة`} />
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              المؤهلات والخبرة
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-border/50">
+            <EditableRow
+              label="سنوات الخبرة"
+              value={emp.yearsOfExperience}
+              display={
+                emp.yearsOfExperience !== undefined && emp.yearsOfExperience !== null
+                  ? `${emp.yearsOfExperience} سنة`
+                  : undefined
+              }
+              type="number"
+              canEdit={canEditFields} onSave={saveField("yearsOfExperience", "number")}
+            />
+            <div className="py-2 space-y-1">
+              <span className="text-xs font-semibold text-muted-foreground uppercase">الشهادة الأولى</span>
+              <EditableRow label="الشهادة" value={emp.certificate1}
+                canEdit={canEditFields} onSave={saveField("certificate1")} />
+              <EditableRow label="التخصص" value={emp.specialization1}
+                canEdit={canEditFields} onSave={saveField("specialization1")} />
+              <EditableRow label="الجامعة" value={emp.university1}
+                canEdit={canEditFields} onSave={saveField("university1")} />
+              {emp.certificateAttachment1 && (
+                <a
+                  href={assetUrl(emp.certificateAttachment1)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  عرض المرفق
+                </a>
               )}
-              {emp.certificate1 && (
-                <div className="py-2 space-y-1">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase">الشهادة الأولى</span>
-                  <InfoRow label="الشهادة" value={emp.certificate1} />
-                  {emp.specialization1 && <InfoRow label="التخصص" value={emp.specialization1} />}
-                  {emp.university1 && <InfoRow label="الجامعة" value={emp.university1} />}
-                  {emp.certificateAttachment1 && (
-                    <a
-                      href={assetUrl(emp.certificateAttachment1)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-primary hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      عرض المرفق
-                    </a>
-                  )}
-                </div>
+            </div>
+            <div className="py-2 space-y-1">
+              <span className="text-xs font-semibold text-muted-foreground uppercase">الشهادة الثانية</span>
+              <EditableRow label="الشهادة" value={emp.certificate2}
+                canEdit={canEditFields} onSave={saveField("certificate2")} />
+              <EditableRow label="التخصص" value={emp.specialization2}
+                canEdit={canEditFields} onSave={saveField("specialization2")} />
+              <EditableRow label="الجامعة" value={emp.university2}
+                canEdit={canEditFields} onSave={saveField("university2")} />
+              {emp.certificateAttachment2 && (
+                <a
+                  href={assetUrl(emp.certificateAttachment2)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  عرض المرفق
+                </a>
               )}
-              {emp.certificate2 && (
-                <div className="py-2 space-y-1">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase">الشهادة الثانية</span>
-                  <InfoRow label="الشهادة" value={emp.certificate2} />
-                  {emp.specialization2 && <InfoRow label="التخصص" value={emp.specialization2} />}
-                  {emp.university2 && <InfoRow label="الجامعة" value={emp.university2} />}
-                  {emp.certificateAttachment2 && (
-                    <a
-                      href={assetUrl(emp.certificateAttachment2)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-primary hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      عرض المرفق
-                    </a>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* ─── Training Certificates ─────────────────────────── */}
         {trainingCertificates.length > 0 && (

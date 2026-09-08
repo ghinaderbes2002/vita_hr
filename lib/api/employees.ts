@@ -68,9 +68,14 @@ export interface DossierResponse {
   timeline: DossierEvent[];
 }
 
+/** List params for /employees — pagination plus the server-side status filter. */
+export interface EmployeeListParams extends PaginationParams {
+  employmentStatus?: Employee["employmentStatus"];
+}
+
 export const employeesApi = {
   getAll: async (
-    params?: PaginationParams
+    params?: EmployeeListParams
   ): Promise<ApiResponse<Employee[]>> => {
     const response = await apiClient.get("/employees", { params });
     return response.data;

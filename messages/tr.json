@@ -49,7 +49,7 @@
     "open": "Aç",
     "myLeaves": "İzinlerim",
     "payroll": "Bordro",
-    "jobTitle": "Unvan",
+    "jobTitle": "Görev Tanımı",
     "codeOfConduct": "Davranış Kuralları",
     "orgChart": "Organizasyon Şeması",
     "deleteConductTitle": "Davranış Kurallarını Sil",
@@ -84,17 +84,13 @@
       "teamAlerts": "Ekip Uyarıları"
     },
     "hr": {
-      "totalEmployees": "Toplam Çalışan",
+      "activeEmployees": "Aktif Çalışanlar",
       "probationEndingSoon": "Deneme Süresi Yakında Bitiyor",
       "employeeJustifications": "Çalışan Gerekçeleri",
       "leavesAwaitingHR": "İK Onayı Bekleyen İzinler",
       "probationEvaluationsHR": "İK Onayı Bekleyen Deneme Değerlendirmeleri",
       "performanceEvaluationsHR": "İK Onayı Bekleyen Performans Değerlendirmeleri",
       "adminRequestsPending": "Onayımı Bekleyen İdari Talepler",
-      "payrollStatus": "Bordro Durumu",
-      "payrollPending": "Beklemede",
-      "payrollCompleted": "Tamamlandı",
-      "viewPayroll": "Bordroyu Görüntüle",
       "candidatesByStage": "Aşamaya Göre Adaylar",
       "probationDialogTitle": "30 Gün İçinde Deneme Süresi Bitenler",
       "noProbationEmployees": "Bu dönemde çalışan yok",
@@ -200,6 +196,7 @@
     "clinicProsthetics": "Protez",
     "clinicPhysio": "Fizyoterapi",
     "clinicPodiatry": "Podoloji",
+    "clinicDoctorExams": "Doktor Muayeneleri",
     "clinicWaitingList": "Bekleme Listesi",
     "clinicAppointments": "Randevular",
     "clinicMyAppointments": "Randevularım",
@@ -435,6 +432,7 @@
     },
     "filterByDepartment": "Departmana Göre Filtrele",
     "allDepartments": "Tüm Departmanlar",
+    "allStatuses": "Tüm Durumlar",
     "subordinates": {
       "title": "Astlar",
       "description": "Belirli bir yöneticiye bağlı çalışanları görüntüle",
@@ -2022,7 +2020,7 @@
         "prosthetics": "Protez",
         "physio": "Fizyoterapi",
         "podiatry": "Ayak Sağlığı",
-        "both": "Her İkisi"
+        "doctorExam": "Doktor Muayenesi"
       },
       "table": {
         "name": "Ad Soyad",
@@ -3476,6 +3474,33 @@
         "archiveSessionTitle": "Seans arşivlensin mi?",
         "archiveSessionDesc": "Seans, verileri korunarak listeden gizlenir ve daha sonra \"Arşivlenenleri Göster\" düğmesinden görüntülenebilir.",
         "arrivalMethod": "Geliş Yöntemi"
+      }
+    },
+    "doctorExams": {
+      "title": "Doktor Muayeneleri",
+      "description": "Doktor muayenesi olan ve henüz fizyoterapiye aktarılmamış hastalar",
+      "searchPlaceholder": "Hasta adı veya numarası ile ara...",
+      "filter": {
+        "all": "Tüm Durumlar"
+      },
+      "statuses": {
+        "INTAKE": "Kabul",
+        "COMPLAINT": "Şikayet",
+        "COMPLETED": "Tamamlandı",
+        "CANCELLED": "İptal Edildi"
+      },
+      "table": {
+        "caseNumber": "Muayene No.",
+        "patientNumber": "Hasta No.",
+        "patient": "Hasta",
+        "idNumber": "Kimlik No.",
+        "complaint": "Ana Şikayet",
+        "status": "Durum",
+        "createdAt": "Oluşturulma"
+      },
+      "empty": {
+        "title": "Muayene Yok",
+        "description": "Fizyoterapiye aktarılmamış doktor muayeneleri burada görünecek"
       }
     },
     "physio": {

@@ -47,7 +47,7 @@
     "open": "Open",
     "myLeaves": "My Leaves",
     "payroll": "Payroll",
-    "jobTitle": "Job Title",
+    "jobTitle": "Job Description",
     "codeOfConduct": "Code of Conduct",
     "orgChart": "Organizational Chart",
     "deleteConductTitle": "Delete Code of Conduct",
@@ -82,17 +82,13 @@
       "teamAlerts": "Team Alerts"
     },
     "hr": {
-      "totalEmployees": "Total Employees",
+      "activeEmployees": "Active Employees",
       "probationEndingSoon": "Probation Period Ending Soon",
       "employeeJustifications": "Employee Justifications",
       "leavesAwaitingHR": "Leaves Awaiting HR",
       "probationEvaluationsHR": "Probation Evaluations Awaiting HR",
       "performanceEvaluationsHR": "Performance Evaluations Awaiting HR",
       "adminRequestsPending": "Administrative Requests Awaiting My Approval",
-      "payrollStatus": "Payroll Status",
-      "payrollPending": "Pending",
-      "payrollCompleted": "Completed",
-      "viewPayroll": "View Payroll",
       "candidatesByStage": "Candidates by Stage",
       "probationDialogTitle": "Employees Whose Probation Ends Within 30 Days",
       "noProbationEmployees": "No employees in this period",
@@ -201,6 +197,7 @@
     "clinicProsthetics": "Prosthetics",
     "clinicPhysio": "Physiotherapy",
     "clinicPodiatry": "Podiatry",
+    "clinicDoctorExams": "Doctor Exams",
     "clinicWaitingList": "Waiting List",
     "clinicAppointments": "Appointments",
     "clinicMyAppointments": "My Appointments",
@@ -438,6 +435,7 @@
     },
     "filterByDepartment": "Filter by Department",
     "allDepartments": "All Departments",
+    "allStatuses": "All Statuses",
     "subordinates": {
       "title": "Subordinates",
       "description": "View employees reporting to a specific manager",
@@ -2944,7 +2942,7 @@
         "prosthetics": "Prosthetics",
         "physio": "Physiotherapy",
         "podiatry": "Podiatry",
-        "both": "Both"
+        "doctorExam": "Doctor Examination"
       },
       "table": {
         "name": "Name",
@@ -4384,6 +4382,33 @@
         "archiveSessionTitle": "Archive session?",
         "archiveSessionDesc": "The session will be hidden from the list while its data is kept, and can be shown later via the \"Show Archived\" button.",
         "arrivalMethod": "Arrival Method"
+      }
+    },
+    "doctorExams": {
+      "title": "Doctor Exams",
+      "description": "Patients with a doctor exam who have not been referred to physiotherapy yet",
+      "searchPlaceholder": "Search by name or patient number...",
+      "filter": {
+        "all": "All statuses"
+      },
+      "statuses": {
+        "INTAKE": "Intake",
+        "COMPLAINT": "Complaint",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled"
+      },
+      "table": {
+        "caseNumber": "Exam No.",
+        "patientNumber": "Patient No.",
+        "patient": "Patient",
+        "idNumber": "ID Number",
+        "complaint": "Major Complaint",
+        "status": "Status",
+        "createdAt": "Created"
+      },
+      "empty": {
+        "title": "No exams",
+        "description": "Doctor exams not yet converted to physiotherapy will appear here"
       }
     },
     "physio": {
