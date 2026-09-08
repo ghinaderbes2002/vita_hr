@@ -243,6 +243,8 @@
       "noProbationEmployees": "لا يوجد موظفون في هذه الفترة",
       "daysRemaining": "{days} يوم متبقي",
       "daysOverdue": "متأخر {days} يوم",
+      "dismiss": "تجاهل",
+      "showDismissed": "إظهار المتجاهَلين ({count})",
       "viewProbationEvaluations": "عرض تقييمات التجربة"
     },
     "ceo": {

@@ -97,6 +97,8 @@
       "noProbationEmployees": "No employees in this period",
       "daysRemaining": "{days} days remaining",
       "daysOverdue": "{days} days overdue",
+      "dismiss": "Dismiss",
+      "showDismissed": "Show dismissed ({count})",
       "viewProbationEvaluations": "View Probation Evaluations"
     },
     "ceo": {

@@ -5,9 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   Users, Calendar, Clock, AlertCircle, PlusCircle,
-  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronRight, ChevronDown,
+  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronDown,
   UserPlus, Bell, FileText, ExternalLink, Hourglass, ClipboardCheck,
-  CheckCircle2, UserCheck, BarChart3, DollarSign, ShieldCheck, ClipboardEdit, CalendarCheck,
+  CheckCircle2, BarChart3, DollarSign, ShieldCheck, ClipboardEdit, CalendarCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ import { EmployeeDialog } from "@/components/features/employees/employee-dialog"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const CONDUCT_DOC_KEY = "conduct_document";
+/** موظفون تم تجاهلهم في تنبيه انتهاء فترة التجربة — لكل متصفح على حدة. */
+const PROBATION_DISMISSED_KEY = "probation_ending_dismissed";
 const DEFAULT_CONDUCT_DOC = { url: "/assets/images/مدونة السلوك.pdf", name: "مدونة السلوك" };
 
 /** دليل الموظف — ملفات ثابتة تُعرض للجميع تحت مدونة السلوك. */
@@ -290,8 +292,25 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
     },
     staleTime: 60_000,
   });
-  const probationEndingList = Array.isArray(probationEndingData) ? probationEndingData : [];
+  // التجاهل محلي بالمتصفح: لا يوجد endpoint لحفظه، فهو يخصّ هذا الجهاز فقط
+  // ولا يظهر لبقية مستخدمي HR.
+  const [dismissedProbation, setDismissedProbation] = useState<string[]>(() => {
+    try {
+      const s = localStorage.getItem(PROBATION_DISMISSED_KEY);
+      const parsed = s ? JSON.parse(s) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  });
+  const persistDismissed = (ids: string[]) => {
+    setDismissedProbation(ids);
+    try { localStorage.setItem(PROBATION_DISMISSED_KEY, JSON.stringify(ids)); } catch { /* storage unavailable */ }
+  };
+
+  const allProbationEnding = Array.isArray(probationEndingData) ? probationEndingData : [];
+  const probationEndingList = allProbationEnding.filter((e: any) => !dismissedProbation.includes(e.id));
+  // العدّاد يتبع القائمة المعروضة، وإلا قال 6 وفتح على 4.
   const probationEndingCount = probationEndingList.length;
+  const dismissedShown = allProbationEnding.length - probationEndingList.length;
   const [probationDialogOpen, setProbationDialogOpen] = useState(false);
 
   // Justifications the manager already passed on and that now sit with HR. Only
@@ -371,8 +390,15 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
                 const overdue = Number(emp.daysRemaining) < 0;
                 const needsAction = overdue && !emp.hasEvaluation;
                 return (
-                <button
+                <div
                   key={emp.id}
+                  className={`w-full flex flex-wrap gap-2 items-center rounded-lg border px-4 py-3 text-sm transition-colors ${
+                    needsAction
+                      ? "border-red-300 bg-red-50/70 hover:bg-red-100/70"
+                      : "hover:bg-muted hover:border-primary/40"
+                  }`}
+                >
+                <button
                   type="button"
                   // Straight into a new evaluation for this employee, with the
                   // dates this report already knows carried over in the URL.
@@ -383,11 +409,7 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
                     if (emp.probationEndDate) qs.set("probationEnd", String(emp.probationEndDate).split("T")[0]);
                     router.push(`/${locale}/probation-evaluations?${qs.toString()}`);
                   }}
-                  className={`w-full text-right flex flex-wrap gap-2 items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors ${
-                    needsAction
-                      ? "border-red-300 bg-red-50/70 hover:bg-red-100/70"
-                      : "hover:bg-muted hover:border-primary/40"
-                  }`}
+                  className="flex-1 min-w-0 text-right flex flex-wrap gap-2 items-center justify-between"
                 >
                   <div>
                     <p className="font-medium">{emp.fullNameAr ?? `${emp.firstNameAr ?? ""} ${emp.lastNameAr ?? ""}`.trim()}</p>
@@ -417,10 +439,30 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
                     <p className="text-xs text-muted-foreground mt-0.5">{emp.probationEndDate}</p>
                   </div>
                 </button>
+                {/* المتأخرون فقط — البقية لم يحن موعدها بعد ليُتجاهل. */}
+                {overdue && (
+                  <button
+                    type="button"
+                    onClick={() => persistDismissed([...dismissedProbation, emp.id])}
+                    className="shrink-0 rounded-md border px-2 py-1 text-xs text-muted-foreground bg-background/70 hover:bg-background hover:text-foreground transition-colors"
+                  >
+                    {t("hr.dismiss")}
+                  </button>
+                )}
+                </div>
                 );
               })
             )}
           </div>
+          {dismissedShown > 0 && (
+            <button
+              type="button"
+              onClick={() => persistDismissed([])}
+              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t("hr.showDismissed", { count: dismissedShown })}
+            </button>
+          )}
           {probationEndingList.length > 0 && (
             <Button variant="outline" className="w-full" onClick={() => { setProbationDialogOpen(false); router.push(`/${locale}/probation-evaluations`); }}>
               {t("hr.viewProbationEvaluations")}

@@ -99,6 +99,8 @@
       "noProbationEmployees": "Bu dönemde çalışan yok",
       "daysRemaining": "{days} gün kaldı",
       "daysOverdue": "{days} gün gecikti",
+      "dismiss": "Yoksay",
+      "showDismissed": "Yoksayılanları göster ({count})",
       "viewProbationEvaluations": "Deneme Değerlendirmelerini Görüntüle"
     },
     "ceo": {
