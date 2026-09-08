@@ -32,6 +32,12 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 const CONDUCT_DOC_KEY = "conduct_document";
 const DEFAULT_CONDUCT_DOC = { url: "/assets/images/مدونة السلوك.pdf", name: "مدونة السلوك" };
 
+/** دليل الموظف — ملفات ثابتة تُعرض للجميع تحت مدونة السلوك. */
+const EMPLOYEE_GUIDE_DOCS = [
+  { url: "/assets/images/بروتوكول الزيارات.pdf", labelKey: "visitsProtocol" },
+  { url: "/assets/images/دليل_اتيكيت_وسلوكيات_العمل_الرسمية.pdf", labelKey: "etiquetteGuide" },
+];
+
 function StatCard({
   title, value, icon: Icon, iconBg, onClick,
 }: {
@@ -460,34 +466,6 @@ function CEODashboard({ d, locale, router }: { d: any; locale: string; router: a
           iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
       </div>
 
-      {d.finalStageCandidates?.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3 flex flex-wrap gap-2 flex-row items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserCheck className="h-4 w-4 text-primary" />
-              {t("ceo.candidatesCEOStage")}
-            </CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => router.push(`/${locale}/job-applications`)}>
-              {t("ceo.viewAll")} <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {d.finalStageCandidates.map((c: any) => (
-                <div key={c.id} className="flex flex-wrap gap-2 items-center justify-between rounded-lg border px-3 py-2 text-sm">
-                  <div>
-                    <p className="font-medium">{c.firstNameAr} {c.lastNameAr}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.position?.jobTitle} · {c.position?.department}
-                    </p>
-                  </div>
-                  <Badge variant="outline">{c.currentStage}</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
@@ -697,6 +675,31 @@ export default function DashboardPage() {
             <p className="text-sm font-medium flex-1">{t("codeOfConduct")}</p>
             <span className="text-xs text-primary shrink-0">{t("open")}</span>
           </a>
+        </CardContent>
+      </Card>
+
+      {/* Employee Guide */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            {t("employeeGuide")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {EMPLOYEE_GUIDE_DOCS.map((doc) => (
+            <a
+              key={doc.url}
+              href={doc.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30 transition-colors hover:bg-muted hover:border-primary/40"
+            >
+              <FileText className="h-8 w-8 text-primary shrink-0" />
+              <p className="text-sm font-medium flex-1">{t(doc.labelKey)}</p>
+              <span className="text-xs text-primary shrink-0">{t("open")}</span>
+            </a>
+          ))}
         </CardContent>
       </Card>
 
