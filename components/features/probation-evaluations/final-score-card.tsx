@@ -142,18 +142,10 @@ export function FinalScoreCard({
                     <th className="text-right p-2 font-medium">المعيار</th>
                     <th className="text-center p-2 font-medium text-blue-700">مدير</th>
                     <th className="text-center p-2 font-medium text-indigo-700">ذاتي</th>
-                    <th className="text-center p-2 font-medium w-8"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sorted.map((s) => {
-                    const diff =
-                      s.score != null && s.selfScore != null
-                        ? Math.abs(s.score - s.selfScore)
-                        : null;
-                    const indicator =
-                      diff == null ? null : diff < 1 ? "✓" : diff >= 2 ? "⚠️" : null;
-                    return (
+                  {sorted.map((s) => (
                       <tr key={s.criteriaId} className="border-t">
                         <td className="p-2">{s.criteria?.nameAr || s.criteriaId}</td>
                         <td className="p-2 text-center font-medium text-blue-700">
@@ -162,22 +154,8 @@ export function FinalScoreCard({
                         <td className="p-2 text-center font-medium text-indigo-700">
                           {s.selfScore != null ? s.selfScore : <span className="text-muted-foreground font-normal">—</span>}
                         </td>
-                        <td className="p-2 text-center">
-                          {indicator && (
-                            <span
-                              title={
-                                diff != null && diff >= 2
-                                  ? "فارق كبير بين التقييمين"
-                                  : "تقييمان متقاربان"
-                              }
-                            >
-                              {indicator}
-                            </span>
-                          )}
-                        </td>
                       </tr>
-                    );
-                  })}
+                  ))}
                 </tbody>
               </table>
             </div>
