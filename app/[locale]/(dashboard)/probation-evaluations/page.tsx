@@ -37,6 +37,7 @@ import { CriteriaSettingsDialog } from "@/components/features/probation-evaluati
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                    "bg-gray-100 text-gray-600",
   PENDING_SELF_EVALUATION:  "bg-indigo-100 text-indigo-700",
+  PENDING_DIRECT_MANAGER:   "bg-blue-100 text-blue-700",
   PENDING_SENIOR_MANAGER:   "bg-blue-100 text-blue-700",
   PENDING_HR:               "bg-purple-100 text-purple-700",
   PENDING_CEO:              "bg-amber-100 text-amber-700",
@@ -233,7 +234,7 @@ export default function ProbationEvaluationsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {ev.overallRating ? t(`scores.${ev.overallRating}`) : "—"}
+                      {ev.overallRating ? t(`scores.${Math.round(ev.overallRating)}`) : "—"}
                     </TableCell>
                     <TableCell>
                       {ev.finalRecommendation ? (

@@ -4,6 +4,9 @@ import type { EmployeeCommission } from "@/types";
 export type ProbationStatus =
   | "DRAFT"
   | "PENDING_SELF_EVALUATION"
+  /** The direct manager reviews right after the self-evaluation. */
+  | "PENDING_DIRECT_MANAGER"
+  /** Legacy: kept for records created before the direct-manager step existed. */
   | "PENDING_SENIOR_MANAGER"
   | "PENDING_HR"
   | "PENDING_CEO"
@@ -31,13 +34,19 @@ export const PROBATION_SCORE_LABELS: Record<number, string> = {
   5: "ممتاز",
 };
 
-export const PROBATION_RECOMMENDATION_OPTIONS: { value: ProbationRecommendation; labelAr: string }[] = [
-  { value: "CONFIRM_POSITION",   labelAr: "تثبيت في المنصب" },
-  { value: "EXTEND_PROBATION",   labelAr: "تمديد فترة التجربة" },
-  { value: "TRANSFER_POSITION",  labelAr: "نقل إلى منصب آخر" },
-  { value: "SALARY_RAISE",       labelAr: "رفع الراتب" },
-  { value: "TERMINATE",          labelAr: "إنهاء الخدمة" },
-];
+/** أسماء كل التوصيات — تشمل الملغاة، لأن التقييمات القديمة مسجّلة عليها. */
+export const PROBATION_RECOMMENDATION_LABELS: Record<ProbationRecommendation, string> = {
+  CONFIRM_POSITION:  "تثبيت في المنصب",
+  EXTEND_PROBATION:  "تمديد فترة التجربة",
+  TRANSFER_POSITION: "نقل إلى منصب آخر",
+  SALARY_RAISE:      "رفع الراتب",
+  TERMINATE:         "إنهاء الخدمة",
+};
+
+/** ما يُعرض في قوائم الاختيار — «تمديد فترة التجربة» لم تعد خياراً متاحاً. */
+export const PROBATION_RECOMMENDATION_OPTIONS: { value: ProbationRecommendation; labelAr: string }[] = (
+  ["CONFIRM_POSITION", "TRANSFER_POSITION", "SALARY_RAISE", "TERMINATE"] as ProbationRecommendation[]
+).map((value) => ({ value, labelAr: PROBATION_RECOMMENDATION_LABELS[value] }));
 
 export interface ProbationEvaluationScore {
   criteriaId: string;
@@ -108,6 +117,12 @@ export interface SeniorApproveData {
   scores: { criteriaId: string; score: number }[];
 }
 
+/**
+ * POST /:id/direct-manager-approve — same body as the legacy senior approval.
+ * Moves the evaluation to PENDING_MEETING_SCHEDULE.
+ */
+export type DirectManagerApproveData = SeniorApproveData;
+
 // POST /:id/ceo-decide
 export interface CeoDecideData {
   recommendation: ProbationRecommendation;
@@ -134,9 +149,20 @@ export interface CompleteProbationData {
   decisionDocumentUrl?: string;
 }
 
-// Generic reject / hr-document body
+// Generic reject body
 export interface WorkflowNotesData {
   notes?: string;
+}
+
+/**
+ * POST /:id/hr-document. `sendToCeo: false` (the common case) closes the
+ * evaluation outright; `true` hands it to the CEO for the final decision.
+ */
+export interface HrDocumentData {
+  sendToCeo: boolean;
+  notes?: string;
+  /** Only meaningful when closing without the CEO. */
+  decisionDocumentUrl?: string;
 }
 
 export interface EmployeeEvaluationsResponse {
@@ -204,7 +230,17 @@ export const probationEvaluationsApi = {
     return response.data?.data || response.data;
   },
 
-  hrDocument: async (id: string, data?: WorkflowNotesData) => {
+  directManagerApprove: async (id: string, data: DirectManagerApproveData) => {
+    const response = await apiClient.post(`/probation-evaluations/${id}/direct-manager-approve`, data);
+    return response.data?.data || response.data;
+  },
+
+  directManagerReject: async (id: string, data?: WorkflowNotesData) => {
+    const response = await apiClient.post(`/probation-evaluations/${id}/direct-manager-reject`, data);
+    return response.data?.data || response.data;
+  },
+
+  hrDocument: async (id: string, data: HrDocumentData) => {
     const response = await apiClient.post(`/probation-evaluations/${id}/hr-document`, data);
     return response.data?.data || response.data;
   },

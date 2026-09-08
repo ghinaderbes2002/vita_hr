@@ -5,7 +5,7 @@ import {
   AdjustBalanceData,
   CarryOverData,
 } from "@/lib/api/leave-balances";
-export type { HourlyBalanceResponse } from "@/lib/api/leave-balances";
+export type { HourlyBalanceResponse, AnnualLeaveSummary } from "@/lib/api/leave-balances";
 import { toast } from "sonner";
 
 export function useHourlyBalance(employeeId: string, year?: number, month?: number) {
@@ -13,6 +13,15 @@ export function useHourlyBalance(employeeId: string, year?: number, month?: numb
     queryKey: ["leave-balances", "hourly-monthly", employeeId, year, month],
     queryFn: () => leaveBalancesApi.getHourlyMonthly(employeeId, year, month),
     enabled: !!employeeId,
+  });
+}
+
+/** Annual entitlement vs. days taken — the basis for "unused leave" figures. */
+export function useAnnualLeaveSummary(employeeId: string, year?: number, enabled = true) {
+  return useQuery({
+    queryKey: ["leave-balances", "annual-summary", employeeId, year],
+    queryFn: () => leaveBalancesApi.getAnnualSummary(employeeId, year),
+    enabled: !!employeeId && enabled,
   });
 }
 

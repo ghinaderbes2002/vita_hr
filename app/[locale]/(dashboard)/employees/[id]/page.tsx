@@ -8,10 +8,10 @@ import {
   Paperclip, Heart, GraduationCap, MapPin, Users, FileDown,
   BadgeCheck, Cigarette, Award, ExternalLink,
   Fingerprint, Plus, Trash2, Settings, Save, ClipboardList, Pencil, X,
-  Clock, CalendarDays, AlertTriangle, CheckCircle2, Check, Loader2, Camera,
+  Clock, CalendarDays, AlertTriangle, CheckCircle2, Check, Loader2, Camera, CalendarX,
   ArrowLeftRight, DollarSign, FolderOpen, Percent,
 } from "lucide-react";
-import { PROBATION_RECOMMENDATION_OPTIONS } from "@/lib/api/probation-evaluations";
+import { PROBATION_RECOMMENDATION_LABELS } from "@/lib/api/probation-evaluations";
 import { useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { TrainingCertificate, EmployeeAllowance, EmployeeCommission, EmployeeRewardPenalty } from "@/types";
 import { useEmployee, useUpdateEmployee } from "@/lib/hooks/use-employees";
+import { useAnnualLeaveSummary } from "@/lib/hooks/use-leave-balances";
 import { EmployeeDossier } from "@/components/features/employees/employee-dossier";
 import { TransferDialog } from "@/components/features/employees/transfer-dialog";
 import { SalaryChangeDialog } from "@/components/features/employees/salary-change-dialog";
@@ -634,6 +635,16 @@ export default function EmployeeDetailsPage() {
     );
   }
 
+  // Annual leave the employee was entitled to but has not taken. Fetched only
+  // once the dialog is opened — it is a report, not part of the profile.
+  const [leaveDuesOpen, setLeaveDuesOpen] = useState(false);
+  const [leaveDuesYear, setLeaveDuesYear] = useState(new Date().getFullYear());
+  const {
+    data: annualLeave,
+    isLoading: annualLeaveLoading,
+    isError: annualLeaveError,
+  } = useAnnualLeaveSummary(employeeId, leaveDuesYear, leaveDuesOpen);
+
   // Employee schedules
   const { data: empSchedules } = useEmployeeSchedules(employeeId);
   const { data: workSchedulesData } = useWorkSchedules();
@@ -825,6 +836,10 @@ export default function EmployeeDetailsPage() {
               تغيير راتب
             </Button>
           </ActionGuard>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setLeaveDuesOpen(true)}>
+            <CalendarX className="h-4 w-4" />
+            مستحقات الإجازات
+          </Button>
           {canExport && (
             <Button variant="outline" size="sm" className="gap-2" onClick={() => { setExportError(null); setExportDialogOpen(true); }}>
               <FileDown className="h-4 w-4" />
@@ -1125,7 +1140,7 @@ export default function EmployeeDetailsPage() {
               <div className="flex flex-wrap gap-2 items-start justify-between py-2">
                 <span className="text-sm text-muted-foreground shrink-0 w-40">نتيجة التقييم</span>
                 <span className="text-sm font-semibold text-end flex-1">
-                  {PROBATION_RECOMMENDATION_OPTIONS.find(o => o.value === emp.probationResult)?.labelAr || emp.probationResult}
+                  {PROBATION_RECOMMENDATION_LABELS[emp.probationResult as keyof typeof PROBATION_RECOMMENDATION_LABELS] || emp.probationResult}
                 </span>
               </div>
               {completedEval?.finalScorePercent != null && (
@@ -1738,6 +1753,84 @@ export default function EmployeeDetailsPage() {
         employeeId={employeeId}
         currentCommissions={commissions}
       />
+
+      {/* ─── Unused Annual Leave ───────────────────────────── */}
+      <Dialog open={leaveDuesOpen} onOpenChange={setLeaveDuesOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarX className="h-4 w-4 text-primary" />
+              مستحقات الإجازات غير المستفاد منها
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-sm text-muted-foreground">السنة</Label>
+              <Select
+                value={String(leaveDuesYear)}
+                onValueChange={(v) => setLeaveDuesYear(Number(v))}
+              >
+                <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 5 }).map((_, i) => {
+                    const y = new Date().getFullYear() - i;
+                    return <SelectItem key={y} value={String(y)}>{y}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {annualLeaveLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : annualLeaveError ? (
+              <p className="text-sm text-destructive text-center py-6">
+                تعذّر جلب رصيد الإجازات. حاول مرة أخرى.
+              </p>
+            ) : (
+              <>
+                {/* The figure the dialog exists for: entitlement not taken. */}
+                <div className="rounded-lg border bg-muted/30 px-4 py-5 text-center">
+                  <p className="text-sm text-muted-foreground">أيام لم يستفد منها الموظف</p>
+                  <p className="text-4xl font-bold text-primary mt-1">
+                    {annualLeave?.remaining ?? 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    من أصل {annualLeave?.entitled ?? 0} يوم مستحقة لسنة {annualLeave?.year ?? leaveDuesYear}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border px-3 py-2 text-center">
+                    <p className="text-xs text-muted-foreground">الرصيد المستحق</p>
+                    <p className="text-lg font-semibold">{annualLeave?.entitled ?? 0}</p>
+                  </div>
+                  <div className="rounded-lg border px-3 py-2 text-center">
+                    <p className="text-xs text-muted-foreground">المستخدم فعلياً</p>
+                    <p className="text-lg font-semibold">{annualLeave?.used ?? 0}</p>
+                  </div>
+                </div>
+
+                {(annualLeave?.entitled ?? 0) === 0 && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                    لا يوجد رصيد إجازات مُهيّأ لهذا الموظف في سنة {leaveDuesYear}.
+                  </p>
+                )}
+
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLeaveDuesOpen(false)}>
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── Start Workflow Dialog ─────────────────────────── */}
       <Dialog open={wfDialogOpen} onOpenChange={setWfDialogOpen}>

@@ -996,7 +996,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                             <SelectItem value="ONE_MONTH">شهر</SelectItem>
                             <SelectItem value="TWO_MONTHS">شهران</SelectItem>
                             <SelectItem value="THREE_MONTHS">3 شهور</SelectItem>
-                            <SelectItem value="PERMANENT">دائم</SelectItem>
+                            <SelectItem value="PERMANENT">مثبت</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

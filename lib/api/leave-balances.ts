@@ -68,6 +68,27 @@ export interface HourlyBalanceResponse {
   remainingMinutes: number;
 }
 
+/**
+ * Annual-leave entitlement vs. what was actually taken, for one employee and
+ * year. The API answers with zeros (not an error) when no balance was
+ * initialised for that employee/year.
+ */
+export interface AnnualLeaveSummary {
+  employeeId: string;
+  employee?: {
+    employeeNumber?: string;
+    firstNameAr?: string;
+    lastNameAr?: string;
+    firstNameEn?: string;
+    lastNameEn?: string;
+  };
+  year: number;
+  /** Allocated for the year plus whatever carried over from the previous one. */
+  entitled: number;
+  used: number;
+  remaining: number;
+}
+
 export const leaveBalancesApi = {
   getMyBalance: async (year?: number): Promise<LeaveBalance[]> => {
     const params = year ? { year } : {};
@@ -110,6 +131,14 @@ export const leaveBalancesApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/leave-balances/${id}`);
+  },
+
+  getAnnualSummary: async (employeeId: string, year?: number): Promise<AnnualLeaveSummary> => {
+    const response = await apiClient.get(
+      `/leave-balances/employee/${employeeId}/annual-summary`,
+      { params: year ? { year } : {} },
+    );
+    return response.data?.data ?? response.data;
   },
 
   getHourlyMonthly: async (employeeId: string, year?: number, month?: number): Promise<HourlyBalanceResponse> => {

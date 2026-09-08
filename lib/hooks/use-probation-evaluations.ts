@@ -4,6 +4,8 @@ import {
   CreateProbationEvaluationData,
   SelfEvaluateData,
   SeniorApproveData,
+  DirectManagerApproveData,
+  HrDocumentData,
   CeoDecideData,
   WorkflowNotesData,
   ProposeMeetingData,
@@ -126,14 +128,42 @@ export function useSeniorRejectProbation() {
   });
 }
 
-export function useHrDocumentProbation() {
+export function useDirectManagerApproveProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: DirectManagerApproveData }) =>
+      probationEvaluationsApi.directManagerApprove(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تمت الموافقة — بانتظار جدولة الاجتماع من HR");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useDirectManagerRejectProbation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data?: WorkflowNotesData }) =>
-      probationEvaluationsApi.hrDocument(id, data),
+      probationEvaluationsApi.directManagerReject(id, data),
     onSuccess: (_, { id }) => {
       invalidateAll(qc, id);
-      toast.success("تم التوثيق وإرساله للمدير التنفيذي");
+      toast.success("تم الرفض");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useHrDocumentProbation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: HrDocumentData }) =>
+      probationEvaluationsApi.hrDocument(id, data),
+    onSuccess: (_, { id, data }) => {
+      invalidateAll(qc, id);
+      toast.success(data.sendToCeo
+        ? "تم التوثيق وإرساله للمدير التنفيذي"
+        : "تم توثيق التقييم وإغلاقه");
     },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });

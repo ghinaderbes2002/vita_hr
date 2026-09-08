@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -25,6 +26,8 @@ import {
   useSelfEvaluateProbation,
   useSeniorApproveProbation,
   useSeniorRejectProbation,
+  useDirectManagerApproveProbation,
+  useDirectManagerRejectProbation,
   useHrDocumentProbation,
   useHrRejectProbation,
   useCeoDecideProbation,
@@ -39,6 +42,7 @@ import {
   ProbationRecommendation,
   PROBATION_SCORE_LABELS,
   PROBATION_RECOMMENDATION_OPTIONS,
+  PROBATION_RECOMMENDATION_LABELS,
 } from "@/lib/api/probation-evaluations";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -48,6 +52,7 @@ import { FinalScoreCard } from "@/components/features/probation-evaluations/fina
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
   DRAFT:                    "bg-gray-100 text-gray-600",
   PENDING_SELF_EVALUATION:  "bg-indigo-100 text-indigo-700",
+  PENDING_DIRECT_MANAGER:   "bg-blue-100 text-blue-700",
   PENDING_SENIOR_MANAGER:   "bg-blue-100 text-blue-700",
   PENDING_HR:               "bg-purple-100 text-purple-700",
   PENDING_CEO:              "bg-amber-100 text-amber-700",
@@ -58,20 +63,28 @@ const STATUS_CLASSES: Record<ProbationStatus, string> = {
   REJECTED_BY_CEO:          "bg-red-100 text-red-700",
 };
 
+// المسار: ذاتي ← المدير المباشر ← جدولة الاجتماع ← HR ← (المدير التنفيذي) ← مكتمل
 const WORKFLOW_STATUSES: ProbationStatus[] = [
   "DRAFT",
   "PENDING_SELF_EVALUATION",
-  "PENDING_SENIOR_MANAGER",
+  "PENDING_DIRECT_MANAGER",
+  "PENDING_MEETING_SCHEDULE",
   "PENDING_HR",
   "PENDING_CEO",
-  "PENDING_MEETING_SCHEDULE",
   "COMPLETED",
 ];
+
+/** Records opened before the direct-manager step share its slot in the stepper. */
+const STEPPER_ALIAS: Partial<Record<ProbationStatus, ProbationStatus>> = {
+  PENDING_SENIOR_MANAGER: "PENDING_DIRECT_MANAGER",
+};
 
 type ActionType =
   | "self-evaluate"
   | "approve"
   | "reject"
+  | "direct-manager-approve"
+  | "direct-manager-reject"
   | "document"
   | "hr-reject"
   | "ceo"
@@ -117,7 +130,7 @@ function ScoreInput({
 
 function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
   const isRejected = status.startsWith("REJECTED");
-  const currentIdx = WORKFLOW_STATUSES.findIndex((s) => s === status);
+  const currentIdx = WORKFLOW_STATUSES.findIndex((s) => s === (STEPPER_ALIAS[status] ?? status));
   const activeIdx = isRejected ? -1 : currentIdx;
 
   return (
@@ -153,6 +166,7 @@ function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
 function StatusBanner({
   status,
   canSeniorApprove,
+  canDirectManagerAct,
   canHrDocument,
   canCeoDecide,
   onAction,
@@ -160,6 +174,7 @@ function StatusBanner({
 }: {
   status: ProbationStatus;
   canSeniorApprove: boolean;
+  canDirectManagerAct: boolean;
   canHrDocument: boolean;
   canCeoDecide: boolean;
   onAction: (type: ActionType) => void;
@@ -193,6 +208,12 @@ function StatusBanner({
       btnLabel: "ابدأ التقييم",
       action: "self-evaluate",
       color: "border-indigo-200 bg-indigo-50 text-indigo-800",
+    },
+    PENDING_DIRECT_MANAGER: {
+      msg: "بانتظار مراجعة المدير المباشر",
+      btnLabel: canDirectManagerAct ? "راجع التقييم" : undefined,
+      action: "direct-manager-approve",
+      color: "border-blue-200 bg-blue-50 text-blue-800",
     },
     PENDING_SENIOR_MANAGER: {
       msg: "بانتظار مراجعة المدير المباشر",
@@ -252,8 +273,10 @@ export default function ProbationEvaluationDetailPage() {
   const [actionType, setActionType] = useState<ActionType | null>(null);
   const [actionNotes, setActionNotes] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
-  const [documentUrl, setDocumentUrl] = useState("");
-  const [overallRating, setOverallRating] = useState<number | "">("");
+  // hr-document: إغلاق مباشر هو الأكثر شيوعاً، والإرسال للمدير التنفيذي استثناء.
+  const [sendToCeo, setSendToCeo] = useState(false);
+  // فارغ = اتبع المتوسط المحسوب من درجات المعايير؛ أي قيمة مكتوبة تتقدّم عليه.
+  const [overallRatingInput, setOverallRatingInput] = useState("");
   const [recommendation, setRecommendation] = useState<ProbationRecommendation | "">("");
   const [scoreMap, setScoreMap] = useState<Record<string, number>>({});
 
@@ -263,6 +286,8 @@ export default function ProbationEvaluationDetailPage() {
   const selfEvaluate    = useSelfEvaluateProbation();
   const seniorApprove   = useSeniorApproveProbation();
   const seniorReject    = useSeniorRejectProbation();
+  const dmApprove       = useDirectManagerApproveProbation();
+  const dmReject        = useDirectManagerRejectProbation();
   const hrDocument      = useHrDocumentProbation();
   const hrReject        = useHrRejectProbation();
   const ceoDecide       = useCeoDecideProbation();
@@ -284,8 +309,16 @@ export default function ProbationEvaluationDetailPage() {
   const { data: employeeRecord } = useEmployeeBasic(ev?.employeeId || "");
 
   const canSeniorApprove = isAdmin() || hasPermission("probation:senior-review");
+  // المدير المباشر للموظف ليس له صلاحية خاصة — الباك هو من يقرر من عليه الدور،
+  // وpending-my-action هي المصدر الوحيد لذلك.
+  const canDirectManagerAct = isPendingForMe || isAdmin();
   const canHrDocument    = isAdmin() || hasPermission("probation:hr-review");
   const canCeoDecide     = isAdmin() || hasPermission("probation:ceo-review");
+  // ملاحظات «مخرجات الاجتماع» داخلية بين HR والإدارة — الموظف صاحب التقييم لا
+  // يراها في سجل الإجراءات، ولا أي شخص خارج أدوار المسار.
+  const canSeeHrNotes =
+    user?.employeeId !== ev?.employeeId &&
+    (canSeniorApprove || canHrDocument || canCeoDecide);
 
   if (isLoading) {
     return (
@@ -301,12 +334,30 @@ export default function ProbationEvaluationDetailPage() {
 
   const evScores: any[] = ev.scores || [];
 
+  // التقييم العام = متوسط الدرجات المُدخلة للمعايير، لأقرب منزلة عشرية. يُحسب
+  // من scoreMap مباشرة فيتحدّث مع كل درجة تُكتب في النافذة، والمدير يقدر يكتب
+  // قيمة غيره فتتقدّم عليه (ومسح الحقل يرجّعه للحساب التلقائي).
+  const enteredScores = evScores
+    .map((s: any) => scoreMap[s.criteriaId])
+    .filter((v) => v >= 1);
+  const autoOverallRating = enteredScores.length
+    ? Math.round((enteredScores.reduce((a, b) => a + b, 0) / enteredScores.length) * 10) / 10
+    : null;
+  const manualOverallRating =
+    overallRatingInput.trim() === "" ? null : Number(overallRatingInput);
+  const overallRating =
+    manualOverallRating != null && manualOverallRating >= 1 && manualOverallRating <= 5
+      ? manualOverallRating
+      : manualOverallRating != null
+        ? null            // رقم مكتوب خارج 1–5: لا يُعتمد، وزر التأكيد يبقى معطّلاً
+        : autoOverallRating;
+
   function openAction(type: ActionType) {
     setActionType(type);
     setActionNotes("");
     setMeetingDate("");
-    setDocumentUrl("");
-    setOverallRating("");
+    setSendToCeo(false);
+    setOverallRatingInput("");
     setRecommendation("");
     // Pre-fill scoreMap from existing scores
     const initial: Record<string, number> = {};
@@ -347,8 +398,30 @@ export default function ProbationEvaluationDetailPage() {
         case "reject":
           await seniorReject.mutateAsync({ id, data: { notes: actionNotes || undefined } });
           break;
+        case "direct-manager-approve":
+          await dmApprove.mutateAsync({
+            id,
+            data: {
+              overallRating: overallRating as number,
+              recommendation: recommendation as ProbationRecommendation,
+              notes: actionNotes || undefined,
+              scores: evScores
+                .filter((s) => scoreMap[s.criteriaId] >= 1)
+                .map((s) => ({ criteriaId: s.criteriaId, score: scoreMap[s.criteriaId] })),
+            },
+          });
+          break;
+        case "direct-manager-reject":
+          await dmReject.mutateAsync({ id, data: { notes: actionNotes || undefined } });
+          break;
         case "document":
-          await hrDocument.mutateAsync({ id, data: { notes: actionNotes || undefined } });
+          await hrDocument.mutateAsync({
+            id,
+            data: {
+              sendToCeo,
+              notes: actionNotes || undefined,
+            },
+          });
           break;
         case "hr-reject":
           await hrReject.mutateAsync({ id, data: { notes: actionNotes || undefined } });
@@ -383,6 +456,7 @@ export default function ProbationEvaluationDetailPage() {
 
   const isActionLoading =
     selfEvaluate.isPending || seniorApprove.isPending || seniorReject.isPending ||
+    dmApprove.isPending || dmReject.isPending ||
     hrDocument.isPending || hrReject.isPending || ceoDecide.isPending ||
     proposeMeeting.isPending || confirmMeeting.isPending || suggestChange.isPending ||
     completeProbation.isPending;
@@ -391,6 +465,8 @@ export default function ProbationEvaluationDetailPage() {
     "self-evaluate":    t("actionDialog.selfEvaluate"),
     approve:            t("actionDialog.approve"),
     reject:             t("actionDialog.reject"),
+    "direct-manager-approve": t("actionDialog.directManagerApprove"),
+    "direct-manager-reject":  t("actionDialog.directManagerReject"),
     document:           t("actionDialog.document"),
     "hr-reject":        t("actionDialog.hrReject"),
     ceo:                t("actionDialog.ceo"),
@@ -405,7 +481,9 @@ export default function ProbationEvaluationDetailPage() {
     isActionLoading ||
     (actionType === "reject" && !actionNotes.trim()) ||
     (actionType === "hr-reject" && !actionNotes.trim()) ||
+    (actionType === "direct-manager-reject" && !actionNotes.trim()) ||
     (actionType === "approve" && (!overallRating || !recommendation)) ||
+    (actionType === "direct-manager-approve" && (!overallRating || !recommendation)) ||
     (actionType === "ceo" && !recommendation) ||
     (actionType === "propose-meeting" && !meetingDate) ||
     (actionType === "suggest-meeting-change" && !actionNotes.trim());
@@ -432,6 +510,7 @@ export default function ProbationEvaluationDetailPage() {
       <StatusBanner
         status={ev.status as ProbationStatus}
         canSeniorApprove={canSeniorApprove}
+        canDirectManagerAct={canDirectManagerAct}
         canHrDocument={canHrDocument}
         canCeoDecide={canCeoDecide}
         onAction={openAction}
@@ -572,14 +651,14 @@ export default function ProbationEvaluationDetailPage() {
             {ev.overallRating && (
               <div>
                 <p className="text-xs text-muted-foreground">{t("detail.overallRating")}</p>
-                <p className="font-bold text-lg">{ev.overallRating} — {PROBATION_SCORE_LABELS[ev.overallRating]}</p>
+                <p className="font-bold text-lg">{ev.overallRating} — {PROBATION_SCORE_LABELS[Math.round(ev.overallRating)]}</p>
               </div>
             )}
             {ev.finalRecommendation && (
               <div>
                 <p className="text-xs text-muted-foreground">{t("detail.finalRecommendation")}</p>
                 <p className="font-bold text-lg">
-                  {PROBATION_RECOMMENDATION_OPTIONS.find(o => o.value === ev.finalRecommendation)?.labelAr || ev.finalRecommendation}
+                  {PROBATION_RECOMMENDATION_LABELS[ev.finalRecommendation as ProbationRecommendation] || ev.finalRecommendation}
                 </p>
               </div>
             )}
@@ -601,7 +680,7 @@ export default function ProbationEvaluationDetailPage() {
               <p className="text-xs text-muted-foreground">نتيجة التقييم</p>
               <p className="font-medium mt-0.5">
                 {ev.finalRecommendation
-                  ? (PROBATION_RECOMMENDATION_OPTIONS.find((o: any) => o.value === ev.finalRecommendation)?.labelAr || ev.finalRecommendation)
+                  ? (PROBATION_RECOMMENDATION_LABELS[ev.finalRecommendation as ProbationRecommendation] || ev.finalRecommendation)
                   : "—"}
               </p>
             </div>
@@ -653,6 +732,16 @@ export default function ProbationEvaluationDetailPage() {
                 <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => openAction("self-evaluate")}>
                   <ClipboardEdit className="h-4 w-4" />{t("actions.selfEvaluate")}
                 </Button>
+              )}
+              {ev.status === "PENDING_DIRECT_MANAGER" && canDirectManagerAct && (
+                <>
+                  <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("direct-manager-approve")}>
+                    <CheckCircle2 className="h-4 w-4" />تقييم المدير المباشر
+                  </Button>
+                  <Button variant="destructive" className="gap-2" onClick={() => openAction("direct-manager-reject")}>
+                    <XCircle className="h-4 w-4" />{t("actions.reject")}
+                  </Button>
+                </>
               )}
               {ev.status === "PENDING_SENIOR_MANAGER" && canSeniorApprove && (
                 <>
@@ -755,7 +844,9 @@ export default function ProbationEvaluationDetailPage() {
                         {new Date(h.createdAt).toLocaleDateString()}
                       </span>
                     </div>
-                    {h.notes && <p className="text-xs text-muted-foreground mt-0.5">{h.notes}</p>}
+                    {h.notes && (h.action !== "HR_DOCUMENT" || canSeeHrNotes) && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{h.notes}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -806,8 +897,8 @@ export default function ProbationEvaluationDetailPage() {
               )
             )}
 
-            {/* Senior approve: overallRating + recommendation + score per criterion */}
-            {actionType === "approve" && (
+            {/* Manager approval: overallRating + recommendation + score per criterion */}
+            {(actionType === "approve" || actionType === "direct-manager-approve") && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -816,16 +907,18 @@ export default function ProbationEvaluationDetailPage() {
                       type="number"
                       min={1}
                       max={5}
-                      value={overallRating}
-                      onChange={(e) => {
-                        const v = parseInt(e.target.value);
-                        setOverallRating((v >= 1 && v <= 5) ? v : "");
-                      }}
+                      step={0.1}
+                      value={overallRatingInput !== "" ? overallRatingInput : (autoOverallRating ?? "")}
+                      onChange={(e) => setOverallRatingInput(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                     />
-                    {overallRating && (
-                      <p className="text-xs text-muted-foreground">{PROBATION_SCORE_LABELS[overallRating as number]}</p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {overallRating != null
+                        ? `${PROBATION_SCORE_LABELS[Math.round(overallRating)]}${
+                            overallRatingInput.trim() === "" ? " — متوسط درجات المعايير تلقائياً" : ""
+                          }`
+                        : "أدخل قيمة بين 1 و 5، أو اترك الحقل فارغاً ليُحسب من درجات المعايير"}
+                    </p>
                   </div>
                   <div className="space-y-1.5">
                     <Label>{t("actionDialog.recommendation")} *</Label>
@@ -866,6 +959,27 @@ export default function ProbationEvaluationDetailPage() {
                   </div>
                 )}
               </>
+            )}
+
+            {/* HR documentation: close outright, or hand over to the CEO. */}
+            {actionType === "document" && (
+              <div className="space-y-3">
+                <label className="flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer">
+                  <Checkbox
+                    checked={sendToCeo}
+                    onCheckedChange={(v) => setSendToCeo(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="space-y-0.5">
+                    <span className="block text-sm font-medium">إرسال للمدير التنفيذي للقرار النهائي</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {sendToCeo
+                        ? "سينتقل التقييم إلى المدير التنفيذي قبل إغلاقه."
+                        : "بدون تحديد، يُوثَّق التقييم ويُغلَق مباشرة."}
+                    </span>
+                  </span>
+                </label>
+              </div>
             )}
 
             {/* CEO: recommendation only */}
