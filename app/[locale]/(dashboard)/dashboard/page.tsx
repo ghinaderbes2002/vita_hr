@@ -359,26 +359,60 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
             {probationEndingList.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">{t("hr.noProbationEmployees")}</p>
             ) : (
-              probationEndingList.map((emp: any) => (
-                <div key={emp.id} className="flex flex-wrap gap-2 items-center justify-between rounded-lg border px-4 py-3 text-sm">
+              probationEndingList.map((emp: any) => {
+                // Probation already ended. Overdue and still unevaluated is the
+                // case that needs chasing, so it gets the loudest treatment.
+                const overdue = Number(emp.daysRemaining) < 0;
+                const needsAction = overdue && !emp.hasEvaluation;
+                return (
+                <button
+                  key={emp.id}
+                  type="button"
+                  // Straight into a new evaluation for this employee, with the
+                  // dates this report already knows carried over in the URL.
+                  onClick={() => {
+                    setProbationDialogOpen(false);
+                    const qs = new URLSearchParams({ newFor: emp.id });
+                    if (emp.hireDate) qs.set("hireDate", String(emp.hireDate).split("T")[0]);
+                    if (emp.probationEndDate) qs.set("probationEnd", String(emp.probationEndDate).split("T")[0]);
+                    router.push(`/${locale}/probation-evaluations?${qs.toString()}`);
+                  }}
+                  className={`w-full text-right flex flex-wrap gap-2 items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors ${
+                    needsAction
+                      ? "border-red-300 bg-red-50/70 hover:bg-red-100/70"
+                      : "hover:bg-muted hover:border-primary/40"
+                  }`}
+                >
                   <div>
                     <p className="font-medium">{emp.fullNameAr ?? `${emp.firstNameAr ?? ""} ${emp.lastNameAr ?? ""}`.trim()}</p>
-                    <p className="text-xs text-muted-foreground">{emp.employeeNumber}</p>
                     <Badge
-                      variant="outline"
-                      className={`text-[10px] mt-1 ${emp.hasEvaluation ? "border-green-300 text-green-700" : "border-red-300 text-red-700"}`}
+                      variant={needsAction ? "destructive" : "outline"}
+                      className={`text-[10px] mt-1 ${
+                        needsAction ? "" : emp.hasEvaluation ? "border-green-300 text-green-700" : "border-red-300 text-red-700"
+                      }`}
                     >
                       {emp.hasEvaluation ? "قيد التقييم" : "بحاجة لتقييم"}
                     </Badge>
                   </div>
                   <div className="text-left">
-                    <Badge variant="outline" className={`text-xs ${emp.daysRemaining <= 7 ? "border-red-300 text-red-700" : emp.daysRemaining <= 14 ? "border-amber-300 text-amber-700" : "border-blue-300 text-blue-700"}`}>
-                      {t("hr.daysRemaining", { days: emp.daysRemaining })}
+                    <Badge
+                      variant={needsAction ? "destructive" : "outline"}
+                      className={`text-xs ${
+                        needsAction ? ""
+                          : overdue || emp.daysRemaining <= 7 ? "border-red-300 text-red-700"
+                          : emp.daysRemaining <= 14 ? "border-amber-300 text-amber-700"
+                          : "border-blue-300 text-blue-700"
+                      }`}
+                    >
+                      {overdue
+                        ? t("hr.daysOverdue", { days: Math.abs(Number(emp.daysRemaining)) })
+                        : t("hr.daysRemaining", { days: emp.daysRemaining })}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-0.5">{emp.probationEndDate}</p>
                   </div>
-                </div>
-              ))
+                </button>
+                );
+              })
             )}
           </div>
           {probationEndingList.length > 0 && (

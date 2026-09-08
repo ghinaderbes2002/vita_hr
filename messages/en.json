@@ -93,6 +93,7 @@
       "probationDialogTitle": "Employees Whose Probation Ends Within 30 Days",
       "noProbationEmployees": "No employees in this period",
       "daysRemaining": "{days} days remaining",
+      "daysOverdue": "{days} days overdue",
       "viewProbationEvaluations": "View Probation Evaluations"
     },
     "ceo": {

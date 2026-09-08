@@ -95,6 +95,7 @@
       "probationDialogTitle": "30 Gün İçinde Deneme Süresi Bitenler",
       "noProbationEmployees": "Bu dönemde çalışan yok",
       "daysRemaining": "{days} gün kaldı",
+      "daysOverdue": "{days} gün gecikti",
       "viewProbationEvaluations": "Deneme Değerlendirmelerini Görüntüle"
     },
     "ceo": {

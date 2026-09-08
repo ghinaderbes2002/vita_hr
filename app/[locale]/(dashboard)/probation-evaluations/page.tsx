@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus, ClipboardCheck, Clock, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,37 @@ export default function ProbationEvaluationsPage() {
   const employees: any[] = canCreateForAll
     ? (Array.isArray(allEmployeesData) ? allEmployeesData : [])
     : (Array.isArray(subordinatesData) ? subordinatesData : []);
+
+  // Arriving from the dashboard's "probation ending soon" list: the employee to
+  // evaluate comes in the URL, so the create dialog opens already filled in.
+  // Seeded during render (React's supported "adjust state when the input
+  // changes"), guarded by seededFor so it runs once per employee.
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [seededFor, setSeededFor] = useState<string | null>(null);
+  const prefillId = searchParams.get("newFor");
+  if (prefillId && prefillId !== seededFor) {
+    const emp = employees.find((e) => e.id === prefillId);
+    if (emp) {
+      // The selectable list has loaded and holds this employee — seed and open.
+      const hireDate = searchParams.get("hireDate")
+        || (emp.hireDate ? String(emp.hireDate).split("T")[0] : "");
+      const probationEndDate = searchParams.get("probationEnd") || "";
+      setSeededFor(prefillId);
+      setForm((f) => ({
+        ...f,
+        employeeId: prefillId,
+        hireDate: hireDate || f.hireDate,
+        probationEndDate: probationEndDate || f.probationEndDate,
+      }));
+      setCreateOpen(true);
+    }
+  }
+
+  // Drop the query once it has been consumed, so a refresh doesn't reopen it.
+  useEffect(() => {
+    if (seededFor && prefillId) router.replace(pathname);
+  }, [seededFor, prefillId, pathname, router]);
 
   function handleCreate() {
     if (!form.employeeId || !form.hireDate || !form.probationEndDate) return;
