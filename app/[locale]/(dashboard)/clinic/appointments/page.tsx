@@ -32,20 +32,14 @@ import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees"
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import {
+  MEDICAL_ADMIN_DEPT_CODE,
+  isClinicalDepartmentName,
+} from "@/lib/clinic/departments";
 
 // Medical Administration doesn't read as a clinical department by name, so it is
 // admitted to the appointment pickers by code and labelled with what it books.
-const MEDICAL_ADMIN_DEPT_CODE = "VTX-DEP-000007";
 const MEDICAL_ADMIN_DEPT_ALIAS = "المعاينات العظمية";
-
-// Clinical departments whose staff can be assigned as the specialist therapist
-// (both spellings — with and without hamza — are accepted).
-const CLINICAL_DEPTS = [
-  "الإدارة الطبية", "الادارة الطبية",
-  "الأطراف الصناعية", "الاطراف الصناعية",
-  "طب الأقدام", "طب الاقدام",
-  "العلاج الفيزيائي",
-];
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
@@ -124,7 +118,7 @@ export default function AppointmentsPage() {
     ? staffData
     : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
   const clinicalStaff = staffList.filter(
-    (e: any) => e.employmentStatus === "ACTIVE" && CLINICAL_DEPTS.some((d) => e.department?.nameAr?.includes(d)),
+    (e: any) => e.employmentStatus === "ACTIVE" && isClinicalDepartmentName(e.department?.nameAr),
   );
   const therapistLabel = (id: string) => {
     const e = clinicalStaff.find((x: any) => (x.userId ?? x.id) === id);

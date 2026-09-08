@@ -16,6 +16,10 @@ import { useDepartments } from "@/lib/hooks/use-departments";
 import { useAssignPodiatryPractitioners } from "@/lib/hooks/use-clinic-podiatry";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import {
+  isClinicalDepartmentCode,
+  isClinicalDepartmentName,
+} from "@/lib/clinic/departments";
 
 interface StaffRow {
   id: string;
@@ -33,9 +37,6 @@ interface DeptRow {
   nameAr?: string;
   parent?: { id?: string } | null;
 }
-
-/** قسم الإدارة الطبية. Matched by code — names get re-spelled, codes do not. */
-const MEDICAL_ADMIN_DEPT_CODE = "VTX-DEP-000007";
 
 /** Only a status that positively says the person has left removes them. */
 const GONE = ["TERMINATED", "RESIGNED", "INACTIVE", "SUSPENDED", "RETIRED"];
@@ -82,27 +83,41 @@ export function PodiatryPractitionersCard({
   }, [staffData]);
 
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
-  const departments: DeptRow[] =
-    (depsData as { data?: { items?: DeptRow[] }; items?: DeptRow[] } | undefined)?.data?.items ??
-    (depsData as { items?: DeptRow[] } | undefined)?.items ??
-    [];
-  const medicalAdminId = departments.find((d) => d.code === MEDICAL_ADMIN_DEPT_CODE)?.id;
+  // Memoised for the same reason as the staff list: the ids below key off it.
+  const departments: DeptRow[] = useMemo(
+    () =>
+      (depsData as { data?: { items?: DeptRow[] }; items?: DeptRow[] } | undefined)?.data?.items ??
+      (depsData as { items?: DeptRow[] } | undefined)?.items ??
+      [],
+    [depsData],
+  );
+  // بالكود أولاً، والاسم احتياطاً لو أضيف قسم طبي جديد لم يُسجَّل كوده هنا.
+  const clinicalDeptIds = useMemo(
+    () =>
+      new Set(
+        departments
+          .filter((d) => isClinicalDepartmentCode(d.code) || isClinicalDepartmentName(d.nameAr))
+          .map((d) => d.id),
+      ),
+    [departments],
+  );
 
-  // الإدارة الطبية and anything filed under it. Until the departments land — or
-  // if that department is ever renumbered — fall back to the whole roster
-  // rather than an empty picker that silently blocks the assignment.
+  // كادر الأقسام الطبية وما يندرج تحتها. Until the departments land — or if none
+  // of them resolves — fall back to the whole roster rather than an empty picker
+  // that silently blocks the assignment.
   const assignableStaff = useMemo(() => {
     const onStaff = staffList.filter((e) => !GONE.includes((e.employmentStatus ?? "").toUpperCase()));
-    if (!medicalAdminId) return onStaff;
-    const inMedicalAdmin = onStaff.filter(
-      (e) => e.department?.id === medicalAdminId || e.department?.parent?.id === medicalAdminId,
+    if (!clinicalDeptIds.size) return onStaff;
+    const inClinical = onStaff.filter(
+      (e) =>
+        (e.department?.id && clinicalDeptIds.has(e.department.id)) ||
+        (e.department?.parent?.id && clinicalDeptIds.has(e.department.parent.id)) ||
+        // /employees/basic does not always carry the department tree, so the
+        // name on the employee's own department is the last resort.
+        isClinicalDepartmentName(e.department?.nameAr),
     );
-    // /employees/basic does not always carry the department tree — with `parent`
-    // missing, nobody filed *under* الإدارة الطبية matches and the picker empties
-    // out, silently blocking the assignment. Prefer the department when it
-    // resolves anyone at all, and otherwise offer the whole roster.
-    return inMedicalAdmin.length ? inMedicalAdmin : onStaff;
-  }, [staffList, medicalAdminId]);
+    return inClinical.length ? inClinical : onStaff;
+  }, [staffList, clinicalDeptIds]);
 
   const byId = useMemo(() => new Map(staffList.map((e) => [e.id, e])), [staffList]);
   // Anyone already assigned still shows — by name when we can resolve them, by

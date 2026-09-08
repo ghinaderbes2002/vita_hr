@@ -57,7 +57,7 @@ export default function PhysioListPage() {
   const [statusFilter, setStatusFilter] = useState<PhysioStatus | "all">("all");
 
   const { hasPermission, isAdmin } = usePermissions();
-  const { data: myEmployee } = useMyEmployee();
+  const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
   // Everyone else — inside the department or outside it — sees only the cases
   // carrying their own id. The old rule read `department.managerId` and applied
@@ -89,11 +89,20 @@ export default function PhysioListPage() {
   // 100 is the server's ceiling for `limit` — asking for more is a 400.
   const trimmedSearch = search.trim();
   const clientPaged = shouldFilter || !!trimmedSearch;
-  const { data, isLoading } = usePhysioCases({
-    page: clientPaged ? 1 : page,
-    limit: clientPaged ? 100 : LIMIT,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-  });
+  // Nothing is asked before the profile lands: until then the job title is
+  // unknown, so `shouldFilter` reads true for everyone. Firing anyway asked for
+  // the wrong page size and then repeated the request once the profile arrived,
+  // and — worse — the screen rendered "no cases" in between, because a filter
+  // keyed on an id we do not have yet drops every row.
+  const { data, isLoading: casesLoading } = usePhysioCases(
+    {
+      page: clientPaged ? 1 : page,
+      limit: clientPaged ? 100 : LIMIT,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+    },
+    !meLoading,
+  );
+  const isLoading = meLoading || casesLoading;
 
   const filtered = (data?.items ?? []).filter((c: PhysioCase) => {
     if (shouldFilter && !isMyCase(c)) return false;

@@ -24,10 +24,12 @@ import {
 } from "@/lib/api/clinic-physio";
 import { toast } from "sonner";
 
-export function usePhysioCases(params?: PhysioCaseListParams) {
+/** `enabled` holds the request until the caller knows which list to ask for. */
+export function usePhysioCases(params?: PhysioCaseListParams, enabled = true) {
   return useQuery({
     queryKey: ["clinic-physio-cases", params],
     queryFn: () => clinicPhysioApi.list(params),
+    enabled,
   });
 }
 
