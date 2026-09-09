@@ -375,7 +375,7 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
 
         {/* ── Footer ── */}
         <View style={S.footer} fixed>
-          <Text style={S.footerText}>{`${ar(title)} — Vita HR`}</Text>
+          <Text style={S.footerText}>{`${ar(title)} — VitaXir`}</Text>
           <Text
             style={S.footerPage}
             render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}

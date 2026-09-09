@@ -669,7 +669,7 @@ const PhysioPdfDoc = ({
   return (
     <Document
       title={`${t("word.title")} — ${patient.firstName} ${patient.lastName}`}
-      author="Vita HR System"
+      author="VitaXir System"
       language={locale}
     >
       <Page size="A4" style={[S.page, { direction: dir.rtl ? "rtl" : "ltr", textAlign: dir.align }]}>

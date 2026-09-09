@@ -87,7 +87,7 @@ export default function LoginPage() {
               <Briefcase className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Vita HR</h1>
+              <h1 className="text-3xl font-bold">VitaXir</h1>
               <p className="text-sm text-slate-300">{t("brandStrap")}</p>
             </div>
           </div>

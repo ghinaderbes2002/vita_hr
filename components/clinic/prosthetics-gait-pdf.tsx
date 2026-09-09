@@ -278,7 +278,7 @@ const ProstheticsGaitPdfDoc = ({ data, age }: { data: ProstheticsGaitPdfData; ag
   const { patient, form } = data;
   const fullName = `${patient?.firstName ?? ""} ${patient?.lastName ?? ""}`.trim() || "—";
   return (
-    <Document title={`تحليل المشي — ${fullName}`} author="Vita HR System" language="ar">
+    <Document title={`تحليل المشي — ${fullName}`} author="VitaXir System" language="ar">
       <Page size="A4" style={S.page}>
         <PageHeader />
         <PageFooter />

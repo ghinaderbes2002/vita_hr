@@ -591,7 +591,7 @@ const ProstheticsCasePdfDoc = ({ data, age }: { data: CasePdfData; age: string }
   const feHasContent = !!fe && Object.values(fe).some((v) => v != null && v !== "");
 
   return (
-    <Document title={`تقرير حالة أطراف صناعية — ${fullName}`} author="Vita HR System" language="ar">
+    <Document title={`تقرير حالة أطراف صناعية — ${fullName}`} author="VitaXir System" language="ar">
       <Page size="A4" style={S.page}>
         <PageHeader />
         <PageFooter />

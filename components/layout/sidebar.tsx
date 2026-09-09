@@ -508,7 +508,7 @@ export function Sidebar() {
               <span className="text-primary-foreground font-extrabold text-sm">V</span>
             </div>
             <div className="flex flex-col leading-none">
-              <span className="font-extrabold text-base tracking-tight text-sidebar-accent-foreground">Vita HR</span>
+              <span className="font-extrabold text-base tracking-tight text-sidebar-accent-foreground">VitaXir</span>
               <span className="text-[10px] text-sidebar-foreground/60 tracking-widest uppercase">System</span>
             </div>
           </Link>
