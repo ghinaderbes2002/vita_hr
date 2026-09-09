@@ -135,7 +135,6 @@ const S = StyleSheet.create({
   colStatus: { flex: 1.3 },
   tdNum:    { ...LTR, fontSize: 8.5, color: MUTED, textAlign: "center" },
   tdName:   { ...RTL, fontSize: 9, color: TEXT, lineHeight: 1.5, textAlign: "right" },
-  tdDesc:   { ...RTL, fontSize: 8, color: MUTED, lineHeight: 1.5, textAlign: "right", marginTop: 1 },
   tdCat:    { ...RTL, fontSize: 9, color: MUTED, textAlign: "right" },
   tdSerial: { ...LTR, fontSize: 8.5, color: MUTED, textAlign: "right" },
   tdDate:   { ...LTR, fontSize: 8.5, color: MUTED, textAlign: "center" },
@@ -147,6 +146,14 @@ const S = StyleSheet.create({
 
   // ── Acknowledgment & signature ──
   ackText: { ...RTL, fontSize: 8.5, color: TEXT, lineHeight: 1.7, textAlign: "right" },
+  // A frame around the acknowledgment — no fill, so the page shows through.
+  ackBox: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 3,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
   // The record sheet pins these to the bottom of the page; the clearance sheet
   // lets them flow after the table so the approvals block below always has room.
   ackPinned:       { position: "absolute", bottom: 92, left: 28, right: 28 },
@@ -180,10 +187,9 @@ const ACKNOWLEDGMENT_LINES = [
 ];
 
 // The clearance sheet states the reverse: everything has been handed back.
-const CLEARANCE_LINES = [
-  "أقرّ أنا الموقّع أدناه بأنني سلّمت كافة العهد اللوجستية الموضّحة أعلاه",
-  "والذمم المالية المترتبة عليّ.",
-];
+// One sentence on one line — it fits the frame at 8.5pt without wrapping.
+const CLEARANCE_TEXT =
+  "أقرّ أنا الموقّع أدناه بأنني سلّمت كافة العهد اللوجستية الموضّحة أعلاه والذمم المالية المترتبة عليّ.";
 
 // Each approver signs off in turn, with room for a remark above the signature.
 const CLEARANCE_SIGNOFFS = ["اللوجستي", "المحاسب", "المدير الإداري"];
@@ -313,12 +319,9 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
         {data.custodies.map((c, i) => (
           <View key={c.id} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]} wrap={false}>
             <Text style={[S.tdNum, S.colNum]}>{i + 1}</Text>
-            {/* Description on its own line rather than in brackets after the
-                name — the cell is narrow and the two read far better stacked. */}
-            <View style={S.colName}>
-              <Text style={S.tdName}>{ar(c.name)}</Text>
-              {c.description ? <Text style={S.tdDesc}>{ar(c.description)}</Text> : null}
-            </View>
+            {/* The asset name only — the description is a spec sheet that
+                belongs on screen, not on a signed handover form. */}
+            <Text style={[S.tdName, S.colName]}>{ar(c.name)}</Text>
             <Text style={[S.tdCat, S.colCat]}>{ar(CAT_LABEL[c.category] ?? c.category)}</Text>
             <Text style={[S.tdSerial, S.colSerial]}>{num(c.serialNumber)}</Text>
             <Text style={[S.tdDate, S.colDate]}>{fmtDate(c.assignedDate)}</Text>
@@ -333,9 +336,9 @@ function CustodyPdfDoc({ data }: { data: PdfData }) {
         {isClearance ? (
           /* ── Clearance: acknowledgment, employee signature, approvals ── */
           <View style={S.approvals}>
-            {CLEARANCE_LINES.map((line, i) => (
-              <Text key={i} style={S.ackText}>{ar(line)}</Text>
-            ))}
+            <View style={S.ackBox}>
+              <Text style={S.ackText}>{ar(CLEARANCE_TEXT)}</Text>
+            </View>
 
             <View style={[S.fieldRow, { marginTop: 14 }]} wrap={false}>
               <Text style={S.fieldLabel}>{ar("توقيع الموظف:")}</Text>

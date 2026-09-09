@@ -5,8 +5,16 @@ export type JustificationStatus =
   | "PENDING_MANAGER"
   | "PENDING_HR"
   | "HR_APPROVED"
+  /** موافقة مع خصم — قبول التبرير مع تطبيق الخصم المالي. حالة وسطية: لا تُحتسب
+   *  رفضاً في أي عدّاد أو إحصائية. */
+  | "HR_APPROVED_WITH_DEDUCTION"
   | "HR_REJECTED"
   | "AUTO_REJECTED";
+
+/** قرار المدير المباشر: موافقة أو رفض فقط. */
+export type ManagerDecision = "APPROVE" | "REJECT";
+/** قرار HR النهائي، وهو وحده الذي يملك خيار "موافقة مع خصم". */
+export type HrDecision = "APPROVE" | "APPROVE_WITH_DEDUCTION" | "REJECT";
 
 export interface AttendanceJustification {
   id: string;
@@ -30,11 +38,11 @@ export interface AttendanceJustification {
   attachmentUrl?: string;
   status: JustificationStatus;
   statusLabelAr?: string;
-  managerDecision?: "APPROVE" | "REJECT";
+  managerDecision?: ManagerDecision;
   managerNotesAr?: string;
   managerNotes?: string;
   managerReviewedAt?: string;
-  hrDecision?: "APPROVE" | "REJECT";
+  hrDecision?: HrDecision;
   hrNotesAr?: string;
   hrNotes?: string;
   hrReviewedAt?: string;
@@ -53,10 +61,15 @@ export interface CreateJustificationData {
 }
 
 export interface ReviewJustificationData {
-  decision: "APPROVE" | "REJECT";
+  decision: ManagerDecision;
   notesAr?: string;
   notes?: string;
   applyDeduction?: boolean; // HR review only (§5.4)
+}
+
+/** Same body as the manager review, but `decision` accepts the extra HR value. */
+export interface HrReviewJustificationData extends Omit<ReviewJustificationData, "decision"> {
+  decision: HrDecision;
 }
 
 export interface JustificationQueryParams {
@@ -106,7 +119,7 @@ export const attendanceJustificationsApi = {
   },
 
   // HR review
-  hrReview: async (id: string, data: ReviewJustificationData): Promise<AttendanceJustification> => {
+  hrReview: async (id: string, data: HrReviewJustificationData): Promise<AttendanceJustification> => {
     const response = await apiClient.patch(`/attendance-justifications/${id}/hr-review`, data);
     return response.data.data;
   },

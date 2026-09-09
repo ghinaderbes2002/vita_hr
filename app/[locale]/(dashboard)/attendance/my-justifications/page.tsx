@@ -17,6 +17,7 @@ const STATUS_CLASS: Record<string, string> = {
   PENDING_MANAGER: "bg-yellow-100 text-yellow-800",
   PENDING_HR:      "bg-orange-100 text-orange-800",
   HR_APPROVED:     "bg-green-100 text-green-800",
+  HR_APPROVED_WITH_DEDUCTION: "bg-amber-100 text-amber-900",
   HR_REJECTED:     "bg-red-100 text-red-800",
   AUTO_REJECTED:   "bg-red-100 text-red-800",
 };
@@ -37,6 +38,7 @@ export default function MyJustificationsPage() {
     PENDING_MANAGER: "في انتظار موافقة المدير المباشر",
     PENDING_HR:      "في انتظار موافقة الموارد البشرية",
     HR_APPROVED:     "تم إقرار الطلب",
+    HR_APPROVED_WITH_DEDUCTION: "تم إقرار الطلب مع خصم",
     HR_REJECTED:     "تم رفض الطلب",
     AUTO_REJECTED:   "رُفض تلقائياً لانتهاء المهلة",
   };

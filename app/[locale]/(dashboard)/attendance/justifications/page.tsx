@@ -7,6 +7,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -26,7 +27,7 @@ import {
 } from "@/lib/hooks/use-attendance-justifications";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
-import { AttendanceJustification, JustificationStatus } from "@/lib/api/attendance-justifications";
+import { AttendanceJustification, JustificationStatus, HrDecision } from "@/lib/api/attendance-justifications";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { formatDate } from "@/lib/utils/date";
 
@@ -34,6 +35,8 @@ const STATUS_CLASSES: Record<string, string> = {
   PENDING_MANAGER: "bg-yellow-100 text-yellow-800",
   PENDING_HR:      "bg-orange-100 text-orange-800",
   HR_APPROVED:     "bg-green-100 text-green-800",
+  // حالة وسطية: قبول لكن مع خصم — لا الأخضر (قبول) ولا الأحمر (رفض).
+  HR_APPROVED_WITH_DEDUCTION: "bg-amber-100 text-amber-900",
   HR_REJECTED:     "bg-red-100 text-red-800",
   AUTO_REJECTED:   "bg-red-100 text-red-800",
 };
@@ -78,7 +81,7 @@ export default function JustificationsPage() {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<AttendanceJustification | null>(null);
   const [reviewType, setReviewType] = useState<"manager" | "hr">("manager");
-  const [decision, setDecision] = useState<"APPROVE" | "REJECT">("APPROVE");
+  const [decision, setDecision] = useState<HrDecision>("APPROVE");
   const [notes, setNotes] = useState("");
 
   const LIMIT = 10;
@@ -107,7 +110,9 @@ export default function JustificationsPage() {
   const meta = total > 0 ? { total, totalPages } : null;
 
 
-  const openReview = (item: AttendanceJustification, type: "manager" | "hr", dec: "APPROVE" | "REJECT") => {
+  // APPROVE_WITH_DEDUCTION is an HR-only decision — the manager step still has
+  // its two options, so only the HR branch ever passes it.
+  const openReview = (item: AttendanceJustification, type: "manager" | "hr", dec: HrDecision) => {
     setSelectedItem(item);
     setReviewType(type);
     setDecision(dec);
@@ -117,11 +122,26 @@ export default function JustificationsPage() {
 
   const submitReview = async () => {
     if (!selectedItem) return;
-    const payload = { id: selectedItem.id, data: { decision, notesAr: notes, notes } };
-    if (reviewType === "manager") await managerReview.mutateAsync(payload);
-    else await hrReview.mutateAsync(payload);
+    const data = { notesAr: notes, notes };
+    if (reviewType === "manager") {
+      if (decision === "APPROVE_WITH_DEDUCTION") return; // not offered at this step
+      await managerReview.mutateAsync({ id: selectedItem.id, data: { ...data, decision } });
+    } else {
+      await hrReview.mutateAsync({ id: selectedItem.id, data: { ...data, decision } });
+    }
     setReviewDialogOpen(false);
   };
+
+  const decisionTitle =
+    decision === "REJECT"
+      ? t("attendance.rejectJustification")
+      : t("attendance.approveJustification");
+  // HR alone chooses between the two kinds of approval.
+  const showApprovalChoice = reviewType === "hr" && decision !== "REJECT";
+  const decisionAction =
+    decision === "APPROVE" ? t("requests.actions.approve")
+      : decision === "REJECT" ? t("requests.actions.reject")
+        : t("attendance.approveWithDeductionAction");
 
   const isPending = managerReview.isPending || hrReview.isPending;
 
@@ -138,6 +158,7 @@ export default function JustificationsPage() {
           <TabsTrigger value="PENDING_MANAGER">{t("attendance.justificationStatuses.pendingManager")}</TabsTrigger>
           <TabsTrigger value="PENDING_HR">{t("attendance.justificationStatuses.pendingHr")}</TabsTrigger>
           <TabsTrigger value="HR_APPROVED">{t("attendance.justificationStatuses.hrApproved")}</TabsTrigger>
+          <TabsTrigger value="HR_APPROVED_WITH_DEDUCTION">{t("attendance.justificationStatuses.hrApprovedWithDeduction")}</TabsTrigger>
           <TabsTrigger value="HR_REJECTED">{t("attendance.justificationStatuses.hrRejected")}</TabsTrigger>
         </TabsList>}
 
@@ -206,6 +227,8 @@ export default function JustificationsPage() {
                                 </Button>
                               </>
                             )}
+                            {/* Approve opens the dialog, where HR picks
+                                with or without deduction. */}
                             {canHrReview && item.status === "PENDING_HR" && (
                               <>
                                 <Button size="sm" variant="default" onClick={() => openReview(item, "hr", "APPROVE")}>
@@ -237,37 +260,69 @@ export default function JustificationsPage() {
       {/* Review Dialog */}
       <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {decision === "APPROVE" ? t("attendance.approveJustification") : t("attendance.rejectJustification")}
-            </DialogTitle>
+          <DialogHeader className="pr-6 text-start sm:text-start">
+            <DialogTitle>{decisionTitle}</DialogTitle>
             <DialogDescription>
               {selectedItem?.descriptionAr}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <Label>{t("attendance.reviewNotesLabel")}</Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t("attendance.reviewNotesPlaceholder")}
-              rows={3}
-            />
+          <div className="space-y-4">
+            {showApprovalChoice && (
+              <div className="space-y-2">
+                <Label>{t("attendance.approveDecisionLabel")}</Label>
+                <RadioGroup
+                  dir={locale === "ar" ? "rtl" : "ltr"}
+                  value={decision}
+                  onValueChange={(v) => setDecision(v as HrDecision)}
+                  className="gap-2"
+                >
+                  <label
+                    htmlFor="approve-plain"
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border p-2.5 text-sm ${
+                      decision === "APPROVE" ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    <RadioGroupItem value="APPROVE" id="approve-plain" />
+                    {t("attendance.approveWithoutDeductionAction")}
+                  </label>
+                  <label
+                    htmlFor="approve-deduction"
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border p-2.5 text-sm ${
+                      decision === "APPROVE_WITH_DEDUCTION" ? "border-amber-400 bg-amber-50" : ""
+                    }`}
+                  >
+                    <RadioGroupItem value="APPROVE_WITH_DEDUCTION" id="approve-deduction" />
+                    {t("attendance.approveWithDeductionAction")}
+                  </label>
+                </RadioGroup>
+                {decision === "APPROVE_WITH_DEDUCTION" && (
+                  <p className="rounded-md bg-amber-50 p-2 text-xs text-amber-900">
+                    {t("attendance.approveWithDeductionHint")}
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>{t("attendance.reviewNotesLabel")}</Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={t("attendance.reviewNotesPlaceholder")}
+                rows={3}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>
               {t("common.cancel")}
             </Button>
             <Button
-              variant={decision === "APPROVE" ? "default" : "destructive"}
+              variant={decision === "REJECT" ? "destructive" : "default"}
+              className={decision === "APPROVE_WITH_DEDUCTION" ? "bg-amber-600 hover:bg-amber-700" : undefined}
               onClick={submitReview}
               disabled={isPending}
             >
-              {isPending
-                ? t("attendance.submitting")
-                : decision === "APPROVE"
-                  ? t("requests.actions.approve")
-                  : t("requests.actions.reject")}
+              {isPending ? t("attendance.submitting") : decisionAction}
             </Button>
           </DialogFooter>
         </DialogContent>

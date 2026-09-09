@@ -4,6 +4,7 @@ import {
   attendanceJustificationsApi,
   CreateJustificationData,
   ReviewJustificationData,
+  HrReviewJustificationData,
   JustificationQueryParams,
 } from "@/lib/api/attendance-justifications";
 
@@ -83,7 +84,7 @@ export function useManagerReviewJustification() {
 export function useHrReviewJustification() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ReviewJustificationData }) =>
+    mutationFn: ({ id, data }: { id: string; data: HrReviewJustificationData }) =>
       attendanceJustificationsApi.hrReview(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["justifications"] });

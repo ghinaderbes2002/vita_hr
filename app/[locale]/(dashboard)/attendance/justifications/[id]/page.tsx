@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -24,12 +25,15 @@ import {
   useHrReviewJustification,
 } from "@/lib/hooks/use-attendance-justifications";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { HrDecision } from "@/lib/api/attendance-justifications";
 import { formatDate } from "@/lib/utils/date";
 
 const STATUS_CLASSES: Record<string, string> = {
   PENDING_MANAGER: "bg-yellow-100 text-yellow-800",
   PENDING_HR:      "bg-orange-100 text-orange-800",
   HR_APPROVED:     "bg-green-100 text-green-800",
+  // حالة وسطية: قبول لكن مع خصم — لا الأخضر (قبول) ولا الأحمر (رفض).
+  HR_APPROVED_WITH_DEDUCTION: "bg-amber-100 text-amber-900",
   HR_REJECTED:     "bg-red-100 text-red-800",
   AUTO_REJECTED:   "bg-red-100 text-red-800",
 };
@@ -37,7 +41,7 @@ const STATUS_CLASSES: Record<string, string> = {
 const toCamelCase = (s: string) =>
   s.toLowerCase().replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 
-type StepOutcome = "APPROVE" | "REJECT" | null;
+type StepOutcome = HrDecision | null;
 
 /**
  * The API does not send a decision per step — only the timestamps and the
@@ -48,16 +52,20 @@ type StepOutcome = "APPROVE" | "REJECT" | null;
 function stepOutcome(
   step: "manager" | "hr",
   status: string,
-  declared?: "APPROVE" | "REJECT",
+  declared?: StepOutcome,
 ): StepOutcome {
   if (declared) return declared;
   if (step === "manager") {
     // Reaching any HR stage means the manager let it through.
-    if (["PENDING_HR", "MANAGER_APPROVED", "HR_APPROVED", "HR_REJECTED"].includes(status)) return "APPROVE";
+    if ([
+      "PENDING_HR", "MANAGER_APPROVED",
+      "HR_APPROVED", "HR_APPROVED_WITH_DEDUCTION", "HR_REJECTED",
+    ].includes(status)) return "APPROVE";
     if (status === "MANAGER_REJECTED") return "REJECT";
     return null;
   }
   if (status === "HR_APPROVED") return "APPROVE";
+  if (status === "HR_APPROVED_WITH_DEDUCTION") return "APPROVE_WITH_DEDUCTION";
   if (status === "HR_REJECTED") return "REJECT";
   return null;
 }
@@ -80,27 +88,24 @@ function ReviewStep({
   notes?: string;
 }) {
   const t = useTranslations();
+  const outcomeClass =
+    outcome === "APPROVE" ? "border-green-300 text-green-700"
+      : outcome === "APPROVE_WITH_DEDUCTION" ? "border-amber-300 text-amber-800"
+        : outcome === "REJECT" ? "border-red-300 text-red-700"
+          : "";
+  const outcomeLabel =
+    outcome === "APPROVE" ? t("requests.actions.approve")
+      : outcome === "APPROVE_WITH_DEDUCTION" ? t("attendance.approveWithDeductionAction")
+        : outcome === "REJECT" ? t("requests.actions.reject")
+          : t("attendance.justificationReviewed");
   return (
     <div>
       <p className="font-medium">{title}</p>
       {reviewedAt ? (
         <>
           <p className="text-xs text-muted-foreground">{formatDate(reviewedAt)}</p>
-          <Badge
-            variant="outline"
-            className={`mt-1 text-[10px] ${
-              outcome === "APPROVE"
-                ? "border-green-300 text-green-700"
-                : outcome === "REJECT"
-                  ? "border-red-300 text-red-700"
-                  : ""
-            }`}
-          >
-            {outcome === "APPROVE"
-              ? t("requests.actions.approve")
-              : outcome === "REJECT"
-                ? t("requests.actions.reject")
-                : t("attendance.justificationReviewed")}
+          <Badge variant="outline" className={`mt-1 text-[10px] ${outcomeClass}`}>
+            {outcomeLabel}
           </Badge>
           {notes && <p className="mt-1 text-xs">{notes}</p>}
         </>
@@ -124,13 +129,15 @@ export default function JustificationDetailPage() {
 
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewType, setReviewType] = useState<"manager" | "hr">("manager");
-  const [decision, setDecision] = useState<"APPROVE" | "REJECT">("APPROVE");
+  const [decision, setDecision] = useState<HrDecision>("APPROVE");
   const [notes, setNotes] = useState("");
 
   const canManagerReview = hasPermission("attendance.justifications.manager-review");
   const canHrReview = hasPermission("attendance.justifications.hr-review");
 
-  const openReview = (type: "manager" | "hr", dec: "APPROVE" | "REJECT") => {
+  // APPROVE_WITH_DEDUCTION is an HR-only decision — the manager step still has
+  // its two options, so only the HR branch ever passes it.
+  const openReview = (type: "manager" | "hr", dec: HrDecision) => {
     setReviewType(type);
     setDecision(dec);
     setNotes("");
@@ -138,11 +145,26 @@ export default function JustificationDetailPage() {
   };
 
   const submitReview = async () => {
-    const payload = { id, data: { decision, notesAr: notes, notes } };
-    if (reviewType === "manager") await managerReview.mutateAsync(payload);
-    else await hrReview.mutateAsync(payload);
+    const data = { notesAr: notes, notes };
+    if (reviewType === "manager") {
+      if (decision === "APPROVE_WITH_DEDUCTION") return; // not offered at this step
+      await managerReview.mutateAsync({ id, data: { ...data, decision } });
+    } else {
+      await hrReview.mutateAsync({ id, data: { ...data, decision } });
+    }
     setReviewOpen(false);
   };
+
+  const decisionTitle =
+    decision === "REJECT"
+      ? t("attendance.rejectJustification")
+      : t("attendance.approveJustification");
+  // HR alone chooses between the two kinds of approval.
+  const showApprovalChoice = reviewType === "hr" && decision !== "REJECT";
+  const decisionAction =
+    decision === "APPROVE" ? t("requests.actions.approve")
+      : decision === "REJECT" ? t("requests.actions.reject")
+        : t("attendance.approveWithDeductionAction");
 
   if (isLoading) {
     return (
@@ -270,25 +292,61 @@ export default function JustificationDetailPage() {
 
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {decision === "APPROVE" ? t("attendance.approveJustification") : t("attendance.rejectJustification")}
-            </DialogTitle>
+          <DialogHeader className="pr-6 text-start sm:text-start">
+            <DialogTitle>{decisionTitle}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label>{t("attendance.alertFields.managerNotes")}</Label>
-            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="space-y-4 py-2">
+            {showApprovalChoice && (
+              <div className="space-y-2">
+                <Label>{t("attendance.approveDecisionLabel")}</Label>
+                <RadioGroup
+                  dir={locale === "ar" ? "rtl" : "ltr"}
+                  value={decision}
+                  onValueChange={(v) => setDecision(v as HrDecision)}
+                  className="gap-2"
+                >
+                  <label
+                    htmlFor="approve-plain"
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border p-2.5 text-sm ${
+                      decision === "APPROVE" ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    <RadioGroupItem value="APPROVE" id="approve-plain" />
+                    {t("attendance.approveWithoutDeductionAction")}
+                  </label>
+                  <label
+                    htmlFor="approve-deduction"
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border p-2.5 text-sm ${
+                      decision === "APPROVE_WITH_DEDUCTION" ? "border-amber-400 bg-amber-50" : ""
+                    }`}
+                  >
+                    <RadioGroupItem value="APPROVE_WITH_DEDUCTION" id="approve-deduction" />
+                    {t("attendance.approveWithDeductionAction")}
+                  </label>
+                </RadioGroup>
+                {decision === "APPROVE_WITH_DEDUCTION" && (
+                  <p className="rounded-md bg-amber-50 p-2 text-xs text-amber-900">
+                    {t("attendance.approveWithDeductionHint")}
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>{t("attendance.alertFields.managerNotes")}</Label>
+              <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReviewOpen(false)} disabled={isPending}>
               {t("common.cancel")}
             </Button>
             <Button
-              variant={decision === "APPROVE" ? "default" : "destructive"}
+              variant={decision === "REJECT" ? "destructive" : "default"}
+              className={decision === "APPROVE_WITH_DEDUCTION" ? "bg-amber-600 hover:bg-amber-700" : undefined}
               onClick={submitReview}
               disabled={isPending}
             >
-              {decision === "APPROVE" ? t("requests.actions.approve") : t("requests.actions.reject")}
+              {decisionAction}
             </Button>
           </DialogFooter>
         </DialogContent>

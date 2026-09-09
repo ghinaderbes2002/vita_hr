@@ -166,6 +166,7 @@ function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
 function StatusBanner({
   status,
   canSeniorApprove,
+  canSelfEvaluate,
   canDirectManagerAct,
   canHrDocument,
   canCeoDecide,
@@ -174,6 +175,7 @@ function StatusBanner({
 }: {
   status: ProbationStatus;
   canSeniorApprove: boolean;
+  canSelfEvaluate: boolean;
   canDirectManagerAct: boolean;
   canHrDocument: boolean;
   canCeoDecide: boolean;
@@ -205,7 +207,7 @@ function StatusBanner({
   const bannerConfig: Partial<Record<ProbationStatus, { msg: string; btnLabel?: string; action?: ActionType; color: string }>> = {
     PENDING_SELF_EVALUATION: {
       msg: "بانتظار إكمال التقييم الذاتي من الموظف",
-      btnLabel: "ابدأ التقييم",
+      btnLabel: canSelfEvaluate ? "ابدأ التقييم" : undefined,
       action: "self-evaluate",
       color: "border-indigo-200 bg-indigo-50 text-indigo-800",
     },
@@ -314,6 +316,12 @@ export default function ProbationEvaluationDetailPage() {
   const canDirectManagerAct = isPendingForMe || isAdmin();
   const canHrDocument    = isAdmin() || hasPermission("probation:hr-review");
   const canCeoDecide     = isAdmin() || hasPermission("probation:ceo-review");
+  // مخرجات الاجتماع وجدولته وإغلاق التقييم كلها من عمل HR وحدها. المدير التنفيذي
+  // قد يحمل صلاحية hr-review أيضاً، فيُستثنى صراحةً — دوره يأتي في ceo-decide.
+  const isHrActor = canHrDocument && (!canCeoDecide || isAdmin());
+  // التقييم الذاتي يملؤه صاحب التقييم وحده — لا HR ولا أي مطّلع آخر.
+  const canSelfEvaluate =
+    isAdmin() || (!!user?.employeeId && user.employeeId === ev?.employeeId) || isPendingForMe;
   // ملاحظات «مخرجات الاجتماع» داخلية بين HR والإدارة — الموظف صاحب التقييم لا
   // يراها في سجل الإجراءات، ولا أي شخص خارج أدوار المسار.
   const canSeeHrNotes =
@@ -510,8 +518,9 @@ export default function ProbationEvaluationDetailPage() {
       <StatusBanner
         status={ev.status as ProbationStatus}
         canSeniorApprove={canSeniorApprove}
+        canSelfEvaluate={canSelfEvaluate}
         canDirectManagerAct={canDirectManagerAct}
-        canHrDocument={canHrDocument}
+        canHrDocument={isHrActor}
         canCeoDecide={canCeoDecide}
         onAction={openAction}
         t={t}
@@ -728,7 +737,7 @@ export default function ProbationEvaluationDetailPage() {
               {ev.status === "DRAFT" && (
                 <p className="text-sm text-muted-foreground">{t("detail.draftNote")}</p>
               )}
-              {ev.status === "PENDING_SELF_EVALUATION" && (
+              {ev.status === "PENDING_SELF_EVALUATION" && canSelfEvaluate && (
                 <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => openAction("self-evaluate")}>
                   <ClipboardEdit className="h-4 w-4" />{t("actions.selfEvaluate")}
                 </Button>
@@ -753,7 +762,7 @@ export default function ProbationEvaluationDetailPage() {
                   </Button>
                 </>
               )}
-              {ev.status === "PENDING_HR" && canHrDocument && (
+              {ev.status === "PENDING_HR" && isHrActor && (
                 <>
                   <Button className="gap-2 bg-purple-600 hover:bg-purple-700" onClick={() => openAction("document")}>
                     <FileCheck className="h-4 w-4" />{t("actions.document")}
@@ -773,7 +782,7 @@ export default function ProbationEvaluationDetailPage() {
                   {/* HR owns the date for the whole scheduling stage: sets it,
                       re-sets it after a reschedule request, and can still change
                       it while the confirmations are outstanding. */}
-                  {!ev.meetingConfirmedAt && canHrDocument && (!canCeoDecide || isAdmin()) && (
+                  {!ev.meetingConfirmedAt && isHrActor && (
                     <Button className="gap-2 bg-orange-600 hover:bg-orange-700" onClick={() => openAction("propose-meeting")}>
                       <CalendarClock className="h-4 w-4" />
                       {ev.meetingRescheduleNote
@@ -809,7 +818,7 @@ export default function ProbationEvaluationDetailPage() {
                     );
                   })()}
                   {/* إغلاق التقييم: بعد تأكيد الموظف + المدير المباشر (يكفي) */}
-                  {(ev.confirmedMeetingDate || ev.meetingConfirmedAt || (ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager)) && canHrDocument && (!canCeoDecide || isAdmin()) && (
+                  {(ev.confirmedMeetingDate || ev.meetingConfirmedAt || (ev.meetingConfirmedByEmployee && ev.meetingConfirmedByManager)) && isHrActor && (
                     <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => openAction("complete")}>
                       <FileCheck className="h-4 w-4" />إغلاق التقييم
                     </Button>
