@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus, ClipboardCheck, Clock, Settings } from "lucide-react";
@@ -26,7 +26,7 @@ import {
   usePendingMyAction,
   useCreateProbationEvaluation,
 } from "@/lib/hooks/use-probation-evaluations";
-import { useEmployeesBasicList, useSubordinates, useMyEmployee } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useSubordinates, useMyEmployee, useEmployeeBasic } from "@/lib/hooks/use-employees";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ProbationStatus, CreateProbationEvaluationData } from "@/lib/api/probation-evaluations";
@@ -93,6 +93,20 @@ export default function ProbationEvaluationsPage() {
     ? (Array.isArray(allEmployeesData) ? allEmployeesData : [])
     : (Array.isArray(subordinatesData) ? subordinatesData : []);
   const employeeMap = Object.fromEntries(tableEmployees.map((e: any) => [e.id, e]));
+
+  // قائمة الاختيار تأتي من /employees/basic المختصرة وهي بلا تاريخ تعيين، فيُجلب
+  // سجل الموظف المختار وحده (‎/employees/:id/basic يعيده) ويُملأ منه الحقل. الـ ref
+  // يمنع الكتابة فوق تعديل يدوي لاحق أو عند إعادة جلب الاستعلام — مرة لكل موظف.
+  const { data: selectedEmployee } = useEmployeeBasic(form.employeeId);
+  const selectedHireDate = (selectedEmployee as any)?.hireDate as string | undefined;
+  const hireDateFilledFor = useRef<string | null>(null);
+  useEffect(() => {
+    const hire = selectedHireDate;
+    if (!form.employeeId || !hire) return;
+    if (hireDateFilledFor.current === form.employeeId) return;
+    hireDateFilledFor.current = form.employeeId;
+    setForm((f) => ({ ...f, hireDate: String(hire).split("T")[0] }));
+  }, [selectedHireDate, form.employeeId]);
 
   // للـ dropdown في نافذة الإنشاء: HR يشوف الكل، غيره يشوف مرؤوسيه فقط
   const employees: any[] = canCreateForAll
@@ -267,9 +281,8 @@ export default function ProbationEvaluationsPage() {
               <Select
                 value={form.employeeId}
                 onValueChange={(v) => {
-                  const emp = employeeMap[v];
-                  const hireDate = emp?.hireDate ? emp.hireDate.split("T")[0] : form.hireDate;
-                  setForm({ ...form, employeeId: v, hireDate });
+                  // تاريخ الموظف السابق لا يبقى معروضاً ريثما يصل تاريخ الجديد.
+                  setForm({ ...form, employeeId: v, hireDate: "" });
                 }}
               >
                 <SelectTrigger><SelectValue placeholder={t("form.employeePlaceholder")} /></SelectTrigger>
