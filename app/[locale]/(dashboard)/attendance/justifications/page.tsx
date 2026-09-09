@@ -25,6 +25,7 @@ import {
   useHrReviewJustification,
 } from "@/lib/hooks/use-attendance-justifications";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { AttendanceJustification, JustificationStatus } from "@/lib/api/attendance-justifications";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { formatDate } from "@/lib/utils/date";
@@ -36,6 +37,14 @@ const STATUS_CLASSES: Record<string, string> = {
   HR_REJECTED:     "bg-red-100 text-red-800",
   AUTO_REJECTED:   "bg-red-100 text-red-800",
 };
+
+/**
+ * مسمّيات لا تفتح هذه الشاشة إلا على ما ينتظر توقيعها كمدير مباشر: قائمة فريقها
+ * وحدها، وبحالة "بانتظار المدير" فقط. أي شيء آخر لا يخصّها هنا.
+ */
+const OWN_APPROVALS_ONLY_JOB_CODES = [
+  "VTX-JTL-000003", // المدير التنفيذي
+];
 
 const toCamelCase = (s: string) =>
   s.toLowerCase().replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -50,6 +59,13 @@ export default function JustificationsPage() {
   const isDirectManager = (user as any)?.roles?.some((r: any) =>
     ["DIRECT_MANAGER", "مدير مباشر"].includes(typeof r === "string" ? r : r?.name)
   );
+
+  const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
+  const ownApprovalsOnly = OWN_APPROVALS_ONLY_JOB_CODES.includes(
+    (myEmployee as any)?.jobTitle?.code ?? "",
+  );
+  // فريقه فقط: إما لأن دوره مدير مباشر، أو لأن مسمّاه محصور بموافقاته وحدها.
+  const teamListOnly = isDirectManager || ownApprovalsOnly;
 
   const canManagerReview = hasPermission("attendance.justifications.manager-review");
   const canHrReview = hasPermission("attendance.justifications.hr-review");
@@ -66,11 +82,22 @@ export default function JustificationsPage() {
   const [notes, setNotes] = useState("");
 
   const LIMIT = 10;
-  const statusFilter = activeTab === "all" ? undefined : activeTab as JustificationStatus;
-  const { data: allData, isLoading: allLoading } = useAllJustifications({ status: statusFilter, page, limit: LIMIT });
-  const { data: teamData, isLoading: teamLoading } = useMyTeamJustifications({ status: statusFilter, page, limit: LIMIT });
-  const data = isDirectManager ? teamData : allData;
-  const isLoading = isDirectManager ? teamLoading : allLoading;
+  // الحالة مثبّتة على "بانتظار المدير" لأصحاب هذه المسمّيات — لا تبويبات تُغيّرها.
+  const statusFilter = ownApprovalsOnly
+    ? ("PENDING_MANAGER" as JustificationStatus)
+    : activeTab === "all" ? undefined : activeTab as JustificationStatus;
+  // لا يُطلب أي من القائمتين قبل وصول الملف الشخصي: المسمّى غير معروف قبله،
+  // فكانت قائمة الشركة كاملة تُجلب وتُعرض للحظة لمن لا يُفترض أن يراها.
+  const { data: allData, isLoading: allLoading } = useAllJustifications(
+    { status: statusFilter, page, limit: LIMIT },
+    !meLoading && !teamListOnly,
+  );
+  const { data: teamData, isLoading: teamLoading } = useMyTeamJustifications(
+    { status: statusFilter, page, limit: LIMIT },
+    !meLoading && teamListOnly,
+  );
+  const data = teamListOnly ? teamData : allData;
+  const isLoading = meLoading || (teamListOnly ? teamLoading : allLoading);
   const managerReview = useManagerReviewJustification();
   const hrReview = useHrReviewJustification();
 
@@ -106,14 +133,13 @@ export default function JustificationsPage() {
       />
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setPage(1); }}>
-        <TabsList>
+        {!ownApprovalsOnly && <TabsList>
           <TabsTrigger value="all">{t("attendance.tabs.all")}</TabsTrigger>
           <TabsTrigger value="PENDING_MANAGER">{t("attendance.justificationStatuses.pendingManager")}</TabsTrigger>
           <TabsTrigger value="PENDING_HR">{t("attendance.justificationStatuses.pendingHr")}</TabsTrigger>
           <TabsTrigger value="HR_APPROVED">{t("attendance.justificationStatuses.hrApproved")}</TabsTrigger>
           <TabsTrigger value="HR_REJECTED">{t("attendance.justificationStatuses.hrRejected")}</TabsTrigger>
-          <TabsTrigger value="AUTO_REJECTED">{t("attendance.justificationStatuses.autoRejected")}</TabsTrigger>
-        </TabsList>
+        </TabsList>}
 
         <TabsContent value={activeTab}>
           <div className="rounded-md border">

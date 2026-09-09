@@ -5,6 +5,17 @@ export interface EmployeeAttendanceConfig {
   employeeId: string;
   salaryLinked: boolean;
   allowedBreakMinutes: number;
+  /**
+   * Attendance justifications finally rejected for this employee — cumulative,
+   * counting both manager and HR rejections. Older records predate the counter
+   * and omit it, so read it as 0.
+   */
+  rejectedJustificationsCount?: number;
+  /**
+   * When the "three rejections" notice went out on the internal mail, to the
+   * employee and to HR. Null until the count first reaches three.
+   */
+  rejectionAlertSentAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

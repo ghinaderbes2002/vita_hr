@@ -14,17 +14,21 @@ export function useMyJustifications(params?: JustificationQueryParams) {
   });
 }
 
-export function useAllJustifications(params?: JustificationQueryParams) {
+/** `enabled` keeps the whole-company list from being fetched by callers who
+ *  only ever show their own team's. */
+export function useAllJustifications(params?: JustificationQueryParams, enabled = true) {
   return useQuery({
     queryKey: ["justifications", "all", params],
     queryFn: () => attendanceJustificationsApi.getAll(params),
+    enabled,
   });
 }
 
-export function useMyTeamJustifications(params?: JustificationQueryParams) {
+export function useMyTeamJustifications(params?: JustificationQueryParams, enabled = true) {
   return useQuery({
     queryKey: ["justifications", "my-team", params],
     queryFn: () => attendanceJustificationsApi.getMyTeam(params),
+    enabled,
   });
 }
 

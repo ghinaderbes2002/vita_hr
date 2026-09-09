@@ -1513,6 +1513,35 @@ export default function EmployeeDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* عدّاد يكتبه الباك ولا يُعدَّل من هنا. عند الثالث يُرسل تنبيه
+                بالبريد الداخلي للموظف ولموظفي HR تلقائياً. */}
+            {(() => {
+              const rejectedCount = Number(config?.rejectedJustificationsCount ?? 0);
+              const alertSentAt = config?.rejectionAlertSentAt ?? null;
+              const flagged = rejectedCount >= 3;
+              return (
+                <div className={`rounded-lg border p-3 ${flagged ? "border-red-300 bg-red-50/60" : ""}`}>
+                  <div className="flex flex-wrap gap-2 items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">التبريرات المرفوضة</p>
+                      <p className="text-xs text-muted-foreground">تراكمي — رفض المدير أو الموارد البشرية</p>
+                    </div>
+                    <Badge
+                      variant={flagged ? "destructive" : "secondary"}
+                      className="text-sm"
+                    >
+                      {rejectedCount}
+                    </Badge>
+                  </div>
+                  {alertSentAt && (
+                    <p className="mt-2 text-xs text-red-700">
+                      أُرسل تنبيه للموظف وللموارد البشرية في{" "}
+                      {new Date(alertSentAt).toLocaleDateString("en-GB")}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
             <div className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
               <div>
                 <p className="text-sm font-medium">مرتبط بالراتب</p>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, ArrowLeftRight, Printer, FileSpreadsheet } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, RotateCcw, ChevronDown, ChevronRight, ArrowLeftRight, Printer, FileSpreadsheet, FileCheck2 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,7 @@ import { CustodyDialog } from "@/components/features/custodies/custody-dialog";
 import { ReturnCustodyDialog } from "@/components/features/custodies/return-custody-dialog";
 import { BulkTransferDialog } from "@/components/features/custodies/bulk-transfer-dialog";
 import { TransferCustodyDialog } from "@/components/features/custodies/transfer-custody-dialog";
-import { downloadCustodyGroupPdf } from "@/components/features/custodies/custody-group-pdf";
+import type { CustodyPdfVariant } from "@/components/features/custodies/custody-group-pdf";
 import { downloadExcel } from "@/lib/utils/excel";
 import { Custody, CustodyStatus } from "@/types";
 import { ActionGuard } from "@/components/permissions/action-guard";
@@ -55,17 +55,28 @@ export default function CustodiesPage() {
   const [bulkTransferGroup, setBulkTransferGroup] = useState<{ custodies: Custody[]; empName: string } | null>(null);
   const [transferDialogCustody, setTransferDialogCustody] = useState<Custody | null>(null);
   const [selected, setSelected] = useState<Custody | null>(null);
+  // `${empKey}:${variant}` while that sheet is being generated, so the two
+  // buttons of a row show their own busy state independently.
   const [printingGroup, setPrintingGroup] = useState<string | null>(null);
 
-  const handlePrintGroup = async (empKey: string, items: Custody[], employee: any) => {
-    setPrintingGroup(empKey);
+  const handlePrintGroup = async (
+    empKey: string,
+    items: Custody[],
+    employee: any,
+    variant: CustodyPdfVariant = "record",
+  ) => {
+    setPrintingGroup(`${empKey}:${variant}`);
     try {
+      // Loaded on demand: @react-pdf/renderer and the Amiri fonts are far too
+      // heavy to sit in this page's bundle just for a print button.
+      const { downloadCustodyGroupPdf } =
+        await import("@/components/features/custodies/custody-group-pdf");
       const empName = employee ? `${employee.firstNameAr} ${employee.lastNameAr}` : "—";
       await downloadCustodyGroupPdf(items, {
         name: empName,
         number: employee?.employeeNumber,
         department: employee?.department?.nameAr,
-      });
+      }, variant);
     } finally {
       setPrintingGroup(null);
     }
@@ -281,14 +292,27 @@ export default function CustodiesPage() {
                           variant="ghost"
                           size="sm"
                           className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                          disabled={printingGroup === group.empKey}
+                          disabled={printingGroup === `${group.empKey}:clearance`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintGroup(group.empKey, group.items, group.employee, "clearance");
+                          }}
+                        >
+                          <FileCheck2 className="h-3 w-3" />
+                          {printingGroup === `${group.empKey}:clearance` ? "جاري..." : "براءة ذمة"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                          disabled={printingGroup === `${group.empKey}:record`}
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePrintGroup(group.empKey, group.items, group.employee);
                           }}
                         >
                           <Printer className="h-3 w-3" />
-                          {printingGroup === group.empKey ? "جاري..." : "طباعة"}
+                          {printingGroup === `${group.empKey}:record` ? "جاري..." : "طباعة"}
                         </Button>
                       </div>
                     </TableCell>
