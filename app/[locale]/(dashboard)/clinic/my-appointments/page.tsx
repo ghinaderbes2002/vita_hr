@@ -13,8 +13,15 @@ import { PageHeader } from "@/components/shared/page-header";
 import { cn, formatClinicTime } from "@/lib/utils";
 import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment } from "@/lib/hooks/use-clinic-appointments";
 import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
+import { clinicPhysioApi, PhysioCase } from "@/lib/api/clinic-physio";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
+
+/** قسم العلاج الفيزيائي — يُطابَق بالاسم كما يعرضه الموعد. */
+const PHYSIO_DEPT_NAME = "العلاج الفيزيائي";
+
+/** حالات لا يُفتح عليها موعد جديد، فلا تُختار عند وجود حالة مفتوحة. */
+const CLOSED_PHYSIO_STATUSES = ["COMPLETED", "DISCHARGED", "CANCELLED"];
 
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
   SCHEDULED: "bg-blue-100 text-blue-800",
@@ -83,11 +90,34 @@ export default function MyAppointmentsPage() {
     if (a.caseId && a.caseType === "PROSTHETICS") return `/${locale}/clinic/prosthetics/${a.caseId}`;
     return `/${locale}/clinic/patients/${a.patientId}`;
   };
+  /**
+   * A physio session is usually booked without a case attached, so `caseId` is
+   * empty and the fallback above lands on the patient profile — while the point
+   * of finishing the appointment is to write the session into the case. Resolve
+   * the patient's own case instead, preferring one that is still open.
+   */
+  const resolvePhysioCaseHref = async (a: Appointment): Promise<string | null> => {
+    if (!a.patientId || !deptNameOf(a).includes(PHYSIO_DEPT_NAME)) return null;
+    try {
+      const cases = await clinicPhysioApi.getByPatient(a.patientId);
+      const open = cases.filter((c: PhysioCase) => !CLOSED_PHYSIO_STATUSES.includes(c.status));
+      const newestFirst = (open.length ? open : cases)
+        .slice()
+        .sort(
+          (x: PhysioCase, y: PhysioCase) =>
+            new Date(y.createdAt ?? 0).getTime() - new Date(x.createdAt ?? 0).getTime(),
+        );
+      return newestFirst[0] ? `/${locale}/clinic/physio/${newestFirst[0].id}` : null;
+    } catch {
+      return null; // a failed lookup falls back to the patient profile
+    }
+  };
+
   const finishAndOpenCase = async (a: Appointment, status: Extract<AppointmentStatus, "COMPLETED" | "NO_SHOW">) => {
-    const href = caseHref(a);
     setDetailAppt(null);
     try {
       await updateStatus.mutateAsync({ id: a.id, status });
+      const href = (a.caseId ? null : await resolvePhysioCaseHref(a)) ?? caseHref(a);
       router.push(href);
     } catch {
       /* the mutation hook already surfaces the error toast */

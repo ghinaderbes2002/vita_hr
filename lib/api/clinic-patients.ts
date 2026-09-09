@@ -37,7 +37,8 @@ export interface Patient {
   firstName: string;
   lastName: string;
   identityType: IdentityType;
-  idNumber: string;
+  /** اختياري — المريض قد يُسجَّل بدون وثيقة هوية. */
+  idNumber?: string | null;
   dateOfBirth: string;
   gender: Gender;
   occupation?: string | null;
@@ -115,7 +116,7 @@ export interface CreatePatientDto {
   firstName: string;
   lastName: string;
   identityType: IdentityType;
-  idNumber: string;
+  idNumber?: string;
   dateOfBirth: string;
   gender: Gender;
   occupation?: string;

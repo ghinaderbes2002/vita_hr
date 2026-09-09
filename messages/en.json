@@ -3063,6 +3063,7 @@
         },
         "fields": {
           "firstName": "First Name",
+          "optional": "Optional",
           "lastName": "Last Name",
           "identityType": "Identity Type",
           "idNumber": "ID Number",

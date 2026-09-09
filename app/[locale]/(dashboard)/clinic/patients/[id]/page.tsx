@@ -71,12 +71,15 @@ const DOC_TYPE_LABEL: Record<string, string> = {
   OTHER:               "أخرى",
 };
 
-function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
-  if (!value && value !== 0) return null;
+// `fallback` keeps a row visible for fields that are optional but still worth
+// showing as unfilled (رقم الهوية، المدينة)؛ بدونه يُخفى السطر الفارغ.
+function InfoRow({ label, value, fallback }: { label: string; value?: string | number | null; fallback?: string }) {
+  const empty = !value && value !== 0;
+  if (empty && !fallback) return null;
   return (
     <div className="flex flex-wrap gap-2 justify-between py-1.5 border-b last:border-0">
       <span className="text-muted-foreground text-sm">{label}</span>
-      <span className="text-sm font-medium">{value}</span>
+      <span className={empty ? "text-sm text-muted-foreground" : "text-sm font-medium"}>{empty ? fallback : value}</span>
     </div>
   );
 }
@@ -397,7 +400,7 @@ export default function PatientProfilePage() {
               <CardContent>
                 <InfoRow label="الاسم الكامل" value={`${patient.firstName} ${patient.lastName}`} />
                 <InfoRow label="نوع الهوية" value={IDENTITY_LABEL[patient.identityType]} />
-                <InfoRow label="رقم الهوية" value={patient.idNumber} />
+                <InfoRow label="رقم الهوية" value={patient.idNumber} fallback="غير محدد" />
                 <InfoRow label="تاريخ الميلاد" value={new Date(patient.dateOfBirth).toLocaleDateString("en-GB")} />
                 <InfoRow label="الجنس" value={GENDER_LABEL[patient.gender]} />
                 <InfoRow label="الطول" value={patient.heightCm ? `${patient.heightCm} سم` : null} />
@@ -417,8 +420,8 @@ export default function PatientProfilePage() {
                 <InfoRow label="الهاتف" value={patient.phone} />
                 <InfoRow label="واتساب" value={patient.whatsapp} />
                 <InfoRow label="البريد" value={patient.email} />
-                <InfoRow label="المحافظة" value={patient.city?.governorate} />
-                <InfoRow label="المدينة" value={patient.city?.name} />
+                <InfoRow label="المحافظة" value={patient.city?.governorate} fallback="غير محدد" />
+                <InfoRow label="المدينة" value={patient.city?.name} fallback="غير محدد" />
                 <InfoRow label="العنوان" value={patient.addressDetails} />
               </CardContent>
             </Card>

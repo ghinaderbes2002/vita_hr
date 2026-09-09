@@ -2151,6 +2151,7 @@
         },
         "fields": {
           "firstName": "Ad",
+          "optional": "İsteğe bağlı",
           "lastName": "Soyad",
           "identityType": "Kimlik Türü",
           "idNumber": "Kimlik Numarası",

@@ -34,7 +34,8 @@ const step1Schema = z.object({
   firstName:    z.string().min(2),
   lastName:     z.string().min(2),
   identityType: z.enum(["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"]),
-  idNumber:     z.string().min(5),
+  // رقم الهوية اختياري: المريض قد يُسجَّل بدون أي وثيقة هوية.
+  idNumber:     z.string().optional(),
   dateOfBirth:  z.string().min(1),
   gender:       z.enum(["MALE", "FEMALE"]),
   occupation:   z.string().optional(),
@@ -44,7 +45,8 @@ const step2Schema = z.object({
   phone:          z.string().min(7),
   whatsapp:       z.string().optional(),
   email:          z.string().email().optional().or(z.literal("")),
-  cityId:         z.string().min(1),
+  // المدينة اختيارية.
+  cityId:         z.string().optional(),
   addressDetails: z.string().optional(),
 });
 
@@ -189,7 +191,7 @@ export default function NewPatientPage() {
       firstName:       s1.firstName!,
       lastName:        s1.lastName!,
       identityType:    s1.identityType! as IdentityType,
-      idNumber:        s1.idNumber!,
+      idNumber:        s1.idNumber?.trim() || undefined,
       dateOfBirth:     s1.dateOfBirth!,
       gender:          s1.gender!,
       occupation:      s1.occupation || undefined,
@@ -335,9 +337,8 @@ export default function NewPatientPage() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t("fields.idNumber")} <span className="text-destructive">*</span></Label>
+                  <Label>{t("fields.idNumber")} <span className="text-xs font-normal text-muted-foreground">({t("fields.optional")})</span></Label>
                   <Input {...form1.register("idNumber")} />
-                  {form1.formState.errors.idNumber && <p className="text-xs text-destructive">{t("validation.required")}</p>}
                 </div>
               </div>
               {isDuplicate && (
@@ -488,9 +489,8 @@ export default function NewPatientPage() {
                 {form2.formState.errors.email && <p className="text-xs text-destructive">{t("validation.invalidEmail")}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label>{t("fields.city")} <span className="text-destructive">*</span></Label>
-                {/* `shouldValidate` so the error clears the moment a city is picked. */}
-                <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v, { shouldValidate: true })}>
+                <Label>{t("fields.city")} <span className="text-xs font-normal text-muted-foreground">({t("fields.optional")})</span></Label>
+                <Select value={form2.watch("cityId") ?? ""} onValueChange={(v) => form2.setValue("cityId", v)}>
                   <SelectTrigger><SelectValue placeholder={t("fields.cityPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {cities.map((c) => (
@@ -500,7 +500,6 @@ export default function NewPatientPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {form2.formState.errors.cityId && <p className="text-xs text-destructive">{t("validation.required")}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>{t("fields.address")}</Label>
@@ -666,7 +665,7 @@ export default function NewPatientPage() {
                 <p className="font-semibold">{t("summary.title")}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
                   <span>{t("summary.name")}:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
-                  <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{s1.idNumber}</span>
+                  <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{s1.idNumber?.trim() || "—"}</span>
                   <span>{t("summary.phone")}:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
                   {s1.occupation && <><span>{t("summary.occupation")}:</span><span className="text-foreground">{s1.occupation}</span></>}
                 </div>

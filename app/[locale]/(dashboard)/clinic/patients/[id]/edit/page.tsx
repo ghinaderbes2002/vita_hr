@@ -29,7 +29,8 @@ const schema = z.object({
   firstName:       z.string().min(2, "مطلوب"),
   lastName:        z.string().min(2, "مطلوب"),
   identityType:    z.enum(["NATIONAL_ID", "PASSPORT", "UNHCR", "OTHER"]),
-  idNumber:        z.string().min(5, "مطلوب"),
+  // رقم الهوية والمدينة اختياريان — قد يُسجَّل المريض بدونهما.
+  idNumber:        z.string().optional(),
   dateOfBirth:     z.string().min(1, "مطلوب"),
   gender:          z.enum(["MALE", "FEMALE"]),
   phone:           z.string().min(7, "مطلوب"),
@@ -131,7 +132,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
     firstName:       patient.firstName,
     lastName:        patient.lastName,
     identityType:    patient.identityType,
-    idNumber:        patient.idNumber,
+    idNumber:        patient.idNumber ?? "",
     dateOfBirth:     patient.dateOfBirth.slice(0, 10),
     gender:          patient.gender,
     phone:           patient.phone,
@@ -203,7 +204,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
       firstName:       values.firstName,
       lastName:        values.lastName,
       identityType:    values.identityType,
-      idNumber:        values.idNumber,
+      idNumber:        values.idNumber?.trim() || undefined,
       dateOfBirth:     values.dateOfBirth,
       gender:          values.gender,
       phone:           values.phone,
@@ -295,9 +296,8 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
                 )} />
               </div>
               <div className="space-y-1.5">
-                <Label>رقم الهوية <span className="text-destructive">*</span></Label>
+                <Label>رقم الهوية <span className="text-xs font-normal text-muted-foreground">(اختياري)</span></Label>
                 <Input {...register("idNumber")} />
-                <FieldError msg={errors.idNumber?.message} />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -347,7 +347,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
               <FieldError msg={errors.email?.message} />
             </div>
             <div className="space-y-1.5">
-              <Label>المدينة</Label>
+              <Label>المدينة <span className="text-xs font-normal text-muted-foreground">(اختياري)</span></Label>
               <Controller name="cityId" control={control} render={({ field }) => (
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>

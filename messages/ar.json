@@ -3197,6 +3197,7 @@
         },
         "fields": {
           "firstName": "الاسم الأول",
+          "optional": "اختياري",
           "lastName": "اسم العائلة",
           "identityType": "نوع الهوية",
           "idNumber": "رقم الهوية",
