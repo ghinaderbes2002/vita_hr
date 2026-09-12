@@ -288,16 +288,14 @@ export default function MyAppointmentsPage() {
       {isLoading ? (
         <Skeleton className="h-[520px] w-full rounded-xl" />
       ) : (
-        <div className="overflow-x-auto">
-          <div className="w-max min-w-full">
-            <AppointmentTimeline
-              groups={timelineGroups}
-              isToday={weekDays.some((d) => localIso(d) === todayKey)}
-              onSelect={setDetailAppt}
-              hideEmptyLabel
-              hideLegend
-            />
-          </div>
+        <div className="overflow-x-auto overscroll-x-contain">
+          <AppointmentTimeline
+            groups={timelineGroups}
+            isToday={weekDays.some((d) => localIso(d) === todayKey)}
+            onSelect={setDetailAppt}
+            hideEmptyLabel
+            hideLegend
+          />
         </div>
       )}
 

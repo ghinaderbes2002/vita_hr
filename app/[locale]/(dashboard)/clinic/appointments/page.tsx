@@ -422,7 +422,9 @@ export default function AppointmentsPage() {
         </Card>
 
         {/* Day view — professional timeline */}
-        <div className="space-y-3">
+        {/* `min-w-0`: a grid item defaults to `min-width:auto`, so without this the
+            board widens its own track instead of scrolling inside it. */}
+        <div className="space-y-3 min-w-0">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-base font-semibold">
               {new Date(selectedDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
@@ -432,9 +434,10 @@ export default function AppointmentsPage() {
           {dayLoading ? (
             <Skeleton className="h-[560px] w-full rounded-xl" />
           ) : (
-            /* Two department columns beside a 56px time gutter don't fit a phone. */
-            <div className="overflow-x-auto">
-            <div className="w-max min-w-full">
+            /* Two department columns beside a 56px time gutter don't fit a phone.
+               The board carries its own `min-width`, so it stretches this scroller
+               rather than needing a `w-max` shim that killed the column truncation. */
+            <div className="overflow-x-auto overscroll-x-contain">
             <AppointmentTimeline
               groups={timelineGroups}
               isToday={isSelectedToday}
@@ -449,7 +452,6 @@ export default function AppointmentsPage() {
                 return (a.therapistIds ?? []).map((id) => staffName(id)).filter(Boolean).join("، ") || null;
               }}
             />
-            </div>
             </div>
           )}
         </div>

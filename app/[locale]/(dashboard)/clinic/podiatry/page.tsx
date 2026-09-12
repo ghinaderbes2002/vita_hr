@@ -24,12 +24,14 @@ const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—"
 
 /**
  * المسميات التي تشرف على مرضى القسم كاملاً. غيرها يرى فقط الحالات المعيَّن
- * عليها كمعالج. Kept in step with the same list on the prosthetics page.
+ * عليها كمعالج. Mirrors the prosthetics page apart from the sales job titles,
+ * which oversee the podiatry caseload only.
  */
 const FULL_CASELOAD_JOB_CODES = [
   "VTX-JTL-000035", // رئيس قسم الأطراف الصناعية وطب الأقدام
   "VTX-JTL-000011", // مشرف المركز
   "VTX-JTL-000007", // المدير الطبي
+  "VTX-JTL-000014", // مشرف المبيعات
 ];
 
 export default function PodiatryListPage() {
