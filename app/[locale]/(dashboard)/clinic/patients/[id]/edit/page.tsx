@@ -40,6 +40,7 @@ const schema = z.object({
   addressDetails:  z.string().optional(),
   heightCm:        z.coerce.number().min(50).max(250).optional().or(z.literal("")),
   weightKg:        z.coerce.number().min(10).max(300).optional().or(z.literal("")),
+  nationality:     z.string().optional(),
   occupation:      z.string().optional(),
   educationLevel:  z.string().optional(),
   maritalStatus:   z.string().optional(),
@@ -142,6 +143,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
     addressDetails:  patient.addressDetails ?? "",
     heightCm:        patient.heightCm ?? "",
     weightKg:        patient.weightKg ?? "",
+    nationality:     patient.nationality ?? "",
     occupation:      patient.occupation ?? "",
     educationLevel:  patient.educationLevel ?? "",
     maritalStatus:   patient.maritalStatus ?? "",
@@ -214,6 +216,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
       addressDetails:  values.addressDetails || undefined,
       heightCm:        values.heightCm ? Number(values.heightCm) : undefined,
       weightKg:        values.weightKg ? Number(values.weightKg) : undefined,
+      nationality:     values.nationality?.trim() || undefined,
       occupation:      values.occupation || undefined,
       educationLevel:  (values.educationLevel as any) || undefined,
       maritalStatus:   (values.maritalStatus as any) || undefined,
@@ -319,9 +322,15 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
                 )} />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>المهنة / Occupation</Label>
-              <Input {...register("occupation")} placeholder="مهندس، معلم، ربة منزل..." />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>الجنسية / Nationality</Label>
+                <Input {...register("nationality")} placeholder="سورية، لبنانية..." />
+              </div>
+              <div className="space-y-1.5">
+                <Label>المهنة / Occupation</Label>
+                <Input {...register("occupation")} placeholder="مهندس، معلم، ربة منزل..." />
+              </div>
             </div>
           </CardContent>
         </Card>

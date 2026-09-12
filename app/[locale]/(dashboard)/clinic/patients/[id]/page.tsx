@@ -403,6 +403,7 @@ export default function PatientProfilePage() {
                 <InfoRow label="رقم الهوية" value={patient.idNumber} fallback="غير محدد" />
                 <InfoRow label="تاريخ الميلاد" value={new Date(patient.dateOfBirth).toLocaleDateString("en-GB")} />
                 <InfoRow label="الجنس" value={GENDER_LABEL[patient.gender]} />
+                <InfoRow label="الجنسية" value={patient.nationality} fallback="غير محدد" />
                 <InfoRow label="الطول" value={patient.heightCm ? `${patient.heightCm} سم` : null} />
                 <InfoRow label="الوزن" value={patient.weightKg ? `${patient.weightKg} كغ` : null} />
                 <InfoRow label="مؤشر كتلة الجسم" value={patient.bmi ? patient.bmi.toFixed(1) : null} />

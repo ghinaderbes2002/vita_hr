@@ -38,6 +38,7 @@ const step1Schema = z.object({
   idNumber:     z.string().optional(),
   dateOfBirth:  z.string().min(1),
   gender:       z.enum(["MALE", "FEMALE"]),
+  nationality:  z.string().optional(),
   occupation:   z.string().optional(),
 });
 
@@ -117,7 +118,7 @@ export default function NewPatientPage() {
 
   const form1 = useForm<Step1>({
     resolver: zodResolver(step1Schema) as any,
-    defaultValues: { firstName: "", lastName: "", identityType: "NATIONAL_ID", idNumber: "", dateOfBirth: "", gender: "MALE", occupation: "", ...s1 },
+    defaultValues: { firstName: "", lastName: "", identityType: "NATIONAL_ID", idNumber: "", dateOfBirth: "", gender: "MALE", nationality: "", occupation: "", ...s1 },
   });
 
   const form2 = useForm<Step2>({
@@ -194,6 +195,7 @@ export default function NewPatientPage() {
       idNumber:        s1.idNumber?.trim() || undefined,
       dateOfBirth:     s1.dateOfBirth!,
       gender:          s1.gender!,
+      nationality:     s1.nationality?.trim() || undefined,
       occupation:      s1.occupation || undefined,
       phone:           s2.phone!,
       whatsapp:        s2.whatsapp || undefined,
@@ -369,9 +371,15 @@ export default function NewPatientPage() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>{t("fields.occupation")}</Label>
-                <Input {...form1.register("occupation")} placeholder={t("fields.occupationPlaceholder")} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>{t("fields.nationality")}</Label>
+                  <Input {...form1.register("nationality")} placeholder={t("fields.nationalityPlaceholder")} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t("fields.occupation")}</Label>
+                  <Input {...form1.register("occupation")} placeholder={t("fields.occupationPlaceholder")} />
+                </div>
               </div>
 
               {/* البيانات الاجتماعية */}
@@ -667,6 +675,7 @@ export default function NewPatientPage() {
                   <span>{t("summary.name")}:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
                   <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{s1.idNumber?.trim() || "—"}</span>
                   <span>{t("summary.phone")}:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
+                  {s1.nationality && <><span>{t("summary.nationality")}:</span><span className="text-foreground">{s1.nationality}</span></>}
                   {s1.occupation && <><span>{t("summary.occupation")}:</span><span className="text-foreground">{s1.occupation}</span></>}
                 </div>
               </div>

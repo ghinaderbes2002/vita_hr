@@ -41,6 +41,8 @@ export interface Patient {
   idNumber?: string | null;
   dateOfBirth: string;
   gender: Gender;
+  /** نص حر — لا يوجد enum للجنسيات. */
+  nationality?: string | null;
   occupation?: string | null;
   heightCm?: number | null;
   weightKg?: number | null;
@@ -119,6 +121,7 @@ export interface CreatePatientDto {
   idNumber?: string;
   dateOfBirth: string;
   gender: Gender;
+  nationality?: string;
   occupation?: string;
   heightCm?: number;
   weightKg?: number;
