@@ -32,6 +32,7 @@ const FULL_CASELOAD_JOB_CODES = [
   "VTX-JTL-000011", // مشرف المركز
   "VTX-JTL-000007", // المدير الطبي
   "VTX-JTL-000014", // مشرف المبيعات
+  "VTX-JTL-000024", // مندوب المبيعات
 ];
 
 export default function PodiatryListPage() {
