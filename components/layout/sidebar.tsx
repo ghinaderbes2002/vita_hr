@@ -265,7 +265,9 @@ const navigation: NavItem[] = [
     // they hold its permission (which the backend also enforces), so the sidebar
     // never shows a tab the API would 403.
     children: [
-      { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view" },
+      // مسميات المبيعات تدخل على مرضى طب الأقدام من تبويب القسم نفسه، فلا يُعرض
+      // لها سجل المرضى الكامل.
+      { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view", hiddenForJobTitleCodes: ["VTX-JTL-000014", "VTX-JTL-000024"] },
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
       { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
       { title: "nav.clinicPodiatry", href: "/clinic/podiatry", icon: Footprints, permission: "clinic.podiatry.reception.view" },
