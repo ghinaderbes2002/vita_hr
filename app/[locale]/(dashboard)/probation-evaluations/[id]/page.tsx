@@ -46,7 +46,7 @@ import {
 } from "@/lib/api/probation-evaluations";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { useEmployeeBasic } from "@/lib/hooks/use-employees";
+import { useEmployeeBasic, useMyEmployee } from "@/lib/hooks/use-employees";
 import { FinalScoreCard } from "@/components/features/probation-evaluations/final-score-card";
 
 const STATUS_CLASSES: Record<ProbationStatus, string> = {
@@ -309,6 +309,12 @@ export default function ProbationEvaluationDetailPage() {
   const { user } = useAuthStore();
 
   const { data: employeeRecord } = useEmployeeBasic(ev?.employeeId || "");
+  // user.employeeId يُملأ فقط إذا أرجعه تسجيل الدخول أو كان الربط محفوظاً في
+  // متصفّح هذا الجهاز، فلا يمكن الاعتماد عليه وحده. ملف الموظف الخاص بالمستخدم
+  // هو المصدر المضمون لمعرفة صاحب التقييم.
+  const { data: myEmployee } = useMyEmployee();
+  const myEmployeeId: string = user?.employeeId || (myEmployee as any)?.id || "";
+  const isEvaluationSubject = !!myEmployeeId && myEmployeeId === ev?.employeeId;
 
   const canSeniorApprove = isAdmin() || hasPermission("probation:senior-review");
   // المدير المباشر للموظف ليس له صلاحية خاصة — الباك هو من يقرر من عليه الدور،
@@ -320,12 +326,11 @@ export default function ProbationEvaluationDetailPage() {
   // قد يحمل صلاحية hr-review أيضاً، فيُستثنى صراحةً — دوره يأتي في ceo-decide.
   const isHrActor = canHrDocument && (!canCeoDecide || isAdmin());
   // التقييم الذاتي يملؤه صاحب التقييم وحده — لا HR ولا أي مطّلع آخر.
-  const canSelfEvaluate =
-    isAdmin() || (!!user?.employeeId && user.employeeId === ev?.employeeId) || isPendingForMe;
+  const canSelfEvaluate = isAdmin() || isEvaluationSubject || isPendingForMe;
   // ملاحظات «مخرجات الاجتماع» داخلية بين HR والإدارة — الموظف صاحب التقييم لا
   // يراها في سجل الإجراءات، ولا أي شخص خارج أدوار المسار.
   const canSeeHrNotes =
-    user?.employeeId !== ev?.employeeId &&
+    !isEvaluationSubject &&
     (canSeniorApprove || canHrDocument || canCeoDecide);
 
   if (isLoading) {
@@ -737,6 +742,14 @@ export default function ProbationEvaluationDetailPage() {
               {ev.status === "DRAFT" && (
                 <p className="text-sm text-muted-foreground">{t("detail.draftNote")}</p>
               )}
+              {/* بدون هذه الملاحظة تظهر البطاقة فارغة بلا تفسير لمن ليس عليه دور. */}
+              {((ev.status === "PENDING_SELF_EVALUATION" && !canSelfEvaluate) ||
+                (ev.status === "PENDING_DIRECT_MANAGER" && !canDirectManagerAct) ||
+                (ev.status === "PENDING_SENIOR_MANAGER" && !canSeniorApprove) ||
+                (ev.status === "PENDING_HR" && !isHrActor) ||
+                (ev.status === "PENDING_CEO" && !canCeoDecide)) && (
+                <p className="text-sm text-muted-foreground">{t("detail.noActionsForYou")}</p>
+              )}
               {ev.status === "PENDING_SELF_EVALUATION" && canSelfEvaluate && (
                 <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => openAction("self-evaluate")}>
                   <ClipboardEdit className="h-4 w-4" />{t("actions.selfEvaluate")}
@@ -795,7 +808,7 @@ export default function ProbationEvaluationDetailPage() {
                   {/* Confirmation is for the employee and the direct manager only;
                       it is hidden while a reschedule request is waiting on HR. */}
                   {ev.meetingProposedAt && !ev.meetingRescheduleNote && isPendingForMe && (() => {
-                    const isEmployee = user?.employeeId === ev.employeeId
+                    const isEmployee = isEvaluationSubject
                       || (!canSeniorApprove && !ev.meetingConfirmedByEmployee);
                     const isManager = !isEmployee && !ev.meetingConfirmedByManager;
                     const myRole =

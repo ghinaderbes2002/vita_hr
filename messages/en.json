@@ -2481,6 +2481,7 @@
       "meetingNotes": "Meeting Notes",
       "availableActions": "Available Actions",
       "completed": "Evaluation completed — no further actions",
+      "noActionsForYou": "No actions are available to you at this stage",
       "historyLog": "Action History",
       "defaultTitle": "Probation Evaluation"
     },
