@@ -20,7 +20,6 @@ import {
   ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -94,6 +93,7 @@ import {
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { ImagingProcedures } from "@/components/clinic/imaging-procedures";
 import { PhysioFollowUps } from "@/components/clinic/physio-follow-ups";
+import { TimePicker } from "@/components/clinic/time-picker";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import {
@@ -3447,53 +3447,10 @@ export default function PhysioCasePage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm">{t("sessions.time")}</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between font-normal">
-                          <span className={sessionForm.sessionTime ? "" : "text-muted-foreground"}>
-                            {sessionForm.sessionTime || "--:--"}
-                          </span>
-                          <CalendarIcon className="h-4 w-4 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 p-3" align="start">
-                        <div className="text-center text-3xl font-bold tracking-widest mb-3 text-primary">
-                          {sessionForm.sessionTime || "--:--"}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الساعة</p>
-                        <div className="grid grid-cols-3 gap-1.5 mb-3">
-                          {Array.from({ length: 9 }, (_, i) => {
-                            const h = String(10 + i).padStart(2, "0");
-                            const active = sessionForm.sessionTime?.split(":")[0] === h;
-                            return (
-                              <button key={h} type="button"
-                                className={`py-1.5 rounded-md text-sm font-medium transition-colors ${active ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70"}`}
-                                onClick={() => {
-                                  const m = sessionForm.sessionTime?.split(":")[1] || "00";
-                                  setSessionForm((f) => ({ ...f, sessionTime: `${h}:${m}` }));
-                                }}
-                              >{h}</button>
-                            );
-                          })}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الدقيقة</p>
-                        <div className="grid grid-cols-6 gap-1">
-                          {Array.from({ length: 60 }, (_, i) => {
-                            const m = String(i).padStart(2, "0");
-                            const active = sessionForm.sessionTime?.split(":")[1] === m;
-                            return (
-                              <button key={m} type="button"
-                                className={`py-1 rounded text-xs font-medium transition-colors ${active ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70"}`}
-                                onClick={() => {
-                                  const h = sessionForm.sessionTime?.split(":")[0] || "10";
-                                  setSessionForm((f) => ({ ...f, sessionTime: `${h}:${m}` }));
-                                }}
-                              >{m}</button>
-                            );
-                          })}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <TimePicker
+                      value={sessionForm.sessionTime}
+                      onChange={(v) => setSessionForm((f) => ({ ...f, sessionTime: v }))}
+                    />
                   </div>
                   <div className="space-y-1.5 col-span-1 sm:col-span-2">
                     <Label className="text-sm">{t("sessions.notes")}</Label>
@@ -3535,53 +3492,10 @@ export default function PhysioCasePage() {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">{t("sessions.time")}</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full justify-between font-normal">
-                                  <span className={editingSession.sessionTime ? "" : "text-muted-foreground"}>
-                                    {editingSession.sessionTime || "--:--"}
-                                  </span>
-                                  <CalendarIcon className="h-4 w-4 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-64 p-3" align="start">
-                                <div className="text-center text-3xl font-bold tracking-widest mb-3 text-primary">
-                                  {editingSession.sessionTime || "--:--"}
-                                </div>
-                                <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الساعة</p>
-                                <div className="grid grid-cols-3 gap-1.5 mb-3">
-                                  {Array.from({ length: 9 }, (_, i) => {
-                                    const h = String(10 + i).padStart(2, "0");
-                                    const active = editingSession.sessionTime?.split(":")[0] === h;
-                                    return (
-                                      <button key={h} type="button"
-                                        className={`py-1.5 rounded-md text-sm font-medium transition-colors ${active ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70"}`}
-                                        onClick={() => {
-                                          const m = editingSession.sessionTime?.split(":")[1] || "00";
-                                          setEditingSession((s) => s && { ...s, sessionTime: `${h}:${m}` });
-                                        }}
-                                      >{h}</button>
-                                    );
-                                  })}
-                                </div>
-                                <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الدقيقة</p>
-                                <div className="grid grid-cols-6 gap-1">
-                                  {Array.from({ length: 60 }, (_, i) => {
-                                    const m = String(i).padStart(2, "0");
-                                    const active = editingSession.sessionTime?.split(":")[1] === m;
-                                    return (
-                                      <button key={m} type="button"
-                                        className={`py-1 rounded text-xs font-medium transition-colors ${active ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70"}`}
-                                        onClick={() => {
-                                          const h = editingSession.sessionTime?.split(":")[0] || "10";
-                                          setEditingSession((s) => s && { ...s, sessionTime: `${h}:${m}` });
-                                        }}
-                                      >{m}</button>
-                                    );
-                                  })}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
+                            <TimePicker
+                              value={editingSession.sessionTime}
+                              onChange={(v) => setEditingSession((s) => s && { ...s, sessionTime: v })}
+                            />
                           </div>
                           <div className="space-y-1 col-span-1 sm:col-span-2">
                             <Label className="text-xs">{t("sessions.notes")}</Label>

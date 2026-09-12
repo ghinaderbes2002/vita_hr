@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { TimePicker } from "@/components/clinic/time-picker";
 import { PhysioFollowUp } from "@/lib/api/clinic-physio";
 import {
   usePhysioFollowUps,
@@ -61,7 +62,7 @@ function Fields({ value, onChange, t }: { value: FormState; onChange: (v: FormSt
       </div>
       <div className="space-y-1">
         <Label className="text-xs">{t("followUps.time")}</Label>
-        <Input type="time" value={value.sessionTime} onChange={(e) => onChange({ ...value, sessionTime: e.target.value })} />
+        <TimePicker value={value.sessionTime} onChange={(v) => onChange({ ...value, sessionTime: v })} />
       </div>
       <div className="space-y-1 col-span-1 sm:col-span-2">
         <Label className="text-xs">{t("followUps.notes")}</Label>

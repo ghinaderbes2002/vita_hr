@@ -378,6 +378,7 @@ export default function PodiatryReceptionPage() {
                 <div className="grid flex-1 grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3">
                 <Row label={t("patientNumber")} value={patient?.patientNumber ?? reception.patient?.patientNumber} />
                 <Row label={t("patientName")} value={patientName} />
+                <Row label={t("phone")} value={patient?.phone} />
                 <Row
                   label={t("age")}
                   value={ageFromDob(patient?.dateOfBirth) != null ? `${ageFromDob(patient?.dateOfBirth)} ${t("years")}` : null}
