@@ -3075,6 +3075,8 @@
           "idNumber": "ID Number",
           "dateOfBirth": "Date of Birth",
           "gender": "Gender",
+          "nationality": "Nationality",
+          "nationalityPlaceholder": "e.g. Syrian, Lebanese...",
           "occupation": "Occupation",
           "occupationPlaceholder": "e.g. Engineer, Teacher, Homemaker...",
           "phone": "Phone Number",
@@ -3117,6 +3119,7 @@
           "name": "Name",
           "idNumber": "ID Number",
           "phone": "Phone",
+          "nationality": "Nationality",
           "occupation": "Occupation"
         },
         "nav": {

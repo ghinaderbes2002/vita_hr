@@ -3209,6 +3209,8 @@
           "idNumber": "رقم الهوية",
           "dateOfBirth": "تاريخ الميلاد",
           "gender": "الجنس",
+          "nationality": "الجنسية",
+          "nationalityPlaceholder": "مثال: سورية، لبنانية...",
           "occupation": "المهنة",
           "occupationPlaceholder": "مثال: مهندس، معلم، ربة منزل...",
           "phone": "رقم الهاتف",
@@ -3251,6 +3253,7 @@
           "name": "الاسم",
           "idNumber": "رقم الهوية",
           "phone": "الهاتف",
+          "nationality": "الجنسية",
           "occupation": "المهنة"
         },
         "nav": {
