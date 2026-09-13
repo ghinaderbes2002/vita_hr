@@ -3,6 +3,7 @@
 // Follow-ups: the visits logged after the treatment sessions are over. Same
 // fields as a session, kept as its own list on the case.
 import { useState } from "react";
+import { formatClockTime } from "@/lib/utils/date";
 import { useTranslations } from "next-intl";
 import { Plus, Save, Trash2, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -146,7 +147,7 @@ export function PhysioFollowUps({ caseId, canEdit }: { caseId: string; canEdit: 
                       <span className="text-sm font-medium">
                         {f.sessionDate ? new Date(f.sessionDate).toLocaleDateString("en-GB") : "—"}
                       </span>
-                      {f.sessionTime && <span className="text-xs text-muted-foreground">{f.sessionTime}</span>}
+                      {f.sessionTime && <span className="text-xs text-muted-foreground">{formatClockTime(f.sessionTime)}</span>}
                     </div>
                     {canEdit && (
                       <div className="flex gap-1 shrink-0">

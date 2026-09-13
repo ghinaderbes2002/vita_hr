@@ -117,7 +117,7 @@ export function MailList({
 
   const getDate = (item: any): string => {
     const d = isDraft ? item.createdAt : item.message?.createdAt ?? item.createdAt;
-    return format(new Date(d), "d MMM HH:mm", { locale: ar });
+    return format(new Date(d), "d MMM hh:mm a", { locale: ar });
   };
 
   const isUnread = (item: any): boolean =>

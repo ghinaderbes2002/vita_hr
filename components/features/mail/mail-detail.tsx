@@ -409,7 +409,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
             {editHistory.length === 1 ? (
               <p className="flex items-center gap-1.5">
                 <Pencil className="h-3 w-3" />
-                {t("editedBy", { name: editHistory[0].editedByName, date: format(new Date(editHistory[0].editedAt), "dd/MM/yyyy HH:mm", { locale: ar }) })}
+                {t("editedBy", { name: editHistory[0].editedByName, date: format(new Date(editHistory[0].editedAt), "dd/MM/yyyy hh:mm a", { locale: ar }) })}
               </p>
             ) : (
               <div>
@@ -464,7 +464,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                               {senderN ?? empNameById[m.senderId] ?? null}
                             </span>
                             <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
-                              {format(new Date(m.createdAt), "d MMM · HH:mm", { locale: ar })}
+                              {format(new Date(m.createdAt), "d MMM · hh:mm a", { locale: ar })}
                             </span>
                           </div>
                           {!expanded && (
@@ -490,7 +490,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                               {(m as any).editHistory.length === 1 ? (
                                 <p className="flex items-center gap-1.5">
                                   <Pencil className="h-3 w-3" />
-                                  {t("editedBy", { name: (m as any).editHistory[0].editedByName, date: format(new Date((m as any).editHistory[0].editedAt), "dd/MM/yyyy HH:mm", { locale: ar }) })}
+                                  {t("editedBy", { name: (m as any).editHistory[0].editedByName, date: format(new Date((m as any).editHistory[0].editedAt), "dd/MM/yyyy hh:mm a", { locale: ar }) })}
                                 </p>
                               ) : (
                                 <button
@@ -612,7 +612,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                 <div className="flex flex-wrap gap-2 items-center justify-between">
                   <span className="font-medium">{h.editedByName}</span>
                   <span className="text-xs text-muted-foreground">
-                    {format(new Date(h.editedAt), "dd/MM/yyyy HH:mm", { locale: ar })}
+                    {format(new Date(h.editedAt), "dd/MM/yyyy hh:mm a", { locale: ar })}
                   </span>
                 </div>
                 {h.previousSubject && (

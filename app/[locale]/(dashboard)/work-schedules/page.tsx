@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatClockTime } from "@/lib/utils/date";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useTranslations } from "next-intl";
@@ -212,7 +213,7 @@ export default function WorkSchedulesPage() {
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1" dir="ltr">
                           <Clock className="h-3 w-3" />
-                          {schedule.workStartTime} - {schedule.workEndTime}
+                          {formatClockTime(schedule.workStartTime)} - {formatClockTime(schedule.workEndTime)}
                         </div>
                       </div>
                     )}

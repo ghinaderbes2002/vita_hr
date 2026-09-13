@@ -23,7 +23,7 @@ import {
 const POLL_MS = 4000;
 
 const fmtTime = (d?: string | null) =>
-  d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "";
+  d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short", hour12: true }) : "";
 
 const lastActivity = (c: ChatConversation) =>
   c.lastMessageAt ?? c.lastMessage?.createdAt ?? c.createdAt ?? "";

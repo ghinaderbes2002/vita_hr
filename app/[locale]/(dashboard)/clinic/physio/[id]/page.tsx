@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { formatClockTime } from "@/lib/utils/date";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -3526,7 +3527,7 @@ export default function PhysioCasePage() {
                           <div className="flex gap-2 items-center flex-wrap">
                             <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{s.sessionNumber}</Badge>
                             <span className="font-medium text-sm">{new Date(s.sessionDate).toLocaleDateString("en-GB")}</span>
-                            {s.sessionTime && <span className="text-xs text-muted-foreground">{s.sessionTime}</span>}
+                            {s.sessionTime && <span className="text-xs text-muted-foreground">{formatClockTime(s.sessionTime)}</span>}
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {canEdit && (
@@ -3746,7 +3747,7 @@ export default function PhysioCasePage() {
                             {alert.status === "RESPONDED" ? "تم الرد" : "بانتظار الرد"}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {new Date(alert.createdAt).toLocaleString(locale)}
+                            {new Date(alert.createdAt).toLocaleString(locale, { hour12: true })}
                           </span>
                         </div>
                         {alert.note && (
@@ -3756,7 +3757,7 @@ export default function PhysioCasePage() {
                         )}
                         {alert.respondedAt && (
                           <p className="text-xs text-muted-foreground">
-                            رُدَّ عليه في: {new Date(alert.respondedAt).toLocaleString(locale)}
+                            رُدَّ عليه في: {new Date(alert.respondedAt).toLocaleString(locale, { hour12: true })}
                           </p>
                         )}
                       </div>
@@ -3804,7 +3805,7 @@ export default function PhysioCasePage() {
                           </Badge>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(alert.createdAt).toLocaleString(locale)}
+                          {new Date(alert.createdAt).toLocaleString(locale, { hour12: true })}
                         </span>
                       </div>
                       <p className="text-sm font-medium text-destructive">

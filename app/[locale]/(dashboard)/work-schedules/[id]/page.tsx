@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { formatClockTime } from "@/lib/utils/date";
 import { useTranslations } from "next-intl";
 import { ArrowRight, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -96,7 +97,7 @@ export default function WorkScheduleDetailPage() {
               <span className="text-xs text-muted-foreground">{t("workSchedules.fields.workTimes")}</span>
               <span className="text-sm font-medium flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                {schedule.workStartTime} - {schedule.workEndTime}
+                {formatClockTime(schedule.workStartTime)} - {formatClockTime(schedule.workEndTime)}
               </span>
             </div>
             <div className="flex flex-col gap-1">

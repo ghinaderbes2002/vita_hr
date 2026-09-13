@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatClockTime } from "@/lib/utils/date";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
@@ -142,7 +143,7 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
               <p className="text-xs text-orange-700 mt-0.5">
                 موعد مقترح:{" "}
                 {ev.meetingProposedAt
-                  ? new Date(ev.meetingProposedAt).toLocaleString("ar-SA")
+                  ? new Date(ev.meetingProposedAt).toLocaleString("ar-SA", { hour12: true })
                   : "—"}
               </p>
             </div>
@@ -181,11 +182,11 @@ function EmployeeDashboard({ d, locale, router }: { d: any; locale: string; rout
             <div className="flex gap-6 text-sm">
               <div>
                 <span className="text-muted-foreground">{t("employee.checkIn")}:</span>
-                <span className="font-semibold mr-2">{d.todayAttendance.checkIn ?? "—"}</span>
+                <span className="font-semibold mr-2">{formatClockTime(d.todayAttendance.checkIn) || "—"}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">{t("employee.expectedCheckOut")}:</span>
-                <span className="font-semibold mr-2">{d.todayAttendance.expectedCheckOut ?? "—"}</span>
+                <span className="font-semibold mr-2">{formatClockTime(d.todayAttendance.expectedCheckOut) || "—"}</span>
               </div>
             </div>
           </CardContent>

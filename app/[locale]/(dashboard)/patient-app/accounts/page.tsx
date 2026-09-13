@@ -28,7 +28,7 @@ const LIMIT = 15;
 const ALL = "__all__";
 
 const fmtDateTime = (d?: string | null) =>
-  d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "—";
+  d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short", hour12: true }) : "—";
 
 const accountPatientName = (a: PatientAppAccountListItem) =>
   a.patient ? patientFullName(a.patient) : <PatientName id={a.erpPatientId} />;

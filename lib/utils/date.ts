@@ -31,6 +31,20 @@ export function formatTime(utcString?: string | null, locale = ar): string {
   }
 }
 
+// A wall-clock "HH:mm" (or "HH:mm:ss") — work schedules, hourly leave, session
+// times — in the same 12-hour form as formatTime: "08:30 ص", "02:15 م". It is
+// not a UTC instant, so there is no company-offset shift. Anything that isn't a
+// clock time comes back unchanged, so a value already formatted still reads.
+export function formatClockTime(value?: string | null, locale = ar): string {
+  if (!value) return "";
+  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(value.trim());
+  if (!m) return value;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return value;
+  return format(new Date(2000, 0, 1, h, min), "hh:mm a", { locale });
+}
+
 export function formatDate(utcString?: string | null, pattern = "dd/MM/yyyy"): string {
   if (!utcString) return "—";
   try {

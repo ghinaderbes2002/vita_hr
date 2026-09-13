@@ -32,6 +32,8 @@ const RESOURCES = [
   "custodies", "requests", "roles", "holidays", "leave-types",
 ];
 
+const METHODS = ["GET", "POST", "PATCH", "PUT", "DELETE"];
+
 function MetadataValue({ value }: { value: any }) {
   if (value === null || value === undefined) {
     return <span className="text-muted-foreground">—</span>;
@@ -83,6 +85,7 @@ export default function AuditLogsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [resource, setResource] = useState("");
+  const [method, setMethod] = useState("");
   const [detailLog, setDetailLog] = useState<AuditLog | null>(null);
   const LIMIT = 20;
 
@@ -92,6 +95,7 @@ export default function AuditLogsPage() {
     ...(from && { from }),
     ...(to && { to }),
     ...(resource && { resource }),
+    ...(method && { method }),
   });
 
   const raw = data as any;
@@ -112,7 +116,7 @@ export default function AuditLogsPage() {
         year: "numeric", month: "short", day: "numeric",
       }).format(d);
       const timePart = new Intl.DateTimeFormat("en-US", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
       }).format(d);
       return `${datePart}، ${timePart}`;
     } catch {
@@ -174,12 +178,25 @@ export default function AuditLogsPage() {
             ))}
           </select>
         </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground">{t("table.method")}</label>
+          <select
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm w-36"
+          >
+            <option value="">{t("filters.all")}</option>
+            {METHODS.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
         <Button onClick={handleFilter}>
           <Search className="h-4 w-4 ml-2" />
           {t("filters.filter")}
         </Button>
-        {(from || to || resource) && (
-          <Button variant="ghost" onClick={() => { setFrom(""); setTo(""); setResource(""); setPage(1); }}>
+        {(from || to || resource || method) && (
+          <Button variant="ghost" onClick={() => { setFrom(""); setTo(""); setResource(""); setMethod(""); setPage(1); }}>
             {t("filters.clear")}
           </Button>
         )}

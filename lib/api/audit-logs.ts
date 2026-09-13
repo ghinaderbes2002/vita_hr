@@ -28,6 +28,7 @@ export interface AuditLogsParams {
   from?: string;
   to?: string;
   resource?: string;
+  method?: string;
 }
 
 export const auditLogsApi = {

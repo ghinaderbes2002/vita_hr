@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatClockTime } from "@/lib/utils/date";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Plus, Send, Eye, Edit, Trash2, XCircle } from "lucide-react";
@@ -255,7 +256,7 @@ export default function MyRequestsPage() {
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {request.isHourlyLeave && request.startTime
-                  ? `${request.startTime} - ${request.endTime}`
+                  ? `${formatClockTime(request.startTime)} - ${formatClockTime(request.endTime)}`
                   : "—"}
               </TableCell>
               <TableCell><StatusBadge status={request.status} /></TableCell>
@@ -369,7 +370,7 @@ export default function MyRequestsPage() {
                             : `${format(new Date(req.startDate), "PPP", { locale: dateLocale })} ${t("common.to")} ${format(new Date(req.endDate), "PPP", { locale: dateLocale })}`}
                           {" — "}
                           {req.isHourlyLeave && req.startTime && req.endTime
-                            ? `${req.startTime} - ${req.endTime}`
+                            ? `${formatClockTime(req.startTime)} - ${formatClockTime(req.endTime)}`
                             : req.isHalfDay || req.totalDays === 0.5
                               ? t("leaves.form.halfDay")
                               : `${calcDays} ${t("common.days")}`}

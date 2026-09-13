@@ -293,7 +293,7 @@ export default function NotificationsPage() {
                     )}
 
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      {format(new Date(notif.createdAt), "yyyy/MM/dd HH:mm")} ·{" "}
+                      {format(new Date(notif.createdAt), "yyyy/MM/dd hh:mm a", { locale: ar })} ·{" "}
                       {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: ar })}
                     </p>
 
@@ -392,7 +392,7 @@ export default function NotificationsPage() {
                   )}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
-                    {format(new Date(selectedNotif.createdAt), "yyyy/MM/dd HH:mm")}
+                    {format(new Date(selectedNotif.createdAt), "yyyy/MM/dd hh:mm a", { locale: ar })}
                     {" · "}
                     {formatDistanceToNow(new Date(selectedNotif.createdAt), { addSuffix: true, locale: ar })}
                   </div>

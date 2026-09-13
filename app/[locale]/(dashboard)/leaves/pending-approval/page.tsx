@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatClockTime } from "@/lib/utils/date";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
@@ -260,7 +261,7 @@ export default function PendingApprovalPage() {
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {request.isHourlyLeave && request.startTime
-                  ? `${request.startTime} - ${request.endTime}`
+                  ? `${formatClockTime(request.startTime)} - ${formatClockTime(request.endTime)}`
                   : "—"}
               </TableCell>
               <TableCell>
@@ -457,7 +458,7 @@ export default function PendingApprovalPage() {
                           : `${Math.round((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / 86400000) + 1} ${t("common.days")}`}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {request.isHourlyLeave && request.startTime ? `${request.startTime} - ${request.endTime}` : "—"}
+                        {request.isHourlyLeave && request.startTime ? `${formatClockTime(request.startTime)} - ${formatClockTime(request.endTime)}` : "—"}
                       </TableCell>
                       <TableCell><StatusBadge status={request.status} /></TableCell>
                       <TableCell>

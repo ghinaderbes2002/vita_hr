@@ -39,7 +39,7 @@ const P = PERMISSIONS.PATIENT_APP;
 
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 const fmtDateTime = (d?: string | null) =>
-  d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "—";
+  d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short", hour12: true }) : "—";
 
 const isCancelled = (a: Pick<Assignment, "status">) => a.status === "CANCELLED";
 

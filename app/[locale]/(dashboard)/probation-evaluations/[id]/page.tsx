@@ -569,13 +569,13 @@ export default function ProbationEvaluationDetailPage() {
             {ev.meetingProposedAt && (
               <div>
                 <p className="text-xs text-muted-foreground">{t("detail.proposedDate")}</p>
-                <p className="font-medium">{new Date(ev.meetingProposedAt).toLocaleString()}</p>
+                <p className="font-medium">{new Date(ev.meetingProposedAt).toLocaleString(undefined, { hour12: true })}</p>
               </div>
             )}
             {ev.confirmedMeetingDate && (
               <div>
                 <p className="text-xs text-muted-foreground">{t("detail.confirmedDate")}</p>
-                <p className="font-medium text-green-700">{new Date(ev.confirmedMeetingDate).toLocaleString()}</p>
+                <p className="font-medium text-green-700">{new Date(ev.confirmedMeetingDate).toLocaleString(undefined, { hour12: true })}</p>
               </div>
             )}
             {/* Scheduling needs the employee and the direct manager only. */}

@@ -89,7 +89,7 @@ export function SignaturePadDialog({
     clearSignature();
   };
 
-  const now = new Date().toLocaleString("en-US");
+  const now = new Date().toLocaleString("en-US", { hour12: true });
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) clearSignature(); onOpenChange(o); }}>

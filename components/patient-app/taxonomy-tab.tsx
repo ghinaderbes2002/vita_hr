@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Pencil, Plus, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,13 +20,16 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useSaveTaxonomy, useTaxonomy } from "@/lib/hooks/use-patient-app";
-import type { TaxonomyItem, TaxonomyKind } from "@/lib/api/patient-app";
+import { localizedName, type TaxonomyItem, type TaxonomyKind } from "@/lib/api/patient-app";
 
-export const TAXONOMY_KINDS: { kind: TaxonomyKind; label: string; singular: string }[] = [
-  { kind: "body-regions",       label: "المناطق الجسدية",   singular: "منطقة جسدية" },
-  { kind: "target-regions",     label: "المناطق المستهدفة", singular: "منطقة مستهدفة" },
-  { kind: "sub-target-regions", label: "المناطق الفرعية",   singular: "منطقة فرعية" },
-  { kind: "goals",              label: "الأهداف العلاجية",  singular: "هدف علاجي" },
+type KindKey = "bodyRegions" | "targetRegions" | "subTargetRegions" | "goals";
+
+/** Tab order; `key` is the entry under `patientApp.taxonomy.kinds`. */
+export const TAXONOMY_KINDS: { kind: TaxonomyKind; key: KindKey }[] = [
+  { kind: "body-regions",       key: "bodyRegions" },
+  { kind: "target-regions",     key: "targetRegions" },
+  { kind: "sub-target-regions", key: "subTargetRegions" },
+  { kind: "goals",              key: "goals" },
 ];
 
 const ALL = "__all__";
@@ -34,7 +38,12 @@ const bySortOrder = (a: TaxonomyItem, b: TaxonomyItem) =>
   (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.nameAr.localeCompare(b.nameAr, "ar");
 
 export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
-  const meta = TAXONOMY_KINDS.find((k) => k.kind === kind)!;
+  const t = useTranslations("patientApp.taxonomy");
+  const tc = useTranslations("patientApp.common");
+  const locale = useLocale();
+  const key = TAXONOMY_KINDS.find((k) => k.kind === kind)!.key;
+  const label = t(`kinds.${key}.label`);
+  const singular = t(`kinds.${key}.singular`);
   const hasBodyParent = kind === "target-regions" || kind === "sub-target-regions";
   const hasTargetParent = kind === "sub-target-regions";
 
@@ -54,14 +63,15 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
     : undefined;
   const { data = [], isLoading } = useTaxonomy(kind, params);
 
-  const targetOptions = bodyFilter === ALL ? allTargets : allTargets.filter((t) => t.bodyRegionId === bodyFilter);
+  const targetOptions = bodyFilter === ALL ? allTargets : allTargets.filter((x) => x.bodyRegionId === bodyFilter);
   const items = [...data]
     .filter((i) =>
       kind !== "sub-target-regions" || bodyFilter === ALL || targetFilter !== ALL ||
-      targetOptions.some((t) => t.id === i.targetRegionId))
+      targetOptions.some((x) => x.id === i.targetRegionId))
     .sort(bySortOrder);
 
-  const nameOf = (list: TaxonomyItem[], id?: string | null) => list.find((x) => x.id === id)?.nameAr ?? "—";
+  const nameOf = (list: TaxonomyItem[], id?: string | null) =>
+    localizedName(list.find((x) => x.id === id), locale) || "—";
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
   const openEdit = (item: TaxonomyItem) => { setEditing(item); setDialogOpen(true); };
@@ -75,9 +85,9 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
           <Select value={bodyFilter} onValueChange={(v) => { setBodyFilter(v); setTargetFilter(ALL); }}>
             <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>كل المناطق الجسدية</SelectItem>
+              <SelectItem value={ALL}>{t("allBodyRegions")}</SelectItem>
               {[...bodyRegions].sort(bySortOrder).map((r) => (
-                <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>
+                <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -86,9 +96,9 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
           <Select value={targetFilter} onValueChange={setTargetFilter}>
             <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>كل المناطق المستهدفة</SelectItem>
+              <SelectItem value={ALL}>{t("allTargetRegions")}</SelectItem>
               {[...targetOptions].sort(bySortOrder).map((r) => (
-                <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>
+                <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -97,7 +107,7 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
         <ActionGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_TAXONOMY}>
           <Button onClick={openAdd} className="gap-2">
             <Plus className="h-4 w-4" />
-            إضافة {meta.singular}
+            {t("addItem", { name: singular })}
           </Button>
         </ActionGuard>
       </div>
@@ -106,12 +116,12 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>الاسم بالعربية</TableHead>
-              <TableHead>الاسم بالإنجليزية</TableHead>
+              <TableHead>{tc("nameAr")}</TableHead>
+              <TableHead>{tc("nameEn")}</TableHead>
               {hasBodyParent && (
-                <TableHead>{hasTargetParent ? "المنطقة المستهدفة" : "المنطقة الجسدية"}</TableHead>
+                <TableHead>{hasTargetParent ? t("targetRegion") : t("bodyRegion")}</TableHead>
               )}
-              <TableHead className="w-24">الترتيب</TableHead>
+              <TableHead className="w-24">{tc("sortOrder")}</TableHead>
               <TableHead className="w-16" />
             </TableRow>
           </TableHeader>
@@ -129,15 +139,15 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
                 <TableCell colSpan={colCount}>
                   <EmptyState
                     icon={<Tags className="h-8 w-8 text-muted-foreground" />}
-                    title={`لا توجد ${meta.label}`}
-                    description="أضف عنصراً ليظهر هنا"
+                    title={t("emptyTitle", { name: label })}
+                    description={t("emptyDescription")}
                   />
                 </TableCell>
               </TableRow>
             ) : (
               items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.nameAr}</TableCell>
+                  <TableCell className="font-medium" dir="rtl">{item.nameAr}</TableCell>
                   <TableCell dir="ltr" className="text-start">{item.nameEn}</TableCell>
                   {hasBodyParent && (
                     <TableCell className="text-sm">
@@ -161,6 +171,7 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
 
       <TaxonomyDialog
         kind={kind}
+        singular={singular}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         item={editing}
@@ -174,16 +185,19 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
 const emptyForm = { nameAr: "", nameEn: "", sortOrder: "", bodyRegionId: "", targetRegionId: "" };
 
 function TaxonomyDialog({
-  kind, open, onOpenChange, item, bodyRegions, allTargets,
+  kind, singular, open, onOpenChange, item, bodyRegions, allTargets,
 }: {
   kind: TaxonomyKind;
+  singular: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item: TaxonomyItem | null;
   bodyRegions: TaxonomyItem[];
   allTargets: TaxonomyItem[];
 }) {
-  const meta = TAXONOMY_KINDS.find((k) => k.kind === kind)!;
+  const t = useTranslations("patientApp.taxonomy");
+  const tc = useTranslations("patientApp.common");
+  const locale = useLocale();
   const hasBodyParent = kind === "target-regions" || kind === "sub-target-regions";
   const hasTargetParent = kind === "sub-target-regions";
   const [form, setForm] = useState(emptyForm);
@@ -202,7 +216,7 @@ function TaxonomyDialog({
             sortOrder: item.sortOrder != null ? String(item.sortOrder) : "",
             // A sub-target stores only its target; the body region is just a narrowing aid.
             bodyRegionId: hasTargetParent
-              ? allTargets.find((t) => t.id === item.targetRegionId)?.bodyRegionId ?? ""
+              ? allTargets.find((x) => x.id === item.targetRegionId)?.bodyRegionId ?? ""
               : item.bodyRegionId ?? "",
             targetRegionId: item.targetRegionId ?? "",
           }
@@ -211,7 +225,7 @@ function TaxonomyDialog({
   }
 
   const targetOptions = form.bodyRegionId
-    ? allTargets.filter((t) => t.bodyRegionId === form.bodyRegionId)
+    ? allTargets.filter((x) => x.bodyRegionId === form.bodyRegionId)
     : allTargets;
 
   const missing =
@@ -239,23 +253,23 @@ function TaxonomyDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!save.isPending) onOpenChange(o); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{item ? `تعديل ${meta.singular}` : `إضافة ${meta.singular}`}</DialogTitle>
+          <DialogTitle>{item ? t("editItem", { name: singular }) : t("addItem", { name: singular })}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {hasBodyParent && (
             <div className="space-y-1.5">
               <Label>
-                المنطقة الجسدية {kind === "target-regions" && <span className="text-destructive">*</span>}
+                {t("bodyRegion")} {kind === "target-regions" && <span className="text-destructive">*</span>}
               </Label>
               <Select
                 value={form.bodyRegionId || undefined}
                 onValueChange={(v) => set({ bodyRegionId: v, targetRegionId: "" })}
               >
-                <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={tc("choose")} /></SelectTrigger>
                 <SelectContent>
                   {[...bodyRegions].sort(bySortOrder).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>
+                    <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -263,27 +277,27 @@ function TaxonomyDialog({
           )}
           {hasTargetParent && (
             <div className="space-y-1.5">
-              <Label>المنطقة المستهدفة <span className="text-destructive">*</span></Label>
+              <Label>{t("targetRegion")} <span className="text-destructive">*</span></Label>
               <Select value={form.targetRegionId || undefined} onValueChange={(v) => set({ targetRegionId: v })}>
-                <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={tc("choose")} /></SelectTrigger>
                 <SelectContent>
                   {[...targetOptions].sort(bySortOrder).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>
+                    <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           )}
           <div className="space-y-1.5">
-            <Label>الاسم بالعربية <span className="text-destructive">*</span></Label>
+            <Label>{tc("nameAr")} <span className="text-destructive">*</span></Label>
             <Input dir="rtl" value={form.nameAr} onChange={(e) => set({ nameAr: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label>الاسم بالإنجليزية <span className="text-destructive">*</span></Label>
+            <Label>{tc("nameEn")} <span className="text-destructive">*</span></Label>
             <Input dir="ltr" value={form.nameEn} onChange={(e) => set({ nameEn: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label>الترتيب</Label>
+            <Label>{tc("sortOrder")}</Label>
             <Input
               type="number"
               min={0}
@@ -297,11 +311,11 @@ function TaxonomyDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={save.isPending}>
-            إلغاء
+            {tc("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={missing || save.isPending}>
-            {save.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-            {item ? "حفظ" : "إضافة"}
+            {save.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+            {item ? tc("save") : tc("add")}
           </Button>
         </DialogFooter>
       </DialogContent>

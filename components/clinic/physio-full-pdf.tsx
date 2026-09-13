@@ -1,5 +1,7 @@
 // Client-only — imported via dynamic import() to avoid SSR issues
 import React from "react";
+import { formatClockTime } from "@/lib/utils/date";
+import { enUS } from "date-fns/locale";
 import {
   Document,
   Page,
@@ -1371,7 +1373,7 @@ const PhysioPdfDoc = ({
                     {new Date(s.sessionDate).toLocaleDateString("en-GB")}
                   </Text>
                   <Text style={[S.tableCell, { flex: 0.7 }]}>
-                    {s.sessionTime ?? "—"}
+                    {formatClockTime(s.sessionTime, enUS) || "—"}
                   </Text>
                   <Text style={[S.tableCell, { flex: 2 }]}>
                     {ar(s.notes ?? "") || "—"}

@@ -2,6 +2,8 @@
 // Full Prosthetics Case Report in the shared VitaSyr PDF style (see pdf-kit.tsx).
 // Replaces the plain backend-generated report with a branded, Arabic document.
 import React from "react";
+import { formatClockTime } from "@/lib/utils/date";
+import { enUS } from "date-fns/locale";
 import { Document, Page, Text, View, pdf } from "@react-pdf/renderer";
 import {
   S, TEXT, MUTED,
@@ -711,7 +713,7 @@ const ProstheticsCasePdfDoc = ({ data, age }: { data: CasePdfData; age: string }
             <OpinionBlock
               label="الخلاصة"
               author={c?.decidedByName}
-              note={c?.decidedAt ? `تم اعتماد القرار بتاريخ ${new Date(c.decidedAt).toLocaleString("en-GB")}` : undefined}
+              note={c?.decidedAt ? `تم اعتماد القرار بتاريخ ${new Date(c.decidedAt).toLocaleString("en-GB", { hour12: true })}` : undefined}
               value={c?.finalSummary}
             />
 
@@ -779,11 +781,11 @@ const ProstheticsCasePdfDoc = ({ data, age }: { data: CasePdfData; age: string }
             {data.sessions.map((s, i) => (
               <View key={i} style={[S.tableRow, i % 2 === 1 ? S.tableRowAlt : {}]} wrap={false}>
                 <Text style={[S.tableCell, { flex: 0.9 }]}>{dt(s.sessionDate)}</Text>
-                <Text style={[S.tableCell, { flex: 0.7 }]}>{s.sessionTime || "—"}</Text>
+                <Text style={[S.tableCell, { flex: 0.7 }]}>{formatClockTime(s.sessionTime, enUS) || "—"}</Text>
                 <Text style={[S.tableCell, { flex: 2 }]}>{ar(s.description ?? "") || "—"}</Text>
                 <Text style={[S.tableCell, { flex: 1.3 }]}>{ar(s.therapistName ?? "") || "—"}</Text>
-                <Text style={[S.tableCell, { flex: 0.8 }]}>{s.startTime || "—"}</Text>
-                <Text style={[S.tableCell, { flex: 0.8 }]}>{s.endTime || "—"}</Text>
+                <Text style={[S.tableCell, { flex: 0.8 }]}>{formatClockTime(s.startTime, enUS) || "—"}</Text>
+                <Text style={[S.tableCell, { flex: 0.8 }]}>{formatClockTime(s.endTime, enUS) || "—"}</Text>
                 <Text style={[S.tableCell, { flex: 1.6 }]}>{ar(s.notes ?? "") || "—"}</Text>
               </View>
             ))}

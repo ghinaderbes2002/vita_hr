@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 import {
   ArrowRight,
   Download,
@@ -697,12 +698,12 @@ export default function JobApplicationDetailPage() {
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <Clock className="h-3.5 w-3.5" />
-          {t("jobApplications.fields.createdAt")}: {format(new Date(app.createdAt), "yyyy/MM/dd HH:mm")}
+          {t("jobApplications.fields.createdAt")}: {format(new Date(app.createdAt), "yyyy/MM/dd hh:mm a", { locale: ar })}
         </span>
         {app.updatedAt && app.updatedAt !== app.createdAt && (
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
-            {t("jobApplications.lastUpdated")}: {format(new Date(app.updatedAt), "yyyy/MM/dd HH:mm")}
+            {t("jobApplications.lastUpdated")}: {format(new Date(app.updatedAt), "yyyy/MM/dd hh:mm a", { locale: ar })}
           </span>
         )}
       </div>

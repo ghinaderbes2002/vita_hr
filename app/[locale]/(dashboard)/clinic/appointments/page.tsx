@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, type ReactNode } from "react";
+import { formatClockTime } from "@/lib/utils/date";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Loader2, UserRound, Search } from "lucide-react";
@@ -293,7 +294,7 @@ export default function AppointmentsPage() {
       date: new Date(startISO).toLocaleDateString(locale, {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
       }),
-      time: formatClinicTime(startISO) || newForm.startTime,
+      time: formatClockTime(newForm.startTime),
     });
     setPatientSearch("");
     setSelectedPatientLabel("");
@@ -540,7 +541,7 @@ export default function AppointmentsPage() {
             if (detailAppt.status === "CANCELLED" && (detailAppt.cancelReason || detailAppt.cancelledReason)) {
               rows.push(["سبب الإلغاء", detailAppt.cancelReason ?? detailAppt.cancelledReason ?? "—"]);
             }
-            rows.push(["تاريخ الإنشاء", detailAppt.createdAt ? new Date(detailAppt.createdAt).toLocaleString("en-GB") : "—"]);
+            rows.push(["تاريخ الإنشاء", detailAppt.createdAt ? new Date(detailAppt.createdAt).toLocaleString("en-GB", { hour12: true }) : "—"]);
             return (
               <dl className="divide-y text-sm">
                 {rows.map(([label, value]) => (

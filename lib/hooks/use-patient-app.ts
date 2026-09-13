@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   patientAppApi,
@@ -18,6 +19,7 @@ import {
 const KEY = "patient-app";
 export const PATIENT_APP_CHAT_KEY = [KEY, "chat-conversations"];
 
+/** The backend sends its own readable message; the fallback covers network errors. */
 const errorMessage = (e: any, fallback: string) => e?.response?.data?.message || fallback;
 
 // ── Accounts ────────────────────────────────────────────────
@@ -49,27 +51,29 @@ export function usePatientAppAccount(erpPatientId?: string) {
 }
 
 export function useCreatePatientAppAccount() {
+  const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidateAccounts();
   return useMutation({
     mutationFn: (dto: CreatePatientAppAccountDto) => patientAppApi.accounts.create(dto),
     onSuccess: () => {
       invalidate();
-      toast.success("تم إنشاء حساب التطبيق");
+      toast.success(t("accountCreated"));
     },
-    onError: (e: any) => toast.error(errorMessage(e, "فشل إنشاء الحساب")),
+    onError: (e: any) => toast.error(errorMessage(e, t("accountCreateFailed"))),
   });
 }
 
 export function useUpdatePatientAppAccount() {
+  const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidateAccounts();
   return useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdatePatientAppAccountDto }) =>
       patientAppApi.accounts.update(id, dto),
     onSuccess: (_data, { dto }) => {
       invalidate();
-      toast.success(dto.password ? "تم تغيير كلمة المرور" : "تم تحديث الحساب");
+      toast.success(dto.password ? t("passwordChanged") : t("accountUpdated"));
     },
-    onError: (e: any) => toast.error(errorMessage(e, "فشل تحديث الحساب")),
+    onError: (e: any) => toast.error(errorMessage(e, t("accountUpdateFailed"))),
   });
 }
 
@@ -84,15 +88,16 @@ export function useTaxonomy(kind: TaxonomyKind, params?: TaxonomyParams, enabled
 }
 
 export function useSaveTaxonomy(kind: TaxonomyKind) {
+  const t = useTranslations("patientApp.toasts");
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, dto }: { id?: string; dto: TaxonomyDto }) =>
       id ? patientAppApi.taxonomy.update(kind, id, dto) : patientAppApi.taxonomy.create(kind, dto),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: [KEY, "taxonomy"] });
-      toast.success(id ? "تم حفظ التعديلات" : "تمت الإضافة");
+      toast.success(id ? t("saved") : t("added"));
     },
-    onError: (e: any) => toast.error(errorMessage(e, "فشل الحفظ")),
+    onError: (e: any) => toast.error(errorMessage(e, t("saveFailed"))),
   });
 }
 
@@ -107,28 +112,30 @@ export function useExercises(params?: ExerciseParams, enabled = true) {
 }
 
 export function useSaveExercise() {
+  const t = useTranslations("patientApp.toasts");
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, dto }: { id?: string; dto: ExerciseDto }) =>
       id ? patientAppApi.exercises.update(id, dto) : patientAppApi.exercises.create(dto),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: [KEY, "exercises"] });
-      toast.success(id ? "تم حفظ التمرين" : "تمت إضافة التمرين");
+      toast.success(id ? t("exerciseSaved") : t("exerciseAdded"));
     },
-    onError: (e: any) => toast.error(errorMessage(e, "فشل حفظ التمرين")),
+    onError: (e: any) => toast.error(errorMessage(e, t("exerciseSaveFailed"))),
   });
 }
 
 export function useUploadExerciseMedia() {
+  const t = useTranslations("patientApp.toasts");
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, file, onProgress }: { id: string; file: File; onProgress?: (p: number) => void }) =>
       patientAppApi.exercises.uploadMedia(id, file, onProgress),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [KEY, "exercises"] });
-      toast.success("تم رفع الملف");
+      toast.success(t("mediaUploaded"));
     },
-    onError: (e: any) => toast.error(errorMessage(e, "فشل رفع الملف")),
+    onError: (e: any) => toast.error(errorMessage(e, t("mediaUploadFailed"))),
   });
 }
 
@@ -168,51 +175,55 @@ function useInvalidatePrograms() {
 }
 
 export function useAssignExercise() {
+  const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidatePrograms();
   return useMutation({
     mutationFn: ({ sessionId, dto }: { sessionId: string; dto: AssignExerciseDto }) =>
       patientAppApi.programs.assign(sessionId, dto),
     onSuccess: () => {
       invalidate();
-      toast.success("تم إسناد التمرين");
+      toast.success(t("exerciseAssigned"));
     },
-    onError: (e: any) => toast.error(errorMessage(e, "فشل إسناد التمرين")),
+    onError: (e: any) => toast.error(errorMessage(e, t("assignFailed"))),
   });
 }
 
 export function useUpdateAssignment() {
+  const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidatePrograms();
   return useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdateAssignmentDto }) =>
       patientAppApi.programs.updateAssignment(id, dto),
     onSuccess: () => {
       invalidate();
-      toast.success("تم تعديل التمرين");
+      toast.success(t("assignmentUpdated"));
     },
-    onError: (e: any) => toast.error(errorMessage(e, "فشل تعديل التمرين")),
+    onError: (e: any) => toast.error(errorMessage(e, t("assignmentUpdateFailed"))),
   });
 }
 
 export function useReorderAssignments() {
+  const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidatePrograms();
   return useMutation({
     mutationFn: ({ sessionId, items }: { sessionId: string; items: { id: string; sortOrder: number }[] }) =>
       patientAppApi.programs.reorder(sessionId, items),
     onSuccess: invalidate,
-    onError: (e: any) => toast.error(errorMessage(e, "فشل إعادة الترتيب")),
+    onError: (e: any) => toast.error(errorMessage(e, t("reorderFailed"))),
   });
 }
 
 export function useCancelAssignment() {
+  const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidatePrograms();
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
       patientAppApi.programs.cancelAssignment(id, reason),
     onSuccess: () => {
       invalidate();
-      toast.success("تم إلغاء التمرين");
+      toast.success(t("assignmentCancelled"));
     },
-    onError: (e: any) => toast.error(errorMessage(e, "فشل إلغاء التمرين")),
+    onError: (e: any) => toast.error(errorMessage(e, t("cancelFailed"))),
   });
 }
 
@@ -230,12 +241,13 @@ export function useChatConversations() {
 }
 
 export function useSendChatMessage() {
+  const t = useTranslations("patientApp.toasts");
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ conversationId, messageText }: { conversationId: string; messageText: string }) =>
       patientAppApi.chat.send(conversationId, messageText),
     onSuccess: () => qc.invalidateQueries({ queryKey: PATIENT_APP_CHAT_KEY }),
-    onError: (e: any) => toast.error(errorMessage(e, "فشل إرسال الرسالة")),
+    onError: (e: any) => toast.error(errorMessage(e, t("sendFailed"))),
   });
 }
 

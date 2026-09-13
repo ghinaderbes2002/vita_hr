@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { formatClockTime } from "@/lib/utils/date";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -359,7 +360,7 @@ function TreatmentProgramCard({
           {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
           <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{idx + 1}</Badge>
           {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
-          {form.sessionTime && <span className="text-xs text-muted-foreground">{form.sessionTime}</span>}
+          {form.sessionTime && <span className="text-xs text-muted-foreground">{formatClockTime(form.sessionTime)}</span>}
         </button>
         <div className="flex gap-1.5 items-center flex-wrap justify-end">
           {isArchived && (
@@ -662,7 +663,7 @@ function TreatmentProgramsSection({
                 <div className="space-y-0.5">
                   <p className="flex items-center gap-1 font-medium">
                     <Bell className="h-3 w-3" />
-                    {t("followUp.alertHead")}{a.sentAt ? ` — ${new Date(a.sentAt).toLocaleString("en-GB")}` : ""}
+                    {t("followUp.alertHead")}{a.sentAt ? ` — ${new Date(a.sentAt).toLocaleString("en-GB", { hour12: true })}` : ""}
                   </p>
                   {a.note && <p><span className="font-medium">{t("followUp.lblTechNote")} </span>{a.note}</p>}
                 </div>
@@ -678,7 +679,7 @@ function TreatmentProgramsSection({
                 <div className="space-y-0.5 border-t border-orange-200 pt-1">
                   <p className="flex items-center gap-1 font-medium text-blue-800">
                     <Reply className="h-3 w-3" />
-                    {t("followUp.headReply")}{a.respondedAt ? ` — ${new Date(a.respondedAt).toLocaleString("en-GB")}` : ""}
+                    {t("followUp.headReply")}{a.respondedAt ? ` — ${new Date(a.respondedAt).toLocaleString("en-GB", { hour12: true })}` : ""}
                   </p>
                   {a.responseNote && <p className="text-blue-900"><span className="font-medium">{t("followUp.lblReply")} </span>{a.responseNote}</p>}
                 </div>
@@ -939,7 +940,7 @@ function ReviewProgramCard({
         <div className="flex gap-2 items-center flex-wrap">
           <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{idx + 1}</Badge>
           {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
-          {form.sessionTime && <span className="text-xs text-muted-foreground">{form.sessionTime}</span>}
+          {form.sessionTime && <span className="text-xs text-muted-foreground">{formatClockTime(form.sessionTime)}</span>}
         </div>
         {!locked && (
           <div className="flex flex-wrap gap-1.5">
@@ -3547,7 +3548,7 @@ function MeasurementHistoryList({
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline">{SIDE_LABEL[r.side] ?? r.side}</Badge>
                 <span className="text-muted-foreground">
-                  {new Date(r.examinedAt).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}
+                  {new Date(r.examinedAt).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short", hour12: true })}
                 </span>
                 {r.footMeasurement && <span className="text-xs text-muted-foreground">قياس القدم: {r.footMeasurement}</span>}
               </div>
@@ -6733,7 +6734,7 @@ export default function ProstheticsCasePage() {
                   <SavedBadge />
                   {cr?.decidedAt && (
                     <span className="text-xs text-muted-foreground">
-                      {t("committee.decidedAt", { date: new Date(cr.decidedAt).toLocaleString("en-GB") })}
+                      {t("committee.decidedAt", { date: new Date(cr.decidedAt).toLocaleString("en-GB", { hour12: true }) })}
                     </span>
                   )}
                 </div>

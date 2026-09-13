@@ -87,6 +87,12 @@ export interface TaxonomyParams {
   targetRegionId?: string;
 }
 
+/** Taxonomy and exercise records carry both languages; pick the viewer's, falling back to the other. */
+export const localizedName = (
+  item: { nameAr: string; nameEn: string } | null | undefined,
+  locale: string,
+) => (!item ? "" : locale === "ar" ? item.nameAr || item.nameEn : item.nameEn || item.nameAr);
+
 // ── Exercise library ────────────────────────────────────────
 
 export type ExerciseMediaType = "VIDEO" | "IMAGE";
@@ -162,10 +168,13 @@ export const MEDIA_ACCEPT =
 const MEDIA_TYPES = MEDIA_ACCEPT.split(",");
 export const MAX_MEDIA_BYTES = 200 * 1024 * 1024;
 
-/** Returns why the server would refuse this file, or null when it's fine. */
-export function mediaFileProblem(file: File): string | null {
-  if (!MEDIA_TYPES.includes(file.type)) return "نوع الملف غير مدعوم — المسموح: MP4, MOV, WEBM, AVI, JPG, PNG";
-  if (file.size > MAX_MEDIA_BYTES) return "حجم الملف أكبر من 200 ميغابايت";
+/**
+ * Why the server would refuse this file, or null when it's fine. The value is a
+ * key under `patientApp.media` in the translation files.
+ */
+export function mediaFileProblem(file: File): "unsupportedType" | "tooLarge" | null {
+  if (!MEDIA_TYPES.includes(file.type)) return "unsupportedType";
+  if (file.size > MAX_MEDIA_BYTES) return "tooLarge";
   return null;
 }
 

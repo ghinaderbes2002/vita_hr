@@ -379,7 +379,7 @@ export default function InventoryPage() {
                           <p className="font-semibold">{item.name}</p>
                           <p className="text-xs text-muted-foreground font-mono">{item.code}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {new Date(item.createdAt).toLocaleString("ar-SA-u-nu-latn", { dateStyle: "medium", timeStyle: "short" })}
+                            {new Date(item.createdAt).toLocaleString("ar-SA-u-nu-latn", { dateStyle: "medium", timeStyle: "short", hour12: true })}
                           </p>
                         </div>
                         {item.status && (

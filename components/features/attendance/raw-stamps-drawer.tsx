@@ -160,8 +160,8 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
               {/* Summary */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 {[
-                  { label: "الدخول",      val: (record as any).clockInTime  ? format(new Date((record as any).clockInTime), "HH:mm")  : "—" },
-                  { label: "الخروج",      val: (record as any).clockOutTime ? format(new Date((record as any).clockOutTime), "HH:mm") : "—" },
+                  { label: "الدخول",      val: (record as any).clockInTime  ? format(new Date((record as any).clockInTime), "hh:mm a", { locale: ar })  : "—" },
+                  { label: "الخروج",      val: (record as any).clockOutTime ? format(new Date((record as any).clockOutTime), "hh:mm a", { locale: ar }) : "—" },
                   { label: "صافي العمل",  val: (record as any).netWorkedMinutes != null ? `${Math.floor((record as any).netWorkedMinutes / 60)}:${String((record as any).netWorkedMinutes % 60).padStart(2,"0")} س` : "—" },
                   { label: "التأخير",     val: (record as any).lateMinutes ? `${(record as any).lateMinutes} د` : "0 د" },
                 ].map(({ label, val }) => (
@@ -188,7 +188,7 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
                             <span className="text-sm font-medium">
-                              {format(new Date(stamp.timestamp), "HH:mm:ss")}
+                              {format(new Date(stamp.timestamp), "hh:mm:ss a", { locale: ar })}
                             </span>
                             {stamp.syncError && (
                               <Badge variant="outline" className="mr-2 text-xs border-amber-300 text-amber-700">
@@ -281,7 +281,7 @@ export function RawStampsDrawer({ recordId, open, onClose }: Props) {
           <div className="space-y-3 py-2">
             {editStamp && (
               <p className="text-sm text-muted-foreground">
-                الوقت: {format(new Date(editStamp.timestamp), "HH:mm:ss")}
+                الوقت: {format(new Date(editStamp.timestamp), "hh:mm:ss a", { locale: ar })}
               </p>
             )}
             <div className="space-y-1.5">

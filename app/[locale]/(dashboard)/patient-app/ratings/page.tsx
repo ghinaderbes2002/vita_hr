@@ -25,7 +25,7 @@ import type { TherapistRating } from "@/lib/api/patient-app";
 const ALL = "__all__";
 
 const fmtDateTime = (d?: string | null) =>
-  d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "—";
+  d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short", hour12: true }) : "—";
 
 const average = (list: TherapistRating[]) =>
   list.length ? list.reduce((sum, r) => sum + r.score, 0) / list.length : 0;

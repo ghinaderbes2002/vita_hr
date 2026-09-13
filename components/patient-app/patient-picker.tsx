@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, Search, UserRound, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,18 +18,19 @@ export const patientFullName = (p?: Pick<Patient, "firstName" | "lastName"> | nu
 export function PatientPicker({
   value,
   onChange,
-  placeholder = "ابحث باسم المريض أو رقمه أو هاتفه...",
+  placeholder,
 }: {
   value: Patient | null;
   onChange: (patient: Patient | null) => void;
   placeholder?: string;
 }) {
+  const t = useTranslations("patientApp.common");
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
 
   useEffect(() => {
-    const t = setTimeout(() => setTerm(search.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setTerm(search.trim()), 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const searching = !value && term.length >= 2;
@@ -57,7 +59,7 @@ export function PatientPicker({
           onClick={() => { onChange(null); setSearch(""); setTerm(""); }}
         >
           <X className="h-4 w-4" />
-          تغيير
+          {t("change")}
         </Button>
       </div>
     );
@@ -65,20 +67,20 @@ export function PatientPicker({
 
   return (
     <div className="relative">
-      <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder={placeholder}
-        className="pr-9"
+        placeholder={placeholder ?? t("searchPatientPlaceholder")}
+        className="ps-9"
       />
       {isFetching && (
-        <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+        <Loader2 className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
       )}
       {searching && !isFetching && (
         <div className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-lg border bg-popover p-1 shadow-md">
           {results.length === 0 ? (
-            <p className="px-3 py-4 text-center text-sm text-muted-foreground">لا توجد نتائج</p>
+            <p className="px-3 py-4 text-center text-sm text-muted-foreground">{t("noResults")}</p>
           ) : (
             results.map((p) => (
               <button
@@ -102,6 +104,7 @@ export function PatientPicker({
 
 /** Shows an ERP patient's name from their id; falls back to a short id. */
 export function PatientName({ id, name }: { id: string; name?: string | null }) {
+  const t = useTranslations("patientApp.common");
   const { data } = useClinicPatient(name ? "" : id);
-  return <>{name || patientFullName(data) || `مريض ${id.slice(0, 8)}`}</>;
+  return <>{name || patientFullName(data) || t("patientFallback", { id: id.slice(0, 8) })}</>;
 }

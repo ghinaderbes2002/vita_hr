@@ -1,9 +1,10 @@
 "use client";
 
 // The clinic's time field: a popover of tappable hour/minute chips instead of
-// the native `<input type="time">`, whose browser picker ignores the clinic day
-// and reads as a 12-hour AM/PM spinner in an otherwise 24-hour RTL form.
+// the native `<input type="time">`, whose browser picker ignores the clinic day.
+// The value stays "HH:mm"; only what is shown is 12-hour, like the rest of the site.
 import { Calendar as CalendarIcon } from "lucide-react";
+import { formatClockTime } from "@/lib/utils/date";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,11 @@ import { cn } from "@/lib/utils";
 /** The clinic day — same window the appointment timeline draws. */
 const HOURS = Array.from({ length: 9 }, (_, i) => String(10 + i).padStart(2, "0"));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+/** "13" → "1 م" — the chip keeps its 24-hour value, only the label is 12-hour. */
+const hourLabel = (h: string) => {
+  const n = Number(h);
+  return `${n % 12 === 0 ? 12 : n % 12} ${n < 12 ? "ص" : "م"}`;
+};
 
 export function TimePicker({
   value,
@@ -31,13 +37,13 @@ export function TimePicker({
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" className={cn("w-full justify-between font-normal", className)}>
-          <span className={value ? "" : "text-muted-foreground"}>{value || "--:--"}</span>
+          <span className={value ? "" : "text-muted-foreground"}>{value ? formatClockTime(value) : "--:--"}</span>
           <CalendarIcon className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-3" align="start">
         <div className="text-center text-3xl font-bold tracking-widest mb-3 text-primary">
-          {value || "--:--"}
+          {value ? formatClockTime(value) : "--:--"}
         </div>
 
         <p className="text-[11px] text-muted-foreground mb-1.5 font-medium">الساعة</p>
@@ -52,7 +58,7 @@ export function TimePicker({
               )}
               onClick={() => set(h, minute || "00")}
             >
-              {h}
+              {hourLabel(h)}
             </button>
           ))}
         </div>
