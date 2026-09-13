@@ -7894,6 +7894,34 @@ export default function ProstheticsCasePage() {
                 <Label className="text-xs">{t("finalEval.generalNotes")}</Label>
                 <Textarea rows={2} className="resize-none text-xs" value={finalEvalForm.medicalDirectorNotes ?? ""} onChange={(e) => setFinalEvalForm((f) => ({ ...f, medicalDirectorNotes: e.target.value }))} />
               </div>
+              {/* The director signs off here without scrolling to the tab's Save
+                  button — saved on its own, like each committee opinion above. */}
+              {!finalEvalLocked && (() => {
+                const directorFields = ["readyForDelivery", "needsFollowUp", "followUpPlan", "medicalDirectorNotes"] as const;
+                const directorDirty = directorFields.some(
+                  (fld) => ((finalEvalForm as any)[fld] ?? "") !== (finalEvalData?.[fld] ?? ""),
+                );
+                const savingDirector = savingOpinion === "directorApproval";
+                return (
+                  <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs"
+                    disabled={savingDirector || !directorDirty}
+                    onClick={() => {
+                      setSavingOpinion("directorApproval");
+                      patchFinalEval.mutate(
+                        { id, dto: {
+                          readyForDelivery: finalEvalForm.readyForDelivery,
+                          needsFollowUp: finalEvalForm.needsFollowUp,
+                          followUpPlan: finalEvalForm.followUpPlan ?? "",
+                          medicalDirectorNotes: finalEvalForm.medicalDirectorNotes ?? "",
+                        } },
+                        { onSettled: () => setSavingOpinion(null) },
+                      );
+                    }}>
+                    {savingDirector ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                    {t("finalEval.saveApproval")}
+                  </Button>
+                );
+              })()}
             </div>
           </Section>
 

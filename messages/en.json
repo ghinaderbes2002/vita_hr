@@ -3686,6 +3686,7 @@
         "approvedForDelivery": "Approved for delivery",
         "needsFollowUp": "Needs follow-up / adjustment before delivery",
         "followUpPlan": "Follow-up plan (if any)",
+        "saveApproval": "Save approval",
         "managerAuditTitle": "Manager Audit",
         "patientFile": "Patient File",
         "complete": "Complete",

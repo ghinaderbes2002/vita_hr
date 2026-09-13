@@ -2773,6 +2773,7 @@
         "approvedForDelivery": "Teslime onaylandı",
         "needsFollowUp": "Teslimden önce takip / düzeltme gerekiyor",
         "followUpPlan": "Takip planı (varsa)",
+        "saveApproval": "Onayı kaydet",
         "managerAuditTitle": "Yönetici Denetimi",
         "patientFile": "Hasta Dosyası",
         "complete": "Tamamlandı",

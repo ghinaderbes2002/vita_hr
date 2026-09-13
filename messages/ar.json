@@ -3820,6 +3820,7 @@
         "approvedForDelivery": "معتمد للتسليم",
         "needsFollowUp": "يحتاج متابعة / تعديل قبل التسليم",
         "followUpPlan": "خطة المتابعة (إن وجدت)",
+        "saveApproval": "حفظ الاعتماد",
         "managerAuditTitle": "تدقيق المدير",
         "patientFile": "اضبارة المريض",
         "complete": "مكتملة",
