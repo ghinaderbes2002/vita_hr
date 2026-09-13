@@ -12,6 +12,8 @@ export const ROLES = {
   DIRECT_MANAGER: "DIRECT_MANAGER",
   FOLLOW_UP_OFFICER: "Follow-up official",
   EMPLOYEE: "موظف",
+  /** الوحيد (مع super_admin) الذي يرى تقييمات المعالجين السرية في تطبيق المريض. */
+  CLINIC_PHYSIO_DEPT_HEAD: "clinic_physio_dept_head",
 } as const;
 
 export type RoleName = (typeof ROLES)[keyof typeof ROLES];

@@ -52,6 +52,11 @@ import {
   Trophy,
   X,
   ListOrdered,
+  Smartphone,
+  Dumbbell,
+  Tags,
+  MessageSquare,
+  KeyRound,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -78,6 +83,10 @@ interface NavItem {
   showForJobTitleCodes?: string[];
   /** إخفاء العنصر إذا كود المسمى الوظيفي ضمن القائمة — يتقدّم على الصلاحيات و showForRoles */
   hiddenForJobTitleCodes?: string[];
+  /** محصور بهذه الأدوار: لا يظهر لغيرها مهما كانت صلاحياته (الأدمن مستثنى) */
+  requiredRoles?: string[];
+  /** للأدمن فقط — يتقدّم على كل الصلاحيات والأدوار */
+  adminOnly?: boolean;
   children?: NavItem[];
 }
 
@@ -294,6 +303,23 @@ const navigation: NavItem[] = [
     ],
   },
   {
+    title: "nav.patientApp",
+    icon: Smartphone,
+    separator: true,
+    // مؤقتاً للأدمن فقط ريثما يُعتمد التطبيق. عند فتحه للجميع يكفي حذف السطر
+    // (وحذف app/[locale]/(dashboard)/patient-app/layout.tsx)، فيظهر القسم إذا
+    // ظهر أي تبويب بداخله — ومنها التقييمات المحصورة بدور لا بصلاحية.
+    adminOnly: true,
+    children: [
+      { title: "nav.patientAppAccounts", href: "/patient-app/accounts", icon: KeyRound, permission: "MANAGE_PATIENT_APP_ACCOUNT" },
+      { title: "nav.patientAppTaxonomy", href: "/patient-app/taxonomy", icon: Tags, permission: "MANAGE_TAXONOMY" },
+      { title: "nav.patientAppExercises", href: "/patient-app/exercises", icon: Dumbbell, permission: "MANAGE_EXERCISE_LIBRARY" },
+      { title: "nav.patientAppPrograms", href: "/patient-app/programs", icon: ClipboardList, permissions: ["ASSIGN_EXERCISE", "EDIT_ASSIGNED_EXERCISE", "CANCEL_ASSIGNED_EXERCISE", "VIEW_PATIENT_EXECUTIONS"] },
+      { title: "nav.patientAppChat", href: "/patient-app/chat", icon: MessageSquare, permission: "CHAT_USE" },
+      { title: "nav.patientAppRatings", href: "/patient-app/ratings", icon: Star, requiredRoles: ["clinic_physio_dept_head", "رئيس قسم العلاج الفيزيائي"] },
+    ],
+  },
+  {
     title: "nav.auditLogs",
     href: "/audit-logs",
     icon: ClipboardSignature,
@@ -456,6 +482,9 @@ export function Sidebar() {
   const hasSectionPermission = (item: NavItem): boolean => {
     // الإخفاء بالمسمى الوظيفي يتقدّم على كل شيء — الصلاحيات و showForRoles
     if (isHiddenByJobTitle(item)) return false;
+    if (item.adminOnly && !isAdmin()) return false;
+    // المحصور بأدوار لا تفتحه أي صلاحية
+    if (item.requiredRoles && !isAdmin() && !item.requiredRoles.some((role) => hasRole(role))) return false;
     // إذا العنصر مجبر على الظهور لدور معين، نظهره — حتى لو المستخدم عنده كمان
     // دور تاني مدرج بـ hiddenForRoles (شخص ممكن يكون عنده أكتر من دور)
     if (item.showForRoles && item.showForRoles.some((role) => hasRole(role))) return true;

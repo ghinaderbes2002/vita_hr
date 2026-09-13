@@ -303,6 +303,22 @@ export const PERMISSIONS = {
     STATS_VIEW: "clinic.referrals.stats.view",
   },
 
+  /**
+   * تطبيق المريض (patient-app). الأسماء منقولة حرفياً من دليل الباك
+   * PATIENT_APP_FRONTEND_INTEGRATION_GUIDE §5 و§8.
+   * تقييمات المعالجين لا صلاحية لها — محصورة بدور clinic_physio_dept_head.
+   */
+  PATIENT_APP: {
+    MANAGE_ACCOUNT:           "MANAGE_PATIENT_APP_ACCOUNT",
+    MANAGE_TAXONOMY:          "MANAGE_TAXONOMY",
+    MANAGE_EXERCISE_LIBRARY:  "MANAGE_EXERCISE_LIBRARY",
+    ASSIGN_EXERCISE:          "ASSIGN_EXERCISE",
+    EDIT_ASSIGNED_EXERCISE:   "EDIT_ASSIGNED_EXERCISE",
+    CANCEL_ASSIGNED_EXERCISE: "CANCEL_ASSIGNED_EXERCISE",
+    VIEW_PATIENT_EXECUTIONS:  "VIEW_PATIENT_EXECUTIONS",
+    CHAT_USE:                 "CHAT_USE",
+  },
+
   AUDIT: {
     READ: "audit:read",
   },

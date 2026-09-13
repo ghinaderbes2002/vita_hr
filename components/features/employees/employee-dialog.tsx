@@ -994,8 +994,10 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="UNSPECIFIED">غير محدد</SelectItem>
-                            <SelectItem value="ONE_MONTH">شهر</SelectItem>
-                            <SelectItem value="TWO_MONTHS">شهران</SelectItem>
+                            {/* One and two months are no longer offered — shown only on an
+                                employee already saved with one, so the field doesn't read blank. */}
+                            {field.value === "ONE_MONTH" && <SelectItem value="ONE_MONTH">شهر</SelectItem>}
+                            {field.value === "TWO_MONTHS" && <SelectItem value="TWO_MONTHS">شهران</SelectItem>}
                             <SelectItem value="THREE_MONTHS">3 شهور</SelectItem>
                             <SelectItem value="PERMANENT">مثبت</SelectItem>
                           </SelectContent>
