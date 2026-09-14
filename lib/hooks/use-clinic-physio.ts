@@ -76,8 +76,13 @@ export function useConvertToPhysio() {
   return useMutation({
     mutationFn: ({ id, physiotherapistId }: { id: string; patientId?: string; physiotherapistId?: string }) =>
       clinicPhysioApi.convertToPhysio(id, physiotherapistId),
-    onSuccess: (_, { patientId }) => {
+    onSuccess: ({ convertedCaseId }, { id, patientId }) => {
       qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
+      qc.invalidateQueries({ queryKey: ["clinic-doctor-exam-cases"] });
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
+      // A repeat conversion reassigns the therapist on the existing PT case, so
+      // its cached copy would still show the previous one.
+      if (convertedCaseId) qc.invalidateQueries({ queryKey: ["clinic-physio-case", convertedCaseId] });
       if (patientId) qc.invalidateQueries({ queryKey: ["clinic-physio-cases-patient", patientId] });
       toast.success("تم تحويل المعاينة إلى حالة علاج فيزيائي");
     },
