@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { KeyRound, Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -15,10 +16,13 @@ import { MIN_ACCOUNT_PASSWORD } from "@/components/patient-app/create-account-di
 import { useUpdatePatientAppAccount } from "@/lib/hooks/use-patient-app";
 import type { PatientAppAccount, PatientAppAccountStatus } from "@/lib/api/patient-app";
 
-export const ACCOUNT_STATUS: Record<PatientAppAccountStatus, { label: string; className: string }> = {
-  ACTIVE:   { label: "نشط",     className: "bg-green-100 text-green-800 border-green-200" },
-  INACTIVE: { label: "غير نشط", className: "bg-gray-100 text-gray-700 border-gray-200" },
-  BLOCKED:  { label: "محظور",   className: "bg-red-100 text-red-800 border-red-200" },
+export const ACCOUNT_STATUSES: PatientAppAccountStatus[] = ["ACTIVE", "INACTIVE", "BLOCKED"];
+
+/** Labels live under `patientApp.accountStatus`. */
+export const ACCOUNT_STATUS_STYLE: Record<PatientAppAccountStatus, string> = {
+  ACTIVE:   "bg-green-100 text-green-800 border-green-200",
+  INACTIVE: "bg-gray-100 text-gray-700 border-gray-200",
+  BLOCKED:  "bg-red-100 text-red-800 border-red-200",
 };
 
 export function ManageAccountDialog({
@@ -31,11 +35,13 @@ export function ManageAccountDialog({
   patientName?: React.ReactNode;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("patientApp.accounts");
+
   return (
     <Dialog open={!!account} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>إدارة الحساب</DialogTitle>
+          <DialogTitle>{t("manageTitle")}</DialogTitle>
         </DialogHeader>
         {account && (
           <ManageAccountBody
@@ -57,6 +63,9 @@ function ManageAccountBody({
   patientName?: React.ReactNode;
   onDone: () => void;
 }) {
+  const t = useTranslations("patientApp.accounts");
+  const tc = useTranslations("patientApp.common");
+  const ts = useTranslations("patientApp.accountStatus");
   const [status, setStatus] = useState<PatientAppAccountStatus>(account.status);
   const [password, setPassword] = useState("");
   const update = useUpdatePatientAppAccount();
@@ -69,13 +78,13 @@ function ManageAccountBody({
       </div>
 
       <div className="space-y-1.5">
-        <Label>حالة الحساب</Label>
+        <Label>{t("accountStatus")}</Label>
         <div className="flex gap-2">
           <Select value={status} onValueChange={(v) => setStatus(v as PatientAppAccountStatus)}>
             <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {(Object.keys(ACCOUNT_STATUS) as PatientAppAccountStatus[]).map((s) => (
-                <SelectItem key={s} value={s}>{ACCOUNT_STATUS[s].label}</SelectItem>
+              {ACCOUNT_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>{ts(s)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -84,18 +93,16 @@ function ManageAccountBody({
             disabled={status === account.status || update.isPending}
             onClick={() => update.mutate({ id: account.id, dto: { status } }, { onSuccess: onDone })}
           >
-            حفظ الحالة
+            {t("saveStatus")}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          الحساب غير النشط أو المحظور لا يستطيع تسجيل الدخول إلى التطبيق.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("statusHint")}</p>
       </div>
 
       <div className="space-y-1.5 border-t pt-4">
         <Label className="flex items-center gap-1.5">
           <KeyRound className="h-4 w-4" />
-          تعيين كلمة مرور جديدة
+          {t("newPassword")}
         </Label>
         <div className="flex gap-2">
           <Input
@@ -111,11 +118,11 @@ function ManageAccountBody({
             disabled={password.length < MIN_ACCOUNT_PASSWORD || update.isPending}
             onClick={() => update.mutate({ id: account.id, dto: { password } }, { onSuccess: onDone })}
           >
-            {update.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-            تغيير
+            {update.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+            {t("changePassword")}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">{MIN_ACCOUNT_PASSWORD} أحرف على الأقل.</p>
+        <p className="text-xs text-muted-foreground">{tc("minPassword", { min: MIN_ACCOUNT_PASSWORD })}</p>
       </div>
     </div>
   );

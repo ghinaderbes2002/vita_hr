@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { FileVideo, Loader2, Upload, X } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  Exercise, ExerciseMediaType, exerciseGoalIds, MEDIA_ACCEPT, mediaFileProblem,
+  Exercise, ExerciseMediaType, exerciseGoalIds, localizedName, MEDIA_ACCEPT, mediaFileProblem,
 } from "@/lib/api/patient-app";
 import {
   useSaveExercise, useTaxonomy, useUploadExerciseMedia,
@@ -67,6 +68,11 @@ export function ExerciseDialog({
   onOpenChange: (open: boolean) => void;
   exercise?: Exercise | null;
 }) {
+  const t = useTranslations("patientApp.exercises");
+  const tt = useTranslations("patientApp.taxonomy");
+  const tc = useTranslations("patientApp.common");
+  const tm = useTranslations("patientApp.media");
+  const locale = useLocale();
   const [form, setForm] = useState<Form>(emptyForm);
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -106,7 +112,7 @@ export function ExerciseDialog({
     e.target.value = "";
     if (!picked) return;
     const problem = mediaFileProblem(picked);
-    if (problem) { toast.error(problem); return; }
+    if (problem) { toast.error(tm(problem)); return; }
     setFile(picked);
     set({ mediaType: picked.type.startsWith("image/") ? "IMAGE" : "VIDEO" });
   };
@@ -162,28 +168,28 @@ export function ExerciseDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!isPending) onOpenChange(o); }}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "تعديل تمرين" : "إضافة تمرين"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("editTitle") : t("addTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-2">
-          <Section title="الأساسيات">
+          <Section title={t("sectionBasics")}>
             <Pair>
-              <Field label="الاسم بالعربية" required>
+              <Field label={tc("nameAr")} required>
                 <Input dir="rtl" value={form.nameAr} onChange={(e) => set({ nameAr: e.target.value })} />
               </Field>
-              <Field label="الاسم بالإنجليزية" required>
+              <Field label={tc("nameEn")} required>
                 <Input dir="ltr" value={form.nameEn} onChange={(e) => set({ nameEn: e.target.value })} />
               </Field>
             </Pair>
             <Pair>
-              <Field label="الوصف بالعربية">
+              <Field label={t("descriptionAr")}>
                 <Textarea dir="rtl" rows={2} value={form.descriptionAr} onChange={(e) => set({ descriptionAr: e.target.value })} />
               </Field>
-              <Field label="الوصف بالإنجليزية">
+              <Field label={t("descriptionEn")}>
                 <Textarea dir="ltr" rows={2} value={form.descriptionEn} onChange={(e) => set({ descriptionEn: e.target.value })} />
               </Field>
             </Pair>
-            <Field label="المدة الافتراضية (ثانية)">
+            <Field label={t("defaultDuration")}>
               <Input
                 type="number" min={0} inputMode="numeric" className="w-40"
                 value={form.defaultDurationSeconds}
@@ -192,20 +198,20 @@ export function ExerciseDialog({
             </Field>
           </Section>
 
-          <Section title="التصنيف">
+          <Section title={t("sectionClassification")}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Field label="المنطقة الجسدية" required>
+              <Field label={tt("bodyRegion")} required>
                 <Select
                   value={form.bodyRegionId || undefined}
                   onValueChange={(v) => set({ bodyRegionId: v, targetRegionId: NONE, subTargetRegionId: NONE })}
                 >
-                  <SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={tc("choose")} /></SelectTrigger>
                   <SelectContent>
-                    {bodyRegions.map((r) => <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>)}
+                    {bodyRegions.map((r) => <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="المنطقة المستهدفة">
+              <Field label={tt("targetRegion")}>
                 <Select
                   value={form.targetRegionId}
                   onValueChange={(v) => set({ targetRegionId: v, subTargetRegionId: NONE })}
@@ -213,12 +219,12 @@ export function ExerciseDialog({
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NONE}>غير محدد</SelectItem>
-                    {targetRegions.map((r) => <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>)}
+                    <SelectItem value={NONE}>{tc("unspecified")}</SelectItem>
+                    {targetRegions.map((r) => <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="المنطقة الفرعية">
+              <Field label={t("subTargetRegion")}>
                 <Select
                   value={form.subTargetRegionId}
                   onValueChange={(v) => set({ subTargetRegionId: v })}
@@ -226,15 +232,15 @@ export function ExerciseDialog({
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NONE}>غير محدد</SelectItem>
-                    {subTargets.map((r) => <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>)}
+                    <SelectItem value={NONE}>{tc("unspecified")}</SelectItem>
+                    {subTargets.map((r) => <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
             </div>
-            <Field label="الأهداف العلاجية">
+            <Field label={t("goals")}>
               {goals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">لا توجد أهداف معرّفة بعد</p>
+                <p className="text-sm text-muted-foreground">{t("noGoals")}</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {goals.map((g) => {
@@ -249,7 +255,7 @@ export function ExerciseDialog({
                           on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
                         )}
                       >
-                        {g.nameAr}
+                        {localizedName(g, locale)}
                       </button>
                     );
                   })}
@@ -258,48 +264,48 @@ export function ExerciseDialog({
             </Field>
           </Section>
 
-          <Section title="طريقة التنفيذ">
+          <Section title={t("sectionExecution")}>
             <Pair>
-              <Field label="طريقة التنفيذ بالعربية">
+              <Field label={t("executionMethodAr")}>
                 <Textarea dir="rtl" rows={3} value={form.executionMethodAr} onChange={(e) => set({ executionMethodAr: e.target.value })} />
               </Field>
-              <Field label="طريقة التنفيذ بالإنجليزية">
+              <Field label={t("executionMethodEn")}>
                 <Textarea dir="ltr" rows={3} value={form.executionMethodEn} onChange={(e) => set({ executionMethodEn: e.target.value })} />
               </Field>
             </Pair>
             <Pair>
-              <Field label="تحذيرات بالعربية">
+              <Field label={t("warningsAr")}>
                 <Textarea dir="rtl" rows={2} value={form.warningsAr} onChange={(e) => set({ warningsAr: e.target.value })} />
               </Field>
-              <Field label="تحذيرات بالإنجليزية">
+              <Field label={t("warningsEn")}>
                 <Textarea dir="ltr" rows={2} value={form.warningsEn} onChange={(e) => set({ warningsEn: e.target.value })} />
               </Field>
             </Pair>
             <Pair>
-              <Field label="أخطاء شائعة بالعربية">
+              <Field label={t("commonMistakesAr")}>
                 <Textarea dir="rtl" rows={2} value={form.commonMistakesAr} onChange={(e) => set({ commonMistakesAr: e.target.value })} />
               </Field>
-              <Field label="أخطاء شائعة بالإنجليزية">
+              <Field label={t("commonMistakesEn")}>
                 <Textarea dir="ltr" rows={2} value={form.commonMistakesEn} onChange={(e) => set({ commonMistakesEn: e.target.value })} />
               </Field>
             </Pair>
           </Section>
 
-          <Section title="الوسائط">
+          <Section title={t("sectionMedia")}>
             <div className="flex flex-wrap items-end gap-4">
-              <Field label="نوع الوسائط">
+              <Field label={t("mediaType")}>
                 <Select value={form.mediaType} onValueChange={(v) => set({ mediaType: v as ExerciseMediaType })}>
                   <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="VIDEO">فيديو</SelectItem>
-                    <SelectItem value="IMAGE">صورة</SelectItem>
+                    <SelectItem value="VIDEO">{t("video")}</SelectItem>
+                    <SelectItem value="IMAGE">{t("image")}</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
               <input ref={fileRef} type="file" accept={MEDIA_ACCEPT} className="hidden" onChange={pickFile} />
               <Button type="button" variant="outline" className="gap-2" onClick={() => fileRef.current?.click()}>
                 <Upload className="h-4 w-4" />
-                {isEdit && exercise?.mediaUrl ? "استبدال الملف" : "اختيار ملف"}
+                {isEdit && exercise?.mediaUrl ? t("replaceFile") : t("pickFile")}
               </Button>
             </div>
             {file && (
@@ -318,19 +324,17 @@ export function ExerciseDialog({
                 )}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              MP4, MOV, WEBM, AVI, JPG, PNG — حتى 200 ميغابايت. يُرفع الملف بعد حفظ التمرين.
-            </p>
+            <p className="text-xs text-muted-foreground">{tm("hint")}</p>
           </Section>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
-            إلغاء
+            {tc("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={missing || isPending}>
-            {isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-            {upload.isPending ? "جارٍ رفع الملف..." : isEdit ? "حفظ" : "إضافة"}
+            {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+            {upload.isPending ? t("uploading") : isEdit ? tc("save") : tc("add")}
           </Button>
         </DialogFooter>
       </DialogContent>

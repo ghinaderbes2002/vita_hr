@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Plus, Search, Settings2, Smartphone } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Plus, Search, Settings2, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,9 @@ import { PageGuard } from "@/components/permissions/page-guard";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PatientName, patientFullName } from "@/components/patient-app/patient-picker";
 import { CreateAccountDialog } from "@/components/patient-app/create-account-dialog";
-import { ACCOUNT_STATUS, ManageAccountDialog } from "@/components/patient-app/manage-account-dialog";
+import {
+  ACCOUNT_STATUSES, ACCOUNT_STATUS_STYLE, ManageAccountDialog,
+} from "@/components/patient-app/manage-account-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePatientAppAccounts } from "@/lib/hooks/use-patient-app";
 import type { PatientAppAccountListItem, PatientAppAccountStatus } from "@/lib/api/patient-app";
@@ -34,6 +37,9 @@ const accountPatientName = (a: PatientAppAccountListItem) =>
   a.patient ? patientFullName(a.patient) : <PatientName id={a.erpPatientId} />;
 
 export default function PatientAppAccountsPage() {
+  const t = useTranslations("patientApp.accounts");
+  const tc = useTranslations("patientApp.common");
+  const ts = useTranslations("patientApp.accountStatus");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
@@ -42,17 +48,16 @@ export default function PatientAppAccountsPage() {
   const [managing, setManaging] = useState<PatientAppAccountListItem | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => { setTerm(search.trim()); setPage(1); }, 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => { setTerm(search.trim()); setPage(1); }, 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
-  const { data, isLoading, error } = usePatientAppAccounts({
+  const { data, isLoading } = usePatientAppAccounts({
     page,
     limit: LIMIT,
     search: term || undefined,
     status: status !== ALL ? status : undefined,
   });
-  const endpointMissing = (error as any)?.response?.status === 404;
   const accounts = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 0;
@@ -61,13 +66,13 @@ export default function PatientAppAccountsPage() {
     <PageGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_ACCOUNT}>
       <div className="space-y-4">
         <PageHeader
-          title="حسابات التطبيق"
-          description="حسابات دخول المرضى إلى تطبيق العلاج الفيزيائي"
+          title={t("title")}
+          description={t("description")}
           actions={
             <ActionGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_ACCOUNT}>
               <Button onClick={() => setCreateOpen(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
-                إنشاء حساب
+                {t("create")}
               </Button>
             </ActionGuard>
           }
@@ -75,115 +80,102 @@ export default function PatientAppAccountsPage() {
 
         <div className="flex flex-wrap gap-3">
           <div className="relative min-w-56 flex-1">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث في المرضى أصحاب الحسابات بالاسم أو الهاتف أو اسم المستخدم..."
-              className="pr-9"
+              placeholder={t("searchPlaceholder")}
+              className="ps-9"
             />
           </div>
           <Select value={status} onValueChange={(v) => { setStatus(v as typeof status); setPage(1); }}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>جميع الحالات</SelectItem>
-              {(Object.keys(ACCOUNT_STATUS) as PatientAppAccountStatus[]).map((s) => (
-                <SelectItem key={s} value={s}>{ACCOUNT_STATUS[s].label}</SelectItem>
+              <SelectItem value={ALL}>{tc("allStatuses")}</SelectItem>
+              {ACCOUNT_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>{ts(s)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {endpointMissing ? (
-          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-            <div className="space-y-1">
-              <p className="font-medium">قائمة الحسابات غير متاحة بعد</p>
-              <p>
-                عرض الحسابات والبحث فيها بانتظار إضافة <span dir="ltr" className="font-mono">GET /patient-app/accounts</span> من
-                الباك. إنشاء الحسابات يعمل من زر «إنشاء حساب».
-              </p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>المريض</TableHead>
-                    <TableHead>اسم المستخدم</TableHead>
-                    <TableHead>الهاتف</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>تاريخ الإنشاء</TableHead>
-                    <TableHead>آخر دخول</TableHead>
-                    <TableHead className="w-16" />
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("colPatient")}</TableHead>
+                <TableHead>{t("colUsername")}</TableHead>
+                <TableHead>{t("colPhone")}</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
+                <TableHead>{t("colCreatedAt")}</TableHead>
+                <TableHead>{t("colLastLogin")}</TableHead>
+                <TableHead className="w-16" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 7 }).map((_, j) => (
+                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                    ))}
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <TableRow key={i}>
-                        {Array.from({ length: 7 }).map((_, j) => (
-                          <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : accounts.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7}>
-                        <EmptyState
-                          icon={<Smartphone className="h-8 w-8 text-muted-foreground" />}
-                          title={term ? "لا يوجد مريض له حساب بهذا البحث" : "لا توجد حسابات بعد"}
-                          description="أنشئ حساباً لمريض من زر «إنشاء حساب»"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    accounts.map((a) => {
-                      const style = ACCOUNT_STATUS[a.status] ?? ACCOUNT_STATUS.INACTIVE;
-                      return (
-                        <TableRow key={a.id}>
-                          <TableCell>
-                            <p className="font-medium">{accountPatientName(a)}</p>
-                            {a.patient?.patientNumber && (
-                              <p className="text-xs text-muted-foreground" dir="ltr">#{a.patient.patientNumber}</p>
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm" dir="ltr">{a.username}</TableCell>
-                          <TableCell className="text-sm" dir="ltr">{a.patient?.phone ?? "—"}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={`text-xs ${style.className}`}>{style.label}</Badge>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground" dir="ltr">
-                            {fmtDateTime(a.createdAt)}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground" dir="ltr">
-                            {fmtDateTime(a.lastLoginAt)}
-                          </TableCell>
-                          <TableCell>
-                            <ActionGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_ACCOUNT}>
-                              <Button
-                                variant="ghost" size="icon" className="h-8 w-8"
-                                title="إدارة الحساب"
-                                onClick={() => setManaging(a)}
-                              >
-                                <Settings2 className="h-4 w-4" />
-                              </Button>
-                            </ActionGuard>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                ))
+              ) : accounts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7}>
+                    <EmptyState
+                      icon={<Smartphone className="h-8 w-8 text-muted-foreground" />}
+                      title={term ? t("emptySearchTitle") : t("emptyTitle")}
+                      description={t("emptyDescription")}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                accounts.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell>
+                      <p className="font-medium">{accountPatientName(a)}</p>
+                      {a.patient?.patientNumber && (
+                        <p className="text-xs text-muted-foreground" dir="ltr">#{a.patient.patientNumber}</p>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm" dir="ltr">{a.username}</TableCell>
+                    <TableCell className="text-sm" dir="ltr">{a.patient?.phone ?? "—"}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${ACCOUNT_STATUS_STYLE[a.status] ?? ACCOUNT_STATUS_STYLE.INACTIVE}`}
+                      >
+                        {ts(a.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground" dir="ltr">
+                      {fmtDateTime(a.createdAt)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground" dir="ltr">
+                      {fmtDateTime(a.lastLoginAt)}
+                    </TableCell>
+                    <TableCell>
+                      <ActionGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_ACCOUNT}>
+                        <Button
+                          variant="ghost" size="icon" className="h-8 w-8"
+                          title={t("manage")}
+                          onClick={() => setManaging(a)}
+                        >
+                          <Settings2 className="h-4 w-4" />
+                        </Button>
+                      </ActionGuard>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-            {totalPages > 1 && (
-              <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
-            )}
-          </>
+        {totalPages > 1 && (
+          <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
         )}
 
         <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />

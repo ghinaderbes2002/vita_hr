@@ -27,10 +27,9 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   username: z.string().min(3, "يجب أن يكون 3 أحرف على الأقل").regex(/^\S+$/, "لا يُسمح بالمسافات في اسم المستخدم"),
-  // Full name and email are optional; an email that *is* entered must still be valid.
+  // Email is optional; an email that *is* entered must still be valid.
   email: z.string().email("البريد الإلكتروني غير صحيح").optional().or(z.literal("")),
   password: z.string().optional(),
-  fullName: z.string().optional(),
   anydesk: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
 });
@@ -57,7 +56,6 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
       username: "",
       email: "",
       password: "",
-      fullName: "",
       anydesk: "",
       status: "ACTIVE",
     },
@@ -75,7 +73,6 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           username: user.username || "",
           email: user.email || "",
           password: "",
-          fullName: user.fullName || "",
           anydesk: user.anydesk || "",
           status: user.status || "ACTIVE",
         });
@@ -84,7 +81,6 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           username: "",
           email: "",
           password: "",
-          fullName: "",
           anydesk: "",
           status: "ACTIVE",
         });
@@ -94,7 +90,6 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         username: "",
         email: "",
         password: "",
-        fullName: "",
         anydesk: "",
         status: "ACTIVE",
       });
@@ -110,7 +105,6 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           status: data.status,
           anydesk: data.anydesk || null,
           ...(data.email ? { email: data.email } : {}),
-          ...(data.fullName ? { fullName: data.fullName } : {}),
           ...(data.password && data.password.length >= 6 && { password: data.password }),
         };
         await updateUser.mutateAsync({ id: user.id, data: updateData });
@@ -124,7 +118,6 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
           password: data.password,
           anydesk: data.anydesk || null,
           ...(data.email ? { email: data.email } : {}),
-          ...(data.fullName ? { fullName: data.fullName } : {}),
         };
         await createUser.mutateAsync(createData);
       }
@@ -140,7 +133,6 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         username: "",
         email: "",
         password: "",
-        fullName: "",
         anydesk: "",
         status: "ACTIVE",
       });
@@ -160,21 +152,9 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         </DialogHeader>
 
         <Form {...form} key={open ? (user?.id || 'new') : 'closed'}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="fullName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("users.fields.fullName")}</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+          {/* This form sets another user's credentials — the browser must not
+              fill in the signed-in admin's saved login. */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
             <FormField
               control={form.control}
               name="username"
@@ -184,6 +164,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                   <FormControl>
                     <Input
                       {...field}
+                      autoComplete="off"
                       disabled={isEdit}
                       className={isEdit ? "opacity-60" : ""}
                       onChange={(e) => field.onChange(e.target.value.replace(/\s/g, ""))}
@@ -204,7 +185,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                 <FormItem>
                   <FormLabel>{t("users.fields.email")}</FormLabel>
                   <FormControl>
-                    <Input type="email" {...field} />
+                    <Input type="email" {...field} autoComplete="off" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -240,7 +221,8 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                   </FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} {...field} className="pl-10" />
+                      {/* "new-password" is what Chrome honours; it ignores "off" on password fields. */}
+                      <Input type={showPassword ? "text" : "password"} {...field} autoComplete="new-password" className="pl-10" />
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}

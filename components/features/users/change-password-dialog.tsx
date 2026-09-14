@@ -98,7 +98,9 @@ export function ChangePasswordDialog({ open, onOpenChange, user }: ChangePasswor
                   <FormLabel>كلمة المرور الحالية</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showCurrent ? "text" : "password"} {...field} className="pl-10" />
+                      {/* The password of the user being edited, not the signed-in admin's —
+                          "new-password" keeps Chrome from filling in the saved login. */}
+                      <Input type={showCurrent ? "text" : "password"} {...field} autoComplete="new-password" className="pl-10" />
                       <button
                         type="button"
                         onClick={() => setShowCurrent((v) => !v)}
@@ -122,7 +124,7 @@ export function ChangePasswordDialog({ open, onOpenChange, user }: ChangePasswor
                   <FormLabel>كلمة المرور الجديدة</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showNew ? "text" : "password"} {...field} className="pl-10" />
+                      <Input type={showNew ? "text" : "password"} {...field} autoComplete="new-password" className="pl-10" />
                       <button
                         type="button"
                         onClick={() => setShowNew((v) => !v)}
@@ -146,7 +148,7 @@ export function ChangePasswordDialog({ open, onOpenChange, user }: ChangePasswor
                   <FormLabel>تأكيد كلمة المرور</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showConfirm ? "text" : "password"} {...field} className="pl-10" />
+                      <Input type={showConfirm ? "text" : "password"} {...field} autoComplete="new-password" className="pl-10" />
                       <button
                         type="button"
                         onClick={() => setShowConfirm((v) => !v)}

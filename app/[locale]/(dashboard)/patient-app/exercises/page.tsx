@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { Dumbbell, ImageIcon, Loader2, Pencil, Plus, Search, Upload, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,12 +26,17 @@ import { ExerciseDialog } from "@/components/patient-app/exercise-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useExercises, useTaxonomy, useUploadExerciseMedia } from "@/lib/hooks/use-patient-app";
 import {
-  Exercise, exerciseGoalIds, MEDIA_ACCEPT, mediaFileProblem, resolveMediaUrl,
+  Exercise, exerciseGoalIds, localizedName, MEDIA_ACCEPT, mediaFileProblem, resolveMediaUrl,
 } from "@/lib/api/patient-app";
 
 const ALL = "__all__";
 
 export default function PatientAppExercisesPage() {
+  const t = useTranslations("patientApp.exercises");
+  const tt = useTranslations("patientApp.taxonomy");
+  const tc = useTranslations("patientApp.common");
+  const tm = useTranslations("patientApp.media");
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
   const [bodyRegionId, setBodyRegionId] = useState(ALL);
@@ -45,8 +51,8 @@ export default function PatientAppExercisesPage() {
   const uploadTarget = useRef<string | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setTerm(search.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setTerm(search.trim()), 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const { data: bodyRegions = [] } = useTaxonomy("body-regions");
@@ -60,7 +66,7 @@ export default function PatientAppExercisesPage() {
   });
   const upload = useUploadExerciseMedia();
 
-  const targetOptions = bodyRegionId === ALL ? [] : allTargets.filter((t) => t.bodyRegionId === bodyRegionId);
+  const targetOptions = bodyRegionId === ALL ? [] : allTargets.filter((x) => x.bodyRegionId === bodyRegionId);
   const withMedia = exercises.filter((e) => e.mediaUrl).length;
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
@@ -77,7 +83,7 @@ export default function PatientAppExercisesPage() {
     const id = uploadTarget.current;
     if (!file || !id) return;
     const problem = mediaFileProblem(file);
-    if (problem) { toast.error(problem); return; }
+    if (problem) { toast.error(tm(problem)); return; }
     setUploadingId(id);
     setProgress(0);
     try {
@@ -93,21 +99,21 @@ export default function PatientAppExercisesPage() {
     <PageGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_EXERCISE_LIBRARY}>
       <div className="space-y-4">
         <PageHeader
-          title="مكتبة التمارين"
-          description="التمارين التعليمية التي يُسندها المعالج للمريض وتظهر له في التطبيق"
+          title={t("title")}
+          description={t("description")}
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <ClinicCountChips
                 isLoading={isLoading}
                 counts={[
-                  { icon: Dumbbell, label: "تمرين", value: exercises.length },
-                  { icon: Video, label: "بوسائط", value: withMedia },
+                  { icon: Dumbbell, label: t("countExercises"), value: exercises.length },
+                  { icon: Video, label: t("countWithMedia"), value: withMedia },
                 ]}
               />
               <ActionGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_EXERCISE_LIBRARY}>
                 <Button onClick={openAdd} className="gap-2">
                   <Plus className="h-4 w-4" />
-                  إضافة تمرين
+                  {t("add")}
                 </Button>
               </ActionGuard>
             </div>
@@ -116,33 +122,33 @@ export default function PatientAppExercisesPage() {
 
         <div className="flex flex-wrap gap-3">
           <div className="relative min-w-56 flex-1">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث باسم التمرين..."
-              className="pr-9"
+              placeholder={t("searchPlaceholder")}
+              className="ps-9"
             />
           </div>
           <Select value={bodyRegionId} onValueChange={(v) => { setBodyRegionId(v); setTargetRegionId(ALL); }}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>كل المناطق الجسدية</SelectItem>
-              {bodyRegions.map((r) => <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>)}
+              <SelectItem value={ALL}>{tt("allBodyRegions")}</SelectItem>
+              {bodyRegions.map((r) => <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={targetRegionId} onValueChange={setTargetRegionId} disabled={bodyRegionId === ALL}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>كل المناطق المستهدفة</SelectItem>
-              {targetOptions.map((r) => <SelectItem key={r.id} value={r.id}>{r.nameAr}</SelectItem>)}
+              <SelectItem value={ALL}>{tt("allTargetRegions")}</SelectItem>
+              {targetOptions.map((r) => <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={goalId} onValueChange={setGoalId}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>كل الأهداف</SelectItem>
-              {goals.map((g) => <SelectItem key={g.id} value={g.id}>{g.nameAr}</SelectItem>)}
+              <SelectItem value={ALL}>{t("allGoals")}</SelectItem>
+              {goals.map((g) => <SelectItem key={g.id} value={g.id}>{localizedName(g, locale)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -153,11 +159,11 @@ export default function PatientAppExercisesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-24">الوسائط</TableHead>
-                <TableHead>التمرين</TableHead>
-                <TableHead>المنطقة</TableHead>
-                <TableHead>المدة</TableHead>
-                <TableHead>الأهداف</TableHead>
+                <TableHead className="w-24">{t("colMedia")}</TableHead>
+                <TableHead>{t("colExercise")}</TableHead>
+                <TableHead>{t("colRegion")}</TableHead>
+                <TableHead>{t("colDuration")}</TableHead>
+                <TableHead>{t("colGoals")}</TableHead>
                 <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
@@ -175,21 +181,23 @@ export default function PatientAppExercisesPage() {
                   <TableCell colSpan={6}>
                     <EmptyState
                       icon={<Dumbbell className="h-8 w-8 text-muted-foreground" />}
-                      title="لا توجد تمارين"
-                      description="أضف تمريناً أو غيّر عوامل التصفية"
+                      title={t("emptyTitle")}
+                      description={t("emptyDescription")}
                     />
                   </TableCell>
                 </TableRow>
               ) : (
                 exercises.map((ex) => {
                   const exGoals = exerciseGoalIds(ex)
-                    .map((id) => goals.find((g) => g.id === id)?.nameAr)
+                    .map((id) => localizedName(goals.find((g) => g.id === id), locale))
                     .filter(Boolean);
                   const region = [
-                    ex.bodyRegion?.nameAr ?? bodyRegions.find((r) => r.id === ex.bodyRegionId)?.nameAr,
-                    ex.targetRegion?.nameAr ?? allTargets.find((r) => r.id === ex.targetRegionId)?.nameAr,
+                    localizedName(ex.bodyRegion ?? bodyRegions.find((r) => r.id === ex.bodyRegionId), locale),
+                    localizedName(ex.targetRegion ?? allTargets.find((r) => r.id === ex.targetRegionId), locale),
                   ].filter(Boolean).join(" / ");
                   const isUploading = uploadingId === ex.id;
+                  // The other language sits underneath as a secondary line.
+                  const secondary = locale === "ar" ? ex.nameEn : ex.nameAr;
 
                   return (
                     <TableRow key={ex.id}>
@@ -197,12 +205,16 @@ export default function PatientAppExercisesPage() {
                         <MediaThumb exercise={ex} onClick={() => setPreview(ex)} />
                       </TableCell>
                       <TableCell>
-                        <p className="font-medium">{ex.nameAr}</p>
-                        <p className="text-xs text-muted-foreground" dir="ltr">{ex.nameEn}</p>
+                        <p className="font-medium">{localizedName(ex, locale)}</p>
+                        {secondary && (
+                          <p className="text-xs text-muted-foreground" dir={locale === "ar" ? "ltr" : "rtl"}>
+                            {secondary}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm">{region || "—"}</TableCell>
                       <TableCell className="whitespace-nowrap text-sm">
-                        {ex.defaultDurationSeconds ? `${ex.defaultDurationSeconds} ث` : "—"}
+                        {ex.defaultDurationSeconds ? tc("secondsShort", { count: ex.defaultDurationSeconds }) : "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex max-w-64 flex-wrap gap-1">
@@ -216,7 +228,7 @@ export default function PatientAppExercisesPage() {
                           <div className="flex items-center gap-1">
                             <Button
                               variant="ghost" size="icon" className="h-8 w-8"
-                              title={ex.mediaUrl ? "استبدال الوسائط" : "رفع وسائط"}
+                              title={ex.mediaUrl ? t("replaceMedia") : t("uploadMedia")}
                               disabled={upload.isPending}
                               onClick={() => startUpload(ex)}
                             >
@@ -245,7 +257,7 @@ export default function PatientAppExercisesPage() {
         <Dialog open={!!preview} onOpenChange={(o) => { if (!o) setPreview(null); }}>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{preview?.nameAr}</DialogTitle>
+              <DialogTitle>{localizedName(preview, locale)}</DialogTitle>
             </DialogHeader>
             {preview && <MediaPreview exercise={preview} />}
           </DialogContent>
@@ -256,6 +268,7 @@ export default function PatientAppExercisesPage() {
 }
 
 function MediaThumb({ exercise, onClick }: { exercise: Exercise; onClick: () => void }) {
+  const t = useTranslations("patientApp.exercises");
   const src = resolveMediaUrl(exercise.mediaUrl, exercise.updatedAt);
   const thumb = resolveMediaUrl(exercise.thumbnailUrl, exercise.updatedAt);
   const isImage = exercise.mediaType === "IMAGE";
@@ -263,7 +276,7 @@ function MediaThumb({ exercise, onClick }: { exercise: Exercise; onClick: () => 
   if (!src) {
     return (
       <div className="flex h-12 w-16 items-center justify-center rounded-md border border-dashed text-[10px] text-muted-foreground">
-        لا يوجد
+        {t("noMedia")}
       </div>
     );
   }
@@ -287,6 +300,7 @@ function MediaThumb({ exercise, onClick }: { exercise: Exercise; onClick: () => 
 }
 
 function MediaPreview({ exercise }: { exercise: Exercise }) {
+  const locale = useLocale();
   const src = resolveMediaUrl(exercise.mediaUrl, exercise.updatedAt);
   const [loading, setLoading] = useState(true);
   if (!src) return null;
@@ -296,7 +310,12 @@ function MediaPreview({ exercise }: { exercise: Exercise }) {
       {loading && <Loader2 className="absolute h-6 w-6 animate-spin text-white/70" />}
       {exercise.mediaType === "IMAGE" ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={exercise.nameAr} className="max-h-[70dvh] w-full object-contain" onLoad={() => setLoading(false)} />
+        <img
+          src={src}
+          alt={localizedName(exercise, locale)}
+          className="max-h-[70dvh] w-full object-contain"
+          onLoad={() => setLoading(false)}
+        />
       ) : (
         <video src={src} controls className="max-h-[70dvh] w-full" onLoadedData={() => setLoading(false)} />
       )}

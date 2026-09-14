@@ -28,8 +28,6 @@ export function usePatientAppAccounts(params?: AccountListParams) {
   return useQuery({
     queryKey: [KEY, "accounts", params ?? {}],
     queryFn: () => patientAppApi.accounts.list(params),
-    // A 404 means the endpoint isn't deployed yet — retrying won't change that.
-    retry: (count, e: any) => e?.response?.status !== 404 && count < 2,
   });
 }
 

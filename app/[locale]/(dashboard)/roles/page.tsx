@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, MoreHorizontal, Pencil, Trash2, Shield } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Shield, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -33,8 +34,19 @@ export default function RolesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<any>(null);
 
+  const [search, setSearch] = useState("");
+
   const { data: roles, isLoading } = useRoles();
   const deleteRole = useDeleteRole();
+
+  // The roles endpoint returns every role at once, so the search filters here —
+  // across the code name, both display names and the description.
+  const q = search.trim().toLowerCase();
+  const filteredRoles = (roles ?? []).filter((role) =>
+    !q ||
+    [role.name, role.displayNameAr, role.displayNameEn, role.description]
+      .some((v) => typeof v === "string" && v.toLowerCase().includes(q)),
+  );
 
   const handleEdit = (role: any) => {
     setSelectedRole(role);
@@ -69,6 +81,16 @@ export default function RolesPage() {
         }
       />
 
+      <div className="relative max-w-sm">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t("common.search")}
+          className="pr-9"
+        />
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -93,14 +115,14 @@ export default function RolesPage() {
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
-            ) : !roles || roles.length === 0 ? (
+            ) : filteredRoles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
             ) : (
-              roles.map((role: any) => (
+              filteredRoles.map((role: any) => (
                 <TableRow key={role.id}>
                   <TableCell className="font-medium">
                     <Badge variant="outline" className="gap-1">

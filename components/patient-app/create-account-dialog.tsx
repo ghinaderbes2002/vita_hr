@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, Loader2, Search, UserRound } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -31,6 +32,8 @@ export function CreateAccountDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("patientApp.accounts");
+  const tc = useTranslations("patientApp.common");
   const [patient, setPatient] = useState<Patient | null>(null);
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
@@ -51,8 +54,8 @@ export function CreateAccountDialog({
   }
 
   useEffect(() => {
-    const t = setTimeout(() => setTerm(search.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setTerm(search.trim()), 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
   // Suggestions show straight away and page in as the list scrolls; typing
@@ -98,22 +101,22 @@ export function CreateAccountDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!create.isPending) onOpenChange(o); }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{patient ? "بيانات الحساب" : "إنشاء حساب — اختر المريض"}</DialogTitle>
+          <DialogTitle>{patient ? t("detailsTitle") : t("pickPatientTitle")}</DialogTitle>
         </DialogHeader>
 
         {!patient ? (
           <div className="space-y-3 py-2">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث باسم المريض أو رقمه أو هاتفه..."
-                className="pr-9"
+                placeholder={tc("searchPatientPlaceholder")}
+                className="ps-9"
               />
               {isFetching && !isLoading && !isFetchingNextPage && (
-                <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                <Loader2 className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
               )}
             </div>
 
@@ -121,7 +124,7 @@ export function CreateAccountDialog({
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="m-1 h-11" />)
               ) : patients.length === 0 ? (
-                <p className="px-3 py-6 text-center text-sm text-muted-foreground">لا توجد نتائج</p>
+                <p className="px-3 py-6 text-center text-sm text-muted-foreground">{tc("noResults")}</p>
               ) : (
                 patients.map((p) => (
                   <button
@@ -151,13 +154,13 @@ export function CreateAccountDialog({
               )}
               {hasNextPage && !isFetchingNextPage && (
                 <Button variant="ghost" size="sm" className="w-full" onClick={() => fetchNextPage()}>
-                  تحميل المزيد
+                  {tc("loadMore")}
                 </Button>
               )}
             </div>
             {!isLoading && total > 0 && (
               <p className="text-xs text-muted-foreground">
-                عرض {patients.length} من {total} مريض
+                {t("showing", { shown: patients.length, total })}
               </p>
             )}
           </div>
@@ -172,12 +175,12 @@ export function CreateAccountDialog({
                 </p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setPatient(null)} disabled={create.isPending}>
-                تغيير
+                {tc("change")}
               </Button>
             </div>
 
             <div className="space-y-1.5">
-              <Label>اسم المستخدم <span className="text-destructive">*</span></Label>
+              <Label>{t("username")} <span className="text-destructive">*</span></Label>
               <Input
                 autoFocus
                 dir="ltr"
@@ -187,7 +190,7 @@ export function CreateAccountDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>كلمة المرور <span className="text-destructive">*</span></Label>
+              <Label>{t("password")} <span className="text-destructive">*</span></Label>
               <Input
                 dir="ltr"
                 type="password"
@@ -197,7 +200,7 @@ export function CreateAccountDialog({
                 onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); }}
               />
               <p className={tooShort ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
-                {MIN_ACCOUNT_PASSWORD} أحرف على الأقل
+                {tc("minPassword", { min: MIN_ACCOUNT_PASSWORD })}
               </p>
             </div>
           </div>
@@ -207,16 +210,16 @@ export function CreateAccountDialog({
           {patient ? (
             <>
               <Button variant="outline" onClick={() => setPatient(null)} disabled={create.isPending}>
-                رجوع
+                {tc("back")}
               </Button>
               <Button onClick={handleCreate} disabled={!canSubmit}>
-                {create.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                إنشاء الحساب
+                {create.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                {t("submitCreate")}
               </Button>
             </>
           ) : (
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              إلغاء
+              {tc("cancel")}
             </Button>
           )}
         </DialogFooter>

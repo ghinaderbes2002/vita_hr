@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 
 /**
@@ -8,12 +9,13 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
  * أصلاً بصلاحيتها.
  */
 export default function PatientAppLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("patientApp.common");
   const { isAdmin } = usePermissions();
 
   if (!isAdmin()) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
-        <p className="text-lg text-muted-foreground">ليس لديك صلاحية لرؤية هذا المحتوى</p>
+        <p className="text-lg text-muted-foreground">{t("notAuthorized")}</p>
       </div>
     );
   }

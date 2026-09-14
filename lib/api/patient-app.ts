@@ -314,11 +314,7 @@ export interface RatingParams {
 
 export const patientAppApi = {
   accounts: {
-    /**
-     * TODO(backend): `GET /patient-app/accounts` is not in the guide and the
-     * server answers 404 for it (checked 2026-09-13). Requested so the accounts
-     * screen can search only patients who already have an account.
-     */
+    /** Accounts with the ERP patient joined in (`patient`); `limit` is capped at 100 server-side. */
     list: async (params?: AccountListParams) => {
       const d = unwrap<any>(await apiClient.get(`${BASE}/accounts`, { params }));
       const items: PatientAppAccountListItem[] = Array.isArray(d) ? d : d?.items ?? d?.data ?? [];
