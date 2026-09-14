@@ -1632,8 +1632,6 @@ function GaitAnalysisCard({
         </div>
       )}
 
-      {/* Saved forms are frozen server-side (PATCH → 400) — render read-only. */}
-      <fieldset disabled={isSaved} className="contents">
       <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
         <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto">
           <TabsTrigger value="basic" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabBasic")}</TabsTrigger>
@@ -1642,6 +1640,12 @@ function GaitAnalysisCard({
           <TabsTrigger value="rehab" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabRehab")}</TabsTrigger>
           <TabsTrigger value="signatures" className="text-xs py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("gait.tabSignatures")}</TabsTrigger>
         </TabsList>
+
+        {/* Saved forms are frozen server-side (PATCH → 400) — render read-only.
+            The tab strip stays outside: a disabled fieldset disables every button
+            inside it, the tab triggers included, which left a saved session stuck
+            on whichever section it opened on. */}
+        <fieldset disabled={isSaved} className="contents">
 
         {/* ── Tab 1: تفاصيل الطرف الصناعي ── */}
         <TabsContent value="basic" className="mt-4 space-y-0">
@@ -2136,8 +2140,8 @@ function GaitAnalysisCard({
           </div>
         </TabsContent>
 
+        </fieldset>
       </Tabs>
-      </fieldset>
 
       {!isSaved && (
         <div className="flex flex-wrap gap-2 pt-2 border-t">
@@ -3676,6 +3680,7 @@ export default function ProstheticsCasePage() {
   const isRtl = locale === "ar";
   const t = useTranslations("clinic.prosthetics.case");
   const tMonth = useTranslations("payroll.months");
+  const tStatus = useTranslations("clinic.prosthetics.statuses");
 
   // Tab access: intake, patient info and the read-only timeline need only
   // case.view; every clinical tab needs its own action permission, so a user
@@ -4989,7 +4994,7 @@ export default function ProstheticsCasePage() {
     // Built field by field on purpose: the form state is seeded by spreading the
     // whole server record, so it also carries `isLocked`, `id` and the per-opinion
     // `…ByName`/`…At` stamps — none of which belong in the payload.
-    const payload: FinalEvaluationDto = {
+    const form: FinalEvaluationDto = {
       supervisorId: f.supervisorId || undefined,
       residualLimbCondition: f.residualLimbCondition,
       suspensionSystemUsed: f.suspensionSystemUsed,
@@ -5008,13 +5013,36 @@ export default function ProstheticsCasePage() {
       followUpPlan: f.followUpPlan,
       medicalDirectorNotes: f.medicalDirectorNotes,
     };
+    // Only what the user actually changed is sent. The backend stamps an opinion's
+    // author whenever its value differs from the stored one, so sending every
+    // field — empty ones included — signed whoever pressed Save onto all six.
+    const blank = (v: unknown) => v === undefined || v === null || v === "";
+    const same = (a: unknown, b: unknown) =>
+      (blank(a) && blank(b))
+      || (typeof a === "boolean" || typeof b === "boolean" ? !!a === !!b : a === b);
+    const saved = (finalEvalData ?? {}) as Record<string, unknown>;
+    const payload = Object.fromEntries(
+      Object.entries(form).filter(([key, value]) => !same(value, saved[key])),
+    ) as FinalEvaluationDto;
+
     // The record is created once and patched from then on — the form stays open
     // for the rest of the committee, so this button can be pressed again.
-    if (finalEvalData?.id) {
+    if (!finalEvalData?.id) {
+      await submitFinalEval.mutateAsync({ id, dto: payload });
+    } else if (Object.keys(payload).length > 0) {
       await patchFinalEval.mutateAsync({ id, dto: payload });
     } else {
-      await submitFinalEval.mutateAsync({ id, dto: payload });
+      toast.info("لا توجد تعديلات جديدة على التقييم");
     }
+
+    // Saving the evaluation is the one step that marks the case delivered. It only
+    // moves forward: a case already at final review stays there, and a closed or
+    // cancelled one (outside STATUS_ORDER, like the legacy stages) is left alone.
+    const at = STATUS_ORDER.indexOf(c.status);
+    const beforeDelivery = at === -1
+      ? !["CLOSED", "CANCELLED"].includes(c.status)
+      : at < STATUS_ORDER.indexOf("DELIVERED");
+    if (beforeDelivery) await updateStatus.mutateAsync({ id, status: "DELIVERED" });
   };
 
   const handleSignFinalEval = async (sig: string) => {
@@ -6626,7 +6654,10 @@ export default function ProstheticsCasePage() {
 
         {/* ── COMMITTEE ───────────────────────────────────────────────────── */}
         <TabsContent value="committee_review" className="mt-4 space-y-4" dir={isRtl ? "rtl" : "ltr"}>
-          <fieldset disabled={caseLocked} className="space-y-4 min-w-0">
+          {/* Not frozen with the case at delivery (`caseLocked`): opinions and the
+              decision are often still being completed after the limb is handed
+              over. Each opinion still locks once saved, the decision once made. */}
+          <fieldset className="space-y-4 min-w-0">
 
           {/* أعضاء لجنة القبول وتقييماتهم */}
           <Section title={t("committee.membersTitle")}>
@@ -6706,8 +6737,7 @@ export default function ProstheticsCasePage() {
                   case has already moved on to measurement or fitting, and gating
                   the button on "معاينة" left those members with no way to save.
                   What still limits it is the work itself — the button goes once
-                  every opinion is in, each box locks on its own once saved, and
-                  the whole tab is frozen with the case at `caseLocked`. */}
+                  every opinion is in, and each box locks on its own once saved. */}
               {!allOpinionsSaved && (
                 <div className="pt-4">
                   <Button
@@ -7986,7 +8016,8 @@ export default function ProstheticsCasePage() {
                 className="flex-1 gap-2"
               >
                 {(submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)) && <Loader2 className="h-4 w-4 animate-spin" />}
-                {t("finalEval.saveEval")}
+                {/* Saving is what marks the case delivered, so the button says so. */}
+                {t("finalEval.saveEval")} ({tStatus("DELIVERED")})
               </Button>
             </div>
           )}

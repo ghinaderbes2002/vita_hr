@@ -15,7 +15,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { Pagination } from "@/components/shared/pagination";
-import { useAuditLogs } from "@/lib/hooks/use-audit-logs";
+import { useAuditLogs, useAuditLogResources } from "@/lib/hooks/use-audit-logs";
 import { AuditLog } from "@/lib/api/audit-logs";
 
 const METHOD_COLORS: Record<string, string> = {
@@ -25,12 +25,6 @@ const METHOD_COLORS: Record<string, string> = {
   PUT: "bg-amber-100 text-amber-700",
   DELETE: "bg-red-100 text-red-700",
 };
-
-const RESOURCES = [
-  "leave-requests", "employees", "departments", "attendance",
-  "evaluations", "users", "audit-logs", "salaries", "maintenance",
-  "custodies", "requests", "roles", "holidays", "leave-types",
-];
 
 const METHODS = ["GET", "POST", "PATCH", "PUT", "DELETE"];
 
@@ -88,6 +82,8 @@ export default function AuditLogsPage() {
   const [method, setMethod] = useState("");
   const [detailLog, setDetailLog] = useState<AuditLog | null>(null);
   const LIMIT = 20;
+
+  const { data: resources = [], isLoading: resourcesLoading } = useAuditLogResources();
 
   const { data, isLoading, refetch } = useAuditLogs({
     page,
@@ -170,11 +166,14 @@ export default function AuditLogsPage() {
           <select
             value={resource}
             onChange={(e) => setResource(e.target.value)}
+            disabled={resourcesLoading}
             className="h-10 rounded-md border border-input bg-background px-3 text-sm w-48"
           >
             <option value="">{t("filters.all")}</option>
-            {RESOURCES.map((r) => (
-              <option key={r} value={r}>{r}</option>
+            {resources.map((r) => (
+              <option key={r.resource} value={r.resource}>
+                {r.count != null ? `${r.resource} (${r.count})` : r.resource}
+              </option>
             ))}
           </select>
         </div>

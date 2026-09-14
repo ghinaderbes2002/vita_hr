@@ -7,3 +7,11 @@ export function useAuditLogs(params?: AuditLogsParams) {
     queryFn: () => auditLogsApi.getAll(params),
   });
 }
+
+export function useAuditLogResources() {
+  return useQuery({
+    queryKey: ["audit-logs", "resources"],
+    queryFn: () => auditLogsApi.getResources(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
