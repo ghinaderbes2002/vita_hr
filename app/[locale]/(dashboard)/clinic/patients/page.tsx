@@ -87,10 +87,12 @@ export default function ClinicPatientsPage() {
         title={t("title")}
         description={t("description")}
         actions={
-          <Button onClick={() => router.push(`/${locale}/clinic/patients/new`)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {t("newPatient")}
-          </Button>
+          <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.CREATE}>
+            <Button onClick={() => router.push(`/${locale}/clinic/patients/new`)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t("newPatient")}
+            </Button>
+          </ActionGuard>
         }
       />
 

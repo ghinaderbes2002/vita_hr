@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Check, Loader2, Search } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -10,20 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { Assignment } from "@/lib/api/patient-app";
+import { localizedName, type Assignment } from "@/lib/api/patient-app";
 import {
   useAssignExercise, useExercises, useUpdateAssignment,
 } from "@/lib/hooks/use-patient-app";
 
-const NUMBER_FIELDS = [
-  { key: "sets",            label: "المجموعات" },
-  { key: "reps",            label: "التكرارات" },
-  { key: "durationSeconds", label: "المدة (ثانية)" },
-  { key: "holdSeconds",     label: "الثبات (ثانية)" },
-  { key: "restSeconds",     label: "الراحة (ثانية)" },
-] as const;
-
-type NumberKey = (typeof NUMBER_FIELDS)[number]["key"];
+/** Each key is both the form field and its label under `patientApp.programs`. */
+const NUMBER_FIELDS = ["sets", "reps", "durationSeconds", "holdSeconds", "restSeconds"] as const;
 
 const emptyForm = {
   exerciseId: "",
@@ -48,6 +42,9 @@ export function AssignmentDialog({
   assignment?: Assignment | null;
   nextSortOrder: number;
 }) {
+  const t = useTranslations("patientApp.programs");
+  const tc = useTranslations("patientApp.common");
+  const locale = useLocale();
   const isEdit = !!assignment;
   const [form, setForm] = useState<Form>(emptyForm);
   const [search, setSearch] = useState("");
@@ -79,8 +76,8 @@ export function AssignmentDialog({
   }
 
   useEffect(() => {
-    const t = setTimeout(() => setTerm(search.trim()), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setTerm(search.trim()), 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const { data: exercises = [], isFetching } = useExercises({ search: term || undefined }, open && !isEdit);
@@ -105,9 +102,9 @@ export function AssignmentDialog({
     // create it's simply left out.
     const empty = isEdit ? null : undefined;
     const numbers = Object.fromEntries(
-      NUMBER_FIELDS.map(({ key }) => {
-        const n = Number(form[key as NumberKey]);
-        return [key, form[key as NumberKey].trim() && !Number.isNaN(n) ? n : empty];
+      NUMBER_FIELDS.map((key) => {
+        const n = Number(form[key]);
+        return [key, form[key].trim() && !Number.isNaN(n) ? n : empty];
       }),
     );
     const text = (s: string) => s.trim() || empty;
@@ -135,32 +132,38 @@ export function AssignmentDialog({
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? `تعديل: ${assignment?.exercise?.nameAr ?? "تمرين"}` : "إسناد تمرين للجلسة"}
+            {isEdit
+              ? t("editTitle", { name: localizedName(assignment?.exercise, locale) || "—" })
+              : t("assignTitle")}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5 py-2">
           {!isEdit && (
             <div className="space-y-1.5">
-              <Label>التمرين <span className="text-destructive">*</span></Label>
+              <Label>{t("exercise")} <span className="text-destructive">*</span></Label>
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="ابحث في مكتبة التمارين..."
-                  className="pr-9"
+                  placeholder={t("searchLibrary")}
+                  className="ps-9"
                 />
                 {isFetching && (
-                  <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  <Loader2 className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
                 )}
               </div>
               <div className="max-h-52 space-y-0.5 overflow-y-auto rounded-md border p-1">
                 {exercises.length === 0 ? (
-                  <p className="px-3 py-4 text-center text-sm text-muted-foreground">لا توجد تمارين</p>
+                  <p className="px-3 py-4 text-center text-sm text-muted-foreground">{t("noExercises")}</p>
                 ) : (
                   exercises.map((ex) => {
                     const selected = ex.id === form.exerciseId;
+                    const region = [
+                      localizedName(ex.bodyRegion, locale),
+                      localizedName(ex.targetRegion, locale),
+                    ].filter(Boolean).join(" / ");
                     return (
                       <button
                         key={ex.id}
@@ -172,9 +175,9 @@ export function AssignmentDialog({
                         )}
                       >
                         <span className="min-w-0">
-                          <span className="block truncate">{ex.nameAr}</span>
+                          <span className="block truncate">{localizedName(ex, locale)}</span>
                           <span className="block truncate text-xs text-muted-foreground">
-                            {[ex.bodyRegion?.nameAr, ex.targetRegion?.nameAr].filter(Boolean).join(" / ") || ex.nameEn}
+                            {region || (locale === "ar" ? ex.nameEn : ex.nameAr)}
                           </span>
                         </span>
                         {selected && <Check className="h-4 w-4 shrink-0" />}
@@ -187,9 +190,9 @@ export function AssignmentDialog({
           )}
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {NUMBER_FIELDS.map(({ key, label }) => (
+            {NUMBER_FIELDS.map((key) => (
               <div key={key} className="space-y-1.5">
-                <Label className="text-xs">{label}</Label>
+                <Label className="text-xs">{t(key)}</Label>
                 <Input
                   type="number" min={0} inputMode="numeric"
                   value={form[key]}
@@ -201,7 +204,7 @@ export function AssignmentDialog({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>التكرار اليومي بالعربية</Label>
+              <Label>{t("frequencyAr")}</Label>
               <Input
                 dir="rtl"
                 value={form.frequencyTextAr}
@@ -210,7 +213,7 @@ export function AssignmentDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>التكرار اليومي بالإنجليزية</Label>
+              <Label>{t("frequencyEn")}</Label>
               <Input
                 dir="ltr"
                 value={form.frequencyTextEn}
@@ -222,11 +225,11 @@ export function AssignmentDialog({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>تعليمات خاصة بالعربية</Label>
+              <Label>{t("instructionAr")}</Label>
               <Textarea dir="rtl" rows={3} value={form.customInstructionAr} onChange={(e) => set({ customInstructionAr: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label>تعليمات خاصة بالإنجليزية</Label>
+              <Label>{t("instructionEn")}</Label>
               <Textarea dir="ltr" rows={3} value={form.customInstructionEn} onChange={(e) => set({ customInstructionEn: e.target.value })} />
             </div>
           </div>
@@ -234,11 +237,11 @@ export function AssignmentDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
-            إلغاء
+            {tc("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={!form.exerciseId || isPending}>
-            {isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-            {isEdit ? "حفظ" : "إسناد"}
+            {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+            {isEdit ? tc("save") : t("submitAssign")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -29,7 +29,7 @@ import { ar } from "date-fns/locale";
 import { useMailMessage, useMailThread, useArchiveFolders, useDeleteMail, useMoveMail, useEditMail } from "@/lib/hooks/use-mail";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAllUsers } from "@/lib/hooks/use-users";
-import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees";
 import { AttachmentList } from "./attachment-list";
 import { ComposeMailModal } from "./compose-mail-modal";
 
@@ -49,6 +49,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   const { user }   = useAuthStore();
   const { data: allUsersData } = useAllUsers();
   const { data: basicEmployees } = useEmployeesBasicList();
+  const { data: myEmployee } = useMyEmployee();
   const empNameById = useMemo(() => {
     const map: Record<string, string> = {};
     const users = (allUsersData as any)?.data?.items ?? (allUsersData as any)?.data ?? [];
@@ -75,9 +76,10 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     return map;
   }, [allUsersData]);
   // Every id that stands for the current user. A recipient may be stored as a
-  // userId or an employeeId, and `user.employeeId` is only set when the account
-  // was linked, so comparing against one of them alone let the sender's own name
-  // survive into a reply-all. Collect them all and match against the set.
+  // userId or an employeeId, and `user.employeeId` is only restored from
+  // localStorage when the account was linked on this browser — so the employee
+  // id is also taken from /employees/my, which doesn't depend on either list.
+  const myEmployeeId = myEmployee?.id;
   const myIds = useMemo(() => {
     const ids = new Set<string>();
     if (user?.id) {
@@ -86,10 +88,11 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
       if (linked) ids.add(linked);
     }
     if (user?.employeeId) ids.add(user.employeeId);
+    if (myEmployeeId) ids.add(myEmployeeId);
     return ids;
-  }, [user?.id, user?.employeeId, userIdToEmpId, empBasicByUserId]);
+  }, [user?.id, user?.employeeId, userIdToEmpId, empBasicByUserId, myEmployeeId]);
 
-  const isMe = (empId: string) => !!empId && myIds.has(empId);
+  const isMe = (id?: string | null) => !!id && myIds.has(id);
 
   const [replyOpen, setReplyOpen]       = useState(false);
   const [replyAll, setReplyAll]         = useState(false);
@@ -151,9 +154,12 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   ) ?? [];
 
   const senderInfo = message.senderInfo ?? message.sender;
-  const isSender = message.senderId === user?.id
-    || (senderInfo as any)?.employeeId === user?.employeeId
-    || message.senderId === user?.employeeId;
+  // Matched through myIds: `senderInfo.employeeId === user.employeeId` was true
+  // whenever both were missing, which made every reader the "sender" — so a plain
+  // Reply went to the original recipients, the reader among them.
+  const isSender = isMe(message.senderId)
+    || isMe((senderInfo as any)?.employeeId)
+    || isMe(message.sender?.id);
   const editHistory = (data as any).editHistory ?? (message as any).editHistory ?? [];
   const senderName = senderInfo
     ? `${senderInfo.firstNameAr} ${senderInfo.lastNameAr}`
@@ -177,11 +183,11 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     return userIdToEmpId[rid] ?? empBasicByUserId[rid]?.id ?? rid;
   };
 
-  const defaultToIds = replyAll
-    ? toRecipients.map(getRecipientEmpId).filter((id: string) => id && !isMe(id))
-    : isSender
-      ? toRecipients.map(getRecipientEmpId).filter(Boolean)
-      : [(senderInfo as any)?.employeeId ?? message.senderId].filter(Boolean);
+  // No branch ever addresses a reply back to the person writing it.
+  const defaultToIds: string[] = (replyAll || isSender
+    ? toRecipients.map(getRecipientEmpId)
+    : [(senderInfo as any)?.employeeId ?? message.senderId]
+  ).filter((id: string) => !!id && !isMe(id));
 
   const defaultCcIds = replyAll
     ? ccRecipients.map(getRecipientEmpId).filter((id: string) => id && !isMe(id))
@@ -443,8 +449,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                   const senderN = m.sender
                     ? `${m.sender.firstNameAr} ${m.sender.lastNameAr}`
                     : null;
-                  const isThreadSender = m.senderId === user?.id
-                    || m.senderId === user?.employeeId;
+                  const isThreadSender = isMe(m.senderId);
                   return (
                     <div key={m.id} className="rounded-lg border bg-card shadow-sm overflow-hidden">
                       <button

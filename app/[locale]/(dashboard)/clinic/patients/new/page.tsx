@@ -27,6 +27,8 @@ import { clinicPatientsApi, CreatePatientDto, IdentityType, ConsentOption, Docum
 import { ReferralSourceFields, referralDto } from "@/components/clinic/referral-source-fields";
 import { REFERRAL_SOURCES } from "@/lib/clinic/referral-sources";
 import { WhatsAppIcon } from "@/components/shared/whatsapp-link";
+import { PageGuard } from "@/components/permissions/page-guard";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -93,7 +95,16 @@ const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+// Hiding the button on the list isn't enough — the URL can still be opened directly.
 export default function NewPatientPage() {
+  return (
+    <PageGuard permission={PERMISSIONS.CLINIC_PATIENTS.CREATE}>
+      <NewPatientForm />
+    </PageGuard>
+  );
+}
+
+function NewPatientForm() {
   const router  = useRouter();
   const locale  = useLocale();
   const t       = useTranslations("clinic.patients.new");

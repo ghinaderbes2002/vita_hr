@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { EyeOff, ShieldAlert, Star, StarHalf } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +32,8 @@ const average = (list: TherapistRating[]) =>
   list.length ? list.reduce((sum, r) => sum + r.score, 0) / list.length : 0;
 
 export default function PatientAppRatingsPage() {
+  const t = useTranslations("patientApp.ratings");
+  const tc = useTranslations("patientApp.common");
   const { isAdmin, hasRole } = usePermissions();
   // No permission covers this screen — the backend allows only this role and
   // super_admin, and answers everyone else with 403.
@@ -50,9 +53,7 @@ export default function PatientAppRatingsPage() {
   if (!allowed) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
-        <p className="text-lg text-muted-foreground">
-          هذه الشاشة مخصصة لرئيس قسم العلاج الفيزيائي فقط
-        </p>
+        <p className="text-lg text-muted-foreground">{t("onlyDeptHead")}</p>
       </div>
     );
   }
@@ -74,14 +75,14 @@ export default function PatientAppRatingsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="تقييمات المعالجين"
-        description="تقييمات المرضى السرية لجلسات العلاج الفيزيائي"
+        title={t("title")}
+        description={t("description")}
         actions={
           <ClinicCountChips
             isLoading={isLoading}
             counts={[
-              { icon: Star, label: "تقييم", value: rows.length },
-              { icon: StarHalf, label: "المتوسط", value: rows.length ? Number(average(rows).toFixed(1)) : undefined },
+              { icon: Star, label: t("countLabel"), value: rows.length },
+              { icon: StarHalf, label: t("averageLabel"), value: rows.length ? Number(average(rows).toFixed(1)) : undefined },
             ]}
           />
         }
@@ -89,23 +90,20 @@ export default function PatientAppRatingsPage() {
 
       <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
         <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
-        <p>
-          هذه البيانات سرية ولا تظهر للمعالجين. كل اطّلاع على هذه الشاشة (مع الفلاتر المستخدمة)
-          يُسجَّل تلقائياً في سجل التدقيق.
-        </p>
+        <p>{t("confidential")}</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_16rem]">
         <div className="space-y-1.5">
-          <Label>المريض</Label>
+          <Label>{tc("patient")}</Label>
           <PatientPicker value={patient} onChange={setPatient} />
         </div>
         <div className="space-y-1.5">
-          <Label>المعالج</Label>
+          <Label>{t("therapist")}</Label>
           <Select value={therapistId} onValueChange={setTherapistId}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>كل المعالجين</SelectItem>
+              <SelectItem value={ALL}>{t("allTherapists")}</SelectItem>
               {therapistIds.map((id) => (
                 <SelectItem key={id} value={id}><TherapistName id={id} /></SelectItem>
               ))}
@@ -117,8 +115,8 @@ export default function PatientAppRatingsPage() {
       {isError ? (
         <EmptyState
           icon={<EyeOff className="h-8 w-8 text-muted-foreground" />}
-          title="تعذّر تحميل التقييمات"
-          description="قد لا يكون دورك مسموحاً له بالاطلاع عليها"
+          title={t("loadFailedTitle")}
+          description={t("loadFailedDescription")}
         />
       ) : (
         <>
@@ -127,9 +125,9 @@ export default function PatientAppRatingsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>المعالج</TableHead>
-                    <TableHead>عدد التقييمات</TableHead>
-                    <TableHead>المتوسط</TableHead>
+                    <TableHead>{t("therapist")}</TableHead>
+                    <TableHead>{t("colRatingsCount")}</TableHead>
+                    <TableHead>{t("averageLabel")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -158,11 +156,11 @@ export default function PatientAppRatingsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>المعالج</TableHead>
-                  <TableHead>المريض</TableHead>
-                  <TableHead>التقييم</TableHead>
-                  <TableHead>ملاحظة المريض</TableHead>
+                  <TableHead>{t("colDate")}</TableHead>
+                  <TableHead>{t("therapist")}</TableHead>
+                  <TableHead>{tc("patient")}</TableHead>
+                  <TableHead>{t("colScore")}</TableHead>
+                  <TableHead>{t("colNote")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -179,8 +177,8 @@ export default function PatientAppRatingsPage() {
                     <TableCell colSpan={5}>
                       <EmptyState
                         icon={<Star className="h-8 w-8 text-muted-foreground" />}
-                        title="لا توجد تقييمات"
-                        description="يقيّم المريض الجلسة من التطبيق بعد انتهائها"
+                        title={t("emptyTitle")}
+                        description={t("emptyDescription")}
                       />
                     </TableCell>
                   </TableRow>
@@ -205,9 +203,10 @@ export default function PatientAppRatingsPage() {
 }
 
 function Stars({ score }: { score: number }) {
+  const t = useTranslations("patientApp.ratings");
   const rounded = Math.round(score);
   return (
-    <span className="flex items-center gap-0.5" aria-label={`${score} من 5`} dir="ltr">
+    <span className="flex items-center gap-0.5" aria-label={t("scoreOutOf", { score })} dir="ltr">
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
@@ -219,8 +218,12 @@ function Stars({ score }: { score: number }) {
 }
 
 function TherapistName({ id }: { id: string }) {
+  const tc = useTranslations("patientApp.common");
+  const locale = useLocale();
   const { data } = useEmployee(id);
   const e = data as any;
-  const name = e ? `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim() : "";
-  return <>{name || `معالج ${id.slice(0, 8)}`}</>;
+  const arabic = e ? `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim() : "";
+  const english = e ? `${e.firstNameEn ?? e.firstName ?? ""} ${e.lastNameEn ?? e.lastName ?? ""}`.trim() : "";
+  const name = locale === "ar" ? arabic || english : english || arabic;
+  return <>{name || tc("therapistFallback", { id: id.slice(0, 8) })}</>;
 }

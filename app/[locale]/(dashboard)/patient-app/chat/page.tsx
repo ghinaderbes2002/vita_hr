@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Loader2, MessageSquare, Send, UserRound } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { ArrowLeft, Loader2, MessageSquare, Send, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +30,7 @@ const lastActivity = (c: ChatConversation) =>
   c.lastMessageAt ?? c.lastMessage?.createdAt ?? c.createdAt ?? "";
 
 export default function PatientAppChatPage() {
+  const t = useTranslations("patientApp.chat");
   const [activeId, setActiveId] = useState<string | null>(null);
   const { data = [], isLoading } = useChatConversations();
   const conversations = [...data].sort((a, b) => lastActivity(b).localeCompare(lastActivity(a)));
@@ -37,23 +39,20 @@ export default function PatientAppChatPage() {
   return (
     <PageGuard permission={PERMISSIONS.PATIENT_APP.CHAT_USE}>
       <div className="space-y-4">
-        <PageHeader
-          title="محادثات المرضى"
-          description="رسائل نصية مع المرضى المسندين إليك عبر التطبيق"
-        />
+        <PageHeader title={t("title")} description={t("description")} />
 
         <div className="grid h-[calc(100dvh-13rem)] min-h-[28rem] grid-rows-[minmax(0,1fr)] overflow-hidden rounded-lg border lg:grid-cols-[20rem_minmax(0,1fr)]">
           <aside className={cn("flex min-h-0 flex-col border-e", active ? "hidden lg:flex" : "flex")}>
-            <div className="border-b px-4 py-3 text-sm font-medium">المحادثات ({conversations.length})</div>
+            <div className="border-b px-4 py-3 text-sm font-medium">
+              {t("conversations", { count: conversations.length })}
+            </div>
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
                 <div className="space-y-2 p-3">
                   {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
                 </div>
               ) : conversations.length === 0 ? (
-                <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  لا توجد محادثات. تظهر هنا محادثات المرضى الذين أنت معالجهم المسؤول.
-                </p>
+                <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("empty")}</p>
               ) : (
                 conversations.map((c) => {
                   const unread = c.unreadCount ?? 0;
@@ -103,7 +102,7 @@ export default function PatientAppChatPage() {
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
                 <MessageSquare className="h-10 w-10" />
-                <p className="text-sm">اختر محادثة لعرض الرسائل</p>
+                <p className="text-sm">{t("pick")}</p>
               </div>
             )}
           </section>
@@ -114,6 +113,7 @@ export default function PatientAppChatPage() {
 }
 
 function ChatThread({ conversation, onBack }: { conversation: ChatConversation; onBack: () => void }) {
+  const t = useTranslations("patientApp.chat");
   const qc = useQueryClient();
   const send = useSendChatMessage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -187,8 +187,8 @@ function ChatThread({ conversation, onBack }: { conversation: ChatConversation; 
   return (
     <>
       <div className="flex items-center gap-2 border-b px-4 py-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={onBack} aria-label="رجوع">
-          <ArrowRight className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={onBack} aria-label={t("back")}>
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
         </Button>
         <p className="font-medium">
           <PatientName id={conversation.erpPatientId} name={conversation.patientName} />
@@ -201,7 +201,7 @@ function ChatThread({ conversation, onBack }: { conversation: ChatConversation; 
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : messages.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">لا توجد رسائل بعد</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">{t("noMessages")}</p>
         ) : (
           messages.map((m) => {
             const mine = !isFromPatient(m);
@@ -236,7 +236,7 @@ function ChatThread({ conversation, onBack }: { conversation: ChatConversation; 
               handleSend();
             }
           }}
-          placeholder="اكتب رسالة... (Shift+Enter لسطر جديد)"
+          placeholder={t("placeholder")}
           className="max-h-32 min-h-10 resize-none"
         />
         <Button size="icon" className="h-10 w-10 shrink-0" onClick={handleSend} disabled={!text.trim() || send.isPending}>

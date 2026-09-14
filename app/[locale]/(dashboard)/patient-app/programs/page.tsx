@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowDown, ArrowUp, Ban, CheckCircle2, ClipboardList, Clock, History, Loader2, Pencil,
   Plus, SkipForward,
@@ -33,7 +33,7 @@ import {
   useReorderAssignments, useSessionExercises,
 } from "@/lib/hooks/use-patient-app";
 import type { Patient } from "@/lib/api/clinic-patients";
-import type { Assignment, ErpSession, Execution } from "@/lib/api/patient-app";
+import { localizedName, type Assignment, type ErpSession, type Execution } from "@/lib/api/patient-app";
 
 const P = PERMISSIONS.PATIENT_APP;
 
@@ -43,19 +43,12 @@ const fmtDateTime = (d?: string | null) =>
 
 const isCancelled = (a: Pick<Assignment, "status">) => a.status === "CANCELLED";
 
-/** "3 × 10 · ثبات 5ث · راحة 15ث" — only the parts that were set. */
-function dosage(a: Assignment) {
-  const parts: string[] = [];
-  if (a.sets && a.reps) parts.push(`${a.sets} × ${a.reps}`);
-  else if (a.sets) parts.push(`${a.sets} مجموعات`);
-  else if (a.reps) parts.push(`${a.reps} تكرار`);
-  if (a.durationSeconds) parts.push(`مدة ${a.durationSeconds}ث`);
-  if (a.holdSeconds) parts.push(`ثبات ${a.holdSeconds}ث`);
-  if (a.restSeconds) parts.push(`راحة ${a.restSeconds}ث`);
-  return parts.join(" · ") || "—";
-}
+/** Bilingual free-text fields: the viewer's language, falling back to the other. */
+const pickText = (locale: string, ar?: string | null, en?: string | null) =>
+  (locale === "ar" ? ar || en : en || ar) || "";
 
 export default function PatientAppProgramsPage() {
+  const t = useTranslations("patientApp.programs");
   const locale = useLocale();
   const { hasPermission, isAdmin } = usePermissions();
   const canViewExecutions = isAdmin() || hasPermission(P.VIEW_PATIENT_EXECUTIONS);
@@ -66,10 +59,7 @@ export default function PatientAppProgramsPage() {
       permissions={[P.ASSIGN_EXERCISE, P.EDIT_ASSIGNED_EXERCISE, P.CANCEL_ASSIGNED_EXERCISE, P.VIEW_PATIENT_EXECUTIONS]}
     >
       <div className="space-y-4">
-        <PageHeader
-          title="برامج التمارين"
-          description="إسناد تمارين التطبيق لجلسات العلاج الفيزيائي ومتابعة تنفيذ المريض لها"
-        />
+        <PageHeader title={t("title")} description={t("description")} />
 
         <div className="max-w-2xl">
           <PatientPicker value={patient} onChange={setPatient} />
@@ -78,14 +68,14 @@ export default function PatientAppProgramsPage() {
         {!patient ? (
           <EmptyState
             icon={<ClipboardList className="h-8 w-8 text-muted-foreground" />}
-            title="اختر مريضاً"
-            description="تظهر جلسات العلاج الفيزيائي للمريض لتسند إليها التمارين"
+            title={t("pickPatientTitle")}
+            description={t("pickPatientDescription")}
           />
         ) : (
           <Tabs key={patient.id} defaultValue="program" dir={locale === "ar" ? "rtl" : "ltr"}>
             <TabsList>
-              <TabsTrigger value="program">الجلسات والتمارين</TabsTrigger>
-              {canViewExecutions && <TabsTrigger value="executions">سجل التنفيذ</TabsTrigger>}
+              <TabsTrigger value="program">{t("tabProgram")}</TabsTrigger>
+              {canViewExecutions && <TabsTrigger value="executions">{t("tabExecutions")}</TabsTrigger>}
             </TabsList>
             <TabsContent value="program" className="mt-4">
               <SessionPrograms patientId={patient.id} />
@@ -105,6 +95,7 @@ export default function PatientAppProgramsPage() {
 // ── Sessions + their assigned exercises ─────────────────────
 
 function SessionPrograms({ patientId }: { patientId: string }) {
+  const t = useTranslations("patientApp.programs");
   const [selected, setSelected] = useState<string | null>(null);
   const { data: sessions = [], isLoading } = usePatientSessions(patientId);
 
@@ -121,8 +112,8 @@ function SessionPrograms({ patientId }: { patientId: string }) {
     return (
       <EmptyState
         icon={<ClipboardList className="h-8 w-8 text-muted-foreground" />}
-        title="لا توجد جلسات علاج فيزيائي"
-        description="تُسند التمارين إلى جلسات المريض المسجّلة في العيادة، ولا توجد له جلسات بعد"
+        title={t("noSessionsTitle")}
+        description={t("noSessionsDescription")}
       />
     );
   }
@@ -130,7 +121,7 @@ function SessionPrograms({ patientId }: { patientId: string }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[17rem_minmax(0,1fr)]">
       <div className="rounded-lg border">
-        <div className="border-b px-3 py-2 text-sm font-medium">الجلسات ({ordered.length})</div>
+        <div className="border-b px-3 py-2 text-sm font-medium">{t("sessions", { count: ordered.length })}</div>
         <div className="max-h-64 space-y-1 overflow-y-auto p-2 lg:max-h-[65dvh]">
           {ordered.map((s) => (
             <button
@@ -143,7 +134,7 @@ function SessionPrograms({ patientId }: { patientId: string }) {
               )}
             >
               <span>
-                <span className="block font-medium">جلسة {s.sessionNumber ?? "—"}</span>
+                <span className="block font-medium">{t("session", { number: s.sessionNumber ?? "—" })}</span>
                 <span className="block text-xs opacity-80">{fmtDate(s.sessionDate)}</span>
               </span>
               {s.attendanceConfirmed && <CheckCircle2 className="h-4 w-4 shrink-0 opacity-80" />}
@@ -158,6 +149,8 @@ function SessionPrograms({ patientId }: { patientId: string }) {
 }
 
 function SessionAssignments({ session }: { session: ErpSession }) {
+  const t = useTranslations("patientApp.programs");
+  const locale = useLocale();
   const { data: assignments = [], isLoading } = useSessionExercises(session.id);
   const { data: library = [] } = useExercises();
   const reorder = useReorderAssignments();
@@ -176,6 +169,18 @@ function SessionAssignments({ session }: { session: ErpSession }) {
   const nextSortOrder = sorted.reduce((max, a) => Math.max(max, a.sortOrder ?? 0), 0) + 1;
 
   const exerciseOf = (a: Assignment) => a.exercise ?? library.find((e) => e.id === a.exerciseId);
+
+  /** "3 × 10 · 5s hold · 15s rest" — only the parts that were set. */
+  const dosage = (a: Assignment) => {
+    const parts: string[] = [];
+    if (a.sets && a.reps) parts.push(t("dosageSetsReps", { sets: a.sets, reps: a.reps }));
+    else if (a.sets) parts.push(t("dosageSets", { count: a.sets }));
+    else if (a.reps) parts.push(t("dosageReps", { count: a.reps }));
+    if (a.durationSeconds) parts.push(t("dosageDuration", { count: a.durationSeconds }));
+    if (a.holdSeconds) parts.push(t("dosageHold", { count: a.holdSeconds }));
+    if (a.restSeconds) parts.push(t("dosageRest", { count: a.restSeconds }));
+    return parts.join(" · ") || "—";
+  };
 
   const move = (index: number, dir: -1 | 1) => {
     const target = index + dir;
@@ -196,18 +201,18 @@ function SessionAssignments({ session }: { session: ErpSession }) {
     <div className="min-w-0 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-semibold">جلسة {session.sessionNumber ?? "—"}</h3>
+          <h3 className="font-semibold">{t("session", { number: session.sessionNumber ?? "—" })}</h3>
           <span className="text-sm text-muted-foreground">{fmtDate(session.sessionDate)}</span>
           {session.attendanceConfirmed ? (
-            <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">تم الحضور</Badge>
+            <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">{t("attended")}</Badge>
           ) : (
-            <Badge variant="outline" className="border-gray-200 bg-gray-100 text-gray-700">لم يُؤكَّد الحضور</Badge>
+            <Badge variant="outline" className="border-gray-200 bg-gray-100 text-gray-700">{t("notAttended")}</Badge>
           )}
         </div>
         <ActionGuard permission={P.ASSIGN_EXERCISE}>
           <Button className="gap-2" onClick={() => { setEditing(null); setDialogOpen(true); }}>
             <Plus className="h-4 w-4" />
-            إسناد تمرين
+            {t("assign")}
           </Button>
         </ActionGuard>
       </div>
@@ -216,11 +221,11 @@ function SessionAssignments({ session }: { session: ErpSession }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-20">الترتيب</TableHead>
-              <TableHead>التمرين</TableHead>
-              <TableHead>الجرعة</TableHead>
-              <TableHead>التكرار اليومي</TableHead>
-              <TableHead>الحالة</TableHead>
+              <TableHead className="w-20">{t("colOrder")}</TableHead>
+              <TableHead>{t("colExercise")}</TableHead>
+              <TableHead>{t("colDosage")}</TableHead>
+              <TableHead>{t("colFrequency")}</TableHead>
+              <TableHead>{t("colStatus")}</TableHead>
               <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
@@ -238,8 +243,8 @@ function SessionAssignments({ session }: { session: ErpSession }) {
                 <TableCell colSpan={6}>
                   <EmptyState
                     icon={<ClipboardList className="h-8 w-8 text-muted-foreground" />}
-                    title="لا توجد تمارين مُسندة لهذه الجلسة"
-                    description="أسند تمريناً من المكتبة ليظهر للمريض في التطبيق"
+                    title={t("noAssignmentsTitle")}
+                    description={t("noAssignmentsDescription")}
                   />
                 </TableCell>
               </TableRow>
@@ -247,7 +252,7 @@ function SessionAssignments({ session }: { session: ErpSession }) {
               rows.map((a) => {
                 const cancelled = isCancelled(a);
                 const index = active.indexOf(a);
-                const ex = exerciseOf(a);
+                const instruction = pickText(locale, a.customInstructionAr, a.customInstructionEn);
                 return (
                   <TableRow key={a.id} className={cn(cancelled && "bg-red-50/60 dark:bg-red-950/20")}>
                     <TableCell>
@@ -263,7 +268,7 @@ function SessionAssignments({ session }: { session: ErpSession }) {
                                 className="rounded p-0.5 hover:bg-accent disabled:opacity-30"
                                 disabled={index === 0 || reorder.isPending}
                                 onClick={() => move(index, -1)}
-                                aria-label="تحريك للأعلى"
+                                aria-label={t("moveUp")}
                               >
                                 <ArrowUp className="h-3.5 w-3.5" />
                               </button>
@@ -272,7 +277,7 @@ function SessionAssignments({ session }: { session: ErpSession }) {
                                 className="rounded p-0.5 hover:bg-accent disabled:opacity-30"
                                 disabled={index === active.length - 1 || reorder.isPending}
                                 onClick={() => move(index, 1)}
-                                aria-label="تحريك للأسفل"
+                                aria-label={t("moveDown")}
                               >
                                 <ArrowDown className="h-3.5 w-3.5" />
                               </button>
@@ -283,22 +288,26 @@ function SessionAssignments({ session }: { session: ErpSession }) {
                     </TableCell>
                     <TableCell>
                       <p className={cn("font-medium", cancelled && "text-red-700 line-through dark:text-red-400")}>
-                        {ex?.nameAr ?? "—"}
+                        {localizedName(exerciseOf(a), locale) || "—"}
                       </p>
-                      {a.customInstructionAr && (
-                        <p className="line-clamp-2 max-w-72 text-xs text-muted-foreground">{a.customInstructionAr}</p>
+                      {instruction && (
+                        <p className="line-clamp-2 max-w-72 text-xs text-muted-foreground">{instruction}</p>
                       )}
                       {cancelled && a.cancelReason && (
-                        <p className="text-xs text-red-700 dark:text-red-400">سبب الإلغاء: {a.cancelReason}</p>
+                        <p className="text-xs text-red-700 dark:text-red-400">
+                          {t("cancelReason", { reason: a.cancelReason })}
+                        </p>
                       )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm">{dosage(a)}</TableCell>
-                    <TableCell className="text-sm">{a.frequencyTextAr || "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {pickText(locale, a.frequencyTextAr, a.frequencyTextEn) || "—"}
+                    </TableCell>
                     <TableCell>
                       {cancelled ? (
-                        <Badge variant="outline" className="border-red-200 bg-red-100 text-red-800">ملغي</Badge>
+                        <Badge variant="outline" className="border-red-200 bg-red-100 text-red-800">{t("cancelled")}</Badge>
                       ) : (
-                        <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">فعّال</Badge>
+                        <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">{t("active")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -315,7 +324,7 @@ function SessionAssignments({ session }: { session: ErpSession }) {
                           <ActionGuard permission={P.CANCEL_ASSIGNED_EXERCISE}>
                             <Button
                               variant="ghost" size="icon" className="h-8 w-8 text-destructive"
-                              title="إلغاء التمرين"
+                              title={t("cancelExercise")}
                               onClick={() => { setCancelling(a); setReason(""); }}
                             >
                               <Ban className="h-4 w-4" />
@@ -343,25 +352,24 @@ function SessionAssignments({ session }: { session: ErpSession }) {
       <Dialog open={!!cancelling} onOpenChange={(o) => { if (!o && !cancel.isPending) setCancelling(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>إلغاء التمرين</DialogTitle>
+            <DialogTitle>{t("cancelExercise")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              سيبقى تمرين «{cancelling ? exerciseOf(cancelling)?.nameAr ?? "—" : ""}» ظاهراً للمريض بحالة «ملغي»
-              ولن يستطيع تنفيذه. الإلغاء لا يمكن التراجع عنه.
+              {t("cancelBody", { name: cancelling ? localizedName(exerciseOf(cancelling), locale) || "—" : "" })}
             </p>
             <div className="space-y-1.5">
-              <Label>سبب الإلغاء</Label>
-              <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="اختياري" />
+              <Label>{t("cancelReasonLabel")}</Label>
+              <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("optional")} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCancelling(null)} disabled={cancel.isPending}>
-              تراجع
+              {t("keep")}
             </Button>
             <Button variant="destructive" onClick={confirmCancel} disabled={cancel.isPending}>
-              {cancel.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              إلغاء التمرين
+              {cancel.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {t("cancelExercise")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -372,16 +380,20 @@ function SessionAssignments({ session }: { session: ErpSession }) {
 
 // ── Execution log ───────────────────────────────────────────
 
-const EXECUTION_STATUS: Record<string, { label: string; className: string }> = {
-  COMPLETED:   { label: "مكتمل", className: "bg-green-100 text-green-800 border-green-200" },
-  SKIPPED:     { label: "متخطى", className: "bg-amber-100 text-amber-800 border-amber-200" },
-  STARTED:     { label: "جارٍ",  className: "bg-blue-100 text-blue-800 border-blue-200" },
-  IN_PROGRESS: { label: "جارٍ",  className: "bg-blue-100 text-blue-800 border-blue-200" },
+type ExecutionLabel = "execCompleted" | "execSkipped" | "execInProgress";
+
+const EXECUTION_STATUS: Record<string, { label: ExecutionLabel; className: string }> = {
+  COMPLETED:   { label: "execCompleted",  className: "bg-green-100 text-green-800 border-green-200" },
+  SKIPPED:     { label: "execSkipped",    className: "bg-amber-100 text-amber-800 border-amber-200" },
+  STARTED:     { label: "execInProgress", className: "bg-blue-100 text-blue-800 border-blue-200" },
+  IN_PROGRESS: { label: "execInProgress", className: "bg-blue-100 text-blue-800 border-blue-200" },
 };
 
 const lastTouched = (e: Execution) => e.completedAt ?? e.skippedAt ?? e.startedAt ?? e.createdAt ?? "";
 
 function ExecutionsLog({ patientId }: { patientId: string }) {
+  const t = useTranslations("patientApp.programs");
+  const locale = useLocale();
   const { data: executions = [], isLoading } = usePatientExecutions(patientId);
   const { data: library = [] } = useExercises();
 
@@ -393,9 +405,9 @@ function ExecutionsLog({ patientId }: { patientId: string }) {
       <ClinicCountChips
         isLoading={isLoading}
         counts={[
-          { icon: CheckCircle2, label: "مكتمل", value: count(["COMPLETED"]) },
-          { icon: SkipForward, label: "متخطى", value: count(["SKIPPED"]) },
-          { icon: Clock, label: "جارٍ", value: count(["STARTED", "IN_PROGRESS"]) },
+          { icon: CheckCircle2, label: t("execCompleted"), value: count(["COMPLETED"]) },
+          { icon: SkipForward, label: t("execSkipped"), value: count(["SKIPPED"]) },
+          { icon: Clock, label: t("execInProgress"), value: count(["STARTED", "IN_PROGRESS"]) },
         ]}
       />
 
@@ -403,11 +415,11 @@ function ExecutionsLog({ patientId }: { patientId: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>التمرين</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>البدء</TableHead>
-              <TableHead>الإنهاء / التخطي</TableHead>
-              <TableHead>ملاحظة المريض / سبب التخطي</TableHead>
+              <TableHead>{t("colExercise")}</TableHead>
+              <TableHead>{t("colStatus")}</TableHead>
+              <TableHead>{t("colStartedAt")}</TableHead>
+              <TableHead>{t("colFinishedAt")}</TableHead>
+              <TableHead>{t("colNote")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -424,14 +436,14 @@ function ExecutionsLog({ patientId }: { patientId: string }) {
                 <TableCell colSpan={5}>
                   <EmptyState
                     icon={<History className="h-8 w-8 text-muted-foreground" />}
-                    title="لا يوجد سجل تنفيذ"
-                    description="يظهر هنا ما يبدؤه المريض أو يكمله أو يتخطاه من التمارين عبر التطبيق"
+                    title={t("noExecutionsTitle")}
+                    description={t("noExecutionsDescription")}
                   />
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((e) => {
-                const status = EXECUTION_STATUS[e.status] ?? { label: e.status, className: "" };
+                const status = EXECUTION_STATUS[e.status];
                 const exercise =
                   e.assignment?.exercise ?? library.find((x) => x.id === e.assignment?.exerciseId);
                 const skipReason =
@@ -441,9 +453,11 @@ function ExecutionsLog({ patientId }: { patientId: string }) {
                   : e.completionNote;
                 return (
                   <TableRow key={e.id}>
-                    <TableCell className="font-medium">{exercise?.nameAr ?? "—"}</TableCell>
+                    <TableCell className="font-medium">{localizedName(exercise, locale) || "—"}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cn("text-xs", status.className)}>{status.label}</Badge>
+                      <Badge variant="outline" className={cn("text-xs", status?.className)}>
+                        {status ? t(status.label) : e.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm" dir="ltr">{fmtDateTime(e.startedAt)}</TableCell>
                     <TableCell className="whitespace-nowrap text-sm" dir="ltr">
