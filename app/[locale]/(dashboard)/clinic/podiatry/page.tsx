@@ -13,6 +13,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/shared/pagination";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { usePodiatryReceptions, usePodiatryMyPatients } from "@/lib/hooks/use-clinic-podiatry";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
@@ -21,6 +22,8 @@ import { PodiatryReception } from "@/lib/api/clinic-podiatry";
 import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
+
+const PAGE_SIZE = 20;
 
 /**
  * المسميات التي تشرف على مرضى القسم كاملاً. غيرها يرى فقط الحالات المعيَّن
@@ -43,6 +46,7 @@ export default function PodiatryListPage() {
   const tCommon = useTranslations("clinic.common");
   const enumLabel = usePodiatryEnumLabels();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   // المشرفون يرون كل مرضى القسم؛ من عداهم يرى حالاته المعيَّن عليها فقط.
   const { isAdmin } = usePermissions();
@@ -67,6 +71,12 @@ export default function PodiatryListPage() {
     const name = `${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.toLowerCase();
     return name.includes(q) || (r.patient?.patientNumber ?? "").toLowerCase().includes(q);
   });
+
+  // The API returns the whole list, so it's paged here — search and the counts
+  // above still cover every reception, not just the visible page.
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   // This list isn't paginated, so the distinct patients are countable right here
   // — no second request, and exact rather than an estimate off one page.
@@ -94,7 +104,7 @@ export default function PodiatryListPage() {
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder={t("searchPlaceholder")}
           className="pr-9"
         />
@@ -124,7 +134,7 @@ export default function PodiatryListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r) => (
+              {pageRows.map((r) => (
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => router.push(`/${locale}/clinic/podiatry/${r.id}`)}>
                   <TableCell className="font-mono text-xs">{r.patient?.patientNumber ?? "—"}</TableCell>
                   <TableCell>{`${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.trim() || "—"}</TableCell>
@@ -150,6 +160,15 @@ export default function PodiatryListPage() {
         )}
       </div>
 
+      {!isLoading && totalPages > 1 && (
+        <Pagination
+          page={currentPage}
+          totalPages={totalPages}
+          total={filtered.length}
+          limit={PAGE_SIZE}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 }
