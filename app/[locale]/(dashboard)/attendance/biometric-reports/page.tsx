@@ -721,12 +721,13 @@ export default function BiometricReportsPage() {
                               ABSENT: "bg-red-100 text-red-700",
                               LATE: "bg-amber-100 text-amber-700",
                               ON_LEAVE: "bg-blue-100 text-blue-700",
+                              ON_MISSION: "bg-cyan-100 text-cyan-700",
                               HOLIDAY: "bg-gray-200 text-gray-700",
                               EARLY_LEAVE: "bg-yellow-100 text-yellow-700",
                             };
                             const statusLabels: Record<string, string> = {
                               PRESENT: "حاضر", ABSENT: "غائب", LATE: "متأخر",
-                              ON_LEAVE: "إجازة", HOLIDAY: "عطلة", EARLY_LEAVE: "خروج مبكر",
+                              ON_LEAVE: "إجازة", ON_MISSION: "في مهمة عمل", HOLIDAY: "عطلة", EARLY_LEAVE: "خروج مبكر",
                             };
                             return (
                               <TableRow key={day.date}>

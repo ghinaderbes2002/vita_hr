@@ -188,6 +188,25 @@ export const clinicPatientsApi = {
     };
   },
 
+  /**
+   * The patient list as an .xlsx file. Without dates it covers every patient;
+   * `from` / `to` (YYYY-MM-DD, either or both) keep only patients created in range.
+   */
+  exportXlsx: async (params?: { from?: string; to?: string }): Promise<{ blob: Blob; filename: string }> => {
+    const response = await apiClient.get("/patients/export-xlsx", { params, responseType: "blob" });
+    // The server names the file in Arabic; a raw non-ASCII `filename=` arrives
+    // garbled through the header, so only the RFC 5987 `filename*` form is trusted.
+    const disposition: string = response.headers["content-disposition"] || "";
+    const encoded = disposition.match(/filename\*=UTF-8''([^;\n]+)/i)?.[1];
+    let filename = "";
+    try { filename = encoded ? decodeURIComponent(encoded) : ""; } catch { /* fall back below */ }
+    if (!filename) {
+      const range = [params?.from, params?.to].filter(Boolean).join("_");
+      filename = `المرضى${range ? `_${range}` : ""}.xlsx`;
+    }
+    return { blob: response.data as Blob, filename };
+  },
+
   getById: async (id: string): Promise<Patient> => {
     const { data } = await apiClient.get(`/patients/${id}`);
     const raw = data?.data ?? data;

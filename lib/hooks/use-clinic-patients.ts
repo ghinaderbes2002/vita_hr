@@ -10,6 +10,36 @@ export function useClinicPatients(params?: PatientListParams, enabled = true) {
   });
 }
 
+export function useExportPatients() {
+  return useMutation({
+    mutationFn: (params?: { from?: string; to?: string }) => clinicPatientsApi.exportXlsx(params),
+    onSuccess: ({ blob, filename }) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير ملف المرضى");
+    },
+    // The request asked for a blob, so an error body arrives as one too — read the
+    // server's message out of it instead of showing a generic failure.
+    onError: async (error: unknown) => {
+      let message: string | undefined;
+      const body = (error as { response?: { data?: unknown } } | null)?.response?.data;
+      if (body instanceof Blob) {
+        try {
+          const parsed = JSON.parse(await body.text());
+          message = parsed?.error?.message ?? parsed?.message;
+        } catch { /* not JSON */ }
+      }
+      toast.error(message || "فشل تصدير ملف المرضى");
+    },
+  });
+}
+
 export function useClinicPatient(id: string) {
   return useQuery({
     queryKey: ["clinic-patient", id],

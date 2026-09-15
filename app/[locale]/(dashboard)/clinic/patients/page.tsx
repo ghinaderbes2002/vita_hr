@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Plus, Search, Eye, Trash2, Users } from "lucide-react";
+import { Plus, Search, Eye, Trash2, Users, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -22,7 +25,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useClinicPatients, useDeleteClinicPatient } from "@/lib/hooks/use-clinic-patients";
+import { useClinicPatients, useDeleteClinicPatient, useExportPatients } from "@/lib/hooks/use-clinic-patients";
 import { Patient } from "@/lib/api/clinic-patients";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -68,6 +71,23 @@ export default function ClinicPatientsPage() {
 
   const deletePatient = useDeleteClinicPatient();
 
+  // Excel export: every patient, or only those created within a date range.
+  // Either end of the range may be left open, but not both.
+  const exportPatients = useExportPatients();
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportScope, setExportScope] = useState<"all" | "range">("all");
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
+  const rangeEmpty = exportScope === "range" && !exportFrom && !exportTo;
+  const rangeReversed = exportScope === "range" && !!exportFrom && !!exportTo && exportFrom > exportTo;
+
+  const handleExport = () => {
+    const params = exportScope === "range"
+      ? { from: exportFrom || undefined, to: exportTo || undefined }
+      : undefined;
+    exportPatients.mutate(params, { onSuccess: () => setExportOpen(false) });
+  };
+
   const patients = data?.items ?? [];
   const totalPages = data?.totalPages ?? 0;
   const total = data?.total ?? 0;
@@ -87,12 +107,19 @@ export default function ClinicPatientsPage() {
         title={t("title")}
         description={t("description")}
         actions={
-          <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.CREATE}>
-            <Button onClick={() => router.push(`/${locale}/clinic/patients/new`)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              {t("newPatient")}
+          <div className="flex flex-wrap gap-2">
+            {/* Shown to everyone who can open this list — the export asks no more than that. */}
+            <Button variant="outline" onClick={() => setExportOpen(true)} className="gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              {t("export.button")}
             </Button>
-          </ActionGuard>
+            <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.CREATE}>
+              <Button onClick={() => router.push(`/${locale}/clinic/patients/new`)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                {t("newPatient")}
+              </Button>
+            </ActionGuard>
+          </div>
         }
       />
 
@@ -223,6 +250,48 @@ export default function ClinicPatientsPage() {
       {total > 0 && (
         <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
       )}
+
+      <Dialog open={exportOpen} onOpenChange={(o) => { if (!exportPatients.isPending) setExportOpen(o); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("export.title")}</DialogTitle>
+          </DialogHeader>
+          <RadioGroup value={exportScope} onValueChange={(v) => setExportScope(v as "all" | "range")} className="gap-3">
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="all" id="patients-export-all" />
+              <Label htmlFor="patients-export-all">{t("export.all")}</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="range" id="patients-export-range" />
+              <Label htmlFor="patients-export-range">{t("export.range")}</Label>
+            </div>
+          </RadioGroup>
+          {exportScope === "range" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t("export.from")}</Label>
+                <Input type="date" value={exportFrom} max={exportTo || undefined} onChange={(e) => setExportFrom(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t("export.to")}</Label>
+                <Input type="date" value={exportTo} min={exportFrom || undefined} onChange={(e) => setExportTo(e.target.value)} />
+              </div>
+              {rangeReversed && (
+                <p className="col-span-2 text-xs text-destructive">{t("export.invalidRange")}</p>
+              )}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setExportOpen(false)} disabled={exportPatients.isPending}>
+              {t("export.cancel")}
+            </Button>
+            <Button onClick={handleExport} disabled={rangeEmpty || rangeReversed || exportPatients.isPending} className="gap-2">
+              {exportPatients.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+              {t("export.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!deleteId}

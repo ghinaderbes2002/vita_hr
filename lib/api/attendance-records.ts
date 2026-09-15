@@ -8,6 +8,7 @@ export type AttendanceStatus =
   | "EARLY_LEAVE"
   | "HALF_DAY"
   | "ON_LEAVE"
+  | "ON_MISSION"
   | "PARTIAL_LEAVE"
   | "HOLIDAY"
   | "WEEKEND";

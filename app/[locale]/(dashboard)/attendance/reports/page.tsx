@@ -33,6 +33,7 @@ const statusColors: Record<string, string> = {
   EARLY_LEAVE: "bg-orange-100 text-orange-800",
   HALF_DAY: "bg-blue-100 text-blue-800",
   ON_LEAVE: "bg-purple-100 text-purple-800",
+  ON_MISSION: "bg-cyan-100 text-cyan-800",
 };
 
 function minutesToHours(minutes: number) {
@@ -92,7 +93,7 @@ function DailyReport({ departments }: { departments: any[] }) {
               <CardContent className="pt-4 text-center">
                 <div className="text-2xl font-bold">{count as number}</div>
                 <Badge className={statusColors[status] || ""} variant="outline">
-                  {t(`attendance.statuses.${status}`)}
+                  {t(`attendance.statuses.${status.toLowerCase()}`)}
                 </Badge>
               </CardContent>
             </Card>
@@ -141,7 +142,7 @@ function DailyReport({ departments }: { departments: any[] }) {
                   <TableCell>{rec.lateMinutes ?? 0} د</TableCell>
                   <TableCell>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[rec.status] || ""}`}>
-                      {t(`attendance.statuses.${rec.status}`)}
+                      {t(`attendance.statuses.${rec.status.toLowerCase()}`)}
                     </span>
                   </TableCell>
                 </TableRow>

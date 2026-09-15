@@ -28,6 +28,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   EARLY_LEAVE:   { label: "خروج مبكر",    color: "bg-orange-100 text-orange-800" },
   HALF_DAY:      { label: "نصف يوم",      color: "bg-blue-100 text-blue-800" },
   ON_LEAVE:      { label: "إجازة",         color: "bg-purple-100 text-purple-800" },
+  ON_MISSION:    { label: "في مهمة عمل",   color: "bg-cyan-100 text-cyan-800" },
   PARTIAL_LEAVE: { label: "إجازة ساعية",  color: "bg-indigo-100 text-indigo-800" },
   WEEKEND:       { label: "إجازة أسبوعية", color: "bg-gray-100 text-gray-500" },
   HOLIDAY:       { label: "عطلة رسمية",   color: "bg-teal-100 text-teal-800" },
