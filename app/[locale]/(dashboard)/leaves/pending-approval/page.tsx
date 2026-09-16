@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatClockTime } from "@/lib/utils/date";
+import { formatClockTime, formatHoursAr } from "@/lib/utils/date";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
@@ -642,6 +642,25 @@ export default function PendingApprovalPage() {
                         {format(new Date(selectedRequest.endDate), "PPP", { locale: ar })}
                       </p>
                     </div>
+                    {selectedRequest.isHourlyLeave && (
+                      <>
+                        <div>
+                          <label className="text-sm text-muted-foreground">وقت الإجازة</label>
+                          <p className="font-medium">
+                            {/* Auto-generated tardiness/early-leave records carry no clock times. */}
+                            {selectedRequest.startTime && selectedRequest.endTime
+                              ? `من ${formatClockTime(selectedRequest.startTime)} إلى ${formatClockTime(selectedRequest.endTime)}`
+                              : "—"}
+                          </p>
+                        </div>
+                        {selectedRequest.durationHours != null && (
+                          <div>
+                            <label className="text-sm text-muted-foreground">المدة</label>
+                            <p className="font-medium">{formatHoursAr(selectedRequest.durationHours)}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
                     <div>
                       <label className="text-sm text-muted-foreground">عدد الأيام</label>
                       <p className="font-medium">

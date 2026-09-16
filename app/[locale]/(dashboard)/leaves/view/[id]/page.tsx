@@ -36,17 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { formatClockTime } from "@/lib/utils/date";
-
-// 1.0833 → "ساعة و 5 دقائق"
-function formatHours(hours: number): string {
-  const total = Math.round(hours * 60);
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  const hPart = h === 0 ? "" : h === 1 ? "ساعة" : h === 2 ? "ساعتان" : `${h} ساعات`;
-  const mPart = m === 0 ? "" : `${m} دقيقة`;
-  return [hPart, mPart].filter(Boolean).join(" و ") || "0 دقيقة";
-}
+import { formatClockTime, formatHoursAr } from "@/lib/utils/date";
 
 export default function ViewLeaveRequestPage() {
   const t = useTranslations();
@@ -221,7 +211,7 @@ export default function ViewLeaveRequestPage() {
                 {request.durationHours != null && (
                   <div className="space-y-2">
                     <Label>المدة</Label>
-                    <div className="text-sm">{formatHours(request.durationHours)}</div>
+                    <div className="text-sm">{formatHoursAr(request.durationHours)}</div>
                   </div>
                 )}
               </>

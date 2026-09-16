@@ -64,3 +64,13 @@ export function formatDuration(minutes?: number | null): string {
   const m = minutes % 60;
   return `${h}:${m.toString().padStart(2, "0")}`;
 }
+
+/** Decimal hours as Arabic words: 1.0833 → "ساعة و 5 دقيقة". */
+export function formatHoursAr(hours: number): string {
+  const total = Math.round(hours * 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const hPart = h === 0 ? "" : h === 1 ? "ساعة" : h === 2 ? "ساعتان" : `${h} ساعات`;
+  const mPart = m === 0 ? "" : `${m} دقيقة`;
+  return [hPart, mPart].filter(Boolean).join(" و ") || "0 دقيقة";
+}
