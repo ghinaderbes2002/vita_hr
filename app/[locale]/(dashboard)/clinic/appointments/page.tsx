@@ -828,10 +828,10 @@ export default function AppointmentsPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0">
                 <Label>{t("form.appointmentType")}</Label>
                 <Select value={newForm.appointmentType} onValueChange={(v) => setNewForm((f) => ({ ...f, appointmentType: v as AppointmentType }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full min-w-0 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {allowedTypes.map((k) => (
                       <SelectItem key={k} value={k}>{t(`types.${k}`)}</SelectItem>
@@ -839,7 +839,7 @@ export default function AppointmentsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0">
                 <Label>{t("form.department")}</Label>
                 <Select
                   value={newForm.departmentId}
@@ -852,7 +852,8 @@ export default function AppointmentsPage() {
                     };
                   })}
                 >
-                  <SelectTrigger><SelectValue placeholder={t("form.departmentPlaceholder")} /></SelectTrigger>
+                  {/* A long department name must truncate, not widen the dialog. */}
+                  <SelectTrigger className="w-full min-w-0 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate"><SelectValue placeholder={t("form.departmentPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {clinicDepartments.map((dep) => (
                       <SelectItem key={dep.id} value={dep.id}>
