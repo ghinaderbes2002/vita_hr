@@ -173,7 +173,11 @@ export default function AppointmentsPage() {
   const to = toISO(lastDay);
 
   const { data: calendarAppts = [], isLoading: calLoading } = useClinicCalendar(from, to);
+  // Scoped to the selected day on the server: unscoped, the 500 cap was filled
+  // by other days and the board silently dropped appointments once the clinic
+  // had more than that in total.
   const { data: dayData, isLoading: dayLoading } = useClinicAppointments({
+    date: selectedDate,
     limit: 500,
     status: statusFilter !== "ALL" ? statusFilter : undefined,
     departmentId: departmentFilter !== "ALL" ? departmentFilter : undefined,
@@ -940,7 +944,7 @@ export default function AppointmentsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewApptOpen(false)}>{t("form.cancel")}</Button>
-            <Button onClick={handleCreateAppt} disabled={(!newForm.patientId && !unregisteredName.trim()) || !(myEmployee as any)?.userId || createAppt.isPending}>
+            <Button onClick={handleCreateAppt} disabled={(!newForm.patientId && !unregisteredName.trim()) || !newForm.departmentId || !(myEmployee as any)?.userId || createAppt.isPending}>
               {createAppt.isPending ? t("form.saving") : t("form.create")}
             </Button>
           </DialogFooter>
