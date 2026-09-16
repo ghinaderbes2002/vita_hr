@@ -36,6 +36,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { formatClockTime } from "@/lib/utils/date";
+
+// 1.0833 → "ساعة و 5 دقائق"
+function formatHours(hours: number): string {
+  const total = Math.round(hours * 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const hPart = h === 0 ? "" : h === 1 ? "ساعة" : h === 2 ? "ساعتان" : `${h} ساعات`;
+  const mPart = m === 0 ? "" : `${m} دقيقة`;
+  return [hPart, mPart].filter(Boolean).join(" و ") || "0 دقيقة";
+}
 
 export default function ViewLeaveRequestPage() {
   const t = useTranslations();
@@ -195,6 +206,26 @@ export default function ViewLeaveRequestPage() {
                 {format(new Date(request.endDate), "PPP", { locale: ar })}
               </div>
             </div>
+
+            {request.isHourlyLeave && (
+              <>
+                <div className="space-y-2">
+                  <Label>وقت الإجازة</Label>
+                  <div className="text-sm">
+                    {/* Auto-generated tardiness/early-leave records carry no clock times. */}
+                    {request.startTime && request.endTime
+                      ? `من ${formatClockTime(request.startTime)} إلى ${formatClockTime(request.endTime)}`
+                      : "—"}
+                  </div>
+                </div>
+                {request.durationHours != null && (
+                  <div className="space-y-2">
+                    <Label>المدة</Label>
+                    <div className="text-sm">{formatHours(request.durationHours)}</div>
+                  </div>
+                )}
+              </>
+            )}
 
             <div className="space-y-2">
               <Label>عدد الأيام</Label>
