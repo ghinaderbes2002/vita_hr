@@ -5220,7 +5220,7 @@
         "specialistTherapist": "Specialist Therapist",
         "specialistTherapistPlaceholder": "Select specialist therapist... (optional)",
         "department": "Department",
-        "departmentPlaceholder": "Select department... (optional)",
+        "departmentPlaceholder": "Select department...",
         "date": "Date",
         "startTime": "Start Time",
         "endTime": "End Time",
