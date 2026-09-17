@@ -146,6 +146,65 @@ export interface AttendanceBreak {
   isAuthorized?: boolean;
 }
 
+export type DeductionOutcome = "NO_DEDUCTION" | "WITH_DEDUCTION" | "PENDING";
+
+export interface DayJustification {
+  alertType: string;
+  status: string;
+  deductionOutcome: DeductionOutcome;
+  reason?: string | null;
+  managerReviewedAt?: string | null;
+  hrReviewedAt?: string | null;
+}
+
+export interface AutoHourlyLeaveUsage {
+  type: "LATE_COMPENSATION" | "EARLY_LEAVE_COMPENSATION" | string;
+  minutes: number;
+  status: string;
+}
+
+export interface ManualHourlyLeave {
+  id: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  durationHours?: number | null;
+  status: string;
+  reason?: string | null;
+  typeName?: string | null;
+}
+
+export interface DayBusinessMission {
+  id: string;
+  status: string;
+  missionType?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+export interface DayUnapprovedLeave {
+  id: string;
+  status: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  typeName?: string | null;
+}
+
+export interface DayDetails {
+  date: string;
+  clockInTime?: string | null;
+  clockOutTime?: string | null;
+  status: string;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  /** Set when an approved half-day leave covers this date; names the half that was off. */
+  halfDayLeavePeriod?: "MORNING" | "AFTERNOON" | null;
+  justifications: DayJustification[];
+  autoHourlyLeaveUsage: AutoHourlyLeaveUsage[];
+  manualHourlyLeave: ManualHourlyLeave[];
+  businessMission: DayBusinessMission[];
+  absenceWithUnapprovedLeave: DayUnapprovedLeave[];
+}
+
 export const attendanceRecordsApi = {
   checkIn: async (data: CheckInData): Promise<AttendanceRecord> => {
     const response = await apiClient.post("/attendance-records/check-in", data);
@@ -189,6 +248,22 @@ return response.data;
   getBreaks: async (id: string): Promise<AttendanceBreak[]> => {
     const response = await apiClient.get(`/attendance-records/${id}/breaks`);
     return response.data?.data || response.data || [];
+  },
+
+  // Read-only summary of everything that explains one day: justifications,
+  // hourly leave (auto and requested), missions, and an absence whose leave
+  // request has not been approved yet.
+  getDayDetails: async (recordId: string): Promise<DayDetails> => {
+    const response = await apiClient.get(`/attendance-records/${recordId}/day-details`);
+    const d = response.data?.data ?? response.data;
+    return {
+      ...d,
+      justifications: Array.isArray(d?.justifications) ? d.justifications : [],
+      autoHourlyLeaveUsage: Array.isArray(d?.autoHourlyLeaveUsage) ? d.autoHourlyLeaveUsage : [],
+      manualHourlyLeave: Array.isArray(d?.manualHourlyLeave) ? d.manualHourlyLeave : [],
+      businessMission: Array.isArray(d?.businessMission) ? d.businessMission : [],
+      absenceWithUnapprovedLeave: Array.isArray(d?.absenceWithUnapprovedLeave) ? d.absenceWithUnapprovedLeave : [],
+    } as DayDetails;
   },
 
   getRawStamps: async (recordId: string): Promise<RawStamp[]> => {

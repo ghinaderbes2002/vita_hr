@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Search, Calendar, Plus, Filter, AlertTriangle, Fingerprint } from "lucide-react";
+import { Search, Calendar, Plus, Filter, AlertTriangle, Fingerprint, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,6 +43,7 @@ import { formatTime, formatDate } from "@/lib/utils/date";
 import { Badge } from "@/components/ui/badge";
 import { BreaksDrawer } from "@/components/features/attendance/breaks-drawer";
 import { RawStampsDrawer } from "@/components/features/attendance/raw-stamps-drawer";
+import { DayDetailsDrawer } from "@/components/features/attendance/day-details-drawer";
 
 const PUNCH_STATUS_CLASSES: Record<string, string> = {
   NEEDS_REVIEW: "bg-amber-50 text-amber-700 border-amber-300",
@@ -64,6 +65,7 @@ export default function AttendanceRecordsPage() {
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [breaksDrawerOpen, setBreaksDrawerOpen] = useState(false);
   const [stampsRecordId, setStampsRecordId] = useState<string | null>(null);
+  const [dayDetailsRecordId, setDayDetailsRecordId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -372,6 +374,15 @@ export default function AttendanceRecordsPage() {
                       >
                         <Fingerprint className="h-3.5 w-3.5" />
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        title="تفاصيل اليوم"
+                        onClick={() => setDayDetailsRecordId(record.id)}
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -403,6 +414,14 @@ export default function AttendanceRecordsPage() {
           recordId={stampsRecordId}
           open={!!stampsRecordId}
           onClose={() => setStampsRecordId(null)}
+        />
+      )}
+
+      {dayDetailsRecordId && (
+        <DayDetailsDrawer
+          recordId={dayDetailsRecordId}
+          open={!!dayDetailsRecordId}
+          onClose={() => setDayDetailsRecordId(null)}
         />
       )}
 

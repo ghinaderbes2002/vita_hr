@@ -207,3 +207,11 @@ export function useNeedsReview(params?: NeedsReviewQueryParams) {
     queryFn: () => attendanceRecordsApi.getNeedsReview(params),
   });
 }
+
+export function useAttendanceDayDetails(recordId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["attendance-records", recordId, "day-details"],
+    queryFn: () => attendanceRecordsApi.getDayDetails(recordId),
+    enabled: !!recordId && enabled,
+  });
+}

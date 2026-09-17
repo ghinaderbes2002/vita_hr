@@ -453,10 +453,14 @@ export const clinicProstheticsApi = {
   list: async (params?: ProstheticsCaseListParams) => {
     const { data } = await apiClient.get("/prosthetics/cases", { params });
     const d = data?.data ?? data;
+    const total = d?.total ?? 0;
+    // The API answers with total/page/limit but no totalPages, which left the
+    // pager hidden however many cases there were.
+    const limit = d?.limit ?? params?.limit;
     return {
       items: d?.items ?? d?.data ?? (Array.isArray(d) ? d : []) as ProstheticsCase[],
-      total: d?.total ?? 0,
-      totalPages: d?.totalPages ?? 0,
+      total,
+      totalPages: d?.totalPages ?? (limit ? Math.ceil(total / limit) : 0),
     };
   },
 
