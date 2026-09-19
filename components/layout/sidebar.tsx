@@ -87,6 +87,8 @@ interface NavItem {
   requiredRoles?: string[];
   /** للأدمن فقط — يتقدّم على كل الصلاحيات والأدوار */
   adminOnly?: boolean;
+  /** يُخفى عن الأدمن — لبند يظهر للأدمن من مكان آخر */
+  hiddenForAdmin?: boolean;
   children?: NavItem[];
 }
 
@@ -302,20 +304,30 @@ const navigation: NavItem[] = [
       { title: "nav.clinicSalesOverview", href: "/clinic/referrals/sales", icon: Trophy, permission: "clinic.referrals.view" },
     ],
   },
+  // محادثات المرضى لغير الأدمن: بند مستقل بدل فتح قسم التطبيق كله، والأدمن
+  // يصل إليها من داخل القسم نفسه.
+  {
+    title: "nav.patientChats",
+    href: "/patient-app/chat",
+    icon: MessageSquare,
+    permission: "clinic.patient_app.chat.use",
+    hiddenForAdmin: true,
+    separator: true,
+  },
   {
     title: "nav.patientApp",
     icon: Smartphone,
     separator: true,
-    // مؤقتاً للأدمن فقط ريثما يُعتمد التطبيق. عند فتحه للجميع يكفي حذف السطر
-    // (وحذف app/[locale]/(dashboard)/patient-app/layout.tsx)، فيظهر القسم إذا
-    // ظهر أي تبويب بداخله — ومنها التقييمات المحصورة بدور لا بصلاحية.
+    // مؤقتاً للأدمن فقط ريثما يُعتمد التطبيق. المحادثات وحدها مفتوحة، وتظهر
+    // لغير الأدمن كبند مستقل (nav.patientChats) خارج هذا القسم. عند فتح القسم
+    // كله يكفي حذف السطر (وحذف app/[locale]/(dashboard)/patient-app/layout.tsx).
     adminOnly: true,
     children: [
-      { title: "nav.patientAppAccounts", href: "/patient-app/accounts", icon: KeyRound, permission: "MANAGE_PATIENT_APP_ACCOUNT" },
-      { title: "nav.patientAppTaxonomy", href: "/patient-app/taxonomy", icon: Tags, permission: "MANAGE_TAXONOMY" },
-      { title: "nav.patientAppExercises", href: "/patient-app/exercises", icon: Dumbbell, permission: "MANAGE_EXERCISE_LIBRARY" },
-      { title: "nav.patientAppPrograms", href: "/patient-app/programs", icon: ClipboardList, permissions: ["ASSIGN_EXERCISE", "EDIT_ASSIGNED_EXERCISE", "CANCEL_ASSIGNED_EXERCISE", "VIEW_PATIENT_EXECUTIONS"] },
-      { title: "nav.patientAppChat", href: "/patient-app/chat", icon: MessageSquare, permissions: ["CHAT_USE", "clinic.patient_app.chat.use"] },
+      { title: "nav.patientAppAccounts", href: "/patient-app/accounts", icon: KeyRound, permission: "clinic.patient_app.account.manage" },
+      { title: "nav.patientAppTaxonomy", href: "/patient-app/taxonomy", icon: Tags, permission: "clinic.patient_app.taxonomy.manage" },
+      { title: "nav.patientAppExercises", href: "/patient-app/exercises", icon: Dumbbell, permission: "clinic.patient_app.exercise_library.manage" },
+      { title: "nav.patientAppPrograms", href: "/patient-app/programs", icon: ClipboardList, permissions: ["clinic.patient_app.assignment.create", "clinic.patient_app.assignment.edit", "clinic.patient_app.assignment.cancel", "clinic.patient_app.execution.view"] },
+      { title: "nav.patientAppChat", href: "/patient-app/chat", icon: MessageSquare, permission: "clinic.patient_app.chat.use" },
       { title: "nav.patientAppRatings", href: "/patient-app/ratings", icon: Star, requiredRoles: ["clinic_physio_dept_head", "رئيس قسم العلاج الفيزيائي"] },
     ],
   },
@@ -483,6 +495,7 @@ export function Sidebar() {
     // الإخفاء بالمسمى الوظيفي يتقدّم على كل شيء — الصلاحيات و showForRoles
     if (isHiddenByJobTitle(item)) return false;
     if (item.adminOnly && !isAdmin()) return false;
+    if (item.hiddenForAdmin && isAdmin()) return false;
     // المحصور بأدوار لا تفتحه أي صلاحية
     if (item.requiredRoles && !isAdmin() && !item.requiredRoles.some((role) => hasRole(role))) return false;
     // إذا العنصر مجبر على الظهور لدور معين، نظهره — حتى لو المستخدم عنده كمان

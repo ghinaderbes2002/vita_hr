@@ -42,7 +42,7 @@ export default function PatientAppChatPage() {
   const active = conversations.find((c) => c.id === activeId) ?? null;
 
   return (
-    <PageGuard permissions={[PERMISSIONS.PATIENT_APP.CHAT_USE, PERMISSIONS.PATIENT_APP.CHAT_USE_CODE]}>
+    <PageGuard permission={PERMISSIONS.PATIENT_APP.CHAT_USE}>
       <div className="space-y-4">
         <PageHeader title={t("title")} description={t("description")} />
 

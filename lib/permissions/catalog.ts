@@ -309,16 +309,15 @@ export const PERMISSIONS = {
    * تقييمات المعالجين لا صلاحية لها — محصورة بدور clinic_physio_dept_head.
    */
   PATIENT_APP: {
-    MANAGE_ACCOUNT:           "MANAGE_PATIENT_APP_ACCOUNT",
-    MANAGE_TAXONOMY:          "MANAGE_TAXONOMY",
-    MANAGE_EXERCISE_LIBRARY:  "MANAGE_EXERCISE_LIBRARY",
-    ASSIGN_EXERCISE:          "ASSIGN_EXERCISE",
-    EDIT_ASSIGNED_EXERCISE:   "EDIT_ASSIGNED_EXERCISE",
-    CANCEL_ASSIGNED_EXERCISE: "CANCEL_ASSIGNED_EXERCISE",
-    VIEW_PATIENT_EXECUTIONS:  "VIEW_PATIENT_EXECUTIONS",
-    CHAT_USE:                 "CHAT_USE",
-    /** نفس الصلاحية بالتسمية المنقّطة التي يرسلها الباك للمحادثات. */
-    CHAT_USE_CODE:            "clinic.patient_app.chat.use",
+    MANAGE_ACCOUNT:           "clinic.patient_app.account.manage",
+    MANAGE_TAXONOMY:          "clinic.patient_app.taxonomy.manage",
+    MANAGE_EXERCISE_LIBRARY:  "clinic.patient_app.exercise_library.manage",
+    ASSIGN_EXERCISE:          "clinic.patient_app.assignment.create",
+    EDIT_ASSIGNED_EXERCISE:   "clinic.patient_app.assignment.edit",
+    CANCEL_ASSIGNED_EXERCISE: "clinic.patient_app.assignment.cancel",
+    VIEW_PATIENT_EXECUTIONS:  "clinic.patient_app.execution.view",
+    CHAT_USE:                 "clinic.patient_app.chat.use",
+    VIEW_RATINGS:             "clinic.patient_app.ratings.view",
   },
 
   AUDIT: {
