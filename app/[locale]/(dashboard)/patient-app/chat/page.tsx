@@ -14,8 +14,6 @@ import { PatientName } from "@/components/patient-app/patient-picker";
 import { cn } from "@/lib/utils";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useMyEmployee } from "@/lib/hooks/use-employees";
-import { isPhysioDepartment } from "@/lib/clinic/departments";
 import {
   PATIENT_APP_CHAT_KEY, useChatConversations, useSendChatMessage,
 } from "@/lib/hooks/use-patient-app";
@@ -35,14 +33,11 @@ const lastActivity = (c: ChatConversation) =>
 export default function PatientAppChatPage() {
   const t = useTranslations("patientApp.chat");
   const [activeId, setActiveId] = useState<string | null>(null);
-  // Conversations belong to the physiotherapist responsible for the patient, so
-  // the screen is theirs alone — anyone else (an admin included) gets the note
-  // instead, and no request is sent.
+  // Conversations belong to the therapist responsible for the patient, so an
+  // admin has none — the request is skipped rather than answered empty.
   const { isAdmin } = usePermissions();
-  const { data: myEmployee, isLoading: employeeLoading } = useMyEmployee();
-  const inPhysioDept = isPhysioDepartment((myEmployee as any)?.department);
-  const adminView = !employeeLoading && !inPhysioDept;
-  const { data = [], isLoading } = useChatConversations(inPhysioDept);
+  const adminView = isAdmin();
+  const { data = [], isLoading } = useChatConversations(!adminView);
   const conversations = [...data].sort((a, b) => lastActivity(b).localeCompare(lastActivity(a)));
   const active = conversations.find((c) => c.id === activeId) ?? null;
 
