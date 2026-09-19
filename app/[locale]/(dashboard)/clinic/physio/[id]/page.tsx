@@ -41,6 +41,14 @@ import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { BodyPainMap } from "@/components/clinic/body-pain-map";
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { ConvertToPhysioDialog } from "@/components/clinic/convert-to-physio-dialog";
+import {
+  SessionExerciseFields, SessionAssignments, emptySessionExerciseForm, sessionExerciseDto,
+  formFromAssignment, assignmentUpdateDto,
+  type SessionExerciseForm,
+} from "@/components/patient-app/session-exercise-fields";
+import { useAssignExercise, useSessionExercises, useUpdateAssignment } from "@/lib/hooks/use-patient-app";
+import { localizedName, type Assignment } from "@/lib/api/patient-app";
+import { PatientSessionsProgress } from "@/components/patient-app/patient-sessions-progress";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -223,7 +231,7 @@ const PHYSIO_GOALS: PhysioGoal[] = PHYSIO_GOAL_VALUES;
 // The two nested form tab groups, in the order the therapist fills them in. Each
 // "save and next" button walks to the following visible tab of its own group.
 const INTAKE_SUB_TABS = ["complaint", "pain_map", "medical_history"];
-const PHYSIO_SUB_TABS = ["goals", "postural_assessment", "treatment_plan", "evaluation", "sessions", "summary", "follow_ups"];
+const PHYSIO_SUB_TABS = ["goals", "postural_assessment", "treatment_plan", "evaluation", "sessions", "summary", "follow_ups", "app_progress"];
 
 const TEST_LABELS: Partial<Record<TestType, string>> = {
   MRI: "التصوير بالرنين المغناطيسي / MRI",
@@ -235,11 +243,15 @@ const TEST_LABELS: Partial<Record<TestType, string>> = {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+/** Stable empty list so the assignments effect isn't re-run on every render. */
+const NO_ASSIGNMENTS: Assignment[] = [];
+
 export default function PhysioCasePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("clinic.physio.case");
+  const tProgress = useTranslations("patientApp.progress");
   const physioLabel = usePhysioLabels();
   const isRtl = locale === "ar";
 
@@ -268,6 +280,8 @@ export default function PhysioCasePage() {
     sessions: [PH.SESSIONS_CREATE],
     // A follow-up is a session-shaped record, so it rides the same permission.
     follow_ups: [PH.SESSIONS_CREATE],
+    // Read-only view of what the patient did in the app.
+    app_progress: [PERMISSIONS.PATIENT_APP.VIEW_PATIENT_EXECUTIONS],
     supervisor_review: [PH.SUPERVISOR_REVIEW],
     doctor_review: [PH.SUPERVISOR_REVIEW],
   };
@@ -303,6 +317,15 @@ export default function PhysioCasePage() {
   const doctorRev = useDoctorReview();
   const signPlan = useSignPhysioTreatmentPlan();
   const addSession = useAddPhysioSession();
+  // A physio session is the same record the patient app assigns exercises to,
+  // so both halves of the form are saved one after the other.
+  const assignExercise = useAssignExercise();
+  const [sessionExercise, setSessionExercise] = useState<SessionExerciseForm>(emptySessionExerciseForm);
+  // Editing a session edits its exercises in the same form: one entry per saved
+  // assignment, plus a blank one for adding another.
+  const updateAssignment = useUpdateAssignment();
+  const [editedAssignments, setEditedAssignments] = useState<Record<string, SessionExerciseForm>>({});
+  const [editingNewExercise, setEditingNewExercise] = useState<SessionExerciseForm>(emptySessionExerciseForm);
   const deleteSession = useDeletePhysioSession();
   const updateSessionMut = useUpdatePhysioSession();
   const submitFinalSummary = useSubmitFinalSummary();
@@ -573,6 +596,17 @@ export default function PhysioCasePage() {
     modalities: [] as TherapyModality[],
   });
   const [editingSession, setEditingSession] = useState<{ id: string; sessionDate: string; sessionTime: string; notes: string; supervisorOpinion: string; doctorDecision: string; modalities: TherapyModality[] } | null>(null);
+  // `data` keeps its identity between renders; a `= []` default would be a new
+  // array every render and the effect below would loop forever.
+  const { data: loadedAssignments } = useSessionExercises(editingSession?.id ?? null);
+  const editingSessionAssignments = loadedAssignments ?? NO_ASSIGNMENTS;
+  useEffect(() => {
+    setEditedAssignments(
+      loadedAssignments
+        ? Object.fromEntries(loadedAssignments.map((a) => [a.id, formFromAssignment(a)]))
+        : {},
+    );
+  }, [loadedAssignments]);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -727,8 +761,9 @@ export default function PhysioCasePage() {
       }
     }
 
-    // Goals
-    const g = caseData.goals;
+    // Goals — the case payload calls this section `treatmentGoals`; `goals` is
+    // kept as a fallback in case the API ever answers with the shorter name.
+    const g = caseData.treatmentGoals ?? caseData.goals;
     if (g) {
       if (g.goals?.length) setGoals(g.goals);
       setGoalsExtra({
@@ -1206,7 +1241,7 @@ export default function PhysioCasePage() {
   const handleAddSession = async () => {
     if (!sessionForm.date) return;
     try {
-      await addSession.mutateAsync({
+      const created = await addSession.mutateAsync({
         id,
         dto: {
           sessionDate: sessionForm.date,
@@ -1217,7 +1252,20 @@ export default function PhysioCasePage() {
           modalities: sessionForm.modalities.length ? sessionForm.modalities : undefined,
         },
       });
+      // The exercise half is optional, and its failure must not read as the
+      // session having failed — that one is already saved by this point.
+      if (sessionExercise.exerciseId && created?.id) {
+        try {
+          await assignExercise.mutateAsync({
+            sessionId: created.id,
+            dto: sessionExerciseDto(sessionExercise),
+          });
+        } catch {
+          // the assign hook already explained itself in a toast
+        }
+      }
       setSessionForm({ date: new Date().toISOString().slice(0, 10), sessionTime: "", notes: "", supervisorOpinion: "", doctorDecision: "", modalities: [] });
+      setSessionExercise(emptySessionExerciseForm);
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message ?? err?.response?.data?.message;
       toast.error(msg || t("sessions.addError"));
@@ -1226,9 +1274,10 @@ export default function PhysioCasePage() {
 
   const handleUpdateSession = async () => {
     if (!editingSession) return;
+    const sessionId = editingSession.id;
     await updateSessionMut.mutateAsync({
       id,
-      sessionId: editingSession.id,
+      sessionId,
       dto: {
         sessionDate: editingSession.sessionDate || undefined,
         sessionTime: editingSession.sessionTime || undefined,
@@ -1238,6 +1287,31 @@ export default function PhysioCasePage() {
         modalities: editingSession.modalities.length ? editingSession.modalities : undefined,
       },
     });
+    // Only the assignments actually touched are sent, so saving the session
+    // alone doesn't fire a request (and a toast) per exercise.
+    for (const saved of editingSessionAssignments) {
+      const edited = editedAssignments[saved.id];
+      if (!edited) continue;
+      const before = JSON.stringify(assignmentUpdateDto(formFromAssignment(saved)));
+      const after = JSON.stringify(assignmentUpdateDto(edited));
+      if (before === after) continue;
+      try {
+        await updateAssignment.mutateAsync({ id: saved.id, dto: assignmentUpdateDto(edited) });
+      } catch {
+        // the hook already reported it; the session edit itself is saved
+      }
+    }
+    if (editingNewExercise.exerciseId) {
+      try {
+        await assignExercise.mutateAsync({
+          sessionId,
+          dto: sessionExerciseDto(editingNewExercise),
+        });
+      } catch {
+        // same here — reported by the hook
+      }
+    }
+    setEditingNewExercise(emptySessionExerciseForm);
     setEditingSession(null);
   };
 
@@ -2555,6 +2629,7 @@ export default function PhysioCasePage() {
               {showPhysioTab("sessions") && <TabsTrigger value="sessions" className="text-sm py-1.5">{`${t("tabs.sessions")} (${sessions.length})`}</TabsTrigger>}
               {showPhysioTab("summary") && <TabsTrigger value="summary" className="text-sm py-1.5">{t("tabs.summary")}</TabsTrigger>}
               {showPhysioTab("follow_ups") && <TabsTrigger value="follow_ups" className="text-sm py-1.5">{t("tabs.followUps")}</TabsTrigger>}
+              {showPhysioTab("app_progress") && <TabsTrigger value="app_progress" className="text-sm py-1.5">{tProgress("tab")}</TabsTrigger>}
             </TabsList>
 
         {/* ── GOALS ─────────────────────────────────────────────────────── */}
@@ -3466,9 +3541,16 @@ export default function PhysioCasePage() {
                     <Textarea rows={2} value={sessionForm.doctorDecision} onChange={(e) => { setSessionForm((f) => ({ ...f, doctorDecision: e.target.value })); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }} className="resize-none overflow-hidden" placeholder={t("sessions.doctorDecisionPlaceholder")} />
                   </div>
                 </div>
+                <div className="mt-4 border-t pt-4">
+                  <SessionExerciseFields
+                    value={sessionExercise}
+                    onChange={setSessionExercise}
+                    disabled={addSession.isPending || assignExercise.isPending}
+                  />
+                </div>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <Button onClick={handleAddSession} disabled={!sessionForm.date || addSession.isPending} className="flex-1 gap-2">
-                    {addSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  <Button onClick={handleAddSession} disabled={!sessionForm.date || addSession.isPending || assignExercise.isPending} className="flex-1 gap-2">
+                    {addSession.isPending || assignExercise.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     {t("sessions.addSession")}
                   </Button>
                   <Button variant="outline" onClick={() => tryAdvanceStatus("ACTIVE_TREATMENT", "SUPERVISOR_REVIEW")} disabled={sessions.length === 0}>
@@ -3511,12 +3593,31 @@ export default function PhysioCasePage() {
                             <Textarea rows={2} value={editingSession.doctorDecision} onChange={(e) => setEditingSession((v) => v && { ...v, doctorDecision: e.target.value })} placeholder={t("sessions.doctorDecisionPlaceholder")} />
                           </div>
                         </div>
+                        {/* The session's exercises are part of this same form —
+                            one save button covers the session and them. */}
+                        {editingSessionAssignments.map((a) => (
+                          <div key={a.id} className="border-t pt-3">
+                            <SessionExerciseFields
+                              value={editedAssignments[a.id] ?? formFromAssignment(a)}
+                              onChange={(next) => setEditedAssignments((m) => ({ ...m, [a.id]: next }))}
+                              disabled={updateSessionMut.isPending || updateAssignment.isPending}
+                              lockedExerciseName={a.exercise ? localizedName(a.exercise, locale) : ""}
+                            />
+                          </div>
+                        ))}
+                        <div className="border-t pt-3">
+                          <SessionExerciseFields
+                            value={editingNewExercise}
+                            onChange={setEditingNewExercise}
+                            disabled={updateSessionMut.isPending || assignExercise.isPending}
+                          />
+                        </div>
                         <div className="flex flex-wrap gap-2">
-                          <Button size="sm" onClick={handleUpdateSession} disabled={updateSessionMut.isPending} className="gap-1">
-                            {updateSessionMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          <Button size="sm" onClick={handleUpdateSession} disabled={updateSessionMut.isPending || updateAssignment.isPending || assignExercise.isPending} className="gap-1">
+                            {updateSessionMut.isPending || updateAssignment.isPending || assignExercise.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                             {t("sessions.save")}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setEditingSession(null)}>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingSession(null); setEditingNewExercise(emptySessionExerciseForm); }}>
                             {t("sessions.cancel")}
                           </Button>
                         </div>
@@ -3572,6 +3673,10 @@ export default function PhysioCasePage() {
                         </div>
                       </>
                     )}
+                    {/* Exercises assigned to this session, from the patient app.
+                        Outside the edit/read branches so they stay visible while
+                        the session itself is being edited. */}
+                    <SessionAssignments sessionId={s.id} />
                   </div>
                 ))}
               </div>
@@ -3597,6 +3702,13 @@ export default function PhysioCasePage() {
         <TabsContent value="follow_ups" className="mt-4">
           <Section title={t("tabs.followUps")}>
             <PhysioFollowUps caseId={id} canEdit={canEdit} />
+          </Section>
+        </TabsContent>
+
+        {/* ── APP FOLLOW-UP ───────────────────────────────────────────────── */}
+        <TabsContent value="app_progress" className="mt-4">
+          <Section title={tProgress("tab")}>
+            <PatientSessionsProgress erpPatientId={caseData.patientId} />
           </Section>
         </TabsContent>
           </Tabs>

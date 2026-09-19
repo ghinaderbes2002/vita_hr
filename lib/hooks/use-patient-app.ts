@@ -225,12 +225,23 @@ export function useCancelAssignment() {
   });
 }
 
+export function usePatientSessionsProgress(erpPatientId?: string, enabled = true) {
+  return useQuery({
+    queryKey: [KEY, "sessions-progress", erpPatientId],
+    queryFn: () => patientAppApi.sessionsProgress(erpPatientId!),
+    enabled: !!erpPatientId && enabled,
+  });
+}
+
 // ── Chat ────────────────────────────────────────────────────
 
-export function useChatConversations() {
+export function useChatConversations(enabled = true) {
   return useQuery({
     queryKey: PATIENT_APP_CHAT_KEY,
     queryFn: () => patientAppApi.chat.conversations(),
+    // The list is the therapist's own patients, so it is not requested for
+    // accounts that are not responsible for any (an admin).
+    enabled,
     // Keeps unread counts moving while the list is on screen; the open thread
     // polls its own messages much faster.
     refetchInterval: 15_000,

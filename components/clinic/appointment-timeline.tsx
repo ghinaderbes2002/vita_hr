@@ -36,11 +36,12 @@ const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
   COMPLETED:   { bar: "#6b7280", cls: "bg-gray-50/90 dark:bg-gray-900/50 text-gray-700 dark:text-gray-200" },
   CANCELLED:   { bar: "#ef4444", cls: "bg-red-50/80 dark:bg-red-950/40 text-red-800/70 dark:text-red-200/70" },
   NO_SHOW:     { bar: "#f97316", cls: "bg-orange-50/90 dark:bg-orange-950/50 text-orange-950 dark:text-orange-100" },
+  LATE:        { bar: "#eab308", cls: "bg-yellow-50/90 dark:bg-yellow-950/50 text-yellow-950 dark:text-yellow-100" },
   RESCHEDULED: { bar: "#a855f7", cls: "bg-purple-50/90 dark:bg-purple-950/50 text-purple-950 dark:text-purple-100" },
 };
 
 // Order shown in the colour legend.
-const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED"];
+const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED", "LATE"];
 
 function toMinutes(v?: string | null): number | null {
   if (!v) return null;

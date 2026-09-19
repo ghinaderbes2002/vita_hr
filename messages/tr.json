@@ -3441,8 +3441,11 @@
         "patient": "Hasta",
         "visitType": "Ziyaret Türü",
         "sessions": "Seanslar",
-        "receptionDate": "Kabul Tarihi"
+        "receptionDate": "Kabul Tarihi",
+        "installStatus": "Takma durumu"
       },
+      "installedBadge": "Takıldı",
+      "notInstalledBadge": "Takılmadı",
       "detail": {
         "back": "Ayak Sağlığı",
         "notFound": "Kabul bulunamadı",
@@ -4287,7 +4290,8 @@
         "COMPLETED": "Tamamlandı",
         "CANCELLED": "İptal Edildi",
         "NO_SHOW": "Gelmedi",
-        "RESCHEDULED": "Yeniden Planlandı"
+        "RESCHEDULED": "Yeniden Planlandı",
+      "LATE": "Geç kaldı"
       },
       "form": {
         "title": "Yeni Randevu",
@@ -4317,6 +4321,7 @@
         "confirm": "Onayla",
         "complete": "Tamamla",
         "noShow": "Gelmedi",
+      "late": "Geç kaldı",
         "cancel": "Randevuyu İptal Et",
         "changeStatus": "Durumu değiştir",
         "rescheduleTitle": "Randevuyu Yeniden Planla",
@@ -4933,7 +4938,12 @@
       "sectionMedia": "Medya",
       "descriptionAr": "Arapça açıklama",
       "descriptionEn": "İngilizce açıklama",
-      "defaultDuration": "Varsayılan süre (saniye)",
+      "defaultDuration": "Süre (sn)",
+      "defaultSets": "Set",
+      "defaultReps": "Tekrar",
+      "defaultHold": "Tutma (sn)",
+      "defaultRest": "Dinlenme (sn)",
+      "defaultsCaption": "Varsayılanlar — egzersiz bir seansa atandığında otomatik önerilir",
       "subTargetRegion": "Alt hedef bölge",
       "goals": "Terapi hedefleri",
       "noGoals": "Henüz tanımlı hedef yok",
@@ -4992,6 +5002,8 @@
       "exercise": "Egzersiz",
       "searchLibrary": "Egzersiz kütüphanesinde arayın...",
       "noExercises": "Egzersiz yok",
+      "assignedExercises": "Atanan egzersizler ({count})",
+      "editAssignment": "Egzersizi düzenle",
       "sets": "Set",
       "reps": "Tekrar",
       "durationSeconds": "Süre (sn)",
@@ -5011,11 +5023,24 @@
       "noExecutionsTitle": "Uygulama geçmişi yok",
       "noExecutionsDescription": "Hastanın uygulamada başlattığı, tamamladığı veya atladığı egzersizler burada görünür"
     },
+    "progress": {
+      "tab": "Uygulama takibi",
+      "empty": "Bu hasta için uygulama seansı yok",
+      "attended": "Katıldı",
+      "noProgramme": "Atanmış egzersiz yok",
+      "allCompleted": "Tüm egzersizler tamamlandı",
+      "ratio": "{total} içinde {done}",
+      "completed": "Tamamlanan {count}",
+      "inProgress": "Devam eden {count}",
+      "skipped": "Atlanan {count}",
+      "notStarted": "Başlamayan {count}"
+    },
     "chat": {
       "title": "Hasta Sohbetleri",
       "description": "Size atanan hastalarla uygulama üzerinden yazışmalar",
       "conversations": "Sohbetler ({count})",
       "empty": "Sohbet yok. Sorumlu terapisti olduğunuz hastaların sohbetleri burada görünür.",
+      "adminNotice": "Sohbetler hastadan sorumlu terapiste aittir, bu yüzden sistem yöneticisi hesabında görünmez.",
       "pick": "Mesajları görmek için bir sohbet seçin",
       "noMessages": "Henüz mesaj yok",
       "placeholder": "Bir mesaj yazın... (yeni satır için Shift+Enter)",

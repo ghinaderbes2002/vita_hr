@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "RESCHEDULED";
+export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "RESCHEDULED" | "LATE";
 export type AppointmentType =
   // Prosthetics & Podiatry
   | "COMPANY_EXAMINATION" | "REFERRAL_EXAMINATION" | "TRIAL_DELIVERY" | "FINAL_DELIVERY"

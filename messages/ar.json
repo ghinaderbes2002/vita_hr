@@ -4488,8 +4488,11 @@
         "patient": "المريض",
         "visitType": "نوع الزيارة",
         "sessions": "الجلسات",
-        "receptionDate": "تاريخ الاستقبال"
+        "receptionDate": "تاريخ الاستقبال",
+        "installStatus": "حالة التركيب"
       },
+      "installedBadge": "رُكّب",
+      "notInstalledBadge": "لم يُركّب",
       "detail": {
         "back": "طب الأقدام",
         "notFound": "لم يُعثر على الاستقبال",
@@ -5363,7 +5366,8 @@
         "COMPLETED": "منجز",
         "CANCELLED": "ملغى",
         "NO_SHOW": "لم يحضر",
-        "RESCHEDULED": "معاد جدولته"
+        "RESCHEDULED": "معاد جدولته",
+      "LATE": "متأخر"
       },
       "form": {
         "title": "موعد جديد",
@@ -5395,6 +5399,7 @@
         "confirm": "تأكيد",
         "complete": "إنجاز",
         "noShow": "لم يحضر",
+      "late": "متأخر",
         "cancel": "إلغاء الموعد",
         "changeStatus": "تغيير الحالة",
         "rescheduleTitle": "إعادة جدولة الموعد",
@@ -6074,7 +6079,12 @@
       "sectionMedia": "الوسائط",
       "descriptionAr": "الوصف بالعربية",
       "descriptionEn": "الوصف بالإنجليزية",
-      "defaultDuration": "المدة الافتراضية (ثانية)",
+      "defaultDuration": "المدة (ثانية)",
+      "defaultSets": "المجموعات",
+      "defaultReps": "التكرارات",
+      "defaultHold": "الثبات (ثانية)",
+      "defaultRest": "الراحة (ثانية)",
+      "defaultsCaption": "القيم الافتراضية — تُقترح تلقائياً عند إسناد التمرين لجلسة",
       "subTargetRegion": "المنطقة الفرعية",
       "goals": "الأهداف العلاجية",
       "noGoals": "لا توجد أهداف معرّفة بعد",
@@ -6133,6 +6143,8 @@
       "exercise": "التمرين",
       "searchLibrary": "ابحث في مكتبة التمارين...",
       "noExercises": "لا توجد تمارين",
+      "assignedExercises": "التمارين المسندة ({count})",
+      "editAssignment": "تعديل التمرين",
       "sets": "المجموعات",
       "reps": "التكرارات",
       "durationSeconds": "المدة (ثانية)",
@@ -6152,11 +6164,24 @@
       "noExecutionsTitle": "لا يوجد سجل تنفيذ",
       "noExecutionsDescription": "يظهر هنا ما يبدؤه المريض أو يكمله أو يتخطاه من التمارين عبر التطبيق"
     },
+    "progress": {
+      "tab": "متابعة المريض في التطبيق",
+      "empty": "لا توجد جلسات في التطبيق لهذا المريض",
+      "attended": "حضر",
+      "noProgramme": "لا توجد تمارين مُسندة",
+      "allCompleted": "أكمل كل التمارين",
+      "ratio": "{done} من {total}",
+      "completed": "مكتمل {count}",
+      "inProgress": "جارٍ {count}",
+      "skipped": "متخطّى {count}",
+      "notStarted": "لم يبدأ {count}"
+    },
     "chat": {
       "title": "محادثات المرضى",
       "description": "رسائل نصية مع المرضى المسندين إليك عبر التطبيق",
       "conversations": "المحادثات ({count})",
       "empty": "لا توجد محادثات. تظهر هنا محادثات المرضى الذين أنت معالجهم المسؤول.",
+      "adminNotice": "المحادثات تخص المعالج المسؤول عن المريض، فلا تظهر لحساب مدير النظام.",
       "pick": "اختر محادثة لعرض الرسائل",
       "noMessages": "لا توجد رسائل بعد",
       "placeholder": "اكتب رسالة... (Shift+Enter لسطر جديد)",

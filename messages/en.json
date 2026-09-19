@@ -4354,8 +4354,11 @@
         "patient": "Patient",
         "visitType": "Visit Type",
         "sessions": "Sessions",
-        "receptionDate": "Reception Date"
+        "receptionDate": "Reception Date",
+        "installStatus": "Fitting status"
       },
+      "installedBadge": "Fitted",
+      "notInstalledBadge": "Not fitted",
       "detail": {
         "back": "Podiatry",
         "notFound": "Reception not found",
@@ -5203,7 +5206,8 @@
         "COMPLETED": "Completed",
         "CANCELLED": "Cancelled",
         "NO_SHOW": "No Show",
-        "RESCHEDULED": "Rescheduled"
+        "RESCHEDULED": "Rescheduled",
+      "LATE": "Late"
       },
       "form": {
         "title": "New Appointment",
@@ -5235,6 +5239,7 @@
         "confirm": "Confirm",
         "complete": "Complete",
         "noShow": "No Show",
+      "late": "Late",
         "cancel": "Cancel Appointment",
         "changeStatus": "Change status",
         "rescheduleTitle": "Reschedule Appointment",
@@ -5850,7 +5855,12 @@
       "sectionMedia": "Media",
       "descriptionAr": "Arabic description",
       "descriptionEn": "English description",
-      "defaultDuration": "Default duration (seconds)",
+      "defaultDuration": "Duration (sec)",
+      "defaultSets": "Sets",
+      "defaultReps": "Reps",
+      "defaultHold": "Hold (sec)",
+      "defaultRest": "Rest (sec)",
+      "defaultsCaption": "Defaults — suggested automatically when the exercise is assigned to a session",
       "subTargetRegion": "Sub-target region",
       "goals": "Therapy goals",
       "noGoals": "No goals defined yet",
@@ -5909,6 +5919,8 @@
       "exercise": "Exercise",
       "searchLibrary": "Search the exercise library...",
       "noExercises": "No exercises",
+      "assignedExercises": "Assigned exercises ({count})",
+      "editAssignment": "Edit exercise",
       "sets": "Sets",
       "reps": "Reps",
       "durationSeconds": "Duration (s)",
@@ -5928,11 +5940,24 @@
       "noExecutionsTitle": "No execution history",
       "noExecutionsDescription": "Exercises the patient starts, completes or skips in the app appear here"
     },
+    "progress": {
+      "tab": "App follow-up",
+      "empty": "No app sessions for this patient",
+      "attended": "Attended",
+      "noProgramme": "No exercises assigned",
+      "allCompleted": "All exercises completed",
+      "ratio": "{done} of {total}",
+      "completed": "Completed {count}",
+      "inProgress": "In progress {count}",
+      "skipped": "Skipped {count}",
+      "notStarted": "Not started {count}"
+    },
     "chat": {
       "title": "Patient Chats",
       "description": "Text messages with the patients assigned to you, through the app",
       "conversations": "Conversations ({count})",
       "empty": "No conversations. Chats with patients you are the responsible therapist for appear here.",
+      "adminNotice": "Conversations belong to the therapist responsible for the patient, so none are shown for a system administrator account.",
       "pick": "Choose a conversation to see its messages",
       "noMessages": "No messages yet",
       "placeholder": "Write a message... (Shift+Enter for a new line)",

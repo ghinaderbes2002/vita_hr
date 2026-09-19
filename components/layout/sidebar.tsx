@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { isPhysioDepartment } from "@/lib/clinic/departments";
 import {
   LayoutDashboard,
   ChevronDown,
@@ -85,6 +86,8 @@ interface NavItem {
   hiddenForJobTitleCodes?: string[];
   /** محصور بهذه الأدوار: لا يظهر لغيرها مهما كانت صلاحياته (الأدمن مستثنى) */
   requiredRoles?: string[];
+  /** محصور بقسم العلاج الفيزيائي: لا يظهر لموظف من قسم آخر، ولا لمن بلا قسم */
+  physioDepartmentOnly?: boolean;
   /** للأدمن فقط — يتقدّم على كل الصلاحيات والأدوار */
   adminOnly?: boolean;
   children?: NavItem[];
@@ -315,7 +318,8 @@ const navigation: NavItem[] = [
       { title: "nav.patientAppTaxonomy", href: "/patient-app/taxonomy", icon: Tags, permission: "MANAGE_TAXONOMY" },
       { title: "nav.patientAppExercises", href: "/patient-app/exercises", icon: Dumbbell, permission: "MANAGE_EXERCISE_LIBRARY" },
       { title: "nav.patientAppPrograms", href: "/patient-app/programs", icon: ClipboardList, permissions: ["ASSIGN_EXERCISE", "EDIT_ASSIGNED_EXERCISE", "CANCEL_ASSIGNED_EXERCISE", "VIEW_PATIENT_EXECUTIONS"] },
-      { title: "nav.patientAppChat", href: "/patient-app/chat", icon: MessageSquare, permission: "CHAT_USE" },
+      // المحادثات تخص معالجي العلاج الفيزيائي وحدهم.
+      { title: "nav.patientAppChat", href: "/patient-app/chat", icon: MessageSquare, permissions: ["CHAT_USE", "clinic.patient_app.chat.use"], physioDepartmentOnly: true },
       { title: "nav.patientAppRatings", href: "/patient-app/ratings", icon: Star, requiredRoles: ["clinic_physio_dept_head", "رئيس قسم العلاج الفيزيائي"] },
     ],
   },
@@ -352,6 +356,7 @@ export function Sidebar() {
   const authUser = useAuthStore((s) => s.user);
   const { data: currentEmployee } = useMyEmployee();
   const currentJobTitleCode: string = (currentEmployee as any)?.jobTitle?.code ?? "";
+  const inPhysioDepartment = isPhysioDepartment((currentEmployee as any)?.department);
 
   // مستخدم بدون دور — يرى لوحة التحكم فقط
   const userRoles = authUser?.roles ?? [];
@@ -483,6 +488,8 @@ export function Sidebar() {
     // الإخفاء بالمسمى الوظيفي يتقدّم على كل شيء — الصلاحيات و showForRoles
     if (isHiddenByJobTitle(item)) return false;
     if (item.adminOnly && !isAdmin()) return false;
+    // القسم وحده يقرر هنا: العنصر يخص قسماً بعينه فلا يظهر لغيره.
+    if (item.physioDepartmentOnly && !inPhysioDepartment) return false;
     // المحصور بأدوار لا تفتحه أي صلاحية
     if (item.requiredRoles && !isAdmin() && !item.requiredRoles.some((role) => hasRole(role))) return false;
     // إذا العنصر مجبر على الظهور لدور معين، نظهره — حتى لو المستخدم عنده كمان

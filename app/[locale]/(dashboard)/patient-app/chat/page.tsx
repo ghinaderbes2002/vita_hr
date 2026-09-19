@@ -13,6 +13,9 @@ import { PageGuard } from "@/components/permissions/page-guard";
 import { PatientName } from "@/components/patient-app/patient-picker";
 import { cn } from "@/lib/utils";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { isPhysioDepartment } from "@/lib/clinic/departments";
 import {
   PATIENT_APP_CHAT_KEY, useChatConversations, useSendChatMessage,
 } from "@/lib/hooks/use-patient-app";
@@ -32,15 +35,28 @@ const lastActivity = (c: ChatConversation) =>
 export default function PatientAppChatPage() {
   const t = useTranslations("patientApp.chat");
   const [activeId, setActiveId] = useState<string | null>(null);
-  const { data = [], isLoading } = useChatConversations();
+  // Conversations belong to the physiotherapist responsible for the patient, so
+  // the screen is theirs alone — anyone else (an admin included) gets the note
+  // instead, and no request is sent.
+  const { isAdmin } = usePermissions();
+  const { data: myEmployee, isLoading: employeeLoading } = useMyEmployee();
+  const inPhysioDept = isPhysioDepartment((myEmployee as any)?.department);
+  const adminView = !employeeLoading && !inPhysioDept;
+  const { data = [], isLoading } = useChatConversations(inPhysioDept);
   const conversations = [...data].sort((a, b) => lastActivity(b).localeCompare(lastActivity(a)));
   const active = conversations.find((c) => c.id === activeId) ?? null;
 
   return (
-    <PageGuard permission={PERMISSIONS.PATIENT_APP.CHAT_USE}>
+    <PageGuard permissions={[PERMISSIONS.PATIENT_APP.CHAT_USE, PERMISSIONS.PATIENT_APP.CHAT_USE_CODE]}>
       <div className="space-y-4">
         <PageHeader title={t("title")} description={t("description")} />
 
+        {adminView ? (
+          <div className="rounded-lg border p-10 text-center">
+            <MessageSquare className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">{t("adminNotice")}</p>
+          </div>
+        ) : (
         <div className="grid h-[calc(100dvh-13rem)] min-h-[28rem] grid-rows-[minmax(0,1fr)] overflow-hidden rounded-lg border lg:grid-cols-[20rem_minmax(0,1fr)]">
           <aside className={cn("flex min-h-0 flex-col border-e", active ? "hidden lg:flex" : "flex")}>
             <div className="border-b px-4 py-3 text-sm font-medium">
@@ -107,6 +123,7 @@ export default function PatientAppChatPage() {
             )}
           </section>
         </div>
+        )}
       </div>
     </PageGuard>
   );

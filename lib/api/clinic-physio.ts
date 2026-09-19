@@ -127,6 +127,8 @@ export interface PhysioCase {
   painMap?: { regions: PainRegion[] } | null;
   medicalHistory?: any;
   goals?: any;
+  /** What the case payload actually calls the goals section. */
+  treatmentGoals?: any;
   posturalAssessment?: any;
   treatmentPlan?: any;
   evaluation?: { modalities?: EvaluationModality[]; otherModality?: string | null; notes?: string | null; evaluation?: string | null } | null;

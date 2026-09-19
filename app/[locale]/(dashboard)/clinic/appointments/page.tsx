@@ -50,6 +50,7 @@ const STATUS_COLOR: Record<AppointmentStatus, string> = {
   COMPLETED: "bg-gray-100 text-gray-600",
   CANCELLED: "bg-red-100 text-red-700",
   NO_SHOW: "bg-orange-100 text-orange-700",
+  LATE: "bg-yellow-100 text-yellow-800",
   RESCHEDULED: "bg-purple-100 text-purple-800",
 };
 
@@ -359,7 +360,7 @@ export default function AppointmentsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t("filter.allStatuses")}</SelectItem>
-            {(["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED"] as AppointmentStatus[]).map((s) => (
+            {(["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED", "LATE"] as AppointmentStatus[]).map((s) => (
               <SelectItem key={s} value={s}>{t(`statuses.${s}`)}</SelectItem>
             ))}
           </SelectContent>
@@ -591,7 +592,7 @@ export default function AppointmentsPage() {
                 >
                   <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(["SCHEDULED", "CONFIRMED", "COMPLETED", "NO_SHOW", "RESCHEDULED", "CANCELLED"] as AppointmentStatus[]).map((s) => (
+                    {(["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "RESCHEDULED", "CANCELLED"] as AppointmentStatus[]).map((s) => (
                       <SelectItem key={s} value={s}>{t(`statuses.${s}`)}</SelectItem>
                     ))}
                   </SelectContent>

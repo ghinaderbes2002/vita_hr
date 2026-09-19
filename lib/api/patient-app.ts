@@ -120,6 +120,12 @@ export interface Exercise {
   commonMistakesAr?: string | null;
   commonMistakesEn?: string | null;
   defaultDurationSeconds?: number | null;
+  // Defaults carried by the exercise itself; an assignment that leaves a field
+  // empty is filled in with these server-side.
+  defaultSets?: number | null;
+  defaultReps?: number | null;
+  defaultHoldSeconds?: number | null;
+  defaultRestSeconds?: number | null;
   goalIds?: string[];
   /** Some responses carry the goal join rows instead of plain ids. */
   goals?: any[];
@@ -145,6 +151,10 @@ export interface ExerciseDto {
   commonMistakesAr: string | null;
   commonMistakesEn: string | null;
   defaultDurationSeconds: number | null;
+  defaultSets: number | null;
+  defaultReps: number | null;
+  defaultHoldSeconds: number | null;
+  defaultRestSeconds: number | null;
   goalIds: string[];
 }
 
@@ -208,6 +218,22 @@ export interface ErpSession {
   attendanceConfirmed?: boolean;
   physiotherapistId?: string | null;
   appointmentId?: string | null;
+}
+
+export interface SessionProgress {
+  session: {
+    id: string;
+    sessionNumber?: number | null;
+    sessionDate?: string | null;
+    attendanceConfirmed?: boolean;
+  };
+  totalExercises: number;
+  completed: number;
+  skipped: number;
+  inProgress: number;
+  notStarted: number;
+  /** Every active exercise of the session is done — no need to add the numbers up. */
+  allCompleted: boolean;
 }
 
 export type AssignmentStatus = "ACTIVE" | "CANCELLED";
@@ -395,6 +421,12 @@ export const patientAppApi = {
     patientExecutions: async (erpPatientId: string) =>
       unwrapList<Execution>(await apiClient.get(`${BASE}/patients/${erpPatientId}/executions`)),
   },
+
+  /** Per-session exercise progress for one patient, for the therapist's view. */
+  sessionsProgress: async (erpPatientId: string) =>
+    unwrapList<SessionProgress>(
+      await apiClient.get(`${BASE}/patients/${erpPatientId}/sessions-progress`),
+    ),
 
   chat: {
     conversations: async () =>

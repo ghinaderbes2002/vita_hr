@@ -33,6 +33,9 @@ const emptyForm = {
   warningsAr: "", warningsEn: "",
   commonMistakesAr: "", commonMistakesEn: "",
   defaultDurationSeconds: "",
+  defaultSets: "", defaultReps: "", defaultHoldSeconds: "", defaultRestSeconds: "",
+  // Kept in the payload though the picker is hidden: editing must not wipe
+  // goals an exercise already has.
   goalIds: [] as string[],
 };
 
@@ -54,6 +57,10 @@ const fromExercise = (ex: Exercise): Form => ({
   commonMistakesAr: ex.commonMistakesAr ?? "",
   commonMistakesEn: ex.commonMistakesEn ?? "",
   defaultDurationSeconds: ex.defaultDurationSeconds != null ? String(ex.defaultDurationSeconds) : "",
+  defaultSets: ex.defaultSets != null ? String(ex.defaultSets) : "",
+  defaultReps: ex.defaultReps != null ? String(ex.defaultReps) : "",
+  defaultHoldSeconds: ex.defaultHoldSeconds != null ? String(ex.defaultHoldSeconds) : "",
+  defaultRestSeconds: ex.defaultRestSeconds != null ? String(ex.defaultRestSeconds) : "",
   goalIds: exerciseGoalIds(ex),
 });
 
@@ -97,15 +104,11 @@ export function ExerciseDialog({
   const { data: subTargets = [] } = useTaxonomy(
     "sub-target-regions", { targetRegionId: form.targetRegionId }, open && form.targetRegionId !== NONE,
   );
-  const { data: goals = [] } = useTaxonomy("goals", undefined, open);
 
   const save = useSaveExercise();
   const upload = useUploadExerciseMedia();
   const isPending = save.isPending || upload.isPending;
   const missing = !form.nameAr.trim() || !form.nameEn.trim() || !form.bodyRegionId;
-
-  const toggleGoal = (id: string) =>
-    set({ goalIds: form.goalIds.includes(id) ? form.goalIds.filter((g) => g !== id) : [...form.goalIds, id] });
 
   const pickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0];
@@ -119,7 +122,11 @@ export function ExerciseDialog({
 
   const handleSave = async () => {
     if (missing) return;
-    const duration = Number(form.defaultDurationSeconds);
+    // Blank stays null so the exercise simply carries no default for that field.
+    const num = (v: string) => {
+      const n = Number(v);
+      return v.trim() && !Number.isNaN(n) ? n : null;
+    };
     let saved: Exercise;
     try {
       saved = await save.mutateAsync({
@@ -143,8 +150,11 @@ export function ExerciseDialog({
           warningsEn: textOrNull(form.warningsEn),
           commonMistakesAr: textOrNull(form.commonMistakesAr),
           commonMistakesEn: textOrNull(form.commonMistakesEn),
-          defaultDurationSeconds:
-            form.defaultDurationSeconds.trim() && !Number.isNaN(duration) ? duration : null,
+          defaultDurationSeconds: num(form.defaultDurationSeconds),
+          defaultSets: num(form.defaultSets),
+          defaultReps: num(form.defaultReps),
+          defaultHoldSeconds: num(form.defaultHoldSeconds),
+          defaultRestSeconds: num(form.defaultRestSeconds),
           goalIds: form.goalIds,
         },
       });
@@ -189,13 +199,53 @@ export function ExerciseDialog({
                 <Textarea dir="ltr" rows={2} value={form.descriptionEn} onChange={(e) => set({ descriptionEn: e.target.value })} />
               </Field>
             </Pair>
-            <Field label={t("defaultDuration")}>
-              <Input
-                type="number" min={0} inputMode="numeric" className="w-40"
-                value={form.defaultDurationSeconds}
-                onChange={(e) => set({ defaultDurationSeconds: e.target.value })}
-              />
-            </Field>
+            {/* Defaults used to pre-fill an assignment when the therapist leaves
+                a field empty. Labels stay short so the five sit on one row. */}
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">{t("defaultsCaption")}</p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <Field label={t("defaultDuration")}>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    className="w-full [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={form.defaultDurationSeconds}
+                    onChange={(e) => set({ defaultDurationSeconds: e.target.value })}
+                  />
+                </Field>
+                <Field label={t("defaultSets")}>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    className="w-full [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={form.defaultSets}
+                    onChange={(e) => set({ defaultSets: e.target.value })}
+                  />
+                </Field>
+                <Field label={t("defaultReps")}>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    className="w-full [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={form.defaultReps}
+                    onChange={(e) => set({ defaultReps: e.target.value })}
+                  />
+                </Field>
+                <Field label={t("defaultHold")}>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    className="w-full [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={form.defaultHoldSeconds}
+                    onChange={(e) => set({ defaultHoldSeconds: e.target.value })}
+                  />
+                </Field>
+                <Field label={t("defaultRest")}>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    className="w-full [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={form.defaultRestSeconds}
+                    onChange={(e) => set({ defaultRestSeconds: e.target.value })}
+                  />
+                </Field>
+              </div>
+            </div>
           </Section>
 
           <Section title={t("sectionClassification")}>
@@ -238,30 +288,6 @@ export function ExerciseDialog({
                 </Select>
               </Field>
             </div>
-            <Field label={t("goals")}>
-              {goals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("noGoals")}</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {goals.map((g) => {
-                    const on = form.goalIds.includes(g.id);
-                    return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => toggleGoal(g.id)}
-                        className={cn(
-                          "rounded-full border px-3 py-1 text-sm transition-colors",
-                          on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
-                        )}
-                      >
-                        {localizedName(g, locale)}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </Field>
           </Section>
 
           <Section title={t("sectionExecution")}>

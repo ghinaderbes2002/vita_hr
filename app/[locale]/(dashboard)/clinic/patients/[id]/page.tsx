@@ -8,13 +8,14 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   User, Phone, MapPin, Calendar, CalendarCheck, FileText, Activity, Heart,
-  Edit2, Trash2, Plus, Upload, Loader2, ArrowRight, ArrowLeftRight, Eye,
+  Edit2, Trash2, Plus, Upload, Loader2, ArrowRight, ArrowLeftRight, Eye, KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePatientAppAccount } from "@/lib/hooks/use-patient-app";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -107,6 +108,9 @@ export default function PatientProfilePage() {
   const { data: consents = [] } = usePatientConsents(id);
   const { data: podiatryReceptions = [] } = usePodiatryReceptions(id);
   const { data: appointments = [], isLoading: apptsLoading } = usePatientAppointments(id);
+  // The app account is created by the backend when the patient is converted to
+  // physio, so the file just reads whatever exists.
+  const { data: appAccount, isLoading: accountLoading } = usePatientAppAccount(id);
   const [podiatryDialogOpen, setPodiatryDialogOpen] = useState(false);
   const { data: notes = [] } = usePatientNotes(id);
 
@@ -370,6 +374,51 @@ export default function PatientProfilePage() {
                   <p className="text-2xl font-bold tabular-nums">{s.value}</p>
                 </div>
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Patient app account — created automatically on conversion to physio */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <KeyRound className="h-4 w-4" />
+            حساب تطبيق المريض
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {accountLoading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : !appAccount ? (
+            <p className="text-sm text-muted-foreground py-2">لا يوجد حساب لهذا المريض</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground mb-1">اسم المستخدم</p>
+                <p className="font-medium break-all">{appAccount.username}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground mb-1">كلمة المرور</p>
+                {/* Fixed for every account the backend creates. */}
+                <p className="font-mono font-medium">00000000</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground mb-1">الحالة</p>
+                <Badge variant="outline" className={appAccount.status === "ACTIVE"
+                  ? "bg-green-50 text-green-700 border-green-300"
+                  : "bg-gray-50 text-gray-600 border-gray-300"}>
+                  {appAccount.status === "ACTIVE" ? "نشط" : "معطّل"}
+                </Badge>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground mb-1">آخر دخول</p>
+                <p className="text-sm">
+                  {appAccount.lastLoginAt
+                    ? new Date(appAccount.lastLoginAt).toLocaleDateString("en-GB")
+                    : "لم يسجّل دخول بعد"}
+                </p>
+              </div>
             </div>
           )}
         </CardContent>

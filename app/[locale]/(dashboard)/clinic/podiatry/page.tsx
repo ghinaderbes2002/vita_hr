@@ -25,6 +25,10 @@ const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—"
 
 const PAGE_SIZE = 20;
 
+// A reception counts as fitted once any of its sessions carries an install stamp.
+const isFitted = (r: PodiatryReception) =>
+  (r.sessions ?? []).some((s) => !!s.installedAt);
+
 /**
  * المسميات التي تشرف على مرضى القسم كاملاً. غيرها يرى فقط الحالات المعيَّن
  * عليها كمعالج. Mirrors the prosthetics page apart from the sales job titles,
@@ -130,6 +134,7 @@ export default function PodiatryListPage() {
                 <TableHead>{t("table.visitType")}</TableHead>
                 <TableHead>{t("table.sessions")}</TableHead>
                 <TableHead>{t("table.receptionDate")}</TableHead>
+                <TableHead>{t("table.installStatus")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -148,6 +153,17 @@ export default function PodiatryListPage() {
                   </TableCell>
                   <TableCell>{r.sessions?.length ?? 0}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{fmt(r.createdAt)}</TableCell>
+                  <TableCell>
+                    {isFitted(r) ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                        {t("installedBadge")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-300">
+                        {t("notInstalledBadge")}
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Button size="icon" variant="ghost" className="h-8 w-8">
                       <Eye className="h-4 w-4" />

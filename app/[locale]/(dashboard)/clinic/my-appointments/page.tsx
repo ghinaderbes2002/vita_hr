@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { X, Check, Loader2, ChevronLeft, ChevronRight, UserRound, CalendarClock } from "lucide-react";
+import { X, Check, Clock, Loader2, ChevronLeft, ChevronRight, UserRound, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,13 +29,14 @@ const STATUS_COLOR: Record<AppointmentStatus, string> = {
   COMPLETED: "bg-gray-100 text-gray-600",
   CANCELLED: "bg-red-100 text-red-700",
   NO_SHOW: "bg-orange-100 text-orange-700",
+  LATE: "bg-yellow-100 text-yellow-800",
   RESCHEDULED: "bg-purple-100 text-purple-800",
 };
 const STATUS_BAR: Record<AppointmentStatus, string> = {
   SCHEDULED: "#3b82f6", CONFIRMED: "#22c55e", COMPLETED: "#6b7280",
-  CANCELLED: "#ef4444", NO_SHOW: "#f97316", RESCHEDULED: "#a855f7",
+  CANCELLED: "#ef4444", NO_SHOW: "#f97316", RESCHEDULED: "#a855f7", LATE: "#eab308",
 };
-const STATUS_ORDER: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "NO_SHOW", "RESCHEDULED", "CANCELLED"];
+const STATUS_ORDER: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "RESCHEDULED", "CANCELLED"];
 
 const deptDot = (name: string) =>
   name.includes("العلاج الفيزيائي") ? "#10b981"
@@ -356,6 +357,12 @@ export default function MyAppointmentsPage() {
                 <Button size="sm" variant="outline" className="gap-1.5 text-orange-600" disabled={updateStatus.isPending}
                   onClick={() => finishAndOpenCase(detailAppt, "NO_SHOW")}>
                   <UserRound className="h-4 w-4" />{t("actions.noShow")}
+                </Button>
+                {/* Late keeps the appointment open — the patient is still coming,
+                    so it neither closes the visit nor opens the case file. */}
+                <Button size="sm" variant="outline" className="gap-1.5 text-yellow-600" disabled={updateStatus.isPending}
+                  onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "LATE" }); setDetailAppt(null); }}>
+                  <Clock className="h-4 w-4" />{t("actions.late")}
                 </Button>
               </>
             )}

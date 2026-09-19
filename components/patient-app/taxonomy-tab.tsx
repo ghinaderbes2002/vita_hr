@@ -25,11 +25,12 @@ import { localizedName, type TaxonomyItem, type TaxonomyKind } from "@/lib/api/p
 type KindKey = "bodyRegions" | "targetRegions" | "subTargetRegions" | "goals";
 
 /** Tab order; `key` is the entry under `patientApp.taxonomy.kinds`. */
+// Therapeutic goals are hidden for now: the tab is dropped here and the picker
+// is left out of the exercise dialog. The "goals" kind itself still works.
 export const TAXONOMY_KINDS: { kind: TaxonomyKind; key: KindKey }[] = [
   { kind: "body-regions",       key: "bodyRegions" },
   { kind: "target-regions",     key: "targetRegions" },
   { kind: "sub-target-regions", key: "subTargetRegions" },
-  { kind: "goals",              key: "goals" },
 ];
 
 const ALL = "__all__";
@@ -116,10 +117,13 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{tc("nameAr")}</TableHead>
+              {/* Table forces dir="ltr" app-wide, so each Arabic column sets its own
+                  direction on the header too — otherwise the heading sits at the far
+                  side of its own values. */}
+              <TableHead dir="rtl">{tc("nameAr")}</TableHead>
               <TableHead>{tc("nameEn")}</TableHead>
               {hasBodyParent && (
-                <TableHead>{hasTargetParent ? t("targetRegion") : t("bodyRegion")}</TableHead>
+                <TableHead dir="rtl">{hasTargetParent ? t("targetRegion") : t("bodyRegion")}</TableHead>
               )}
               <TableHead className="w-24">{tc("sortOrder")}</TableHead>
               <TableHead className="w-16" />
@@ -150,7 +154,7 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
                   <TableCell className="font-medium" dir="rtl">{item.nameAr}</TableCell>
                   <TableCell dir="ltr" className="text-start">{item.nameEn}</TableCell>
                   {hasBodyParent && (
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm" dir="rtl">
                       {hasTargetParent ? nameOf(allTargets, item.targetRegionId) : nameOf(bodyRegions, item.bodyRegionId)}
                     </TableCell>
                   )}

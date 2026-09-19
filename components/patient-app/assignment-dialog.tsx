@@ -49,6 +49,8 @@ export function AssignmentDialog({
   const [form, setForm] = useState<Form>(emptyForm);
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
+  // The library list stays out of the way until the field is actually used.
+  const [listOpen, setListOpen] = useState(false);
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
 
   const [wasOpen, setWasOpen] = useState(open);
@@ -57,6 +59,7 @@ export function AssignmentDialog({
     if (open) {
       setSearch("");
       setTerm("");
+      setListOpen(false);
       const str = (n?: number | null) => (n != null ? String(n) : "");
       setForm(assignment
         ? {
@@ -87,13 +90,22 @@ export function AssignmentDialog({
 
   const pickExercise = (id: string) => {
     const ex = exercises.find((e) => e.id === id);
-    set({
-      exerciseId: id,
-      // Start from the library default; the therapist can still override it.
-      ...(ex?.defaultDurationSeconds != null && !form.durationSeconds
-        ? { durationSeconds: String(ex.defaultDurationSeconds) }
-        : {}),
-    });
+    // Show what was picked in the field itself, since the list closes on choosing.
+    if (ex) setSearch(localizedName(ex, locale));
+    setListOpen(false);
+    // Start from the library defaults; the therapist can still override any of
+    // them, and a field already filled in by hand is left alone. The API applies
+    // the same defaults itself for anything left empty.
+    const prefill: Record<string, string> = {};
+    const fromDefault = (field: (typeof NUMBER_FIELDS)[number], value?: number | null) => {
+      if (value != null && !form[field]) prefill[field] = String(value);
+    };
+    fromDefault("sets", ex?.defaultSets);
+    fromDefault("reps", ex?.defaultReps);
+    fromDefault("durationSeconds", ex?.defaultDurationSeconds);
+    fromDefault("holdSeconds", ex?.defaultHoldSeconds);
+    fromDefault("restSeconds", ex?.defaultRestSeconds);
+    set({ exerciseId: id, ...prefill });
   };
 
   const handleSave = async () => {
@@ -142,11 +154,22 @@ export function AssignmentDialog({
           {!isEdit && (
             <div className="space-y-1.5">
               <Label>{t("exercise")} <span className="text-destructive">*</span></Label>
+              {/* Opening is tied to click/typing, not focus: the dialog puts the
+                  caret in this field on open, which would pop the list every time.
+                  Closing follows focus leaving the whole block, so a click on a
+                  result still registers. */}
+              <div
+                className="space-y-1.5"
+                onBlur={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setListOpen(false);
+                }}
+              >
               <div className="relative">
                 <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setListOpen(true); }}
+                  onClick={() => setListOpen(true)}
                   placeholder={t("searchLibrary")}
                   className="ps-9"
                 />
@@ -154,6 +177,7 @@ export function AssignmentDialog({
                   <Loader2 className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
                 )}
               </div>
+              {listOpen && (
               <div className="max-h-52 space-y-0.5 overflow-y-auto rounded-md border p-1">
                 {exercises.length === 0 ? (
                   <p className="px-3 py-4 text-center text-sm text-muted-foreground">{t("noExercises")}</p>
@@ -185,6 +209,8 @@ export function AssignmentDialog({
                     );
                   })
                 )}
+              </div>
+              )}
               </div>
             </div>
           )}

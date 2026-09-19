@@ -317,6 +317,8 @@ export const PERMISSIONS = {
     CANCEL_ASSIGNED_EXERCISE: "CANCEL_ASSIGNED_EXERCISE",
     VIEW_PATIENT_EXECUTIONS:  "VIEW_PATIENT_EXECUTIONS",
     CHAT_USE:                 "CHAT_USE",
+    /** نفس الصلاحية بالتسمية المنقّطة التي يرسلها الباك للمحادثات. */
+    CHAT_USE_CODE:            "clinic.patient_app.chat.use",
   },
 
   AUDIT: {
