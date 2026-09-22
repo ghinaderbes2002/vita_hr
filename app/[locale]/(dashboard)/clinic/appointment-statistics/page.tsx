@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocale } from "next-intl";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,7 @@ function AppointmentStatisticsReport() {
   const [dateFrom, setDateFrom] = useState(initial.from);
   const [dateTo, setDateTo] = useState(initial.to);
   const [departmentId, setDepartmentId] = useState("ALL");
+  const [patientSearch, setPatientSearch] = useState("");
 
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
   const clinicDepartments = useMemo(() => {
@@ -83,11 +84,17 @@ function AppointmentStatisticsReport() {
   const { data, isLoading, isFetching } = useAppointmentStatistics(params);
   const exportXlsx = useExportAppointmentStatistics();
 
-  const rows = data?.rows ?? [];
+  const allRows = data?.rows ?? [];
   const totals = data?.totals ?? {};
-  // بند "العدد الكلي" يأتي من الباك؛ وإن لم يأتِ يُحسب من الأسطر المعروضة.
+  // البحث بالاسم يتم هنا: الرد يأتي كاملاً لهذه الفترة، فلا حاجة لطلب جديد.
+  const term = patientSearch.trim().toLowerCase();
+  const rows = term
+    ? allRows.filter((r) => patientOf(r).toLowerCase().includes(term))
+    : allRows;
+  const filtered = rows.length !== allRows.length;
+  // بند "العدد الكلي" يأتي من الباك؛ ومع البحث يُحسب من الأسطر الظاهرة وحدها.
   const count = (key: "attended" | "cancelled" | "postponed" | "noShow") =>
-    totals[key] ?? rows.filter((r) => r[key]).length;
+    filtered ? rows.filter((r) => r[key]).length : (totals[key] ?? rows.filter((r) => r[key]).length);
 
   return (
     <div className="space-y-4">
@@ -135,14 +142,25 @@ function AppointmentStatisticsReport() {
       </Card>
 
       <Card>
-        <CardContent className="pt-5">
+        <CardContent className="pt-5 space-y-4">
+          {/* Search sits over the table it filters, not among the filters that
+              re-fetch — it only narrows what is already on screen. */}
+          <div className="relative w-full">
+            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={patientSearch}
+              onChange={(e) => setPatientSearch(e.target.value)}
+              placeholder="ابحث باسم المريض..."
+              className="ps-9"
+            />
+          </div>
           {isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
             </div>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              لا توجد مواعيد ضمن هذه الفترة
+              {term ? "لا توجد مواعيد لهذا المريض ضمن الفترة" : "لا توجد مواعيد ضمن هذه الفترة"}
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -175,7 +193,10 @@ function AppointmentStatisticsReport() {
                     </TableRow>
                   ))}
                   <TableRow className="bg-muted/50 font-bold">
-                    <TableCell colSpan={5}>العدد الكلي ({data?.total ?? rows.length})</TableCell>
+                    <TableCell colSpan={5}>
+                      العدد الكلي ({filtered ? rows.length : (data?.total ?? rows.length)})
+                      {filtered && <span className="font-normal text-muted-foreground"> — من أصل {data?.total ?? allRows.length}</span>}
+                    </TableCell>
                     <TableCell className="text-center">{count("attended")}</TableCell>
                     <TableCell className="text-center">{count("cancelled")}</TableCell>
                     <TableCell className="text-center">{count("postponed")}</TableCell>
