@@ -49,13 +49,18 @@ export default function ClinicPatientsPage() {
   // Restrict the list to the user's own department: a physio-only clinician sees
   // physio patients, a prosthetics/podiatry one sees that department. Admins and
   // anyone holding both see everything (no restriction).
+  //
+  // Whoever may register patients is excluded from that narrowing: reception and
+  // sales enter patients for every department, so a list missing half of them is
+  // the wrong tool for their job.
   const { hasPermission, isAdmin } = usePermissions();
+  const registersPatients = hasPermission(PERMISSIONS.CLINIC_PATIENTS.CREATE);
   const canPhysio = hasPermission(PERMISSIONS.CLINIC_PHYSIO.CASE_VIEW);
   const canProsthetics =
     hasPermission(PERMISSIONS.CLINIC_PROSTHETICS.CASE_VIEW) ||
     hasPermission(PERMISSIONS.CLINIC_PODIATRY.RECEPTION_VIEW);
   const department: "physio" | "prosthetics" | undefined =
-    isAdmin() || canPhysio === canProsthetics
+    isAdmin() || registersPatients || canPhysio === canProsthetics
       ? undefined
       : canPhysio ? "physio" : "prosthetics";
 

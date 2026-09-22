@@ -32,6 +32,7 @@ import {
   ClipboardPen,
   UserRoundCheck,
   FileBarChart,
+  BarChart3,
   ChevronsRight,
   ChevronsLeft,
   GraduationCap,
@@ -291,6 +292,7 @@ const navigation: NavItem[] = [
       { title: "nav.clinicWaitingList", href: "/clinic/waiting-list", icon: ListOrdered, permission: "clinic.waiting_list.view" },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
       { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permission: "clinic.appointments.view_own" },
+      { title: "nav.clinicAppointmentStats", href: "/clinic/appointment-statistics", icon: BarChart3, permission: "clinic.appointments.statistics_view" },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
       { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor" },
     ],
@@ -459,6 +461,7 @@ export function Sidebar() {
         "/clinic/doctor-exams",
         "/clinic/appointments",
         "/clinic/my-appointments",
+        "/clinic/appointment-statistics",
         "/clinic/inventory",
         "/clinic/reports",
         // Sits under the contacts route but is its own nav item — without this

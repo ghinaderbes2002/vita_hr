@@ -143,6 +143,48 @@ export interface AppointmentListParams {
   status?: AppointmentStatus;
 }
 
+/**
+ * One line of the appointments statistics report. The four status columns are
+ * booleans — one appointment is counted in exactly one of them.
+ */
+export interface AppointmentStatisticsRow {
+  id?: string;
+  patientName?: string | null;
+  patientNumber?: string | null;
+  department?: string | null;
+  departmentName?: string | null;
+  serviceType?: string | null;
+  appointmentType?: AppointmentType | string | null;
+  technicianName?: string | null;
+  practitionerName?: string | null;
+  visitDate?: string | null;
+  date?: string | null;
+  attended?: boolean;
+  cancelled?: boolean;
+  postponed?: boolean;
+  noShow?: boolean;
+}
+
+export interface AppointmentStatisticsTotals {
+  attended?: number;
+  cancelled?: number;
+  postponed?: number;
+  noShow?: number;
+  total?: number;
+}
+
+export interface AppointmentStatisticsParams {
+  dateFrom: string;
+  dateTo: string;
+  departmentId?: string;
+}
+
+export interface AppointmentStatisticsResponse {
+  rows: AppointmentStatisticsRow[];
+  totals: AppointmentStatisticsTotals;
+  total: number;
+}
+
 export const clinicAppointmentsApi = {
   create: async (dto: CreateAppointmentDto): Promise<Appointment> => {
     const { data } = await apiClient.post("/appointments", dto);
@@ -229,5 +271,23 @@ export const clinicAppointmentsApi = {
     });
     const d = data?.data ?? data;
     return Array.isArray(d) ? d : d?.patientIds ?? d?.items ?? [];
+  },
+
+  statistics: async (params: AppointmentStatisticsParams): Promise<AppointmentStatisticsResponse> => {
+    const { data } = await apiClient.get("/appointments/statistics", { params });
+    const d = data?.data ?? data;
+    return {
+      rows: d?.rows ?? d?.items ?? (Array.isArray(d) ? d : []),
+      totals: d?.totals ?? {},
+      total: d?.total ?? d?.rows?.length ?? 0,
+    };
+  },
+
+  exportStatisticsXlsx: async (params: AppointmentStatisticsParams): Promise<Blob> => {
+    const response = await apiClient.get("/appointments/statistics/export-xlsx", {
+      params,
+      responseType: "blob",
+    });
+    return response.data;
   },
 };

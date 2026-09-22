@@ -279,6 +279,11 @@ export const PERMISSIONS = {
     VIEW_OWN: "clinic.appointments.view_own",
     CREATE: "clinic.appointments.create",
     CANCEL: "clinic.appointments.cancel",
+    /**
+     * تقرير إحصائيات المواعيد. لا تُمنح لأي دور تلقائياً — تُضاف يدوياً من
+     * شاشة إدارة الأدوار بعد نشر الباك.
+     */
+    STATISTICS_VIEW: "clinic.appointments.statistics_view",
   },
   /** قائمة انتظار العيادة — مرضى بانتظار جدولة موعد. */
   CLINIC_WAITING_LIST: {

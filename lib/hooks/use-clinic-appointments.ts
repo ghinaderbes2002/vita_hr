@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { clinicAppointmentsApi, CreateAppointmentDto, UpdateAppointmentDto, RescheduleAppointmentDto, AppointmentListParams, AppointmentStatus } from "@/lib/api/clinic-appointments";
+import { clinicAppointmentsApi, CreateAppointmentDto, UpdateAppointmentDto, RescheduleAppointmentDto, AppointmentListParams, AppointmentStatus, AppointmentStatisticsParams } from "@/lib/api/clinic-appointments";
 import { toast } from "sonner";
 
 export function useClinicAppointments(params?: AppointmentListParams) {
@@ -120,5 +120,29 @@ export function usePractitionerPatients(practitionerId?: string, enabled = true)
     queryFn: () => clinicAppointmentsApi.getPractitionerPatients(practitionerId),
     staleTime: 60_000,
     enabled,
+  });
+}
+
+export function useAppointmentStatistics(params: AppointmentStatisticsParams, enabled = true) {
+  return useQuery({
+    queryKey: ["appointment-statistics", params],
+    queryFn: () => clinicAppointmentsApi.statistics(params),
+    enabled: enabled && !!params.dateFrom && !!params.dateTo,
+  });
+}
+
+export function useExportAppointmentStatistics() {
+  return useMutation({
+    mutationFn: (params: AppointmentStatisticsParams) =>
+      clinicAppointmentsApi.exportStatisticsXlsx(params),
+    onSuccess: (blob, params) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `appointments-statistics-${params.dateFrom}-${params.dateTo}.xlsx`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تصدير الملف"),
   });
 }
