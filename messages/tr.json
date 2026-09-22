@@ -2188,6 +2188,8 @@
           "nationalityPlaceholder": "örn. Suriyeli, Lübnanlı...",
           "occupation": "Meslek",
           "occupationPlaceholder": "örn. Mühendis, Öğretmen, Ev hanımı...",
+          "companyPatient": "Şirket hastası",
+          "companyPatientYes": "Evet",
           "phone": "Telefon",
           "whatsapp": "WhatsApp",
           "email": "E-posta",

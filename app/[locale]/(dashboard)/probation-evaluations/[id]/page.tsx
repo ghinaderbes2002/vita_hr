@@ -614,7 +614,10 @@ export default function ProbationEvaluationDetailPage() {
       {(ev.employeeNotes || ev.evaluatorNotes) && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">{t("detail.notes")}</CardTitle>
+            {/* بلا ملاحظات مُقيِّم، البطاقة كلها ملاحظات الموظف — فتأخذ عنوانها. */}
+            <CardTitle className="text-base">
+              {ev.evaluatorNotes ? t("detail.notes") : t("detail.selfEvaluationNotes")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {ev.employeeNotes && (
@@ -1024,18 +1027,22 @@ export default function ProbationEvaluationDetailPage() {
             {!["propose-meeting", "confirm-employee", "confirm-direct-manager", "complete"].includes(actionType ?? "") && (
               <div className="space-y-1.5">
                 <Label>
-                  {actionType === "reject" || actionType === "hr-reject"
-                    ? t("actionDialog.notesRequired")
-                    : t("actionDialog.notesOptional")}
+                  {actionType === "self-evaluate"
+                    ? t("actionDialog.selfEvaluateNotes")
+                    : actionType === "reject" || actionType === "hr-reject"
+                      ? t("actionDialog.notesRequired")
+                      : t("actionDialog.notesOptional")}
                 </Label>
                 <Textarea
                   rows={3}
                   value={actionNotes}
                   onChange={(e) => setActionNotes(e.target.value)}
                   placeholder={
-                    actionType === "reject" || actionType === "hr-reject"
-                      ? t("actionDialog.rejectionReason")
-                      : t("actionDialog.notesPlaceholder")
+                    actionType === "self-evaluate"
+                      ? t("actionDialog.selfEvaluateNotesPlaceholder")
+                      : actionType === "reject" || actionType === "hr-reject"
+                        ? t("actionDialog.rejectionReason")
+                        : t("actionDialog.notesPlaceholder")
                   }
                 />
               </div>

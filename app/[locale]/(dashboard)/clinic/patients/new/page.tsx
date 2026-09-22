@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ChevronRight, ChevronLeft, Check, AlertCircle, Upload, X, FileText, Loader2, Plus, Camera, Download } from "lucide-react";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,7 @@ const step1Schema = z.object({
   gender:       z.enum(["MALE", "FEMALE"]),
   nationality:  z.string().optional(),
   occupation:   z.string().optional(),
+  isCompanyPatient: z.boolean().optional(),
 });
 
 const step2Schema = z.object({
@@ -129,7 +131,7 @@ function NewPatientForm() {
 
   const form1 = useForm<Step1>({
     resolver: zodResolver(step1Schema) as any,
-    defaultValues: { firstName: "", lastName: "", identityType: "NATIONAL_ID", idNumber: "", dateOfBirth: "", gender: "MALE", nationality: "", occupation: "", ...s1 },
+    defaultValues: { firstName: "", lastName: "", identityType: "NATIONAL_ID", idNumber: "", dateOfBirth: "", gender: "MALE", nationality: "", occupation: "", isCompanyPatient: false, ...s1 },
   });
 
   const form2 = useForm<Step2>({
@@ -208,6 +210,7 @@ function NewPatientForm() {
       gender:          s1.gender!,
       nationality:     s1.nationality?.trim() || undefined,
       occupation:      s1.occupation || undefined,
+      isCompanyPatient: !!s1.isCompanyPatient,
       phone:           s2.phone!,
       whatsapp:        s2.whatsapp || undefined,
       email:           s2.email || undefined,
@@ -482,6 +485,19 @@ function NewPatientForm() {
                 <Label>{t("fields.careProvider")}</Label>
                 <Input {...form3.register("receivesAid")} placeholder={t("fields.careProviderPlaceholder")} />
               </div>
+              <Controller
+                name="isCompanyPatient"
+                control={form1.control}
+                render={({ field }) => (
+                  <Label className="flex items-center gap-2 font-normal">
+                    <Checkbox
+                      checked={!!field.value}
+                      onCheckedChange={(v) => field.onChange(v === true)}
+                    />
+                    {t("fields.companyPatient")}
+                  </Label>
+                )}
+              />
             </div>
           )}
 
@@ -688,6 +704,7 @@ function NewPatientForm() {
                   <span>{t("summary.phone")}:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
                   {s1.nationality && <><span>{t("summary.nationality")}:</span><span className="text-foreground">{s1.nationality}</span></>}
                   {s1.occupation && <><span>{t("summary.occupation")}:</span><span className="text-foreground">{s1.occupation}</span></>}
+                  {s1.isCompanyPatient && <><span>{t("fields.companyPatient")}:</span><span className="text-foreground">{t("fields.companyPatientYes")}</span></>}
                 </div>
               </div>
             </div>

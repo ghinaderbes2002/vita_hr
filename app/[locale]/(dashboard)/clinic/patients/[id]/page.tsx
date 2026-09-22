@@ -272,6 +272,11 @@ export default function PatientProfilePage() {
                 {GENDER_LABEL[patient.gender]}
               </Badge>
               {age !== null && <span className="text-sm text-muted-foreground">{age} سنة</span>}
+              {patient.isCompanyPatient && (
+                <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700">
+                  مريض شركة
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -488,6 +493,8 @@ export default function PatientProfilePage() {
                 <InfoRow label="الحالة الاجتماعية" value={patient.maritalStatus ? MARITAL_LABEL[patient.maritalStatus] : null} />
                 <InfoRow label="الوضع المادي" value={patient.financialStatus ? FINANCIAL_LABEL[patient.financialStatus] : null} />
                 <InfoRow label="مقدم الرعاية / Care Provider" value={patient.receivesAid ?? null} />
+                {/* يُعرض دائماً — "لا" معلومة مقصودة هنا، لا حقل فارغ. */}
+                <InfoRow label="مريض شركة" value={patient.isCompanyPatient ? "نعم" : "لا"} />
                 <InfoRow label="طريقة الوصول" value={referralSourceLabel(patient.referralSource)} />
                 <InfoRow
                   label={REFERRAL_DETAILS_LABEL[patient.referralSource as ReferralSource] ?? "تفاصيل الإحالة"}

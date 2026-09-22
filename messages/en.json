@@ -2527,6 +2527,8 @@
       "notes": "Notes",
       "notesOptional": "Notes (optional)",
       "notesRequired": "Notes *",
+      "selfEvaluateNotes": "Main difficulties and obstacles faced",
+      "selfEvaluateNotesPlaceholder": "Describe the main difficulties and obstacles faced during probation...",
       "rejectionReason": "Reason for rejection...",
       "notesPlaceholder": "Notes..."
     }
@@ -3101,6 +3103,8 @@
           "nationalityPlaceholder": "e.g. Syrian, Lebanese...",
           "occupation": "Occupation",
           "occupationPlaceholder": "e.g. Engineer, Teacher, Homemaker...",
+          "companyPatient": "Company patient",
+          "companyPatientYes": "Yes",
           "phone": "Phone Number",
           "phonePlaceholder": "+963...",
           "whatsapp": "WhatsApp",

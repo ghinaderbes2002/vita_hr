@@ -44,6 +44,8 @@ export interface Patient {
   /** نص حر — لا يوجد enum للجنسيات. */
   nationality?: string | null;
   occupation?: string | null;
+  /** مريض شركة — العلاج على حساب جهة/شركة وليس على حسابه. */
+  isCompanyPatient?: boolean;
   heightCm?: number | null;
   weightKg?: number | null;
   bmi?: number | null;
@@ -123,6 +125,8 @@ export interface CreatePatientDto {
   gender: Gender;
   nationality?: string;
   occupation?: string;
+  /** يُسجَّل false تلقائياً إن لم يُرسل. */
+  isCompanyPatient?: boolean;
   heightCm?: number;
   weightKg?: number;
   cityId?: number | string;

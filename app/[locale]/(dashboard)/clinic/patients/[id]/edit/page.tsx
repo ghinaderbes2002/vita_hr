@@ -11,6 +11,7 @@ import { ArrowRight, Save, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,7 @@ const schema = z.object({
   weightKg:        z.coerce.number().min(10).max(300).optional().or(z.literal("")),
   nationality:     z.string().optional(),
   occupation:      z.string().optional(),
+  isCompanyPatient: z.boolean().optional(),
   educationLevel:  z.string().optional(),
   maritalStatus:   z.string().optional(),
   livingCondition: z.string().optional(),
@@ -145,6 +147,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
     weightKg:        patient.weightKg ?? "",
     nationality:     patient.nationality ?? "",
     occupation:      patient.occupation ?? "",
+    isCompanyPatient: patient.isCompanyPatient ?? false,
     educationLevel:  patient.educationLevel ?? "",
     maritalStatus:   patient.maritalStatus ?? "",
     livingCondition: patient.livingCondition ?? "",
@@ -218,6 +221,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
       weightKg:        values.weightKg ? Number(values.weightKg) : undefined,
       nationality:     values.nationality?.trim() || undefined,
       occupation:      values.occupation || undefined,
+      isCompanyPatient: !!values.isCompanyPatient,
       educationLevel:  (values.educationLevel as any) || undefined,
       maritalStatus:   (values.maritalStatus as any) || undefined,
       livingCondition: (values.livingCondition as any) || undefined,
@@ -453,6 +457,15 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
               <Label>مقدم الرعاية / Care Provider</Label>
               <Input {...register("receivesAid")} placeholder="مقدم الرعاية..." />
             </div>
+            <Controller name="isCompanyPatient" control={control} render={({ field }) => (
+              <Label className="flex items-center gap-2 font-normal">
+                <Checkbox
+                  checked={!!field.value}
+                  onCheckedChange={(v) => field.onChange(v === true)}
+                />
+                مريض شركة / Company patient
+              </Label>
+            )} />
           </CardContent>
         </Card>
 
