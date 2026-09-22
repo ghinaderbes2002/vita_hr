@@ -11,13 +11,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { ProbationCriteria } from "@/lib/api/probation-criteria";
 import {
-  CriteriaTargetSelect, TARGET_ALL, jobTitleLabel, targetOf, targetToPayload, useJobTitleOptions,
+  CriteriaTarget, CriteriaTargetSelect, EMPTY_TARGET, jobTitleIdsOf, jobTitleLabel, targetOf,
+  useJobTitleOptions,
 } from "./criteria-target-select";
-import { JobTitleCriteriaPanel } from "./job-title-criteria-panel";
 import {
   useProbationCriteria,
   useCreateProbationCriteria,
@@ -45,9 +44,9 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
 
   const [newNameAr, setNewNameAr] = useState("");
   const [newNameEn, setNewNameEn] = useState("");
-  // Who the question is for: everyone, one job title, or one employee.
-  const [newTarget, setNewTarget] = useState(TARGET_ALL);
-  const [editTarget, setEditTarget] = useState(TARGET_ALL);
+  // Who the question is for: everyone, a set of job titles, or one employee.
+  const [newTarget, setNewTarget] = useState<CriteriaTarget>(EMPTY_TARGET);
+  const [editTarget, setEditTarget] = useState<CriteriaTarget>(EMPTY_TARGET);
 
   const { data: employeesData } = useEmployeesBasicList();
   const employees: { id: string; firstNameAr: string; lastNameAr: string }[] =
@@ -58,8 +57,15 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
   };
 
   const jobTitles = useJobTitleOptions();
-  const jobTitleName = (titleId?: string | null) =>
-    jobTitleLabel(jobTitles.find((t) => t.id === titleId)) || null;
+  const jobTitleNames = (c: ProbationCriteria) => {
+    const ids = jobTitleIdsOf(c);
+    return ids.map(
+      (id) =>
+        jobTitleLabel(jobTitles.find((t) => t.id === id))
+        || jobTitleLabel(c.jobTitles?.find((t) => t.id === id))
+        || "مسمى وظيفي",
+    );
+  };
 
   const [deleteTarget, setDeleteTarget] = useState<ProbationCriteria | null>(null);
 
@@ -82,7 +88,8 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
         nameAr: editNameAr.trim(),
         nameEn: editNameEn.trim() || undefined,
         displayOrder: editOrder,
-        ...targetToPayload(editTarget),
+        jobTitleIds: editTarget.jobTitleIds,
+        targetEmployeeId: editTarget.targetEmployeeId,
       } },
       { onSuccess: () => setEditingId(null) },
     );
@@ -96,9 +103,10 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
         nameEn: newNameEn.trim() || undefined,
         displayOrder: criteria.length + 1,
         // Only the field that applies — a general question sends neither.
-        ...Object.fromEntries(Object.entries(targetToPayload(newTarget)).filter(([, v]) => v)),
+        ...(newTarget.jobTitleIds.length ? { jobTitleIds: newTarget.jobTitleIds } : {}),
+        ...(newTarget.targetEmployeeId ? { targetEmployeeId: newTarget.targetEmployeeId } : {}),
       },
-      { onSuccess: () => { setNewNameAr(""); setNewNameEn(""); setNewTarget(TARGET_ALL); } },
+      { onSuccess: () => { setNewNameAr(""); setNewNameEn(""); setNewTarget(EMPTY_TARGET); } },
     );
   }
 
@@ -110,101 +118,97 @@ export function CriteriaSettingsDialog({ open, onOpenChange }: CriteriaSettingsD
             <DialogTitle>إعدادات أسئلة تقييم التجربة</DialogTitle>
           </DialogHeader>
 
-          <Tabs defaultValue="questions">
-            <TabsList>
-              <TabsTrigger value="questions">الأسئلة</TabsTrigger>
-              <TabsTrigger value="job-titles">حسب المسمى الوظيفي</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="questions">
-              <div className="space-y-2 py-2">
-                {isLoading ? (
-                  Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-11 w-full" />)
-                ) : criteria.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">لا توجد أسئلة بعد</p>
-                ) : (
-                  criteria.map((c) => (
-                    <div key={c.id} className={`gap-2 rounded-lg border p-2 ${editingId === c.id ? "space-y-2" : "flex items-center"}`}>
-                      {editingId === c.id ? (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              className="w-14 h-8 text-center shrink-0"
-                              value={editOrder}
-                              onChange={(e) => setEditOrder(parseInt(e.target.value) || 0)}
-                            />
-                            <Input className="flex-1 h-8" value={editNameAr} onChange={(e) => setEditNameAr(e.target.value)} placeholder="النص بالعربية" />
-                            <Input className="flex-1 h-8" value={editNameEn} onChange={(e) => setEditNameEn(e.target.value)} placeholder="English" />
-                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" disabled={!editNameAr.trim() || updateCriteria.isPending} onClick={saveEdit}>
-                              <Check className="h-4 w-4 text-green-600" />
-                            </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={cancelEdit}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <CriteriaTargetSelect value={editTarget} onChange={setEditTarget} className="h-8 text-xs" />
-                        </>
-                      ) : (
-                        <>
-                          <span className="w-8 text-xs text-muted-foreground text-center shrink-0">{c.displayOrder}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{c.nameAr}</p>
-                            {c.nameEn && <p className="text-xs text-muted-foreground truncate">{c.nameEn}</p>}
-                          </div>
-                          {c.jobTitleId && (
-                            <Badge variant="outline" className="text-[10px] shrink-0 border-blue-300 bg-blue-50 text-blue-700">
-                              {jobTitleName(c.jobTitleId)
-                                ?? (jobTitleLabel(c.jobTitle) || "مخصص لمسمى وظيفي")}
-                            </Badge>
-                          )}
-                          {c.targetEmployeeId && (
-                            <Badge variant="outline" className="text-[10px] shrink-0 border-orange-300 bg-orange-50 text-orange-700">
-                              {employeeName(c.targetEmployeeId)
-                                ?? (`${c.targetEmployee?.firstNameAr ?? ""} ${c.targetEmployee?.lastNameAr ?? ""}`.trim()
-                                  || "مخصص لموظف")}
-                            </Badge>
-                          )}
-                          {c.isCore && <Badge variant="secondary" className="text-[10px] shrink-0">أساسي</Badge>}
-                          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => startEdit(c)}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          {!c.isCore && (
-                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-destructive" onClick={() => setDeleteTarget(c)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </>
+          <div className="space-y-2 py-2">
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-11 w-full" />)
+            ) : criteria.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">لا توجد أسئلة بعد</p>
+            ) : (
+              criteria.map((c) => (
+                <div key={c.id} className={`gap-2 rounded-lg border p-2 ${editingId === c.id ? "space-y-2" : "flex items-center"}`}>
+                  {editingId === c.id ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          className="w-14 h-8 text-center shrink-0"
+                          value={editOrder}
+                          onChange={(e) => setEditOrder(parseInt(e.target.value) || 0)}
+                        />
+                        <Input className="flex-1 h-8" value={editNameAr} onChange={(e) => setEditNameAr(e.target.value)} placeholder="النص بالعربية" />
+                        <Input className="flex-1 h-8" value={editNameEn} onChange={(e) => setEditNameEn(e.target.value)} placeholder="English" />
+                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" disabled={!editNameAr.trim() || updateCriteria.isPending} onClick={saveEdit}>
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={cancelEdit}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <CriteriaTargetSelect
+                        value={editTarget}
+                        onChange={setEditTarget}
+                        resetKey={c.id}
+                        compact
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-8 text-xs text-muted-foreground text-center shrink-0">{c.displayOrder}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.nameAr}</p>
+                        {c.nameEn && <p className="text-xs text-muted-foreground truncate">{c.nameEn}</p>}
+                      </div>
+                      {jobTitleNames(c).slice(0, 2).map((name, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px] shrink-0 border-blue-300 bg-blue-50 text-blue-700">
+                          {name}
+                        </Badge>
+                      ))}
+                      {jobTitleNames(c).length > 2 && (
+                        <Badge variant="outline" className="text-[10px] shrink-0 border-blue-300 bg-blue-50 text-blue-700">
+                          +{jobTitleNames(c).length - 2}
+                        </Badge>
                       )}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="border-t pt-3 space-y-1.5">
-                <Label>إضافة سؤال جديد</Label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input className="flex-1" value={newNameAr} onChange={(e) => setNewNameAr(e.target.value)} placeholder="النص بالعربية *" />
-                  <Input className="flex-1" value={newNameEn} onChange={(e) => setNewNameEn(e.target.value)} placeholder="English (اختياري)" />
-                  <Button onClick={handleAdd} disabled={!newNameAr.trim() || createCriteria.isPending} className="gap-1.5 shrink-0">
-                    <Plus className="h-4 w-4" />
-                    إضافة
-                  </Button>
+                      {c.targetEmployeeId && (
+                        <Badge variant="outline" className="text-[10px] shrink-0 border-orange-300 bg-orange-50 text-orange-700">
+                          {employeeName(c.targetEmployeeId)
+                            ?? (`${c.targetEmployee?.firstNameAr ?? ""} ${c.targetEmployee?.lastNameAr ?? ""}`.trim()
+                              || "مخصص لموظف")}
+                        </Badge>
+                      )}
+                      {c.isCore && <Badge variant="secondary" className="text-[10px] shrink-0">أساسي</Badge>}
+                      <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => startEdit(c)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      {!c.isCore && (
+                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-destructive" onClick={() => setDeleteTarget(c)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
-                {/* A targeted question only reaches that employee, or everyone holding
-                    that job title. */}
-                <CriteriaTargetSelect value={newTarget} onChange={setNewTarget} className="h-9 text-sm" />
-                <p className="text-xs text-muted-foreground">
-                  السؤال المخصص يظهر فقط في تقييم الموظف المحدد أو في تقييمات موظفي المسمى الوظيفي المحدد،
-                  ولا يؤثر على التقييمات المنشأة سابقاً.
-                </p>
-              </div>
-            </TabsContent>
+              ))
+            )}
+          </div>
 
-            <TabsContent value="job-titles">
-              <JobTitleCriteriaPanel active={open} />
-            </TabsContent>
-          </Tabs>
+          <div className="border-t pt-3 space-y-1.5">
+            <Label>إضافة سؤال جديد</Label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input className="flex-1" value={newNameAr} onChange={(e) => setNewNameAr(e.target.value)} placeholder="النص بالعربية *" />
+              <Input className="flex-1" value={newNameEn} onChange={(e) => setNewNameEn(e.target.value)} placeholder="English (اختياري)" />
+              <Button onClick={handleAdd} disabled={!newNameAr.trim() || createCriteria.isPending} className="gap-1.5 shrink-0">
+                <Plus className="h-4 w-4" />
+                إضافة
+              </Button>
+            </div>
+            {/* A targeted question only reaches that employee, or everyone holding
+                that job title. */}
+            <CriteriaTargetSelect value={newTarget} onChange={setNewTarget} resetKey="new" />
+            <p className="text-xs text-muted-foreground">
+              السؤال المخصص يظهر فقط في تقييم الموظف المحدد أو في تقييمات موظفي المسميات الوظيفية
+              المحددة، ولا يؤثر على التقييمات المنشأة سابقاً.
+            </p>
+          </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>إغلاق</Button>

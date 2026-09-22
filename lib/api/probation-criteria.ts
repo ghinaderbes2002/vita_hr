@@ -14,13 +14,15 @@ export interface ProbationCriteria {
     firstNameAr?: string | null;
     lastNameAr?: string | null;
   } | null;
-  /** Set → the question is attached to everyone holding this job title. */
-  jobTitleId?: string | null;
-  jobTitle?: {
+  /** Set → the question is attached to everyone holding these job titles. */
+  jobTitleIds?: string[];
+  jobTitles?: {
     id: string;
     nameAr?: string | null;
     nameEn?: string | null;
-  } | null;
+  }[];
+  /** The older single-value form of the same link, kept for older records. */
+  jobTitleId?: string | null;
 }
 
 export interface CreateProbationCriteriaData {
@@ -30,8 +32,9 @@ export interface CreateProbationCriteriaData {
   isCore?: boolean;
   /** Omit for a general question; set to scope it to one employee. */
   targetEmployeeId?: string | null;
-  /** Omit for a general question; set to attach it to a whole job title. */
-  jobTitleId?: string | null;
+  /** Omit for a general question; set to attach it to whole job titles. An
+   *  empty array on update clears every link and makes the question general. */
+  jobTitleIds?: string[];
 }
 
 export type UpdateProbationCriteriaData = Partial<CreateProbationCriteriaData>;
@@ -59,21 +62,8 @@ export const probationCriteriaApi = {
     return response.data?.data || response.data;
   },
 
-  // The questions a new evaluation gets for an employee holding this job title:
-  // the general ones minus whatever was excluded here, plus the ones attached to
-  // the title itself.
   getByJobTitle: async (jobTitleId: string): Promise<ProbationCriteria[]> => {
     const response = await apiClient.get(`/probation/criteria/by-job-title/${jobTitleId}`);
     return response.data?.data || response.data;
-  },
-
-  // Excludes (or brings back) one question for one job title, without touching
-  // the question itself or any other job title.
-  setEnabledForJobTitle: async (
-    jobTitleId: string,
-    criteriaId: string,
-    isEnabled: boolean,
-  ): Promise<void> => {
-    await apiClient.put(`/probation/criteria/job-title/${jobTitleId}/${criteriaId}`, { isEnabled });
   },
 };

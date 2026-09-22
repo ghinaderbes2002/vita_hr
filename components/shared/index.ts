@@ -6,3 +6,4 @@ export * from "./loading-spinner";
 export * from "./empty-state";
 export * from "./confirm-dialog";
 export * from "./whatsapp-link";
+export * from "./multi-select";
