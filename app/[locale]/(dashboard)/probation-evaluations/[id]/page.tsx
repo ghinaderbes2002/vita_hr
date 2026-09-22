@@ -277,8 +277,6 @@ export default function ProbationEvaluationDetailPage() {
   const [meetingDate, setMeetingDate] = useState("");
   // hr-document: إغلاق مباشر هو الأكثر شيوعاً، والإرسال للمدير التنفيذي استثناء.
   const [sendToCeo, setSendToCeo] = useState(false);
-  // فارغ = اتبع المتوسط المحسوب من درجات المعايير؛ أي قيمة مكتوبة تتقدّم عليه.
-  const [overallRatingInput, setOverallRatingInput] = useState("");
   const [recommendation, setRecommendation] = useState<ProbationRecommendation | "">("");
   const [scoreMap, setScoreMap] = useState<Record<string, number>>({});
 
@@ -348,29 +346,19 @@ export default function ProbationEvaluationDetailPage() {
   const evScores: any[] = ev.scores || [];
 
   // التقييم العام = متوسط الدرجات المُدخلة للمعايير، لأقرب منزلة عشرية. يُحسب
-  // من scoreMap مباشرة فيتحدّث مع كل درجة تُكتب في النافذة، والمدير يقدر يكتب
-  // قيمة غيره فتتقدّم عليه (ومسح الحقل يرجّعه للحساب التلقائي).
+  // من scoreMap مباشرة فيتحدّث مع كل درجة تُكتب في النافذة، ولا يُكتب يدوياً.
   const enteredScores = evScores
     .map((s: any) => scoreMap[s.criteriaId])
     .filter((v) => v >= 1);
-  const autoOverallRating = enteredScores.length
+  const overallRating = enteredScores.length
     ? Math.round((enteredScores.reduce((a, b) => a + b, 0) / enteredScores.length) * 10) / 10
     : null;
-  const manualOverallRating =
-    overallRatingInput.trim() === "" ? null : Number(overallRatingInput);
-  const overallRating =
-    manualOverallRating != null && manualOverallRating >= 1 && manualOverallRating <= 5
-      ? manualOverallRating
-      : manualOverallRating != null
-        ? null            // رقم مكتوب خارج 1–5: لا يُعتمد، وزر التأكيد يبقى معطّلاً
-        : autoOverallRating;
 
   function openAction(type: ActionType) {
     setActionType(type);
     setActionNotes("");
     setMeetingDate("");
     setSendToCeo(false);
-    setOverallRatingInput("");
     setRecommendation("");
     // Pre-fill scoreMap from existing scores
     const initial: Record<string, number> = {};
@@ -925,21 +913,14 @@ export default function ProbationEvaluationDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>{t("actionDialog.overallRating")} * (1–5)</Label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={5}
-                      step={0.1}
-                      value={overallRatingInput !== "" ? overallRatingInput : (autoOverallRating ?? "")}
-                      onChange={(e) => setOverallRatingInput(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    />
+                    {/* محسوب فقط: متوسط درجات المعايير أدناه، غير قابل للكتابة. */}
+                    <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm font-medium">
+                      {overallRating ?? "—"}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {overallRating != null
-                        ? `${PROBATION_SCORE_LABELS[Math.round(overallRating)]}${
-                            overallRatingInput.trim() === "" ? " — متوسط درجات المعايير تلقائياً" : ""
-                          }`
-                        : "أدخل قيمة بين 1 و 5، أو اترك الحقل فارغاً ليُحسب من درجات المعايير"}
+                        ? `${PROBATION_SCORE_LABELS[Math.round(overallRating)]} — متوسط درجات المعايير تلقائياً`
+                        : "أدخل درجات المعايير أدناه ليُحسب التقييم العام تلقائياً"}
                     </p>
                   </div>
                   <div className="space-y-1.5">
