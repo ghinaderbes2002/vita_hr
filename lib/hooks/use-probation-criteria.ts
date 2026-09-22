@@ -23,6 +23,33 @@ export function useProbationCriteriaForEmployee(employeeId: string) {
   });
 }
 
+/** The questions an evaluation will include for anyone holding this job title. */
+export function useProbationCriteriaByJobTitle(jobTitleId: string) {
+  return useQuery({
+    queryKey: ["probation-criteria", "by-job-title", jobTitleId],
+    queryFn: () => probationCriteriaApi.getByJobTitle(jobTitleId),
+    enabled: !!jobTitleId,
+  });
+}
+
+/** Excludes one question from one job title's evaluations, or brings it back. */
+export function useSetCriteriaEnabledForJobTitle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobTitleId, criteriaId, isEnabled }: { jobTitleId: string; criteriaId: string; isEnabled: boolean }) =>
+      probationCriteriaApi.setEnabledForJobTitle(jobTitleId, criteriaId, isEnabled),
+    onSuccess: (_data, { isEnabled }) => {
+      toast.success(isEnabled ? "تم تفعيل السؤال لهذا المسمى الوظيفي" : "تم استثناء السؤال من هذا المسمى الوظيفي");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+    // Also on failure: the caller flips the switch optimistically, so a refetch
+    // is what puts a rejected toggle back where it was.
+    onSettled: (_data, _err, { jobTitleId }) => {
+      qc.invalidateQueries({ queryKey: ["probation-criteria", "by-job-title", jobTitleId] });
+    },
+  });
+}
+
 export function useCreateProbationCriteria() {
   const qc = useQueryClient();
   return useMutation({

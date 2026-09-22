@@ -83,6 +83,8 @@ interface NavItem {
   showForJobTitleCodes?: string[];
   /** إخفاء العنصر إذا كود المسمى الوظيفي ضمن القائمة — يتقدّم على الصلاحيات و showForRoles */
   hiddenForJobTitleCodes?: string[];
+  /** صلاحية تُلغي الإخفاء أعلاه: من يملكها يرى العنصر مهما كان مسماه الوظيفي */
+  jobTitleHidingBypassPermission?: string;
   /** محصور بهذه الأدوار: لا يظهر لغيرها مهما كانت صلاحياته (الأدمن مستثنى) */
   requiredRoles?: string[];
   /** للأدمن فقط — يتقدّم على كل الصلاحيات والأدوار */
@@ -278,7 +280,8 @@ const navigation: NavItem[] = [
     children: [
       // مسميات المبيعات تدخل على مرضى طب الأقدام من تبويب القسم نفسه، فلا يُعرض
       // لها سجل المرضى الكامل.
-      { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view", hiddenForJobTitleCodes: ["VTX-JTL-000014", "VTX-JTL-000024"] },
+      // مخفي عن المبيعات، إلا من أُعطي صلاحية إنشاء مريض صراحةً.
+      { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view", hiddenForJobTitleCodes: ["VTX-JTL-000014", "VTX-JTL-000024"], jobTitleHidingBypassPermission: "clinic.patients.create" },
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
       { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
       { title: "nav.clinicPodiatry", href: "/clinic/podiatry", icon: Footprints, permission: "clinic.podiatry.reception.view" },
@@ -480,7 +483,9 @@ export function Sidebar() {
     !!item.hiddenForJobTitleCodes &&
     !isAdmin() &&
     !!currentJobTitleCode &&
-    item.hiddenForJobTitleCodes.includes(currentJobTitleCode);
+    item.hiddenForJobTitleCodes.includes(currentJobTitleCode) &&
+    // الصلاحية المعطاة عمداً تتقدّم على الإخفاء حسب المسمى الوظيفي.
+    !(item.jobTitleHidingBypassPermission && hasPermission(item.jobTitleHidingBypassPermission));
 
   // التحقق من صلاحية عنصر نهائي (بدون أطفال)
   const hasItemPermission = (item: NavItem): boolean => {

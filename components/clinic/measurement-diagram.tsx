@@ -6,7 +6,7 @@
 // Same overlay technique as body-pain-map (relative container + absolute boxes).
 import { FlipHorizontal } from "lucide-react";
 import { MEASUREMENT_SHEET_FIELDS } from "@/lib/clinic/measurement-sheet-fields";
-import { measurementSheetImage, MeasureSheetKey } from "@/lib/clinic/measurement-sheet-images";
+import { measurementSheetImage, measurementSheetImageRight, MeasureSheetKey } from "@/lib/clinic/measurement-sheet-images";
 
 export interface DiagramField {
   /** Key stored in the limb map (e.g. the SVG shape id "circ_01" / "len_07"). */
@@ -36,8 +36,14 @@ export function MeasurementSheet({
    *  right-side case is the one that gets flipped. */
   side?: "LEFT" | "RIGHT";
 }) {
+  // The sheet always turns over when the side changes. A level that ships its
+  // own right-side drawing swaps to it and cancels the flip on the artwork
+  // alone, so the plate still animates while that drawing — numbers printed
+  // into it included — stays the right way round. Field positions are unchanged:
+  // they ride the turning plate exactly as they do on every other sheet.
+  const rightImage = side === "RIGHT" ? measurementSheetImageRight(sheet) : null;
   const mirrored = side === "RIGHT";
-  const image = measurementSheetImage(sheet);
+  const image = rightImage ?? measurementSheetImage(sheet);
   const fields = MEASUREMENT_SHEET_FIELDS[sheet];
   if (!image || !fields) return null;
   return (
@@ -46,7 +52,7 @@ export function MeasurementSheet({
         <FlipHorizontal
           className={`h-3.5 w-3.5 transition-transform duration-500 ${mirrored ? "-scale-x-100" : ""}`}
         />
-        {mirrored ? "الرسم معكوس — الجهة اليمنى" : "الجهة اليسرى"}
+        {rightImage ? "الجهة اليمنى" : mirrored ? "الرسم معكوس — الجهة اليمنى" : "الجهة اليسرى"}
       </div>
       <div className="overflow-x-auto">
         <div className="min-w-[680px] sm:min-w-0">
@@ -58,6 +64,7 @@ export function MeasurementSheet({
             onChange={onChange}
             disabled={disabled}
             mirrored={mirrored}
+            artworkCounterFlipped={!!rightImage}
           />
         </div>
       </div>
@@ -73,6 +80,7 @@ export function MeasurementDiagram({
   onChange,
   disabled = false,
   mirrored = false,
+  artworkCounterFlipped = false,
   maxWidth = 1040,
   className,
 }: {
@@ -84,6 +92,8 @@ export function MeasurementDiagram({
   disabled?: boolean;
   /** Flip the artwork horizontally; the inputs move with it but stay readable. */
   mirrored?: boolean;
+  /** The drawing is already a right-side one: undo the flip on it alone. */
+  artworkCounterFlipped?: boolean;
   maxWidth?: number;
   className?: string;
 }) {
@@ -96,7 +106,13 @@ export function MeasurementDiagram({
         style={{ transform: mirrored ? "rotateY(180deg)" : "rotateY(0deg)", transformStyle: "preserve-3d" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- static overlay image */}
-        <img src={imageSrc} alt="مخطط القياس" className="block h-auto w-full select-none" draggable={false} />
+        <img
+          src={imageSrc}
+          alt="مخطط القياس"
+          className="block h-auto w-full select-none"
+          draggable={false}
+          style={artworkCounterFlipped ? { transform: "scaleX(-1)" } : undefined}
+        />
         {fields.map((f) => {
           const value = (f.map === "sound" ? sound : affected)[f.key] ?? "";
           return (

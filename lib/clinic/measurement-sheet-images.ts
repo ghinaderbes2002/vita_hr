@@ -21,5 +21,23 @@ const FILE: Partial<Record<MeasureSheetKey, string>> = {
   above_knee:            "فوق الركبة",
 };
 
+/**
+ * Drawings that ship with a right-side version of their own. Those are already
+ * mirrored artwork — printed numbers included — so they are shown as they are
+ * instead of flipping the left-side drawing in the browser.
+ */
+const FILE_RIGHT: Partial<Record<MeasureSheetKey, string>> = {
+  below_knee:            "تحت_الركبة_يمين",
+  // Named after the limb drawn in them, not the case they serve.
+  ankle_disarticulation: "عبر_الكاحل_يسار",
+  knee_disarticulation:  "عبر_الركبة_يسار",
+  above_knee:            "فوق_الركبة_يسار",
+  hemipelvectomy:        "عبر_الحوض_يسار",
+};
+
 export const measurementSheetImage = (key: MeasureSheetKey): string | null =>
   FILE[key] ? encodeURI(`/prosthetics/${FILE[key]}.svg`) : null;
+
+/** The right-side drawing for this level, when one exists. */
+export const measurementSheetImageRight = (key: MeasureSheetKey): string | null =>
+  FILE_RIGHT[key] ? encodeURI(`/prosthetics/${FILE_RIGHT[key]}.svg`) : null;
