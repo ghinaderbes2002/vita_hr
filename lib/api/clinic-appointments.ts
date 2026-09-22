@@ -163,6 +163,8 @@ export interface AppointmentStatisticsRow {
   cancelled?: boolean;
   postponed?: boolean;
   noShow?: boolean;
+  /** Why the visit was cancelled; empty for a visit that was not. */
+  cancelledReason?: string | null;
 }
 
 export interface AppointmentStatisticsTotals {

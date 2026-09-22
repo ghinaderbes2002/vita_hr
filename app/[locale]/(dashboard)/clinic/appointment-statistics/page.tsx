@@ -47,8 +47,20 @@ interface DepartmentOption {
   nameEn?: string;
 }
 
-function Tick({ on }: { on?: boolean }) {
-  return <span className={on ? "font-bold text-primary" : "text-muted-foreground"}>{on ? "✓" : "—"}</span>;
+function Tick({ on, reason }: { on?: boolean; reason?: string | null }) {
+  // The reason rides on the tick itself, so hovering the cancelled mark explains it.
+  const hint = on && reason ? reason.trim() : "";
+  return (
+    <span
+      title={hint || undefined}
+      className={[
+        on ? "font-bold text-primary" : "text-muted-foreground",
+        hint ? "cursor-help underline decoration-dotted underline-offset-4" : "",
+      ].join(" ")}
+    >
+      {on ? "✓" : "—"}
+    </span>
+  );
 }
 
 export default function AppointmentStatisticsPage() {
@@ -187,7 +199,7 @@ function AppointmentStatisticsReport() {
                       <TableCell>{technicianOf(r)}</TableCell>
                       <TableCell className="font-mono text-xs">{visitDateOf(r)}</TableCell>
                       <TableCell className="text-center"><Tick on={r.attended} /></TableCell>
-                      <TableCell className="text-center"><Tick on={r.cancelled} /></TableCell>
+                      <TableCell className="text-center"><Tick on={r.cancelled} reason={r.cancelledReason} /></TableCell>
                       <TableCell className="text-center"><Tick on={r.postponed} /></TableCell>
                       <TableCell className="text-center"><Tick on={r.noShow} /></TableCell>
                     </TableRow>
