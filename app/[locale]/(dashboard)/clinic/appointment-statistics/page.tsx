@@ -78,6 +78,8 @@ function AppointmentStatisticsReport() {
   const [dateTo, setDateTo] = useState(initial.to);
   const [departmentId, setDepartmentId] = useState("ALL");
   const [patientSearch, setPatientSearch] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("ALL");
+  const [technicianFilter, setTechnicianFilter] = useState("ALL");
 
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
   const clinicDepartments = useMemo(() => {
@@ -98,12 +100,26 @@ function AppointmentStatisticsReport() {
 
   const allRows = data?.rows ?? [];
   const totals = data?.totals ?? {};
-  // البحث بالاسم يتم هنا: الرد يأتي كاملاً لهذه الفترة، فلا حاجة لطلب جديد.
+  // البحث والفلترة يتمّان هنا: الرد يأتي كاملاً لهذه الفترة، فلا حاجة لطلب جديد.
   const term = patientSearch.trim().toLowerCase();
-  const rows = term
-    ? allRows.filter((r) => patientOf(r).toLowerCase().includes(term))
-    : allRows;
+  // قد يحمل السطر أكثر من فنيّ مفصولين بفاصلة، فتُقرأ الأسماء مفردةً.
+  const techniciansOf = (r: AppointmentStatisticsRow) =>
+    technicianOf(r).split("،").map((n) => n.trim()).filter((n) => n && n !== "—");
+  const rows = allRows.filter((r) => {
+    if (term && !patientOf(r).toLowerCase().includes(term)) return false;
+    if (serviceFilter !== "ALL" && serviceOf(r) !== serviceFilter) return false;
+    if (technicianFilter !== "ALL" && !techniciansOf(r).includes(technicianFilter)) return false;
+    return true;
+  });
   const filtered = rows.length !== allRows.length;
+
+  // خيارات القائمتين من القيم الموجودة فعلاً في نتيجة هذه الفترة.
+  const serviceOptions = Array.from(new Set(allRows.map(serviceOf).filter((v) => v && v !== "—"))).sort(
+    (a, b) => a.localeCompare(b, "ar"),
+  );
+  const technicianOptions = Array.from(new Set(allRows.flatMap(techniciansOf))).sort(
+    (a, b) => a.localeCompare(b, "ar"),
+  );
   // بند "العدد الكلي" يأتي من الباك؛ ومع البحث يُحسب من الأسطر الظاهرة وحدها.
   const count = (key: "attended" | "cancelled" | "postponed" | "noShow") =>
     filtered ? rows.filter((r) => r[key]).length : (totals[key] ?? rows.filter((r) => r[key]).length);
@@ -157,14 +173,38 @@ function AppointmentStatisticsReport() {
         <CardContent className="pt-5 space-y-4">
           {/* Search sits over the table it filters, not among the filters that
               re-fetch — it only narrows what is already on screen. */}
-          <div className="relative w-full">
-            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={patientSearch}
-              onChange={(e) => setPatientSearch(e.target.value)}
-              placeholder="ابحث باسم المريض..."
-              className="ps-9"
-            />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_14rem_14rem]">
+            <div className="relative">
+              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={patientSearch}
+                onChange={(e) => setPatientSearch(e.target.value)}
+                placeholder="ابحث باسم المريض..."
+                className="ps-9"
+              />
+            </div>
+            <Select value={serviceFilter} onValueChange={setServiceFilter}>
+              <SelectTrigger className="w-full min-w-0 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate">
+                <SelectValue placeholder="نوع الخدمة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">كل الخدمات</SelectItem>
+                {serviceOptions.map((v) => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
+              <SelectTrigger className="w-full min-w-0 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate">
+                <SelectValue placeholder="اسم الفني" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">كل الفنيين</SelectItem>
+                {technicianOptions.map((v) => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {isLoading ? (
             <div className="space-y-2">
@@ -172,7 +212,7 @@ function AppointmentStatisticsReport() {
             </div>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              {term ? "لا توجد مواعيد لهذا المريض ضمن الفترة" : "لا توجد مواعيد ضمن هذه الفترة"}
+              {allRows.length > 0 ? "لا توجد مواعيد مطابقة للبحث" : "لا توجد مواعيد ضمن هذه الفترة"}
             </p>
           ) : (
             <div className="overflow-x-auto">
