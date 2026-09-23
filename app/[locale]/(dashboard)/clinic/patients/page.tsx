@@ -44,6 +44,7 @@ export default function ClinicPatientsPage() {
     useState<"all" | "prosthetics" | "physio" | "podiatry" | "doctor_exam">("all");
   const [consentFilter, setConsentFilter] =
     useState<"all" | "FUNDER_ONLY" | "FUNDER_AND_SOCIAL" | "REFUSED" | "NONE">("all");
+  const [companyFilter, setCompanyFilter] = useState<"all" | "yes" | "no">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Restrict the list to the user's own department: a physio-only clinician sees
@@ -71,6 +72,7 @@ export default function ClinicPatientsPage() {
     gender: genderFilter !== "all" ? (genderFilter as any) : undefined,
     caseType: caseTypeFilter !== "all" ? (caseTypeFilter as any) : undefined,
     consentDecision: consentFilter !== "all" ? consentFilter : undefined,
+    isCompanyPatient: companyFilter === "all" ? undefined : companyFilter === "yes",
     department,
   });
 
@@ -161,6 +163,16 @@ export default function ClinicPatientsPage() {
             <SelectItem value="doctor_exam">{t("filter.doctorExam")}</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={companyFilter} onValueChange={(v) => { setCompanyFilter(v as "all" | "yes" | "no"); setPage(1); }}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="مريض شركة" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filter.all")}</SelectItem>
+            <SelectItem value="yes">مرضى الشركة</SelectItem>
+            <SelectItem value="no">غير مرضى الشركة</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={consentFilter} onValueChange={(v) => { setConsentFilter(v as any); setPage(1); }}>
           <SelectTrigger className="w-52">
             <SelectValue placeholder="الموافقة" />
@@ -212,7 +224,16 @@ export default function ClinicPatientsPage() {
                   onClick={() => router.push(`/${locale}/clinic/patients/${p.id}`)}
                 >
                   <TableCell className="font-mono text-sm">{p.patientNumber}</TableCell>
-                  <TableCell className="font-medium">{p.firstName} {p.lastName}</TableCell>
+                  <TableCell className="font-medium">
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {p.firstName} {p.lastName}
+                      {p.isCompanyPatient && (
+                        <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700 text-[10px]">
+                          شركة
+                        </Badge>
+                      )}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={p.gender === "MALE" ? "default" : "secondary"}>
                       {tCommon(`gender.${p.gender}`)}

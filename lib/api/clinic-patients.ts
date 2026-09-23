@@ -169,6 +169,8 @@ export interface PatientListParams {
   consentDecision?: ConsentDecision | "NONE";
   /** Restrict to a clinic department: physio only, or prosthetics + podiatry. */
   department?: "physio" | "prosthetics";
+  /** true = مرضى الشركات فقط، false = من عداهم. */
+  isCompanyPatient?: boolean;
 }
 
 export interface PaginatedPatients {
