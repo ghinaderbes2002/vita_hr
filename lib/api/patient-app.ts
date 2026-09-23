@@ -249,6 +249,9 @@ export interface Assignment {
   reps?: number | null;
   holdSeconds?: number | null;
   restSeconds?: number | null;
+  /** الرقمان الاختياريان بجانب frequencyText النصي. */
+  timesPerDay?: number | null;
+  daysPerWeek?: number | null;
   frequencyTextAr?: string | null;
   frequencyTextEn?: string | null;
   customInstructionAr?: string | null;
@@ -268,6 +271,8 @@ export interface AssignExerciseDto {
   reps?: number | null;
   holdSeconds?: number | null;
   restSeconds?: number | null;
+  timesPerDay?: number | null;
+  daysPerWeek?: number | null;
   frequencyTextAr?: string | null;
   frequencyTextEn?: string | null;
   customInstructionAr?: string | null;

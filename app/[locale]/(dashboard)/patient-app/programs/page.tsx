@@ -182,6 +182,14 @@ function SessionAssignments({ session }: { session: ErpSession }) {
     return parts.join(" · ") || "—";
   };
 
+  /** الرقمان الاختياريان تحت نص التكرار: "3 مرات/يوم · 5 أيام/أسبوع". */
+  const frequencyNumbers = (a: Assignment) => {
+    const parts: string[] = [];
+    if (a.timesPerDay) parts.push(t("dosageTimesPerDay", { count: a.timesPerDay }));
+    if (a.daysPerWeek) parts.push(t("dosageDaysPerWeek", { count: a.daysPerWeek }));
+    return parts.join(" · ");
+  };
+
   const move = (index: number, dir: -1 | 1) => {
     const target = index + dir;
     if (target < 0 || target >= active.length) return;
@@ -301,7 +309,11 @@ function SessionAssignments({ session }: { session: ErpSession }) {
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm">{dosage(a)}</TableCell>
                     <TableCell className="text-sm">
-                      {pickText(locale, a.frequencyTextAr, a.frequencyTextEn) || "—"}
+                      {pickText(locale, a.frequencyTextAr, a.frequencyTextEn)
+                        || (frequencyNumbers(a) ? "" : "—")}
+                      {frequencyNumbers(a) && (
+                        <p className="text-xs text-muted-foreground tabular-nums">{frequencyNumbers(a)}</p>
+                      )}
                     </TableCell>
                     <TableCell>
                       {cancelled ? (

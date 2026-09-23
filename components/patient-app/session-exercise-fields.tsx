@@ -18,6 +18,8 @@ export interface SessionExerciseForm {
   durationSeconds: string;
   holdSeconds: string;
   restSeconds: string;
+  timesPerDay: string;
+  daysPerWeek: string;
   frequencyTextAr: string;
   frequencyTextEn: string;
   customInstructionAr: string;
@@ -27,11 +29,16 @@ export interface SessionExerciseForm {
 export const emptySessionExerciseForm: SessionExerciseForm = {
   exerciseId: "",
   sets: "", reps: "", durationSeconds: "", holdSeconds: "", restSeconds: "",
+  timesPerDay: "", daysPerWeek: "",
   frequencyTextAr: "", frequencyTextEn: "",
   customInstructionAr: "", customInstructionEn: "",
 };
 
-const NUMBER_FIELDS = ["sets", "reps", "durationSeconds", "holdSeconds", "restSeconds"] as const;
+/** Seeded from the exercise library's defaults when an exercise is picked. */
+const SEEDED_NUMBER_FIELDS = ["sets", "reps", "durationSeconds", "holdSeconds", "restSeconds"] as const;
+
+/** كم مرة باليوم وكم يوم بالأسبوع — رقمان بجانب نص التكرار، بلا افتراضي بالمكتبة. */
+const NUMBER_FIELDS = [...SEEDED_NUMBER_FIELDS, "timesPerDay", "daysPerWeek"] as const;
 
 const str = (n?: number | null) => (n != null ? String(n) : "");
 
@@ -43,6 +50,8 @@ export const formFromAssignment = (a: Assignment): SessionExerciseForm => ({
   durationSeconds: str(a.durationSeconds),
   holdSeconds: str(a.holdSeconds),
   restSeconds: str(a.restSeconds),
+  timesPerDay: str(a.timesPerDay),
+  daysPerWeek: str(a.daysPerWeek),
   frequencyTextAr: a.frequencyTextAr ?? "",
   frequencyTextEn: a.frequencyTextEn ?? "",
   customInstructionAr: a.customInstructionAr ?? "",
@@ -68,6 +77,8 @@ export const sessionExerciseDto = (f: SessionExerciseForm) => ({
   durationSeconds: numOrNull(f.durationSeconds),
   holdSeconds: numOrNull(f.holdSeconds),
   restSeconds: numOrNull(f.restSeconds),
+  timesPerDay: numOrNull(f.timesPerDay),
+  daysPerWeek: numOrNull(f.daysPerWeek),
   frequencyTextAr: f.frequencyTextAr.trim() || null,
   frequencyTextEn: f.frequencyTextEn.trim() || null,
   customInstructionAr: f.customInstructionAr.trim() || null,
@@ -110,7 +121,7 @@ export function SessionExerciseFields({
     setListOpen(false);
     // Seed from the library defaults, leaving anything already typed alone.
     const prefill: Partial<SessionExerciseForm> = {};
-    const seed = (field: (typeof NUMBER_FIELDS)[number], v?: number | null) => {
+    const seed = (field: (typeof SEEDED_NUMBER_FIELDS)[number], v?: number | null) => {
       if (v != null && !value[field]) prefill[field] = String(v);
     };
     seed("sets", ex?.defaultSets);
@@ -180,7 +191,7 @@ export function SessionExerciseFields({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {NUMBER_FIELDS.map((key) => (
           <div key={key} className="space-y-1.5 min-w-0">
             <Label className="text-sm">{t(key)}</Label>
@@ -241,6 +252,8 @@ export function SessionAssignments({ sessionId }: { sessionId: string }) {
     if (a.durationSeconds) parts.push(t("dosageDuration", { count: a.durationSeconds }));
     if (a.holdSeconds) parts.push(t("dosageHold", { count: a.holdSeconds }));
     if (a.restSeconds) parts.push(t("dosageRest", { count: a.restSeconds }));
+    if (a.timesPerDay) parts.push(t("dosageTimesPerDay", { count: a.timesPerDay }));
+    if (a.daysPerWeek) parts.push(t("dosageDaysPerWeek", { count: a.daysPerWeek }));
     return parts.join(" · ") || "—";
   };
 

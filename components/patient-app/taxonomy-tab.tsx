@@ -114,19 +114,20 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
       </div>
 
       <div className="overflow-x-auto rounded-md border">
-        <Table>
+        {/* The shared Table forces dir="ltr" on its wrapper; this sheet is read in
+            Arabic, so the table itself is turned back to rtl — the first column
+            then starts at the right, beside its own heading. */}
+        <Table dir="rtl">
           <TableHeader>
             <TableRow>
-              {/* Table forces dir="ltr" app-wide, so each Arabic column sets its own
-                  direction on the header too — otherwise the heading sits at the far
-                  side of its own values. */}
-              <TableHead dir="rtl">{tc("nameAr")}</TableHead>
-              <TableHead>{tc("nameEn")}</TableHead>
+              <TableHead className="w-64">{tc("nameAr")}</TableHead>
+              <TableHead className="w-64">{tc("nameEn")}</TableHead>
               {hasBodyParent && (
-                <TableHead dir="rtl">{hasTargetParent ? t("targetRegion") : t("bodyRegion")}</TableHead>
+                <TableHead className="w-56">{hasTargetParent ? t("targetRegion") : t("bodyRegion")}</TableHead>
               )}
               <TableHead className="w-24">{tc("sortOrder")}</TableHead>
-              <TableHead className="w-16" />
+              {/* Soaks up the leftover width so the named columns stay put. */}
+              <TableHead className="w-auto" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -151,15 +152,18 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
             ) : (
               items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium" dir="rtl">{item.nameAr}</TableCell>
-                  <TableCell dir="ltr" className="text-start">{item.nameEn}</TableCell>
+                  <TableCell className="font-medium">{item.nameAr}</TableCell>
+                  {/* English reads ltr inside the rtl table, aligned to the same edge. */}
+                  <TableCell dir="ltr" className="text-end">{item.nameEn}</TableCell>
                   {hasBodyParent && (
-                    <TableCell className="text-sm" dir="rtl">
+                    <TableCell className="text-sm">
                       {hasTargetParent ? nameOf(allTargets, item.targetRegionId) : nameOf(bodyRegions, item.bodyRegionId)}
                     </TableCell>
                   )}
                   <TableCell className="text-sm text-muted-foreground">{item.sortOrder ?? "—"}</TableCell>
-                  <TableCell>
+                  {/* Last column runs to the far edge, so the action sits at the
+                      end of the row rather than hugging the numbers. */}
+                  <TableCell className="text-end">
                     <ActionGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_TAXONOMY}>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                         <Pencil className="h-4 w-4" />

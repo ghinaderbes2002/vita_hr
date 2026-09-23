@@ -17,11 +17,15 @@ import {
 } from "@/lib/hooks/use-patient-app";
 
 /** Each key is both the form field and its label under `patientApp.programs`. */
-const NUMBER_FIELDS = ["sets", "reps", "durationSeconds", "holdSeconds", "restSeconds"] as const;
+const SEEDED_NUMBER_FIELDS = ["sets", "reps", "durationSeconds", "holdSeconds", "restSeconds"] as const;
+
+/** كم مرة باليوم وكم يوم بالأسبوع — بجانب نص التكرار، وبلا افتراضي في المكتبة. */
+const NUMBER_FIELDS = [...SEEDED_NUMBER_FIELDS, "timesPerDay", "daysPerWeek"] as const;
 
 const emptyForm = {
   exerciseId: "",
   sets: "", reps: "", durationSeconds: "", holdSeconds: "", restSeconds: "",
+  timesPerDay: "", daysPerWeek: "",
   frequencyTextAr: "", frequencyTextEn: "",
   customInstructionAr: "", customInstructionEn: "",
 };
@@ -69,6 +73,8 @@ export function AssignmentDialog({
             durationSeconds: str(assignment.durationSeconds),
             holdSeconds: str(assignment.holdSeconds),
             restSeconds: str(assignment.restSeconds),
+            timesPerDay: str(assignment.timesPerDay),
+            daysPerWeek: str(assignment.daysPerWeek),
             frequencyTextAr: assignment.frequencyTextAr ?? "",
             frequencyTextEn: assignment.frequencyTextEn ?? "",
             customInstructionAr: assignment.customInstructionAr ?? "",
@@ -97,7 +103,7 @@ export function AssignmentDialog({
     // them, and a field already filled in by hand is left alone. The API applies
     // the same defaults itself for anything left empty.
     const prefill: Record<string, string> = {};
-    const fromDefault = (field: (typeof NUMBER_FIELDS)[number], value?: number | null) => {
+    const fromDefault = (field: (typeof SEEDED_NUMBER_FIELDS)[number], value?: number | null) => {
       if (value != null && !form[field]) prefill[field] = String(value);
     };
     fromDefault("sets", ex?.defaultSets);
@@ -215,7 +221,7 @@ export function AssignmentDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {NUMBER_FIELDS.map((key) => (
               <div key={key} className="space-y-1.5">
                 <Label className="text-xs">{t(key)}</Label>
