@@ -224,6 +224,7 @@
     "patientAppRatings": "Therapist Ratings",
     "myProfile": "My Profile",
     "maintenanceRequests": "Maintenance Requests",
+    "maintenanceLog": "Maintenance log",
     "myMaintenanceRequests": "My Maintenance Requests",
     "maintenancePending": "Pending Maintenance",
     "myMaintenanceTasks": "My Maintenance Tasks"
@@ -5449,6 +5450,16 @@
       "ASSIGNED": "Assigned",
       "DONE": "Done",
       "REJECTED": "Rejected"
+    },
+    "log": {
+      "title": "Maintenance log",
+      "description": "Every maintenance request in every state, whoever filed it or was assigned to it",
+      "submittedBy": "Submitted by",
+      "assignedTo": "Assigned to",
+      "searchPlaceholder": "Search by requester, assignee or asset type...",
+      "allStatuses": "All statuses",
+      "noMatches": "No requests match the search",
+      "count": "Showing {shown} of {total}"
     },
     "tabs": {
       "manager": "Pending My Approval",

@@ -22,8 +22,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   useAllMaintenanceRequests,
-  useManagerApproveMaintenanceRequest,
-  useManagerRejectMaintenanceRequest,
   useExecutiveApproveMaintenanceRequest,
   useExecutiveRejectMaintenanceRequest,
 } from "@/lib/hooks/use-maintenance-requests";
@@ -38,7 +36,9 @@ const priorityClasses: Record<string, string> = {
   NORMAL: "bg-gray-100 text-gray-700 border-gray-300",
 };
 
-type ActionType = "manager-approve" | "manager-reject" | "executive-approve" | "executive-reject";
+// The direct manager is no longer part of the route: a request goes straight
+// from the requester to the logistics officer.
+type ActionType = "executive-approve" | "executive-reject";
 
 export default function MaintenancePendingPage() {
   const t = useTranslations();
@@ -46,15 +46,13 @@ export default function MaintenancePendingPage() {
   const dateLocale = locale === "ar" ? ar : locale === "tr" ? tr : enUS;
 
   const { hasPermission, isAdmin } = usePermissions();
-  const canManagerApprove = isAdmin() || hasPermission("maintenance:manager-approve" as any);
   const canLogistics = isAdmin() || hasPermission("maintenance:logistics" as any);
   const canExecutiveApprove = isAdmin() || hasPermission("maintenance:executive-approve" as any);
 
-  const showManagerTab = isAdmin() || canManagerApprove;
   const showLogisticsTab = isAdmin() || canLogistics;
   const showExecutiveTab = isAdmin() || canExecutiveApprove;
 
-  const defaultTab = showManagerTab ? "manager" : showLogisticsTab ? "logistics" : "executive";
+  const defaultTab = showLogisticsTab ? "logistics" : "executive";
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   const [actionDialog, setActionDialog] = useState<{ type: ActionType; req: MaintenanceRequest } | null>(null);
@@ -64,10 +62,6 @@ export default function MaintenancePendingPage() {
   const [logisticsRequestId, setLogisticsRequestId] = useState<string | null>(null);
   const [logisticsDialogOpen, setLogisticsDialogOpen] = useState(false);
 
-  const { data: managerData, isLoading: managerLoading } = useAllMaintenanceRequests(
-    { status: "PENDING_MANAGER" },
-    { enabled: activeTab === "manager" },
-  );
   const { data: logisticsData, isLoading: logisticsLoading } = useAllMaintenanceRequests(
     { status: "PENDING_LOGISTICS" },
     { enabled: activeTab === "logistics" },
@@ -77,16 +71,14 @@ export default function MaintenancePendingPage() {
     { enabled: activeTab === "executive" },
   );
 
-  const managerApprove = useManagerApproveMaintenanceRequest();
-  const managerReject = useManagerRejectMaintenanceRequest();
   const execApprove = useExecutiveApproveMaintenanceRequest();
   const execReject = useExecutiveRejectMaintenanceRequest();
 
   const getList = (tab: string): MaintenanceRequest[] => {
-    const d = tab === "manager" ? managerData : tab === "logistics" ? logisticsData : execData;
+    const d = tab === "logistics" ? logisticsData : execData;
     return (d as any)?.data?.items || (d as any)?.data || (d as any)?.items || [];
   };
-  const isLoadingTab = activeTab === "manager" ? managerLoading : activeTab === "logistics" ? logisticsLoading : execLoading;
+  const isLoadingTab = activeTab === "logistics" ? logisticsLoading : execLoading;
 
   const openAction = (type: ActionType, req: MaintenanceRequest) => {
     setActionDialog({ type, req });
@@ -96,20 +88,15 @@ export default function MaintenancePendingPage() {
   const confirmAction = async () => {
     if (!actionDialog) return;
     const { type, req } = actionDialog;
-    if (type === "manager-approve") await managerApprove.mutateAsync({ id: req.id, notes: notes || undefined });
-    else if (type === "manager-reject") await managerReject.mutateAsync({ id: req.id, notes: notes || undefined });
-    else if (type === "executive-approve") await execApprove.mutateAsync({ id: req.id, notes: notes || undefined });
+    if (type === "executive-approve") await execApprove.mutateAsync({ id: req.id, notes: notes || undefined });
     else if (type === "executive-reject") await execReject.mutateAsync({ id: req.id, notes: notes || undefined });
     setActionDialog(null);
     setNotes("");
   };
 
-  const isConfirmPending =
-    managerApprove.isPending || managerReject.isPending ||
-    execApprove.isPending || execReject.isPending;
+  const isConfirmPending = execApprove.isPending || execReject.isPending;
 
-  const isRejectAction = (type?: ActionType) =>
-    type === "manager-reject" || type === "executive-reject";
+  const isRejectAction = (type?: ActionType) => type === "executive-reject";
 
   const renderTable = (
     list: MaintenanceRequest[],
@@ -180,19 +167,6 @@ export default function MaintenancePendingPage() {
     </Table>
   );
 
-  const managerActions = (req: MaintenanceRequest) => (
-    <>
-      <Button size="sm" onClick={() => openAction("manager-approve", req)}>
-        <Check className="h-4 w-4 ml-1" />
-        {t("maintenance.actions.approve")}
-      </Button>
-      <Button size="sm" variant="destructive" onClick={() => openAction("manager-reject", req)}>
-        <X className="h-4 w-4 ml-1" />
-        {t("maintenance.actions.reject")}
-      </Button>
-    </>
-  );
-
   const logisticsActions = (req: MaintenanceRequest) => (
     <Button
       size="sm"
@@ -230,9 +204,6 @@ export default function MaintenancePendingPage() {
         className="space-y-4"
       >
         <TabsList>
-          {showManagerTab && (
-            <TabsTrigger value="manager">{t("maintenance.tabs.manager")}</TabsTrigger>
-          )}
           {showLogisticsTab && (
             <TabsTrigger value="logistics">{t("maintenance.tabs.logistics")}</TabsTrigger>
           )}
@@ -241,11 +212,6 @@ export default function MaintenancePendingPage() {
           )}
         </TabsList>
 
-        {showManagerTab && (
-          <TabsContent value="manager" className="rounded-md border">
-            {renderTable(getList("manager"), managerActions)}
-          </TabsContent>
-        )}
         {showLogisticsTab && (
           <TabsContent value="logistics" className="rounded-md border">
             {renderTable(getList("logistics"), logisticsActions)}

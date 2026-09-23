@@ -168,6 +168,8 @@ const navigation: NavItem[] = [
         hiddenForRoles: ["IT", "تقنية المعلومات", "CFO", "CEO"],
         children: [
           { title: "nav.pendingManagerApproval", href: "/requests/pending-manager", icon: Clock, permissions: ["requests:manager-approve", "requests:hr-approve"] },
+          // سجل الصيانة: لمن يتخذ القرار اللوجستي، ويعرض الطلبات بكل حالاتها.
+          { title: "nav.maintenanceLog", href: "/maintenance-requests/log", icon: ClipboardList, permission: "requests:lo-approve" },
           { title: "nav.allRequests", href: "/requests/all", icon: ClipboardList, permission: "requests:read", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
         ],
       },

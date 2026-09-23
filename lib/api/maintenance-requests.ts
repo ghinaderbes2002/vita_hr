@@ -48,6 +48,13 @@ export interface MaintenanceRequest {
   updatedAt: string;
 }
 
+/** A row of the maintenance log: every request, whoever filed it. */
+export interface MaintenanceLogItem extends MaintenanceRequest {
+  submittedByName?: string | null;
+  /** Null while no one has been put on the job yet. */
+  assignedToName?: string | null;
+}
+
 export interface CreateMaintenanceData {
   workLocation: WorkLocation;
   assetType: string;
@@ -77,6 +84,16 @@ export const maintenanceRequestsApi = {
       params: { ...params, type: "MAINTENANCE" },
     });
     return response.data;
+  },
+
+  /**
+   * Every maintenance request in every state, for whoever decides on them —
+   * not scoped to the caller the way "mine" and "my tasks" are.
+   */
+  getLog: async (): Promise<MaintenanceLogItem[]> => {
+    const response = await apiClient.get("/requests/maintenance/log");
+    const d = response.data?.data ?? response.data;
+    return Array.isArray(d) ? d : d?.items ?? [];
   },
 
   create: async (data: CreateMaintenanceData) => {

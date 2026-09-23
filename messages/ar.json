@@ -173,6 +173,7 @@
     "patientChats": "محادثات المرضى",
     "patientAppRatings": "تقييمات المعالجين",
     "maintenanceRequests": "طلبات الصيانة",
+    "maintenanceLog": "سجل الصيانة",
     "myMaintenanceRequests": "طلبات صيانتي",
     "maintenancePending": "الصيانة المعلقة",
     "myMaintenanceTasks": "مهام الصيانة الخاصة بي"
@@ -5673,6 +5674,16 @@
       "ASSIGNED": "مكلَّف",
       "DONE": "منجز",
       "REJECTED": "مرفوض"
+    },
+    "log": {
+      "title": "سجل الصيانة",
+      "description": "كل طلبات الصيانة بكل حالاتها، مهما كان مقدّمها أو المكلَّف بها",
+      "submittedBy": "مقدّم الطلب",
+      "assignedTo": "المكلَّف",
+      "searchPlaceholder": "ابحث باسم مقدّم الطلب أو المكلَّف أو نوع الأصل...",
+      "allStatuses": "كل الحالات",
+      "noMatches": "لا توجد طلبات مطابقة للبحث",
+      "count": "المعروض {shown} من أصل {total}"
     },
     "tabs": {
       "manager": "بانتظار موافقتك",

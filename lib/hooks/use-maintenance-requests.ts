@@ -33,6 +33,13 @@ export function useMyMaintenanceTasks() {
   });
 }
 
+export function useMaintenanceLog() {
+  return useQuery({
+    queryKey: ["maintenance-log"],
+    queryFn: () => maintenanceRequestsApi.getLog(),
+  });
+}
+
 export function useCreateMaintenanceRequest() {
   const queryClient = useQueryClient();
   return useMutation({

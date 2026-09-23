@@ -223,6 +223,7 @@
     "patientAppRatings": "Terapist Değerlendirmeleri",
     "myProfile": "Profilim",
     "maintenanceRequests": "Bakım Talepleri",
+    "maintenanceLog": "Bakım kaydı",
     "myMaintenanceRequests": "Bakım Taleplerim",
     "maintenancePending": "Bekleyen Bakım",
     "myMaintenanceTasks": "Bakım Görevlerim"
@@ -4530,6 +4531,16 @@
       "ASSIGNED": "Atandı",
       "DONE": "Tamamlandı",
       "REJECTED": "Reddedildi"
+    },
+    "log": {
+      "title": "Bakım kaydı",
+      "description": "Kimin açtığına veya kime atandığına bakılmaksızın tüm bakım talepleri",
+      "submittedBy": "Talep eden",
+      "assignedTo": "Atanan",
+      "searchPlaceholder": "Talep eden, atanan veya varlık türüne göre ara...",
+      "allStatuses": "Tüm durumlar",
+      "noMatches": "Aramayla eşleşen talep yok",
+      "count": "{total} içinde {shown} gösteriliyor"
     },
     "tabs": {
       "manager": "Onayım Bekleniyor",
