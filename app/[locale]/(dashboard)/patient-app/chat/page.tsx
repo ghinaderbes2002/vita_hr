@@ -18,7 +18,7 @@ import {
   PATIENT_APP_CHAT_KEY, useChatConversations, useSendChatMessage,
 } from "@/lib/hooks/use-patient-app";
 import {
-  ChatConversation, ChatMessage, isFromPatient, patientAppApi,
+  ChatConversation, ChatMessage, isFromPatient, messageTime, patientAppApi,
 } from "@/lib/api/patient-app";
 
 /** The gateway has no WebSocket support; the guide recommends polling every 3–5s. */
@@ -28,7 +28,7 @@ const fmtTime = (d?: string | null) =>
   d ? new Date(d).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short", hour12: true }) : "";
 
 const lastActivity = (c: ChatConversation) =>
-  c.lastMessageAt ?? c.lastMessage?.createdAt ?? c.createdAt ?? "";
+  c.lastMessageAt || messageTime(c.lastMessage) || c.createdAt || "";
 
 export default function PatientAppChatPage() {
   const t = useTranslations("patientApp.chat");
@@ -138,14 +138,16 @@ function ChatThread({ conversation, onBack }: { conversation: ChatConversation; 
   const merge = useCallback((incoming: ChatMessage[]) => {
     if (incoming.length === 0) return;
     for (const m of incoming) {
-      if (!lastAt.current || m.createdAt > lastAt.current) lastAt.current = m.createdAt;
+      // مؤشّر ?after= هو أحدث sentAt وصلنا؛ حارس الفراغ احتياط فقط، فالحقل مضمون.
+      const at = messageTime(m);
+      if (at && (!lastAt.current || at > lastAt.current)) lastAt.current = at;
     }
     setMessages((prev) => {
       const seen = new Set(prev.map((m) => m.id));
       const fresh = incoming.filter((m) => !seen.has(m.id));
       return fresh.length === 0
         ? prev
-        : [...prev, ...fresh].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        : [...prev, ...fresh].sort((a, b) => messageTime(a).localeCompare(messageTime(b)));
     });
   }, []);
 
@@ -227,7 +229,7 @@ function ChatThread({ conversation, onBack }: { conversation: ChatConversation; 
                 >
                   <p className="whitespace-pre-wrap break-words">{m.messageText}</p>
                   <p className={cn("mt-1 text-[10px]", mine ? "text-primary-foreground/70" : "text-muted-foreground")} dir="ltr">
-                    {fmtTime(m.createdAt)}
+                    {fmtTime(messageTime(m))}
                   </p>
                 </div>
               </div>

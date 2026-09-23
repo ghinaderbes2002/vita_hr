@@ -306,7 +306,8 @@ export interface ChatMessage {
   senderId?: string | null;
   messageText: string;
   readAt?: string | null;
-  createdAt: string;
+  /** وقت الرسالة الوحيد في المخطّط — لا يوجد createdAt على الرسائل. */
+  sentAt: string;
 }
 
 export interface ChatConversation {
@@ -320,6 +321,9 @@ export interface ChatConversation {
   unreadCount?: number | null;
   createdAt?: string;
 }
+
+/** وقت الرسالة (sentAt)، أو "" حين لا تكون هناك رسالة أصلاً. */
+export const messageTime = (m?: Pick<ChatMessage, "sentAt"> | null) => m?.sentAt ?? "";
 
 export const isFromPatient = (m: Pick<ChatMessage, "senderType">) =>
   String(m.senderType ?? "").toUpperCase() === "PATIENT";
