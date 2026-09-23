@@ -102,6 +102,33 @@ export function useSelfEvaluateProbation() {
   });
 }
 
+const apiErrorMessage = (e: unknown, fallback: string) => {
+  const res = (e as { response?: { data?: { error?: { message?: string }; message?: string } } })?.response;
+  return res?.data?.error?.message || res?.data?.message || fallback;
+};
+
+/** رفع مرفق الإنجاز قبل إرسال التقييم الذاتي — يرجّع رابط الملف. */
+export function useUploadAchievementFile() {
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      probationEvaluationsApi.uploadAchievementFile(id, file),
+    onSuccess: () => toast.success("تم رفع المرفق"),
+    onError: (e) => toast.error(apiErrorMessage(e, "فشل رفع المرفق")),
+  });
+}
+
+export function useDownloadAchievementFile() {
+  return useMutation({
+    mutationFn: (id: string) => probationEvaluationsApi.downloadAchievementFile(id),
+    onSuccess: (blob) => {
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    },
+    onError: () => toast.error("فشل فتح المرفق"),
+  });
+}
+
 export function useSeniorApproveProbation() {
   const qc = useQueryClient();
   return useMutation({

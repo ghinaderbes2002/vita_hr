@@ -75,6 +75,9 @@ export interface ProbationEvaluation {
   finalRecommendation?: ProbationRecommendation;
   evaluatorNotes?: string;
   employeeNotes?: string;
+  /** إجابة الموظف عن سؤال الإنجاز، ومرفقها الاختياري. */
+  employeeAchievementNote?: string | null;
+  employeeAchievementFileUrl?: string | null;
   managerScorePercent?: number | null;
   selfScorePercent?: number | null;
   finalScorePercent?: number | null;
@@ -107,7 +110,14 @@ export interface CreateProbationEvaluationData {
 export interface SelfEvaluateData {
   notes?: string;
   scores: { criteriaId: string; score: number }[];
+  /** كلاهما اختياري: نص الإنجاز، ورابط المرفق الراجع من رفع الملف. */
+  achievementNote?: string;
+  achievementFileUrl?: string;
 }
+
+/** ما يقبله رفع مرفق الإنجاز — يطابق ما يفرضه الباك. */
+export const ACHIEVEMENT_FILE_ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx";
+export const ACHIEVEMENT_FILE_MAX_BYTES = 10 * 1024 * 1024;
 
 // POST /:id/senior-approve
 export interface SeniorApproveData {
@@ -213,6 +223,26 @@ export const probationEvaluationsApi = {
   update: async (id: string, data: Partial<CreateProbationEvaluationData>): Promise<ProbationEvaluation> => {
     const response = await apiClient.put(`/probation-evaluations/${id}`, data);
     return response.data?.data || response.data;
+  },
+
+  // يُرفع والتقييم لا يزال PENDING_SELF_EVALUATION، أي قبل إرسال التقييم الذاتي.
+  uploadAchievementFile: async (id: string, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post(
+      `/probation-evaluations/${id}/achievement-file`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    const d = response.data?.data ?? response.data;
+    return d?.achievementFileUrl ?? d;
+  },
+
+  downloadAchievementFile: async (id: string): Promise<Blob> => {
+    const response = await apiClient.get(`/probation-evaluations/${id}/achievement-file`, {
+      responseType: "blob",
+    });
+    return response.data;
   },
 
   selfEvaluate: async (id: string, data: SelfEvaluateData) => {

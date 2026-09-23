@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-  ArrowRight, CheckCircle2, XCircle, FileCheck,
+  ArrowRight, CheckCircle2, XCircle, FileCheck, Paperclip, Loader2, X, Download,
   Gavel, History, CalendarClock, CalendarCheck, ClipboardEdit, AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ import {
   useSuggestMeetingChange,
   usePendingMyAction,
   useCompleteProbation,
+  useUploadAchievementFile,
+  useDownloadAchievementFile,
 } from "@/lib/hooks/use-probation-evaluations";
 import {
   ProbationStatus,
@@ -43,7 +45,10 @@ import {
   PROBATION_SCORE_LABELS,
   PROBATION_RECOMMENDATION_OPTIONS,
   PROBATION_RECOMMENDATION_LABELS,
+  ACHIEVEMENT_FILE_ACCEPT,
+  ACHIEVEMENT_FILE_MAX_BYTES,
 } from "@/lib/api/probation-evaluations";
+import { toast } from "sonner";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useEmployeeBasic, useMyEmployee } from "@/lib/hooks/use-employees";
@@ -278,12 +283,18 @@ export default function ProbationEvaluationDetailPage() {
   // hr-document: إغلاق مباشر هو الأكثر شيوعاً، والإرسال للمدير التنفيذي استثناء.
   const [sendToCeo, setSendToCeo] = useState(false);
   const [recommendation, setRecommendation] = useState<ProbationRecommendation | "">("");
+  // سؤال الإنجاز ومرفقه — اختياريان، ويخصّان التقييم الذاتي وحده.
+  const [achievementNote, setAchievementNote] = useState("");
+  const [achievementFileUrl, setAchievementFileUrl] = useState("");
+  const [achievementFileName, setAchievementFileName] = useState("");
   const [scoreMap, setScoreMap] = useState<Record<string, number>>({});
 
   const { data: evaluation, isLoading } = useProbationEvaluation(id);
   const { data: history } = useProbationHistory(id);
 
   const selfEvaluate    = useSelfEvaluateProbation();
+  const uploadAchievement   = useUploadAchievementFile();
+  const downloadAchievement = useDownloadAchievementFile();
   const seniorApprove   = useSeniorApproveProbation();
   const seniorReject    = useSeniorRejectProbation();
   const dmApprove       = useDirectManagerApproveProbation();
@@ -360,6 +371,9 @@ export default function ProbationEvaluationDetailPage() {
     setMeetingDate("");
     setSendToCeo(false);
     setRecommendation("");
+    setAchievementNote("");
+    setAchievementFileUrl("");
+    setAchievementFileName("");
     // Pre-fill scoreMap from existing scores
     const initial: Record<string, number> = {};
     evScores.forEach((s: any) => {
@@ -377,6 +391,8 @@ export default function ProbationEvaluationDetailPage() {
             id,
             data: {
               notes: actionNotes || undefined,
+              achievementNote: achievementNote.trim() || undefined,
+              achievementFileUrl: achievementFileUrl || undefined,
               scores: evScores
                 .filter((s) => scoreMap[s.criteriaId] >= 1)
                 .map((s) => ({ criteriaId: s.criteriaId, score: scoreMap[s.criteriaId] })),
@@ -487,7 +503,9 @@ export default function ProbationEvaluationDetailPage() {
     (actionType === "direct-manager-approve" && (!overallRating || !recommendation)) ||
     (actionType === "ceo" && !recommendation) ||
     (actionType === "propose-meeting" && !meetingDate) ||
-    (actionType === "suggest-meeting-change" && !actionNotes.trim());
+    (actionType === "suggest-meeting-change" && !actionNotes.trim()) ||
+    // لا يُرسل التقييم ومرفق الإنجاز ما زال قيد الرفع، وإلا ضاع الرابط.
+    (actionType === "self-evaluate" && uploadAchievement.isPending);
 
   return (
     <div className="space-y-6">
@@ -631,6 +649,36 @@ export default function ProbationEvaluationDetailPage() {
                 <p className="text-xs text-muted-foreground mb-1">{t("detail.evaluatorNotes")}</p>
                 <p className="rounded-lg bg-muted/50 p-2">{ev.evaluatorNotes}</p>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Achievement — the employee's own answer, with its attachment if any. */}
+      {(ev.employeeAchievementNote || ev.employeeAchievementFileUrl) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">
+              ما هو إنجاز قمت به خلال الفترة التي قضيتها بالعمل معنا
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {ev.employeeAchievementNote && (
+              <p className="rounded-lg bg-muted/50 p-2 whitespace-pre-wrap">{ev.employeeAchievementNote}</p>
+            )}
+            {ev.employeeAchievementFileUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={downloadAchievement.isPending}
+                onClick={() => downloadAchievement.mutate(id)}
+              >
+                {downloadAchievement.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Download className="h-4 w-4" />}
+                فتح المرفق
+              </Button>
             )}
           </CardContent>
         </Card>
@@ -908,6 +956,64 @@ export default function ProbationEvaluationDetailPage() {
                   لم يتم تحميل معايير التقييم. يرجى إعادة تحميل الصفحة، أو التواصل مع المسؤول للتأكد من إعداد المعايير.
                 </div>
               )
+            )}
+
+            {/* Self-evaluate: the achievement question and its optional attachment.
+                The file goes up on pick, while the evaluation is still pending — the
+                only window the endpoint accepts it in. */}
+            {actionType === "self-evaluate" && (
+              <div className="space-y-1.5">
+                <Label>ما هو إنجاز قمت به خلال الفترة التي قضيتها بالعمل معنا؟ (اختياري)</Label>
+                <Textarea
+                  rows={3}
+                  value={achievementNote}
+                  onChange={(e) => setAchievementNote(e.target.value)}
+                  placeholder="اذكر إنجازاً أو أكثر تعتز به خلال فترة التجربة..."
+                />
+                {achievementFileUrl ? (
+                  <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-2 text-sm">
+                    <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="flex-1 min-w-0 truncate">{achievementFileName}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => { setAchievementFileUrl(""); setAchievementFileName(""); }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed p-2 text-sm text-muted-foreground hover:bg-accent">
+                    {uploadAchievement.isPending
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <Paperclip className="h-4 w-4" />}
+                    {uploadAchievement.isPending ? "جارِ الرفع..." : "إرفاق ملف (اختياري)"}
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept={ACHIEVEMENT_FILE_ACCEPT}
+                      disabled={uploadAchievement.isPending}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        if (file.size > ACHIEVEMENT_FILE_MAX_BYTES) {
+                          toast.error("حجم الملف يتجاوز 10 ميغابايت");
+                          return;
+                        }
+                        uploadAchievement.mutate(
+                          { id, file },
+                          { onSuccess: (url) => { setAchievementFileUrl(url); setAchievementFileName(file.name); } },
+                        );
+                      }}
+                    />
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  الملفات المقبولة: PDF أو صورة أو Word، بحد أقصى 10 ميغابايت.
+                </p>
+              </div>
             )}
 
             {/* Manager approval: overallRating + recommendation + score per criterion */}
