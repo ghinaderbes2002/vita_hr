@@ -3725,6 +3725,7 @@
           "yes": "Evet",
           "no": "Hayır",
           "other": "Diğer",
+          "diagnosisEval": "Tanı ve Değerlendirme",
           "details": "Ayrıntılar",
           "title": "Fizyoterapi Vakası"
         },

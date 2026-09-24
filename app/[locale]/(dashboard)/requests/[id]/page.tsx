@@ -196,18 +196,21 @@ function renderDetailValue(value: any, employeeMap: Record<string, string> = {})
   return <span>{String(value)}</span>;
 }
 
+// The direct manager is no longer part of the route: a maintenance request goes
+// from the requester straight to the logistics officer. PENDING_MANAGER is kept
+// only so requests filed before that change still render at the right stage.
 const MAINTENANCE_STATUS_ORDER = [
-  "PENDING_MANAGER", "PENDING_LOGISTICS", "PENDING_EXECUTIVE", "ASSIGNED", "DONE",
+  "PENDING_LOGISTICS", "PENDING_EXECUTIVE", "ASSIGNED", "DONE",
 ];
 
 function buildMaintenancePath(req: any): ApprovalStep[] {
   const status: string = req.status ?? "";
-  const rank = MAINTENANCE_STATUS_ORDER.indexOf(status);
+  // An old request still sitting with the manager counts as waiting on logistics.
+  const rank = MAINTENANCE_STATUS_ORDER.indexOf(
+    status === "PENDING_MANAGER" ? "PENDING_LOGISTICS" : status,
+  );
   const isRejected = status === "REJECTED";
 
-  // Infer rejected stage from direct backend fields
-  const rejectedAtManager =
-    isRejected && req.managerStatus === "REJECTED";
   const rejectedAtLogistics =
     isRejected && req.logisticsStatus === "REJECTED";
   const rejectedAtExecutive =
@@ -217,7 +220,7 @@ function buildMaintenancePath(req: any): ApprovalStep[] {
   const hadExecutive =
     status === "PENDING_EXECUTIVE" ||
     req.executiveStatus != null ||
-    rank >= 3 && req.executiveReviewedAt != null;
+    rank >= 2 && req.executiveReviewedAt != null;
 
   const mkStep = (
     id: string,
@@ -235,36 +238,29 @@ function buildMaintenancePath(req: any): ApprovalStep[] {
     notes: notes ?? undefined,
   } as any);
 
-  // ── Step 1: Manager ──
-  const mgSt: ApprovalStatus =
-    rejectedAtManager ? "REJECTED" : rank >= 1 || req.managerStatus === "APPROVED" ? "APPROVED" : "PENDING";
-
-  // ── Step 2: Logistics ──
+  // ── Step 1: Logistics ──
   const lgSt: ApprovalStatus =
     rejectedAtLogistics ? "REJECTED"
-    : rank >= 2 || req.logisticsStatus === "APPROVED" ? "APPROVED"
-    : rank === 1 ? "PENDING"
+    : rank >= 1 || req.logisticsStatus === "APPROVED" ? "APPROVED"
     : "PENDING";
 
-  // ── Step 3: Executive ──
+  // ── Step 2: Executive ──
   const execSt: ApprovalStatus =
     !hadExecutive ? "SKIPPED"
     : rejectedAtExecutive ? "REJECTED"
-    : rank >= 3 || req.executiveStatus === "APPROVED" ? "APPROVED"
-    : rank === 2 ? "PENDING"
+    : rank >= 2 || req.executiveStatus === "APPROVED" ? "APPROVED"
     : "PENDING";
 
-  // ── Step 4: Assigned employee ──
+  // ── Step 3: Assigned employee ──
   const assignedSt: ApprovalStatus =
     status === "DONE" ? "APPROVED"
     : status === "ASSIGNED" ? "PENDING"
     : "PENDING";
 
   return [
-    mkStep("m1", 1, "DIRECT_MANAGER", mgSt, req.managerReviewedAt, req.managerNotes),
-    mkStep("m2", 2, "LOGISTICS", lgSt, req.logisticsReviewedAt ?? req.logisticsProcessedAt, req.logisticsNotes),
-    mkStep("m3", 3, "CEO", execSt, req.executiveReviewedAt, req.executiveNotes),
-    mkStep("m4", 4, "ASSIGNED_EMPLOYEE", assignedSt, req.completedAt ?? undefined),
+    mkStep("m1", 1, "LOGISTICS", lgSt, req.logisticsReviewedAt ?? req.logisticsProcessedAt, req.logisticsNotes),
+    mkStep("m2", 2, "CEO", execSt, req.executiveReviewedAt, req.executiveNotes),
+    mkStep("m3", 3, "ASSIGNED_EMPLOYEE", assignedSt, req.completedAt ?? undefined),
   ];
 }
 

@@ -348,10 +348,16 @@ const Txt = ({ t: text, style }: { t?: string | number | null; style?: Style | S
   if (!dir.rtl || !v) return <Text style={style}>{v}</Text>;
   // Arabic never joins across a space, so shaping word by word is lossless —
   // and it lets flexbox, not react-pdf, decide the reading order.
+  // direction rtl: النقطة والنقطتان محايدتان، فبلا اتجاه صريح تُحسب على أساس LTR
+  // وتقفز إلى الطرف الخاطئ من الكلمة (".الجانب" بدل "الجانب.").
+  const rtlStyle: Style[] = [
+    ...(Array.isArray(style) ? style : style ? [style] : []),
+    { direction: "rtl" },
+  ];
   return (
     <View style={{ flexDirection: dir.row, flexWrap: "wrap", gap: 2.5 }}>
       {v.split(" ").filter(Boolean).map((w, i) => (
-        <Text key={i} style={style}>{ar(w)}</Text>
+        <Text key={i} style={rtlStyle}>{ar(w)}</Text>
       ))}
     </View>
   );
@@ -424,6 +430,25 @@ const F = ({ label, value }: { label: string; value?: string | number | null }) 
       <View style={{ flex: 1, paddingRight: dir.rtl ? 12 : 0, paddingLeft: dir.rtl ? 0 : 12 }}>
         <Txt t={v || "—"} style={{ fontSize: 8.5, color: MUTED }} />
       </View>
+    </View>
+  );
+};
+
+/**
+ * نص حرّ متعدد الأسطر بعرض الصفحة كاملاً. كل سطر كتبه المعالج يبقى سطراً مستقلاً
+ * كما يظهر على الشاشة — بخلاف F التي تحشر النص في عمود ضيّق وتذيب الأسطر ببعضها.
+ */
+const Block = ({ label, value }: { label?: string; value?: string | null }) => {
+  const lines = String(value ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+  return (
+    <View style={{ marginBottom: 6 }}>
+      {label && <SubHead label={label} />}
+      {lines.map((line, i) => (
+        <View key={i} style={{ marginBottom: 2 }}>
+          <Txt t={line} style={{ fontSize: 8.5, color: MUTED }} />
+        </View>
+      ))}
     </View>
   );
 };
@@ -1304,7 +1329,9 @@ const PhysioPdfDoc = ({
 
         {/* ── 8. الملاحظات والتقييم ── */}
         <SecHead label={t("sections.notesEval")} break />
-        <F label={t("postural.diagnosis")} value={data.postural.diagnosis} />
+        {/* ما يكتبه المعالج في حقل "التشخيص والتقييم" على الشاشة (evaluation.notes). */}
+        <Block label={t("word.diagnosisEval")} value={data.evalNotes} />
+        <Block value={data.evalText} />
         <SubHead label={t("sub.appliedTreatment")} />
         <View style={{ flexDirection: dir.row, gap: 8, marginBottom: 4 }}>
           <View style={{ flex: 1 }}>

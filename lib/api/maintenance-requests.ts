@@ -9,7 +9,8 @@ export type MaintenanceStatus =
   | "REJECTED";
 
 export type WorkLocation = "SHAHBA" | "CENTER" | "NEW_ALEPPO";
-export type MaintenancePriority = "URGENT" | "HIGH" | "NORMAL";
+// Exactly the values the API accepts — a different spelling is rejected with 400.
+export type MaintenancePriority = "URGENT" | "MEDIUM" | "NORMAL";
 export type RepairOption = "INTERNAL" | "INTERNAL_PARTS" | "EXTERNAL_WORKSHOP";
 
 export interface MaintenanceRequest {

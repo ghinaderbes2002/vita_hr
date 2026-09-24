@@ -24,7 +24,7 @@ import { MaintenanceLogItem, MaintenanceStatus } from "@/lib/api/maintenance-req
 
 const PRIORITY_CLASSES: Record<string, string> = {
   URGENT: "bg-red-100 text-red-800 border-red-300",
-  HIGH: "bg-orange-100 text-orange-800 border-orange-300",
+  MEDIUM: "bg-orange-100 text-orange-800 border-orange-300",
   NORMAL: "bg-gray-100 text-gray-700 border-gray-300",
 };
 

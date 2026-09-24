@@ -4640,6 +4640,7 @@
           "yes": "Yes",
           "no": "No",
           "other": "Other",
+          "diagnosisEval": "Diagnosis & Evaluation",
           "details": "Details",
           "title": "Physiotherapy Case"
         },

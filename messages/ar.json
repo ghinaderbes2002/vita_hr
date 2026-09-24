@@ -4774,6 +4774,7 @@
           "yes": "نعم",
           "no": "لا",
           "other": "أخرى",
+          "diagnosisEval": "التشخيص والتقييم",
           "details": "التفاصيل",
           "title": "حالة علاج فيزيائي"
         },
@@ -5659,7 +5660,7 @@
     },
     "priorities": {
       "URGENT": "عاجل",
-      "HIGH": "عالي",
+      "MEDIUM": "متوسط",
       "NORMAL": "عادي"
     },
     "repairOptions": {
