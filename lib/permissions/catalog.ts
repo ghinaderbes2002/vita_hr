@@ -93,6 +93,8 @@ export const PERMISSIONS = {
   ATTENDANCE_RECORDS: {
     READ: "attendance.records.read",
     READ_OWN: "attendance.records.read-own",
+    /** بصمات المرؤوسين المباشرين — تُمنح للمدير المباشر من شاشة الأدوار. */
+    READ_TEAM: "attendance.records.read-team",
     CREATE: "attendance.records.create",
     CREATE_MANUAL: "attendance.records.create-manual",
     UPDATE: "attendance.records.update",

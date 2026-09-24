@@ -143,6 +143,7 @@ const navigation: NavItem[] = [
         icon: ClipboardCheck,
         hiddenForRoles: ["IT", "تقنية المعلومات", "CEO", "المدير التنفيذي", "General Manager", "المدير العام", "CFO"],
         children: [
+          { title: "nav.teamAttendance", href: "/attendance/my-team", icon: Users, permission: "attendance.records.read-team" },
           { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
           { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
           { title: "nav.needsReview", href: "/attendance/needs-review", icon: AlertCircle, permission: "attendance.records.read" },
@@ -439,6 +440,7 @@ export function Sidebar() {
         "/requests/new",
         "/leaves/pending-approval",
         "/attendance/my-attendance",
+        "/attendance/my-team",
         "/attendance/check-in-out",
         "/attendance/records",
         "/attendance/my-alerts",

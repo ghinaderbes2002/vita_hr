@@ -221,6 +221,12 @@ export const attendanceRecordsApi = {
     return response.data;
   },
 
+  // بصمات المرؤوسين المباشرين للمستخدم الحالي — نفس البارامترات وشكل الرد.
+  getMyTeam: async (params: AttendanceQueryParams): Promise<ApiResponse<AttendanceRecord[]>> => {
+    const response = await apiClient.get("/attendance-records/my-team", { params });
+    return response.data;
+  },
+
   getAll: async (params: AttendanceQueryParams): Promise<ApiResponse<AttendanceRecord[]>> => {
     const response = await apiClient.get("/attendance-records", { params });
 return response.data;

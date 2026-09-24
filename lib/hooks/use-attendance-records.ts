@@ -21,6 +21,15 @@ export function useMyAttendance(params: AttendanceQueryParams) {
   });
 }
 
+/** بصمات المرؤوسين المباشرين. قائمة فارغة إن لم يكن للمستخدم مرؤوسون. */
+export function useMyTeamAttendance(params: AttendanceQueryParams) {
+  return useQuery({
+    queryKey: ["attendance-records", "my-team", params],
+    queryFn: () => attendanceRecordsApi.getMyTeam(params),
+    enabled: !!params.dateFrom && !!params.dateTo,
+  });
+}
+
 export function useAttendanceRecords(params: AttendanceQueryParams) {
   return useQuery({
     queryKey: ["attendance-records", params],
