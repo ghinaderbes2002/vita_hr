@@ -45,6 +45,7 @@ import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { isMedicalAdminDepartmentName } from "@/lib/clinic/departments";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import {
@@ -5499,15 +5500,18 @@ export default function ProstheticsCasePage() {
                 caseId + caseType: "PROSTHETICS". Suspended until that is wired.
               */}
 
+              {/* زر واحد في مرحلة الاستقبال: الحفظ والانتقال معاً. بعد تجاوز هذه
+                  المرحلة لا انتقال، فيبقى الحفظ وحده حتى يمكن تعديل البيانات. */}
               <div className="flex flex-wrap gap-3 pt-2">
-                <Button onClick={handleSaveIntake} disabled={updateCase.isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white">
-                  {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                  {t("intake.save")}
-                </Button>
-                {c.status === "INTAKE" && (
+                {c.status === "INTAKE" ? (
                   <Button onClick={handleSaveIntakeAndAdvance} disabled={updateCase.isPending || updateStatus.isPending} className="flex-1">
                     {(updateCase.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
                     {t("intake.saveAndAdvance")}
+                  </Button>
+                ) : (
+                  <Button onClick={handleSaveIntake} disabled={updateCase.isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white">
+                    {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+                    {t("intake.save")}
                   </Button>
                 )}
               </div>
@@ -5683,7 +5687,7 @@ export default function ProstheticsCasePage() {
                               ? staffList.filter((e) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
                               : key === "prosthetistIds"
                               ? staffList.filter((e) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الأطراف الصناعية") || e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("طب الأقدام") || e.department?.nameAr?.includes("طب الاقدام")))
-                              : staffList
+                              : staffList.filter((e) => e.employmentStatus === "ACTIVE" && isMedicalAdminDepartmentName(e.department?.nameAr))
                             ).map((emp) => (
                               <div
                                 key={emp.id}

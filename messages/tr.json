@@ -2916,7 +2916,7 @@
           "title": "Tedavi Ekibi",
           "prosthetist": "Protez Teknisyeni",
           "physio": "Fizyoterapist",
-          "supervisor": "Süpervizör",
+          "supervisor": "Doktor",
           "choose": "Seçin...",
           "selectedCount": "{count} seçili"
         },

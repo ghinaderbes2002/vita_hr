@@ -34,6 +34,13 @@ export const isClinicalDepartmentCode = (code?: string | null): boolean =>
 export const isClinicalDepartmentName = (name?: string | null): boolean =>
   !!name && CLINICAL_DEPT_NAMES.some((d) => name.includes(d));
 
+/** أسماء قسم الإدارة الطبية بتهجئتيه. */
+export const MEDICAL_ADMIN_DEPT_NAMES = ["الإدارة الطبية", "الادارة الطبية"];
+
+/** هل القسم هو الإدارة الطبية؟ يُطابَق بالاسم لأن القوائم المختصرة لا تعيد الكود. */
+export const isMedicalAdminDepartmentName = (name?: string | null): boolean =>
+  !!name && MEDICAL_ADMIN_DEPT_NAMES.some((d) => name.includes(d));
+
 /** اسم قسم العلاج الفيزيائي — يُستعمل احتياطاً حين لا يرجع الكود مع القسم. */
 const PHYSIO_DEPT_NAME = "العلاج الفيزيائي";
 

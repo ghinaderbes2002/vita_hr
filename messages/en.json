@@ -3831,7 +3831,7 @@
           "title": "Treating Team",
           "prosthetist": "Prosthetist",
           "physio": "Physiotherapist",
-          "supervisor": "Supervisor",
+          "supervisor": "Doctor",
           "choose": "Select...",
           "selectedCount": "{count} selected"
         },
