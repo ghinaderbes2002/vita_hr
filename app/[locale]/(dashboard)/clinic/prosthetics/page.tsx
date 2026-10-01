@@ -42,6 +42,14 @@ const STATUS_VALUES: ProstheticsStatus[] = [
   "FOLLOW_UP", "CLOSED", "CANCELLED",
 ];
 
+/**
+ * مؤقتاً: الجميع يرى قائمة الحالات الكاملة (GET /prosthetics/cases) بدل قصرها
+ * على حالات الممارس (GET /prosthetics/cases/by-practitioner).
+ * للعودة إلى السلوك السابق: اجعل القيمة true — كل كود by-practitioner (الدالة،
+ * الـ hook، والفلترة والترقيم المحليان أدناه) ما زال في مكانه بلا تغيير.
+ */
+const USE_PRACTITIONER_CASELOAD = false;
+
 const fmt = (d: string) => {
   const date = new Date(d);
   return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
@@ -64,7 +72,7 @@ export default function ProstheticsListPage() {
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
   const seesAll = isAdmin() || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
-  const mineOnly = !seesAll;
+  const mineOnly = USE_PRACTITIONER_CASELOAD && !seesAll;
 
   // Only one of the two runs — the mode isn't known until the profile lands, so
   // neither fires before then and a practitioner never pulls the whole list.

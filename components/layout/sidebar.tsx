@@ -297,6 +297,8 @@ const navigation: NavItem[] = [
       { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permission: "clinic.appointments.view_own" },
       { title: "nav.clinicAppointmentStats", href: "/clinic/appointment-statistics", icon: BarChart3, permission: "clinic.appointments.statistics_view" },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
+      // المشاريع = جهات الإحالة من نوع جمعية، بنفس صلاحيات جهات الاتصال.
+      { title: "nav.clinicProjects", href: "/clinic/projects", icon: Briefcase, permission: "clinic.referrals.view" },
       { title: "nav.clinicReports", href: "/clinic/reports", icon: FileBarChart, permission: "clinic.reports.view_donor" },
     ],
   },

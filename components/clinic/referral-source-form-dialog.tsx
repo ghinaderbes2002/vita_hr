@@ -58,7 +58,7 @@ const OTHER = "__other";
 const NAME_PLACEHOLDER: Record<ReferralSourceType, string> = {
   DOCTOR:      "مثال: د. أحمد الحربي",
   HOSPITAL:    "مثال: مشفى الرازي",
-  ASSOCIATION: "مثال: جمعية البر",
+  ASSOCIATION: "مثال: مشروع الأطراف الصناعية",
   OTHER:       "مثال: صيدلية النور",
 };
 
@@ -176,14 +176,22 @@ export function ReferralSourceFormDialog({
   onOpenChange,
   source,
   onSaved,
+  lockedType,
+  excludeTypes,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Present = edit mode. */
   source?: ReferralSource | null;
   onSaved?: (s: ReferralSource) => void;
+  /** Fixes the kind of source being added — the projects screen only files جمعية. */
+  lockedType?: ReferralSourceType;
+  /** Kinds this screen does not file — جمعية belongs to the projects screen. */
+  excludeTypes?: ReferralSourceType[];
 }) {
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const [form, setForm] = useState<FormState>(() =>
+    lockedType ? { ...emptyForm(), type: lockedType } : emptyForm(),
+  );
   const [tab, setTab] = useState("basic");
   const [citySearch, setCitySearch] = useState("");
   const [isOtherSpecialty, setIsOtherSpecialty] = useState(false);
@@ -236,7 +244,7 @@ export function ReferralSourceFormDialog({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      const next = source ? formOf(source) : emptyForm();
+      const next = source ? formOf(source) : { ...emptyForm(), ...(lockedType ? { type: lockedType } : {}) };
       setForm(next);
       setTab("basic");
       setIsOtherSpecialty(
@@ -310,14 +318,23 @@ export function ReferralSourceFormDialog({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>النوع <span className="text-destructive">*</span></Label>
-                  <Select value={form.type} onValueChange={(v) => set("type", v as ReferralSourceType)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {REFERRAL_SOURCE_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{REFERRAL_SOURCE_TYPE_LABEL[t]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {lockedType ? (
+                    // Shown, not chosen: this screen files one kind of source only.
+                    <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm font-medium">
+                      {REFERRAL_SOURCE_TYPE_LABEL[lockedType]}
+                    </p>
+                  ) : (
+                    <Select value={form.type} onValueChange={(v) => set("type", v as ReferralSourceType)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {REFERRAL_SOURCE_TYPES
+                          .filter((t) => !excludeTypes?.includes(t))
+                          .map((t) => (
+                            <SelectItem key={t} value={t}>{REFERRAL_SOURCE_TYPE_LABEL[t]}</SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>الاسم <span className="text-destructive">*</span></Label>

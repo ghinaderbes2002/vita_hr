@@ -118,6 +118,30 @@ const recordKey = (r: unknown): string | null => {
   return o?.updatedAt ?? o?.id ?? null;
 };
 
+// ─── اكتمال النماذج ───────────────────────────────────────────────────────────
+// زر الحفظ في كل قسم لا يُفعَّل إلا بعد تعبئة كل حقوله الظاهرة. القاعدة واحدة
+// لكل الحقول: نص غير فارغ، رقم صالح، مصفوفة فيها عنصر، أو مفتاح محسوم (نعم/لا).
+// المفاتيح الثلاثية تبدأ null فتُعدّ فارغة حتى يختار المستخدم.
+const isFilled = (v: unknown): boolean => {
+  if (v == null) return false;
+  if (typeof v === "boolean") return true;
+  if (typeof v === "number") return Number.isFinite(v);
+  if (typeof v === "string") return v.trim().length > 0;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") return Object.keys(v as object).length > 0;
+  return true;
+};
+
+/** كل المفاتيح المذكورة معبّأة في النموذج (أو في القيمة الاحتياطية من السجل). */
+const allFilled = (
+  form: Record<string, unknown>,
+  keys: readonly string[],
+  fallback: Record<string, unknown> = {},
+): boolean => keys.every((k) => isFilled(form[k] ?? fallback[k]));
+
+/** حقل شرطي: مطلوب فقط عندما يكون المفتاح الذي يحكمه مفعّلاً. */
+const filledWhen = (condition: boolean, value: unknown): boolean => !condition || isFilled(value);
+
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
 const TYPE_LABEL: Record<string, string> = { UPPER: "طرف علوي", LOWER: "طرف سفلي" };
@@ -526,7 +550,7 @@ function TreatmentProgramCard({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={handleSave} disabled={updateProgram.isPending} className="flex-1 gap-1">
+            <Button size="sm" onClick={handleSave} disabled={!allFilled(form, ["sessionDate", "sessionTime", "technicianId", "description", "sessionStartTime", "sessionEndTime", "notes"]) || updateProgram.isPending} className="flex-1 gap-1">
               {updateProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
               {t("followUp.save")}
             </Button>
@@ -574,41 +598,6 @@ function TreatmentProgramsSection({
     technicianSignatureUrl: "",
     managerSignatureUrl: "",
   });
-  const [newSigUploadFor, setNewSigUploadFor] = useState<"technician" | "manager" | null>(null);
-  const newSigFileRef = useRef<HTMLInputElement>(null);
-
-  const handleNewSignatureClick = async (role: "technician" | "manager") => {
-    const empId = role === "technician" ? newForm.technicianId : currentUser?.employeeId;
-    if (!empId) { toast.error(role === "technician" ? t("followUp.enterTherapistFirst") : t("followUp.noUserData")); return; }
-    try {
-      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
-      if (sig.hasSignature && sig.signatureUrl) {
-        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
-        if (role === "technician") setNewForm((f) => ({ ...f, technicianSignatureUrl: url }));
-        else setNewForm((f) => ({ ...f, managerSignatureUrl: url }));
-      } else {
-        setNewSigUploadFor(role);
-        setTimeout(() => newSigFileRef.current?.click(), 50);
-      }
-    } catch { toast.error(t("followUp.signatureFetchFailed")); }
-  };
-
-  const handleNewSignatureFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !newSigUploadFor) return;
-    const empId = newSigUploadFor === "technician" ? newForm.technicianId : currentUser?.employeeId;
-    if (!empId) return;
-    try {
-      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
-      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
-      if (newSigUploadFor === "technician") setNewForm((f) => ({ ...f, technicianSignatureUrl: url }));
-      else setNewForm((f) => ({ ...f, managerSignatureUrl: url }));
-      toast.success(t("followUp.signatureUploaded"));
-    } catch { toast.error(t("followUp.signatureUploadFailed")); }
-    setNewSigUploadFor(null);
-    e.target.value = "";
-  };
-
   const handleAdd = async () => {
     if (!newForm.sessionDate) return;
     await createProgram.mutateAsync({
@@ -797,33 +786,11 @@ function TreatmentProgramsSection({
               <Label className="text-xs">{t("followUp.notes")}</Label>
               <Textarea rows={2} className="resize-none" placeholder={t("followUp.notesPlaceholder")} value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
-            <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-semibold">{t("followUp.signature")}</p>
-                {newForm.technicianSignatureUrl ? (
-                  <div className="relative">
-                    <img src={newForm.technicianSignatureUrl} alt={t("followUp.signature")} className="h-16 w-full object-contain border rounded bg-white" />
-                    <button onClick={() => setNewForm((f) => ({ ...f, technicianSignatureUrl: "" }))} className="absolute top-0 left-0 text-destructive text-xs p-0.5">✕</button>
-                  </div>
-                ) : (
-                  <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={() => handleNewSignatureClick("technician")} disabled={!newForm.technicianId}>
-                    {newForm.technicianId ? t("followUp.fetchSignature") : t("followUp.chooseTherapistFirst")}
-                  </Button>
-                )}
-              </div>
-              <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-semibold">{t("followUp.managerSignature")}</p>
-                <MySignatureField
-                  value={newForm.managerSignatureUrl}
-                  onChange={(v) => setNewForm((f) => ({ ...f, managerSignatureUrl: v }))}
-                  title={t("followUp.managerSignature")}
-                />
-              </div>
-            </div>
+            {/* أُزيل صندوقا "التوقيع" و"توقيع مدير القسم" من نموذج إضافة الجلسة؛
+                التوقيعان ما زالا متاحين على الجلسة بعد إنشائها. */}
           </div>
-          <input ref={newSigFileRef} type="file" accept="image/*" className="hidden" onChange={handleNewSignatureFileChange} />
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={handleAdd} disabled={!newForm.sessionDate || createProgram.isPending} className="gap-1">
+            <Button size="sm" onClick={handleAdd} disabled={!allFilled(newForm, ["sessionDate", "sessionTime", "technicianId", "description", "sessionStartTime", "sessionEndTime", "notes"]) || createProgram.isPending} className="gap-1">
               {createProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               {t("followUp.add")}
             </Button>
@@ -1055,7 +1022,7 @@ function ReviewProgramCard({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={handleSave} disabled={updateReview.isPending} className="flex-1 gap-1">
+            <Button size="sm" onClick={handleSave} disabled={!allFilled(form, ["sessionDate", "sessionTime", "technicianId", "description", "sessionStartTime", "sessionEndTime", "notes"]) || updateReview.isPending} className="flex-1 gap-1">
               {updateReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
               {t("followUp.save")}
             </Button>
@@ -1165,7 +1132,7 @@ function ReviewProgramsSection({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={handleAdd} disabled={!newForm.sessionDate || createReview.isPending} className="gap-1">
+            <Button size="sm" onClick={handleAdd} disabled={!allFilled(newForm, ["sessionDate", "sessionTime", "technicianId", "description", "sessionStartTime", "sessionEndTime", "notes"]) || createReview.isPending} className="gap-1">
               {createReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               {t("followUp.add")}
             </Button>
@@ -1432,6 +1399,22 @@ function GaitAnalysisCard({
   const isNew = !session;
   const [editing, setEditing] = useState(isNew);
   const [form, setForm] = useState<GaitForm>(() => session ? gaitFormFromData(session) : { ...INITIAL_GAIT_FORM, phases: {} });
+  // كل حقول الجلسة مطلوبة. المستثنى: المفاتيح (تُعرض محسومة دائماً)، والتوقيع،
+  // وخانات التوضيح التي لا تُطلب إلا عند اختيار "أخرى".
+  const formComplete =
+    allFilled(form, [
+      "sessionDate", "suspensionSystem", "socketBearing", "kneeJointType", "footType",
+      "patientComplaints", "painIntensity", "alignmentCheck", "sittingBalance", "standingBalance",
+      "assistiveDevice", "speedMs", "cadence", "stepLengthProsCm", "stepLengthSoundCm",
+      "stancePercProsthetic", "stancePercSound", "symmetry", "prostheticIssues", "mainProblem",
+      "likelyCauses", "recommendations", "rehabPlanItems", "rehabNotes",
+      "examinerProsthetistId", "notes",
+    ]) &&
+    Object.values(form.phases).some((ph) => ph.deviations.length > 0) &&
+    filledWhen(form.patientComplaints.includes("OTHER"), form.patientComplaintsOtherNotes) &&
+    filledWhen(form.suspensionSystem.includes("OTHER"), form.suspensionSystemOtherNotes) &&
+    filledWhen(form.prostheticIssues.includes("OTHER"), form.prostheticIssuesOtherNotes) &&
+    filledWhen(form.likelyCauses.includes("OTHER"), form.likelyCausesOtherNotes);
   const [activeTab, setActiveTab] = useState("basic");
   const [pdfExporting, setPdfExporting] = useState(false);
   const prostoSigRef = useRef<HTMLInputElement>(null);
@@ -2146,7 +2129,7 @@ function GaitAnalysisCard({
 
       {!isSaved && (
         <div className="flex flex-wrap gap-2 pt-2 border-t">
-          <Button onClick={handleSave} disabled={isSaving} className="flex-1 gap-1">
+          <Button onClick={handleSave} disabled={isSaving || !formComplete} className="flex-1 gap-1">
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {isNew ? t("gait.addSession") : t("gait.saveFinal")}
           </Button>
@@ -2416,9 +2399,16 @@ function BalanceAssessmentCard({
   const [form, setForm] = useState<BalanceForm>(() =>
     session ? balanceFormFromData(session) : { ...INITIAL_BALANCE_FORM, exerciseProgram: DEFAULT_EXERCISE_PROGRAM.map((e) => ({ ...e })) }
   );
-  const physioSigRef = useRef<HTMLInputElement>(null);
-  const committeeSigRef = useRef<HTMLInputElement>(null);
-  const [sigUploadFor, setSigUploadFor] = useState<"physio" | "committee" | null>(null);
+  // كل حقول الجلسة مطلوبة عدا المفاتيح والتواقيع، وخانات التوضيح تُطلب مع سببها.
+  const formComplete =
+    allFilled(form, [
+      "assessmentDate", "assistiveDevice", "staticBalance", "dynamicTasks", "dynamicActivities",
+      "fallRiskLevel", "overallBalanceLevel", "limitingFactors", "exerciseProgram",
+      "programProgression", "followUpWeeks", "expectedOutcomes",
+      "notes",
+    ]) &&
+    filledWhen(!!form.previousProsthesis, form.previousProsthesisNotes) &&
+    filledWhen(form.limitingFactors.includes("OTHER"), form.limitingFactorsOtherNotes);
   const addMut = useAddBalanceAssessment();
   const updateMut = useUpdateBalanceAssessment();
   const saveMut = useSaveBalanceAssessmentForm();
@@ -2428,38 +2418,6 @@ function BalanceAssessmentCard({
   // Frozen after POST /save — the backend rejects any further PATCH (400).
   const isSaved = !!session?.isSaved;
   const isArchived = !!session?.archivedAt;
-
-  const handleSigClick = async (role: "physio" | "committee") => {
-    const empId = role === "physio" ? form.physiotherapistId : form.committeeHeadId;
-    if (!empId) { toast.error(role === "physio" ? t("bal.choosePhysioFirst") : t("bal.chooseCommitteeHeadFirst")); return; }
-    try {
-      const sig = await clinicProstheticsApi.getEmployeeSignature(empId);
-      if (sig.hasSignature && sig.signatureUrl) {
-        const url = sig.signatureUrl.startsWith("http") ? sig.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${sig.signatureUrl}`;
-        if (role === "physio") setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
-        else setForm((f) => ({ ...f, committeeHeadSignatureUrl: url }));
-      } else {
-        setSigUploadFor(role);
-        setTimeout(() => (role === "physio" ? physioSigRef : committeeSigRef).current?.click(), 50);
-      }
-    } catch { toast.error(t("bal.signatureFetchFailed")); }
-  };
-
-  const handleSigFile = async (e: React.ChangeEvent<HTMLInputElement>, role: "physio" | "committee") => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const empId = role === "physio" ? form.physiotherapistId : form.committeeHeadId;
-    if (!empId) return;
-    try {
-      const res = await clinicProstheticsApi.uploadEmployeeSignature(empId, file);
-      const url = res.signatureUrl.startsWith("http") ? res.signatureUrl : `${process.env.NEXT_PUBLIC_API_URL ?? ""}${res.signatureUrl}`;
-      if (role === "physio") setForm((f) => ({ ...f, physiotherapistSignatureUrl: url }));
-      else setForm((f) => ({ ...f, committeeHeadSignatureUrl: url }));
-      toast.success(t("bal.signatureUploaded"));
-    } catch { toast.error(t("bal.signatureUploadFailed")); }
-    setSigUploadFor(null);
-    e.target.value = "";
-  };
 
   const handleSave = async () => {
     const dto = balanceFormToDto(form);
@@ -3128,118 +3086,9 @@ function BalanceAssessmentCard({
           </div>
         </div>
 
-        {/* Signatures */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {(
-            [
-              [
-                "committee",
-                "bal.committeeHead",
-                "committeeHeadId",
-                "committeeHeadSignatureUrl",
-                "committeeHeadSignatureDate",
-              ],
-              [
-                "physio",
-                "bal.physiotherapist",
-                "physiotherapistId",
-                "physiotherapistSignatureUrl",
-                "physiotherapistSignatureDate",
-              ],
-            ] as const
-          ).map(([role, lbl, idField, sigField, dateField]) => (
-            <div key={role} className="space-y-2 rounded-lg border p-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">{tl(t, lbl)}</Label>
-                <Select
-                  value={(form as any)[idField] || "none"}
-                  onValueChange={(v) =>
-                    setForm((f) => ({
-                      ...f,
-                      [idField]: v === "none" ? "" : v,
-                      [sigField]: "",
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("bal.choose")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("bal.unspecified")}</SelectItem>
-                    {(role === "physio"
-                      ? staffList.filter((e: any) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
-                      : staffList
-                    ).map((e: any) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.firstNameAr} {e.lastNameAr}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t("bal.signature")}</Label>
-                <div className="rounded border min-h-[64px] flex items-center justify-center bg-white/50 p-2">
-                  {(form as any)[sigField] ? (
-                    <div className="relative inline-block">
-                      <img
-                        src={(form as any)[sigField]}
-                        alt={t("bal.signatureShort")}
-                        className="h-14 object-contain"
-                      />
-                      <button
-                        onClick={() =>
-                          setForm((f) => ({ ...f, [sigField]: "" }))
-                        }
-                        className="absolute -top-1 -left-1 bg-destructive text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="text-xs w-full"
-                      onClick={() => handleSigClick(role)}
-                      disabled={!(form as any)[idField]}
-                    >
-                      {(form as any)[idField]
-                        ? t("bal.fetchSignature")
-                        : t("bal.chooseFirst")}
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t("bal.date")}</Label>
-                <Input
-                  type="date"
-                  value={(form as any)[dateField]}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, [dateField]: e.target.value }))
-                  }
-                  className="text-xs"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-        <input
-          ref={physioSigRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => handleSigFile(e, "physio")}
-        />
-        <input
-          ref={committeeSigRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => handleSigFile(e, "committee")}
-        />
+        {/* أُزيل بلوكا "رئيس لجنة التقييم" و"المعالج الفيزيائي" بتوقيعيهما
+            وتاريخيهما من تبويب التوازن بناءً على طلب العيادة. الحقول نفسها باقية
+            في النموذج وتُرسل بقيمها المحفوظة دون تعديل. */}
       </div>
 
       <Separator />
@@ -3262,7 +3111,7 @@ function BalanceAssessmentCard({
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || !formComplete}
             className="flex-1 gap-1"
           >
             {isSaving ? (
@@ -3909,9 +3758,8 @@ export default function ProstheticsCasePage() {
     prosthesisSuitable: null as boolean | null,
     proposedProsthesisType: "",
   });
-  // "غير مناسب" (and the untouched default) asks the committee for its notes;
-  // "مناسب" asks for the proposed prosthesis instead.
-  const notesRequired = committeeSuitForm.prosthesisSuitable !== true;
+  // الملخص النهائي إلزامي مع كل قرار لجنة — الباك يرد 400 إن لم يصل كنص
+  // ("finalSummary must be a string")، أياً كانت الإجابة على "مناسب/غير مناسب".
   const [signOpen, setSignOpen] = useState(false);
   const [signRole, setSignRole] = useState<"DOCTOR" | "PROSTHETIST" | "PHYSIOTHERAPIST">("DOCTOR");
   const [compShared, setCompShared] = useState({
@@ -4447,6 +4295,40 @@ export default function ProstheticsCasePage() {
     ? `${patientFull.firstName} ${patientFull.lastName}`
     : c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—";
 
+  // ── اكتمال تبويب الاستقبال ──
+  // كل حقل ظاهر مطلوب؛ والحقول التي لا تظهر إلا مع مفتاح مفعّل تُطلب معه فقط.
+  const intakeFlags = {
+    hcd: intakeForm.hasChronicDiseases ?? c.hasChronicDiseases ?? false,
+    hpt: intakeForm.hasPhysicalTherapy ?? c.hasPhysicalTherapy ?? false,
+    hpp: intakeForm.hasPreviousProsthesis ?? c.hasPreviousProsthesis ?? false,
+    hrs: intakeForm.hasRevisionSurgery ?? c.hasRevisionSurgery ?? false,
+  };
+  const intakeCause = intakeForm.amputationCause || amputationCauseOf(c) || "";
+  const intakeComplete =
+    isFilled(intakeCause) &&
+    filledWhen(intakeCause === "OTHER", intakeForm.amputationCauseOtherDetail) &&
+    isFilled(intakeForm.amputationYear) &&
+    isFilled(intakeForm.amputationMonth) &&
+    isFilled(intakeForm.amputationCount) &&
+    isFilled(intakeForm.amputationSide || c.amputationSide) &&
+    isFilled(intakeForm.amputationType || c.amputationType) &&
+    (intakeForm.amputationLevels.length > 0 || toAmputationLevels(c.amputationLevel).length > 0) &&
+    filledWhen(intakeFlags.hcd, intakeForm.chronicDiseases || c.chronicDiseases) &&
+    filledWhen(intakeFlags.hpt, intakeForm.physicalTherapyDetails || c.physicalTherapyDetails) &&
+    filledWhen(intakeFlags.hpp, intakeForm.previousProsthesisDetails || c.previousProsthesisDetails) &&
+    filledWhen(intakeFlags.hpp, intakeForm.previousProsthesisWhen || c.previousProsthesisWhen) &&
+    filledWhen(intakeFlags.hpp, intakeForm.previousProsthesisWhere || c.previousProsthesisWhere) &&
+    filledWhen(intakeFlags.hpp, intakeForm.previousProsthesisType || c.previousProsthesisType) &&
+    filledWhen(intakeFlags.hrs, intakeForm.revisionDetails || c.revisionDetails);
+
+  // الهاتف ليس له حقل في هذا القسم، فلا يُطلب.
+  const patientEditComplete = allFilled(patientEditForm, [
+    "firstName", "lastName", "dateOfBirth", "heightCm", "weightKg",
+  ]);
+  const staffComplete = allFilled(staffForm, [
+    "prosthetistIds", "physiotherapistIds", "supervisingDoctorIds",
+  ]);
+
   const buildIntakeDto = () => {
     const hcd = intakeForm.hasChronicDiseases ?? c.hasChronicDiseases ?? false;
     const hpt = intakeForm.hasPhysicalTherapy ?? c.hasPhysicalTherapy ?? false;
@@ -4706,15 +4588,83 @@ export default function ProstheticsCasePage() {
    * Foot-of-Section save. Disappears once the Section is saved — saved data is
    * read-only, so there is nothing left to submit from it.
    */
-  const SectionSaveButton = ({ onSave, busy, saved }: { onSave: () => void; busy: boolean; saved: boolean }) => {
+  const SectionSaveButton = ({ onSave, busy, saved, incomplete }: { onSave: () => void; busy: boolean; saved: boolean; incomplete?: boolean }) => {
     if (saved) return null;
     return (
-      <Button onClick={onSave} disabled={busy} className="w-full gap-2 mt-4">
+      <Button onClick={onSave} disabled={busy || !!incomplete} className="w-full gap-2 mt-4">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         {t("assess.saveSection")}
       </Button>
     );
   };
+
+  // ─── اكتمال أقسام التقييم ────────────────────────────────────────────────
+  // المفاتيح (Switch) تُعرض دائماً بحالة محسومة فلا تُعدّ حقلاً ناقصاً؛ وما يظهر
+  // منها فقط عند تفعيل مفتاح يُطلب عند تفعيله.
+  // حقول تظهر بشروط: نوع الطرف الحالي لا يظهر إلا مع "يستخدم طرفاً الآن"،
+  // و"الحالة الطبيعية" و"مستوى النشاط" في ورقة السفلي لا تظهران إن كانت الحالة
+  // علوية أيضاً (مكانهما وقتها ورقة العلوي). وفي الحالة الثنائية تظهر الصفوف
+  // المشتركة في ورقة الجانب الأول فقط.
+  const usesProsthesisNow = genAssessForm.currentlyUsingProsthesis === true;
+  const lowerSharedRowsShown = !ampTypes.includes("UPPER");
+
+  const lowerLimbFormComplete = (f: ReturnType<typeof emptyLowerForm>) =>
+    allFilled(f, [
+      "residualLimbLength", "residualLimbShape", "amputationLevelNote", "loadTolerance",
+      "notes", "skinAppearance", "skinColor", "skinTemperature", "scarCondition",
+      "generalHealthNotes", "otherLimbCondition",
+    ]) &&
+    filledWhen(!!f.painPresent, f.painArea) &&
+    filledWhen(!!f.painPresent, f.painTypes) &&
+    filledWhen(f.painTypes.includes("OTHER"), f.painTypeOtherDetail) &&
+    filledWhen(f.loadTolerance === "WEIGHT_BEARING", f.weightBearingLevel) &&
+    filledWhen(f.hasSkinGrafts, f.graftArea) &&
+    filledWhen(usesProsthesisNow, f.prostheticLimbType) &&
+    filledWhen(lowerSharedRowsShown, f.jointsRangeOfMotion) &&
+    filledWhen(lowerSharedRowsShown, f.activityLevel);
+
+  const lowerMuscleFormComplete = (f: ReturnType<typeof emptyLowerForm>) =>
+    isFilled(f.romData) &&
+    isFilled(f.muscleMotionNotes) &&
+    filledWhen(!!f.usesAssistiveDevices, f.assistiveDeviceTypes);
+
+  /** isPrimary: ورقة الجانب الأول وحدها تعرض الصفوف المشتركة. */
+  const upperLimbFormComplete = (f: ReturnType<typeof emptyUpperForm>, isPrimary: boolean) =>
+    allFilled(f, [
+      "residualLimbLength", "residualLimbShape", "amputationLevelNote", "skinNotes",
+      "skinAppearance", "skinColor", "skinTemperature", "scarCondition", "closureNotes",
+      "generalHealthNotes", "otherLimbCondition",
+    ]) &&
+    filledWhen(!!f.painPresent, f.painTypes) &&
+    filledWhen(f.painTypes.includes("OTHER"), f.painTypeOtherDetail) &&
+    filledWhen(f.hasSkinGrafts, f.graftArea) &&
+    filledWhen(isPrimary && usesProsthesisNow, f.prostheticLimbType);
+
+  const upperMuscleFormComplete = (f: ReturnType<typeof emptyUpperForm>, isPrimary: boolean) =>
+    isFilled(f.romData) &&
+    filledWhen(isPrimary, f.jointsRangeOfMotion) &&
+    filledWhen(isPrimary, f.activityLevel);
+
+  /** الحالة الثنائية تملك نموذجاً لكل جانب، وكلاهما مطلوب. */
+  const upperSideForms = upperAssessForm.amputationSide === "BILATERAL"
+    ? [upperAssessForm, upperAssessFormLeft]
+    : [upperAssessForm];
+  const lowerSideForms = lowerAssessForm.amputationSide === "BILATERAL"
+    ? [lowerAssessForm, lowerAssessFormLeft]
+    : [lowerAssessForm];
+
+  const upperLimbComplete = upperSideForms.every((f, i) => upperLimbFormComplete(f, i === 0));
+  const upperMuscleComplete = upperSideForms.every((f, i) => upperMuscleFormComplete(f, i === 0));
+  const lowerLimbComplete = lowerSideForms.every(lowerLimbFormComplete);
+  const lowerMuscleComplete = lowerSideForms.every(lowerMuscleFormComplete);
+
+  /** التقييم العام المشترك فوق ورقتي الجانبين. */
+  const genAssessComplete =
+    allFilled(genAssessForm, [
+      "amputationYear", "amputationMonth", "amputationCause", "clinicalHistory", "moreAffectedSide",
+    ]) &&
+    filledWhen(genAssessForm.amputationCause === "OTHER", genAssessForm.amputationCauseOtherDetail) &&
+    filledWhen(!!genAssessForm.previouslyUsedProsthesis, genAssessForm.previousProsthesisSystemDetail);
 
   // ─── Per-section saving ──────────────────────────────────────────────────
   // The limb sheet and the muscle sheet are two Sections on screen but one row
@@ -4859,9 +4809,19 @@ export default function ProstheticsCasePage() {
     if (decisionForm.finalSummary.trim()) await handleSubmitDecision();
   };
 
+  // رأي كل عضو مطلوب، إلا رأياً محفوظاً سلفاً أو لا يملك المستخدم الحالي كتابته.
+  const committeeOpinionsComplete =
+    (prosthetistOpinionSaved || !canWriteOpinion("prosthetistIds") || isFilled(prosthetistOpinion)) &&
+    (physioOpinionSaved || !canWriteOpinion("physiotherapistIds") || isFilled(physioOpinion)) &&
+    (doctorOpinionSaved || !canWriteOpinion("supervisingDoctorIds") || isFilled(doctorOpinion));
+
+  const committeeDecisionComplete =
+    filledWhen(committeeSuitForm.prosthesisSuitable === true, committeeSuitForm.proposedProsthesisType) &&
+    isFilled(decisionForm.finalSummary);
+
   const handleSubmitDecision = async () => {
     // The notes explain a refusal, so they are only demanded for "غير مناسب".
-    if (notesRequired && !decisionForm.finalSummary.trim()) {
+    if (!decisionForm.finalSummary.trim()) {
       toast.error(t("committee.summaryRequired"));
       return;
     }
@@ -4879,9 +4839,11 @@ export default function ProstheticsCasePage() {
       id,
       // Omitted rather than sent empty when the answer is "مناسب", so an
       // optional-but-non-empty validator on the API still passes.
+      // الملخص يُرسل دائماً كنص؛ حذفه (undefined) كان يسقط المفتاح من JSON
+      // فيرد الباك 400.
       dto: {
         decision: "APPROVED" as CommitteeDecision,
-        finalSummary: decisionForm.finalSummary.trim() || undefined,
+        finalSummary: decisionForm.finalSummary.trim(),
       },
     });
   };
@@ -4989,6 +4951,13 @@ export default function ProstheticsCasePage() {
     }
     setConsumables([]);
   };
+
+  // ما يملكه زر التقييم النهائي نفسه. آراء الأعضاء وقرار المدير الطبي لكلٍّ
+  // منها زر حفظ مستقل، فلا تُحتسب هنا.
+  const finalEvalComplete = allFilled(finalEvalForm as unknown as Record<string, unknown>, [
+    "residualLimbCondition", "suspensionSystemUsed", "socksDelivered", "linersDelivered",
+    "fittingDate", "generalNotes",
+  ]);
 
   const handleSubmitFinalEval = async () => {
     const f = finalEvalForm;
@@ -5504,12 +5473,12 @@ export default function ProstheticsCasePage() {
                   المرحلة لا انتقال، فيبقى الحفظ وحده حتى يمكن تعديل البيانات. */}
               <div className="flex flex-wrap gap-3 pt-2">
                 {c.status === "INTAKE" ? (
-                  <Button onClick={handleSaveIntakeAndAdvance} disabled={updateCase.isPending || updateStatus.isPending} className="flex-1">
+                  <Button onClick={handleSaveIntakeAndAdvance} disabled={!intakeComplete || updateCase.isPending || updateStatus.isPending} className="flex-1">
                     {(updateCase.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
                     {t("intake.saveAndAdvance")}
                   </Button>
                 ) : (
-                  <Button onClick={handleSaveIntake} disabled={updateCase.isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white">
+                  <Button onClick={handleSaveIntake} disabled={!intakeComplete || updateCase.isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white">
                     {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
                     {t("intake.save")}
                   </Button>
@@ -5580,7 +5549,7 @@ export default function ProstheticsCasePage() {
                       <Label className="text-xs">{t("patientInfo.weightKg")}</Label>
                       <Input type="number" className="h-8 text-sm" value={patientEditForm.weightKg} onChange={(e) => setPatientEditForm((f) => ({ ...f, weightKg: e.target.value }))} />
                     </div>
-                    <Button onClick={handleSavePatient} disabled={updatePatient.isPending} className="col-span-1 sm:col-span-2 h-8">
+                    <Button onClick={handleSavePatient} disabled={!patientEditComplete || updatePatient.isPending} className="col-span-1 sm:col-span-2 h-8">
                       {updatePatient.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-2" />}
                       {t("patientInfo.saveChanges")}
                     </Button>
@@ -5714,7 +5683,7 @@ export default function ProstheticsCasePage() {
                 records — so it saves on its own and stays editable afterwards. */}
             <Button
               onClick={handleSaveStaff}
-              disabled={updateCase.isPending}
+              disabled={!staffComplete || updateCase.isPending}
               className="w-full gap-2 mt-4"
             >
               {updateCase.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -5807,7 +5776,7 @@ export default function ProstheticsCasePage() {
                     {sf.phantomPainPresent && <PfNumPicker value={sf.phantomPainIntensity} onChange={(n) => setS({ phantomPainIntensity: n })} max={9} />}
                   </PfRow>
                   <PfRow label={t("assess.painType")}>
-                    {[["NUMBNESS","pain.NUMBNESS"],["DULL_ACHE","pain.DULL_ACHE"],["HOT_BURNING","pain.HOT_BURNING"],["SHARP_STABBING","pain.SHARP_STABBING"],["PINS","pain.PINS"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
+                    {[["NUMBNESS","pain.NUMBNESS"],["DULL_ACHE","pain.DULL_ACHE"],["HOT_BURNING","pain.HOT_BURNING"],["SHARP_STABBING","pain.SHARP_STABBING"],["PINS","pain.PINS"],["NONE","pain.NONE"],["OTHER","pain.OTHER"]].map(([val, lbl]) => (
                       <PfSq key={val} checked={sf.painTypes.includes(val)} label={t(`assess.${lbl}`)} onClick={() => setS({ painTypes: togS(sf.painTypes, val) })} />
                     ))}
                     {sf.painTypes.includes("OTHER") && (
@@ -5845,10 +5814,22 @@ export default function ProstheticsCasePage() {
                     ))}
                   </PfRow>
                   <PfRow label={t("assess.grafts")}>
-                    <PfSq checked={sf.hasSkinGrafts} label={t("assess.hasGraft")} onClick={() => setS({ hasSkinGrafts: !sf.hasSkinGrafts })} />
-                    {sf.hasSkinGrafts && (
-                      <Input className="h-7 text-sm w-52" placeholder={t("assess.graftArea")} value={sf.graftArea} onChange={(e) => setS({ graftArea: e.target.value })} />
-                    )}
+                    {/* مفتاح نعم/لا بدل مربع التأشير، ومنطقة الطعم تظهر مع "نعم". */}
+                    <div className="flex flex-col gap-1.5 w-full">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                        <Switch checked={sf.hasSkinGrafts} onCheckedChange={(v) => setS({ hasSkinGrafts: v, graftArea: v ? sf.graftArea : "" })} />
+                        <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                      </div>
+                      {sf.hasSkinGrafts && (
+                        <Input
+                          className="h-7 text-sm w-64"
+                          placeholder={t("assess.graftArea")}
+                          value={sf.graftArea}
+                          onChange={(e) => setS({ graftArea: e.target.value })}
+                        />
+                      )}
+                    </div>
                   </PfRow>
                   <PfRow label={t("assess.scarCondition")}>
                     {[["HEALED","scar.HEALED"],["FLEXIBLE","scar.FLEXIBLE"],["HEALED_WITH_PINS","scar.HEALED_WITH_PINS"],["OPEN","scar.OPEN"],["DRY","scar.DRY"],["INFLAMED","scar.INFLAMED"],["OOZING","scar.OOZING"]].map(([val, lbl]) => (
@@ -5946,7 +5927,7 @@ export default function ProstheticsCasePage() {
 
 
                 </div>
-                <SectionSaveButton onSave={handleSaveUpperLimb} busy={patchUpper.isPending} saved={upperLimbSaved} />
+                <SectionSaveButton onSave={handleSaveUpperLimb} busy={patchUpper.isPending} saved={upperLimbSaved} incomplete={!upperLimbComplete} />
                 </fieldset>
               </Section>
             );
@@ -6005,7 +5986,7 @@ export default function ProstheticsCasePage() {
                     </div>
                   </PfRow>
                 </div>
-                <SectionSaveButton onSave={handleSaveUpperMuscle} busy={patchUpper.isPending} saved={upperMuscleSaved} />
+                <SectionSaveButton onSave={handleSaveUpperMuscle} busy={patchUpper.isPending} saved={upperMuscleSaved} incomplete={!upperMuscleComplete} />
                 </fieldset>
               </Section>
             );
@@ -6154,6 +6135,7 @@ export default function ProstheticsCasePage() {
                       ["HOT_BURNING", "pain.HOT_BURNING"],
                       ["SHARP_STABBING", "pain.SHARP_STABBING"],
                       ["PINS", "pain.PINS"],
+                      ["NONE", "pain.NONE"],
                       ["OTHER", "pain.OTHER"],
                     ].map(([val, lbl]) => (
                       <PfSq
@@ -6282,19 +6264,22 @@ export default function ProstheticsCasePage() {
                     ))}
                   </PfRow>
                   <PfRow label={t("assess.grafts")}>
-                    <PfSq
-                      checked={sf.hasSkinGrafts}
-                      label={t("assess.hasGraft")}
-                      onClick={() => setS({ hasSkinGrafts: !sf.hasSkinGrafts })}
-                    />
-                    {sf.hasSkinGrafts && (
-                      <Input
-                        className="h-7 text-sm w-64 mt-1"
-                        placeholder={t("assess.graftArea")}
-                        value={sf.graftArea}
-                        onChange={(e) => setS({ graftArea: e.target.value })}
-                      />
-                    )}
+                    {/* مفتاح نعم/لا بدل مربع التأشير، ومنطقة الطعم تظهر مع "نعم". */}
+                    <div className="flex flex-col gap-1.5 w-full">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground">{t("assess.no")}</span>
+                        <Switch checked={sf.hasSkinGrafts} onCheckedChange={(v) => setS({ hasSkinGrafts: v, graftArea: v ? sf.graftArea : "" })} />
+                        <span className="text-sm text-muted-foreground">{t("assess.yes")}</span>
+                      </div>
+                      {sf.hasSkinGrafts && (
+                        <Input
+                          className="h-7 text-sm w-64"
+                          placeholder={t("assess.graftArea")}
+                          value={sf.graftArea}
+                          onChange={(e) => setS({ graftArea: e.target.value })}
+                        />
+                      )}
+                    </div>
                   </PfRow>
                   <PfRow label={t("assess.scarCondition")}>
                     {[
@@ -6477,7 +6462,7 @@ export default function ProstheticsCasePage() {
                   )}
 
                 </div>
-                <SectionSaveButton onSave={handleSaveLowerLimb} busy={patchLower.isPending} saved={lowerLimbSaved} />
+                <SectionSaveButton onSave={handleSaveLowerLimb} busy={patchLower.isPending} saved={lowerLimbSaved} incomplete={!lowerLimbComplete} />
                 </fieldset>
               </Section>
             );
@@ -6561,7 +6546,7 @@ export default function ProstheticsCasePage() {
                     <Textarea rows={2} className="text-sm w-full" value={f.muscleMotionNotes} onChange={(e) => set({ muscleMotionNotes: e.target.value })} />
                   </PfRow>
                 </div>
-                <SectionSaveButton onSave={handleSaveLowerMuscle} busy={patchLower.isPending} saved={lowerMuscleSaved} />
+                <SectionSaveButton onSave={handleSaveLowerMuscle} busy={patchLower.isPending} saved={lowerMuscleSaved} incomplete={!lowerMuscleComplete} />
                 </fieldset>
               </Section>
             );
@@ -6576,10 +6561,15 @@ export default function ProstheticsCasePage() {
             if (!pending) return null;
             const busy = updateCase.isPending || submitAssessmentUpper.isPending
               || submitAssessmentLower.isPending || updateStatus.isPending;
+            // ينهي مرحلة التقييم، فيطلب كل ما في التبويب: الفريق، التقييم العام،
+            // وورقتي الطرف والعضلات لكل نوع بتر لم يُحفظ بعد.
+            const tabComplete = staffComplete && genAssessComplete
+              && (!ampTypes.includes("UPPER") || upperSaved || (upperLimbComplete && upperMuscleComplete))
+              && (!ampTypes.includes("LOWER") || lowerSaved || (lowerLimbComplete && lowerMuscleComplete));
             return (
               <Button
                 onClick={handleSubmitAssessmentAndAdvance}
-                disabled={busy}
+                disabled={busy || !tabComplete}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
@@ -6747,7 +6737,7 @@ export default function ProstheticsCasePage() {
                   <Button
                     className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                     onClick={handleSaveCommitteeAll}
-                    disabled={submitOpinion.isPending}
+                    disabled={!committeeOpinionsComplete || submitOpinion.isPending}
                   >
                     {submitOpinion.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
                     {t("committee.saveOpinions")}
@@ -6804,30 +6794,30 @@ export default function ProstheticsCasePage() {
                       />
                     </div>
                   )}
-                  {/* A decided case keeps showing whatever was written, so an old
-                      note stays readable even after the answer turned "مناسب". */}
-                  {(notesRequired || (committeeDecided && !!decisionForm.finalSummary)) && (
-                    <div className="space-y-1.5 pt-1">
-                      <Label className="text-xs">
-                        {t("committee.summary")}
-                        {notesRequired && <span className="text-destructive"> *</span>}
-                      </Label>
-                      <Textarea
-                        rows={3}
-                        disabled={committeeDecided}
-                        value={decisionForm.finalSummary}
-                        onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))}
-                        placeholder={t("committee.summaryPlaceholder")}
-                      />
-                    </div>
-                  )}
+                  {/* إلزامي مع كل قرار، ويبقى ظاهراً بعد التسجيل للقراءة. */}
+                  <div className="space-y-1.5 pt-1">
+                    <Label className="text-xs">
+                      {t("committee.summary")}
+                      <span className="text-destructive"> *</span>
+                    </Label>
+                    <Textarea
+                      rows={3}
+                      disabled={committeeDecided}
+                      value={decisionForm.finalSummary}
+                      onChange={(e) => setDecisionForm((f) => ({ ...f, finalSummary: e.target.value }))}
+                      placeholder={t("committee.summaryPlaceholder")}
+                    />
+                  </div>
                 </div>
               </div>
               {/* التوقيعات أُزيلت من تبويب اللجنة */}
-              {(c.status === STATUS_BY_TAB.committee_review || c.status === "COMMITTEE_REVIEW" || c.status === "COMMITTEE_APPROVED") && !committeeDecided && (
+              {/* يظهر ما دام القرار لم يُسجَّل بعد: الحقول أعلاه تبقى قابلة
+                  للتعديل في هذه الحالة، وربطه بحالة الملف كان يُخفيه عن حالات
+                  تجاوزت مرحلة اللجنة دون تسجيل قرارها فتُترك بلا وسيلة حفظ. */}
+              {!committeeDecided && (
                 <Button
                   onClick={handleSubmitDecision}
-                  disabled={(notesRequired && !decisionForm.finalSummary.trim()) || submitDecision.isPending}
+                  disabled={!committeeDecisionComplete || submitDecision.isPending}
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                 >
                   {submitDecision.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle2 className="h-4 w-4 ml-2" />}
@@ -6939,7 +6929,12 @@ export default function ProstheticsCasePage() {
 
               <Button
                 onClick={handleAddComponents}
-                disabled={addComponent.isPending || updateStatus.isPending || !compRows.some((r) => r.inventoryItemId)}
+                disabled={
+                  addComponent.isPending || updateStatus.isPending
+                  || !compRows.some((r) => r.inventoryItemId)
+                  // اسم المورّد مطلوب متى اختير "أخرى".
+                  || !filledWhen(compShared.supplier === "OTHER", compShared.supplierOther)
+                }
                 className="w-full gap-2"
               >
                 {(addComponent.isPending || updateStatus.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -7873,8 +7868,8 @@ export default function ProstheticsCasePage() {
                 "physioOpinion",
                 "departmentHeadOpinion",
                 "prosthetistOpinion",
-                "prosthetistSupervisorOpinion",
-                "committeeHeadOpinion",
+                // أُزيل "رأي مسؤول فني الأطراف الصناعية" و"رأي رئيس اللجنة"
+                // من الشاشة؛ الحقلان باقيان في النموذج وفي جسم الحفظ.
                 "expertOpinion",
               ] as const).map((fld) => (
                 <CollapsibleOpinionField
@@ -8016,7 +8011,7 @@ export default function ProstheticsCasePage() {
             <div className="flex gap-2">
               <Button
                 onClick={handleSubmitFinalEval}
-                disabled={submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)}
+                disabled={!finalEvalComplete || submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)}
                 className="flex-1 gap-2"
               >
                 {(submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)) && <Loader2 className="h-4 w-4 animate-spin" />}

@@ -38,7 +38,7 @@ const ARRIVAL_LABEL: Record<string, string> = {
   SOCIAL_MEDIA: "مواقع التواصل",
   HOSPITAL: "مشفى",
   DOCTOR: "طبيب",
-  ASSOCIATION: "جمعية",
+  ASSOCIATION: "مشروع",
   FRIEND: "صديق",
   STAFF: "موظف",
 };

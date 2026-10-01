@@ -11,7 +11,7 @@ export type ReferralVisitType = (typeof REFERRAL_VISIT_TYPES)[number];
 export const REFERRAL_SOURCE_TYPE_LABEL: Record<ReferralSourceType, string> = {
   DOCTOR:      "طبيب",
   HOSPITAL:    "مشفى",
-  ASSOCIATION: "جمعية",
+  ASSOCIATION: "مشروع",
   OTHER:       "أخرى",
 };
 

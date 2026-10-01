@@ -20,7 +20,7 @@ const ARRIVAL_METHODS: { value: WaitingArrivalMethod; label: string }[] = [
   { value: "SOCIAL_MEDIA", label: "مواقع التواصل" },
   { value: "HOSPITAL",     label: "مشفى" },
   { value: "DOCTOR",       label: "طبيب" },
-  { value: "ASSOCIATION",  label: "جمعية" },
+  { value: "ASSOCIATION",  label: "مشروع" },
   { value: "FRIEND",       label: "صديق" },
   { value: "STAFF",        label: "موظف" },
 ];

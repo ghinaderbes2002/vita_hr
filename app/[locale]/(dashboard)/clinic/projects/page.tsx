@@ -6,10 +6,8 @@ import { useLocale } from "next-intl";
 import { Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
@@ -18,29 +16,19 @@ import { ActionGuard, PageGuard } from "@/components/permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { ReferralSourceFormDialog } from "@/components/clinic/referral-source-form-dialog";
 import { useDeleteReferralSource, useReferralSources } from "@/lib/hooks/use-clinic-referrals";
-import {
-  REFERRAL_SOURCE_TYPES, REFERRAL_SOURCE_TYPE_LABEL, ReferralSource, ReferralSourceType, visitsCountOf,
-} from "@/lib/api/clinic-referrals";
+import { ReferralSource, visitsCountOf } from "@/lib/api/clinic-referrals";
 
 const PAGE_SIZE = 20;
 
-// Associations are projects, and have their own screen — this list is doctors,
-// hospitals and the rest.
-const CONTACT_TYPES = REFERRAL_SOURCE_TYPES.filter((t) => t !== "ASSOCIATION");
-
-const TYPE_BADGE: Record<ReferralSourceType, string> = {
-  DOCTOR:      "border-blue-300 bg-blue-50 text-blue-700",
-  HOSPITAL:    "border-purple-300 bg-purple-50 text-purple-700",
-  ASSOCIATION: "border-green-300 bg-green-50 text-green-700",
-  OTHER:       "border-slate-300 bg-slate-50 text-slate-700",
-};
-
-export default function ReferralSourcesPage() {
+/**
+ * The referral-sources screen narrowed to one kind: a project is the source type
+ * stored as ASSOCIATION, so the type is neither filtered nor asked for.
+ */
+export default function ClinicProjectsPage() {
   const router = useRouter();
   const locale = useLocale();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<ReferralSourceType | "all">("all");
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ReferralSource | null>(null);
@@ -52,21 +40,17 @@ export default function ReferralSourcesPage() {
     return () => clearTimeout(id);
   }, [search]);
 
-  // A filter change re-scopes the list, so the old page number no longer applies.
   const changeSearch = (v: string) => { setSearch(v); setPage(1); };
-  const changeType = (v: ReferralSourceType | "all") => { setTypeFilter(v); setPage(1); };
 
   const { data, isLoading } = useReferralSources({
     page,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
-    type: typeFilter !== "all" ? typeFilter : undefined,
+    type: "ASSOCIATION",
   });
   const deleteSource = useDeleteReferralSource();
 
-  // The API filters by one type at a time, so "الكل" still returns associations;
-  // they are dropped here.
-  const sources = (data?.items ?? []).filter((s) => s.type !== "ASSOCIATION");
+  const projects = data?.items ?? [];
 
   const openEdit = (s: ReferralSource) => { setEditing(s); setFormOpen(true); };
   const openCreate = () => { setEditing(null); setFormOpen(true); };
@@ -75,13 +59,13 @@ export default function ReferralSourcesPage() {
     <PageGuard permission={PERMISSIONS.CLINIC_REFERRALS.VIEW}>
       <div className="space-y-6">
         <PageHeader
-          title="جهات الاتصال"
-          description="الأطباء والمشافي التي تُحيل المرضى إلى المركز"
+          title="المشاريع"
+          description="المشاريع التي تُحيل المرضى إلى المركز"
           actions={
             <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.MANAGE}>
               <Button onClick={openCreate} className="gap-2">
                 <Plus className="h-4 w-4" />
-                إضافة مصدر
+                إضافة مشروع
               </Button>
             </ActionGuard>
           }
@@ -93,15 +77,6 @@ export default function ReferralSourcesPage() {
             <Input value={search} onChange={(e) => changeSearch(e.target.value)}
               placeholder="ابحث بالاسم..." className="pr-9" />
           </div>
-          <Select value={typeFilter} onValueChange={(v) => changeType(v as ReferralSourceType | "all")}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="النوع" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
-              {CONTACT_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>{REFERRAL_SOURCE_TYPE_LABEL[t]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="rounded-md border">
@@ -109,7 +84,6 @@ export default function ReferralSourcesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>الاسم</TableHead>
-                <TableHead>النوع</TableHead>
                 <TableHead>المدينة</TableHead>
                 <TableHead>التخصص</TableHead>
                 <TableHead>الزيارات</TableHead>
@@ -121,42 +95,38 @@ export default function ReferralSourcesPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 6 }).map((_, j) => (
                       <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
-              ) : sources.length === 0 ? (
+              ) : projects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={6}>
                     <EmptyState
                       icon={<Users className="h-8 w-8 text-muted-foreground" />}
-                      title="لا توجد مصادر إحالة"
-                      description={debouncedSearch || typeFilter !== "all"
+                      title="لا توجد مشاريع"
+                      description={debouncedSearch
                         ? "لا توجد نتائج مطابقة للبحث"
-                        : "أضف أول مصدر إحالة للمركز"}
+                        : "أضف أول مشروع للمركز"}
                     />
                   </TableCell>
                 </TableRow>
               ) : (
-                sources.map((s) => (
+                projects.map((s) => (
                   <TableRow
                     key={s.id}
                     className="cursor-pointer hover:bg-muted/50"
+                    // The detail screen is shared with the contacts list.
                     onClick={() => router.push(`/${locale}/clinic/referrals/${s.id}`)}
                   >
                     <TableCell className="font-medium">{s.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-xs ${TYPE_BADGE[s.type]}`}>
-                        {REFERRAL_SOURCE_TYPE_LABEL[s.type]}
-                      </Badge>
-                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{s.city || "—"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{s.specialty || "—"}</TableCell>
                     <TableCell className="font-medium">{visitsCountOf(s)}</TableCell>
                     <TableCell className="font-medium">{s.patientCount ?? "—"}</TableCell>
                     <TableCell>
-                      {/* The row itself opens the source, so editing and deleting
+                      {/* The row itself opens the project, so editing and deleting
                           must not bubble up to it. */}
                       <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                         <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.MANAGE}>
@@ -192,14 +162,14 @@ export default function ReferralSourcesPage() {
           open={formOpen}
           onOpenChange={(o) => { setFormOpen(o); if (!o) setEditing(null); }}
           source={editing}
-          excludeTypes={["ASSOCIATION"]}
+          lockedType="ASSOCIATION"
         />
 
         <ConfirmDialog
           open={!!deleteTarget}
           onOpenChange={(o) => !o && setDeleteTarget(null)}
           title={`حذف "${deleteTarget?.name ?? ""}"؟`}
-          description="سيتم إخفاء المصدر من القائمة مع الاحتفاظ بزياراته المسجلة."
+          description="سيتم إخفاء المشروع من القائمة مع الاحتفاظ بزياراته المسجلة."
           variant="destructive"
           onConfirm={() => {
             if (deleteTarget) deleteSource.mutate(deleteTarget.id);

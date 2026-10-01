@@ -15,7 +15,7 @@ export const REFERRAL_SOURCE_LABEL: Record<ReferralSource, string> = {
   SOCIAL_MEDIA: "وسائل التواصل",
   DOCTOR:       "طبيب",
   HOSPITAL:     "مشفى",
-  ASSOCIATION:  "جمعية",
+  ASSOCIATION:  "مشروع",
   FRIEND:       "صديق",
   STAFF:        "كادر العمل",
 };
@@ -24,7 +24,7 @@ export const REFERRAL_SOURCE_LABEL: Record<ReferralSource, string> = {
 export const REFERRAL_DETAILS_LABEL: Partial<Record<ReferralSource, string>> = {
   DOCTOR:      "اسم الطبيب",
   HOSPITAL:    "اسم المشفى",
-  ASSOCIATION: "اسم الجمعية",
+  ASSOCIATION: "اسم المشروع",
 };
 
 export const referralNeedsDetails = (s?: string | null): s is ReferralSource =>
