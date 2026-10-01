@@ -17,7 +17,9 @@ import {
 import { PodiatrySession } from "@/lib/api/clinic-podiatry";
 import {
   AssessmentValue, PodiatryAssessmentFields, assessmentOf, assessmentToDto, emptyAssessment,
+  missingAssessmentFields,
 } from "./podiatry-assessment-fields";
+import { FormT } from "./podiatry-session-schema";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "");
 
@@ -35,6 +37,9 @@ export function PodiatryAssessmentPanel({
   const [form, setForm] = useState<AssessmentValue>(emptyAssessment);
 
   const t = useTranslations("clinic.podiatry.form.panel");
+  // نفس مترجم الورقة، ليخرج اسم كل حقل ناقص بالصيغة المعروضة فيها.
+  const tForm = useTranslations("clinic.podiatry.form") as unknown as FormT;
+  const missing = missingAssessmentFields(form, tForm);
 
   const create = useCreatePodiatrySession();
   const update = useUpdatePodiatrySession();
@@ -78,7 +83,7 @@ export function PodiatryAssessmentPanel({
                   <X className="h-3.5 w-3.5" />
                   {t("cancel")}
                 </Button>
-                <Button size="sm" className="gap-1.5" disabled={saving} onClick={handleSave}>
+                <Button size="sm" className="gap-1.5" disabled={saving || missing.length > 0} onClick={handleSave}>
                   {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                   {t("save")}
                 </Button>
@@ -102,7 +107,14 @@ export function PodiatryAssessmentPanel({
         {!session && !editing ? (
           <p className="text-sm text-muted-foreground text-center py-6">{t("notFilled")}</p>
         ) : (
-          <PodiatryAssessmentFields value={shown} onChange={setForm} readOnly={!editing} />
+          <>
+            {editing && missing.length > 0 && (
+              <p className="mb-3 text-[11px] text-orange-600">
+                {t("missingFields")}: {missing.join("، ")}
+              </p>
+            )}
+            <PodiatryAssessmentFields value={shown} onChange={setForm} readOnly={!editing} />
+          </>
         )}
       </CardContent>
     </Card>

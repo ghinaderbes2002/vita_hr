@@ -168,9 +168,12 @@ const PROSTHETIC_TYPE_LABEL: Record<ProstheticType, string> = {
 
 // ─── Workflow step order ───────────────────────────────────────────────────────
 
+// التسلسل المعتمد من الباك (2026-10-01): استقبال → معاينة → تمت المعاينة →
+// اخذ قياس → تسليم تجريبي → متابعة → جاهز للتسليم → تم التسليم.
+// GAIT_TRAINING لم تعد مرحلة مستقلة (دُمجت في تسليم تجريبي).
 const STATUS_ORDER: ProstheticsStatus[] = [
-  "INTAKE", "ASSESSMENT", "FITTING", "SOCKET_TRIAL",
-  "GAIT_TRAINING", "FOLLOW_UP", "DELIVERED", "FINAL_REVIEW",
+  "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "FITTING",
+  "SOCKET_TRIAL", "FOLLOW_UP", "FINAL_REVIEW", "DELIVERED",
 ];
 
 function StepIndicator({ status }: { status: ProstheticsStatus }) {
@@ -1401,20 +1404,44 @@ function GaitAnalysisCard({
   const [form, setForm] = useState<GaitForm>(() => session ? gaitFormFromData(session) : { ...INITIAL_GAIT_FORM, phases: {} });
   // كل حقول الجلسة مطلوبة. المستثنى: المفاتيح (تُعرض محسومة دائماً)، والتوقيع،
   // وخانات التوضيح التي لا تُطلب إلا عند اختيار "أخرى".
-  const formComplete =
-    allFilled(form, [
-      "sessionDate", "suspensionSystem", "socketBearing", "kneeJointType", "footType",
-      "patientComplaints", "painIntensity", "alignmentCheck", "sittingBalance", "standingBalance",
-      "assistiveDevice", "speedMs", "cadence", "stepLengthProsCm", "stepLengthSoundCm",
-      "stancePercProsthetic", "stancePercSound", "symmetry", "prostheticIssues", "mainProblem",
-      "likelyCauses", "recommendations", "rehabPlanItems", "rehabNotes",
-      "examinerProsthetistId", "notes",
-    ]) &&
-    Object.values(form.phases).some((ph) => ph.deviations.length > 0) &&
-    filledWhen(form.patientComplaints.includes("OTHER"), form.patientComplaintsOtherNotes) &&
-    filledWhen(form.suspensionSystem.includes("OTHER"), form.suspensionSystemOtherNotes) &&
-    filledWhen(form.prostheticIssues.includes("OTHER"), form.prostheticIssuesOtherNotes) &&
-    filledWhen(form.likelyCauses.includes("OTHER"), form.likelyCausesOtherNotes);
+  // كل حقل مقرون بمفتاح تسميته ليظهر بالاسم في قائمة النواقص تحت الزر.
+  const GAIT_REQUIRED: [keyof GaitForm, string][] = [
+    ["sessionDate", "gait.sessionDate"],
+    ["suspensionSystem", "gait.suspensionSystem"],
+    ["socketBearing", "gait.socketBearing"],
+    ["kneeJointType", "gait.kneeJointType"],
+    ["footType", "gait.footJointType"],
+    ["patientComplaints", "gait.patientComplaints"],
+    ["painIntensity", "gait.painIntensity"],
+    ["alignmentCheck", "gait.alignmentExam"],
+    ["sittingBalance", "gait.sittingBalance"],
+    ["standingBalance", "gait.standingBalance"],
+    ["assistiveDevice", "gait.assistiveDevice"],
+    ["speedMs", "gait.speed"],
+    ["cadence", "gait.cadence"],
+    ["stepLengthProsCm", "gait.stepLenProsth"],
+    ["stepLengthSoundCm", "gait.stepLenSound"],
+    ["stancePercProsthetic", "gait.stanceProsth"],
+    ["stancePercSound", "gait.stanceSound"],
+    ["symmetry", "gait.symmetry"],
+    ["prostheticIssues", "gait.prostheticIssues"],
+    ["mainProblem", "gait.mainProblem"],
+    ["likelyCauses", "gait.likelyCause"],
+    ["recommendations", "gait.recommendations"],
+    ["rehabPlanItems", "gait.tabRehab"],
+    ["rehabNotes", "gait.notesBilingual"],
+    ["examinerProsthetistId", "gait.prosthetistName"],
+    ["notes", "gait.generalNotes"],
+  ];
+  const missingFields = [
+    ...GAIT_REQUIRED.filter(([k]) => !isFilled(form[k])).map(([, label]) => t(label)),
+    ...(Object.values(form.phases).some((ph) => ph.deviations.length > 0) ? [] : [t("gait.tabDeviations")]),
+    ...(filledWhen(form.patientComplaints.includes("OTHER"), form.patientComplaintsOtherNotes) ? [] : [t("gait.patientComplaints")]),
+    ...(filledWhen(form.suspensionSystem.includes("OTHER"), form.suspensionSystemOtherNotes) ? [] : [t("gait.suspensionSystem")]),
+    ...(filledWhen(form.prostheticIssues.includes("OTHER"), form.prostheticIssuesOtherNotes) ? [] : [t("gait.prostheticIssues")]),
+    ...(filledWhen(form.likelyCauses.includes("OTHER"), form.likelyCausesOtherNotes) ? [] : [t("gait.likelyCause")]),
+  ];
+  const formComplete = missingFields.length === 0;
   const [activeTab, setActiveTab] = useState("basic");
   const [pdfExporting, setPdfExporting] = useState(false);
   const prostoSigRef = useRef<HTMLInputElement>(null);
@@ -2134,6 +2161,11 @@ function GaitAnalysisCard({
             {isNew ? t("gait.addSession") : t("gait.saveFinal")}
           </Button>
           <Button variant="outline" onClick={() => isNew ? onCancel?.() : setEditing(false)}>{t("gait.cancel")}</Button>
+          {missingFields.length > 0 && (
+            <p className="w-full text-[11px] text-orange-600">
+              {t("gait.missingFields")}: {missingFields.join("، ")}
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -3315,38 +3347,39 @@ const SHOW_FINAL_DELIVERY_CEO = false;      // التسليم النهائي —
 const SHOW_FINAL_DELIVERY_PHYSIO = false;   // التسليم النهائي — المعالج الفيزيائي
 const SHOW_PRO_DELIVERY_PHYSIO = false;     // التسليم التجريبي — المعالج الفيزيائي
 
-// Which case status each workflow tab corresponds to. The tab name no longer
-// matches the status name, so the mapping is explicit in both directions:
-//   الاستقبال…التركيب → معاينة, ورق القياس → أخذ قياس, التسليم التجريبي → تسليم
-//   تجريبي, تحليل المشي/التوازن → تأهيل, التقييم النهائي → تم التسليم,
-//   التسليم النهائي → تم التركيب.
+// الحالة التي يقابلها كل تبويب، وفق تسلسل الباك الجديد:
+//   الاستقبال → استقبال, معلومات المريض/التقييم → معاينة, اللجنة → تمت المعاينة,
+//   ورق القياس/التركيب → اخذ قياس, التسليم التجريبي وتحليل المشي والتوازن →
+//   تسليم تجريبي, المتابعة → متابعة, التقييم النهائي → جاهز للتسليم,
+//   التسليم النهائي → تم التسليم.
 const STATUS_BY_TAB: Record<string, ProstheticsStatus> = {
   intake: "INTAKE",
   patient_info: "ASSESSMENT",
   assessment: "ASSESSMENT",
-  committee_review: "ASSESSMENT",
-  fitting: "ASSESSMENT",
+  committee_review: "COMMITTEE_REVIEW",
+  fitting: "FITTING",
   measurement_sheet: "FITTING",
-  treatment_program: "FITTING",
+  treatment_program: "FOLLOW_UP",
   delivered: "SOCKET_TRIAL",
-  gait_analysis: "GAIT_TRAINING",
-  balance_assessment: "GAIT_TRAINING",
-  final_evaluation: "DELIVERED",
-  final_delivery: "FINAL_REVIEW",
+  gait_analysis: "SOCKET_TRIAL",
+  balance_assessment: "SOCKET_TRIAL",
+  final_evaluation: "FINAL_REVIEW",
+  final_delivery: "DELIVERED",
 };
 
 // The tab a case opens on, given its stored status. First tab that maps to it.
 const TAB_BY_STATUS: Record<string, string> = {
   INTAKE: "intake",
   ASSESSMENT: "assessment",
+  COMMITTEE_REVIEW: "committee_review",
   FITTING: "measurement_sheet",
   SOCKET_TRIAL: "delivered",
-  GAIT_TRAINING: "gait_analysis",
   FOLLOW_UP: "treatment_program",
-  DELIVERED: "final_evaluation",
-  FINAL_REVIEW: "final_delivery",
-  // Legacy statuses still stored on older cases.
-  COMMITTEE_REVIEW: "committee_review",
+  FINAL_REVIEW: "final_evaluation",
+  DELIVERED: "final_delivery",
+  // حالات قديمة ما زالت مخزّنة على ملفات سابقة.
+  COMMITTEE_APPROVED: "committee_review",
+  GAIT_TRAINING: "gait_analysis",
   GAIT_ANALYSIS: "gait_analysis",
   FINAL_EVALUATION: "final_evaluation",
 };
@@ -4931,7 +4964,7 @@ export default function ProstheticsCasePage() {
         treatmentPlan: gaitForm.treatmentPlan || undefined,
       },
     });
-    await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.final_evaluation });
+    await updateStatus.mutateAsync({ id, status: STATUS_BY_TAB.gait_analysis });
   };
 
   const handleMarkDelivered = async () => {
@@ -5005,14 +5038,14 @@ export default function ProstheticsCasePage() {
       toast.info("لا توجد تعديلات جديدة على التقييم");
     }
 
-    // Saving the evaluation is the one step that marks the case delivered. It only
-    // moves forward: a case already at final review stays there, and a closed or
-    // cancelled one (outside STATUS_ORDER, like the legacy stages) is left alone.
+    // حفظ التقييم النهائي ينقل الحالة إلى "جاهز للتسليم"؛ "تم التسليم" صارت
+    // للتسليم النهائي وحده. والتقدّم للأمام فقط: حالة أبعد تبقى مكانها، وحالة
+    // مغلقة أو ملغاة (خارج STATUS_ORDER) لا تُمسّ.
     const at = STATUS_ORDER.indexOf(c.status);
-    const beforeDelivery = at === -1
+    const beforeFinalReview = at === -1
       ? !["CLOSED", "CANCELLED"].includes(c.status)
-      : at < STATUS_ORDER.indexOf("DELIVERED");
-    if (beforeDelivery) await updateStatus.mutateAsync({ id, status: "DELIVERED" });
+      : at < STATUS_ORDER.indexOf("FINAL_REVIEW");
+    if (beforeFinalReview) await updateStatus.mutateAsync({ id, status: "FINAL_REVIEW" });
   };
 
   const handleSignFinalEval = async (sig: string) => {
@@ -5022,7 +5055,7 @@ export default function ProstheticsCasePage() {
       managerNotes: finalEvalForm.managerNotes || undefined,
       patientFileComplete: finalEvalForm.patientFileComplete || undefined,
     }});
-    await updateStatus.mutateAsync({ id, status: "DELIVERED" });
+    await updateStatus.mutateAsync({ id, status: "FINAL_REVIEW" });
   };
 
   const handleMedicalDirectorSignatureClick = async () => {

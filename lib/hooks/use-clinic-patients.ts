@@ -140,6 +140,41 @@ export function useDeletePatientDocument() {
   });
 }
 
+// ── روابط المريض ─────────────────────────────────────────────────────────────
+export function usePatientLinks(patientId: string) {
+  return useQuery({
+    queryKey: ["clinic-patient-links", patientId],
+    queryFn: () => clinicPatientsApi.getLinks(patientId),
+    enabled: !!patientId,
+  });
+}
+
+export function useAddPatientLink() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ patientId, title, url }: { patientId: string; title: string; url: string }) =>
+      clinicPatientsApi.addLink(patientId, { title, url }),
+    onSuccess: (_, { patientId }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-patient-links", patientId] });
+      toast.success("تمت إضافة الرابط");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة الرابط"),
+  });
+}
+
+export function useDeletePatientLink() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ patientId, linkId }: { patientId: string; linkId: string }) =>
+      clinicPatientsApi.deleteLink(patientId, linkId),
+    onSuccess: (_, { patientId }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-patient-links", patientId] });
+      toast.success("تم حذف الرابط");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
+  });
+}
+
 export function usePatientConsents(patientId: string) {
   return useQuery({
     queryKey: ["clinic-patient-consents", patientId],

@@ -17,17 +17,19 @@ import { useProstheticsCases } from "@/lib/hooks/use-clinic-prosthetics";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { ProstheticsCase, ProstheticsStatus } from "@/lib/api/clinic-prosthetics";
 
+// خيارات فلتر الحالة = مراحل التسلسل الجديد، زائد الإغلاق والإلغاء.
 const STATUS_VALUES: ProstheticsStatus[] = [
-  "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "COMMITTEE_APPROVED",
-  "FITTING", "GAIT_ANALYSIS", "FINAL_EVALUATION", "DELIVERED",
-  "FOLLOW_UP", "CLOSED", "CANCELLED",
+  "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "FITTING",
+  "SOCKET_TRIAL", "FOLLOW_UP", "FINAL_REVIEW", "DELIVERED",
+  "CLOSED", "CANCELLED",
 ];
 
+// تسميات تسلسل الباك الجديد؛ الحالات القديمة تبقى هنا لملفات سُجّلت بها.
 const STATUS_LABEL: Record<ProstheticsStatus, string> = {
-  INTAKE: "استقبال", ASSESSMENT: "معاينة", COMMITTEE_REVIEW: "مراجعة اللجنة",
+  INTAKE: "استقبال", ASSESSMENT: "معاينة", COMMITTEE_REVIEW: "تمت المعاينة",
   COMMITTEE_APPROVED: "اعتمدت اللجنة", FITTING: "أخذ قياس", SOCKET_TRIAL: "تسليم تجريبي",
-  GAIT_ANALYSIS: "تحليل مشي", GAIT_TRAINING: "تأهيل",
-  FINAL_EVALUATION: "تقييم نهائي", FINAL_REVIEW: "تم التركيب", DELIVERED: "تم التسليم",
+  GAIT_ANALYSIS: "تحليل مشي", GAIT_TRAINING: "تسليم تجريبي",
+  FINAL_EVALUATION: "تقييم نهائي", FINAL_REVIEW: "جاهز للتسليم", DELIVERED: "تم التسليم",
   FOLLOW_UP: "متابعة", CLOSED: "مغلقة", CANCELLED: "ملغى",
 };
 

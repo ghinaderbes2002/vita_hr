@@ -3456,6 +3456,7 @@
         "tabRehab": "خطة العلاج",
         "tabSignatures": "التوقيعات",
         "baseAssessment": "التقييم الأساسي",
+        "missingFields": "حقول ناقصة",
         "sessionDate": "تاريخ الجلسة",
         "suspensionSystem": "نظام التعليق",
         "otherSuspensionDetails": "تفاصيل نظام التعليق الآخر (اختياري)...",
@@ -4415,6 +4416,7 @@
           }
         },
         "panel": {
+          "missingFields": "حقول ناقصة",
           "filledBy": "عبّأ النموذج",
           "cancel": "إلغاء",
           "save": "حفظ",

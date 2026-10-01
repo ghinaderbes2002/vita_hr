@@ -140,6 +140,60 @@ export const assessmentToDto = (v: AssessmentValue): PodiatrySessionDto => {
   };
 };
 
+// ── اكتمال النموذج ───────────────────────────────────────────────────────────
+// زر الحفظ لا يُفعَّل إلا بتعبئة كل حقول الورقة. المستثنى: مربعات التأشير
+// (الموجودات والجس) لأنها تُعرض محسومة دائماً — وما تفتحه من حقول تفصيلية
+// يُطلب عند تأشيرها فقط.
+const filled = (v: unknown): boolean =>
+  Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim().length > 0 : v != null;
+
+/** أسماء الحقول غير المعبّأة، بالترتيب الذي تظهر به في الورقة. */
+export function missingAssessmentFields(v: AssessmentValue, t: FormT): string[] {
+  const out: string[] = [];
+  const need = (ok: boolean, label: string) => { if (!ok) out.push(label); };
+  const sub = v.subjectiveHistory;
+  const vis = v.visualInspection;
+  const dyn = v.dynamicAnalysis;
+
+  need(filled(sub.mainCause), t("labels.mainCause"));
+  need(filled(sub.painLocation), t("labels.painLocation"));
+  need(filled(sub.vasScore), t("labels.painNature"));
+  need(filled(sub.painCharacteristics), t("labels.painNature"));
+
+  need(filled(vis.rightRearfootAlignment) && filled(vis.leftRearfootAlignment), t("labels.rearfootAlignment"));
+  need(filled(vis.rightTooManyToes) && filled(vis.leftTooManyToes), t("labels.tooManyToes"));
+  need(filled(vis.rightTooManyToesCount) && filled(vis.leftTooManyToesCount), t("labels.toesCount"));
+  need(filled(vis.rightArchArchitecture) && filled(vis.leftArchArchitecture), t("labels.archArchitecture"));
+  // كل موجودة مؤشَّرة تطلب تفصيلها.
+  need(!vis.halluxValgus || filled(vis.halluxValgusType), t("findings.halluxValgus"));
+  need(!vis.tailorsBunion || filled(vis.tailorsBunionType), t("findings.tailorsBunion"));
+  need(!vis.hammerToes || filled(vis.hammerToesAffected), t("findings.hammerToes"));
+  need(!vis.clawToes || filled(vis.clawToesAffected), t("findings.clawToes"));
+  need(!vis.malletToes || filled(vis.malletToesAffected), t("findings.malletToes"));
+  need(!vis.hyperkeratosisCallus || filled(vis.hyperkeratosisLocation), t("findings.hyperkeratosisCallus"));
+  need(!vis.preTrophicLesions || filled(vis.preTrophicLesionsNotes), t("findings.preTrophicLesions"));
+  need(!vis.edema || filled(vis.edemaType), t("findings.edema"));
+
+  need(filled(v.rangeOfMotion.ankleDorsiflexion), t("labels.ankleDorsiflexion"));
+  need(filled(v.rangeOfMotion.anklePlantarflexion), t("labels.anklePlantarflexion"));
+
+  need(filled(dyn.rightJackTest) && filled(dyn.leftJackTest), t("labels.jackTest"));
+  need(filled(dyn.rightWalkingLine) && filled(dyn.leftWalkingLine), t("labels.walkingLine"));
+
+  need(filled(v.shoeWearPattern.currentFootwear), t("labels.currentFootwear"));
+  need(filled(v.shoeWearPattern.outsoleWear), t("labels.outsoleWear"));
+
+  // القياسات: كل قياس يمين ويسار.
+  FOOT_MEASUREMENT_KEYS.forEach((k) => {
+    const both = filled(v.footMeasurements[`${k}Right`]) && filled(v.footMeasurements[`${k}Left`]);
+    need(both, t(`measurements.${k}`));
+  });
+
+  need(filled(v.insoleType), t("labels.insoleType"));
+  need(filled(v.notes), t("labels.notes"));
+  return out;
+}
+
 // ── Building blocks ──────────────────────────────────────────────────────────
 const pick = <T extends string>(list: T[], v: T, single: boolean): T[] =>
   single

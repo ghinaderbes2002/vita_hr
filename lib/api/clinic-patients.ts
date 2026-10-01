@@ -96,6 +96,16 @@ export interface PatientDocument {
   uploadedAt?: string;
 }
 
+/** رابط خارجي يُحفظ على ملف المريض — نفس منطق المستندات بلا ملف مرفوع. */
+export interface PatientLink {
+  id: string;
+  patientId: string;
+  title: string;
+  url: string;
+  addedAt: string;
+  addedBy?: string | null;
+}
+
 export interface PatientConsent {
   id: string;
   patientId: string;
@@ -282,6 +292,22 @@ export const clinicPatientsApi = {
 
   deleteDocument: async (patientId: string, docId: string): Promise<void> => {
     await apiClient.delete(`/patients/${patientId}/documents/${docId}`);
+  },
+
+  // ── روابط المريض — صلاحياتها نفس صلاحيات المستندات ──────────────────────────
+  getLinks: async (patientId: string): Promise<PatientLink[]> => {
+    const { data } = await apiClient.get(`/patients/${patientId}/links`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  addLink: async (patientId: string, dto: { title: string; url: string }): Promise<PatientLink> => {
+    const { data } = await apiClient.post(`/patients/${patientId}/links`, dto);
+    return data?.data ?? data;
+  },
+
+  deleteLink: async (patientId: string, linkId: string): Promise<void> => {
+    await apiClient.delete(`/patients/${patientId}/links/${linkId}`);
   },
 
   createConsent: async (
