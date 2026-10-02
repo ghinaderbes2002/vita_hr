@@ -4023,6 +4023,22 @@ export default function ProstheticsCasePage() {
       hasRevisionSurgery: caseData.hasRevisionSurgery ?? null,
       revisionDetails: caseData.revisionDetails ?? "",
     });
+    // The general assessment rows sit inside the limb sheet, which locks once
+    // saved — unhydrated, they would freeze blank on the next visit.
+    setGenAssessForm({
+      amputationYear: amputationDateOf(caseData)?.slice(0, 4) ?? "",
+      amputationMonth: (() => {
+        const d = amputationDateOf(caseData);
+        return d && d.length >= 7 ? String(parseInt(d.slice(5, 7))) : "0";
+      })(),
+      amputationCause: amputationCauseOf(caseData) ?? "",
+      amputationCauseOtherDetail: caseData.amputationCauseOtherDetail ?? "",
+      clinicalHistory: (caseData as any).clinicalHistory ?? "",
+      moreAffectedSide: caseData.moreAffectedSide ?? "",
+      currentlyUsingProsthesis: caseData.currentlyUsingProsthesis ?? null,
+      previouslyUsedProsthesis: caseData.previouslyUsedProsthesis ?? null,
+      previousProsthesisSystemDetail: caseData.previousProsthesisSystemDetail ?? "",
+    });
     // Saved via updateCase as arrays (prosthetistIds …). On reload the backend may
     // echo the staff back in any of several shapes — plural id arrays, a single id,
     // or a nested staff object carrying the id — so read whichever is present.
@@ -4493,7 +4509,9 @@ export default function ProstheticsCasePage() {
       amputationLevelNote: f.amputationLevelNote || undefined,
       painPresent: f.painPresent ?? undefined,
       painIntensity: f.painPresent ? f.painIntensity : undefined,
-      painTypes: f.painPresent && f.painTypes.length ? f.painTypes as any : undefined,
+      // The pain type row is always on the sheet (it has its own "none"), so it
+      // is sent whatever the pain switch says.
+      painTypes: f.painTypes.length ? f.painTypes as any : undefined,
       painTypeOtherDetail: f.painTypes.includes("OTHER") ? f.painTypeOtherDetail || undefined : undefined,
       phantomPainPresent: f.phantomPainPresent ?? undefined,
       phantomPainIntensity: f.phantomPainPresent ? f.phantomPainIntensity : undefined,
@@ -4545,7 +4563,7 @@ export default function ProstheticsCasePage() {
       painPresent: f.painPresent ?? undefined,
       painIntensity: f.painPresent ? f.painIntensity : undefined,
       painArea: f.painPresent ? f.painArea || undefined : undefined,
-      painTypes: f.painPresent && f.painTypes.length ? f.painTypes as any : undefined,
+      painTypes: f.painTypes.length ? f.painTypes as any : undefined,
       painTypeOtherDetail: f.painTypes.includes("OTHER") ? f.painTypeOtherDetail || undefined : undefined,
       phantomSensationPresent: f.phantomSensationPresent ?? undefined,
       // No phantom sensation means no phantom pain, so the answer is pinned to
@@ -4694,7 +4712,7 @@ export default function ProstheticsCasePage() {
   /** التقييم العام المشترك فوق ورقتي الجانبين. */
   const genAssessComplete =
     allFilled(genAssessForm, [
-      "amputationYear", "amputationMonth", "amputationCause", "clinicalHistory", "moreAffectedSide",
+      "amputationYear", "amputationMonth", "amputationCause", "clinicalHistory",
     ]) &&
     filledWhen(genAssessForm.amputationCause === "OTHER", genAssessForm.amputationCauseOtherDetail) &&
     filledWhen(!!genAssessForm.previouslyUsedProsthesis, genAssessForm.previousProsthesisSystemDetail);
@@ -4732,7 +4750,10 @@ export default function ProstheticsCasePage() {
       ? ["RIGHT", "LEFT"]
       : [((form.amputationSide as "LEFT" | "RIGHT") || form.side) as "LEFT" | "RIGHT"];
 
+  // The limb sheets also carry the general assessment rows (amputation date,
+  // cause, clinical history), which live on the case — saved alongside.
   const handleSaveUpperLimb = async () => {
+    await handleSaveGeneralAssessment();
     for (const side of sidesOf(upperAssessForm)) {
       const form = side === "LEFT" && upperAssessForm.amputationSide === "BILATERAL"
         ? upperAssessFormLeft
@@ -4754,6 +4775,7 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSaveLowerLimb = async () => {
+    await handleSaveGeneralAssessment();
     for (const side of sidesOf(lowerAssessForm)) {
       const form = side === "LEFT" && lowerAssessForm.amputationSide === "BILATERAL"
         ? lowerAssessFormLeft
@@ -5960,7 +5982,7 @@ export default function ProstheticsCasePage() {
 
 
                 </div>
-                <SectionSaveButton onSave={handleSaveUpperLimb} busy={patchUpper.isPending} saved={upperLimbSaved} incomplete={!upperLimbComplete} />
+                <SectionSaveButton onSave={handleSaveUpperLimb} busy={patchUpper.isPending || updateCase.isPending} saved={upperLimbSaved} incomplete={!upperLimbComplete || !genAssessComplete} />
                 </fieldset>
               </Section>
             );
@@ -6495,7 +6517,7 @@ export default function ProstheticsCasePage() {
                   )}
 
                 </div>
-                <SectionSaveButton onSave={handleSaveLowerLimb} busy={patchLower.isPending} saved={lowerLimbSaved} incomplete={!lowerLimbComplete} />
+                <SectionSaveButton onSave={handleSaveLowerLimb} busy={patchLower.isPending || updateCase.isPending} saved={lowerLimbSaved} incomplete={!lowerLimbComplete || !genAssessComplete} />
                 </fieldset>
               </Section>
             );

@@ -107,14 +107,7 @@ export function PodiatryAssessmentPanel({
         {!session && !editing ? (
           <p className="text-sm text-muted-foreground text-center py-6">{t("notFilled")}</p>
         ) : (
-          <>
-            {editing && missing.length > 0 && (
-              <p className="mb-3 text-[11px] text-orange-600">
-                {t("missingFields")}: {missing.join("، ")}
-              </p>
-            )}
-            <PodiatryAssessmentFields value={shown} onChange={setForm} readOnly={!editing} />
-          </>
+          <PodiatryAssessmentFields value={shown} onChange={setForm} readOnly={!editing} />
         )}
       </CardContent>
     </Card>

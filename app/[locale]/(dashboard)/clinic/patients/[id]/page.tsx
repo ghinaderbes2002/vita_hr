@@ -8,7 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   User, Phone, MapPin, Calendar, CalendarCheck, FileText, Activity, Heart,
-  Edit2, Trash2, Plus, Upload, Loader2, ArrowRight, ArrowLeftRight, Eye, KeyRound,
+  Edit2, Trash2, Plus, Upload, Loader2, ArrowRight, ArrowLeftRight, Eye, KeyRound, Link2, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
 import {
   useClinicPatient, useDeleteClinicPatient,
   usePatientDocuments, useUploadPatientDocument, useDeletePatientDocument, useDownloadPatientDocument,
+  usePatientLinks, useAddPatientLink, useDeletePatientLink,
   usePatientNotes, useCreatePatientNote,
   usePatientConsents,
 } from "@/lib/hooks/use-clinic-patients";
@@ -97,6 +98,10 @@ export default function PatientProfilePage() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadType, setUploadType] = useState<DocumentType>("OTHER");
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkTitle, setLinkTitle] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [deleteLinkId, setDeleteLinkId] = useState<string | null>(null);
 
   const { data: patient, isLoading } = useClinicPatient(id);
   const { data: prostCases = [] } = useProstheticsCasesByPatient(id);
@@ -105,6 +110,7 @@ export default function PatientProfilePage() {
   const { data: physioCases = [] } = usePhysioCasesByPatient(id);
   const { data: doctorExams = [] } = usePhysioCasesByPatient(id, "DOCTOR_EXAM");
   const { data: documents = [] } = usePatientDocuments(id);
+  const { data: links = [] } = usePatientLinks(id);
   const { data: consents = [] } = usePatientConsents(id);
   const { data: podiatryReceptions = [] } = usePodiatryReceptions(id);
   const { data: appointments = [], isLoading: apptsLoading } = usePatientAppointments(id);
@@ -118,6 +124,8 @@ export default function PatientProfilePage() {
   const uploadDoc = useUploadPatientDocument();
   const deleteDoc = useDeletePatientDocument();
   const downloadDoc = useDownloadPatientDocument();
+  const addLink = useAddPatientLink();
+  const deleteLink = useDeletePatientLink();
   const createNote = useCreatePatientNote();
 
   // Most recently signed consent — the current state of the patient's choice.
@@ -212,6 +220,27 @@ export default function PatientProfilePage() {
     setUploadDialogOpen(false);
     setUploadFile(null);
     setUploadType("OTHER");
+  };
+
+  // A scheme-less address ("example.com") would open relative to this app, so
+  // it is completed to https before it is saved.
+  const normalizedLinkUrl = (() => {
+    const raw = linkUrl.trim();
+    if (!raw) return null;
+    try {
+      const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+      return u.hostname.includes(".") ? u.toString() : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const handleAddLink = async () => {
+    if (!linkTitle.trim() || !normalizedLinkUrl) return;
+    await addLink.mutateAsync({ patientId: id, title: linkTitle.trim(), url: normalizedLinkUrl });
+    setLinkDialogOpen(false);
+    setLinkTitle("");
+    setLinkUrl("");
   };
 
   const handleNewProstheticsCase = async () => {
@@ -438,6 +467,7 @@ export default function PatientProfilePage() {
           <TabsTrigger value="podiatry">طب الأقدام ({podiatryReceptions.length})</TabsTrigger>
           <TabsTrigger value="doctor_exam">معاينة الطبيب ({doctorExams.length})</TabsTrigger>
           <TabsTrigger value="documents">المستندات ({documents.length})</TabsTrigger>
+          <TabsTrigger value="links">الروابط ({links.length})</TabsTrigger>
           <TabsTrigger value="notes">الملاحظات ({notes.length})</TabsTrigger>
         </TabsList>
 
@@ -765,6 +795,60 @@ export default function PatientProfilePage() {
           )}
         </TabsContent>
 
+        {/* Links Tab */}
+        <TabsContent value="links" className="mt-4 space-y-4">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
+            <h3 className="font-semibold">الروابط</h3>
+            <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.UPLOAD_DOCUMENTS}>
+              <Button size="sm" variant="outline" className="gap-2" onClick={() => setLinkDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                إضافة رابط
+              </Button>
+            </ActionGuard>
+          </div>
+          {links.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground border rounded-lg">لا توجد روابط</div>
+          ) : (
+            <div className="space-y-2">
+              {links.map((link) => (
+                <div key={link.id} className="flex items-center gap-3 rounded-lg border p-3">
+                  <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                    <Link2 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{link.title}</p>
+                    <p className="text-xs text-muted-foreground truncate" dir="ltr">{link.url}</p>
+                    {link.addedAt && (
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(link.addedAt).toLocaleString("en-US", { hour12: true })}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-sm text-primary hover:opacity-80"
+                      title="فتح الرابط"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                    <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.UPLOAD_DOCUMENTS}>
+                      <button
+                        className="text-destructive hover:opacity-80"
+                        onClick={() => setDeleteLinkId(link.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </ActionGuard>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
         {/* Notes Tab */}
         <TabsContent value="notes" className="mt-4 space-y-4">
           <ActionGuard permission={PERMISSIONS.CLINIC_PATIENTS.CREATE}>
@@ -848,6 +932,41 @@ export default function PatientProfilePage() {
         </DialogContent>
       </Dialog>
 
+      {/* Add Link Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={(o) => { if (!addLink.isPending) { setLinkDialogOpen(o); if (!o) { setLinkTitle(""); setLinkUrl(""); } } }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة رابط</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>اسم الرابط</Label>
+              <Input value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>الرابط</Label>
+              <Input
+                dir="ltr"
+                type="url"
+                placeholder="https://..."
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+              />
+              {linkUrl.trim() && !normalizedLinkUrl && (
+                <p className="text-xs text-destructive">الرابط غير صالح</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkDialogOpen(false)} disabled={addLink.isPending}>إلغاء</Button>
+            <Button onClick={handleAddLink} disabled={!linkTitle.trim() || !normalizedLinkUrl || addLink.isPending}>
+              {addLink.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Plus className="h-4 w-4 ml-2" />}
+              إضافة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <PodiatryReceptionDialog
         open={podiatryDialogOpen}
         onOpenChange={setPodiatryDialogOpen}
@@ -883,6 +1002,19 @@ export default function PatientProfilePage() {
         onConfirm={() => {
           if (deleteDocId) deleteDoc.mutate({ patientId: id, docId: deleteDocId });
           setDeleteDocId(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!deleteLinkId}
+        onOpenChange={(o) => { if (!o) setDeleteLinkId(null); }}
+        title="حذف الرابط"
+        description="هل تريد حذف هذا الرابط؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteLinkId) deleteLink.mutate({ patientId: id, linkId: deleteLinkId });
+          setDeleteLinkId(null);
         }}
       />
 
