@@ -1207,6 +1207,8 @@ export interface FinalEvaluationDto {
   needsFollowUp?: boolean;
   followUpPlan?: string;
   medicalDirectorNotes?: string;
+  managerNotes?: string;
+  patientFileComplete?: boolean;
 }
 
 export interface DirectorSignDto {

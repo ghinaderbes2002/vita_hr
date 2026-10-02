@@ -3251,7 +3251,8 @@
             "unknown": "Bilinmiyor",
             "acute_injury": "Akut Yaralanma",
             "post_surgery": "Cerrahi Sonrası",
-            "chronic_overuse": "Kronik Aşırı Kullanım"
+            "chronic_overuse": "Kronik Aşırı Kullanım",
+            "hereditary_condition": "Kalıtsal Durum"
           },
           "painLocation": {
             "forefoot": "Ön Ayak",

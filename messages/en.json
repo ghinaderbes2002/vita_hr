@@ -4166,7 +4166,8 @@
             "unknown": "Unknown",
             "acute_injury": "Acute Injury",
             "post_surgery": "Post-Surgery",
-            "chronic_overuse": "Chronic Overuse"
+            "chronic_overuse": "Chronic Overuse",
+            "hereditary_condition": "Hereditary Condition"
           },
           "painLocation": {
             "forefoot": "Forefoot",

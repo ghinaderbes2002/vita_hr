@@ -580,8 +580,9 @@ export function PodiatryAssessmentFields({
                   <Input
                     key={side}
                     className="h-8 text-center"
-                    dir="ltr"
-                    inputMode="decimal"
+                    // ارتفاع القوس يُكتب وصفاً (نص حر)، وباقي الصفوف أرقام.
+                    dir={key === "archHeight" ? "auto" : "ltr"}
+                    inputMode={key === "archHeight" ? "text" : "decimal"}
                     value={value.footMeasurements[field] ?? ""}
                     onChange={(e) => onChange({
                       ...value,

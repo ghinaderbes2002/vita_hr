@@ -4301,7 +4301,8 @@
             "unknown": "غير معروف",
             "acute_injury": "إصابة حادة",
             "post_surgery": "بعد الجراحة",
-            "chronic_overuse": "إجهاد مفرط مزمن"
+            "chronic_overuse": "إجهاد مفرط مزمن",
+            "hereditary_condition": "حالة وراثية"
           },
           "painLocation": {
             "forefoot": "مقدمة القدم",

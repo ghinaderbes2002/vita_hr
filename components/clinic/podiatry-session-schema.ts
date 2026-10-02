@@ -23,7 +23,7 @@ export interface OptGroup<T extends string> {
 const g = <T extends string>(group: string, values: readonly T[]): OptGroup<T> => ({ group, values });
 
 export const MAIN_CAUSE = g<PodiatryMainCause>("mainCause", [
-  "none", "unknown", "acute_injury", "post_surgery", "chronic_overuse",
+  "none", "unknown", "acute_injury", "post_surgery", "chronic_overuse", "hereditary_condition",
 ]);
 
 export const PAIN_LOCATION = g<PodiatryPainLocation>("painLocation", [

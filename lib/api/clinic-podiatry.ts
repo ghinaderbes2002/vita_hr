@@ -13,7 +13,8 @@ export type MedicalHistoryItem =
 // and updates it afterwards. Single-choice groups still travel as arrays, and
 // every measurement / count is a free-text string, matching the API contract.
 export type PodiatryMainCause =
-  | "none" | "unknown" | "acute_injury" | "post_surgery" | "chronic_overuse";
+  | "none" | "unknown" | "acute_injury" | "post_surgery" | "chronic_overuse"
+  | "hereditary_condition";
 export type PodiatryPainLocation = "forefoot" | "midfoot" | "rearfoot";
 export type PodiatryPainCharacteristic =
   | "morning_startup" | "eases_with_activity" | "progressively_worse"

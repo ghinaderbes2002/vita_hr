@@ -4129,6 +4129,12 @@ export default function ProstheticsCasePage() {
   // A delivered case is closed for editing — sessions and visits become history.
   const caseLocked = c.status === "DELIVERED";
   const committeeDecided = !!cr?.decidedAt;
+  // Once decided the switch is read-only, so it shows the server's answer. The
+  // case may come back without `prosthesisSuitable`; the recorded decision then
+  // stands in for it, otherwise an approved case would read as "غير مناسب".
+  const committeeSuitable = committeeDecided
+    ? (c.prosthesisSuitable ?? cr?.finalDecision === "APPROVED")
+    : committeeSuitForm.prosthesisSuitable === true;
   // The decision carries only the user id; employees are linked to users, so the
   // name comes from the staff list. Falls back to nothing when unlinked.
   const decidedByName = (() => {
@@ -5037,6 +5043,10 @@ export default function ProstheticsCasePage() {
       needsFollowUp: f.needsFollowUp,
       followUpPlan: f.followUpPlan,
       medicalDirectorNotes: f.medicalDirectorNotes,
+      // تدقيق المدير: كان يُرسل مع توقيع المدير فقط، والتوقيع مخفي الآن
+      // (SHOW_FINAL_EVAL_MANAGER_SIG)، فلم يكن يصل إلى السيرفر إطلاقاً.
+      managerNotes: f.managerNotes,
+      patientFileComplete: f.patientFileComplete,
     };
     // Only what the user actually changed is sent. The backend stamps an opinion's
     // author whenever its value differs from the stored one, so sending every
@@ -6826,7 +6836,7 @@ export default function ProstheticsCasePage() {
                     <span className="text-sm text-muted-foreground">{t("committee.notSuitable")}</span>
                     <Switch
                       disabled={committeeDecided}
-                      checked={committeeSuitForm.prosthesisSuitable === true}
+                      checked={committeeSuitable}
                       onCheckedChange={(v) => setCommitteeSuitForm((f) => ({
                         ...f,
                         prosthesisSuitable: v,
@@ -6837,7 +6847,7 @@ export default function ProstheticsCasePage() {
                   </div>
                   {/* Each answer opens its own follow-up: "مناسب" asks which
                       prosthesis, "غير مناسب" asks the committee to say why. */}
-                  {committeeSuitForm.prosthesisSuitable === true && (
+                  {committeeSuitable && (
                     <div className="space-y-1.5 pt-1">
                       <Label className="text-xs">{t("committee.proposedType")}</Label>
                       <Input
