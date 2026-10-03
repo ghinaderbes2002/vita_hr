@@ -327,6 +327,87 @@ export const PERMISSIONS = {
     VIEW_RATINGS:             "clinic.patient_app.ratings.view",
   },
 
+  /**
+   * خدمة المستودعات (warehouse) — منفصلة عن CLINIC_INVENTORY القديمة.
+   * الأسماء منقولة حرفياً من Warehouse_API_Frontend_Guide_AR §15.
+   */
+  WAREHOUSE_WAREHOUSES: {
+    READ:   "warehouse.warehouses.read",
+    CREATE: "warehouse.warehouses.create",
+    UPDATE: "warehouse.warehouses.update",
+  },
+  /** الأصناف والتصنيفات تشترك بنفس الصلاحيات، وحذف الصنف يتبع UPDATE. */
+  WAREHOUSE_ITEMS: {
+    READ:   "warehouse.items.read",
+    CREATE: "warehouse.items.create",
+    UPDATE: "warehouse.items.update",
+  },
+  WAREHOUSE_UNITS: {
+    READ:   "warehouse.units.read",
+    CREATE: "warehouse.units.create",
+    UPDATE: "warehouse.units.update",
+  },
+  WAREHOUSE_SUPPLIERS: {
+    READ:   "warehouse.suppliers.read",
+    CREATE: "warehouse.suppliers.create",
+    UPDATE: "warehouse.suppliers.update",
+  },
+  WAREHOUSE_STOCK: {
+    READ:   "warehouse.stock.read",
+    ADJUST: "warehouse.stock.adjust",
+  },
+  WAREHOUSE_MATERIAL_REQUESTS: {
+    READ:     "warehouse.material_requests.read",
+    READ_OWN: "warehouse.material_requests.read_own",
+    CREATE:   "warehouse.material_requests.create",
+    /** اعتماد + رفض + صرف */
+    APPROVE:  "warehouse.material_requests.approve",
+  },
+  WAREHOUSE_CURRENCIES: {
+    READ:   "warehouse.currencies.read",
+    MANAGE: "warehouse.currencies.manage",
+  },
+  WAREHOUSE_PURCHASE_INVOICES: {
+    READ:    "warehouse.purchase_invoices.read",
+    CREATE:  "warehouse.purchase_invoices.create",
+    APPROVE: "warehouse.purchase_invoices.approve",
+    POST:    "warehouse.purchase_invoices.post",
+    /** بدونها يحذف الباك حقول السعر من الاستجابة أصلاً. */
+    VIEW_PRICES: "warehouse.purchase_prices.view",
+  },
+  WAREHOUSE_TRANSFERS: {
+    READ:    "warehouse.transfers.read",
+    CREATE:  "warehouse.transfers.create",
+    RECEIVE: "warehouse.transfers.receive",
+  },
+  WAREHOUSE_RETURNS: {
+    READ:   "warehouse.returns.read",
+    CREATE: "warehouse.returns.create",
+  },
+  WAREHOUSE_COUNTS: {
+    READ:    "warehouse.counts.read",
+    /** بدء الجلسة + تسجيل العدّ */
+    CREATE:  "warehouse.counts.create",
+    /** إنهاء/إلغاء */
+    APPROVE: "warehouse.counts.approve",
+  },
+  WAREHOUSE_QUOTATIONS: {
+    READ:        "warehouse.quotations.read",
+    CREATE:      "warehouse.quotations.create",
+    APPROVE:     "warehouse.quotations.approve",
+    EDIT_PRICES: "warehouse.quotations.edit_prices",
+    /** تشمل فواتير المبيعات أيضاً — بدونها نسخة الفني بلا أسعار. */
+    VIEW_PRICES: "warehouse.quotations.view_prices",
+  },
+  WAREHOUSE_SALES_INVOICES: {
+    READ:    "warehouse.sales_invoices.read",
+    CREATE:  "warehouse.sales_invoices.create",
+    APPROVE: "warehouse.sales_invoices.approve",
+  },
+  WAREHOUSE_REPORTS: {
+    READ: "warehouse.reports.read",
+  },
+
   AUDIT: {
     READ: "audit:read",
   },

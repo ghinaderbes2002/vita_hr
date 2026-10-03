@@ -36,10 +36,11 @@ const FULL_CASELOAD_JOB_CODES = [
   "VTX-JTL-000024", // مندوب المبيعات
 ];
 
-// خيارات فلتر الحالة = مراحل التسلسل الجديد، زائد الإغلاق والإلغاء.
+// خيارات فلتر الحالة = مراحل سير الحالة السبع ثم الإغلاق والإلغاء، بالأسماء نفسها التي تظهر
+// في عمود الحالة (CaseStatusBadge).
 const STATUS_VALUES: ProstheticsStatus[] = [
   "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "FITTING",
-  "SOCKET_TRIAL", "FOLLOW_UP", "FINAL_REVIEW", "DELIVERED",
+  "SOCKET_TRIAL", "FINAL_REVIEW", "DELIVERED",
   "CLOSED", "CANCELLED",
 ];
 

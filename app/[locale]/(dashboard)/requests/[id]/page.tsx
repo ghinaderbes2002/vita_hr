@@ -68,6 +68,7 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
   newDepartmentId: "القسم الجديد",
   newJobTitleId: "المسمى الجديد",
   violationDescription: "وصف المخالفة",
+  executiveRecommendation: "التوصية التنفيذية",
   penaltyType: "نوع العقوبة",
   penaltyDays: "أيام الخصم",
   targetEmployeeId: "الموظف المستهدف",

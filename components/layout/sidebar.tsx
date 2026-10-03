@@ -58,6 +58,16 @@ import {
   Tags,
   MessageSquare,
   KeyRound,
+  Warehouse,
+  Boxes,
+  FolderTree,
+  Ruler,
+  Truck,
+  Coins,
+  Receipt,
+  ReceiptText,
+  ArrowLeftRight,
+  Undo2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -312,6 +322,35 @@ const navigation: NavItem[] = [
     children: [
       { title: "nav.clinicContacts", href: "/clinic/referrals", icon: Users, permission: "clinic.referrals.view" },
       { title: "nav.clinicSalesOverview", href: "/clinic/referrals/sales", icon: Trophy, permission: "clinic.referrals.view" },
+    ],
+  },
+  {
+    title: "nav.warehouse",
+    icon: Warehouse,
+    separator: true,
+    children: [
+      { title: "nav.warehouseStock", href: "/warehouse/stock", icon: Package, permission: "warehouse.stock.read" },
+      { title: "nav.warehouseMaterialRequests", href: "/warehouse/material-requests", icon: ClipboardList, permissions: ["warehouse.material_requests.read", "warehouse.material_requests.read_own"] },
+      { title: "nav.warehousePurchaseInvoices", href: "/warehouse/purchase-invoices", icon: Receipt, permission: "warehouse.purchase_invoices.read" },
+      { title: "nav.warehouseTransfers", href: "/warehouse/transfers", icon: ArrowLeftRight, permission: "warehouse.transfers.read" },
+      { title: "nav.warehouseReturns", href: "/warehouse/returns", icon: Undo2, permission: "warehouse.returns.read" },
+      { title: "nav.warehouseCounts", href: "/warehouse/inventory-counts", icon: ClipboardCheck, permission: "warehouse.counts.read" },
+      { title: "nav.warehouseQuotations", href: "/warehouse/quotations", icon: FileText, permission: "warehouse.quotations.read" },
+      { title: "nav.warehouseSalesInvoices", href: "/warehouse/sales-invoices", icon: ReceiptText, permission: "warehouse.sales_invoices.read" },
+      { title: "nav.warehouseReports", href: "/warehouse/reports", icon: FileBarChart, permission: "warehouse.reports.read" },
+      {
+        // البيانات الأساسية التي تُعرَّف مرة وتعتمد عليها كل العمليات أعلاه.
+        title: "nav.warehouseSetup",
+        icon: Settings,
+        children: [
+          { title: "nav.warehouseWarehouses", href: "/warehouse/warehouses", icon: Warehouse, permission: "warehouse.warehouses.read" },
+          { title: "nav.warehouseItems", href: "/warehouse/items", icon: Boxes, permission: "warehouse.items.read" },
+          { title: "nav.warehouseCategories", href: "/warehouse/categories", icon: FolderTree, permission: "warehouse.items.read" },
+          { title: "nav.warehouseUnits", href: "/warehouse/units", icon: Ruler, permission: "warehouse.units.read" },
+          { title: "nav.warehouseSuppliers", href: "/warehouse/suppliers", icon: Truck, permission: "warehouse.suppliers.read" },
+          { title: "nav.warehouseCurrencies", href: "/warehouse/currencies", icon: Coins, permission: "warehouse.currencies.read" },
+        ],
+      },
     ],
   },
   // محادثات المرضى لغير الأدمن: بند مستقل بدل فتح قسم التطبيق كله، والأدمن

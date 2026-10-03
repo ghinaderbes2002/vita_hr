@@ -6,9 +6,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   Users, Calendar, Clock, AlertCircle, PlusCircle,
-  Package, Briefcase, TrendingUp, FileWarning, UserX, ChevronDown,
-  UserPlus, Bell, FileText, ExternalLink, Hourglass, ClipboardCheck,
-  CheckCircle2, BarChart3, DollarSign, ShieldCheck, ClipboardEdit, CalendarCheck,
+  Package, Briefcase, TrendingUp, FileWarning, ChevronDown,
+  UserPlus, FileText, ExternalLink, Hourglass, ClipboardCheck,
+  BarChart3, DollarSign, ShieldCheck, ClipboardEdit, CalendarCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,13 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useQuery } from "@tanstack/react-query";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { usePendingMyApproval } from "@/lib/hooks/use-requests";
-import { usePendingManagerLeaveRequests } from "@/lib/hooks/use-leave-requests";
 import { usePendingMyAction, useProbationEvaluationsByEmployee } from "@/lib/hooks/use-probation-evaluations";
 import { useMyEmployee, useSubordinates } from "@/lib/hooks/use-employees";
 import { useAllJustifications } from "@/lib/hooks/use-attendance-justifications";
 import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { CEODashboard } from "@/components/dashboard/ceo-dashboard";
 
 const CONDUCT_DOC_KEY = "conduct_document";
 /** موظفون تم تجاهلهم في تنبيه انتهاء فترة التجربة — لكل متصفح على حدة. */
@@ -475,44 +475,6 @@ function HRDashboard({ d, locale, router }: { d: any; locale: string; router: an
   );
 }
 
-// ── CEO Dashboard ─────────────────────────────────────────────────────────────
-function CEODashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
-  const t = useTranslations("dashboard");
-  const { data: pendingAdminData } = usePendingMyApproval({ limit: 1 });
-  const pendingAdminCount = (pendingAdminData as any)?.total ?? (pendingAdminData as any)?.data?.total ?? 0;
-  const { data: pendingLeavesData } = usePendingManagerLeaveRequests({ status: "PENDING_MANAGER", limit: 1 });
-  const pendingLeavesCount = (pendingLeavesData as any)?.total ?? (pendingLeavesData as any)?.data?.total ?? 0;
-  const { data: pendingEvals } = usePendingMyAction();
-  const probationPendingCount = Array.isArray(pendingEvals) ? pendingEvals.length : 0;
-
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title={t("ceo.absencesThisMonth")}
-          value={Array.isArray(d.monthlyAbsences) ? d.monthlyAbsences.length : (d.monthlyAbsences ?? "—")}
-          icon={UserX} iconBg="bg-red-500" />
-        <StatCard
-          title={t("ceo.leavesPendingCEO")}
-          value={pendingLeavesCount}
-          icon={CheckCircle2} iconBg="bg-green-500"
-          onClick={() => router.push(`/${locale}/leaves/pending-approval`)} />
-        <StatCard
-          title={t("ceo.adminRequestsPendingCEO")}
-          value={pendingAdminCount}
-          icon={Bell} iconBg="bg-amber-500"
-          onClick={() => router.push(`/${locale}/requests/pending-manager`)} />
-        <StatCard
-          title={t("ceo.probationPendingCEO")}
-          value={probationPendingCount}
-          icon={ShieldCheck}
-          iconBg="bg-purple-500" onClick={() => router.push(`/${locale}/probation-evaluations`)} />
-      </div>
-
-    </div>
-  );
-}
-
 // ── CFO Dashboard ─────────────────────────────────────────────────────────────
 function CFODashboard({ d, locale, router }: { d: any; locale: string; router: any }) {
   const t = useTranslations("dashboard");
@@ -574,6 +536,7 @@ export default function DashboardPage() {
   useMyEmployee();
   const d = data as any;
   const role = d?.role;
+  const isCeoView = role === "CEO" && !isFollowUpOfficial;
 
   const jobTitleId = (d?.employee?.jobTitle?.id ?? "") as string;
   const { data: jobTitleData } = useJobTitle(jobTitleId);
@@ -607,8 +570,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      {/* ── Hero Banner ─────────────────────────────────────────────────── */}
-      <div
+      {/* ── Hero Banner — the CEO view brings its own ───────────────────── */}
+      {!isCeoView && <div
         className="relative rounded-2xl overflow-hidden"
         style={{
           background: "linear-gradient(to right, oklch(0.188 0.078 272) 0%, oklch(0.218 0.082 262) 32%, oklch(0.355 0.092 52) 68%, oklch(0.435 0.105 38) 100%)",
@@ -645,12 +608,12 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Role-based content */}
       {role === "MANAGER" && !isFollowUpOfficial && <ManagerDashboard d={d} locale={locale} router={router} employeeId={d?.employee?.id} />}
       {role === "HR" && !isFollowUpOfficial && <HRDashboard d={d} locale={locale} router={router} />}
-      {role === "CEO" && !isFollowUpOfficial && <CEODashboard d={d} locale={locale} router={router} />}
+      {isCeoView && <CEODashboard d={d} locale={locale} router={router} />}
       {role === "CFO" && !isFollowUpOfficial && <CFODashboard d={d} locale={locale} router={router} />}
       {(isFollowUpOfficial || !role || !["MANAGER", "HR", "CEO", "CFO"].includes(role)) && <EmployeeDashboard d={d} locale={locale} router={router} />}
 
@@ -768,8 +731,8 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <Card>
+      {/* Quick Actions — not shown on the CEO view */}
+      {!isCeoView && <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">{t("quickActions")}</CardTitle>
         </CardHeader>
@@ -811,7 +774,7 @@ export default function DashboardPage() {
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       <EmployeeDialog open={addEmployeeOpen} onOpenChange={setAddEmployeeOpen} />
       <ConfirmDialog

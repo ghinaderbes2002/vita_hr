@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import { CalendarX, ExternalLink, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useContractReport } from "@/lib/hooks/use-employees";
+import { useContractReport, useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const CONTRACT_TYPE_LABELS: Record<string, string> = {
@@ -40,10 +40,25 @@ export default function ContractEndingPage() {
   const locale = useLocale();
   const router = useRouter();
   const { hasPermission } = usePermissions();
-  const [days, setDays] = useState(30);
+  // A link may preselect the window (?days=90) — the CEO dashboard does.
+  const searchParams = useSearchParams();
+  const [days, setDays] = useState(() => {
+    const d = Number(searchParams.get("days"));
+    return [7, 14, 30, 60, 90].includes(d) ? d : 30;
+  });
 
   const { data, isLoading } = useContractReport(days);
   const items: any[] = Array.isArray(data) ? data : [];
+
+  // The report rows can come back without the name fields; the basic employee
+  // list fills them in, matched by id or by employee number.
+  const { data: basicEmployees } = useEmployeesBasicList();
+  const basicList: any[] = Array.isArray(basicEmployees) ? basicEmployees : [];
+  const nameOf = (e?: any) => (e ? `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim() : "");
+  const displayName = (item: any) =>
+    nameOf(item) || nameOf(item.employee) || nameOf(basicList.find((e) =>
+      e.id === item.id || e.id === item.employeeId || (!!item.employeeNumber && e.employeeNumber === item.employeeNumber),
+    )) || "—";
 
   if (!hasPermission("employees:contract-report:read")) {
     return (
@@ -108,12 +123,11 @@ export default function ContractEndingPage() {
           ) : (
             /* A 7/8-column grid can't usefully reflow on a phone — let it scroll. */
             <div className="overflow-x-auto">
-            <div className="divide-y min-w-[820px]">
+            <div className="divide-y min-w-[720px]">
               {/* Header */}
-              <div className="grid grid-cols-7 gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/40">
+              <div className="grid grid-cols-6 gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/40">
                 <span>الرقم الوظيفي</span>
                 <span className="col-span-2">الاسم</span>
-                <span>القسم</span>
                 <span>نوع العقد</span>
                 <span>تاريخ الانتهاء</span>
                 <span>الأيام المتبقية</span>
@@ -121,16 +135,15 @@ export default function ContractEndingPage() {
               {items.map((item: any) => (
                 <div
                   key={item.id}
-                  className={`grid grid-cols-7 gap-2 px-4 py-3 items-center border-r-4 ${rowColor(item.daysRemaining)}`}
+                  className={`grid grid-cols-6 gap-2 px-4 py-3 items-center border-r-4 ${rowColor(item.daysRemaining)}`}
                 >
                   <span className="text-xs font-mono text-muted-foreground">{item.employeeNumber}</span>
                   <div className="col-span-2">
-                    <p className="text-sm font-medium">{item.firstNameAr} {item.lastNameAr}</p>
+                    <p className="text-sm font-medium">{displayName(item)}</p>
                     {item.jobTitle?.nameAr && (
                       <p className="text-xs text-muted-foreground">{item.jobTitle.nameAr}</p>
                     )}
                   </div>
-                  <span className="text-sm">{item.department?.nameAr || "—"}</span>
                   <span className="text-sm">{CONTRACT_TYPE_LABELS[item.contractType] || item.contractType || "—"}</span>
                   <span className="text-sm">{item.contractEndDate ? new Date(item.contractEndDate).toLocaleDateString("en-GB") : "—"}</span>
                   <div className="flex items-center gap-2">
