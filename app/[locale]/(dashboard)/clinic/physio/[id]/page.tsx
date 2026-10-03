@@ -297,7 +297,9 @@ export default function PhysioCasePage() {
   const { data: sessions = [] } = usePhysioSessions(id);
   const { data: timeline = [] } = usePhysioTimeline(id);
   const { data: myAlerts = [] } = useCaseEmergencyAlerts(id, canSendAlert);
-  const { data: incomingAlerts = [] } = useIncomingEmergencyAlerts(!canSendAlert);
+  // The inbox answers 403 to everyone but the one fixed receiver; a failed call
+  // therefore means "not the receiver" and the section stays hidden.
+  const { data: incomingAlerts = [], isSuccess: isAlertReceiver } = useIncomingEmergencyAlerts(!canSendAlert);
   const sendAlert = useSendEmergencyAlert();
   const respondAlert = useRespondToAlert();
 
@@ -669,9 +671,12 @@ export default function PhysioCasePage() {
       hasChronicDiseases: caseData.hasChronicDiseases ?? false,
       chronicDiseasesDetail: caseData.chronicDiseasesDetail ?? "",
       visitedSpecialist: caseData.visitedSpecialist ?? false,
-      specialistReason: caseData.specialistReason ?? "",
+      // The API stores these two details under the doctor-form columns and
+      // returns them only by those names (specialistReason → previousDoctorSeen,
+      // previousPTDetail → previousTreatment).
+      specialistReason: caseData.specialistReason ?? caseData.previousDoctorSeen ?? "",
       hadPreviousPT: caseData.hadPreviousPT ?? false,
-      previousPTDetail: caseData.previousPTDetail ?? "",
+      previousPTDetail: caseData.previousPTDetail ?? caseData.previousTreatment ?? "",
       hadSurgery: caseData.hadSurgery ?? false,
       surgeryDetail: caseData.surgeryDetail ?? "",
     });
@@ -1437,6 +1442,10 @@ export default function PhysioCasePage() {
   const formSubTab2 = PHYSIO_FORM_TABS.includes(resolvedTab) ? resolvedTab : (PHYSIO_FORM_TABS.find(showPhysioTab) ?? "goals");
 
   const canEdit = !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status);
+  // POST/PUT /physio/cases/:id/complaint — the intake tab and the complaint form
+  // both save through it — requires this permission; without it the API answers
+  // 403, so the save buttons are not offered at all.
+  const canSaveComplaint = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PHYSIO.ASSESSMENT_CREATE]);
   const isDoctorExam = isDoctorExamCase(c);
 
   const handleConvertToPhysio = async (physiotherapistId?: string) => {
@@ -1758,7 +1767,7 @@ export default function PhysioCasePage() {
 
               {canEdit && (
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <Button
+                  {canSaveComplaint && <Button
                     onClick={handleSaveIntake}
                     disabled={
                       submitComplaint.isPending || updateStatus.isPending
@@ -1772,13 +1781,23 @@ export default function PhysioCasePage() {
                       <Save className="h-4 w-4" />
                     )}
                     {t("intake.save")}
-                  </Button>
+                  </Button>}
                   {c.status === "INTAKE" && (
                     <Button
-                      onClick={() =>
-                        updateStatus.mutate({ id, status: "COMPLAINT" })
-                      }
-                      disabled={updateStatus.isPending}
+                      // Moving on must not drop what was typed: this button used to
+                      // advance the stage without saving, so an intake filled in
+                      // and followed by "start" never reached the server.
+                      onClick={async () => {
+                        if (canSaveComplaint) {
+                          try {
+                            await handleSaveIntake();
+                          } catch {
+                            return; // the mutation hook already toasted the reason
+                          }
+                        }
+                        updateStatus.mutate({ id, status: "COMPLAINT" });
+                      }}
+                      disabled={updateStatus.isPending || submitComplaint.isPending}
                       className="gap-2"
                     >
                       {t("intake.startComplaint")}
@@ -2020,7 +2039,7 @@ export default function PhysioCasePage() {
                 </div>
               </div>
 
-              {canEdit && (
+              {canEdit && canSaveComplaint && (
                 <Button
                   onClick={handleSaveComplaint}
                   disabled={submitComplaint.isPending || updateStatus.isPending}
@@ -3900,7 +3919,7 @@ export default function PhysioCasePage() {
           )}
 
           {/* التنبيهات الواردة (الموظف الثابت) */}
-          {!canSendAlert && (
+          {!canSendAlert && isAlertReceiver && (
             <Section title="التنبيهات الطارئة الواردة">
               {(incomingAlerts as any[]).length === 0 ? (
                 <p className="text-center py-6 text-muted-foreground text-sm">لا توجد تنبيهات واردة</p>

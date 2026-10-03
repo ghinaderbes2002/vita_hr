@@ -446,12 +446,18 @@ export function useMyEmergencyAlerts(enabled = true) {
   });
 }
 
+// The backend serves this inbox to one fixed employee — the receiver of every
+// emergency alert — and answers 403 to everyone else, whatever their
+// permissions. There is no permission to check up front, so a 403 simply means
+// "not the receiver": it is not retried and the caller falls back to an empty list.
 export function useIncomingEmergencyAlerts(enabled = true) {
   return useQuery({
     queryKey: ["physio-emergency-incoming"],
     queryFn: () => clinicPhysioApi.getIncomingAlerts(),
     staleTime: 30_000,
     enabled,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 }
 
