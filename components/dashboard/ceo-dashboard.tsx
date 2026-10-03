@@ -32,7 +32,6 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { apiClient } from "@/lib/api/client";
 import { jobApplicationsApi } from "@/lib/api/job-applications";
-import { clinicProstheticsApi } from "@/lib/api/clinic-prosthetics";
 import { employeesApi } from "@/lib/api/employees";
 import { hrReportsApi, attendanceReportsApi } from "@/lib/api/reports";
 import {
@@ -393,20 +392,16 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
   const clinic = d?.clinic as {
     newPatientsThisMonth?: number | null; newPatientsPreviousMonth?: number | null;
     openProstheticsCasesByStatus?: { status: string; count: number }[] | null;
-    prostheticsDeliveredThisMonth?: number | null; avgDaysIntakeToDelivery?: number | null;
+    prostheticsDeliveredThisMonth?: number | null; prostheticsDeliveredTotal?: number | null;
+    avgDaysIntakeToDelivery?: number | null;
     waitingListCount?: number | null; appointmentsThisMonth?: number | null;
     appointmentsNoShowThisMonth?: number | null;
   } | undefined;
-  // The dashboard block lists open cases only, so the delivered total is read
-  // off the case list (one row fetched, just for its `total`) and shown last.
-  const deliveredParams = { status: "DELIVERED" as const, page: 1, limit: 1 };
-  const deliveredQ = useQuery({
-    queryKey: ["clinic-prosthetics-cases", deliveredParams],
-    queryFn: () => clinicProstheticsApi.list(deliveredParams),
-    enabled: !!clinic,
-    ...reportQuery,
-  });
-  const deliveredTotal = deliveredQ.isSuccess ? (deliveredQ.data?.total ?? 0) : null;
+  // The by-status list covers open cases only; the all-time delivered count
+  // comes as its own figure and is shown as the last row. It is read from the
+  // dashboard block rather than the case list, which the CEO role has no
+  // permission for (granting it would also put the clinic tab in the sidebar).
+  const deliveredTotal = clinic?.prostheticsDeliveredTotal ?? null;
   const openCases = [
     ...(clinic?.openProstheticsCasesByStatus ?? []),
     ...(deliveredTotal !== null ? [{ status: "DELIVERED", count: deliveredTotal }] : []),
