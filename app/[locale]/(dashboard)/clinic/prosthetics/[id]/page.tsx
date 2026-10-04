@@ -3831,7 +3831,13 @@ export default function ProstheticsCasePage() {
   const finalEvalKey = recordKey(finalEvalData);
   useEffect(() => {
     if (finalEvalData) {
-      setFinalEvalForm({ ...INITIAL_FINAL_EVAL, ...finalEvalData });
+      setFinalEvalForm({
+        ...INITIAL_FINAL_EVAL,
+        ...finalEvalData,
+        // The API returns a full ISO timestamp; <input type="date"> only shows
+        // YYYY-MM-DD, so the saved date rendered as an empty field.
+        fittingDate: typeof finalEvalData.fittingDate === "string" ? finalEvalData.fittingDate.slice(0, 10) : undefined,
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalEvalKey]);
@@ -5055,7 +5061,10 @@ export default function ProstheticsCasePage() {
     const same = (a: unknown, b: unknown) =>
       (blank(a) && blank(b))
       || (typeof a === "boolean" || typeof b === "boolean" ? !!a === !!b : a === b);
-    const saved = (finalEvalData ?? {}) as Record<string, unknown>;
+    const saved = { ...(finalEvalData ?? {}) } as Record<string, unknown>;
+    // Compared as a calendar day, like the form holds it — otherwise an untouched
+    // date would always look changed and be re-sent.
+    if (typeof saved.fittingDate === "string") saved.fittingDate = saved.fittingDate.slice(0, 10);
     const payload = Object.fromEntries(
       Object.entries(form).filter(([key, value]) => !same(value, saved[key])),
     ) as FinalEvaluationDto;
