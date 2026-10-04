@@ -22,7 +22,8 @@ import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
-import { ProstheticsCase, ProstheticsStatus } from "@/lib/api/clinic-prosthetics";
+import { ProstheticsCase, ProstheticsStatus, clinicProstheticsApi } from "@/lib/api/clinic-prosthetics";
+import { useQuery } from "@tanstack/react-query";
 
 const LIMIT = 15;
 
@@ -86,27 +87,51 @@ export default function ProstheticsListPage() {
     myEmployeeId,
     !meLoading && mineOnly,
   );
-  const isLoading = meLoading || (mineOnly ? mineLoading : listLoading);
+
+  // The API takes no search term, so a search cannot be answered from one server
+  // page: it would only ever look at the 15 rows on screen. While something is
+  // typed, every case (under the current status filter) is loaded once and the
+  // matching and paging happen here. 100 is the server's ceiling for `limit`,
+  // so the list is walked page by page until `total` is reached.
+  const trimmedSearch = search.trim();
+  const searching = !mineOnly && !!trimmedSearch;
+  const allStatus = statusFilter !== "all" ? statusFilter : undefined;
+  const { data: allCases, isLoading: allLoading } = useQuery({
+    queryKey: ["clinic-prosthetics-cases", "all", allStatus],
+    queryFn: async () => {
+      const out: ProstheticsCase[] = [];
+      for (let p = 1; p <= 50; p++) {
+        const res = await clinicProstheticsApi.list({ page: p, limit: 100, status: allStatus });
+        out.push(...res.items);
+        if (res.items.length === 0 || out.length >= (res.total ?? 0)) break;
+      }
+      return out;
+    },
+    enabled: !meLoading && searching,
+    staleTime: 30_000,
+  });
+  const clientPaged = mineOnly || searching;
+  const isLoading = meLoading || (mineOnly ? mineLoading : searching ? allLoading : listLoading);
 
   // `by-practitioner` returns every case at once, so its status filter, paging
   // and search all happen here; the paginated list already applied status+page
   // server-side and only needs the search.
-  const source: ProstheticsCase[] = mineOnly ? (myCases ?? []) : (data?.items ?? []);
+  const source: ProstheticsCase[] = mineOnly ? (myCases ?? []) : searching ? (allCases ?? []) : (data?.items ?? []);
   const filtered = source.filter((c: ProstheticsCase) => {
     if (mineOnly && statusFilter !== "all" && c.status !== statusFilter) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
+    if (!trimmedSearch) return true;
+    const q = trimmedSearch.toLowerCase();
     const name = c.patient ? `${c.patient.firstName} ${c.patient.lastName}`.toLowerCase() : "";
     const num = c.patient?.patientNumber?.toLowerCase() ?? "";
     return name.includes(q) || num.includes(q);
   });
 
-  const total = mineOnly ? filtered.length : (data?.total ?? 0);
-  const totalPages = mineOnly ? Math.ceil(filtered.length / LIMIT) : (data?.totalPages ?? 0);
+  const total = clientPaged ? filtered.length : (data?.total ?? 0);
+  const totalPages = clientPaged ? Math.ceil(filtered.length / LIMIT) : (data?.totalPages ?? 0);
   // Filtering can shrink the list under the current page — clamp instead of
   // leaving the user on an empty screen with no way back.
-  const safePage = mineOnly ? Math.min(page, Math.max(1, totalPages)) : page;
-  const cases = mineOnly
+  const safePage = clientPaged ? Math.min(page, Math.max(1, totalPages)) : page;
+  const cases = clientPaged
     ? filtered.slice((safePage - 1) * LIMIT, safePage * LIMIT)
     : filtered;
 
@@ -148,7 +173,7 @@ export default function ProstheticsListPage() {
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder={t("searchPlaceholder")}
             className="pr-9"
           />
