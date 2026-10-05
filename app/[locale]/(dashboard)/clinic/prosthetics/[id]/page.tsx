@@ -4915,6 +4915,16 @@ export default function ProstheticsCasePage() {
         if (e?.response?.status !== 409) throw e;
       }
     };
+    // Nothing typed into a box that is still open: say so rather than look like
+    // the button did nothing.
+    const hasNewOpinion =
+      (!prosthetistOpinionSaved && isFilled(prosthetistOpinion)) ||
+      (!physioOpinionSaved && isFilled(physioOpinion)) ||
+      (!doctorOpinionSaved && isFilled(doctorOpinion));
+    if (!hasNewOpinion && !decisionForm.finalSummary.trim()) {
+      toast.info("لا توجد آراء جديدة للحفظ");
+      return;
+    }
     await submitIfNew("PROSTHETIST", prosthetistOpinion);
     await submitIfNew("PHYSIOTHERAPIST", physioOpinion);
     await submitIfNew("DOCTOR", doctorOpinion);
@@ -4924,8 +4934,8 @@ export default function ProstheticsCasePage() {
   // رأي كل عضو مطلوب، إلا رأياً محفوظاً سلفاً أو لا يملك المستخدم الحالي كتابته.
   const committeeOpinionsComplete =
     (prosthetistOpinionSaved || !canWriteOpinion("prosthetistIds") || isFilled(prosthetistOpinion)) &&
-    (physioOpinionSaved || !canWriteOpinion("physiotherapistIds") || isFilled(physioOpinion)) &&
-    (doctorOpinionSaved || !canWriteOpinion("supervisingDoctorIds") || isFilled(doctorOpinion));
+    (physioOpinionSaved || !canWriteOpinion("physiotherapistIds") || isFilled(physioOpinion));
+  // رأي الطبيب المختص اختياري: يُحفظ إن كُتب، ولا يمنع حفظ الرأيين الآخرين.
 
   const committeeDecisionComplete =
     filledWhen(committeeSuitForm.prosthesisSuitable === true, committeeSuitForm.proposedProsthesisType) &&
