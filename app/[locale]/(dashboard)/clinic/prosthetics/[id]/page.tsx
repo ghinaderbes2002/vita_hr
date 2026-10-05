@@ -5318,7 +5318,8 @@ export default function ProstheticsCasePage() {
           {showTab("measurement_sheet") && <TabsTrigger value="measurement_sheet" className="text-sm py-1.5">{t("tabs.measurement")}</TabsTrigger>}
           {showTab("treatment_program") && <TabsTrigger value="treatment_program" className="text-sm py-1.5">{t("tabs.followUp")}</TabsTrigger>}
           {showTab("delivered") && <TabsTrigger value="delivered" className="text-sm py-1.5">{t("tabs.delivered")}</TabsTrigger>}
-          {showTab("gait_analysis") && <TabsTrigger value="gait_analysis" className="text-sm py-1.5">{t("tabs.gait")}</TabsTrigger>}
+          {/* تحليل المشي والتوازن يخصّان الطرف السفلي فقط. */}
+          {ampTypes.includes("LOWER") && showTab("gait_analysis") && <TabsTrigger value="gait_analysis" className="text-sm py-1.5">{t("tabs.gait")}</TabsTrigger>}
           {ampTypes.includes("LOWER") && showTab("balance_assessment") && <TabsTrigger value="balance_assessment" className="text-sm py-1.5">{t("tabs.balance")}</TabsTrigger>}
           {showTab("final_evaluation") && <TabsTrigger value="final_evaluation" className="text-sm py-1.5">{t("tabs.finalEval")}</TabsTrigger>}
           {showTab("final_delivery") && <TabsTrigger value="final_delivery" className="text-sm py-1.5">{t("tabs.finalDelivery")}</TabsTrigger>}
@@ -7929,11 +7930,13 @@ export default function ProstheticsCasePage() {
         </TabsContent>
 
         {/* ── GAIT ANALYSIS ───────────────────────────────────────────────── */}
+        {ampTypes.includes("LOWER") && (
         <TabsContent value="gait_analysis" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
           <fieldset disabled={caseLocked} className="min-w-0">
           <GaitAnalysisSection caseId={id} staffList={staffList} patient={patientFull ?? caseData?.patient} />
           </fieldset>
         </TabsContent>
+        )}
 
         {/* ── BALANCE ASSESSMENT ──────────────────────────────────────────── */}
         {ampTypes.includes("LOWER") && (
