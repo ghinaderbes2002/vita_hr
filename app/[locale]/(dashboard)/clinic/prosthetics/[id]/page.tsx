@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowRight, User, Clock, Trash2, Plus, Download, Loader2,
   CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera, Archive, Bell, Reply, Save,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -3342,6 +3343,12 @@ const sectionSavedAt = (records: any[] | undefined, stamp: "limbSavedAt" | "romS
  * and the code inside stays type-checked meanwhile.
  */
 const SHOW_MEDICAL_DIRECTOR = false;        // التسليم التجريبي
+/**
+ * مؤقت (2026-10-05): زر "تعديل" على أقسام التقييم المحفوظة (ورقة الطرف وقوة
+ * العضلات، علوي وسفلي). اجعل القيمة false لإخفاء الزر والعودة إلى "المحفوظ
+ * نهائي" — لا شيء آخر يحتاج تغييراً.
+ */
+const ALLOW_EDIT_SAVED_ASSESSMENT = true;
 const SHOW_FINAL_EVAL_MANAGER_SIG = false;  // التقييم النهائي
 const SHOW_FINAL_DELIVERY_CEO = false;      // التسليم النهائي — المدير التنفيذي وتوقيعه
 const SHOW_FINAL_DELIVERY_PHYSIO = false;   // التسليم النهائي — المعالج الفيزيائي
@@ -3615,6 +3622,10 @@ export default function ProstheticsCasePage() {
    * The physiotherapy case page applies the same rule to this job title.
    */
   const CENTER_SUPERVISOR_JOB_CODE = "VTX-JTL-000011";
+  const DEPT_HEAD_JOB_CODES = [
+    "VTX-JTL-000035", // رئيس قسم الأطراف الصناعية وطب الأقدام
+    "VTX-JTL-000034", // رئيس قسم العلاج الفيزيائي
+  ];
   const isCenterSupervisor = !isAdmin() && myJobTitleCode === CENTER_SUPERVISOR_JOB_CODE;
 
   // Permission decides first; a role can only narrow what is left, never widen it.
@@ -3639,6 +3650,10 @@ export default function ProstheticsCasePage() {
   const updatePatient = useUpdateClinicPatient();
   const submitAssessmentUpper = useSubmitAssessmentUpper();
   const [justSavedSections, setJustSavedSections] = useState<Set<string>>(new Set());
+  // Saved assessment Sections reopened with "تعديل". A Section stays writable
+  // until its next successful save, which locks it again.
+  const [editingSections, setEditingSections] = useState<Set<string>>(new Set());
+  const tCommon = useTranslations("common");
   const patchUpper = usePatchAssessmentUpper();
   const patchLower = usePatchAssessmentLower();
   const submitAssessmentLower = useSubmitAssessmentLower();
@@ -4116,14 +4131,15 @@ export default function ProstheticsCasePage() {
   // Saved is final: a Section goes read-only once the API has stamped it.
   // `justSavedSections` only bridges the moment between a successful save and
   // the refetch that brings the stamp back.
-  const upperLimbSaved = justSavedSections.has("upperLimb")
-    || sectionSavedAt(c.upperAssessment, "limbSavedAt");
-  const upperMuscleSaved = justSavedSections.has("upperMuscle")
-    || sectionSavedAt(c.upperAssessment, "romSavedAt");
-  const lowerLimbSaved = justSavedSections.has("lowerLimb")
-    || sectionSavedAt(c.lowerAssessment, "limbSavedAt");
-  const lowerMuscleSaved = justSavedSections.has("lowerMuscle")
-    || sectionSavedAt(c.lowerAssessment, "romSavedAt");
+  // The lock is the page's own — the API accepts the PATCH at any time — so a
+  // Section reopened with "تعديل" simply stops counting as saved until it is
+  // saved again.
+  const sectionLocked = (key: string, stamped: boolean) =>
+    (justSavedSections.has(key) || stamped) && !editingSections.has(key);
+  const upperLimbSaved = sectionLocked("upperLimb", sectionSavedAt(c.upperAssessment, "limbSavedAt"));
+  const upperMuscleSaved = sectionLocked("upperMuscle", sectionSavedAt(c.upperAssessment, "romSavedAt"));
+  const lowerLimbSaved = sectionLocked("lowerLimb", sectionSavedAt(c.lowerAssessment, "limbSavedAt"));
+  const lowerMuscleSaved = sectionLocked("lowerMuscle", sectionSavedAt(c.lowerAssessment, "romSavedAt"));
 
   // A committee opinion can be submitted only once; once its *ReviewedAt is set it
   // renders read-only (the backend rejects re-submission with 409).
@@ -4134,6 +4150,27 @@ export default function ProstheticsCasePage() {
   const allOpinionsSaved = prosthetistOpinionSaved && physioOpinionSaved && doctorOpinionSaved;
   // A delivered case is closed for editing — sessions and visits become history.
   const caseLocked = c.status === "DELIVERED";
+  const canEditSavedAssessment = ALLOW_EDIT_SAVED_ASSESSMENT
+    && (isAdmin() || hasPermission(PERMISSIONS.CLINIC_PROSTHETICS.ASSESSMENT_CREATE));
+  /** Header of a saved assessment Section: the badge, plus "تعديل" for those allowed. */
+  const savedSectionAction = (key: string, saved: boolean) =>
+    saved ? (
+      <div className="flex items-center gap-2">
+        <SavedBadge />
+        {canEditSavedAssessment && !caseLocked && (
+          <Button
+            type="button" size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs"
+            onClick={() => {
+              setEditingSections((prev) => new Set(prev).add(key));
+              setJustSavedSections((prev) => { const next = new Set(prev); next.delete(key); return next; });
+            }}
+          >
+            <Pencil className="h-3 w-3" />
+            {tCommon("edit")}
+          </Button>
+        )}
+      </div>
+    ) : undefined;
   const committeeDecided = !!cr?.decidedAt;
   // Once decided the switch is read-only, so it shows the server's answer. The
   // case may come back without `prosthesisSuitable`; the recorded decision then
@@ -4766,6 +4803,12 @@ export default function ProstheticsCasePage() {
 
   // The limb sheets also carry the general assessment rows (amputation date,
   // cause, clinical history), which live on the case — saved alongside.
+  /** A successful save locks the Section, whether it was new or reopened. */
+  const markSectionSaved = (key: string) => {
+    setJustSavedSections((prev) => new Set(prev).add(key));
+    setEditingSections((prev) => { const next = new Set(prev); next.delete(key); return next; });
+  };
+
   const handleSaveUpperLimb = async () => {
     await handleSaveGeneralAssessment();
     for (const side of sidesOf(upperAssessForm)) {
@@ -4774,7 +4817,7 @@ export default function ProstheticsCasePage() {
         : upperAssessForm;
       await patchUpper.mutateAsync({ id, side, dto: dropKeys(buildUpperDto(form, side), UPPER_MUSCLE_KEYS) });
     }
-    setJustSavedSections((prev) => new Set(prev).add("upperLimb"));
+    markSectionSaved("upperLimb");
     toast.success(t("assess.savedLimbUpper"));
   };
 
@@ -4784,7 +4827,7 @@ export default function ProstheticsCasePage() {
     for (const side of sidesOf(upperAssessForm)) {
       await patchUpper.mutateAsync({ id, side, dto });
     }
-    setJustSavedSections((prev) => new Set(prev).add("upperMuscle"));
+    markSectionSaved("upperMuscle");
     toast.success(t("assess.savedMuscle"));
   };
 
@@ -4796,7 +4839,7 @@ export default function ProstheticsCasePage() {
         : lowerAssessForm;
       await patchLower.mutateAsync({ id, side, dto: dropKeys(buildLowerDto(form, side), LOWER_MUSCLE_KEYS) });
     }
-    setJustSavedSections((prev) => new Set(prev).add("lowerLimb"));
+    markSectionSaved("lowerLimb");
     toast.success(t("assess.savedLimbLower"));
   };
 
@@ -4805,7 +4848,7 @@ export default function ProstheticsCasePage() {
     for (const side of sidesOf(lowerAssessForm)) {
       await patchLower.mutateAsync({ id, side, dto });
     }
-    setJustSavedSections((prev) => new Set(prev).add("lowerMuscle"));
+    markSectionSaved("lowerMuscle");
     toast.success(t("assess.savedMuscle"));
   };
 
@@ -5728,12 +5771,23 @@ export default function ProstheticsCasePage() {
                       {isOpen && (
                         <div className="absolute z-50 top-full mt-1 w-full min-w-48 rounded-md border bg-background shadow-lg overflow-hidden">
                           <div className="max-h-52 overflow-y-auto p-1">
-                            {(key === "physiotherapistIds"
-                              ? staffList.filter((e) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
-                              : key === "prosthetistIds"
-                              ? staffList.filter((e) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الأطراف الصناعية") || e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("طب الأقدام") || e.department?.nameAr?.includes("طب الاقدام")))
-                              : staffList.filter((e) => e.employmentStatus === "ACTIVE" && isMedicalAdminDepartmentName(e.department?.nameAr))
-                            ).map((emp) => (
+                            {(() => {
+                              const base = key === "physiotherapistIds"
+                                ? staffList.filter((e) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الفيزيائي") || e.department?.nameAr?.includes("العلاج الطبيعي")))
+                                : key === "prosthetistIds"
+                                ? staffList.filter((e) => e.employmentStatus === "ACTIVE" && (e.department?.nameAr?.includes("الأطراف الصناعية") || e.department?.nameAr?.includes("الاطراف الصناعية") || e.department?.nameAr?.includes("طب الأقدام") || e.department?.nameAr?.includes("طب الاقدام")))
+                                // قائمة الطبيب: الإدارة الطبية، ومعها رئيسا قسمَي الأطراف
+                                // والعلاج الفيزيائي إن وُجدا (هما خارج قسم الإدارة الطبية).
+                                : staffList.filter((e) => e.employmentStatus === "ACTIVE" && (
+                                    isMedicalAdminDepartmentName(e.department?.nameAr)
+                                    || DEPT_HEAD_JOB_CODES.includes((e as any).jobTitle?.code ?? "")
+                                  ));
+                              // A member already on the case but no longer in the list (left
+                              // the department, went inactive) is kept as a row — otherwise
+                              // there is nothing to click to take them off.
+                              const extra = staffList.filter((e) => selected.includes(e.id) && !base.some((x) => x.id === e.id));
+                              return [...base, ...extra];
+                            })().map((emp) => (
                               <div
                                 key={emp.id}
                                 className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-muted"
@@ -5973,7 +6027,7 @@ export default function ProstheticsCasePage() {
             return (
               <Section
                 title={t("assess.upperTitle")}
-                action={upperLimbSaved ? <SavedBadge /> : undefined}
+                action={savedSectionAction("upperLimb", upperLimbSaved)}
               >
                 <fieldset disabled={caseLocked || upperLimbSaved} className="contents">
                 <div className="divide-y divide-border/30">
@@ -6019,7 +6073,7 @@ export default function ProstheticsCasePage() {
             return (
               <Section
                 title={t("assess.muscleTitle")}
-                action={upperMuscleSaved ? <SavedBadge /> : undefined}
+                action={savedSectionAction("upperMuscle", upperMuscleSaved)}
               >
                 <fieldset disabled={caseLocked || upperMuscleSaved} className="contents">
                 <div className="divide-y divide-border/30">
@@ -6458,7 +6512,7 @@ export default function ProstheticsCasePage() {
             return (
               <Section
                 title={t("assess.lowerTitle")}
-                action={lowerLimbSaved ? <SavedBadge /> : undefined}
+                action={savedSectionAction("lowerLimb", lowerLimbSaved)}
               >
                 <fieldset disabled={caseLocked || lowerLimbSaved} className="contents">
                 <div className="divide-y divide-border/30">
@@ -6554,7 +6608,7 @@ export default function ProstheticsCasePage() {
             return (
               <Section
                 title={t("assess.muscleTitle")}
-                action={lowerMuscleSaved ? <SavedBadge /> : undefined}
+                action={savedSectionAction("lowerMuscle", lowerMuscleSaved)}
               >
                 <fieldset disabled={caseLocked || lowerMuscleSaved} className="contents">
                 <div className="divide-y divide-border/30">
