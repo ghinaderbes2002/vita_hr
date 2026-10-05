@@ -4701,12 +4701,15 @@ export default function ProstheticsCasePage() {
     filledWhen(!!f.painPresent, f.painTypes) &&
     filledWhen(f.painTypes.includes("OTHER"), f.painTypeOtherDetail) &&
     filledWhen(f.hasSkinGrafts, f.graftArea) &&
-    filledWhen(isPrimary && usesProsthesisNow, f.prostheticLimbType);
-
-  const upperMuscleFormComplete = (f: ReturnType<typeof emptyUpperForm>, isPrimary: boolean) =>
-    isFilled(f.romData) &&
+    filledWhen(isPrimary && usesProsthesisNow, f.prostheticLimbType) &&
+    // "الحالة الطبيعية" و"مستوى النشاط" تُعرضان وتُحفظان مع ورقة الطرف، فهما
+    // شرط لها — كما في ورقة السفلي. كانتا شرطاً على ورقة العضلات، فمن حفظ ورقة
+    // الطرف دونهما قُفلت عليه وبقي زر حفظ العضلات معطّلاً بلا سبيل لتفعيله.
     filledWhen(isPrimary, f.jointsRangeOfMotion) &&
     filledWhen(isPrimary, f.activityLevel);
+
+  const upperMuscleFormComplete = (f: ReturnType<typeof emptyUpperForm>) =>
+    isFilled(f.romData);
 
   /** الحالة الثنائية تملك نموذجاً لكل جانب، وكلاهما مطلوب. */
   const upperSideForms = upperAssessForm.amputationSide === "BILATERAL"
@@ -4717,7 +4720,7 @@ export default function ProstheticsCasePage() {
     : [lowerAssessForm];
 
   const upperLimbComplete = upperSideForms.every((f, i) => upperLimbFormComplete(f, i === 0));
-  const upperMuscleComplete = upperSideForms.every((f, i) => upperMuscleFormComplete(f, i === 0));
+  const upperMuscleComplete = upperSideForms.every((f) => upperMuscleFormComplete(f));
   const lowerLimbComplete = lowerSideForms.every(lowerLimbFormComplete);
   const lowerMuscleComplete = lowerSideForms.every(lowerMuscleFormComplete);
 
