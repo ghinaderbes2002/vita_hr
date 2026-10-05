@@ -4904,6 +4904,12 @@ export default function ProstheticsCasePage() {
     await submitOpinion.mutateAsync({ id, dto: { role, opinion } });
   };
 
+  // An opinion typed into a box that is still open (not yet submitted).
+  const hasNewOpinion =
+    (!prosthetistOpinionSaved && isFilled(prosthetistOpinion)) ||
+    (!physioOpinionSaved && isFilled(physioOpinion)) ||
+    (!doctorOpinionSaved && isFilled(doctorOpinion));
+
   const handleSaveCommitteeAll = async () => {
     // An opinion can be submitted only once; re-submitting returns 409. Skip any
     // already-submitted role so the others (and the decision) still go through.
@@ -4915,27 +4921,15 @@ export default function ProstheticsCasePage() {
         if (e?.response?.status !== 409) throw e;
       }
     };
-    // Nothing typed into a box that is still open: say so rather than look like
-    // the button did nothing.
-    const hasNewOpinion =
-      (!prosthetistOpinionSaved && isFilled(prosthetistOpinion)) ||
-      (!physioOpinionSaved && isFilled(physioOpinion)) ||
-      (!doctorOpinionSaved && isFilled(doctorOpinion));
-    if (!hasNewOpinion && !decisionForm.finalSummary.trim()) {
-      toast.info("لا توجد آراء جديدة للحفظ");
-      return;
-    }
     await submitIfNew("PROSTHETIST", prosthetistOpinion);
     await submitIfNew("PHYSIOTHERAPIST", physioOpinion);
     await submitIfNew("DOCTOR", doctorOpinion);
     if (decisionForm.finalSummary.trim()) await handleSubmitDecision();
   };
 
-  // رأي كل عضو مطلوب، إلا رأياً محفوظاً سلفاً أو لا يملك المستخدم الحالي كتابته.
-  const committeeOpinionsComplete =
-    (prosthetistOpinionSaved || !canWriteOpinion("prosthetistIds") || isFilled(prosthetistOpinion)) &&
-    (physioOpinionSaved || !canWriteOpinion("physiotherapistIds") || isFilled(physioOpinion));
-  // رأي الطبيب المختص اختياري: يُحفظ إن كُتب، ولا يمنع حفظ الرأيين الآخرين.
+  // لا رأي إلزامي: يكفي رأي واحد جديد (غير محفوظ بعد) ليتفعّل الحفظ، وتبقى
+  // المربعات الأخرى مفتوحة لتُكتب وتُحفظ لاحقاً.
+  const committeeOpinionsComplete = hasNewOpinion;
 
   const committeeDecisionComplete =
     filledWhen(committeeSuitForm.prosthesisSuitable === true, committeeSuitForm.proposedProsthesisType) &&
