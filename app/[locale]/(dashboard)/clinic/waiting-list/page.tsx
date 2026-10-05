@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, Pencil, Trash2, ListOrdered, Users } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, ListOrdered, Users, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,7 @@ import { WaitingListDialog, WAITING_STATUSES } from "@/components/clinic/waiting
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import {
   useWaitingList, useCreateWaitingListEntry, useUpdateWaitingListEntry,
-  useDeleteWaitingListEntry,
+  useDeleteWaitingListEntry, useExportWaitingList,
 } from "@/lib/hooks/use-clinic-waiting-list";
 import { WaitingListEntry, WaitingStatus } from "@/lib/api/clinic-waiting-list";
 
@@ -55,7 +55,8 @@ const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—"
 export default function WaitingListPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<WaitingStatus | "all">("all");
+  // تفتح الصفحة على من ينتظرون فعلاً؛ "جميع الحالات" تبقى خياراً في القائمة.
+  const [statusFilter, setStatusFilter] = useState<WaitingStatus | "all">("WAITING");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WaitingListEntry | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -76,6 +77,7 @@ export default function WaitingListPage() {
   const entries = (data?.items ?? []).filter((e) =>
     !q || e.patientName.toLowerCase().includes(q) || e.contactNumber.toLowerCase().includes(q),
   );
+  const exportXlsx = useExportWaitingList();
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
@@ -105,6 +107,14 @@ export default function WaitingListPage() {
               isLoading={isLoading}
               counts={[{ icon: Users, label: "بالانتظار", value: total }]}
             />
+            {/* يتبع فلتر الحالة المختار؛ "جميع الحالات" تصدّر القائمة كاملة. */}
+            <Button
+              variant="outline" className="gap-2" disabled={exportXlsx.isPending}
+              onClick={() => exportXlsx.mutate(statusFilter !== "all" ? statusFilter : undefined)}
+            >
+              {exportXlsx.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              تصدير Excel
+            </Button>
             <ActionGuard permission={PERMISSIONS.CLINIC_WAITING_LIST.CREATE}>
               <Button onClick={openAdd} className="gap-2">
                 <Plus className="h-4 w-4" />

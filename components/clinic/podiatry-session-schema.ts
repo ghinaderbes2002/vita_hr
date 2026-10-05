@@ -27,7 +27,7 @@ export const MAIN_CAUSE = g<PodiatryMainCause>("mainCause", [
 ]);
 
 export const PAIN_LOCATION = g<PodiatryPainLocation>("painLocation", [
-  "forefoot", "midfoot", "rearfoot",
+  "none", "forefoot", "midfoot", "rearfoot",
 ]);
 
 export const PAIN_CHARACTERISTIC = g<PodiatryPainCharacteristic>("painCharacteristic", [
@@ -85,9 +85,14 @@ export const FOOT_MEASUREMENT_KEYS = [
 /** Arch height is a choice, not a measurement; stored in its free-text field. */
 export const ARCH_HEIGHT_VALUES = ["high", "low"] as const;
 
-/** Reads a stored arch height: the two choices translate, older free text shows as typed. */
-export const archHeightLabel = (t: FormT, v?: string | null): string =>
-  v === "high" || v === "low" ? t(`opts.archArchitecture.${v}`) : (v ?? "");
+/**
+ * Reads a stored arch height. The two choices read "High" / "Low" in English in
+ * every locale (the clinic's wording); older free text shows as typed. `t` is
+ * kept so callers need not change if this is ever localised.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const archHeightLabel = (_t: FormT, v?: string | null): string =>
+  v === "high" ? "High" : v === "low" ? "Low" : (v ?? "");
 
 /** The label one picked value reads as. */
 export const labelOf = <T extends string>(t: FormT, o: OptGroup<T>, v?: string | null): string =>

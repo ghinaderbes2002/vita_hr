@@ -5,6 +5,7 @@ import {
   CreateWaitingListDto,
   UpdateWaitingListDto,
   WaitingListParams,
+  WaitingStatus,
 } from "@/lib/api/clinic-waiting-list";
 
 const KEY = "clinic-waiting-list";
@@ -59,5 +60,21 @@ export function useDeleteWaitingListEntry() {
       toast.success("تم حذف السجل");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الحذف"),
+  });
+}
+
+/** Downloads the waiting list as Excel — under one status, or all when none is given. */
+export function useExportWaitingList() {
+  return useMutation({
+    mutationFn: (status?: WaitingStatus) => clinicWaitingListApi.exportXlsx(status),
+    onSuccess: (blob, status) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `waiting-list${status ? `-${status.toLowerCase()}` : ""}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    },
+    onError: () => toast.error("فشل تصدير الملف"),
   });
 }

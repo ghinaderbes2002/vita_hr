@@ -72,6 +72,15 @@ export const clinicWaitingListApi = {
     };
   },
 
+  /** The whole list as an .xlsx file; `status` narrows it, omitted means every status. */
+  exportXlsx: async (status?: WaitingStatus): Promise<Blob> => {
+    const response = await apiClient.get(`${BASE}/export-xlsx`, {
+      params: status ? { status } : undefined,
+      responseType: "blob",
+    });
+    return response.data;
+  },
+
   getById: async (id: string): Promise<WaitingListEntry> => {
     const { data } = await apiClient.get(`${BASE}/${id}`);
     return data?.data ?? data;

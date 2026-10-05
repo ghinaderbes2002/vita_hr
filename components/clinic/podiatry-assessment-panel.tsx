@@ -24,8 +24,15 @@ import { FormT } from "./podiatry-session-schema";
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "");
 
 export function PodiatryAssessmentPanel({
-  receptionId, session, title, actions,
+  receptionId, session, title, actions, state = "ready", onRetry,
 }: {
+  /**
+   * Whether the sessions request has answered. Until it has — or if it failed —
+   * the panel offers neither "fill" nor "edit": an empty form saved then would
+   * upsert over a session the page simply has not received.
+   */
+  state?: "loading" | "error" | "ready";
+  onRetry?: () => void;
   receptionId: string;
   /** The reception's saved assessment, or null while it is still unfilled. */
   session: PodiatrySession | null;
@@ -88,7 +95,7 @@ export function PodiatryAssessmentPanel({
                   {t("save")}
                 </Button>
               </>
-            ) : (
+            ) : state !== "ready" ? null : (
               <ActionGuard
                 permission={session
                   ? PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT
@@ -104,7 +111,20 @@ export function PodiatryAssessmentPanel({
         </div>
       </CardHeader>
       <CardContent>
-        {!session && !editing ? (
+        {state === "loading" && !editing ? (
+          <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t("loadingForm")}
+          </div>
+        ) : state === "error" && !editing ? (
+          <div className="flex flex-col items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 py-6 text-center">
+            <p className="text-sm font-medium text-destructive">{t("loadFailed")}</p>
+            <p className="max-w-md text-xs text-muted-foreground">{t("loadFailedHint")}</p>
+            {onRetry && (
+              <Button size="sm" variant="outline" onClick={onRetry}>{t("retry")}</Button>
+            )}
+          </div>
+        ) : !session && !editing ? (
           <p className="text-sm text-muted-foreground text-center py-6">{t("notFilled")}</p>
         ) : (
           <PodiatryAssessmentFields value={shown} onChange={setForm} readOnly={!editing} />

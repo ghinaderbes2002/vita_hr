@@ -9,6 +9,7 @@
 // the layout it was filled in.
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   PodiatryArchArchitecture, PodiatryDeformityType, PodiatryEdemaType, PodiatryFootwear,
@@ -431,7 +432,12 @@ export function PodiatryAssessmentFields({
         <Chips label={t("labels.mainCause")} opts={MAIN_CAUSE} value={sub.mainCause} single t={t}
           onChange={(v) => setSub({ mainCause: v })} readOnly={readOnly} />
         <Chips label={t("labels.painLocation")} opts={PAIN_LOCATION} value={sub.painLocation} t={t}
-          onChange={(v) => setSub({ painLocation: v })} readOnly={readOnly} />
+          // "لا يوجد" لا يجتمع مع موقع: اختياره يلغي المواقع، واختيار موقع يلغيه.
+          onChange={(v) => setSub({
+            painLocation: v.includes("none") && !sub.painLocation.includes("none")
+              ? ["none"]
+              : v.filter((x) => x !== "none"),
+          })} readOnly={readOnly} />
         <div className="space-y-2.5">
           <FieldLabel text={`${t("labels.painNature")}${sub.vasScore ? ` — ${sub.vasScore}/10` : ""}`} />
           <div className="flex flex-wrap gap-1.5">
@@ -579,25 +585,25 @@ export function PodiatryAssessmentFields({
                     {(key === "archHeight" ? archHeightLabel(t, value.footMeasurements[field]) : value.footMeasurements[field]) || "—"}
                   </div>
                 ) : key === "archHeight" ? (
-                  // ارتفاع القوس اختيار لا قياس: عالٍ أو منخفض. يُخزَّن "high" / "low"
-                  // في الحقل النصي نفسه؛ والضغط على المختار يلغيه.
-                  <div key={side} className="flex flex-wrap justify-center gap-1">
-                    {ARCH_HEIGHT_VALUES.map((opt) => {
-                      const on = value.footMeasurements[field] === opt;
-                      return (
-                        <button
-                          key={opt} type="button"
-                          className={`rounded-full border px-2 py-1 text-xs transition-colors ${on ? "border-orange-500 bg-orange-500 text-white" : "border-border text-muted-foreground hover:bg-muted"}`}
-                          onClick={() => onChange({
-                            ...value,
-                            footMeasurements: { ...value.footMeasurements, [field]: on ? "" : opt },
-                          })}
-                        >
-                          {archHeightLabel(t, opt)}
-                        </button>
-                      );
+                  // ارتفاع القوس اختيار لا قياس: High أو Low، قائمة منسدلة بالإنجليزية
+                  // في كل اللغات. يُخزَّن "high" / "low" في الحقل النصي نفسه.
+                  <Select
+                    key={side}
+                    value={(ARCH_HEIGHT_VALUES as readonly string[]).includes(value.footMeasurements[field]) ? value.footMeasurements[field] : ""}
+                    onValueChange={(opt) => onChange({
+                      ...value,
+                      footMeasurements: { ...value.footMeasurements, [field]: opt },
                     })}
-                  </div>
+                  >
+                    <SelectTrigger className="h-8 w-full justify-center gap-1 px-2 text-sm" dir="ltr">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent dir="ltr">
+                      {ARCH_HEIGHT_VALUES.map((opt) => (
+                        <SelectItem key={opt} value={opt}>{archHeightLabel(t, opt)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <Input
                     key={side}

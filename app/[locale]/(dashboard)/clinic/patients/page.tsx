@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Plus, Search, Eye, Trash2, Users, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Plus, Search, Eye, Trash2, Users, FileSpreadsheet, Loader2, Building2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,6 +76,22 @@ export default function ClinicPatientsPage() {
     department,
   });
 
+  // Company / non-company head-counts for the cards above the table. One row is
+  // fetched per count, just for its `total`, under the same department scope as
+  // the list but none of its other filters.
+  const { data: allCount } = useClinicPatients({ page: 1, limit: 1, department });
+  const { data: companyCount } = useClinicPatients({ page: 1, limit: 1, department, isCompanyPatient: true });
+  const { data: nonCompanyCount } = useClinicPatients({ page: 1, limit: 1, department, isCompanyPatient: false });
+  const totalAll = allCount?.total;
+  const totalCompany = companyCount?.total;
+  const totalNonCompany = nonCompanyCount?.total;
+  // The two halves must add up to the whole. If they do not, the API ignored the
+  // isCompanyPatient filter and both numbers would be the full total — the split
+  // is then withheld rather than shown wrong.
+  const splitReliable =
+    totalAll != null && totalCompany != null && totalNonCompany != null
+    && totalCompany + totalNonCompany === totalAll;
+
   const deletePatient = useDeleteClinicPatient();
 
   // Excel export: every patient, or only those created within a date range.
@@ -129,6 +145,37 @@ export default function ClinicPatientsPage() {
           </div>
         }
       />
+
+      {splitReliable && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {([
+            { key: "all", label: "إجمالي المرضى", value: totalAll!, icon: Users, tone: "bg-slate-500" },
+            { key: "yes", label: "مرضى الشركة", value: totalCompany!, icon: Building2, tone: "bg-orange-500" },
+            { key: "no", label: "غير مرضى الشركة", value: totalNonCompany!, icon: UserRound, tone: "bg-sky-500" },
+          ] as const).map((c) => {
+            const active = companyFilter === c.key;
+            return (
+              <button
+                key={c.key} type="button"
+                onClick={() => { setCompanyFilter(c.key); setPage(1); }}
+                className={`relative overflow-hidden rounded-xl border bg-card p-4 text-start shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${active ? "border-primary ring-1 ring-primary/40" : ""}`}
+              >
+                <div className={`absolute inset-x-0 top-0 h-0.5 ${c.tone}`} />
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-muted-foreground">{c.label}</p>
+                  <div className={`rounded-lg p-1.5 text-white ${c.tone}`}><c.icon className="h-3.5 w-3.5" /></div>
+                </div>
+                <p className="mt-1 text-3xl font-bold tabular-nums">{c.value}</p>
+                {c.key !== "all" && (
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {totalAll ? Math.round((c.value / totalAll) * 100) : 0}% من الإجمالي
+                  </p>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

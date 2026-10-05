@@ -3374,6 +3374,7 @@
             "hereditary_condition": "Kalıtsal Durum"
           },
           "painLocation": {
+            "none": "Yok",
             "forefoot": "Ön Ayak",
             "midfoot": "Orta Ayak",
             "rearfoot": "Arka Ayak"
@@ -3492,6 +3493,10 @@
           "edit": "Düzenle",
           "fill": "Formu doldur",
           "notFilled": "Form henüz doldurulmadı",
+          "loadingForm": "Form yükleniyor...",
+          "loadFailed": "Form yüklenemedi",
+          "loadFailedHint": "Form kayıtlı olabilir ancak şu anda getirilemedi (bağlantı veya yetki). Yeniden doldurmayın — tekrar deneyin veya yöneticiye başvurun.",
+          "retry": "Tekrar dene",
           "clinicianName": "Uzman adı",
           "selectClinician": "Uzman seçin...",
           "signature": "İmza",

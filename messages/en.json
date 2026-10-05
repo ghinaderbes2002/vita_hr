@@ -4288,6 +4288,7 @@
             "hereditary_condition": "Hereditary Condition"
           },
           "painLocation": {
+            "none": "None",
             "forefoot": "Forefoot",
             "midfoot": "Midfoot",
             "rearfoot": "Rearfoot"
@@ -4406,6 +4407,10 @@
           "edit": "Edit",
           "fill": "Fill in the form",
           "notFilled": "The form has not been filled in yet",
+          "loadingForm": "Loading the form...",
+          "loadFailed": "Could not load the form",
+          "loadFailedHint": "The form may be saved but could not be fetched right now (connection or permission). Do not fill it in again — retry or contact the administrator.",
+          "retry": "Retry",
           "clinicianName": "Clinician name",
           "selectClinician": "Select clinician...",
           "signature": "Signature",

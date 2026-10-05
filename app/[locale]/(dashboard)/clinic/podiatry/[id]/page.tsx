@@ -129,7 +129,12 @@ export default function PodiatryReceptionPage() {
 
   const { data: reception, isLoading } = usePodiatryReception(id);
   // The API returns at most one assessment per reception.
-  const { data: sessions = [] } = usePodiatrySessions(id);
+  // "No session" and "could not load the sessions" must not look alike: a failed
+  // request used to render as an unfilled form, and filling it would POST — an
+  // upsert — over the session that is really there.
+  const {
+    data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions,
+  } = usePodiatrySessions(id);
   const session: PodiatrySession | null = sessions[0] ?? null;
   const { data: patient } = useClinicPatient(reception?.patientId ?? "");
   // Links kept on the patient's own file (الروابط). Shown here read-only so the
@@ -439,6 +444,8 @@ export default function PodiatryReceptionPage() {
           <PodiatryAssessmentPanel
             receptionId={id}
             session={session}
+            state={sessionsLoading ? "loading" : sessionsError ? "error" : "ready"}
+            onRetry={() => refetchSessions()}
             title={t("tabSessions")}
             actions={session && (
               <Button size="sm" variant="outline" className="gap-1.5" disabled={pdfBusy} onClick={handleExportPdf}>

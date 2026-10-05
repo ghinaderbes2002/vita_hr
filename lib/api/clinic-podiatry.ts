@@ -15,7 +15,7 @@ export type MedicalHistoryItem =
 export type PodiatryMainCause =
   | "none" | "unknown" | "acute_injury" | "post_surgery" | "chronic_overuse"
   | "hereditary_condition";
-export type PodiatryPainLocation = "forefoot" | "midfoot" | "rearfoot";
+export type PodiatryPainLocation = "none" | "forefoot" | "midfoot" | "rearfoot";
 export type PodiatryPainCharacteristic =
   | "morning_startup" | "eases_with_activity" | "progressively_worse"
   | "night_pain" | "pain_at_rest";
