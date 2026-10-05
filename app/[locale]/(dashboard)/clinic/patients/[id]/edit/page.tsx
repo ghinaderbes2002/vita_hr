@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClinicPatient, useUpdateClinicPatient, usePatientConsents } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
-import { clinicPatientsApi, ConsentOption, UpdatePatientDto } from "@/lib/api/clinic-patients";
+import { clinicPatientsApi, ConsentOption, UpdatePatientDto, cleanIdNumber } from "@/lib/api/clinic-patients";
 import { ReferralSourceFields, referralDto } from "@/components/clinic/referral-source-fields";
 import { REFERRAL_SOURCES, asCurrentReferralSource } from "@/lib/clinic/referral-sources";
 import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
@@ -135,7 +135,7 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
     firstName:       patient.firstName,
     lastName:        patient.lastName,
     identityType:    patient.identityType,
-    idNumber:        patient.idNumber ?? "",
+    idNumber:        cleanIdNumber(patient.idNumber),
     dateOfBirth:     patient.dateOfBirth.slice(0, 10),
     gender:          patient.gender,
     phone:           patient.phone,
@@ -209,7 +209,8 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
       firstName:       values.firstName,
       lastName:        values.lastName,
       identityType:    values.identityType,
-      idNumber:        values.idNumber?.trim() || undefined,
+      // null يمسح الرقم المحفوظ (ومنه "-" القديمة)؛ undefined كان يتركه كما هو.
+      idNumber:        cleanIdNumber(values.idNumber) || null,
       dateOfBirth:     values.dateOfBirth,
       gender:          values.gender,
       phone:           values.phone,

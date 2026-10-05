@@ -24,7 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useCreateClinicPatient, useCheckDuplicate } from "@/lib/hooks/use-clinic-patients";
 import { useClinicCities } from "@/lib/hooks/use-clinic-cities";
-import { clinicPatientsApi, CreatePatientDto, IdentityType, ConsentOption, DocumentType } from "@/lib/api/clinic-patients";
+import { clinicPatientsApi, CreatePatientDto, IdentityType, ConsentOption, DocumentType, cleanIdNumber } from "@/lib/api/clinic-patients";
 import { ReferralSourceFields, referralDto } from "@/components/clinic/referral-source-fields";
 import { REFERRAL_SOURCES } from "@/lib/clinic/referral-sources";
 import { WhatsAppIcon } from "@/components/shared/whatsapp-link";
@@ -126,7 +126,7 @@ function NewPatientForm() {
   const { data: rawCities = [] } = useClinicCities();
   const cities = rawCities.filter((c, i, arr) => arr.findIndex((x) => x.name === c.name && x.governorate === c.governorate) === i);
 
-  const idNumber = s1.idNumber ?? "";
+  const idNumber = cleanIdNumber(s1.idNumber);
   const { data: dupData } = useCheckDuplicate(idNumber);
 
   const form1 = useForm<Step1>({
@@ -205,7 +205,8 @@ function NewPatientForm() {
       firstName:       s1.firstName!,
       lastName:        s1.lastName!,
       identityType:    s1.identityType! as IdentityType,
-      idNumber:        s1.idNumber?.trim() || undefined,
+      // لا رقم = لا يُرسل الحقل إطلاقاً (العمود فريد، و"-" يُرفض عند المريض التالي).
+      idNumber:        cleanIdNumber(s1.idNumber) || undefined,
       dateOfBirth:     s1.dateOfBirth!,
       gender:          s1.gender!,
       nationality:     s1.nationality?.trim() || undefined,
@@ -700,7 +701,7 @@ function NewPatientForm() {
                 <p className="font-semibold">{t("summary.title")}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
                   <span>{t("summary.name")}:</span><span className="text-foreground">{s1.firstName} {s1.lastName}</span>
-                  <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{s1.idNumber?.trim() || "—"}</span>
+                  <span>{t("summary.idNumber")}:</span><span className="text-foreground font-mono">{cleanIdNumber(s1.idNumber) || "-"}</span>
                   <span>{t("summary.phone")}:</span><span className="text-foreground" dir="ltr">{s2.phone}</span>
                   {s1.nationality && <><span>{t("summary.nationality")}:</span><span className="text-foreground">{s1.nationality}</span></>}
                   {s1.occupation && <><span>{t("summary.occupation")}:</span><span className="text-foreground">{s1.occupation}</span></>}

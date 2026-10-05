@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { clinicPatientsApi } from "@/lib/api/clinic-patients";
+import { clinicPatientsApi, cleanIdNumber } from "@/lib/api/clinic-patients";
 import { consentChoiceOf } from "@/components/clinic/consent-choices";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -484,7 +484,7 @@ export default function PatientProfilePage() {
               <CardContent>
                 <InfoRow label="الاسم الكامل" value={`${patient.firstName} ${patient.lastName}`} />
                 <InfoRow label="نوع الهوية" value={IDENTITY_LABEL[patient.identityType]} />
-                <InfoRow label="رقم الهوية" value={patient.idNumber} fallback="غير محدد" />
+                <InfoRow label="رقم الهوية" value={cleanIdNumber(patient.idNumber)} fallback="-" />
                 <InfoRow label="تاريخ الميلاد" value={new Date(patient.dateOfBirth).toLocaleDateString("en-GB")} />
                 <InfoRow label="الجنس" value={GENDER_LABEL[patient.gender]} />
                 <InfoRow label="الجنسية" value={patient.nationality} fallback="غير محدد" />

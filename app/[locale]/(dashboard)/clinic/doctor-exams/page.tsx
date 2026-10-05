@@ -178,7 +178,7 @@ export default function DoctorExamsListPage() {
                     {c.patient ? `${c.patient.firstName} ${c.patient.lastName}`.trim() : "—"}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {c.patient?.idNumber ?? "—"}
+                    {c.patient?.idNumber?.trim() || "-"}
                   </TableCell>
                   <TableCell className="max-w-56 truncate" title={c.majorComplaint ?? undefined}>
                     {c.majorComplaint || "—"}

@@ -130,7 +130,8 @@ export interface CreatePatientDto {
   firstName: string;
   lastName: string;
   identityType: IdentityType;
-  idNumber?: string;
+  /** Unique in the database — omitted (or null on update) when the patient has none. */
+  idNumber?: string | null;
   dateOfBirth: string;
   gender: Gender;
   nationality?: string;
@@ -162,6 +163,17 @@ export interface CreatePatientDto {
 }
 
 export interface UpdatePatientDto extends Partial<CreatePatientDto> {}
+
+/**
+ * The ID number as it should be stored: trimmed, or empty when the patient has
+ * none. A lone dash (or several) is how "no number" gets typed, and the column
+ * is unique — a second patient saved as "-" would be rejected as a duplicate —
+ * so placeholders count as empty and never reach the API.
+ */
+export const cleanIdNumber = (v?: string | null): string => {
+  const s = (v ?? "").trim();
+  return /^[-–—ـ\s]*$/.test(s) ? "" : s;
+};
 
 export interface PatientListParams {
   page?: number;
