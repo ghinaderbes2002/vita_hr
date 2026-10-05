@@ -4386,9 +4386,8 @@ export default function ProstheticsCasePage() {
   const patientEditComplete = allFilled(patientEditForm, [
     "firstName", "lastName", "dateOfBirth", "heightCm", "weightKg",
   ]);
-  const staffComplete = allFilled(staffForm, [
-    "prosthetistIds", "physiotherapistIds", "supervisingDoctorIds",
-  ]);
+  // الطبيب المشرف اختياري: الفريق يُحفظ بالفني والمعالج وحدهما.
+  const staffComplete = allFilled(staffForm, ["prosthetistIds", "physiotherapistIds"]);
 
   const buildIntakeDto = () => {
     const hcd = intakeForm.hasChronicDiseases ?? c.hasChronicDiseases ?? false;
