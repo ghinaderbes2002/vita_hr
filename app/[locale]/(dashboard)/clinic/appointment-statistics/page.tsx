@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocale } from "next-intl";
-import { Download, Loader2, Search } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Download, Loader2, Search, UserX, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -124,6 +124,8 @@ function AppointmentStatisticsReport() {
   const count = (key: "attended" | "cancelled" | "postponed" | "noShow") =>
     filtered ? rows.filter((r) => r[key]).length : (totals[key] ?? rows.filter((r) => r[key]).length);
 
+  const totalShown: number = filtered ? rows.length : (data?.total ?? rows.length);
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -168,6 +170,40 @@ function AppointmentStatisticsReport() {
           </div>
         </CardContent>
       </Card>
+
+      {/* الأعداد في الأعلى: نفس أرقام سطر "العدد الكلي" أسفل الجدول، وتتبع البحث
+          والفلاتر مثله. المحجوز والمؤكد والمتأخر يدخل في الإجمالي دون البطاقات الأربع. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {([
+          { label: "إجمالي المواعيد", value: totalShown, icon: CalendarDays, tone: "bg-slate-500", text: "" },
+          { label: "حضر", value: count("attended"), icon: CheckCircle2, tone: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
+          { label: "ألغى", value: count("cancelled"), icon: XCircle, tone: "bg-rose-500", text: "text-rose-600 dark:text-rose-400" },
+          { label: "أجّل", value: count("postponed"), icon: Clock, tone: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
+          { label: "لم يحضر", value: count("noShow"), icon: UserX, tone: "bg-violet-500", text: "text-violet-600 dark:text-violet-400" },
+        ] as const).map((s, i) => (
+          <Card key={s.label} className="relative overflow-hidden">
+            <div className={`absolute inset-x-0 top-0 h-0.5 ${s.tone}`} />
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-muted-foreground">{s.label}</p>
+                <div className={`rounded-lg p-1.5 text-white ${s.tone}`}><s.icon className="h-3.5 w-3.5" /></div>
+              </div>
+              {isLoading ? (
+                <Skeleton className="mt-2 h-8 w-14" />
+              ) : (
+                <p className={`mt-1 text-3xl font-bold tabular-nums ${s.text}`}>{s.value}</p>
+              )}
+              {!isLoading && (
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {i === 0
+                    ? (filtered ? `من أصل ${data?.total ?? allRows.length}` : "خلال المدة المحددة")
+                    : `${totalShown ? Math.round((s.value / totalShown) * 100) : 0}% من الإجمالي`}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <Card>
         <CardContent className="pt-5 space-y-4">

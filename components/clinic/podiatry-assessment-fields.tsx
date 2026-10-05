@@ -21,7 +21,7 @@ import {
   ARCH_ARCHITECTURE, DEFORMITY_TYPE, EDEMA_TYPE, FOOTWEAR, FOOT_MEASUREMENT_KEYS,
   FormT, INSOLE_TYPE_VALUES, JACK_TEST, MAIN_CAUSE, OUTSOLE_WEAR, OptGroup,
   PAIN_CHARACTERISTIC, PAIN_LOCATION, PALPATION_KEYS, REARFOOT_ALIGNMENT, ROM,
-  TOO_MANY_TOES, WALKING_LINE,
+  TOO_MANY_TOES, WALKING_LINE, ARCH_HEIGHT_VALUES, archHeightLabel,
 } from "./podiatry-session-schema";
 
 // ── Value shape ──────────────────────────────────────────────────────────────
@@ -141,9 +141,9 @@ export const assessmentToDto = (v: AssessmentValue): PodiatrySessionDto => {
 };
 
 // ── اكتمال النموذج ───────────────────────────────────────────────────────────
-// زر الحفظ لا يُفعَّل إلا بتعبئة كل حقول الورقة. المستثنى: مربعات التأشير
-// (الموجودات والجس) لأنها تُعرض محسومة دائماً — وما تفتحه من حقول تفصيلية
-// يُطلب عند تأشيرها فقط.
+// زر الحفظ لا يُفعَّل إلا بتعبئة حقول الورقة المطلوبة. المستثنى ثلاثة أقسام
+// اختيارية بكل ما فيها: تشوهات مقدمة القدم والأصابع، حالة الجلد والأنسجة
+// الرخوة، ونقاط الجس والمضض.
 const filled = (v: unknown): boolean =>
   Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim().length > 0 : v != null;
 
@@ -162,17 +162,16 @@ export function missingAssessmentFields(v: AssessmentValue, t: FormT): string[] 
 
   need(filled(vis.rightRearfootAlignment) && filled(vis.leftRearfootAlignment), t("labels.rearfootAlignment"));
   need(filled(vis.rightTooManyToes) && filled(vis.leftTooManyToes), t("labels.tooManyToes"));
-  need(filled(vis.rightTooManyToesCount) && filled(vis.leftTooManyToesCount), t("labels.toesCount"));
+  // العدد مطلوب للجهة التي علامتها إيجابية فقط.
+  need(
+    (!vis.rightTooManyToes.includes("positive") || filled(vis.rightTooManyToesCount)) &&
+    (!vis.leftTooManyToes.includes("positive") || filled(vis.leftTooManyToesCount)),
+    t("labels.toesCount"),
+  );
   need(filled(vis.rightArchArchitecture) && filled(vis.leftArchArchitecture), t("labels.archArchitecture"));
-  // كل موجودة مؤشَّرة تطلب تفصيلها.
-  need(!vis.halluxValgus || filled(vis.halluxValgusType), t("findings.halluxValgus"));
-  need(!vis.tailorsBunion || filled(vis.tailorsBunionType), t("findings.tailorsBunion"));
-  need(!vis.hammerToes || filled(vis.hammerToesAffected), t("findings.hammerToes"));
-  need(!vis.clawToes || filled(vis.clawToesAffected), t("findings.clawToes"));
-  need(!vis.malletToes || filled(vis.malletToesAffected), t("findings.malletToes"));
-  need(!vis.hyperkeratosisCallus || filled(vis.hyperkeratosisLocation), t("findings.hyperkeratosisCallus"));
-  need(!vis.preTrophicLesions || filled(vis.preTrophicLesionsNotes), t("findings.preTrophicLesions"));
-  need(!vis.edema || filled(vis.edemaType), t("findings.edema"));
+  // "تشوهات مقدمة القدم والأصابع" و"حالة الجلد والأنسجة الرخوة" اختياريان
+  // بالكامل: لا التأشير مطلوب، ولا تفصيل ما أُشِّر عليه. ومثلهما "نقاط الجس
+  // والمضض". كل ما عدا هذه الثلاثة مطلوب.
 
   need(filled(v.rangeOfMotion.ankleDorsiflexion), t("labels.ankleDorsiflexion"));
   need(filled(v.rangeOfMotion.anklePlantarflexion), t("labels.anklePlantarflexion"));
@@ -185,7 +184,8 @@ export function missingAssessmentFields(v: AssessmentValue, t: FormT): string[] 
 
   // القياسات: كل قياس يمين ويسار.
   FOOT_MEASUREMENT_KEYS.forEach((k) => {
-    const both = filled(v.footMeasurements[`${k}Right`]) && filled(v.footMeasurements[`${k}Left`]);
+    const ok = (x: string) => (k === "archHeight" ? (ARCH_HEIGHT_VALUES as readonly string[]).includes(x) : filled(x));
+    const both = ok(v.footMeasurements[`${k}Right`]) && ok(v.footMeasurements[`${k}Left`]);
     need(both, t(`measurements.${k}`));
   });
 
@@ -464,9 +464,11 @@ export function PodiatryAssessmentFields({
 
         <SidePair label={t("labels.tooManyToes")} opts={TOO_MANY_TOES} t={t}
           right={vis.rightTooManyToes} left={vis.leftTooManyToes}
-          onRight={(v) => setVis({ rightTooManyToes: v })}
-          onLeft={(v) => setVis({ leftTooManyToes: v })} readOnly={readOnly}
-          extra={(side) => (
+          // عدد الأصابع الظاهرة يخصّ العلامة الإيجابية وحدها: يظهر معها، ويُفرَّغ
+          // عند العدول عنها حتى لا يبقى عدد محفوظ مع علامة سلبية.
+          onRight={(v) => setVis({ rightTooManyToes: v, ...(v.includes("positive") ? {} : { rightTooManyToesCount: "" }) })}
+          onLeft={(v) => setVis({ leftTooManyToes: v, ...(v.includes("positive") ? {} : { leftTooManyToesCount: "" }) })} readOnly={readOnly}
+          extra={(side) => (side === "right" ? vis.rightTooManyToes : vis.leftTooManyToes).includes("positive") && (
             <Line
               label={t("labels.toesCount")}
               value={side === "right" ? vis.rightTooManyToesCount : vis.leftTooManyToesCount}
@@ -574,15 +576,34 @@ export function PodiatryAssessmentFields({
                 const field = `${key}${side}`;
                 return readOnly ? (
                   <div key={side} className="rounded-md border bg-muted/40 px-2 py-1 text-center text-sm">
-                    {value.footMeasurements[field] || "—"}
+                    {(key === "archHeight" ? archHeightLabel(t, value.footMeasurements[field]) : value.footMeasurements[field]) || "—"}
+                  </div>
+                ) : key === "archHeight" ? (
+                  // ارتفاع القوس اختيار لا قياس: عالٍ أو منخفض. يُخزَّن "high" / "low"
+                  // في الحقل النصي نفسه؛ والضغط على المختار يلغيه.
+                  <div key={side} className="flex flex-wrap justify-center gap-1">
+                    {ARCH_HEIGHT_VALUES.map((opt) => {
+                      const on = value.footMeasurements[field] === opt;
+                      return (
+                        <button
+                          key={opt} type="button"
+                          className={`rounded-full border px-2 py-1 text-xs transition-colors ${on ? "border-orange-500 bg-orange-500 text-white" : "border-border text-muted-foreground hover:bg-muted"}`}
+                          onClick={() => onChange({
+                            ...value,
+                            footMeasurements: { ...value.footMeasurements, [field]: on ? "" : opt },
+                          })}
+                        >
+                          {archHeightLabel(t, opt)}
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <Input
                     key={side}
                     className="h-8 text-center"
-                    // ارتفاع القوس يُكتب وصفاً (نص حر)، وباقي الصفوف أرقام.
-                    dir={key === "archHeight" ? "auto" : "ltr"}
-                    inputMode={key === "archHeight" ? "text" : "decimal"}
+                    dir="ltr"
+                    inputMode="decimal"
                     value={value.footMeasurements[field] ?? ""}
                     onChange={(e) => onChange({
                       ...value,

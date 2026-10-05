@@ -1446,6 +1446,7 @@ export default function PhysioCasePage() {
   // both save through it — requires this permission; without it the API answers
   // 403, so the save buttons are not offered at all.
   const canSaveComplaint = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PHYSIO.ASSESSMENT_CREATE]);
+  const canOpenPatientFile = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PATIENTS.CREATE]);
   const isDoctorExam = isDoctorExamCase(c);
 
   const handleConvertToPhysio = async (physiotherapistId?: string) => {
@@ -1463,20 +1464,32 @@ export default function PhysioCasePage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div className="space-y-1">
-          <button
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            onClick={() =>
-              c.patientId
-                ? router.push(`/${locale}/clinic/patients/${c.patientId}`)
-                : router.back()
-            }
-          >
-            <ArrowRight className="h-3.5 w-3.5" />
-            {patientName}
-            {c.patient?.patientNumber && (
-              <span className="font-mono">— {c.patient.patientNumber}</span>
-            )}
-          </button>
+          {/* The name opens the patient file only for those who manage patients
+              (same rule as the sidebar tab); for everyone else it is a label. */}
+          {canOpenPatientFile ? (
+            <button
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() =>
+                c.patientId
+                  ? router.push(`/${locale}/clinic/patients/${c.patientId}`)
+                  : router.back()
+              }
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+              {patientName}
+              {c.patient?.patientNumber && (
+                <span className="font-mono">— {c.patient.patientNumber}</span>
+              )}
+            </button>
+          ) : (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <ArrowRight className="h-3.5 w-3.5" />
+              {patientName}
+              {c.patient?.patientNumber && (
+                <span className="font-mono">— {c.patient.patientNumber}</span>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-bold">{t(isDoctorExam ? "pageTitleDoctorExam" : "pageTitle")}</h1>
             {c.caseNumber && (

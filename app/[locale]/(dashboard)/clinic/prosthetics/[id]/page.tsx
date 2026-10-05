@@ -123,6 +123,19 @@ const recordKey = (r: unknown): string | null => {
 // زر الحفظ في كل قسم لا يُفعَّل إلا بعد تعبئة كل حقوله الظاهرة. القاعدة واحدة
 // لكل الحقول: نص غير فارغ، رقم صالح، مصفوفة فيها عنصر، أو مفتاح محسوم (نعم/لا).
 // المفاتيح الثلاثية تبدأ null فتُعدّ فارغة حتى يختار المستخدم.
+/**
+ * معالجو جلسات المتابعة: الموظفون النشطون في قسم الأطراف الصناعية وطب الأقدام
+ * وحده. `keepId` يُبقي المعالج المحفوظ على الجلسة ظاهراً ولو لم يعد من القسم،
+ * وإلا عُرض اختياره فارغاً عند فتح جلسة قديمة.
+ */
+const isProstheticsDeptStaff = (e: any, keepId?: string): boolean => {
+  if (keepId && e.id === keepId) return true;
+  if (e.employmentStatus !== "ACTIVE") return false;
+  const dep: string = e.department?.nameAr ?? "";
+  return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية")
+    || dep.includes("طب الاقدام") || dep.includes("طب الأقدام");
+};
+
 const isFilled = (v: unknown): boolean => {
   if (v == null) return false;
   if (typeof v === "boolean") return true;
@@ -503,9 +516,7 @@ function TreatmentProgramCard({
               <SelectContent>
                 <SelectItem value="none">{t("followUp.unspecified")}</SelectItem>
                 {staffList.filter((e: any) => {
-                  if (e.employmentStatus !== "ACTIVE") return false;
-                  const dep = e.department?.nameAr ?? "";
-                  return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية") || dep.includes("العلاج الفيزيائي") || dep.includes("الادارة الطبية") || dep.includes("الإدارة الطبية");
+                  return isProstheticsDeptStaff(e, form.technicianId);
                 }).map((emp: any) => (
                   <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
                 ))}
@@ -769,9 +780,7 @@ function TreatmentProgramsSection({
                 <SelectContent>
                   <SelectItem value="none">{t("followUp.unspecified")}</SelectItem>
                   {staffList.filter((e: any) => {
-                    if (e.employmentStatus !== "ACTIVE") return false;
-                    const dep = e.department?.nameAr ?? "";
-                    return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية") || dep.includes("العلاج الفيزيائي") || dep.includes("الادارة الطبية") || dep.includes("الإدارة الطبية");
+                    return isProstheticsDeptStaff(e, newForm.technicianId);
                   }).map((emp: any) => (
                     <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
                   ))}
@@ -985,9 +994,7 @@ function ReviewProgramCard({
               <SelectContent>
                 <SelectItem value="none">{t("followUp.unspecified")}</SelectItem>
                 {staffList.filter((e: any) => {
-                  if (e.employmentStatus !== "ACTIVE") return false;
-                  const dep = e.department?.nameAr ?? "";
-                  return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية") || dep.includes("العلاج الفيزيائي") || dep.includes("الادارة الطبية") || dep.includes("الإدارة الطبية");
+                  return isProstheticsDeptStaff(e, form.technicianId);
                 }).map((emp: any) => (
                   <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
                 ))}
@@ -1113,9 +1120,7 @@ function ReviewProgramsSection({
                 <SelectContent>
                   <SelectItem value="none">{t("followUp.unspecified")}</SelectItem>
                   {staffList.filter((e: any) => {
-                    if (e.employmentStatus !== "ACTIVE") return false;
-                    const dep = e.department?.nameAr ?? "";
-                    return dep.includes("الاطراف الصناعية") || dep.includes("الأطراف الصناعية") || dep.includes("العلاج الفيزيائي") || dep.includes("الادارة الطبية") || dep.includes("الإدارة الطبية");
+                    return isProstheticsDeptStaff(e, newForm.technicianId);
                   }).map((emp: any) => (
                     <SelectItem key={emp.id} value={emp.id}>{emp.firstNameAr} {emp.lastNameAr}</SelectItem>
                   ))}
@@ -1403,45 +1408,12 @@ function GaitAnalysisCard({
   const isNew = !session;
   const [editing, setEditing] = useState(isNew);
   const [form, setForm] = useState<GaitForm>(() => session ? gaitFormFromData(session) : { ...INITIAL_GAIT_FORM, phases: {} });
-  // كل حقول الجلسة مطلوبة. المستثنى: المفاتيح (تُعرض محسومة دائماً)، والتوقيع،
-  // وخانات التوضيح التي لا تُطلب إلا عند اختيار "أخرى".
+  // الحقول اختيارية؛ المطلوب تاريخ الجلسة وحده، ليُعرَف أي جلسة هذه.
   // كل حقل مقرون بمفتاح تسميته ليظهر بالاسم في قائمة النواقص تحت الزر.
   const GAIT_REQUIRED: [keyof GaitForm, string][] = [
     ["sessionDate", "gait.sessionDate"],
-    ["suspensionSystem", "gait.suspensionSystem"],
-    ["socketBearing", "gait.socketBearing"],
-    ["kneeJointType", "gait.kneeJointType"],
-    ["footType", "gait.footJointType"],
-    ["patientComplaints", "gait.patientComplaints"],
-    ["painIntensity", "gait.painIntensity"],
-    ["alignmentCheck", "gait.alignmentExam"],
-    ["sittingBalance", "gait.sittingBalance"],
-    ["standingBalance", "gait.standingBalance"],
-    ["assistiveDevice", "gait.assistiveDevice"],
-    ["speedMs", "gait.speed"],
-    ["cadence", "gait.cadence"],
-    ["stepLengthProsCm", "gait.stepLenProsth"],
-    ["stepLengthSoundCm", "gait.stepLenSound"],
-    ["stancePercProsthetic", "gait.stanceProsth"],
-    ["stancePercSound", "gait.stanceSound"],
-    ["symmetry", "gait.symmetry"],
-    ["prostheticIssues", "gait.prostheticIssues"],
-    ["mainProblem", "gait.mainProblem"],
-    ["likelyCauses", "gait.likelyCause"],
-    ["recommendations", "gait.recommendations"],
-    ["rehabPlanItems", "gait.tabRehab"],
-    ["rehabNotes", "gait.notesBilingual"],
-    ["examinerProsthetistId", "gait.prosthetistName"],
-    ["notes", "gait.generalNotes"],
   ];
-  const missingFields = [
-    ...GAIT_REQUIRED.filter(([k]) => !isFilled(form[k])).map(([, label]) => t(label)),
-    ...(Object.values(form.phases).some((ph) => ph.deviations.length > 0) ? [] : [t("gait.tabDeviations")]),
-    ...(filledWhen(form.patientComplaints.includes("OTHER"), form.patientComplaintsOtherNotes) ? [] : [t("gait.patientComplaints")]),
-    ...(filledWhen(form.suspensionSystem.includes("OTHER"), form.suspensionSystemOtherNotes) ? [] : [t("gait.suspensionSystem")]),
-    ...(filledWhen(form.prostheticIssues.includes("OTHER"), form.prostheticIssuesOtherNotes) ? [] : [t("gait.prostheticIssues")]),
-    ...(filledWhen(form.likelyCauses.includes("OTHER"), form.likelyCausesOtherNotes) ? [] : [t("gait.likelyCause")]),
-  ];
+  const missingFields = GAIT_REQUIRED.filter(([k]) => !isFilled(form[k])).map(([, label]) => t(label));
   const formComplete = missingFields.length === 0;
   const [activeTab, setActiveTab] = useState("basic");
   const [pdfExporting, setPdfExporting] = useState(false);
@@ -2432,16 +2404,8 @@ function BalanceAssessmentCard({
   const [form, setForm] = useState<BalanceForm>(() =>
     session ? balanceFormFromData(session) : { ...INITIAL_BALANCE_FORM, exerciseProgram: DEFAULT_EXERCISE_PROGRAM.map((e) => ({ ...e })) }
   );
-  // كل حقول الجلسة مطلوبة عدا المفاتيح والتواقيع، وخانات التوضيح تُطلب مع سببها.
-  const formComplete =
-    allFilled(form, [
-      "assessmentDate", "assistiveDevice", "staticBalance", "dynamicTasks", "dynamicActivities",
-      "fallRiskLevel", "overallBalanceLevel", "limitingFactors", "exerciseProgram",
-      "programProgression", "followUpWeeks", "expectedOutcomes",
-      "notes",
-    ]) &&
-    filledWhen(!!form.previousProsthesis, form.previousProsthesisNotes) &&
-    filledWhen(form.limitingFactors.includes("OTHER"), form.limitingFactorsOtherNotes);
+  // الحقول اختيارية؛ المطلوب تاريخ التقييم وحده.
+  const formComplete = allFilled(form, ["assessmentDate"]);
   const addMut = useAddBalanceAssessment();
   const updateMut = useUpdateBalanceAssessment();
   const saveMut = useSaveBalanceAssessmentForm();
@@ -4150,6 +4114,7 @@ export default function ProstheticsCasePage() {
   const allOpinionsSaved = prosthetistOpinionSaved && physioOpinionSaved && doctorOpinionSaved;
   // A delivered case is closed for editing — sessions and visits become history.
   const caseLocked = c.status === "DELIVERED";
+  const canOpenPatientFile = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.CREATE);
   const canEditSavedAssessment = ALLOW_EDIT_SAVED_ASSESSMENT
     && (isAdmin() || hasPermission(PERMISSIONS.CLINIC_PROSTHETICS.ASSESSMENT_CREATE));
   /** Header of a saved assessment Section: the badge, plus "تعديل" for those allowed. */
@@ -5261,14 +5226,24 @@ export default function ProstheticsCasePage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div className="space-y-1">
-          <button
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => c.patientId ? router.push(`/${locale}/clinic/patients/${c.patientId}`) : router.back()}
-          >
-            <ArrowRight className="h-3.5 w-3.5" />
-            {patientName}
-            {c.patient?.patientNumber && <span className="font-mono">— {c.patient.patientNumber}</span>}
-          </button>
+          {/* The name opens the patient file only for those who manage patients
+              (same rule as the sidebar tab); for everyone else it is a label. */}
+          {canOpenPatientFile ? (
+            <button
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => c.patientId ? router.push(`/${locale}/clinic/patients/${c.patientId}`) : router.back()}
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+              {patientName}
+              {c.patient?.patientNumber && <span className="font-mono">— {c.patient.patientNumber}</span>}
+            </button>
+          ) : (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <ArrowRight className="h-3.5 w-3.5" />
+              {patientName}
+              {c.patient?.patientNumber && <span className="font-mono">— {c.patient.patientNumber}</span>}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h1 className="text-xl font-bold">{t("page.pageTitle")}</h1>
             <CaseStatusBadge status={c.status} />
@@ -8152,8 +8127,9 @@ export default function ProstheticsCasePage() {
                 className="flex-1 gap-2"
               >
                 {(submitFinalEval.isPending || (patchFinalEval.isPending && !savingOpinion)) && <Loader2 className="h-4 w-4 animate-spin" />}
-                {/* Saving is what marks the case delivered, so the button says so. */}
-                {t("finalEval.saveEval")} ({tStatus("DELIVERED")})
+                {/* Saving moves the case to "جاهز للتسليم" (FINAL_REVIEW), so the
+                    button names that stage; "تم التسليم" belongs to final delivery. */}
+                {t("finalEval.saveEval")} ({tStatus("FINAL_REVIEW")})
               </Button>
             </div>
           )}
@@ -8287,11 +8263,6 @@ export default function ProstheticsCasePage() {
                   </div>
                 </>
               )}
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t("delivered.date")}</Label>
-                <Input type="date" value={proDeliveryHeader.signatureDate} onChange={(e) => setProDeliveryHeader((f) => ({ ...f, signatureDate: e.target.value }))} />
-              </div>
 
               <input ref={medicalDirectorSigRef} type="file" accept="image/*" className="hidden" onChange={handleMedicalDirectorSigFileChange} />
 
@@ -8434,12 +8405,6 @@ export default function ProstheticsCasePage() {
                 </div>
                 </>
                 )}
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t("delivered.date")}</Label>
-                  <Input type="date" value={finalDeliveryHeader.signatureDate}
-                    onChange={(e) => setFinalDeliveryHeader((f) => ({ ...f, signatureDate: e.target.value }))} />
-                </div>
 
                 <input ref={finalCeoSigRef} type="file" accept="image/*" className="hidden" onChange={handleFinalCeoSigFileChange} />
 

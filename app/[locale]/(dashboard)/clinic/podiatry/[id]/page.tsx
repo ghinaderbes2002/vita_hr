@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, Download, Loader2, Pencil } from "lucide-react";
+import { ArrowRight, CheckCircle2, Download, ExternalLink, Link2, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import {
   useInstallPodiatrySession, usePodiatryDoctorDecision, usePodiatryReception,
   usePodiatryReviews, usePodiatrySessions,
 } from "@/lib/hooks/use-clinic-podiatry";
-import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
+import { useClinicPatient, usePatientLinks } from "@/lib/hooks/use-clinic-patients";
 import { PatientPhoto } from "@/components/clinic/patient-photo";
 import { PodiatrySession } from "@/lib/api/clinic-podiatry";
 import {
@@ -132,6 +132,12 @@ export default function PodiatryReceptionPage() {
   const { data: sessions = [] } = usePodiatrySessions(id);
   const session: PodiatrySession | null = sessions[0] ?? null;
   const { data: patient } = useClinicPatient(reception?.patientId ?? "");
+  // Links kept on the patient's own file (الروابط). Shown here read-only so the
+  // podiatrist reaches them without leaving the case; they are added and removed
+  // from the patient file. A user who may not read them gets a 403 and simply
+  // sees no links block.
+  const { data: patientLinks } = usePatientLinks(reception?.patientId ?? "");
+  const links = Array.isArray(patientLinks) ? patientLinks : [];
   // Both hang off the reception, and both print on the sheet.
   const { data: reviews = [] } = usePodiatryReviews(id);
   const { data: doctorDecision } = usePodiatryDoctorDecision(id);
@@ -251,7 +257,7 @@ export default function PodiatryReceptionPage() {
       <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
         <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
           <TabsTrigger value="reception" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabReception")}</TabsTrigger>
-          <TabsTrigger value="patient_info" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabPatientInfo")}</TabsTrigger>
+          <TabsTrigger value="patient_info" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabPatientInfo")}{links.length > 0 && <span className="ms-1.5 inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold"><Link2 className="h-3 w-3" />{links.length}</span>}</TabsTrigger>
           {/* The assessment form is a session activity — hidden from a supervisor
               who can only receive patients (no session permission). */}
           {showSessionsTab && (
@@ -392,6 +398,41 @@ export default function PodiatryReceptionPage() {
               </div>
             </CardContent>
           </Card>
+
+          {links.length > 0 && (
+            <Card className="mt-4">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  {t("patientLinks")}
+                  <Badge variant="secondary" className="text-xs">{links.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {links.map((l) => {
+                    let host = "";
+                    try { host = new URL(l.url).hostname.replace(/^www\./, ""); } catch { host = l.url; }
+                    return (
+                      <a
+                        key={l.id} href={l.url} target="_blank" rel="noopener noreferrer"
+                        className="group flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-muted"
+                      >
+                        <div className="shrink-0 rounded-md bg-primary/10 p-2 text-primary">
+                          <Link2 className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{l.title || host}</p>
+                          <p className="truncate text-xs text-muted-foreground" dir="ltr">{host}</p>
+                        </div>
+                        <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                      </a>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-4 space-y-4">

@@ -82,6 +82,13 @@ export const FOOT_MEASUREMENT_KEYS = [
   "navicularHeightWithOrthotic", "navicularDropWithOrthotic",
 ] as const;
 
+/** Arch height is a choice, not a measurement; stored in its free-text field. */
+export const ARCH_HEIGHT_VALUES = ["high", "low"] as const;
+
+/** Reads a stored arch height: the two choices translate, older free text shows as typed. */
+export const archHeightLabel = (t: FormT, v?: string | null): string =>
+  v === "high" || v === "low" ? t(`opts.archArchitecture.${v}`) : (v ?? "");
+
 /** The label one picked value reads as. */
 export const labelOf = <T extends string>(t: FormT, o: OptGroup<T>, v?: string | null): string =>
   (v ? t(`opts.${o.group}.${v}`) : "");

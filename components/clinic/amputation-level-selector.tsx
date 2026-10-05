@@ -1,6 +1,6 @@
 "use client";
 
-const UPPER_LEVELS = [
+export const UPPER_LEVELS = [
   { value: "PH", labelAr: "بتر جزئي / الأصابع", labelCode: "PH / Finger" },
   { value: "WD", labelAr: "عبر الرسغ",           labelCode: "WD" },
   { value: "TR", labelAr: "تحت المرفق",           labelCode: "TR" },
@@ -9,7 +9,7 @@ const UPPER_LEVELS = [
   { value: "SD", labelAr: "عبر الكتف",            labelCode: "SD" },
 ];
 
-const LOWER_LEVELS = [
+export const LOWER_LEVELS = [
   { value: "PF",      labelAr: "بتر جزئي / الأصابع", labelCode: "PF / toe" },
   { value: "CHOPART", labelAr: "عبر الكاحل",          labelCode: "chopart" },
   { value: "TT",      labelAr: "تحت الركبة",          labelCode: "TT" },

@@ -18,7 +18,7 @@ import {
 import {
   ARCH_ARCHITECTURE, DEFORMITY_TYPE, EDEMA_TYPE, FOOTWEAR, FOOT_MEASUREMENT_KEYS,
   FormT, JACK_TEST, MAIN_CAUSE, OUTSOLE_WEAR, PAIN_CHARACTERISTIC, PAIN_LOCATION,
-  PALPATION_KEYS, REARFOOT_ALIGNMENT, ROM, TOO_MANY_TOES, WALKING_LINE, labelsOf,
+  PALPATION_KEYS, REARFOOT_ALIGNMENT, ROM, TOO_MANY_TOES, WALKING_LINE, labelsOf, archHeightLabel,
 } from "./podiatry-session-schema";
 
 // ── VitaFoot theme (teal), distinct from the VitaSyr reports ──────────────────
@@ -242,7 +242,9 @@ const PodiatryFormPdfDoc = ({
       .filter(Boolean).join("   —   ");
 
   const measRows = FOOT_MEASUREMENT_KEYS
-    .map((k) => [k, pair(meas[`${k}Right`], meas[`${k}Left`])] as const)
+    .map((k) => [k, k === "archHeight"
+      ? pair(archHeightLabel(t, meas.archHeightRight), archHeightLabel(t, meas.archHeightLeft))
+      : pair(meas[`${k}Right`], meas[`${k}Left`])] as const)
     .filter(([, v]) => v);
 
   // Both feet affected → the symptoms and the visit types print per foot.

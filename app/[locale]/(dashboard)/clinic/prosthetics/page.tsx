@@ -24,6 +24,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { ProstheticsCase, ProstheticsStatus, clinicProstheticsApi } from "@/lib/api/clinic-prosthetics";
 import { useQuery } from "@tanstack/react-query";
+import { UPPER_LEVELS, LOWER_LEVELS } from "@/components/clinic/amputation-level-selector";
 
 const LIMIT = 15;
 
@@ -66,6 +67,20 @@ export default function ProstheticsListPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProstheticsStatus | "all">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "UPPER" | "LOWER" | "BOTH">("all");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+  // Final-delivery exit date range. Filtered by the server (the caseload is past
+  // one 100-row page), so both the paged list and the load-all path send it.
+  const [deliveredFrom, setDeliveredFrom] = useState("");
+  const [deliveredTo, setDeliveredTo] = useState("");
+  const deliveredRange = {
+    deliveredFrom: deliveredFrom || undefined,
+    deliveredTo: deliveredTo || undefined,
+  };
+  // The level list follows the chosen type; with no type chosen it offers both.
+  const levelOptions = typeFilter === "UPPER" ? UPPER_LEVELS
+    : typeFilter === "LOWER" ? LOWER_LEVELS
+    : [...UPPER_LEVELS, ...LOWER_LEVELS];
 
   // Only the overseeing job titles and system admins get the whole caseload.
   // Everyone else — including a physiotherapist from another department who is
@@ -80,7 +95,7 @@ export default function ProstheticsListPage() {
   // Only one of the two runs — the mode isn't known until the profile lands, so
   // neither fires before then and a practitioner never pulls the whole list.
   const { data, isLoading: listLoading } = useProstheticsCases(
-    { page, limit: LIMIT, status: statusFilter !== "all" ? statusFilter : undefined },
+    { page, limit: LIMIT, status: statusFilter !== "all" ? statusFilter : undefined, ...deliveredRange },
     !meLoading && !mineOnly,
   );
   const { data: myCases, isLoading: mineLoading } = useProstheticsCasesByPractitioner(
@@ -88,20 +103,21 @@ export default function ProstheticsListPage() {
     !meLoading && mineOnly,
   );
 
-  // The API takes no search term, so a search cannot be answered from one server
-  // page: it would only ever look at the 15 rows on screen. While something is
-  // typed, every case (under the current status filter) is loaded once and the
-  // matching and paging happen here. 100 is the server's ceiling for `limit`,
+  // The API takes no search term and no type/level filter, so none of them can be
+  // answered from one server page: they would only ever look at the 15 rows on
+  // screen. While any of them is set, every case (under the current status
+  // filter) is loaded once and the matching and paging happen here. 100 is the server's ceiling for `limit`,
   // so the list is walked page by page until `total` is reached.
   const trimmedSearch = search.trim();
-  const searching = !mineOnly && !!trimmedSearch;
+  const narrowed = !!trimmedSearch || typeFilter !== "all" || levelFilter !== "all";
+  const searching = !mineOnly && narrowed;
   const allStatus = statusFilter !== "all" ? statusFilter : undefined;
   const { data: allCases, isLoading: allLoading } = useQuery({
-    queryKey: ["clinic-prosthetics-cases", "all", allStatus],
+    queryKey: ["clinic-prosthetics-cases", "all", allStatus, deliveredFrom, deliveredTo],
     queryFn: async () => {
       const out: ProstheticsCase[] = [];
       for (let p = 1; p <= 50; p++) {
-        const res = await clinicProstheticsApi.list({ page: p, limit: 100, status: allStatus });
+        const res = await clinicProstheticsApi.list({ page: p, limit: 100, status: allStatus, ...deliveredRange });
         out.push(...res.items);
         if (res.items.length === 0 || out.length >= (res.total ?? 0)) break;
       }
@@ -119,6 +135,12 @@ export default function ProstheticsListPage() {
   const source: ProstheticsCase[] = mineOnly ? (myCases ?? []) : searching ? (allCases ?? []) : (data?.items ?? []);
   const filtered = source.filter((c: ProstheticsCase) => {
     if (mineOnly && statusFilter !== "all" && c.status !== statusFilter) return false;
+    const types: string[] = Array.isArray(c.amputationType) ? c.amputationType : c.amputationType ? [c.amputationType as any] : [];
+    const has = (k: string) => types.some((x) => String(x).toUpperCase() === k);
+    // "الطرفان معاً" = الحالة تحمل النوعين؛ وكل نوع منفرداً يشمل هذه الحالات أيضاً.
+    if (typeFilter === "BOTH" ? !(has("UPPER") && has("LOWER")) : typeFilter !== "all" && !has(typeFilter)) return false;
+    const levels: string[] = Array.isArray(c.amputationLevel) ? c.amputationLevel : c.amputationLevel ? [c.amputationLevel as any] : [];
+    if (levelFilter !== "all" && !levels.includes(levelFilter)) return false;
     if (!trimmedSearch) return true;
     const q = trimmedSearch.toLowerCase();
     const name = c.patient ? `${c.patient.firstName} ${c.patient.lastName}`.toLowerCase() : "";
@@ -189,6 +211,53 @@ export default function ProstheticsListPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select
+          value={typeFilter}
+          onValueChange={(v) => { setTypeFilter(v as any); setLevelFilter("all"); setPage(1); }}
+        >
+          <SelectTrigger className="w-52">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filter.allTypes")}</SelectItem>
+            <SelectItem value="UPPER">{tCommon("amputationType.UPPER")}</SelectItem>
+            <SelectItem value="LOWER">{tCommon("amputationType.LOWER")}</SelectItem>
+            <SelectItem value="BOTH">{tCommon("amputationType.UPPER")} + {tCommon("amputationType.LOWER")}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={levelFilter} onValueChange={(v) => { setLevelFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filter.allLevels")}</SelectItem>
+            {levelOptions.map((l) => (
+              <SelectItem key={l.value} value={l.value}>{l.labelAr} — {l.labelCode}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {/* تاريخ الخروج من التسليم النهائي — يحصر القائمة بالحالات المسلّمة ضمن المدة. */}
+        <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-1">
+          <span className="text-xs text-muted-foreground">{t("filter.deliveredDate")}</span>
+          <span className="text-xs text-muted-foreground">{t("filter.from")}</span>
+          <Input
+            type="date" className="h-8 w-40" value={deliveredFrom} max={deliveredTo || undefined}
+            onChange={(e) => { setDeliveredFrom(e.target.value); setPage(1); }}
+          />
+          <span className="text-xs text-muted-foreground">{t("filter.to")}</span>
+          <Input
+            type="date" className="h-8 w-40" value={deliveredTo} min={deliveredFrom || undefined}
+            onChange={(e) => { setDeliveredTo(e.target.value); setPage(1); }}
+          />
+          {(deliveredFrom || deliveredTo) && (
+            <button
+              type="button" className="text-xs text-primary hover:underline"
+              onClick={() => { setDeliveredFrom(""); setDeliveredTo(""); setPage(1); }}
+            >
+              {t("filter.clear")}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="rounded-md border">

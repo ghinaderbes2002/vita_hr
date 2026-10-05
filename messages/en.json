@@ -4186,7 +4186,13 @@
         "COSMETIC": "Cosmetic"
       },
       "filter": {
-        "all": "All Cases"
+        "all": "All Cases",
+        "allTypes": "All types",
+        "allLevels": "All levels",
+        "deliveredDate": "Delivery date",
+        "from": "From",
+        "to": "To",
+        "clear": "Clear"
       },
       "table": {
         "patientNumber": "Patient No.",
@@ -4553,7 +4559,8 @@
         "asymmetry": "Asymmetry",
         "archiveSessionTitle": "Archive session?",
         "archiveSessionDesc": "The session will be hidden from the list while its data is kept, and can be shown later via the \"Show Archived\" button.",
-        "arrivalMethod": "Arrival Method"
+        "arrivalMethod": "Arrival Method",
+        "patientLinks": "Patient links"
       }
     },
     "doctorExams": {

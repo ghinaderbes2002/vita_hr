@@ -3272,7 +3272,13 @@
         "COSMETIC": "Kozmetik"
       },
       "filter": {
-        "all": "Tüm Vakalar"
+        "all": "Tüm Vakalar",
+        "allTypes": "Tüm türler",
+        "allLevels": "Tüm seviyeler",
+        "deliveredDate": "Teslim tarihi",
+        "from": "Başlangıç",
+        "to": "Bitiş",
+        "clear": "Temizle"
       },
       "table": {
         "patientNumber": "Hasta No.",
@@ -3639,7 +3645,8 @@
         "asymmetry": "Asimetri",
         "archiveSessionTitle": "Seans arşivlensin mi?",
         "archiveSessionDesc": "Seans, verileri korunarak listeden gizlenir ve daha sonra \"Arşivlenenleri Göster\" düğmesinden görüntülenebilir.",
-        "arrivalMethod": "Geliş Yöntemi"
+        "arrivalMethod": "Geliş Yöntemi",
+        "patientLinks": "Hasta bağlantıları"
       }
     },
     "doctorExams": {

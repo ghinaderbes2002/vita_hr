@@ -442,6 +442,10 @@ export interface ProstheticsCaseListParams {
   limit?: number;
   status?: ProstheticsStatus;
   patientId?: string;
+  /** Final-delivery exit date range, YYYY-MM-DD, inclusive. Either bound alone
+   *  works; setting any leaves out cases with no final delivery. */
+  deliveredFrom?: string;
+  deliveredTo?: string;
 }
 
 export const clinicProstheticsApi = {

@@ -295,7 +295,11 @@ const navigation: NavItem[] = [
       // مسميات المبيعات تدخل على مرضى طب الأقدام من تبويب القسم نفسه، فلا يُعرض
       // لها سجل المرضى الكامل.
       // مخفي عن المبيعات، إلا من أُعطي صلاحية إنشاء مريض صراحةً.
-      { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.view", hiddenForJobTitleCodes: ["VTX-JTL-000014", "VTX-JTL-000024"], jobTitleHidingBypassPermission: "clinic.patients.create" },
+      // The tab follows "create", not "view": practitioners (Prosthetics / PT) need
+      // clinic.patients.view to load a patient inside their cases, but are not
+      // meant to browse the whole patient list. This also covers the sales job
+      // titles the tab used to be hidden from by code.
+      { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.create" },
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
       { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
       { title: "nav.clinicPodiatry", href: "/clinic/podiatry", icon: Footprints, permission: "clinic.podiatry.reception.view" },

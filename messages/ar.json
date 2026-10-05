@@ -4321,7 +4321,13 @@
         "COSMETIC": "تجميلي"
       },
       "filter": {
-        "all": "جميع الحالات"
+        "all": "جميع الحالات",
+        "allTypes": "كل الأنواع",
+        "allLevels": "كل المستويات",
+        "deliveredDate": "تاريخ التسليم",
+        "from": "من",
+        "to": "إلى",
+        "clear": "مسح"
       },
       "table": {
         "patientNumber": "رقم المريض",
@@ -4689,7 +4695,8 @@
         "asymmetry": "عدم التماثل",
         "archiveSessionTitle": "أرشفة الجلسة؟",
         "archiveSessionDesc": "ستُخفى الجلسة من القائمة مع الاحتفاظ ببياناتها، ويمكن عرضها لاحقاً من زر «عرض المؤرشفة».",
-        "arrivalMethod": "طريقة الوصول"
+        "arrivalMethod": "طريقة الوصول",
+        "patientLinks": "روابط المريض"
       }
     },
     "doctorExams": {
