@@ -16,9 +16,12 @@ import { ActionGuard, PageGuard } from "@/components/permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { ReferralSourceFormDialog } from "@/components/clinic/referral-source-form-dialog";
 import { useDeleteReferralSource, useReferralSources } from "@/lib/hooks/use-clinic-referrals";
-import { ReferralSource, visitsCountOf } from "@/lib/api/clinic-referrals";
+import { ReferralSource } from "@/lib/api/clinic-referrals";
 
 const PAGE_SIZE = 20;
+
+/** The API returns dates as full ISO timestamps; the table shows the day only. */
+const dayOf = (iso?: string | null) => (iso ? iso.slice(0, 10) : "—");
 
 /**
  * The referral-sources screen narrowed to one kind: a project is the source type
@@ -83,11 +86,12 @@ export default function ClinicProjectsPage() {
           <Table dir="rtl">
             <TableHeader>
               <TableRow>
-                <TableHead>الاسم</TableHead>
-                <TableHead>المدينة</TableHead>
-                <TableHead>التخصص</TableHead>
-                <TableHead>الزيارات</TableHead>
-                <TableHead>المرضى</TableHead>
+                <TableHead>اسم المشروع</TableHead>
+                <TableHead>الجهة الداعمة</TableHead>
+                <TableHead>تاريخ التعاقد</TableHead>
+                <TableHead>تاريخ التفعيل</TableHead>
+                <TableHead>انتهاء التعاقد</TableHead>
+                <TableHead>ملاحظات أخرى</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -95,14 +99,14 @@ export default function ClinicProjectsPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : projects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <EmptyState
                       icon={<Users className="h-8 w-8 text-muted-foreground" />}
                       title="لا توجد مشاريع"
@@ -121,10 +125,17 @@ export default function ClinicProjectsPage() {
                     onClick={() => router.push(`/${locale}/clinic/referrals/${s.id}`)}
                   >
                     <TableCell className="font-medium">{s.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{s.city || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{s.specialty || "—"}</TableCell>
-                    <TableCell className="font-medium">{visitsCountOf(s)}</TableCell>
-                    <TableCell className="font-medium">{s.patientCount ?? "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{s.supportingEntity || "—"}</TableCell>
+                    {/* The date itself reads left-to-right, but the cell stays in the
+                        table's direction — otherwise it drifts away from its header. */}
+                    {[s.contractDate, s.activationDate, s.contractEndDate].map((d, i) => (
+                      <TableCell key={i} className="text-sm text-muted-foreground whitespace-nowrap">
+                        <span dir="ltr">{dayOf(d)}</span>
+                      </TableCell>
+                    ))}
+                    <TableCell className="max-w-56 truncate text-sm text-muted-foreground" title={s.notes ?? undefined}>
+                      {s.notes || "—"}
+                    </TableCell>
                     <TableCell>
                       {/* The row itself opens the project, so editing and deleting
                           must not bubble up to it. */}

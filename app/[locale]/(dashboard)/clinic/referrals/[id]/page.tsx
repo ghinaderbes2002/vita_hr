@@ -109,6 +109,10 @@ export default function ReferralSourceDetailPage() {
 
   const addressLine = [source.street, source.landmark, source.region, source.city]
     .filter(Boolean).join("، ");
+  // A project (ASSOCIATION) has its own short record: name, backer, contract
+  // dates and notes. The visits, address, phones, ratings and map of the other
+  // source types do not apply to it and are left out.
+  const isProject = source.type === "ASSOCIATION";
 
   return (
     <PageGuard permission={PERMISSIONS.CLINIC_REFERRALS.VIEW}>
@@ -119,7 +123,7 @@ export default function ReferralSourceDetailPage() {
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" className="gap-2"
-                onClick={() => router.push(`/${locale}/clinic/referrals`)}>
+                onClick={() => router.push(`/${locale}/clinic/${isProject ? "projects" : "referrals"}`)}>
                 <ArrowRight className="h-4 w-4" />
                 رجوع
               </Button>
@@ -129,15 +133,32 @@ export default function ReferralSourceDetailPage() {
                   تعديل
                 </Button>
               </ActionGuard>
+              {!isProject && (
               <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.VISITS_ADD}>
                 <Button className="gap-2" onClick={openNewVisit}>
                   <Plus className="h-4 w-4" />
                   تسجيل زيارة
                 </Button>
               </ActionGuard>
+              )}
             </div>
           }
         />
+
+        {isProject ? (
+          <Card className="max-w-2xl">
+            <CardHeader className="pb-2"><CardTitle className="text-base">بيانات المشروع</CardTitle></CardHeader>
+            <CardContent>
+              <InfoRow label="اسم المشروع" value={source.name} />
+              <InfoRow label="الجهة الداعمة" value={source.supportingEntity || "—"} />
+              <InfoRow label="تاريخ التعاقد" value={formatDate(source.contractDate)} />
+              <InfoRow label="تاريخ التفعيل" value={formatDate(source.activationDate)} />
+              <InfoRow label="تاريخ انتهاء التعاقد" value={formatDate(source.contractEndDate)} />
+              <InfoRow label="ملاحظات أخرى" value={source.notes || "—"} />
+            </CardContent>
+          </Card>
+        ) : (
+        <>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <Card>
@@ -323,6 +344,9 @@ export default function ReferralSourceDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        </>
+        )}
 
         <ReferralSourceFormDialog open={editOpen} onOpenChange={setEditOpen} source={source} />
 

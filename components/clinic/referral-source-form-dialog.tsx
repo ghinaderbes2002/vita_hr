@@ -48,6 +48,12 @@ interface FormState {
   visitTimes: string;
   notes: string;
   location: LatLng | null;
+  // Project (ASSOCIATION) fields.
+  projectName: string;
+  supportingEntity: string;
+  contractDate: string;
+  activationDate: string;
+  contractEndDate: string;
 }
 
 // Most sources the centre deals with are in Aleppo, so a new form starts there.
@@ -82,7 +88,15 @@ const emptyForm = (): FormState => ({
   visitTimes: "",
   notes: "",
   location: null,
+  projectName: "",
+  supportingEntity: "",
+  contractDate: "",
+  activationDate: "",
+  contractEndDate: "",
 });
+
+/** The API returns dates as full ISO timestamps; a date input takes YYYY-MM-DD. */
+const dayOf = (iso?: string | null) => (iso ? iso.slice(0, 10) : "");
 
 const formOf = (s: ReferralSource): FormState => ({
   type: s.type,
@@ -107,6 +121,11 @@ const formOf = (s: ReferralSource): FormState => ({
     s.latitude != null && s.longitude != null
       ? { latitude: s.latitude, longitude: s.longitude }
       : null,
+  projectName: s.projectName ?? "",
+  supportingEntity: s.supportingEntity ?? "",
+  contractDate: dayOf(s.contractDate),
+  activationDate: dayOf(s.activationDate),
+  contractEndDate: dayOf(s.contractEndDate),
 });
 
 function StarRating({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
@@ -256,8 +275,26 @@ export function ReferralSourceFormDialog({
   const set = <K extends keyof FormState>(key: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: v }));
 
+  // A project is the ASSOCIATION type. It has its own short form: the address,
+  // phones, visit times, ratings and map of the other source types do not apply.
+  const isProject = form.type === "ASSOCIATION";
+
   const buildDto = (): CreateReferralSourceDto => {
     const text = (v: string) => (v.trim() ? v.trim() : undefined);
+    // Only what the project form shows is sent; the fields it hides are left
+    // out, so on edit whatever an older record holds in them stays untouched.
+    if (isProject) {
+      return {
+        type: form.type,
+        name: form.name.trim(),
+        projectName: form.name.trim(),
+        supportingEntity: text(form.supportingEntity),
+        contractDate: form.contractDate || undefined,
+        activationDate: form.activationDate || undefined,
+        contractEndDate: form.contractEndDate || undefined,
+        notes: text(form.notes),
+      };
+    }
     return {
       type: form.type,
       name: form.name.trim(),
@@ -288,7 +325,7 @@ export function ReferralSourceFormDialog({
     // A freehand specialty joins the directory first, so the next source can
     // pick it from the list instead of retyping it.
     const typed = form.specialty.trim();
-    if (isOtherSpecialty && typed && !specialties.some((sp) => sp.name === typed)) {
+    if (!isProject && isOtherSpecialty && typed && !specialties.some((sp) => sp.name === typed)) {
       await createSpecialty.mutateAsync(typed);
     }
     const dto = buildDto();
@@ -303,10 +340,52 @@ export function ReferralSourceFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle>{source ? "تعديل المصدر" : "إضافة مصدر إحالة"}</DialogTitle>
+          <DialogTitle>
+            {isProject
+              ? (source ? "تعديل المشروع" : "إضافة مشروع")
+              : (source ? "تعديل المصدر" : "إضافة مصدر إحالة")}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isProject ? (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* One name: the project is filed under the association's name, so
+                    the same text is stored as both `name` and `projectName`. */}
+                <div className="space-y-1.5">
+                  <Label>اسم المشروع <span className="text-destructive">*</span></Label>
+                  <Input value={form.name} onChange={(e) => set("name", e.target.value)}
+                    placeholder="مثال: مشروع دعم الأطراف" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الجهة الداعمة</Label>
+                  <Input value={form.supportingEntity} onChange={(e) => set("supportingEntity", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>تاريخ التعاقد</Label>
+                  <Input type="date" value={form.contractDate} onChange={(e) => set("contractDate", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>تاريخ التفعيل</Label>
+                  <Input type="date" value={form.activationDate} onChange={(e) => set("activationDate", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>تاريخ انتهاء التعاقد</Label>
+                  <Input type="date" value={form.contractEndDate} min={form.contractDate || undefined}
+                    onChange={(e) => set("contractEndDate", e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>ملاحظات أخرى</Label>
+                <Textarea rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)}
+                  placeholder="مثال: اتفاق غير ربحي — منحة من المركز بالتبرع بأطراف صناعية لجهة محددة" />
+                <p className="text-xs text-muted-foreground">
+                  اذكر هنا طبيعة الاتفاق إن لم يكن ربحياً، كأن يكون منحة أو تبرعاً من المركز بأطراف لجهة معيّنة.
+                </p>
+              </div>
+            </div>
+          ) : (
           <Tabs value={tab} onValueChange={setTab} dir="rtl">
             <TabsList className="w-full">
               <TabsTrigger value="basic" className="flex-1">بيانات أساسية</TabsTrigger>
@@ -483,6 +562,7 @@ export function ReferralSourceFormDialog({
               </div>
             </TabsContent>
           </Tabs>
+          )}
 
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>

@@ -64,6 +64,13 @@ export interface ReferralSource {
   notes?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  // Project (ASSOCIATION) fields — null on other types and on older records.
+  // The three dates come back as full ISO timestamps.
+  projectName?: string | null;
+  supportingEntity?: string | null;
+  contractDate?: string | null;
+  activationDate?: string | null;
+  contractEndDate?: string | null;
   /** Present on the detail response. */
   visits?: ReferralVisit[];
   /** Prisma-style aggregate the list/stats endpoints return. */
@@ -103,6 +110,12 @@ export interface CreateReferralSourceDto {
   notes?: string;
   latitude?: number;
   longitude?: number;
+  // Project (ASSOCIATION) fields, all optional. Dates are "YYYY-MM-DD".
+  projectName?: string;
+  supportingEntity?: string;
+  contractDate?: string;
+  activationDate?: string;
+  contractEndDate?: string;
 }
 
 export type UpdateReferralSourceDto = Partial<CreateReferralSourceDto>;
