@@ -4755,9 +4755,12 @@ export default function ProstheticsCasePage() {
     : [lowerAssessForm];
 
   const upperLimbComplete = upperSideForms.every((f, i) => upperLimbFormComplete(f, i === 0));
-  const upperMuscleComplete = upperSideForms.every((f) => upperMuscleFormComplete(f));
+  // ورقة العضلات واحدة للمريض وتُكتب في النموذج الأول فقط (والحفظ ينسخها
+  // للجانبين). فحصها على نموذج كل جانب كان يطلب من الحالة الثنائية تعبئة
+  // نموذج الجانب الثاني — وهو لا يظهر في هذه الورقة أصلاً — فيبقى الزر معطّلاً.
+  const upperMuscleComplete = upperMuscleFormComplete(upperAssessForm);
   const lowerLimbComplete = lowerSideForms.every(lowerLimbFormComplete);
-  const lowerMuscleComplete = lowerSideForms.every(lowerMuscleFormComplete);
+  const lowerMuscleComplete = lowerMuscleFormComplete(lowerAssessForm);
 
   /** التقييم العام المشترك فوق ورقتي الجانبين. */
   const genAssessComplete =
