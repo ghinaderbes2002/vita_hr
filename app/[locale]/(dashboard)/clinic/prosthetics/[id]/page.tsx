@@ -136,6 +136,12 @@ const isProstheticsDeptStaff = (e: any, keepId?: string): boolean => {
     || dep.includes("طب الاقدام") || dep.includes("طب الأقدام");
 };
 
+/**
+ * ما يُطلب لحفظ جلسة متابعة (إضافة أو تعديل، في قسمَي تبويب المتابعة).
+ * وقت الدخول ووقت الخروج والملاحظات اختيارية.
+ */
+const FOLLOW_UP_SESSION_REQUIRED = ["sessionDate", "sessionTime", "technicianId", "description"] as const;
+
 const isFilled = (v: unknown): boolean => {
   if (v == null) return false;
   if (typeof v === "boolean") return true;
@@ -565,7 +571,7 @@ function TreatmentProgramCard({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={handleSave} disabled={!allFilled(form, ["sessionDate", "sessionTime", "technicianId", "description", "sessionStartTime", "sessionEndTime", "notes"]) || updateProgram.isPending} className="flex-1 gap-1">
+            <Button size="sm" onClick={handleSave} disabled={!allFilled(form, FOLLOW_UP_SESSION_REQUIRED) || updateProgram.isPending} className="flex-1 gap-1">
               {updateProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
               {t("followUp.save")}
             </Button>
@@ -803,7 +809,7 @@ function TreatmentProgramsSection({
                 التوقيعان ما زالا متاحين على الجلسة بعد إنشائها. */}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={handleAdd} disabled={!allFilled(newForm, ["sessionDate", "sessionTime", "technicianId", "description", "sessionStartTime", "sessionEndTime", "notes"]) || createProgram.isPending} className="gap-1">
+            <Button size="sm" onClick={handleAdd} disabled={!allFilled(newForm, FOLLOW_UP_SESSION_REQUIRED) || createProgram.isPending} className="gap-1">
               {createProgram.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               {t("followUp.add")}
             </Button>
@@ -1033,7 +1039,7 @@ function ReviewProgramCard({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={handleSave} disabled={!allFilled(form, ["sessionDate", "sessionTime", "technicianId", "description", "sessionStartTime", "sessionEndTime", "notes"]) || updateReview.isPending} className="flex-1 gap-1">
+            <Button size="sm" onClick={handleSave} disabled={!allFilled(form, FOLLOW_UP_SESSION_REQUIRED) || updateReview.isPending} className="flex-1 gap-1">
               {updateReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
               {t("followUp.save")}
             </Button>
@@ -1141,7 +1147,7 @@ function ReviewProgramsSection({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={handleAdd} disabled={!allFilled(newForm, ["sessionDate", "sessionTime", "technicianId", "description", "sessionStartTime", "sessionEndTime", "notes"]) || createReview.isPending} className="gap-1">
+            <Button size="sm" onClick={handleAdd} disabled={!allFilled(newForm, FOLLOW_UP_SESSION_REQUIRED) || createReview.isPending} className="gap-1">
               {createReview.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               {t("followUp.add")}
             </Button>
