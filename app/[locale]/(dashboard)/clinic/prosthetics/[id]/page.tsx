@@ -3226,6 +3226,27 @@ function recordForSide(recs: AssessmentResult[], side: "RIGHT" | "LEFT") {
   return recs.reduce<AssessmentResult | undefined>((acc, r) => (r.side === side ? r : acc), undefined);
 }
 
+type LimbSide = "RIGHT" | "LEFT" | "BILATERAL";
+
+/**
+ * The side a limb sheet was saved as. The case's own `amputationSide` is the
+ * source when the case has that limb alone — the limb save writes it there.
+ * Counting the side records can't be trusted on its own: a case once saved as
+ * bilateral keeps its LEFT record, so it kept reopening as bilateral. With both
+ * limbs the single field can't tell which limb it belongs to, so it falls back.
+ */
+function limbSideOf(recs: AssessmentResult[], ownsCaseSide: boolean, caseSide?: string | null): LimbSide | undefined {
+  if (ownsCaseSide && (caseSide === "RIGHT" || caseSide === "LEFT" || caseSide === "BILATERAL")) return caseSide;
+  if (!recs.length) return undefined;
+  const sides = new Set(recs.map((r) => r.side));
+  return sides.has("RIGHT") && sides.has("LEFT") ? "BILATERAL" : (recs[0].side as LimbSide);
+}
+
+/** Only the records the saved side owns — a stale other-side record is left out. */
+function recordsForLimbSide<T extends { side?: string }>(recs: T[], side: LimbSide | undefined): T[] {
+  return !side || side === "BILATERAL" ? recs : recs.filter((r) => r.side === side);
+}
+
 // ─── Paper-form helpers ───────────────────────────────────────────────────────
 
 function PfSq({ checked, label, onClick }: { checked: boolean; label: string; onClick: () => void }) {
@@ -4045,16 +4066,22 @@ export default function ProstheticsCasePage() {
     });
 
     // Assessment forms — without this a saved case reopens blank, and the
-    // read-only lock below would freeze empty fields. `amputationSide` is not
-    // stored on the record; it is implied by which sides came back.
+    // read-only lock below would freeze empty fields. See `limbSideOf` for where
+    // the side comes from.
+    const caseLimbs = (() => {
+      const raw = caseData.amputationType as unknown;
+      if (!raw) return [] as string[];
+      if (Array.isArray(raw)) return raw.map((x) => String(x).toUpperCase());
+      const s = String(raw).toUpperCase();
+      return s === "BOTH" ? ["UPPER", "LOWER"] : [s];
+    })();
     const upperRecs = caseData.upperAssessment ?? [];
     if (upperRecs.length) {
-      const sides = new Set(upperRecs.map((r) => r.side));
-      const ampSide = sides.has("RIGHT") && sides.has("LEFT") ? "BILATERAL" : upperRecs[0].side;
+      const ampSide = limbSideOf(upperRecs, caseLimbs.length === 1 && caseLimbs[0] === "UPPER", caseData.amputationSide)!;
       const right = recordForSide(upperRecs, "RIGHT");
       const left = recordForSide(upperRecs, "LEFT");
       setUpperAssessForm({
-        ...hydrateAssessForm(emptyUpperForm(), ampSide === "LEFT" ? left : right ?? upperRecs[0]),
+        ...hydrateAssessForm(emptyUpperForm(), ampSide === "LEFT" ? left : right),
         amputationSide: ampSide,
       });
       if (ampSide === "BILATERAL") {
@@ -4064,12 +4091,11 @@ export default function ProstheticsCasePage() {
 
     const lowerRecs = caseData.lowerAssessment ?? [];
     if (lowerRecs.length) {
-      const sides = new Set(lowerRecs.map((r) => r.side));
-      const ampSide = sides.has("RIGHT") && sides.has("LEFT") ? "BILATERAL" : lowerRecs[0].side;
+      const ampSide = limbSideOf(lowerRecs, caseLimbs.length === 1 && caseLimbs[0] === "LOWER", caseData.amputationSide)!;
       const right = recordForSide(lowerRecs, "RIGHT");
       const left = recordForSide(lowerRecs, "LEFT");
       setLowerAssessForm({
-        ...hydrateAssessForm(emptyLowerForm(), ampSide === "LEFT" ? left : right ?? lowerRecs[0]),
+        ...hydrateAssessForm(emptyLowerForm(), ampSide === "LEFT" ? left : right),
         amputationSide: ampSide,
       });
       if (ampSide === "BILATERAL") {
@@ -4206,8 +4232,8 @@ export default function ProstheticsCasePage() {
       const dv = deliveryData19 as any;
 
       // Pass the whole assessment through so the PDF can mirror the form tab.
-      const mapAssess = (arr: any[] | undefined, region: string) =>
-        (arr ?? []).map((a: any) => ({
+      const mapAssess = (arr: any[] | undefined, region: string, side: string) =>
+        recordsForLimbSide(arr ?? [], side as LimbSide).map((a: any) => ({
           region, side: a.side,
           residualLimbLength: a.residualLimbLength, residualLimbShape: a.residualLimbShape,
           amputationLevelNote: a.amputationLevelNote,
@@ -4280,7 +4306,10 @@ export default function ProstheticsCasePage() {
           supervisingDoctor: resolveStaffName(c.supervisingDoctor, c.supervisingDoctorId),
           workshopSupervisor: resolveStaffName(c.workshopSupervisor, c.workshopSupervisorId),
         },
-        assessments: [...mapAssess(c.upperAssessment, "طرف علوي"), ...mapAssess(c.lowerAssessment, "طرف سفلي")],
+        assessments: [
+          ...mapAssess(c.upperAssessment, "طرف علوي", upperAssessForm.amputationSide),
+          ...mapAssess(c.lowerAssessment, "طرف سفلي", lowerAssessForm.amputationSide),
+        ],
         committee: cr ? {
           prosthetistOpinion: cr.prosthetistOpinion, physiotherapistOpinion: cr.physiotherapistOpinion,
           doctorOpinion: cr.doctorOpinion, committeeHeadOpinion: cr.committeeHeadOpinion,
@@ -4644,6 +4673,11 @@ export default function ProstheticsCasePage() {
         currentlyUsingProsthesis: genAssessForm.currentlyUsingProsthesis ?? undefined,
         previouslyUsedProsthesis: genAssessForm.currentlyUsingProsthesis === false ? (genAssessForm.previouslyUsedProsthesis ?? undefined) : undefined,
         previousProsthesisSystemDetail: genAssessForm.previouslyUsedProsthesis === true ? genAssessForm.previousProsthesisSystemDetail || undefined : undefined,
+        // The limb sheet's side is kept on the case — see `limbSideOf`. Only
+        // when the case has a single limb, so the field belongs to that sheet.
+        amputationSide: ampTypes.length === 1
+          ? ((ampTypes[0] === "UPPER" ? upperAssessForm : lowerAssessForm).amputationSide || undefined) as AmputationSide | undefined
+          : undefined,
       },
     });
   };

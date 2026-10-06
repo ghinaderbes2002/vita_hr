@@ -83,6 +83,10 @@ export default function AppointmentsPage() {
   const { data: myEmployee } = useMyEmployee();
   const { hasPermission, isAdmin } = usePermissions();
   const canCreateAppt = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CREATE);
+  // Same rules the API enforces on PUT /appointments/:id/status: any status but
+  // CANCELLED needs update_status (or create); CANCELLED needs cancel (or create).
+  const canChangeApptStatus = canCreateAppt || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.UPDATE_STATUS);
+  const canCancelAppt = canCreateAppt || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CANCEL);
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
   const departments: { id: string; code?: string; nameAr: string; nameEn?: string }[] =
     (depsData as any)?.data?.items ?? (depsData as any)?.items ?? [];
@@ -559,7 +563,7 @@ export default function AppointmentsPage() {
             );
           })()}
           <DialogFooter className="flex-wrap items-center gap-2 sm:justify-start">
-            {detailAppt && detailAppt.status !== "CANCELLED" && (
+            {detailAppt && detailAppt.status !== "CANCELLED" && canChangeApptStatus && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground shrink-0">{t("actions.changeStatus")}</span>
                 <Select
@@ -592,7 +596,9 @@ export default function AppointmentsPage() {
                 >
                   <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "RESCHEDULED", "CANCELLED"] as AppointmentStatus[]).map((s) => (
+                    {(["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "RESCHEDULED", "CANCELLED"] as AppointmentStatus[])
+                      .filter((s) => s !== "CANCELLED" || canCancelAppt)
+                      .map((s) => (
                       <SelectItem key={s} value={s}>{t(`statuses.${s}`)}</SelectItem>
                     ))}
                   </SelectContent>

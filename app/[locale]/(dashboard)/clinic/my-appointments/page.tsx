@@ -16,6 +16,8 @@ import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { clinicPhysioApi, PhysioCase } from "@/lib/api/clinic-physio";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 /** قسم العلاج الفيزيائي — يُطابَق بالاسم كما يعرضه الموعد. */
 const PHYSIO_DEPT_NAME = "العلاج الفيزيائي";
@@ -71,6 +73,12 @@ export default function MyAppointmentsPage() {
 
   const updateStatus = useUpdateAppointmentStatus();
   const cancelAppt = useCancelAppointment();
+  // Same rules the API enforces on PUT /appointments/:id/status: any status but
+  // CANCELLED needs update_status (or create); CANCELLED needs cancel (or create).
+  const { hasPermission, isAdmin } = usePermissions();
+  const canCreateAppt = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CREATE);
+  const canChangeApptStatus = canCreateAppt || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.UPDATE_STATUS);
+  const canCancelAppt = canCreateAppt || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CANCEL);
 
   // Every status is fetched and the filter is applied locally, so the counts in
   // the toolbar keep describing the whole week while the calendar narrows.
@@ -340,13 +348,13 @@ export default function MyAppointmentsPage() {
             </>
           )}
           <DialogFooter className="flex-wrap gap-2 sm:justify-start">
-            {detailAppt?.status === "SCHEDULED" && (
+            {canChangeApptStatus && detailAppt?.status === "SCHEDULED" && (
               <Button size="sm" variant="outline" className="gap-1.5" disabled={updateStatus.isPending}
                 onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "CONFIRMED" }); setDetailAppt(null); }}>
                 <Check className="h-4 w-4" />{t("actions.confirm")}
               </Button>
             )}
-            {detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
+            {canChangeApptStatus && detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
               <>
                 {/* Completing / marking a no-show sends the practitioner straight to the
                     patient's case file so the visit can be documented right away. */}
@@ -366,7 +374,7 @@ export default function MyAppointmentsPage() {
                 </Button>
               </>
             )}
-            {detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
+            {canCancelAppt && detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
               <Button size="sm" variant="ghost" className="gap-1.5 text-destructive"
                 onClick={() => { setCancelTargetId(detailAppt.id); setCancelReason(""); setCancelOpen(true); setDetailAppt(null); }}>
                 <X className="h-4 w-4" />{t("actions.cancel")}

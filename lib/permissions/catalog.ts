@@ -282,6 +282,12 @@ export const PERMISSIONS = {
     CREATE: "clinic.appointments.create",
     CANCEL: "clinic.appointments.cancel",
     /**
+     * تغيير حالة الموعد (حضر، لم يحضر، مؤكد، متأخر، مؤجّل…) عبر
+     * PUT /appointments/:id/status — كل الحالات عدا CANCELLED، التي تتطلب
+     * CANCEL أو CREATE. من يملك CREATE يغيّر كل الحالات كما كان.
+     */
+    UPDATE_STATUS: "clinic.appointments.update_status",
+    /**
      * تقرير إحصائيات المواعيد. لا تُمنح لأي دور تلقائياً — تُضاف يدوياً من
      * شاشة إدارة الأدوار بعد نشر الباك.
      */
