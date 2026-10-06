@@ -293,6 +293,7 @@
     "clinicPodiatry": "Podiatry",
     "clinicDoctorExams": "Doctor Exams",
     "clinicWaitingList": "Waiting List",
+    "clinicPotentialClients": "Potential Clients",
     "clinicAppointments": "Appointments",
     "clinicMyAppointments": "My Appointments",
     "clinicAppointmentStats": "Appointment Statistics",
@@ -4597,7 +4598,18 @@
     },
     "physio": {
       "sheet": {
+        "intake": {
+          "complaintType": "Type of complaint",
+          "painLocation": "Pain location",
+          "complaintDuration": "How long have you had the complaint?",
+          "notes": "Notes",
+          "hasChronicDiseases": "Any chronic diseases?",
+          "visitedSpecialist": "Have you seen a specialist doctor before?",
+          "hadPreviousPT": "Have you had physiotherapy sessions before?",
+          "hadSurgery": "Have you had surgery before?"
+        },
         "sections": {
+          "intake": "Reception",
           "patientInfo": "Patient Information",
           "complaint": "Complaint",
           "painMap": "Mark the Pain Locations",

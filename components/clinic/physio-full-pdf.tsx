@@ -705,6 +705,26 @@ const PhysioPdfDoc = ({
         <PH patient={patient} caseId={data.caseId} generatedAt={generatedAt} />
         <PF patient={patient} />
 
+        {/* ── الاستقبال ── أول الورقة، على نفس صفحة معلومات المريض والشكوى: ما
+            يُسجَّل في تبويب "الاستقبال" قبل أي نموذج سريري. الأسئلة الأربعة تُطبع بجوابها، ومعه تفصيله إن كان "نعم". */}
+        <SecHead label={t("sections.intake")} />
+        <F label={t("intake.complaintType")} value={complaint.complaintType} />
+        <F label={t("intake.painLocation")} value={complaint.painLocation} />
+        <F label={t("intake.complaintDuration")} value={complaint.complaintDuration} />
+        <F label={t("intake.notes")} value={complaint.complaintNotes} />
+        {([
+          ["hasChronicDiseases", complaint.hasChronicDiseases, complaint.chronicDiseasesDetail],
+          ["visitedSpecialist", complaint.visitedSpecialist, complaint.specialistReason],
+          ["hadPreviousPT", complaint.hadPreviousPT, complaint.previousPTDetail],
+          ["hadSurgery", complaint.hadSurgery, complaint.surgeryDetail],
+        ] as const).map(([key, yes, detail]) => (
+          <F
+            key={key}
+            label={t(`intake.${key}`)}
+            value={yes ? [t("word.yes"), (detail ?? "").trim()].filter(Boolean).join(" — ") : t("word.no")}
+          />
+        ))}
+
         {/* ── 1. معلومات المريض ── */}
         <SecHead label={t("sections.patientInfo")} />
         <View

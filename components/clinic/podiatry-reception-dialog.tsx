@@ -19,6 +19,7 @@ import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import {
   useCreatePodiatryReception, useUpdatePodiatryReception,
 } from "@/lib/hooks/use-clinic-podiatry";
+import { useClickCooldown } from "@/lib/hooks/use-click-cooldown";
 import {
   AffectedSide, FootSymptom, MedicalHistoryItem, PodiatryReception, VisitType,
 } from "@/lib/api/clinic-podiatry";
@@ -169,15 +170,22 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
       : undefined,
   });
 
+  // Creating is locked for a minute after it succeeds, so a double press on
+  // "save" cannot open two receptions. Editing can be repeated freely.
+  const createCooldown = useClickCooldown();
+
   const handleSave = async () => {
     if (isEdit && reception) {
       await updateReception.mutateAsync({ id: reception.id, dto: buildDto() });
-    } else {
-      if (!form.patientId && !patientId) return;
+      onOpenChange(false);
+      return;
+    }
+    if (!form.patientId && !patientId) return;
+    await createCooldown.run(async () => {
       const created = await createReception.mutateAsync(buildDto());
       onCreated?.(created.id);
-    }
-    onOpenChange(false);
+      onOpenChange(false);
+    });
   };
 
   return (
@@ -359,7 +367,7 @@ export function PodiatryReceptionDialog({ open, onOpenChange, reception, patient
           <Button
             onClick={handleSave}
             disabled={
-              isPending || (!isEdit && !form.patientId && !fixedPatient)
+              isPending || (!isEdit && createCooldown.locked) || (!isEdit && !form.patientId && !fixedPatient)
             }
             className="gap-2"
           >

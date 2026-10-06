@@ -27,6 +27,7 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
+import { useClickCooldown } from "@/lib/hooks/use-click-cooldown";
 import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
 import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
@@ -157,6 +158,11 @@ export default function PatientProfilePage() {
   }, [photoUrl]);
   const createProst = useCreateProstheticsCase();
   const createPhysio = useCreatePhysioCase();
+  // One press, one record: each "new …" button stays locked for a minute after it
+  // creates something, so a double press cannot open a second case.
+  const newProstCooldown = useClickCooldown();
+  const newExamCooldown = useClickCooldown();
+
   const convertToPhysio = useConvertToPhysio();
   // Which exam the therapist picker is open for — the button sits inside a list.
   const [convertExamId, setConvertExamId] = useState<string | null>(null);
@@ -243,10 +249,10 @@ export default function PatientProfilePage() {
     setLinkUrl("");
   };
 
-  const handleNewProstheticsCase = async () => {
+  const handleNewProstheticsCase = () => newProstCooldown.run(async () => {
     const c = await createProst.mutateAsync({ patientId: id });
     router.push(`/${locale}/clinic/prosthetics/${c.id}`);
-  };
+  });
 
   const handleConvertToPhysio = async (physiotherapistId?: string) => {
     if (!convertExamId) return;
@@ -257,12 +263,12 @@ export default function PatientProfilePage() {
     if (convertedCaseId) router.push(`/${locale}/clinic/physio/${convertedCaseId}`);
   };
 
-  const handleNewDoctorExam = async () => {
+  const handleNewDoctorExam = () => newExamCooldown.run(async () => {
     const c = await createPhysio.mutateAsync({
       patientId: id, caseType: "DOCTOR_EXAM", majorComplaint: "", symptoms: "",
     });
     router.push(`/${locale}/clinic/physio/${c.id}`);
-  };
+  });
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -604,8 +610,8 @@ export default function PatientProfilePage() {
           <div className="flex flex-wrap gap-2 justify-between items-center">
             <h3 className="font-semibold">حالات الأطراف الصناعية</h3>
               <ActionGuard permission={PERMISSIONS.CLINIC_PROSTHETICS.CASE_CREATE}>
-                <Button size="sm" onClick={handleNewProstheticsCase} disabled={createProst.isPending} className="gap-2">
-                  {createProst.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                <Button size="sm" onClick={handleNewProstheticsCase} disabled={createProst.isPending || newProstCooldown.locked} className="gap-2">
+                  {createProst.isPending || newProstCooldown.locked ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   حالة جديدة
                 </Button>
               </ActionGuard>
@@ -707,8 +713,8 @@ export default function PatientProfilePage() {
           <div className="flex flex-wrap gap-2 justify-between items-center">
             <h3 className="font-semibold">معاينات الطبيب</h3>
             <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
-              <Button size="sm" onClick={handleNewDoctorExam} disabled={createPhysio.isPending} className="gap-2">
-                {createPhysio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              <Button size="sm" onClick={handleNewDoctorExam} disabled={createPhysio.isPending || newExamCooldown.locked} className="gap-2">
+                {createPhysio.isPending || newExamCooldown.locked ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 معاينة جديدة
               </Button>
             </ActionGuard>

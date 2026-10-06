@@ -156,6 +156,7 @@
     "clinicPodiatry": "طب الأقدام",
     "clinicDoctorExams": "معاينات الطبيب",
     "clinicWaitingList": "قائمة الانتظار",
+    "clinicPotentialClients": "العملاء المحتملون",
     "clinicAppointments": "المواعيد",
     "clinicMyAppointments": "مواعيدي",
     "clinicAppointmentStats": "إحصائيات المواعيد",
@@ -4733,7 +4734,18 @@
     },
     "physio": {
       "sheet": {
+        "intake": {
+          "complaintType": "نوع الشكاية المرضية",
+          "painLocation": "تحديد مكان الألم",
+          "complaintDuration": "منذ متى وأنت تعاني من الشكاية؟",
+          "notes": "ملاحظات",
+          "hasChronicDiseases": "هل يوجد أمراض مزمنة؟",
+          "visitedSpecialist": "هل سبق وقمت بزيارة طبيباً مختصاً؟",
+          "hadPreviousPT": "هل خضعت لجلسات علاج فيزيائي سابقاً؟",
+          "hadSurgery": "هل سبق أن خضعت لعمل جراحي؟"
+        },
         "sections": {
+          "intake": "الاستقبال",
           "patientInfo": "معلومات المريض",
           "complaint": "الشكوى",
           "painMap": "حدد أماكن الألم",

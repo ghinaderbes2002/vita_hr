@@ -293,6 +293,7 @@
     "clinicPodiatry": "Podoloji",
     "clinicDoctorExams": "Doktor Muayeneleri",
     "clinicWaitingList": "Bekleme Listesi",
+    "clinicPotentialClients": "Potansiyel Müşteriler",
     "clinicAppointments": "Randevular",
     "clinicMyAppointments": "Randevularım",
     "clinicAppointmentStats": "Randevu İstatistikleri",
@@ -3683,7 +3684,18 @@
     },
     "physio": {
       "sheet": {
+        "intake": {
+          "complaintType": "Şikayet türü",
+          "painLocation": "Ağrı yeri",
+          "complaintDuration": "Şikayetiniz ne zamandır var?",
+          "notes": "Notlar",
+          "hasChronicDiseases": "Kronik hastalık var mı?",
+          "visitedSpecialist": "Daha önce uzman hekime gittiniz mi?",
+          "hadPreviousPT": "Daha önce fizik tedavi seansı aldınız mı?",
+          "hadSurgery": "Daha önce ameliyat oldunuz mu?"
+        },
         "sections": {
+          "intake": "Kabul",
           "patientInfo": "Hasta Bilgileri",
           "complaint": "Şikayet",
           "painMap": "Ağrı Yerlerini İşaretleyin",

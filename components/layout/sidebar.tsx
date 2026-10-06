@@ -53,6 +53,7 @@ import {
   Trophy,
   X,
   ListOrdered,
+  UserSearch,
   Smartphone,
   Dumbbell,
   Tags,
@@ -285,6 +286,7 @@ const navigation: NavItem[] = [
       "clinic.podiatry.reception.view",
       "clinic.appointments.view",
       "clinic.appointments.view_own",
+      "clinic.potential_clients.view",
       "clinic.inventory.view",
       "clinic.reports.view_donor",
     ],
@@ -307,6 +309,7 @@ const navigation: NavItem[] = [
       // from every other job title even when they hold the physio permission.
       { title: "nav.clinicDoctorExams", href: "/clinic/doctor-exams", icon: Stethoscope, permission: "clinic.physio.case.view", showForJobTitleCodes: ["VTX-JTL-000007"] },
       { title: "nav.clinicWaitingList", href: "/clinic/waiting-list", icon: ListOrdered, permission: "clinic.waiting_list.view" },
+      { title: "nav.clinicPotentialClients", href: "/clinic/potential-clients", icon: UserSearch, permission: "clinic.potential_clients.view" },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
       { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permission: "clinic.appointments.view_own" },
       { title: "nav.clinicAppointmentStats", href: "/clinic/appointment-statistics", icon: BarChart3, permission: "clinic.appointments.statistics_view" },

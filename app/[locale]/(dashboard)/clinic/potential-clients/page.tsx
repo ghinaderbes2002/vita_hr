@@ -1,0 +1,223 @@
+"use client";
+
+// العملاء المحتملون: من سأل عن خدمة ولم يصبح مريضاً ولا دخل قائمة الانتظار بعد.
+// سجل مستقل عن قائمة الانتظار — بلا أولوية ولا حالة.
+
+import { useState } from "react";
+import { Plus, Search, Pencil, Trash2, UserSearch, Users, Download, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/shared/pagination";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ActionGuard } from "@/components/permissions/action-guard";
+import { PageGuard } from "@/components/permissions/page-guard";
+import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
+import {
+  PotentialClientDialog, POTENTIAL_CLIENT_ARRIVAL_METHODS,
+} from "@/components/clinic/potential-client-dialog";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
+import {
+  usePotentialClients, useCreatePotentialClient, useUpdatePotentialClient,
+  useDeletePotentialClient, useExportPotentialClients,
+} from "@/lib/hooks/use-clinic-potential-clients";
+import { CreatePotentialClientDto, PotentialClient } from "@/lib/api/clinic-potential-clients";
+
+const LIMIT = 15;
+
+const arrivalLabel = (v?: string | null) =>
+  v ? POTENTIAL_CLIENT_ARRIVAL_METHODS.find((m) => m.value === v)?.label ?? v : "—";
+
+const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
+
+function PotentialClientsList() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<PotentialClient | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const { data, isLoading } = usePotentialClients({ page, limit: LIMIT });
+
+  const createClient = useCreatePotentialClient();
+  const updateClient = useUpdatePotentialClient();
+  const deleteClient = useDeletePotentialClient();
+  const exportXlsx = useExportPotentialClients();
+
+  // The API has no search parameter, so the name/phone/service filter runs over
+  // the page in hand — the same limitation the waiting list carries.
+  const q = search.trim().toLowerCase();
+  const clients = (data?.items ?? []).filter((c) =>
+    !q
+    || c.patientName.toLowerCase().includes(q)
+    || c.contactNumber.toLowerCase().includes(q)
+    || (c.interestedService ?? "").toLowerCase().includes(q),
+  );
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 0;
+
+  const openAdd = () => { setEditing(null); setDialogOpen(true); };
+  const openEdit = (c: PotentialClient) => { setEditing(c); setDialogOpen(true); };
+
+  const handleSubmit = async (dto: Record<string, unknown>) => {
+    if (editing) {
+      // Nothing changed — close without a request.
+      if (Object.keys(dto).length > 0) await updateClient.mutateAsync({ id: editing.id, dto });
+    } else {
+      await createClient.mutateAsync(dto as unknown as CreatePotentialClientDto);
+    }
+    setDialogOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    await deleteClient.mutateAsync(deleteId);
+    setDeleteId(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title="العملاء المحتملون"
+        description="من استفسر عن خدمة ولم يُسجَّل مريضاً بعد"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <ClinicCountChips
+              isLoading={isLoading}
+              counts={[{ icon: Users, label: "العملاء", value: total }]}
+            />
+            <Button
+              variant="outline" className="gap-2" disabled={exportXlsx.isPending}
+              onClick={() => exportXlsx.mutate()}
+            >
+              {exportXlsx.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              تصدير Excel
+            </Button>
+            <ActionGuard permission={PERMISSIONS.CLINIC_POTENTIAL_CLIENTS.CREATE}>
+              <Button onClick={openAdd} className="gap-2">
+                <Plus className="h-4 w-4" />
+                إضافة عميل
+              </Button>
+            </ActionGuard>
+          </div>
+        }
+      />
+
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="ابحث بالاسم أو رقم التواصل أو الخدمة..."
+          className="pr-9"
+        />
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>الاسم</TableHead>
+              <TableHead>الجنس</TableHead>
+              <TableHead>العمر</TableHead>
+              <TableHead>خدمة مهتم بها</TableHead>
+              <TableHead>رقم التواصل</TableHead>
+              <TableHead>طريقة الوصول</TableHead>
+              <TableHead>تاريخ التسجيل</TableHead>
+              <TableHead>ملاحظات</TableHead>
+              <TableHead className="w-20" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 9 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : clients.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9}>
+                  <EmptyState
+                    icon={<UserSearch className="h-8 w-8 text-muted-foreground" />}
+                    title="لا يوجد عملاء محتملون"
+                    description="أضف عميلاً لتظهر السجلات هنا"
+                  />
+                </TableCell>
+              </TableRow>
+            ) : (
+              clients.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium">{c.patientName}</TableCell>
+                  <TableCell className="text-sm">{c.gender === "FEMALE" ? "أنثى" : "ذكر"}</TableCell>
+                  <TableCell className="text-sm">{c.age ?? "—"}</TableCell>
+                  <TableCell className="text-sm">{c.interestedService}</TableCell>
+                  <TableCell className="text-sm font-mono" dir="ltr">{c.contactNumber}</TableCell>
+                  <TableCell className="text-sm">{arrivalLabel(c.arrivalMethod)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {fmt(c.registrationDate ?? c.createdAt)}
+                  </TableCell>
+                  <TableCell className="max-w-56 truncate text-sm text-muted-foreground" title={c.notes ?? undefined}>
+                    {c.notes || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <ActionGuard permission={PERMISSIONS.CLINIC_POTENTIAL_CLIENTS.EDIT}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </ActionGuard>
+                      <ActionGuard permission={PERMISSIONS.CLINIC_POTENTIAL_CLIENTS.DELETE}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
+                          onClick={() => setDeleteId(c.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </ActionGuard>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {totalPages > 1 && (
+        <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
+      )}
+
+      <PotentialClientDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        client={editing}
+        onSubmit={handleSubmit}
+        isPending={createClient.isPending || updateClient.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(o) => { if (!o) setDeleteId(null); }}
+        title="حذف عميل محتمل"
+        description="هل تريد حذف هذا السجل؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
+    </div>
+  );
+}
+
+export default function PotentialClientsPage() {
+  return (
+    <PageGuard permission={PERMISSIONS.CLINIC_POTENTIAL_CLIENTS.VIEW}>
+      <PotentialClientsList />
+    </PageGuard>
+  );
+}
