@@ -45,6 +45,9 @@ export interface PotentialClientFilters {
   interestedService?: string;
   /** Partial, case-insensitive match on name, contact number or service. */
   search?: string;
+  /** Registration date range, inclusive, as YYYY-MM-DD. */
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface PotentialClientParams extends PotentialClientFilters {

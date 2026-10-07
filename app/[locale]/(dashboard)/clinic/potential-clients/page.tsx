@@ -4,7 +4,7 @@
 // سجل مستقل عن قائمة الانتظار — بلا أولوية ولا حالة.
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Pencil, Trash2, UserSearch, Users, Download, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, UserSearch, Users, Download, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,6 +46,8 @@ function PotentialClientsList() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [service, setService] = useState(ALL_SERVICES);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PotentialClient | null>(null);
   const [viewing, setViewing] = useState<PotentialClient | null>(null);
@@ -62,12 +64,14 @@ function PotentialClientsList() {
   // A service whose last record was edited or deleted no longer filters.
   const activeService = services.includes(service) ? service : ALL_SERVICES;
 
-  // Both filters run on the server, so they cover every page and `total`.
+  // The filters run on the server, so they cover every page and `total`.
   const filters = {
     interestedService: activeService !== ALL_SERVICES ? activeService : undefined,
     search: debouncedSearch || undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
   };
-  const isFiltered = !!filters.interestedService || !!filters.search;
+  const isFiltered = Object.values(filters).some(Boolean);
 
   const { data, isLoading } = usePotentialClients({ ...filters, page, limit: LIMIT });
 
@@ -127,8 +131,8 @@ function PotentialClientsList() {
         }
       />
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-56 flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
@@ -138,7 +142,7 @@ function PotentialClientsList() {
           />
         </div>
         <Select value={activeService} onValueChange={(v) => { setService(v); setPage(1); }}>
-          <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_SERVICES}>كل الخدمات</SelectItem>
             {services.map((s) => (
@@ -146,6 +150,27 @@ function PotentialClientsList() {
             ))}
           </SelectContent>
         </Select>
+        {/* Registration date range; either end may be left open. */}
+        <span className="text-sm text-muted-foreground">من</span>
+        <Input
+          type="date" value={dateFrom} max={dateTo || undefined} className="w-38"
+          title="تاريخ التسجيل من"
+          onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+        />
+        <span className="text-sm text-muted-foreground">إلى</span>
+        <Input
+          type="date" value={dateTo} min={dateFrom || undefined} className="w-38"
+          title="تاريخ التسجيل إلى"
+          onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+        />
+        {(dateFrom || dateTo) && (
+          <Button
+            variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" title="مسح التاريخ"
+            onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       <div className="rounded-md border">
