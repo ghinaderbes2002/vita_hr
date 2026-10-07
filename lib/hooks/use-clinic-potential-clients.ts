@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   clinicPotentialClientsApi,
   CreatePotentialClientDto,
+  PotentialClientFilters,
   PotentialClientParams,
   UpdatePotentialClientDto,
 } from "@/lib/api/clinic-potential-clients";
@@ -14,6 +15,13 @@ export function usePotentialClients(params?: PotentialClientParams, enabled = tr
     queryKey: [KEY, params],
     queryFn: () => clinicPotentialClientsApi.list(params),
     enabled,
+  });
+}
+
+export function usePotentialClientServices() {
+  return useQuery({
+    queryKey: [KEY, "services"],
+    queryFn: () => clinicPotentialClientsApi.getServices(),
   });
 }
 
@@ -54,10 +62,10 @@ export function useDeletePotentialClient() {
   });
 }
 
-/** Downloads the whole potential-clients list as Excel. */
+/** Downloads the potential-clients list as Excel, narrowed by the given filters. */
 export function useExportPotentialClients() {
   return useMutation({
-    mutationFn: () => clinicPotentialClientsApi.exportXlsx(),
+    mutationFn: (filters?: PotentialClientFilters) => clinicPotentialClientsApi.exportXlsx(filters),
     onSuccess: (blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

@@ -3,7 +3,7 @@
 // العملاء المحتملون: من سأل عن خدمة ولم يصبح مريضاً ولا دخل قائمة الانتظار بعد.
 // سجل مستقل عن قائمة الانتظار — بلا أولوية ولا حالة.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Search, Pencil, Trash2, UserSearch, Users, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ import {
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import {
   usePotentialClients, useCreatePotentialClient, useUpdatePotentialClient,
-  useDeletePotentialClient, useExportPotentialClients,
+  useDeletePotentialClient, useExportPotentialClients, usePotentialClientServices,
 } from "@/lib/hooks/use-clinic-potential-clients";
 import { CreatePotentialClientDto, PotentialClient } from "@/lib/api/clinic-potential-clients";
 
@@ -49,31 +49,32 @@ function PotentialClientsList() {
   const [editing, setEditing] = useState<PotentialClient | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data, isLoading } = usePotentialClients({ page, limit: LIMIT });
+  // The search hits the server, so wait for the typing to pause.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1); }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const { data: services = [] } = usePotentialClientServices();
+  // A service whose last record was edited or deleted no longer filters.
+  const activeService = services.includes(service) ? service : ALL_SERVICES;
+
+  // Both filters run on the server, so they cover every page and `total`.
+  const filters = {
+    interestedService: activeService !== ALL_SERVICES ? activeService : undefined,
+    search: debouncedSearch || undefined,
+  };
+  const isFiltered = !!filters.interestedService || !!filters.search;
+
+  const { data, isLoading } = usePotentialClients({ ...filters, page, limit: LIMIT });
 
   const createClient = useCreatePotentialClient();
   const updateClient = useUpdatePotentialClient();
   const deleteClient = useDeletePotentialClient();
   const exportXlsx = useExportPotentialClients();
 
-  // The API has no search or service parameter, so both filters run over the
-  // page in hand — the same limitation the waiting list carries.
-  const items = data?.items ?? [];
-  // interestedService is free text, so the options are whatever the page holds.
-  const services = [...new Set(items.map((c) => (c.interestedService ?? "").trim()).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, "ar"));
-  // A service that left the page (edit, delete, page change) no longer filters.
-  const activeService = services.includes(service) ? service : ALL_SERVICES;
-  const q = search.trim().toLowerCase();
-  const clients = items.filter((c) =>
-    (activeService === ALL_SERVICES || (c.interestedService ?? "").trim() === activeService)
-    && (
-      !q
-      || c.patientName.toLowerCase().includes(q)
-      || c.contactNumber.toLowerCase().includes(q)
-      || (c.interestedService ?? "").toLowerCase().includes(q)
-    ),
-  );
+  const clients = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
@@ -109,7 +110,7 @@ function PotentialClientsList() {
             />
             <Button
               variant="outline" className="gap-2" disabled={exportXlsx.isPending}
-              onClick={() => exportXlsx.mutate()}
+              onClick={() => exportXlsx.mutate(filters)}
             >
               {exportXlsx.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               تصدير Excel
@@ -134,7 +135,7 @@ function PotentialClientsList() {
             className="pr-9"
           />
         </div>
-        <Select value={activeService} onValueChange={setService}>
+        <Select value={activeService} onValueChange={(v) => { setService(v); setPage(1); }}>
           <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_SERVICES}>كل الخدمات</SelectItem>
@@ -174,8 +175,8 @@ function PotentialClientsList() {
                 <TableCell colSpan={9}>
                   <EmptyState
                     icon={<UserSearch className="h-8 w-8 text-muted-foreground" />}
-                    title="لا يوجد عملاء محتملون"
-                    description="أضف عميلاً لتظهر السجلات هنا"
+                    title={isFiltered ? "لا توجد نتائج مطابقة" : "لا يوجد عملاء محتملون"}
+                    description={isFiltered ? "جرّب تغيير البحث أو الخدمة" : "أضف عميلاً لتظهر السجلات هنا"}
                   />
                 </TableCell>
               </TableRow>

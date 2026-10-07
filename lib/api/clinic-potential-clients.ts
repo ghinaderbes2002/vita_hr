@@ -40,7 +40,14 @@ export interface CreatePotentialClientDto {
 /** PUT takes only the fields that changed. */
 export type UpdatePotentialClientDto = Partial<CreatePotentialClientDto>;
 
-export interface PotentialClientParams {
+export interface PotentialClientFilters {
+  /** Exact match on the service text. */
+  interestedService?: string;
+  /** Partial, case-insensitive match on name, contact number or service. */
+  search?: string;
+}
+
+export interface PotentialClientParams extends PotentialClientFilters {
   page?: number;
   limit?: number;
 }
@@ -61,9 +68,16 @@ export const clinicPotentialClientsApi = {
     };
   },
 
-  /** The whole list as an .xlsx file. */
-  exportXlsx: async (): Promise<Blob> => {
-    const response = await apiClient.get(`${BASE}/export-xlsx`, { responseType: "blob" });
+  /** The distinct services on record, sorted by the server. */
+  getServices: async (): Promise<string[]> => {
+    const { data } = await apiClient.get(`${BASE}/services`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : [];
+  },
+
+  /** The list as an .xlsx file — narrowed by the same filters as the list. */
+  exportXlsx: async (params?: PotentialClientFilters): Promise<Blob> => {
+    const response = await apiClient.get(`${BASE}/export-xlsx`, { params, responseType: "blob" });
     return response.data;
   },
 
