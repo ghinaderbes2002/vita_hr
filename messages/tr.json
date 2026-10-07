@@ -3047,6 +3047,7 @@
         "savedLimbUpper": "Üst ekstremite değerlendirmesi kaydedildi",
         "savedLimbLower": "Alt ekstremite değerlendirmesi kaydedildi",
         "savedMuscle": "Kas gücü değerlendirmesi kaydedildi",
+        "sideRequiredFirst": "Önce uzuv formunda ampütasyon tarafını belirleyin, sonra kas formunu kaydedin",
         "saveUpper": "Üst Ekstremite Değerlendirmesini Kaydet",
         "saveLower": "Alt Ekstremite Değerlendirmesini Kaydet",
         "sendToCommittee": "Değerlendirmeyi Komiteye Gönder",

@@ -5007,10 +5007,25 @@ export default function ProstheticsCasePage() {
     toast.success(t("assess.savedLimbUpper"));
   };
 
+  /**
+   * Which side record(s) a muscle sheet is written to: the amputation side —
+   * the limb sheet's, else the case's. With neither set there is nothing to file
+   * it under; it used to fall back to LEFT and land on a record of its own,
+   * apart from the limb sheet saved later under the real side. Null = not known.
+   */
+  const muscleSides = (form: { amputationSide: string }): ("LEFT" | "RIGHT")[] | null => {
+    const side = form.amputationSide || c.amputationSide || "";
+    if (side === "BILATERAL") return ["RIGHT", "LEFT"];
+    if (side === "RIGHT" || side === "LEFT") return [side];
+    return null;
+  };
+
   const handleSaveUpperMuscle = async () => {
+    const sides = muscleSides(upperAssessForm);
+    if (!sides) { toast.error(t("assess.sideRequiredFirst")); return; }
     // One muscle sheet for the patient, so both side records get the same answers.
     const dto = pickKeys(buildUpperDto(upperAssessForm), UPPER_MUSCLE_KEYS);
-    for (const side of sidesOf(upperAssessForm)) {
+    for (const side of sides) {
       await patchUpper.mutateAsync({ id, side, dto });
     }
     markSectionSaved("upperMuscle");
@@ -5030,8 +5045,10 @@ export default function ProstheticsCasePage() {
   };
 
   const handleSaveLowerMuscle = async () => {
+    const sides = muscleSides(lowerAssessForm);
+    if (!sides) { toast.error(t("assess.sideRequiredFirst")); return; }
     const dto = pickKeys(buildLowerDto(lowerAssessForm), LOWER_MUSCLE_KEYS);
-    for (const side of sidesOf(lowerAssessForm)) {
+    for (const side of sides) {
       await patchLower.mutateAsync({ id, side, dto });
     }
     markSectionSaved("lowerMuscle");

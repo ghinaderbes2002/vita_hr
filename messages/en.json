@@ -3961,6 +3961,7 @@
         "savedLimbUpper": "Upper limb assessment saved",
         "savedLimbLower": "Lower limb assessment saved",
         "savedMuscle": "Muscle strength assessment saved",
+        "sideRequiredFirst": "Set the amputation side on the limb sheet first, then save the muscle sheet",
         "saveUpper": "Save Upper Limb Assessment",
         "saveLower": "Save Lower Limb Assessment",
         "sendToCommittee": "Send Assessment to Committee",
