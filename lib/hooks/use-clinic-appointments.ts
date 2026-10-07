@@ -105,10 +105,18 @@ export function useUpdateAppointmentStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: AppointmentStatus }) =>
       clinicAppointmentsApi.updateStatus(id, status),
-    onSuccess: () => {
+    onSuccess: (_, { status }) => {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
       qc.invalidateQueries({ queryKey: ["my-appointments"] });
+      // Completing a prosthetics appointment stamps the exit time on its
+      // follow-up session — server-side, a moment after this request answers.
+      // The sessions are refetched now and once more shortly after, so the time
+      // shows up without a manual reload.
+      if (status === "COMPLETED") {
+        qc.invalidateQueries({ queryKey: ["treatment-programs"] });
+        setTimeout(() => qc.invalidateQueries({ queryKey: ["treatment-programs"] }), 2000);
+      }
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تغيير الحالة"),
   });

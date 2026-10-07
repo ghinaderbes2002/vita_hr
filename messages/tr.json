@@ -2754,6 +2754,13 @@
         "fetchSignature": "İmza getir / yükle",
         "chooseTherapistFirst": "Önce terapisti seçin",
         "noSessions": "Kayıtlı seans yok",
+        "startSessionTitle": "Seansı başlat",
+        "startSessionDesc": "Bu seans şimdi başlatılsın mı? Giriş saati şu anki saat olarak kaydedilir.",
+        "startSessionYes": "Evet, başlat",
+        "startSessionNo": "Şimdi değil",
+        "endSession": "Seansı bitir",
+        "endSessionDesc": "Bu seansa bağlı randevu tamamlandı olarak işaretlenecek ve çıkış saati şimdi olarak kaydedilecek. Devam edilsin mi?",
+        "noLinkedSession": "Bu randevuya bağlı bir takip seansı bulunamadı. Seans, randevu onaylandığında oluşturulur.",
         "edit": "Düzenle",
         "archive": "Arşivle",
         "archiveSession": "Seansı Arşivle",
@@ -3576,10 +3583,13 @@
         "visitType": "Ziyaret Türü",
         "sessions": "Seanslar",
         "receptionDate": "Kabul Tarihi",
-        "installStatus": "Takma durumu"
+        "installStatus": "Takma durumu",
+        "practitioner": "Uygulayıcı"
       },
       "installedBadge": "Takıldı",
       "notInstalledBadge": "Takılmadı",
+      "noPractitioner": "Uygulayıcı yok",
+      "assignFilter": { "all": "Tüm hastalar", "assigned": "Atanmış", "unassigned": "Atanmamış" },
       "detail": {
         "back": "Ayak Sağlığı",
         "notFound": "Kabul bulunamadı",
@@ -4465,6 +4475,8 @@
         "create": "Randevu Oluştur"
       },
       "actions": {
+        "startSession": "Seansı başlat",
+        "noCaseForSession": "Bu hastanın protez vakası yok",
         "confirm": "Onayla",
         "complete": "Tamamla",
         "noShow": "Gelmedi",

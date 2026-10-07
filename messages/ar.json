@@ -3803,6 +3803,13 @@
         "fetchSignature": "جلب / رفع التوقيع",
         "chooseTherapistFirst": "اختر المعالج أولاً",
         "noSessions": "لا توجد جلسات مسجّلة",
+        "startSessionTitle": "بدء الجلسة",
+        "startSessionDesc": "هل تريد بدء هذه الجلسة الآن؟ سيُسجَّل وقت الدخول بالوقت الحالي.",
+        "startSessionYes": "نعم، ابدأ",
+        "startSessionNo": "ليس الآن",
+        "endSession": "إنهاء الجلسة",
+        "endSessionDesc": "سيُسجَّل الموعد المرتبط بهذه الجلسة منجزاً، ويُكتب وقت الخروج بالوقت الحالي. هل تريد المتابعة؟",
+        "noLinkedSession": "لم نجد جلسة متابعة مرتبطة بهذا الموعد. تُنشأ الجلسة تلقائياً عند تأكيد الموعد.",
         "edit": "تعديل",
         "archive": "أرشفة",
         "archiveSession": "أرشفة الجلسة",
@@ -4626,10 +4633,13 @@
         "visitType": "نوع الزيارة",
         "sessions": "الجلسات",
         "receptionDate": "تاريخ الاستقبال",
-        "installStatus": "حالة التركيب"
+        "installStatus": "حالة التركيب",
+        "practitioner": "المعالج"
       },
       "installedBadge": "رُكّب",
       "notInstalledBadge": "لم يُركّب",
+      "noPractitioner": "بدون معالج",
+      "assignFilter": { "all": "كل المرضى", "assigned": "لهم معالج", "unassigned": "بدون معالج" },
       "detail": {
         "back": "طب الأقدام",
         "notFound": "لم يُعثر على الاستقبال",
@@ -5546,6 +5556,8 @@
         "create": "إنشاء الموعد"
       },
       "actions": {
+        "startSession": "بدء الجلسة",
+        "noCaseForSession": "لا توجد حالة أطراف صناعية لهذا المريض",
         "confirm": "تأكيد",
         "complete": "إنجاز",
         "noShow": "لم يحضر",

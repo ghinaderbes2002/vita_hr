@@ -9,7 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowRight, User, Clock, Trash2, Plus, Download, Loader2,
   CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera, Archive, Bell, Reply, Save,
-  Pencil,
+  Pencil, CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
 import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
@@ -299,7 +300,7 @@ function AttachmentCard({
 
 // ─── Treatment program card (inline form — Pro-004) ────────────────────────────
 function TreatmentProgramCard({
-  caseId, program, idx, staffList, currentUser, locked,
+  caseId, program, idx, staffList, currentUser, locked, startNow, openInitially,
 }: {
   caseId: string;
   program: any;
@@ -307,22 +308,42 @@ function TreatmentProgramCard({
   staffList: any[];
   currentUser: any;
   locked?: boolean;
+  /** "HH:mm" — the session was just started: open it in edit mode with this entry time. */
+  startNow?: string;
+  /** Arrived here from the session's appointment: show it expanded. */
+  openInitially?: boolean;
 }) {
   const t = useTranslations("clinic.prosthetics.case");
+  // Same labels the appointments screens use, so the type reads identically.
+  const tApptType = useTranslations("clinic.appointments.types");
   const updateProgram = useUpdateTreatmentProgram();
   const archiveProgram = useArchiveTreatmentProgram();
-  const [editing, setEditing] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(!!startNow);
+  const [expanded, setExpanded] = useState(!!startNow || !!openInitially);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveNotes, setArchiveNotes] = useState("");
   const isArchived = !!program.archivedAt;
+
+  // "إنهاء الجلسة": a started session that came from an appointment is closed by
+  // completing that appointment — the server then stamps the exit time on the
+  // session itself. Offered to whoever may change an appointment's status.
+  const { hasPermission, isAdmin } = usePermissions();
+  const completeAppt = useUpdateAppointmentStatus();
+  const [endOpen, setEndOpen] = useState(false);
+  const canEndSession =
+    !locked && !isArchived && !!program.appointmentId
+    && !!program.sessionStartTime && !program.sessionEndTime
+    && (isAdmin()
+      || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.UPDATE_STATUS)
+      || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CREATE));
   // Auto-created sessions (from a confirmed appointment) carry only date + time.
   // Show the edit button only while those "rest" fields are still empty — once
   // the technician fills any of them, the session is considered complete.
   const hasOtherData = !!(
     program.technicianId ||
     program.description ||
-    program.sessionStartTime ||
+    // The entry time alone does not count: "start session" stamps it before
+    // anything else is written, and the rest still has to be filled in.
     program.sessionEndTime ||
     program.notes ||
     program.technicianSignatureUrl ||
@@ -333,12 +354,23 @@ function TreatmentProgramCard({
     sessionTime: program.sessionTime ?? "",
     technicianId: program.technicianId ?? "",
     description: program.description ?? "",
-    sessionStartTime: program.sessionStartTime ?? "",
+    sessionStartTime: program.sessionStartTime || startNow || "",
     sessionEndTime: program.sessionEndTime ?? "",
     notes: program.notes ?? "",
     technicianSignatureUrl: program.technicianSignatureUrl ?? "",
     managerSignatureUrl: program.managerSignatureUrl ?? "",
   });
+  // The exit time is stamped by the server when the appointment is completed,
+  // after this card has mounted. Copy it into the form when it arrives (and
+  // leave edit mode), otherwise the open form keeps showing an empty exit time.
+  const [seenEndTime, setSeenEndTime] = useState<string>(program.sessionEndTime ?? "");
+  if ((program.sessionEndTime ?? "") !== seenEndTime) {
+    setSeenEndTime(program.sessionEndTime ?? "");
+    if (program.sessionEndTime) {
+      setForm((f) => ({ ...f, sessionEndTime: program.sessionEndTime }));
+      setEditing(false);
+    }
+  }
   const [sigUploadFor, setSigUploadFor] = useState<"technician" | "manager" | null>(null);
   const sigFileRef = useRef<HTMLInputElement>(null);
 
@@ -397,7 +429,11 @@ function TreatmentProgramCard({
   const displayDate = form.sessionDate ? new Date(form.sessionDate).toLocaleDateString("en-GB") : null;
 
   return (
-    <div className="rounded-lg border p-3 space-y-2">
+    <div
+      // Reached from an appointment: bring this session into view.
+      ref={startNow || openInitially ? (el) => { el?.scrollIntoView({ block: "center" }); } : undefined}
+      className={`rounded-lg border p-3 space-y-2 ${startNow || openInitially ? "border-primary ring-1 ring-primary/30" : ""}`}
+    >
       <div className="flex flex-wrap gap-2 justify-between items-start">
         <button
           type="button"
@@ -409,6 +445,14 @@ function TreatmentProgramCard({
           <Badge variant="secondary" className="text-base font-bold px-3 py-1">#{idx + 1}</Badge>
           {displayDate && <span className="font-medium text-sm">{displayDate}</span>}
           {form.sessionTime && <span className="text-xs text-muted-foreground">{formatClockTime(form.sessionTime)}</span>}
+          {/* A session opened by a confirmed appointment carries that appointment's
+              type; manual and older sessions have none and show nothing. */}
+          {program.appointmentType && (
+            <Badge variant="outline" className="border-sky-300 bg-sky-50 text-sky-700 text-xs gap-1">
+              <CalendarCheck className="h-3 w-3" />
+              {tApptType.has(program.appointmentType) ? tApptType(program.appointmentType) : program.appointmentType}
+            </Badge>
+          )}
         </button>
         <div className="flex gap-1.5 items-center flex-wrap justify-end">
           {isArchived && (
@@ -420,6 +464,13 @@ function TreatmentProgramCard({
           {!locked && !hasOtherData && (
             <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => { setEditing((v) => !v); setExpanded(true); }}>
               {editing ? t("followUp.close") : t("followUp.edit")}
+            </Button>
+          )}
+          {canEndSession && (
+            <Button size="sm" className="gap-1 bg-emerald-600 text-white hover:bg-emerald-700"
+              disabled={completeAppt.isPending} onClick={() => setEndOpen(true)}>
+              {completeAppt.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+              {t("followUp.endSession")}
             </Button>
           )}
           {!locked && !isArchived && (
@@ -442,6 +493,34 @@ function TreatmentProgramCard({
           )}
         </div>
       )}
+
+      <Dialog open={endOpen} onOpenChange={(o) => { if (!completeAppt.isPending) setEndOpen(o); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{t("followUp.endSession")}</DialogTitle>
+            <DialogDescription>{t("followUp.endSessionDesc")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" disabled={completeAppt.isPending} onClick={() => setEndOpen(false)}>
+              {t("followUp.cancel")}
+            </Button>
+            <Button disabled={completeAppt.isPending} className="gap-1.5"
+              onClick={async () => {
+                try {
+                  await completeAppt.mutateAsync({ id: program.appointmentId, status: "COMPLETED" });
+                  setEndOpen(false);
+                  // An ended session is closed: back to the read-only view.
+                  setEditing(false);
+                } catch {
+                  /* the mutation hook already reported the error */
+                }
+              }}>
+              {completeAppt.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("followUp.endSession")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
         <DialogContent className="max-w-sm" dir="rtl">
@@ -474,11 +553,14 @@ function TreatmentProgramCard({
         <div className="text-xs text-muted-foreground space-y-1 pt-1 border-t">
           {form.description && <p><span className="font-medium text-foreground">{t("followUp.lblDescription")} </span>{form.description}</p>}
           {technicianName && <p><span className="font-medium text-foreground">{t("followUp.lblTherapist")} </span>{technicianName.firstNameAr} {technicianName.lastNameAr}</p>}
-          {(form.sessionStartTime || form.sessionEndTime) && (
-            <p><span className="font-medium text-foreground">{t("followUp.lblTime")} </span>{form.sessionStartTime || "—"} — {form.sessionEndTime || "—"}</p>
+          {/* The exit time can arrive from the server after this card mounted
+              (stamped when the appointment is completed), so the saved record is
+              read first and the form only fills in what it lacks. */}
+          {(form.sessionStartTime || form.sessionEndTime || program.sessionEndTime) && (
+            <p><span className="font-medium text-foreground">{t("followUp.lblTime")} </span>{program.sessionStartTime || form.sessionStartTime || "—"} — {program.sessionEndTime || form.sessionEndTime || "—"}</p>
           )}
           {form.notes && <p><span className="font-medium text-foreground">{t("followUp.lblNotes")} </span>{form.notes}</p>}
-          {(form.technicianSignatureUrl || form.managerSignatureUrl) && (
+          {SHOW_FOLLOW_UP_SIGNATURES && (form.technicianSignatureUrl || form.managerSignatureUrl) && (
             <div className="flex gap-3 pt-1">
               {form.technicianSignatureUrl && (
                 <div className="text-center">
@@ -546,6 +628,9 @@ function TreatmentProgramCard({
             <Textarea rows={2} placeholder={t("followUp.extraNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
           </div>
 
+          {/* HIDDEN 2026-10-07 — see SHOW_FOLLOW_UP_SIGNATURES. Saved signatures stay
+              on the record: the save sends none of these fields when they are unchanged. */}
+          {SHOW_FOLLOW_UP_SIGNATURES && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="rounded-lg border p-3 space-y-2">
               <p className="text-xs font-semibold">{t("followUp.signature")}</p>
@@ -569,6 +654,7 @@ function TreatmentProgramCard({
               />
             </div>
           </div>
+          )}
 
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={handleSave} disabled={!allFilled(form, FOLLOW_UP_SESSION_REQUIRED) || updateProgram.isPending} className="flex-1 gap-1">
@@ -598,6 +684,37 @@ function TreatmentProgramsSection({
   const t = useTranslations("clinic.prosthetics.case");
   const { data: programs = [], isLoading } = useTreatmentPrograms(caseId);
   const createProgram = useCreateTreatmentProgram();
+
+  // ── Arriving from "مواعيدي" on a confirmed appointment ─────────────────────
+  // The link names the appointment; its session is the one the confirmation
+  // created. The session is matched by the appointment id when the API returns
+  // it, otherwise by appointment type + day (the newest unstarted one).
+  const searchParams = useSearchParams();
+  const apptId = searchParams.get("apptId");
+  const apptType = searchParams.get("apptType");
+  const apptDate = searchParams.get("apptDate");
+  const fromAppointment = !!(apptId || (apptType && apptDate));
+  const dayOf = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : "");
+  const linkedProgram: any = !fromAppointment ? null
+    : (programs as any[]).find((p) => !!apptId && p.appointmentId === apptId)
+      ?? (programs as any[])
+        .filter((p) => !p.archivedAt && !!apptType && p.appointmentType === apptType && dayOf(p.sessionDate) === apptDate)
+        .sort((a, b) => Number(!!a.sessionStartTime) - Number(!!b.sessionStartTime))[0]
+      ?? null;
+  const startProgram = useUpdateTreatmentProgram();
+  const [startAnswer, setStartAnswer] = useState<"pending" | "no" | string>("pending");
+  const askToStart = !!linkedProgram && !locked && !linkedProgram.sessionStartTime && startAnswer === "pending";
+  const handleStartSession = async () => {
+    const now = new Date();
+    const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    try {
+      // Saved at once, so the entry time is recorded even if the page is left.
+      await startProgram.mutateAsync({ caseId, programId: linkedProgram.id, dto: { sessionStartTime: hhmm } });
+      setStartAnswer(hhmm);
+    } catch {
+      /* the mutation hook already reported the error */
+    }
+  };
   // Case-level alerts (whole follow-up program). A case can have several.
   const { data: alerts = [] } = useCaseAlerts(caseId);
   const sendAlert = useSendCaseAlert();
@@ -818,23 +935,55 @@ function TreatmentProgramsSection({
         </div>
       )}
 
+      {fromAppointment && !isLoading && !linkedProgram && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          {t("followUp.noLinkedSession")}
+        </p>
+      )}
+
+      <Dialog open={askToStart} onOpenChange={(o) => { if (!o && !startProgram.isPending) setStartAnswer("no"); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{t("followUp.startSessionTitle")}</DialogTitle>
+            <DialogDescription>{t("followUp.startSessionDesc")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" disabled={startProgram.isPending} onClick={() => setStartAnswer("no")}>
+              {t("followUp.startSessionNo")}
+            </Button>
+            <Button disabled={startProgram.isPending} onClick={handleStartSession} className="gap-1.5">
+              {startProgram.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("followUp.startSessionYes")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {isLoading ? (
         <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : programs.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">{t("followUp.noSessions")}</p>
       ) : (
         <div className="space-y-3">
-          {programs.map((program: any, idx: number) => (
+          {programs.map((program: any, idx: number) => {
+            const isLinked = !!linkedProgram && program.id === linkedProgram.id;
+            // The moment the session is started the card is remounted, so it
+            // reopens in edit mode with the entry time already in its form.
+            const started = isLinked && startAnswer !== "pending" && startAnswer !== "no" ? startAnswer : undefined;
+            return (
             <TreatmentProgramCard
-              key={program.id ?? idx}
+              key={`${program.id ?? idx}${started ? `-${started}` : ""}`}
               caseId={caseId}
               program={program}
               idx={idx}
               staffList={staffList}
               currentUser={currentUser}
               locked={locked}
+              startNow={started}
+              openInitially={isLinked}
             />
-          ))}
+            );
+          })}
         </div>
       )}
     </Section>
@@ -966,7 +1115,7 @@ function ReviewProgramCard({
             <p><span className="font-medium text-foreground">{t("followUp.lblTime")} </span>{form.sessionStartTime || "—"} — {form.sessionEndTime || "—"}</p>
           )}
           {form.notes && <p><span className="font-medium text-foreground">{t("followUp.lblNotes")} </span>{form.notes}</p>}
-          {form.signatureUrl && (
+          {SHOW_FOLLOW_UP_SIGNATURES && form.signatureUrl && (
             <div className="pt-1">
               <img src={form.signatureUrl} alt={t("followUp.signature")} className="h-10 object-contain border rounded bg-white" />
               <p className="text-[10px] mt-0.5">{t("followUp.signature")}</p>
@@ -1024,6 +1173,7 @@ function ReviewProgramCard({
             <Textarea rows={2} placeholder={t("followUp.notesShort")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="resize-none" />
           </div>
 
+          {SHOW_FOLLOW_UP_SIGNATURES && (
           <div className="rounded-lg border p-3 space-y-2">
             <p className="text-xs font-semibold">{t("followUp.signature")}</p>
             {form.signatureUrl ? (
@@ -1037,6 +1187,7 @@ function ReviewProgramCard({
               </Button>
             )}
           </div>
+          )}
 
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={handleSave} disabled={!allFilled(form, FOLLOW_UP_SESSION_REQUIRED) || updateReview.isPending} className="flex-1 gap-1">
@@ -3329,6 +3480,25 @@ const sectionSavedAt = (records: any[] | undefined, stamp: "limbSavedAt" | "romS
   (records ?? []).some((r) => !!r?.[stamp]);
 
 /**
+ * The muscle sheet is one per patient, but it is stored on a side record — and
+ * on some cases it was saved to the other side's record than the limb sheet
+ * (saved before the amputation side was set). The form is loaded from the
+ * amputation side's record, so the sheet then showed as "saved" yet empty.
+ * When that record carries no muscle sheet, its keys are taken from whichever
+ * record does.
+ */
+const withMuscleSheet = <T extends Record<string, any>>(
+  form: T, records: any[], sideRecord: any, keys: readonly string[],
+): T => {
+  if (sideRecord?.romSavedAt) return form;
+  const src = records.find((r) => !!r?.romSavedAt);
+  if (!src) return form;
+  const out: any = { ...form };
+  for (const k of keys) if (src[k] !== undefined && src[k] !== null) out[k] = src[k];
+  return out;
+};
+
+/**
  * HIDDEN 2026-08-31 — director sign-off is off screen on request and expected
  * back. Flip a flag to true to restore that block; nothing else has to change,
  * and the code inside stays type-checked meanwhile.
@@ -3341,6 +3511,7 @@ const SHOW_MEDICAL_DIRECTOR = false;        // التسليم التجريبي
  */
 const ALLOW_EDIT_SAVED_ASSESSMENT = true;
 const SHOW_FINAL_EVAL_MANAGER_SIG = false;  // التقييم النهائي
+const SHOW_FOLLOW_UP_SIGNATURES = false;    // جلسات المتابعة — توقيع المعالج وتوقيع مدير القسم
 const SHOW_FINAL_DELIVERY_CEO = false;      // التسليم النهائي — المدير التنفيذي وتوقيعه
 const SHOW_FINAL_DELIVERY_PHYSIO = false;   // التسليم النهائي — المعالج الفيزيائي
 const SHOW_PRO_DELIVERY_PHYSIO = false;     // التسليم التجريبي — المعالج الفيزيائي
@@ -4086,8 +4257,10 @@ export default function ProstheticsCasePage() {
       const ampSide = limbSideOf(upperRecs, caseLimbs.length === 1 && caseLimbs[0] === "UPPER", caseData.amputationSide)!;
       const right = recordForSide(upperRecs, "RIGHT");
       const left = recordForSide(upperRecs, "LEFT");
+      const upperSideRec = ampSide === "LEFT" ? left : right;
       setUpperAssessForm({
-        ...hydrateAssessForm(emptyUpperForm(), ampSide === "LEFT" ? left : right),
+        ...withMuscleSheet(hydrateAssessForm(emptyUpperForm(), upperSideRec), upperRecs, upperSideRec,
+          ["romData", "canBalanceOneSide"]),
         amputationSide: ampSide,
       });
       if (ampSide === "BILATERAL") {
@@ -4100,8 +4273,10 @@ export default function ProstheticsCasePage() {
       const ampSide = limbSideOf(lowerRecs, caseLimbs.length === 1 && caseLimbs[0] === "LOWER", caseData.amputationSide)!;
       const right = recordForSide(lowerRecs, "RIGHT");
       const left = recordForSide(lowerRecs, "LEFT");
+      const lowerSideRec = ampSide === "LEFT" ? left : right;
       setLowerAssessForm({
-        ...hydrateAssessForm(emptyLowerForm(), ampSide === "LEFT" ? left : right),
+        ...withMuscleSheet(hydrateAssessForm(emptyLowerForm(), lowerSideRec), lowerRecs, lowerSideRec,
+          ["romData", "muscleMotionNotes", "usesAssistiveDevices", "assistiveDeviceTypes", "canClimbStairs", "canBalanceOneSide"]),
         amputationSide: ampSide,
       });
       if (ampSide === "BILATERAL") {

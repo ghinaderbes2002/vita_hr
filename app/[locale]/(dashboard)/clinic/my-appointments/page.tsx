@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { X, Check, Clock, Loader2, ChevronLeft, ChevronRight, UserRound, CalendarClock } from "lucide-react";
+import { X, Check, Clock, Loader2, ChevronLeft, ChevronRight, UserRound, CalendarClock, PlayCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import { cn, formatClinicTime } from "@/lib/utils";
 import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment } from "@/lib/hooks/use-clinic-appointments";
 import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { clinicPhysioApi, PhysioCase } from "@/lib/api/clinic-physio";
+import { clinicProstheticsApi } from "@/lib/api/clinic-prosthetics";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -130,6 +132,39 @@ export default function MyAppointmentsPage() {
       router.push(href);
     } catch {
       /* the mutation hook already surfaces the error toast */
+    }
+  };
+
+  /**
+   * The follow-up session a confirmed prosthetics appointment created lives in
+   * the case's follow-up tab. The link carries the appointment so that page can
+   * find the session and offer to start it. Without a case on the appointment
+   * the patient's newest open prosthetics case is used.
+   */
+  const [openingSession, setOpeningSession] = useState(false);
+  const isProstheticsAppt = (a: Appointment) =>
+    a.caseType === "PROSTHETICS" || /الأطراف|الاطراف/.test(deptNameOf(a));
+  const openFollowUpSession = async (a: Appointment) => {
+    setOpeningSession(true);
+    try {
+      let caseId = a.caseType === "PROSTHETICS" ? a.caseId ?? null : null;
+      if (!caseId && a.patientId) {
+        const cases = await clinicProstheticsApi.getByPatient(a.patientId);
+        const open = cases.filter((c) => !["DELIVERED", "CLOSED", "CANCELLED"].includes(c.status));
+        caseId = (open.length ? open : cases)
+          .slice()
+          .sort((x, y) => new Date(y.createdAt ?? 0).getTime() - new Date(x.createdAt ?? 0).getTime())[0]?.id ?? null;
+      }
+      if (!caseId) { toast.error(t("actions.noCaseForSession")); return; }
+      const qs = new URLSearchParams({
+        tab: "treatment_program", apptId: a.id, apptType: a.appointmentType, apptDate: dayKeyOf(a),
+      });
+      setDetailAppt(null);
+      router.push(`/${locale}/clinic/prosthetics/${caseId}?${qs.toString()}`);
+    } catch {
+      toast.error(t("actions.noCaseForSession"));
+    } finally {
+      setOpeningSession(false);
     }
   };
 
@@ -352,6 +387,13 @@ export default function MyAppointmentsPage() {
               <Button size="sm" variant="outline" className="gap-1.5" disabled={updateStatus.isPending}
                 onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "CONFIRMED" }); setDetailAppt(null); }}>
                 <Check className="h-4 w-4" />{t("actions.confirm")}
+              </Button>
+            )}
+            {detailAppt?.status === "CONFIRMED" && isProstheticsAppt(detailAppt) && (
+              <Button size="sm" className="gap-1.5" disabled={openingSession}
+                onClick={() => openFollowUpSession(detailAppt)}>
+                {openingSession ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+                {t("actions.startSession")}
               </Button>
             )}
             {canChangeApptStatus && detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (

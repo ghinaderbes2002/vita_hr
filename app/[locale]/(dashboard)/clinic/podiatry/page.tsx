@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Footprints, Users } from "lucide-react";
+import { Search, Eye, Footprints, Users, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { usePodiatryReceptions, usePodiatryMyPatients } from "@/lib/hooks/use-clinic-podiatry";
-import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
 import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
@@ -24,6 +27,9 @@ import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
 const PAGE_SIZE = 20;
+
+/** A reception is assigned once it carries at least one practitioner. */
+const isAssigned = (r: PodiatryReception) => (r.practitionerIds ?? []).length > 0;
 
 // A reception counts as fitted once any of its sessions carries an install stamp.
 const isFitted = (r: PodiatryReception) =>
@@ -51,6 +57,15 @@ export default function PodiatryListPage() {
   const enumLabel = usePodiatryEnumLabels();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  // من له معالج ومن ليس له — يهمّ المشرف وحده: المعالج يرى حالاته المعيَّن عليها فقط.
+  const [assignFilter, setAssignFilter] = useState<"all" | "assigned" | "unassigned">("all");
+
+  // The reception carries practitioner ids only; names come from the staff list.
+  const { data: staffData } = useEmployeesBasicList();
+  const staffName = (id: string) => {
+    const e = (Array.isArray(staffData) ? staffData : []).find((x) => x.id === id);
+    return e ? `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim() : "";
+  };
 
   // المشرفون يرون كل مرضى القسم؛ من عداهم يرى حالاته المعيَّن عليها فقط.
   const { isAdmin } = usePermissions();
@@ -69,7 +84,11 @@ export default function PodiatryListPage() {
   const receptions = mineOnly ? myReceptions : allReceptions;
   const isLoading = meLoading || (mineOnly ? mineLoading : allLoading);
 
+  const unassignedCount = (receptions as PodiatryReception[]).filter((r) => !isAssigned(r)).length;
+
   const filtered = (receptions as PodiatryReception[]).filter((r) => {
+    if (assignFilter === "assigned" && !isAssigned(r)) return false;
+    if (assignFilter === "unassigned" && isAssigned(r)) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     const name = `${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.toLowerCase();
@@ -99,19 +118,35 @@ export default function PodiatryListPage() {
             counts={[
               { icon: Users, label: tCommon("patients"), value: patientCount },
               { icon: Footprints, label: tCommon("receptions"), value: (receptions as PodiatryReception[]).length },
+              ...(seesAll ? [{ icon: UserX, label: t("noPractitioner"), value: unassignedCount }] : []),
             ]}
           />
         }
       />
 
-      <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder={t("searchPlaceholder")}
-          className="pr-9"
-        />
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-56">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder={t("searchPlaceholder")}
+            className="pr-9"
+          />
+        </div>
+        {seesAll && (
+          <Select
+            value={assignFilter}
+            onValueChange={(v) => { setAssignFilter(v as "all" | "assigned" | "unassigned"); setPage(1); }}
+          >
+            <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("assignFilter.all")}</SelectItem>
+              <SelectItem value="assigned">{t("assignFilter.assigned")}</SelectItem>
+              <SelectItem value="unassigned">{t("assignFilter.unassigned")}</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="rounded-md border">
@@ -131,6 +166,7 @@ export default function PodiatryListPage() {
               <TableRow>
                 <TableHead>{t("table.patientNumber")}</TableHead>
                 <TableHead>{t("table.patient")}</TableHead>
+                <TableHead>{t("table.practitioner")}</TableHead>
                 <TableHead>{t("table.visitType")}</TableHead>
                 <TableHead>{t("table.sessions")}</TableHead>
                 <TableHead>{t("table.receptionDate")}</TableHead>
@@ -140,9 +176,29 @@ export default function PodiatryListPage() {
             </TableHeader>
             <TableBody>
               {pageRows.map((r) => (
-                <TableRow key={r.id} className="cursor-pointer" onClick={() => router.push(`/${locale}/clinic/podiatry/${r.id}`)}>
+                <TableRow key={r.id}
+                  // An unassigned reception is marked down its leading edge so it
+                  // stands out while scanning the list.
+                  className={`cursor-pointer ${isAssigned(r) ? "" : "border-s-4 border-s-amber-400 bg-amber-50/40 dark:bg-amber-500/5"}`}
+                  onClick={() => router.push(`/${locale}/clinic/podiatry/${r.id}`)}>
                   <TableCell className="font-mono text-xs">{r.patient?.patientNumber ?? "—"}</TableCell>
                   <TableCell>{`${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.trim() || "—"}</TableCell>
+                  <TableCell>
+                    {isAssigned(r) ? (
+                      <div className="flex flex-wrap gap-1">
+                        {(r.practitionerIds ?? []).map((pid) => (
+                          <Badge key={pid} variant="secondary" className="text-xs font-normal">
+                            {staffName(pid) || "…"}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-700 text-xs">
+                        <UserX className="h-3 w-3" />
+                        {t("noPractitioner")}
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {(r.visitTypes ?? []).map((v) => (

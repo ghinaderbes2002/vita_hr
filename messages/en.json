@@ -3668,6 +3668,13 @@
         "fetchSignature": "Fetch / upload signature",
         "chooseTherapistFirst": "Select the therapist first",
         "noSessions": "No sessions recorded",
+        "startSessionTitle": "Start session",
+        "startSessionDesc": "Start this session now? The entry time will be set to the current time.",
+        "startSessionYes": "Yes, start",
+        "startSessionNo": "Not now",
+        "endSession": "End session",
+        "endSessionDesc": "The appointment linked to this session will be marked completed and the exit time set to now. Continue?",
+        "noLinkedSession": "No follow-up session linked to this appointment was found. One is created when the appointment is confirmed.",
         "edit": "Edit",
         "archive": "Archive",
         "archiveSession": "Archive Session",
@@ -4490,10 +4497,13 @@
         "visitType": "Visit Type",
         "sessions": "Sessions",
         "receptionDate": "Reception Date",
-        "installStatus": "Fitting status"
+        "installStatus": "Fitting status",
+        "practitioner": "Practitioner"
       },
       "installedBadge": "Fitted",
       "notInstalledBadge": "Not fitted",
+      "noPractitioner": "No practitioner",
+      "assignFilter": { "all": "All patients", "assigned": "Assigned", "unassigned": "Unassigned" },
       "detail": {
         "back": "Podiatry",
         "notFound": "Reception not found",
@@ -5384,6 +5394,8 @@
         "create": "Create Appointment"
       },
       "actions": {
+        "startSession": "Start session",
+        "noCaseForSession": "This patient has no prosthetics case",
         "confirm": "Confirm",
         "complete": "Complete",
         "noShow": "No Show",
