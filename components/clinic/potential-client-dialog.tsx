@@ -28,6 +28,12 @@ export const POTENTIAL_CLIENT_ARRIVAL_METHODS: { value: PotentialClientArrivalMe
 /** Radix rejects an empty option value, so "unspecified" needs a sentinel. */
 const NONE = "__none__";
 
+/** Yes / no / not recorded, as the select holds it and as the API wants it. */
+const triOf = (v?: boolean | null) => (v == null ? NONE : v ? "yes" : "no");
+const triToValue = (v: string) => (v === NONE ? null : v === "yes");
+
+export const yesNoLabel = (v?: boolean | null) => (v == null ? "—" : v ? "نعم" : "لا");
+
 const emptyForm = {
   patientName: "",
   gender: "" as "" | "MALE" | "FEMALE",
@@ -36,6 +42,8 @@ const emptyForm = {
   interestedService: "",
   contactNumber: "",
   notes: "",
+  visitedCenter: NONE,
+  paidVisit: NONE,
 };
 
 type FormState = typeof emptyForm;
@@ -48,6 +56,8 @@ const formOf = (c: PotentialClient): FormState => ({
   interestedService: c.interestedService ?? "",
   contactNumber: c.contactNumber ?? "",
   notes: c.notes ?? "",
+  visitedCenter: triOf(c.visitedCenter),
+  paidVisit: triOf(c.paidVisit),
 });
 
 /** The form as the API wants it; optional fields left blank are omitted. */
@@ -62,6 +72,10 @@ const toDto = (f: FormState): Record<string, unknown> => {
     interestedService: f.interestedService.trim(),
     contactNumber: f.contactNumber.trim(),
     ...(f.notes.trim() ? { notes: f.notes.trim() } : {}),
+    // Unlike the fields above, these two can be blanked: null means "not recorded".
+    // They are answered independently of each other.
+    visitedCenter: triToValue(f.visitedCenter),
+    paidVisit: triToValue(f.paidVisit),
   };
 };
 
@@ -97,7 +111,11 @@ export function PotentialClientDialog({
   const handleSubmit = () => {
     if (missing) return;
     const next = toDto(form);
-    if (!client) { onSubmit(next); return; }
+    // A new record has nothing to blank, so unanswered questions are left out.
+    if (!client) {
+      onSubmit(Object.fromEntries(Object.entries(next).filter(([, v]) => v !== null)));
+      return;
+    }
     // PUT takes only what changed. An optional field the user cleared is not
     // sent — the API has no documented way to blank one.
     const prev = toDto(formOf(client));
@@ -159,6 +177,31 @@ export function PotentialClientDialog({
               <Label>رقم التواصل <span className="text-destructive">*</span></Label>
               <Input dir="ltr" value={form.contactNumber}
                 onChange={(e) => set({ contactNumber: e.target.value })} placeholder="09xxxxxxxx" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>زار المركز؟</Label>
+              <Select value={form.visitedCenter} onValueChange={(v) => set({ visitedCenter: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>غير محدد</SelectItem>
+                  <SelectItem value="yes">نعم</SelectItem>
+                  <SelectItem value="no">لا</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>استفاد بدفع فعلي؟</Label>
+              <Select value={form.paidVisit} onValueChange={(v) => set({ paidVisit: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>غير محدد</SelectItem>
+                  <SelectItem value="yes">نعم</SelectItem>
+                  <SelectItem value="no">لا</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

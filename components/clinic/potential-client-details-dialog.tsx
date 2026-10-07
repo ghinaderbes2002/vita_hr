@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ActionGuard } from "@/components/permissions/action-guard";
-import { POTENTIAL_CLIENT_ARRIVAL_METHODS } from "@/components/clinic/potential-client-dialog";
+import { POTENTIAL_CLIENT_ARRIVAL_METHODS, yesNoLabel } from "@/components/clinic/potential-client-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { PotentialClient } from "@/lib/api/clinic-potential-clients";
 
@@ -56,6 +56,8 @@ export function PotentialClientDetailsDialog({
                 <span className="font-mono" dir="ltr">{client.contactNumber}</span>
               </Field>
               <Field label="طريقة الوصول">{arrival}</Field>
+              <Field label="زار المركز">{yesNoLabel(client.visitedCenter)}</Field>
+              <Field label="استفاد بدفع فعلي">{yesNoLabel(client.paidVisit)}</Field>
               <Field label="تاريخ التسجيل">{fmtDateTime(client.registrationDate ?? client.createdAt)}</Field>
               {edited && <Field label="آخر تعديل">{fmtDateTime(client.updatedAt)}</Field>}
             </div>

@@ -22,7 +22,7 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { PageGuard } from "@/components/permissions/page-guard";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import {
-  PotentialClientDialog, POTENTIAL_CLIENT_ARRIVAL_METHODS,
+  PotentialClientDialog, POTENTIAL_CLIENT_ARRIVAL_METHODS, yesNoLabel,
 } from "@/components/clinic/potential-client-dialog";
 import { PotentialClientDetailsDialog } from "@/components/clinic/potential-client-details-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -37,6 +37,10 @@ const LIMIT = 15;
 /** Radix rejects an empty option value, so "all services" needs a sentinel. */
 const ALL_SERVICES = "__all__";
 
+/** The yes/no filters: "any" sends nothing, the other two send a boolean. */
+const ANY = "any";
+const yesNoParam = (v: string) => (v === ANY ? undefined : v === "yes");
+
 const arrivalLabel = (v?: string | null) =>
   v ? POTENTIAL_CLIENT_ARRIVAL_METHODS.find((m) => m.value === v)?.label ?? v : "—";
 
@@ -48,6 +52,8 @@ function PotentialClientsList() {
   const [service, setService] = useState(ALL_SERVICES);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [visited, setVisited] = useState(ANY);
+  const [paid, setPaid] = useState(ANY);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PotentialClient | null>(null);
   const [viewing, setViewing] = useState<PotentialClient | null>(null);
@@ -70,8 +76,11 @@ function PotentialClientsList() {
     search: debouncedSearch || undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    visitedCenter: yesNoParam(visited),
+    paidVisit: yesNoParam(paid),
   };
-  const isFiltered = Object.values(filters).some(Boolean);
+  // `false` is a real filter value here, so only undefined counts as "not set".
+  const isFiltered = Object.values(filters).some((v) => v !== undefined);
 
   const { data, isLoading } = usePotentialClients({ ...filters, page, limit: LIMIT });
 
@@ -150,6 +159,22 @@ function PotentialClientsList() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={visited} onValueChange={(v) => { setVisited(v); setPage(1); }}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ANY}>زيارة المركز: الكل</SelectItem>
+            <SelectItem value="yes">زار المركز</SelectItem>
+            <SelectItem value="no">لم يزر المركز</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={paid} onValueChange={(v) => { setPaid(v); setPage(1); }}>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ANY}>الدفع: الكل</SelectItem>
+            <SelectItem value="yes">دفع فعلياً</SelectItem>
+            <SelectItem value="no">لم يدفع</SelectItem>
+          </SelectContent>
+        </Select>
         {/* Registration date range; either end may be left open. */}
         <span className="text-sm text-muted-foreground">من</span>
         <Input
@@ -184,6 +209,8 @@ function PotentialClientsList() {
               <TableHead>رقم التواصل</TableHead>
               <TableHead>طريقة الوصول</TableHead>
               <TableHead>تاريخ التسجيل</TableHead>
+              <TableHead>زار المركز</TableHead>
+              <TableHead>دفع فعلي</TableHead>
               <TableHead>ملاحظات</TableHead>
               <TableHead className="w-20" />
             </TableRow>
@@ -192,18 +219,18 @@ function PotentialClientsList() {
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 9 }).map((_, j) => (
+                  {Array.from({ length: 11 }).map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9}>
+                <TableCell colSpan={11}>
                   <EmptyState
                     icon={<UserSearch className="h-8 w-8 text-muted-foreground" />}
                     title={isFiltered ? "لا توجد نتائج مطابقة" : "لا يوجد عملاء محتملون"}
-                    description={isFiltered ? "جرّب تغيير البحث أو الخدمة" : "أضف عميلاً لتظهر السجلات هنا"}
+                    description={isFiltered ? "جرّب تغيير البحث أو الفلاتر" : "أضف عميلاً لتظهر السجلات هنا"}
                   />
                 </TableCell>
               </TableRow>
@@ -219,6 +246,8 @@ function PotentialClientsList() {
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {fmt(c.registrationDate ?? c.createdAt)}
                   </TableCell>
+                  <TableCell className="text-sm">{yesNoLabel(c.visitedCenter)}</TableCell>
+                  <TableCell className="text-sm">{yesNoLabel(c.paidVisit)}</TableCell>
                   <TableCell className="max-w-56 truncate text-sm text-muted-foreground" title={c.notes ?? undefined}>
                     {c.notes || "—"}
                   </TableCell>

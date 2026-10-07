@@ -20,6 +20,10 @@ export interface PotentialClient {
   interestedService: string;
   contactNumber: string;
   notes?: string | null;
+  /** Did the person come to the centre? null = not recorded. */
+  visitedCenter?: boolean | null;
+  /** Did the person actually pay for a service? Independent of visitedCenter; null = not recorded. */
+  paidVisit?: boolean | null;
   /** Stamped by the server at creation; never sent by the client. */
   registrationDate: string;
   createdAt?: string;
@@ -35,6 +39,9 @@ export interface CreatePotentialClientDto {
   interestedService: string;
   contactNumber: string;
   notes?: string;
+  /** null resets the answer to "not recorded". */
+  visitedCenter?: boolean | null;
+  paidVisit?: boolean | null;
 }
 
 /** PUT takes only the fields that changed. */
@@ -48,6 +55,8 @@ export interface PotentialClientFilters {
   /** Registration date range, inclusive, as YYYY-MM-DD. */
   dateFrom?: string;
   dateTo?: string;
+  visitedCenter?: boolean;
+  paidVisit?: boolean;
 }
 
 export interface PotentialClientParams extends PotentialClientFilters {
