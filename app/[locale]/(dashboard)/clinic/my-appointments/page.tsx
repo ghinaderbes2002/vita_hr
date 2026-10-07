@@ -382,48 +382,50 @@ export default function MyAppointmentsPage() {
               </dl>
             </>
           )}
-          <DialogFooter className="flex-wrap gap-2 sm:justify-start">
+          {/* Actions, top to bottom: the next step, the status outcomes, then cancel. */}
+          <div className="space-y-2">
             {canChangeApptStatus && detailAppt?.status === "SCHEDULED" && (
-              <Button size="sm" variant="outline" className="gap-1.5" disabled={updateStatus.isPending}
+              <Button className="w-full gap-2" disabled={updateStatus.isPending}
                 onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "CONFIRMED" }); setDetailAppt(null); }}>
                 <Check className="h-4 w-4" />{t("actions.confirm")}
               </Button>
             )}
             {detailAppt?.status === "CONFIRMED" && isProstheticsAppt(detailAppt) && (
-              <Button size="sm" className="gap-1.5" disabled={openingSession}
+              <Button className="w-full gap-2" disabled={openingSession}
                 onClick={() => openFollowUpSession(detailAppt)}>
                 {openingSession ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
                 {t("actions.startSession")}
               </Button>
             )}
             {canChangeApptStatus && detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
-              <>
+              <div className="grid grid-cols-3 gap-2">
                 {/* Completing / marking a no-show sends the practitioner straight to the
                     patient's case file so the visit can be documented right away. */}
-                <Button size="sm" variant="outline" className="gap-1.5" disabled={updateStatus.isPending}
+                <Button size="sm" variant="outline" className="gap-1.5 px-2" disabled={updateStatus.isPending}
                   onClick={() => finishAndOpenCase(detailAppt, "COMPLETED")}>
-                  <Check className="h-4 w-4" />{t("actions.complete")}
+                  <Check className="h-4 w-4 shrink-0" />{t("actions.complete")}
                 </Button>
-                <Button size="sm" variant="outline" className="gap-1.5 text-orange-600" disabled={updateStatus.isPending}
+                <Button size="sm" variant="outline" className="gap-1.5 px-2 text-orange-600" disabled={updateStatus.isPending}
                   onClick={() => finishAndOpenCase(detailAppt, "NO_SHOW")}>
-                  <UserRound className="h-4 w-4" />{t("actions.noShow")}
+                  <UserRound className="h-4 w-4 shrink-0" />{t("actions.noShow")}
                 </Button>
                 {/* Late keeps the appointment open — the patient is still coming,
                     so it neither closes the visit nor opens the case file. */}
-                <Button size="sm" variant="outline" className="gap-1.5 text-yellow-600" disabled={updateStatus.isPending}
+                <Button size="sm" variant="outline" className="gap-1.5 px-2 text-yellow-600" disabled={updateStatus.isPending}
                   onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "LATE" }); setDetailAppt(null); }}>
-                  <Clock className="h-4 w-4" />{t("actions.late")}
+                  <Clock className="h-4 w-4 shrink-0" />{t("actions.late")}
                 </Button>
-              </>
+              </div>
             )}
             {canCancelAppt && detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
-              <Button size="sm" variant="ghost" className="gap-1.5 text-destructive"
-                onClick={() => { setCancelTargetId(detailAppt.id); setCancelReason(""); setCancelOpen(true); setDetailAppt(null); }}>
-                <X className="h-4 w-4" />{t("actions.cancel")}
-              </Button>
+              <div className="flex justify-center border-t pt-2">
+                <Button size="sm" variant="ghost" className="gap-1.5 text-destructive hover:text-destructive"
+                  onClick={() => { setCancelTargetId(detailAppt.id); setCancelReason(""); setCancelOpen(true); setDetailAppt(null); }}>
+                  <X className="h-4 w-4" />{t("actions.cancel")}
+                </Button>
+              </div>
             )}
-            <Button variant="outline" className="ms-auto" onClick={() => setDetailAppt(null)}>{t("form.cancel")}</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

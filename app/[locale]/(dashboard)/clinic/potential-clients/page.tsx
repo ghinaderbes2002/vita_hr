@@ -24,6 +24,7 @@ import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import {
   PotentialClientDialog, POTENTIAL_CLIENT_ARRIVAL_METHODS,
 } from "@/components/clinic/potential-client-dialog";
+import { PotentialClientDetailsDialog } from "@/components/clinic/potential-client-details-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import {
   usePotentialClients, useCreatePotentialClient, useUpdatePotentialClient,
@@ -47,6 +48,7 @@ function PotentialClientsList() {
   const [service, setService] = useState(ALL_SERVICES);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PotentialClient | null>(null);
+  const [viewing, setViewing] = useState<PotentialClient | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // The search hits the server, so wait for the typing to pause.
@@ -182,7 +184,7 @@ function PotentialClientsList() {
               </TableRow>
             ) : (
               clients.map((c) => (
-                <TableRow key={c.id}>
+                <TableRow key={c.id} className="cursor-pointer" onClick={() => setViewing(c)}>
                   <TableCell className="font-medium">{c.patientName}</TableCell>
                   <TableCell className="text-sm">{c.gender === "FEMALE" ? "أنثى" : "ذكر"}</TableCell>
                   <TableCell className="text-sm">{c.age ?? "—"}</TableCell>
@@ -195,7 +197,8 @@ function PotentialClientsList() {
                   <TableCell className="max-w-56 truncate text-sm text-muted-foreground" title={c.notes ?? undefined}>
                     {c.notes || "—"}
                   </TableCell>
-                  <TableCell>
+                  {/* The row opens the details; its own buttons must not. */}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       <ActionGuard permission={PERMISSIONS.CLINIC_POTENTIAL_CLIENTS.EDIT}>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
@@ -220,6 +223,12 @@ function PotentialClientsList() {
       {totalPages > 1 && (
         <Pagination page={page} totalPages={totalPages} total={total} limit={LIMIT} onPageChange={setPage} />
       )}
+
+      <PotentialClientDetailsDialog
+        client={viewing}
+        onOpenChange={(o) => { if (!o) setViewing(null); }}
+        onEdit={(c) => { setViewing(null); openEdit(c); }}
+      />
 
       <PotentialClientDialog
         open={dialogOpen}
