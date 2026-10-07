@@ -3490,8 +3490,11 @@ const sectionSavedAt = (records: any[] | undefined, stamp: "limbSavedAt" | "romS
 const withMuscleSheet = <T extends Record<string, any>>(
   form: T, records: any[], sideRecord: any, keys: readonly string[],
 ): T => {
-  if (sideRecord?.romSavedAt) return form;
-  const src = records.find((r) => !!r?.romSavedAt);
+  // Judged by content, not only by the save stamp: older records were saved
+  // before the stamp existed, and whatever was filled in must always show.
+  const hasSheet = (r: any) => !!r && (!!r.romSavedAt || (!!r.romData && Object.keys(r.romData).length > 0));
+  if (hasSheet(sideRecord)) return form;
+  const src = records.find(hasSheet);
   if (!src) return form;
   const out: any = { ...form };
   for (const k of keys) if (src[k] !== undefined && src[k] !== null) out[k] = src[k];
