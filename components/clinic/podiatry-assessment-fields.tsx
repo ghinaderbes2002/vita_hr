@@ -183,8 +183,10 @@ export function missingAssessmentFields(v: AssessmentValue, t: FormT): string[] 
   need(filled(v.shoeWearPattern.currentFootwear), t("labels.currentFootwear"));
   need(filled(v.shoeWearPattern.outsoleWear), t("labels.outsoleWear"));
 
-  // القياسات: كل قياس يمين ويسار.
-  FOOT_MEASUREMENT_KEYS.forEach((k) => {
+  // القياسات: كل قياس يمين ويسار — عدا قياسَي "بالضبان"، فهما اختياريان (لا
+  // يُؤخذان إلا بعد تركيب الضبان).
+  const OPTIONAL_MEASUREMENTS: readonly string[] = ["navicularHeightWithOrthotic", "navicularDropWithOrthotic"];
+  FOOT_MEASUREMENT_KEYS.filter((k) => !OPTIONAL_MEASUREMENTS.includes(k)).forEach((k) => {
     const ok = (x: string) => (k === "archHeight" ? (ARCH_HEIGHT_VALUES as readonly string[]).includes(x) : filled(x));
     const both = ok(v.footMeasurements[`${k}Right`]) && ok(v.footMeasurements[`${k}Left`]);
     need(both, t(`measurements.${k}`));

@@ -11,6 +11,7 @@ export interface UpdateJobApplicationData {
 export const jobApplicationsApi = {
   getAll: async (params?: {
     status?: string;
+    isTalent?: boolean;
     page?: number;
     limit?: number;
   }) => {
@@ -38,6 +39,14 @@ export const jobApplicationsApi = {
     const response = await apiClient.patch(
       `/job-applications/${id}/ceo-approve`,
     );
+    return response.data.data;
+  },
+
+  // إضافة/إزالة الطلب من قائمة المواهب
+  setTalent: async (id: string, isTalent: boolean) => {
+    const response = await apiClient.patch(`/job-applications/${id}/talent`, {
+      isTalent,
+    });
     return response.data.data;
   },
 };

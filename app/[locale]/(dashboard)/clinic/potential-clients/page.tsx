@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +33,9 @@ import { CreatePotentialClientDto, PotentialClient } from "@/lib/api/clinic-pote
 
 const LIMIT = 15;
 
+/** Radix rejects an empty option value, so "all services" needs a sentinel. */
+const ALL_SERVICES = "__all__";
+
 const arrivalLabel = (v?: string | null) =>
   v ? POTENTIAL_CLIENT_ARRIVAL_METHODS.find((m) => m.value === v)?.label ?? v : "—";
 
@@ -38,6 +44,7 @@ const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—"
 function PotentialClientsList() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [service, setService] = useState(ALL_SERVICES);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PotentialClient | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -49,14 +56,23 @@ function PotentialClientsList() {
   const deleteClient = useDeletePotentialClient();
   const exportXlsx = useExportPotentialClients();
 
-  // The API has no search parameter, so the name/phone/service filter runs over
-  // the page in hand — the same limitation the waiting list carries.
+  // The API has no search or service parameter, so both filters run over the
+  // page in hand — the same limitation the waiting list carries.
+  const items = data?.items ?? [];
+  // interestedService is free text, so the options are whatever the page holds.
+  const services = [...new Set(items.map((c) => (c.interestedService ?? "").trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "ar"));
+  // A service that left the page (edit, delete, page change) no longer filters.
+  const activeService = services.includes(service) ? service : ALL_SERVICES;
   const q = search.trim().toLowerCase();
-  const clients = (data?.items ?? []).filter((c) =>
-    !q
-    || c.patientName.toLowerCase().includes(q)
-    || c.contactNumber.toLowerCase().includes(q)
-    || (c.interestedService ?? "").toLowerCase().includes(q),
+  const clients = items.filter((c) =>
+    (activeService === ALL_SERVICES || (c.interestedService ?? "").trim() === activeService)
+    && (
+      !q
+      || c.patientName.toLowerCase().includes(q)
+      || c.contactNumber.toLowerCase().includes(q)
+      || (c.interestedService ?? "").toLowerCase().includes(q)
+    ),
   );
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 0;
@@ -108,14 +124,25 @@ function PotentialClientsList() {
         }
       />
 
-      <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="ابحث بالاسم أو رقم التواصل أو الخدمة..."
-          className="pr-9"
-        />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ابحث بالاسم أو رقم التواصل أو الخدمة..."
+            className="pr-9"
+          />
+        </div>
+        <Select value={activeService} onValueChange={setService}>
+          <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_SERVICES}>كل الخدمات</SelectItem>
+            {services.map((s) => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-md border">

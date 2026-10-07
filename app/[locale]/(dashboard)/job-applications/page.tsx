@@ -25,7 +25,10 @@ import {
   useJobApplicationStats,
   useUpdateJobApplication,
   useApproveJobApplicationCEO,
+  useSetJobApplicationTalent,
+  useMigrateLocalTalents,
 } from "@/lib/hooks/use-job-applications";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { JobApplication, JobApplicationStatus } from "@/types";
 import { useLocale } from "next-intl";
 
@@ -229,43 +232,40 @@ export default function JobApplicationsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [page, setPage] = useState(1);
   const [showFavorites, setShowFavorites] = useState(false);
-  const [favorites, setFavorites] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const stored = localStorage.getItem("job-application-favorites");
-      return new Set(stored ? JSON.parse(stored) : []);
-    } catch {
-      return new Set();
-    }
-  });
-
-  const toggleFavorite = (id: string) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      localStorage.setItem("job-application-favorites", JSON.stringify([...next]));
-      return next;
-    });
-  };
+  const { hasPermission } = usePermissions();
+  const canUpdate = hasPermission("job-applications:update");
 
   const { data, isLoading } = useJobApplications(
     view === "pipeline"
       ? { limit: 500 }
       : {
           status: statusFilter !== "ALL" ? statusFilter : undefined,
+          isTalent: showFavorites ? true : undefined,
           page,
           limit: 20,
         }
   );
+  const { data: talentsData } = useJobApplications({ isTalent: true, page: 1, limit: 1 });
   const { data: stats } = useJobApplicationStats();
   const updateApplication = useUpdateJobApplication();
   const ceoApprove = useApproveJobApplicationCEO();
+  const setTalent = useSetJobApplicationTalent();
 
   const applications: JobApplication[] =
     (data as any)?.data?.data || (data as any)?.data || [];
   const pagination = (data as any)?.data?.pagination;
   const statsData = stats as any;
+
+  // Only migrate once the server actually returns isTalent — otherwise the
+  // endpoint isn't deployed yet and the local list must be left untouched.
+  const serverHasTalent = applications.some((a) => typeof a.isTalent === "boolean");
+  useMigrateLocalTalents(canUpdate && serverHasTalent);
+
+  // Without server support the isTalent filter is ignored and the total would
+  // be the count of all applications, so hide the badge until it's deployed.
+  const talentsCount: number = serverHasTalent
+    ? (talentsData as any)?.data?.pagination?.total ?? (talentsData as any)?.pagination?.total ?? 0
+    : 0;
 
   const statCards = [
     { label: t("jobApplications.stats.total"),    value: statsData?.total ?? 0,          icon: Users,      color: "text-foreground" },
@@ -388,14 +388,14 @@ export default function JobApplicationsPage() {
             <Button
               variant={showFavorites ? "default" : "outline"}
               size="sm"
-              onClick={() => setShowFavorites((v) => !v)}
+              onClick={() => { setShowFavorites((v) => !v); setPage(1); }}
               className="gap-2"
             >
               <Star className={`h-4 w-4 ${showFavorites ? "fill-white" : "fill-none"}`} />
               {t("jobApplications.talentList")}
-              {favorites.size > 0 && (
+              {talentsCount > 0 && (
                 <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${showFavorites ? "bg-white/20" : "bg-red-100 text-red-600"}`}>
-                  {favorites.size}
+                  {talentsCount}
                 </span>
               )}
             </Button>
@@ -424,22 +424,23 @@ export default function JobApplicationsPage() {
                       ))}
                     </TableRow>
                   ))
-                ) : applications.filter((a) => !showFavorites || favorites.has(a.id)).length === 0 ? (
+                ) : applications.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
                       {showFavorites ? t("jobApplications.noFavorites") : t("common.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  applications.filter((a) => !showFavorites || favorites.has(a.id)).map((app) => {
+                  applications.map((app) => {
                     const statusBg = STATUS_BG[app.status];
-                    const isFav = favorites.has(app.id);
+                    const isFav = !!app.isTalent;
                     return (
                       <TableRow key={app.id}>
                         <TableCell>
                           <button
-                            onClick={() => toggleFavorite(app.id)}
-                            className="p-1 rounded hover:bg-muted transition-colors"
+                            onClick={() => setTalent.mutate({ id: app.id, isTalent: !isFav })}
+                            disabled={!canUpdate || setTalent.isPending}
+                            className="p-1 rounded hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Star className={`h-4 w-4 transition-colors ${isFav ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
                           </button>

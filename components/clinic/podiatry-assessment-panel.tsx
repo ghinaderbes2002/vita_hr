@@ -111,6 +111,14 @@ export function PodiatryAssessmentPanel({
         </div>
       </CardHeader>
       <CardContent>
+        {/* Why "save" is still disabled: the required fields left to fill, by the
+            names they carry on the sheet. */}
+        {editing && missing.length > 0 && (
+          <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <span className="font-semibold">{t("missingFields")}: </span>
+            {[...new Set(missing)].join("، ")}
+          </p>
+        )}
         {state === "loading" && !editing ? (
           <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />

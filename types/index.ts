@@ -432,6 +432,7 @@ export interface JobApplication {
   reviewNotes: string | null;
   rejectionNote: string | null;
   rating: number | null;
+  isTalent?: boolean;
   createdAt: string;
   updatedAt: string;
 }
