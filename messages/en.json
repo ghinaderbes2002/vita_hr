@@ -6031,6 +6031,9 @@
       "therapistFallback": "Therapist {id}"
     },
     "toasts": {
+      "deleted": "Deleted",
+      "exerciseDeleted": "Exercise deleted",
+      "deleteFailed": "Delete failed",
       "accountCreated": "App account created",
       "accountCreateFailed": "Failed to create account",
       "passwordChanged": "Password changed",
@@ -6094,6 +6097,9 @@
       "changePassword": "Change"
     },
     "taxonomy": {
+      "deleteTitle": "Delete item",
+      "deleteDesc": "\"{name}\" will be deleted permanently. It cannot be deleted while exercises or sub-items are linked to it.",
+      "deleteConfirm": "Delete",
       "title": "Exercise Taxonomy",
       "description": "Body regions, target regions and therapy goals used to classify the exercise library",
       "kinds": {
@@ -6112,6 +6118,9 @@
       "emptyDescription": "Add an item to see it here"
     },
     "exercises": {
+      "deleteTitle": "Delete exercise",
+      "deleteDesc": "\"{name}\" will be removed from the library and lists. It stays visible to patients it was assigned to, with their history.",
+      "deleteConfirm": "Delete",
       "title": "Exercise Library",
       "description": "Instructional exercises the therapist assigns to patients, shown to them in the app",
       "add": "Add exercise",

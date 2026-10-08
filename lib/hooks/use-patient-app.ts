@@ -99,6 +99,20 @@ export function useSaveTaxonomy(kind: TaxonomyKind) {
   });
 }
 
+export function useDeleteTaxonomy(kind: TaxonomyKind) {
+  const t = useTranslations("patientApp.toasts");
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => patientAppApi.taxonomy.remove(kind, id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY, "taxonomy"] });
+      toast.success(t("deleted"));
+    },
+    // A 409 carries a ready Arabic message naming what still hangs off the item.
+    onError: (e: any) => toast.error(errorMessage(e, t("deleteFailed"))),
+  });
+}
+
 // ── Exercise library ────────────────────────────────────────
 
 export function useExercises(params?: ExerciseParams, enabled = true) {
@@ -120,6 +134,19 @@ export function useSaveExercise() {
       toast.success(id ? t("exerciseSaved") : t("exerciseAdded"));
     },
     onError: (e: any) => toast.error(errorMessage(e, t("exerciseSaveFailed"))),
+  });
+}
+
+export function useDeleteExercise() {
+  const t = useTranslations("patientApp.toasts");
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => patientAppApi.exercises.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY, "exercises"] });
+      toast.success(t("exerciseDeleted"));
+    },
+    onError: (e: any) => toast.error(errorMessage(e, t("deleteFailed"))),
   });
 }
 

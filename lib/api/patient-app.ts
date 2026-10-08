@@ -385,6 +385,10 @@ export const patientAppApi = {
       unwrap<TaxonomyItem>(await apiClient.post(`${BASE}/taxonomy/${kind}`, dto)),
     update: async (kind: TaxonomyKind, id: string, dto: TaxonomyDto) =>
       unwrap<TaxonomyItem>(await apiClient.put(`${BASE}/taxonomy/${kind}/${id}`, dto)),
+    /** Permanent — refused with 409 TAXONOMY_IN_USE while anything still hangs off the item. */
+    remove: async (kind: TaxonomyKind, id: string): Promise<void> => {
+      await apiClient.delete(`${BASE}/taxonomy/${kind}/${id}`);
+    },
   },
 
   exercises: {
@@ -396,6 +400,10 @@ export const patientAppApi = {
       unwrap<Exercise>(await apiClient.post(`${BASE}/exercises`, dto)),
     update: async (id: string, dto: ExerciseDto) =>
       unwrap<Exercise>(await apiClient.put(`${BASE}/exercises/${id}`, dto)),
+    /** Drops the exercise from the library and lists; patients' history of it is kept server-side. */
+    remove: async (id: string): Promise<void> => {
+      await apiClient.delete(`${BASE}/exercises/${id}`);
+    },
     uploadMedia: async (id: string, file: File, onProgress?: (percent: number) => void) => {
       const form = new FormData();
       form.append("file", file);

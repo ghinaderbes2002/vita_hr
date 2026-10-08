@@ -5113,6 +5113,9 @@
       "therapistFallback": "Terapist {id}"
     },
     "toasts": {
+      "deleted": "Silindi",
+      "exerciseDeleted": "Egzersiz silindi",
+      "deleteFailed": "Silme başarısız",
       "accountCreated": "Uygulama hesabı oluşturuldu",
       "accountCreateFailed": "Hesap oluşturulamadı",
       "passwordChanged": "Şifre değiştirildi",
@@ -5176,6 +5179,9 @@
       "changePassword": "Değiştir"
     },
     "taxonomy": {
+      "deleteTitle": "Öğeyi sil",
+      "deleteDesc": "\"{name}\" kalıcı olarak silinecek. Bağlı egzersiz veya alt öğe varken silinemez.",
+      "deleteConfirm": "Sil",
       "title": "Egzersiz Sınıflandırması",
       "description": "Egzersiz kütüphanesini sınıflandırmak için kullanılan vücut bölgeleri, hedef bölgeler ve terapi hedefleri",
       "kinds": {
@@ -5194,6 +5200,9 @@
       "emptyDescription": "Burada görmek için bir öğe ekleyin"
     },
     "exercises": {
+      "deleteTitle": "Egzersizi sil",
+      "deleteDesc": "\"{name}\" kütüphaneden ve listelerden kaldırılacak. Atandığı hastalarda geçmişiyle birlikte görünmeye devam eder.",
+      "deleteConfirm": "Sil",
       "title": "Egzersiz Kütüphanesi",
       "description": "Terapistin hastaya atadığı ve uygulamada gösterilen eğitici egzersizler",
       "add": "Egzersiz ekle",

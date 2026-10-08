@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Loader2, Pencil, Plus, Tags } from "lucide-react";
+import { Loader2, Pencil, Plus, Tags, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,8 @@ import {
 import { EmptyState } from "@/components/shared/empty-state";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
-import { useSaveTaxonomy, useTaxonomy } from "@/lib/hooks/use-patient-app";
+import { useDeleteTaxonomy, useSaveTaxonomy, useTaxonomy } from "@/lib/hooks/use-patient-app";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { localizedName, type TaxonomyItem, type TaxonomyKind } from "@/lib/api/patient-app";
 
 type KindKey = "bodyRegions" | "targetRegions" | "subTargetRegions" | "goals";
@@ -76,6 +77,8 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
   const openEdit = (item: TaxonomyItem) => { setEditing(item); setDialogOpen(true); };
+  const remove = useDeleteTaxonomy(kind);
+  const [deleteTarget, setDeleteTarget] = useState<TaxonomyItem | null>(null);
 
   const colCount = 4 + (hasBodyParent ? 1 : 0);
 
@@ -165,6 +168,10 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
                       end of the row rather than hugging the numbers. */}
                   <TableCell className="text-end">
                     <ActionGuard permission={PERMISSIONS.PATIENT_APP.MANAGE_TAXONOMY}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                        disabled={remove.isPending} onClick={() => setDeleteTarget(item)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -176,6 +183,24 @@ export function TaxonomyTab({ kind }: { kind: TaxonomyKind }) {
           </TableBody>
         </Table>
       </div>
+
+      <ConfirmDialog
+
+        open={!!deleteTarget}
+
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+
+        title={t("deleteTitle")}
+
+        description={deleteTarget ? t("deleteDesc", { name: localizedName(deleteTarget, locale) }) : undefined}
+
+        confirmText={t("deleteConfirm")}
+
+        variant="destructive"
+
+        onConfirm={() => { if (deleteTarget) remove.mutate(deleteTarget.id); setDeleteTarget(null); }}
+
+      />
 
       <TaxonomyDialog
         kind={kind}

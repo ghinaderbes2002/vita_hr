@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
-import { Dumbbell, ImageIcon, Loader2, Pencil, Plus, Search, Upload, Video } from "lucide-react";
+import { Dumbbell, ImageIcon, Loader2, Pencil, Plus, Search, Trash2, Upload, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,8 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { ExerciseDialog } from "@/components/patient-app/exercise-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
-import { useExercises, useTaxonomy, useUploadExerciseMedia } from "@/lib/hooks/use-patient-app";
+import { useDeleteExercise, useExercises, useTaxonomy, useUploadExerciseMedia } from "@/lib/hooks/use-patient-app";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
   Exercise, exerciseGoalIds, localizedName, MEDIA_ACCEPT, mediaFileProblem, resolveMediaUrl,
 } from "@/lib/api/patient-app";
@@ -71,6 +72,8 @@ export default function PatientAppExercisesPage() {
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
   const openEdit = (ex: Exercise) => { setEditing(ex); setDialogOpen(true); };
+  const deleteExercise = useDeleteExercise();
+  const [deleteTarget, setDeleteTarget] = useState<Exercise | null>(null);
 
   const startUpload = (ex: Exercise) => {
     uploadTarget.current = ex.id;
@@ -241,6 +244,10 @@ export default function PatientAppExercisesPage() {
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(ex)}>
                               <Pencil className="h-4 w-4" />
                             </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                              disabled={deleteExercise.isPending} onClick={() => setDeleteTarget(ex)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </ActionGuard>
                       </TableCell>
@@ -251,6 +258,24 @@ export default function PatientAppExercisesPage() {
             </TableBody>
           </Table>
         </div>
+
+        <ConfirmDialog
+
+          open={!!deleteTarget}
+
+          onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+
+          title={t("deleteTitle")}
+
+          description={deleteTarget ? t("deleteDesc", { name: localizedName(deleteTarget, locale) }) : undefined}
+
+          confirmText={t("deleteConfirm")}
+
+          variant="destructive"
+
+          onConfirm={() => { if (deleteTarget) deleteExercise.mutate(deleteTarget.id); setDeleteTarget(null); }}
+
+        />
 
         <ExerciseDialog open={dialogOpen} onOpenChange={setDialogOpen} exercise={editing} />
 
