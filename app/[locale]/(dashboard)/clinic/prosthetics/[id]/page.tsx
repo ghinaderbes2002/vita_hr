@@ -28,6 +28,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
+import { ProstheticsCaseHistory } from "@/components/clinic/prosthetics-case-history";
 import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
 import { MySignatureField } from "@/components/clinic/my-signature-field";
 import { KLevelSelector } from "@/components/clinic/k-level-selector";
@@ -41,6 +42,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
 import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@/lib/hooks/use-clinic-patients";
 import { arrivalMethodText } from "@/lib/clinic/referral-sources";
@@ -61,7 +63,7 @@ import {
   useAddConsumable, useSubmitFinalEvaluation, useSignFinalEvaluation,
   useSubmitDelivery, useSignDelivery,
   useProstheticsFollowUps, useAddProstheticsFollowUp,
-  useProstheticsTimeline, useDownloadProstheticsPdf,
+  useDownloadProstheticsPdf,
   useProstheticsAttachments, useUploadProstheticsAttachment, useDeleteProstheticsAttachment,
   useSubmitAnkleDisarticulation,
   useSubmitKneeDisarticulation,
@@ -3806,7 +3808,6 @@ export default function ProstheticsCasePage() {
   const { data: patientDocs = [] } = usePatientDocuments(caseData?.patientId ?? "");
   const { data: components = [] } = useCaseComponents(id);
   const { data: followUps = [] } = useProstheticsFollowUps(id);
-  const { data: timeline = [] } = useProstheticsTimeline(id);
   const { data: attachments = [] } = useProstheticsAttachments(id);
 
   const qc = useQueryClient();
@@ -3829,6 +3830,9 @@ export default function ProstheticsCasePage() {
   const deleteComponent = useDeleteCaseComponent();
   const [confirmDelComp, setConfirmDelComp] = useState<string | null>(null);
   const [casePdfExporting, setCasePdfExporting] = useState(false);
+  // Closing / cancelling is confirmed first, with an optional reason for the case history.
+  const [statusTarget, setStatusTarget] = useState<ProstheticsStatus | null>(null);
+  const [statusReason, setStatusReason] = useState("");
   const submitGait = useSubmitGaitAnalysis();
   const addConsumable = useAddConsumable();
   const { data: finalEvalData } = useFinalEvaluation(id);
@@ -3843,6 +3847,7 @@ export default function ProstheticsCasePage() {
   const downloadPdf = useDownloadProstheticsPdf();
   const uploadAttachment = useUploadProstheticsAttachment();
   const deleteAttachment = useDeleteProstheticsAttachment();
+  const [deletePhotoId, setDeletePhotoId] = useState<string | null>(null);
   const attachFileRef = useRef<HTMLInputElement>(null);
   const attachCameraRef = useRef<HTMLInputElement>(null);
   const submitAnkleMeasurement = useSubmitAnkleDisarticulation();
@@ -4064,6 +4069,27 @@ export default function ProstheticsCasePage() {
   // ── Measurement sheet state ──
   type MeasureSheetType = "ankle_disarticulation" | "knee_disarticulation" | "above_knee" | "below_knee" | "hemipelvectomy" | "elbow_disarticulation" | "transhumeral" | "transradial";
   const [measureSheetType, setMeasureSheetType] = useState<MeasureSheetType[]>([]);
+  // Sheets that already hold a measurement open selected, so the tab lands on
+  // what was filled in instead of an empty type picker. Done once per case —
+  // after that the selection is the user's.
+  const sheetsPreselectedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!caseData || sheetsPreselectedFor.current === caseData.id) return;
+    sheetsPreselectedFor.current = caseData.id;
+    const filled = ([
+      ["ankle_disarticulation", caseData.ankleDisarticulationAssessment],
+      ["below_knee", caseData.transtibialAssessment],
+      ["knee_disarticulation", caseData.kneeDisarticulationAssessment],
+      ["above_knee", caseData.transfemoralAssessment],
+      ["hemipelvectomy", caseData.hemipelvectomyAssessment],
+      ["elbow_disarticulation", caseData.elbowDisarticulationAssessment],
+      ["transhumeral", caseData.transhumeralAssessment],
+      ["transradial", caseData.transradialAssessment],
+    ] as [MeasureSheetType, unknown[] | undefined | null][])
+      .filter(([, recs]) => (recs ?? []).length > 0)
+      .map(([key]) => key);
+    if (filled.length) setMeasureSheetType(filled);
+  }, [caseData]);
   // Explicitly-opened "add new measurement" forms — a type's form is shown
   // by default only when it has no history yet; otherwise the user opens it
   // via the "+ إضافة قياس جديد" button once they want to add another record.
@@ -5504,12 +5530,43 @@ export default function ProstheticsCasePage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {(["CLOSED", "CANCELLED"] as ProstheticsStatus[]).map((s) => (
-                <DropdownMenuItem key={s} onClick={() => updateStatus.mutate({ id, status: s })}>
+                <DropdownMenuItem key={s} onClick={() => { setStatusReason(""); setStatusTarget(s); }}>
                   {s === "CLOSED" ? "إغلاق الحالة" : "إلغاء الحالة"}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          <Dialog open={!!statusTarget} onOpenChange={(o) => { if (!o && !updateStatus.isPending) setStatusTarget(null); }}>
+            <DialogContent className="sm:max-w-md" dir={isRtl ? "rtl" : "ltr"}>
+              <DialogHeader>
+                <DialogTitle>{statusTarget === "CLOSED" ? "إغلاق الحالة" : "إلغاء الحالة"}</DialogTitle>
+                <DialogDescription>
+                  {statusTarget === "CLOSED" ? "هل تريد إغلاق هذه الحالة؟" : "هل تريد إلغاء هذه الحالة؟"} يُسجَّل السبب في السجل الزمني.
+                </DialogDescription>
+              </DialogHeader>
+              <Textarea
+                rows={3} value={statusReason} onChange={(e) => setStatusReason(e.target.value)}
+                placeholder="السبب (اختياري)"
+              />
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setStatusTarget(null)} disabled={updateStatus.isPending}>
+                  تراجع
+                </Button>
+                <Button
+                  variant={statusTarget === "CANCELLED" ? "destructive" : "default"}
+                  disabled={updateStatus.isPending}
+                  onClick={async () => {
+                    if (!statusTarget) return;
+                    await updateStatus.mutateAsync({ id, status: statusTarget, reason: statusReason.trim() || undefined });
+                    setStatusTarget(null);
+                  }}
+                >
+                  {updateStatus.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                  {statusTarget === "CLOSED" ? "إغلاق الحالة" : "إلغاء الحالة"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -6984,7 +7041,8 @@ export default function ProstheticsCasePage() {
                     key={att.id}
                     caseId={id}
                     att={att}
-                    onDelete={() => deleteAttachment.mutate({ id, attachmentId: att.id })}
+                    // الحذف نهائي، فيُسأل عنه أولاً بدل أن يُنفَّذ من ضغطة واحدة.
+                    onDelete={() => setDeletePhotoId(att.id)}
                     deleteDisabled={deleteAttachment.isPending}
                   />
                 ))}
@@ -6992,6 +7050,18 @@ export default function ProstheticsCasePage() {
             )}
           </Section>
           </fieldset>
+          <ConfirmDialog
+            open={!!deletePhotoId}
+            onOpenChange={(o) => { if (!o) setDeletePhotoId(null); }}
+            title="حذف الصورة"
+            description="هل تريد حذف هذه الصورة؟ لا يمكن التراجع عن هذا الإجراء."
+            confirmText="حذف"
+            variant="destructive"
+            onConfirm={() => {
+              if (deletePhotoId) deleteAttachment.mutate({ id, attachmentId: deletePhotoId });
+              setDeletePhotoId(null);
+            }}
+          />
         </TabsContent>
 
         {/* ── COMMITTEE ───────────────────────────────────────────────────── */}
@@ -8722,28 +8792,7 @@ export default function ProstheticsCasePage() {
 
         {/* ── TIMELINE ────────────────────────────────────────────────────── */}
         <TabsContent value="timeline" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-          <Section title="السجل الزمني">
-            {timeline.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">{t("page.noEvents")}</p>
-            ) : (
-              <div className="relative space-y-4 pr-4">
-                <div className="absolute right-2 top-0 bottom-0 w-0.5 bg-border" />
-                {timeline.map((ev) => (
-                  <div key={ev.id} className="relative flex gap-3">
-                    <div className="absolute -right-4 top-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
-                    <div className="flex-1 rounded-lg border p-3 space-y-1">
-                      <div className="flex flex-wrap gap-2 justify-between items-start">
-                        <p className="font-medium text-sm">{ev.title}</p>
-                        <span className="text-xs text-muted-foreground">{new Date(ev.date).toLocaleDateString("ar")}</span>
-                      </div>
-                      {ev.description && <p className="text-xs text-muted-foreground">{ev.description}</p>}
-                      {ev.actorName && <p className="text-xs text-muted-foreground">بواسطة: {ev.actorName}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
+          <ProstheticsCaseHistory caseId={id} isRtl={isRtl} />
         </TabsContent>
 
         {/* ── ATTACHMENTS ──────────────────────────────────────────────── */}

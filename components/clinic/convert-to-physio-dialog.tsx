@@ -53,10 +53,18 @@ export function ConvertToPhysioDialog({
     : active;
   const hiddenByGender = active.length - matching.length;
 
-  // Don't carry the previous pick into the next conversion.
+  // Don't carry the previous pick into the next conversion. Only the dialog
+  // opening resets it: resetting when the patient's gender arrives as well used
+  // to wipe a therapist picked before the patient record finished loading, and
+  // the case was then converted unassigned without any sign of it.
   useEffect(() => {
     if (open) setSelected(UNASSIGNED);
-  }, [open, patientGender]);
+  }, [open]);
+  // A pick the gender filter no longer offers must not be sent silently.
+  useEffect(() => {
+    if (selected !== UNASSIGNED && !matching.some((e) => e?.id === selected)) setSelected(UNASSIGNED);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientGender, matching.length]);
 
   const nameOf = (e: any) =>
     `${e.firstNameAr ?? e.firstName ?? ""} ${e.lastNameAr ?? e.lastName ?? ""}`.trim() || "—";

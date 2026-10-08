@@ -435,6 +435,53 @@ export interface TimelineEvent {
   date: string;
   actorName?: string | null;
   metadata?: Record<string, unknown>;
+  /** The stage the case was in when the event happened. */
+  stage?: string | null;
+  action?: string | null;
+  actorId?: string | null;
+  actorRole?: string | null;
+  /** Field-level diff, on edits only. */
+  changes?: TimelineChange[];
+}
+
+export interface TimelineChange {
+  field: string;
+  oldValue?: unknown;
+  newValue?: unknown;
+}
+
+/** One stay of the case in a stage; a stage re-entered later gets its own entry. */
+export interface CaseStageEntry {
+  stage: string;
+  /** null = entered before stage tracking began (older cases). */
+  enteredAt: string | null;
+  /** null = the case is in this stage now. */
+  exitedAt: string | null;
+  durationMinutes: number | null;
+  enteredBy?: string | null;
+  enteredByName?: string | null;
+  exitedBy?: string | null;
+  exitedByName?: string | null;
+}
+
+export interface CaseHistoryParams {
+  stage?: string;
+  type?: string;
+  actorId?: string;
+  /** YYYY-MM-DD (Syria time) or ISO. */
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CaseHistory {
+  stages: CaseStageEntry[];
+  /** Newest first. */
+  items: TimelineEvent[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface ProstheticsCaseListParams {
@@ -493,8 +540,12 @@ export const clinicProstheticsApi = {
     return data?.data ?? data;
   },
 
-  updateStatus: async (id: string, status: ProstheticsStatus): Promise<ProstheticsCase> => {
-    const { data } = await apiClient.put(`/prosthetics/cases/${id}/status`, { status });
+  /** `reason` is optional; it shows up on the stage change in the case history. */
+  updateStatus: async (id: string, status: ProstheticsStatus, reason?: string): Promise<ProstheticsCase> => {
+    const { data } = await apiClient.put(`/prosthetics/cases/${id}/status`, {
+      status,
+      ...(reason ? { reason } : {}),
+    });
     return data?.data ?? data;
   },
 
@@ -700,7 +751,22 @@ export const clinicProstheticsApi = {
   getTimeline: async (id: string): Promise<TimelineEvent[]> => {
     const { data } = await apiClient.get(`/prosthetics/cases/${id}/timeline`);
     const d = data?.data ?? data;
-    return Array.isArray(d) ? d : d?.items ?? [];
+    // `timeline` is the server's older key, kept until `items` is everywhere.
+    return Array.isArray(d) ? d : d?.items ?? d?.timeline ?? [];
+  },
+
+  /** The full case history: stage durations plus the filtered, paged events. */
+  getHistory: async (id: string, params?: CaseHistoryParams): Promise<CaseHistory> => {
+    const { data } = await apiClient.get(`/prosthetics/cases/${id}/timeline`, { params });
+    const d = data?.data ?? data;
+    const items: TimelineEvent[] = Array.isArray(d) ? d : d?.items ?? d?.timeline ?? [];
+    return {
+      stages: Array.isArray(d?.stages) ? d.stages : [],
+      items,
+      total: d?.total ?? items.length,
+      page: d?.page ?? params?.page ?? 1,
+      limit: d?.limit ?? params?.limit ?? 50,
+    };
   },
 
   downloadPdf: async (id: string): Promise<Blob> => {

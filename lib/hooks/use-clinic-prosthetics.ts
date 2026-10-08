@@ -29,6 +29,7 @@ import {
   GaitAnalysisFormDto,
   FinalEvaluationDto,
   DirectorSignDto,
+  CaseHistoryParams,
 } from "@/lib/api/clinic-prosthetics";
 import { toast } from "sonner";
 
@@ -93,9 +94,10 @@ export function useUpdateProstheticsCase() {
 export function useUpdateProstheticsStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: ProstheticsStatus }) =>
-      clinicProstheticsApi.updateStatus(id, status),
+    mutationFn: ({ id, status, reason }: { id: string; status: ProstheticsStatus; reason?: string }) =>
+      clinicProstheticsApi.updateStatus(id, status, reason),
     onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-timeline", data.id] });
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", data.id] });
       qc.invalidateQueries({ queryKey: ["clinic-prosthetics-cases"] });
     },
@@ -288,6 +290,18 @@ export function useProstheticsTimeline(caseId: string) {
     queryKey: ["clinic-prosthetics-timeline", caseId],
     queryFn: () => clinicProstheticsApi.getTimeline(caseId),
     enabled: !!caseId,
+  });
+}
+
+/** Shares the timeline key prefix, so whatever refreshes the timeline refreshes this. */
+export function useProstheticsCaseHistory(caseId: string, params?: CaseHistoryParams) {
+  return useQuery({
+    queryKey: ["clinic-prosthetics-timeline", caseId, "history", params],
+    queryFn: () => clinicProstheticsApi.getHistory(caseId, params),
+    enabled: !!caseId,
+    // Every save on the case adds an event, and few of those mutations know about
+    // this query — so refetch whenever the history tab is opened.
+    refetchOnMount: "always",
   });
 }
 

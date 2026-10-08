@@ -637,6 +637,8 @@ export default function PhysioCasePage() {
   }, [painRegions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Initialize form states from backend data ─────────────────────────────────
+  // The intake is showing values borrowed from the doctor form, not saved ones.
+  const [intakeSuggested, setIntakeSuggested] = useState(false);
   const initialized = useRef(false);
   useEffect(() => {
     if (!caseData || initialized.current) return;
@@ -647,6 +649,10 @@ export default function PhysioCasePage() {
     setTimeout(() => {
       autoSaveReady.current = true;
     }, 500);
+
+    const intakeEmpty =
+      !caseData.complaintType && !caseData.painLocation && !caseData.complaintDuration && !caseData.complaintNotes;
+    setIntakeSuggested(intakeEmpty && !!(caseData.majorComplaint || caseData.complaintStartDate));
 
     // Complaint
     setComplaint({
@@ -664,9 +670,12 @@ export default function PhysioCasePage() {
       hadPreviousInjury: caseData.hadPreviousInjury ?? "",
       bestTimeOfDay: caseData.bestTimeOfDay ?? "",
       worstTimeOfDay: caseData.worstTimeOfDay ?? "",
-      complaintType: caseData.complaintType ?? "",
+      // Older cases never had their intake saved, while the same facts sit in the
+      // doctor form. When the whole intake is empty it is offered pre-filled from
+      // there — nothing is stored until the user reviews it and presses save.
+      complaintType: caseData.complaintType ?? (intakeEmpty ? (caseData.majorComplaint ?? "") : ""),
       painLocation: caseData.painLocation ?? "",
-      complaintDuration: caseData.complaintDuration ?? "",
+      complaintDuration: caseData.complaintDuration ?? (intakeEmpty ? (caseData.complaintStartDate ?? "") : ""),
       complaintNotes: caseData.complaintNotes ?? "",
       hasChronicDiseases: caseData.hasChronicDiseases ?? false,
       chronicDiseasesDetail: caseData.chronicDiseasesDetail ?? "",
@@ -979,6 +988,10 @@ export default function PhysioCasePage() {
   };
 
   const handleSaveIntake = async () => {
+    await saveIntakeRequest();
+    setIntakeSuggested(false);
+  };
+  const saveIntakeRequest = async () => {
     await submitComplaint.mutateAsync({
       id,
       dto: {
@@ -1164,7 +1177,9 @@ export default function PhysioCasePage() {
       return; // the mutation hook already toasted the reason — stay on the tab
     }
     goToNextPhysioFormTab("goals");
-    void tryAdvanceStatus("MEDICAL_HISTORY", "GOALS");
+    // A doctor exam ends at the medical history: the stages after it belong to
+    // the PT case it is converted into, and the API rejects them for an exam.
+    if (!isDoctorExamCase(c)) void tryAdvanceStatus("MEDICAL_HISTORY", "GOALS");
   };
 
   const handleSavePostural = async () => {
@@ -1587,6 +1602,11 @@ export default function PhysioCasePage() {
               <p className="text-sm text-muted-foreground">
                 {t("intake.patient")} <strong>{patientName}</strong>
               </p>
+              {intakeSuggested && (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  {t("intake.suggestedFromDoctorForm")}
+                </p>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
