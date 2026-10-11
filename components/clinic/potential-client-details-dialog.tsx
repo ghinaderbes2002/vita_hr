@@ -51,6 +51,7 @@ export function PotentialClientDetailsDialog({
               <Field label="الاسم">{client.patientName}</Field>
               <Field label="الجنس">{client.gender === "FEMALE" ? "أنثى" : "ذكر"}</Field>
               <Field label="العمر">{client.age ?? "—"}</Field>
+              <Field label="مكان الإقامة">{client.residence || "—"}</Field>
               <Field label="خدمة مهتم بها">{client.interestedService || "—"}</Field>
               <Field label="رقم التواصل">
                 <span className="font-mono" dir="ltr">{client.contactNumber}</span>

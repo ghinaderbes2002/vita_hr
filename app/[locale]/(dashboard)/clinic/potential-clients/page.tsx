@@ -205,6 +205,7 @@ function PotentialClientsList() {
               <TableHead>الاسم</TableHead>
               <TableHead>الجنس</TableHead>
               <TableHead>العمر</TableHead>
+              <TableHead>مكان الإقامة</TableHead>
               <TableHead>خدمة مهتم بها</TableHead>
               <TableHead>رقم التواصل</TableHead>
               <TableHead>طريقة الوصول</TableHead>
@@ -219,14 +220,14 @@ function PotentialClientsList() {
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 11 }).map((_, j) => (
+                  {Array.from({ length: 12 }).map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11}>
+                <TableCell colSpan={12}>
                   <EmptyState
                     icon={<UserSearch className="h-8 w-8 text-muted-foreground" />}
                     title={isFiltered ? "لا توجد نتائج مطابقة" : "لا يوجد عملاء محتملون"}
@@ -240,6 +241,7 @@ function PotentialClientsList() {
                   <TableCell className="font-medium">{c.patientName}</TableCell>
                   <TableCell className="text-sm">{c.gender === "FEMALE" ? "أنثى" : "ذكر"}</TableCell>
                   <TableCell className="text-sm">{c.age ?? "—"}</TableCell>
+                  <TableCell className="text-sm">{c.residence || "—"}</TableCell>
                   <TableCell className="text-sm">{c.interestedService}</TableCell>
                   <TableCell className="text-sm font-mono" dir="ltr">{c.contactNumber}</TableCell>
                   <TableCell className="text-sm">{arrivalLabel(c.arrivalMethod)}</TableCell>

@@ -15,6 +15,8 @@ export interface PotentialClient {
   patientName: string;
   gender: PotentialClientGender;
   age?: number | null;
+  /** Free text — where the person lives. */
+  residence?: string | null;
   arrivalMethod?: PotentialClientArrivalMethod | null;
   /** Free text — what the person was interested in. */
   interestedService: string;
@@ -35,6 +37,7 @@ export interface CreatePotentialClientDto {
   patientName: string;
   gender: PotentialClientGender;
   age?: number;
+  residence?: string;
   arrivalMethod?: PotentialClientArrivalMethod;
   interestedService: string;
   contactNumber: string;

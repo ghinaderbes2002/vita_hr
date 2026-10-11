@@ -38,6 +38,7 @@ const emptyForm = {
   patientName: "",
   gender: "" as "" | "MALE" | "FEMALE",
   age: "",
+  residence: "",
   arrivalMethod: NONE,
   interestedService: "",
   contactNumber: "",
@@ -52,6 +53,7 @@ const formOf = (c: PotentialClient): FormState => ({
   patientName: c.patientName ?? "",
   gender: c.gender,
   age: c.age != null ? String(c.age) : "",
+  residence: c.residence ?? "",
   arrivalMethod: c.arrivalMethod ?? NONE,
   interestedService: c.interestedService ?? "",
   contactNumber: c.contactNumber ?? "",
@@ -68,6 +70,7 @@ const toDto = (f: FormState): Record<string, unknown> => {
     gender: f.gender,
     // An unparseable age is dropped rather than sent as NaN.
     ...(age != null && !Number.isNaN(age) ? { age } : {}),
+    ...(f.residence.trim() ? { residence: f.residence.trim() } : {}),
     ...(f.arrivalMethod !== NONE ? { arrivalMethod: f.arrivalMethod } : {}),
     interestedService: f.interestedService.trim(),
     contactNumber: f.contactNumber.trim(),
@@ -178,6 +181,11 @@ export function PotentialClientDialog({
               <Input dir="ltr" value={form.contactNumber}
                 onChange={(e) => set({ contactNumber: e.target.value })} placeholder="09xxxxxxxx" />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>مكان الإقامة</Label>
+            <Input value={form.residence} onChange={(e) => set({ residence: e.target.value })} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
