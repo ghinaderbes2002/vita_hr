@@ -31,6 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { CreateLeaveRequestData, CreateHourlyLeaveData, LeaveRequest } from "@/lib/api/leave-requests";
 import { useState } from "react";
@@ -207,6 +208,17 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
     return diff > 0 ? diff : null;
   })();
 
+  // Balance of the selected type, for the year the leave starts in.
+  const balanceYear = (watchedStartDate ?? new Date()).getFullYear();
+  const { data: myBalances } = useMyLeaveBalances(balanceYear);
+  const selectedBalance = !selectedLeaveTypeId || isHourlyType || selectedLeaveType?.isUnlimited
+    ? undefined
+    : extractArray(myBalances).find((b: any) => b.leaveTypeId === selectedLeaveTypeId);
+  // When editing, this request's days are already counted in the balance.
+  const remainingAfter = selectedBalance && totalDaysPreview !== null && !initialData
+    ? selectedBalance.remainingDays - totalDaysPreview
+    : null;
+
   // تلميح نافذة التقديم
   const submissionWindowHint = (() => {
     if (!selectedLeaveType) return null;
@@ -349,6 +361,34 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
             </FormItem>
           )}
         />
+
+        {selectedBalance && (
+          <div className="rounded-md border bg-muted/40 px-4 py-2.5 text-sm space-y-1">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
+              <span className="text-muted-foreground">الرصيد المتبقي ({balanceYear})</span>
+              <span className={cn("font-semibold", selectedBalance.remainingDays > 0 ? "text-green-600" : "text-red-500")}>
+                {selectedBalance.remainingDays} / {selectedBalance.totalDays} يوم
+              </span>
+            </div>
+            {selectedBalance.pendingDays > 0 && (
+              <p className="text-xs text-muted-foreground">منها {selectedBalance.pendingDays} يوم بطلبات قيد الموافقة</p>
+            )}
+            {remainingAfter !== null && (
+              <div className="flex flex-wrap gap-2 items-center justify-between">
+                <span className="text-muted-foreground">بعد هذا الطلب</span>
+                <span className={cn("font-semibold", remainingAfter >= 0 ? "text-blue-700" : "text-red-500")}>
+                  {remainingAfter} يوم
+                </span>
+              </div>
+            )}
+            {remainingAfter !== null && remainingAfter < 0 && (
+              <p className="flex items-center gap-1 text-xs text-red-600">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                الطلب يتجاوز رصيدك المتبقي
+              </p>
+            )}
+          </div>
+        )}
 
         {submissionWindowHint && (
           <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">

@@ -86,6 +86,8 @@ interface Props {
   defaultCcIds?: string[];
   defaultBody?: string;
   forwardAttachments?: ForwardAttachment[];
+  /** Shown in the forward preview; defaults to forwardAttachments. Display only. */
+  forwardPreviewAttachments?: ForwardAttachment[];
 }
 
 export function ComposeMailModal({
@@ -100,7 +102,9 @@ export function ComposeMailModal({
   defaultCcIds = [],
   defaultBody = "",
   forwardAttachments = [],
+  forwardPreviewAttachments,
 }: Props) {
+  const previewAttachments = forwardPreviewAttachments ?? forwardAttachments;
   const [subject, setSubject] = useState(defaultSubject);
   const [toIds, setToIds] = useState<string[]>(defaultToIds);
   const [ccIds, setCcIds] = useState<string[]>(defaultCcIds);
@@ -474,11 +478,11 @@ export function ComposeMailModal({
           )}
 
           {/* Forwarded attachments (read-only) */}
-          {forwardAttachments.length > 0 && (
+          {previewAttachments.length > 0 && (
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">{t("originalAttachments")}</p>
               <div className="border rounded-md divide-y">
-                {forwardAttachments.map((att) => (
+                {previewAttachments.map((att) => (
                   <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground">
                     <Paperclip className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">{decodeFileName(att.fileName)}</span>

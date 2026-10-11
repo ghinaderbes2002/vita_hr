@@ -207,24 +207,31 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
       ]
   ).filter((r) => !!r.employeeId && !isMe(r.employeeId));
 
-  const forwardSenderLine = senderName
-    ? `${t("forwardFrom")}: ${senderName}`
-    : "";
-  const forwardDateLine = message.createdAt
-    ? `${t("forwardDate")}: ${format(new Date(message.createdAt), "PPP", { locale: ar })}`
-    : "";
-  const forwardDefaultBody = [
-    "",
-    "",
-    t("forwardedHeader"),
-    forwardSenderLine,
-    `${t("forwardSubject")}: ${message.subject}`,
-    forwardDateLine,
-    "",
-    stripTags(message.body ?? ""),
-  ]
-    .filter((l, i) => i < 3 || l !== "")
-    .join("\n");
+  // A forward carries the whole conversation, oldest first — the backend builds
+  // the forwarded body from the thread; this is the preview of what it sends.
+  const forwardThread = (thread.length > 1 ? [...thread] : [message])
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const toPlainText = (html: string) =>
+    stripTags(html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div)>/gi, "\n")).trim();
+  const forwardBlock = (m: typeof message) => {
+    const name = m.id === message.id && senderName
+      ? senderName
+      : m.sender
+        ? `${m.sender.firstNameAr} ${m.sender.lastNameAr}`
+        : (empBasicByUserId[m.senderId]?.nameAr ?? empNameById[m.senderId] ?? "");
+    return [
+      t("forwardedHeader"),
+      name ? `${t("forwardFrom")}: ${name}` : "",
+      `${t("forwardSubject")}: ${m.subject}`,
+      m.createdAt ? `${t("forwardDate")}: ${format(new Date(m.createdAt), "PPP p", { locale: ar })}` : "",
+      "",
+      toPlainText(m.body ?? ""),
+    ].filter((l, i) => i === 4 || l !== "").join("\n");
+  };
+  const forwardDefaultBody = ["", "", forwardThread.map(forwardBlock).join("\n\n")].join("\n");
+  const forwardThreadAttachments = Array.from(
+    new Map(forwardThread.flatMap((m) => m.attachments ?? []).map((a) => [a.id, a])).values(),
+  );
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -662,6 +669,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           defaultSubject={t("fwdPrefix") + message.subject}
           defaultBody={forwardDefaultBody}
           forwardAttachments={message.attachments ?? []}
+          forwardPreviewAttachments={forwardThreadAttachments}
         />
       )}
 
