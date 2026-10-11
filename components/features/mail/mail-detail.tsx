@@ -165,14 +165,38 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     ? `${senderInfo.firstNameAr} ${senderInfo.lastNameAr}`
     : (empBasicByUserId[message.senderId]?.nameAr ?? empNameById[message.senderId] ?? null);
 
+  const stripTags = (text: string) => text.replace(/<[^>]*>/g, "");
+  const escapeHtml = (text: string) =>
+    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // The backend prefixes a forwarded message with a plain-text header (a dashed
+  // rule, then من / الموضوع / التاريخ separated by newlines). Inside an HTML body
+  // those newlines collapse into one run-on line, so the header is lifted out
+  // and drawn as a card instead.
+  const FORWARD_HEADER =
+    /(?:\s|<br\s*\/?>)*[─—\-_]{5,}(?:[^<]|<br\s*\/?>)*?(?:من|From):\s*([\s\S]+?)\s*(?:الموضوع|Subject):\s*([\s\S]+?)\s*(?:التاريخ|Date):\s*(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2})(?::\d{2})?(?:\s|<br\s*\/?>)*/g;
+  const forwardHeaderCard = (_: string, from: string, subject: string, date: string) => {
+    const parsed = new Date(date.replace(" ", "T"));
+    const when = isNaN(parsed.getTime()) ? date : format(parsed, "PPPp", { locale: ar });
+    const row = (label: string, value: string) =>
+      `<div class="flex gap-2"><span class="text-muted-foreground shrink-0">${label}:</span><span>${escapeHtml(stripTags(value).trim())}</span></div>`;
+    return (
+      `<div class="my-3 rounded-md border-s-4 border-primary/40 bg-muted/40 px-4 py-3 space-y-1">` +
+      `<div class="text-xs font-semibold text-muted-foreground">${t("forwardedMessage")}</div>` +
+      row(t("forwardFrom"), from) +
+      row(t("forwardSubject"), subject) +
+      row(t("forwardDate"), when) +
+      `</div>`
+    );
+  };
+
   const renderBody = (body: string) => {
     // Body is stored as HTML from the rich-text editor — render directly.
     // For plain-text bodies (no tags), convert newlines to <br>.
     const isHtml = /<[a-z][\s\S]*>/i.test(body);
-    return { __html: isHtml ? body : body.replace(/\n/g, "<br>") };
+    const html = isHtml ? body : body.replace(/\n/g, "<br>");
+    return { __html: html.replace(FORWARD_HEADER, forwardHeaderCard) };
   };
-
-  const stripTags = (text: string) => text.replace(/<[^>]*>/g, "");
 
   const defaultSubject = `${t("rePrefix")}${message.subject}`;
   const getRecipientEmpId = (r: any) => {

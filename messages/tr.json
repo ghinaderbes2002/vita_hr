@@ -820,6 +820,7 @@
     "uploadingAttachments": "Ekler yükleniyor...",
     "send": "Gönder",
     "forwardedHeader": "---------- İletilen Mesaj ----------",
+    "forwardedMessage": "İletilen mesaj",
     "forwardFrom": "Gönderen",
     "forwardSubject": "Konu",
     "forwardDate": "Tarih",

@@ -678,6 +678,7 @@
     "uploadingAttachments": "جاري رفع المرفقات...",
     "send": "إرسال",
     "forwardedHeader": "---------- رسالة محوّلة ----------",
+    "forwardedMessage": "رسالة محوّلة",
     "forwardFrom": "من",
     "forwardSubject": "الموضوع",
     "forwardDate": "التاريخ",

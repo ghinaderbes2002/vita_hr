@@ -822,6 +822,7 @@
     "uploadingAttachments": "Uploading attachments...",
     "send": "Send",
     "forwardedHeader": "---------- Forwarded Message ----------",
+    "forwardedMessage": "Forwarded message",
     "forwardFrom": "From",
     "forwardSubject": "Subject",
     "forwardDate": "Date",
