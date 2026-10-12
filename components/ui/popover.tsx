@@ -21,6 +21,8 @@ function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  onWheel,
+  onTouchMove,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
   return (
@@ -34,6 +36,11 @@ function PopoverContent({
           className
         )}
         {...props}
+        // The content is portaled out of any Dialog it was opened from, and the
+        // Dialog's scroll lock cancels wheel/touch scrolling outside itself.
+        // Stopping the events here keeps a scrollable list inside usable.
+        onWheel={(e) => { e.stopPropagation(); onWheel?.(e) }}
+        onTouchMove={(e) => { e.stopPropagation(); onTouchMove?.(e) }}
       />
     </PopoverPrimitive.Portal>
   )
