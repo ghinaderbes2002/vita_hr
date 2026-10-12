@@ -5518,7 +5518,6 @@
         "edit": "Edit",
         "editTitle": "Edit appointment",
         "editSave": "Save changes",
-        "editOpenEndedHint": "This appointment is open-ended — to change its date or time, choose Rescheduled under Change status.",
         "rescheduleTitle": "Reschedule Appointment",
         "rescheduleConfirm": "Reschedule",
         "cancelConfirmTitle": "Cancel Appointment",

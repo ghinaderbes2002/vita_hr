@@ -70,16 +70,10 @@ function toISO(d: Date) {
 
 /** The editable fields of an appointment, as the edit dialog holds them. */
 function editFormOf(a: Appointment) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const s = a.startTime && a.startTime.length > 5 ? new Date(a.startTime) : null;
-  const e = a.endTime && a.endTime.length > 5 ? new Date(a.endTime) : null;
   return {
     appointmentType: a.appointmentType,
     departmentId: a.departmentId ?? a.department?.id ?? "",
     therapistIds: a.therapistIds?.length ? a.therapistIds : (a.therapists ?? []).map((tp) => tp.id),
-    date: s ? `${s.getFullYear()}-${pad(s.getMonth() + 1)}-${pad(s.getDate())}` : (a.date ?? ""),
-    startTime: s ? `${pad(s.getHours())}:${pad(s.getMinutes())}` : "",
-    endTime: e ? `${pad(e.getHours())}:${pad(e.getMinutes())}` : "",
     notes: a.notes ?? "",
   };
 }
@@ -378,30 +372,20 @@ export default function AppointmentsPage() {
     setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "", isOpenEnded: false });
   };
 
-  // PUT /appointments/:id takes only what changed. It has no open-ended flag, so
-  // the timing of an open-ended booking is left to the reschedule dialog.
+  // PUT /appointments/:id takes only what changed. Date and time are not edited
+  // here — they go through the reschedule dialog.
   const editChanges = () => {
     if (!editFor || !editForm) return {};
     const was = editFormOf(editFor);
     const sameIds = (x: string[], y: string[]) => [...x].sort().join() === [...y].sort().join();
-    const timeChanged = !editFor.isOpenEnded &&
-      (editForm.date !== was.date || editForm.startTime !== was.startTime || editForm.endTime !== was.endTime);
     return {
       ...(editForm.appointmentType !== was.appointmentType ? { appointmentType: editForm.appointmentType } : {}),
       ...(editForm.departmentId && editForm.departmentId !== was.departmentId ? { departmentId: editForm.departmentId } : {}),
       ...(!sameIds(editForm.therapistIds, was.therapistIds) ? { therapistIds: editForm.therapistIds } : {}),
       ...(editForm.notes.trim() !== was.notes.trim() ? { notes: editForm.notes.trim() } : {}),
-      ...(timeChanged
-        ? {
-            startTime: new Date(`${editForm.date}T${editForm.startTime}:00`).toISOString(),
-            endTime: new Date(`${editForm.date}T${editForm.endTime}:00`).toISOString(),
-          }
-        : {}),
     };
   };
   const editHasChanges = Object.keys(editChanges()).length > 0;
-  const editTimeMissing = !!editFor && !!editForm && !editFor.isOpenEnded &&
-    (!editForm.date || !editForm.startTime || !editForm.endTime);
   // The appointment's own department and type stay selectable even when the
   // pickers would no longer offer them (a legacy type, a non-clinical department).
   const editDeptOptions = !editForm
@@ -800,28 +784,6 @@ export default function AppointmentsPage() {
                   labelOf={(id) => staffName(id) ?? id}
                 />
               </div>
-              {editFor.isOpenEnded ? (
-                <p className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-                  {t("actions.editOpenEndedHint")}
-                </p>
-              ) : (
-                <>
-                  <div className="space-y-1.5">
-                    <Label>{t("form.date")}</Label>
-                    <Input type="date" value={editForm.date} onChange={(e) => setEditForm((f) => f && ({ ...f, date: e.target.value }))} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>{t("form.startTime")}</Label>
-                      <Input type="time" value={editForm.startTime} onChange={(e) => setEditForm((f) => f && ({ ...f, startTime: e.target.value }))} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>{t("form.endTime")}</Label>
-                      <Input type="time" value={editForm.endTime} onChange={(e) => setEditForm((f) => f && ({ ...f, endTime: e.target.value }))} />
-                    </div>
-                  </div>
-                </>
-              )}
               <div className="space-y-1.5">
                 <Label>{t("form.notes")}</Label>
                 <Textarea rows={2} value={editForm.notes} onChange={(e) => setEditForm((f) => f && ({ ...f, notes: e.target.value }))} />
@@ -833,7 +795,7 @@ export default function AppointmentsPage() {
               {t("form.cancel")}
             </Button>
             <Button
-              disabled={updateAppt.isPending || !editHasChanges || editTimeMissing}
+              disabled={updateAppt.isPending || !editHasChanges}
               onClick={async () => {
                 if (!editFor) return;
                 await updateAppt.mutateAsync({ id: editFor.id, dto: editChanges() });
