@@ -4,7 +4,7 @@ import { useState, useMemo, type ReactNode } from "react";
 import { formatClockTime } from "@/lib/utils/date";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Loader2, UserRound, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Loader2, UserRound, Search, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +21,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { WhatsappConfirmButton } from "@/components/clinic/whatsapp-confirm-button";
 import { CLINIC_WHATSAPP_NUMBER } from "@/lib/clinic/whatsapp";
 import { cn, formatClinicTime } from "@/lib/utils";
-import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment } from "@/lib/hooks/use-clinic-appointments";
+import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment, useUpdateAppointment } from "@/lib/hooks/use-clinic-appointments";
 import {
   Appointment, AppointmentType, AppointmentStatus,
   ALL_APPOINTMENT_TYPES, PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
@@ -66,6 +66,69 @@ function daysInMonth(year: number, month: number) {
 
 function toISO(d: Date) {
   return d.toISOString().slice(0, 10);
+}
+
+/** The editable fields of an appointment, as the edit dialog holds them. */
+function editFormOf(a: Appointment) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const s = a.startTime && a.startTime.length > 5 ? new Date(a.startTime) : null;
+  const e = a.endTime && a.endTime.length > 5 ? new Date(a.endTime) : null;
+  return {
+    appointmentType: a.appointmentType,
+    departmentId: a.departmentId ?? a.department?.id ?? "",
+    therapistIds: a.therapistIds?.length ? a.therapistIds : (a.therapists ?? []).map((tp) => tp.id),
+    date: s ? `${s.getFullYear()}-${pad(s.getMonth() + 1)}-${pad(s.getDate())}` : (a.date ?? ""),
+    startTime: s ? `${pad(s.getHours())}:${pad(s.getMinutes())}` : "",
+    endTime: e ? `${pad(e.getHours())}:${pad(e.getMinutes())}` : "",
+    notes: a.notes ?? "",
+  };
+}
+
+/** Multi-select of specialist therapists, shared by the new and edit dialogs. */
+function TherapistPicker({
+  staff, value, onChange, placeholder, labelOf,
+}: {
+  staff: any[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+  placeholder: string;
+  labelOf: (id: string) => string;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" className="w-full justify-between font-normal h-auto min-h-10 py-2">
+          <span className={cn("truncate text-start", value.length === 0 && "text-muted-foreground")}>
+            {value.length ? value.map(labelOf).join("، ") : placeholder}
+          </span>
+          <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-(--radix-popover-trigger-width) p-1" align="start">
+        {staff.length === 0 ? (
+          <p className="px-2 py-1.5 text-sm text-muted-foreground">—</p>
+        ) : (
+          <div className="max-h-60 overflow-y-auto">
+            {staff.map((emp: any) => {
+              const val = emp.userId ?? emp.id;
+              const active = value.includes(val);
+              return (
+                <button
+                  key={emp.id}
+                  type="button"
+                  onClick={() => onChange(active ? value.filter((x) => x !== val) : [...value, val])}
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent text-start"
+                >
+                  <Checkbox checked={active} className="pointer-events-none" />
+                  <span className="flex-1 truncate">{emp.firstNameAr} {emp.lastNameAr}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -147,6 +210,8 @@ export default function AppointmentsPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [rescheduleFor, setRescheduleFor] = useState<Appointment | null>(null);
   const [rsForm, setRsForm] = useState({ date: "", startTime: "", endTime: "", isOpenEnded: false });
+  const [editFor, setEditFor] = useState<Appointment | null>(null);
+  const [editForm, setEditForm] = useState<ReturnType<typeof editFormOf> | null>(null);
   const [newApptOpen, setNewApptOpen] = useState(false);
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [patientPopoverOpen, setPatientPopoverOpen] = useState(false);
@@ -192,6 +257,7 @@ export default function AppointmentsPage() {
   const cancelAppt = useCancelAppointment();
   const updateStatus = useUpdateAppointmentStatus();
   const rescheduleAppt = useRescheduleAppointment();
+  const updateAppt = useUpdateAppointment();
 
   const patientsList = patientsData?.items ?? [];
 
@@ -311,6 +377,44 @@ export default function AppointmentsPage() {
     setUnregisteredName("");
     setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "", isOpenEnded: false });
   };
+
+  // PUT /appointments/:id takes only what changed. It has no open-ended flag, so
+  // the timing of an open-ended booking is left to the reschedule dialog.
+  const editChanges = () => {
+    if (!editFor || !editForm) return {};
+    const was = editFormOf(editFor);
+    const sameIds = (x: string[], y: string[]) => [...x].sort().join() === [...y].sort().join();
+    const timeChanged = !editFor.isOpenEnded &&
+      (editForm.date !== was.date || editForm.startTime !== was.startTime || editForm.endTime !== was.endTime);
+    return {
+      ...(editForm.appointmentType !== was.appointmentType ? { appointmentType: editForm.appointmentType } : {}),
+      ...(editForm.departmentId && editForm.departmentId !== was.departmentId ? { departmentId: editForm.departmentId } : {}),
+      ...(!sameIds(editForm.therapistIds, was.therapistIds) ? { therapistIds: editForm.therapistIds } : {}),
+      ...(editForm.notes.trim() !== was.notes.trim() ? { notes: editForm.notes.trim() } : {}),
+      ...(timeChanged
+        ? {
+            startTime: new Date(`${editForm.date}T${editForm.startTime}:00`).toISOString(),
+            endTime: new Date(`${editForm.date}T${editForm.endTime}:00`).toISOString(),
+          }
+        : {}),
+    };
+  };
+  const editHasChanges = Object.keys(editChanges()).length > 0;
+  const editTimeMissing = !!editFor && !!editForm && !editFor.isOpenEnded &&
+    (!editForm.date || !editForm.startTime || !editForm.endTime);
+  // The appointment's own department and type stay selectable even when the
+  // pickers would no longer offer them (a legacy type, a non-clinical department).
+  const editDeptOptions = !editForm
+    ? []
+    : clinicDepartments.some((d) => d.id === editForm.departmentId)
+      ? clinicDepartments
+      : [...clinicDepartments, ...departments.filter((d) => d.id === editForm.departmentId)];
+  const editTypeOptions = !editForm
+    ? []
+    : (() => {
+        const allowed = typesForDepartment(editForm.departmentId);
+        return allowed.includes(editForm.appointmentType) ? allowed : [editForm.appointmentType, ...allowed];
+      })();
 
   // Same wording as the rows inside the details dialog, reused by its WhatsApp button.
   const detailPatientName = !detailAppt
@@ -618,7 +722,127 @@ export default function AppointmentsPage() {
                 }
               />
             )}
+            {detailAppt && detailAppt.status !== "CANCELLED" && canCreateAppt && (
+              <Button
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => {
+                  setEditForm(editFormOf(detailAppt));
+                  setEditFor(detailAppt);
+                  setDetailAppt(null);
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+                {t("actions.edit")}
+              </Button>
+            )}
             <Button variant="outline" className="ms-auto" onClick={() => setDetailAppt(null)}>{t("form.cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit appointment dialog */}
+      <Dialog open={!!editFor} onOpenChange={(o) => { if (!o && !updateAppt.isPending) setEditFor(null); }}>
+        <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("actions.editTitle")}</DialogTitle>
+          </DialogHeader>
+          {editFor && editForm && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-1.5">
+                <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  {editFor.patient ? `${editFor.patient.firstName} ${editFor.patient.lastName}` : (editFor.patientName || "—")}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5 min-w-0">
+                  <Label>{t("form.appointmentType")}</Label>
+                  <Select value={editForm.appointmentType} onValueChange={(v) => setEditForm((f) => f && ({ ...f, appointmentType: v as AppointmentType }))}>
+                    <SelectTrigger className="w-full min-w-0 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {editTypeOptions.map((k) => (
+                        <SelectItem key={k} value={k}>{t(`types.${k}`)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 min-w-0">
+                  <Label>{t("form.department")}</Label>
+                  <Select
+                    value={editForm.departmentId}
+                    onValueChange={(v) => setEditForm((f) => {
+                      if (!f) return f;
+                      const allowed = typesForDepartment(v);
+                      return {
+                        ...f,
+                        departmentId: v,
+                        appointmentType: allowed.includes(f.appointmentType) ? f.appointmentType : allowed[0],
+                      };
+                    })}
+                  >
+                    <SelectTrigger className="w-full min-w-0 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate"><SelectValue placeholder={t("form.departmentPlaceholder")} /></SelectTrigger>
+                    <SelectContent>
+                      {editDeptOptions.map((dep) => (
+                        <SelectItem key={dep.id} value={dep.id}>{deptName(dep)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("form.specialistTherapist")}</Label>
+                <TherapistPicker
+                  staff={clinicalStaff}
+                  value={editForm.therapistIds}
+                  onChange={(ids) => setEditForm((f) => f && ({ ...f, therapistIds: ids }))}
+                  placeholder={t("form.specialistTherapistPlaceholder")}
+                  labelOf={(id) => staffName(id) ?? id}
+                />
+              </div>
+              {editFor.isOpenEnded ? (
+                <p className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                  {t("actions.editOpenEndedHint")}
+                </p>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>{t("form.date")}</Label>
+                    <Input type="date" value={editForm.date} onChange={(e) => setEditForm((f) => f && ({ ...f, date: e.target.value }))} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>{t("form.startTime")}</Label>
+                      <Input type="time" value={editForm.startTime} onChange={(e) => setEditForm((f) => f && ({ ...f, startTime: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>{t("form.endTime")}</Label>
+                      <Input type="time" value={editForm.endTime} onChange={(e) => setEditForm((f) => f && ({ ...f, endTime: e.target.value }))} />
+                    </div>
+                  </div>
+                </>
+              )}
+              <div className="space-y-1.5">
+                <Label>{t("form.notes")}</Label>
+                <Textarea rows={2} value={editForm.notes} onChange={(e) => setEditForm((f) => f && ({ ...f, notes: e.target.value }))} />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditFor(null)} disabled={updateAppt.isPending}>
+              {t("form.cancel")}
+            </Button>
+            <Button
+              disabled={updateAppt.isPending || !editHasChanges || editTimeMissing}
+              onClick={async () => {
+                if (!editFor) return;
+                await updateAppt.mutateAsync({ id: editFor.id, dto: editChanges() });
+                setEditFor(null);
+              }}
+            >
+              {updateAppt.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              {t("actions.editSave")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -875,48 +1099,13 @@ export default function AppointmentsPage() {
                 each gets notified of the appointment. */}
             <div className="space-y-1.5">
               <Label>{t("form.specialistTherapist")}</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" className="w-full justify-between font-normal h-auto min-h-10 py-2">
-                    <span className={cn("truncate text-start", newForm.therapistIds.length === 0 && "text-muted-foreground")}>
-                      {newForm.therapistIds.length
-                        ? newForm.therapistIds.map(therapistLabel).join("، ")
-                        : t("form.specialistTherapistPlaceholder")}
-                    </span>
-                    <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-(--radix-popover-trigger-width) p-1" align="start">
-                  {clinicalStaff.length === 0 ? (
-                    <p className="px-2 py-1.5 text-sm text-muted-foreground">—</p>
-                  ) : (
-                    <div className="max-h-60 overflow-y-auto">
-                      {clinicalStaff.map((emp: any) => {
-                        const val = emp.userId ?? emp.id;
-                        const active = newForm.therapistIds.includes(val);
-                        return (
-                          <button
-                            key={emp.id}
-                            type="button"
-                            onClick={() =>
-                              setNewForm((f) => ({
-                                ...f,
-                                therapistIds: active
-                                  ? f.therapistIds.filter((x) => x !== val)
-                                  : [...f.therapistIds, val],
-                              }))
-                            }
-                            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent text-start"
-                          >
-                            <Checkbox checked={active} className="pointer-events-none" />
-                            <span className="flex-1 truncate">{emp.firstNameAr} {emp.lastNameAr}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </PopoverContent>
-              </Popover>
+              <TherapistPicker
+                staff={clinicalStaff}
+                value={newForm.therapistIds}
+                onChange={(ids) => setNewForm((f) => ({ ...f, therapistIds: ids }))}
+                placeholder={t("form.specialistTherapistPlaceholder")}
+                labelOf={therapistLabel}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t("form.date")}</Label>

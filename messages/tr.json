@@ -4596,6 +4596,10 @@
       "late": "Geç kaldı",
         "cancel": "Randevuyu İptal Et",
         "changeStatus": "Durumu değiştir",
+        "edit": "Düzenle",
+        "editTitle": "Randevuyu düzenle",
+        "editSave": "Değişiklikleri kaydet",
+        "editOpenEndedHint": "Bu randevu açık uçlu — tarih veya saatini değiştirmek için Durum değiştir altında Yeniden planlandı seçin.",
         "rescheduleTitle": "Randevuyu Yeniden Planla",
         "rescheduleConfirm": "Yeniden Planla"
       }
