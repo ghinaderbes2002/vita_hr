@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { clinicAppointmentsApi, CreateAppointmentDto, UpdateAppointmentDto, RescheduleAppointmentDto, AppointmentListParams, AppointmentStatus, AppointmentStatisticsParams } from "@/lib/api/clinic-appointments";
+import { clinicAppointmentsApi, CreateAppointmentDto, UpdateAppointmentDto, RescheduleAppointmentDto, AppointmentListParams, AppointmentStatus, AppointmentStatisticsParams, CreateInternalMeetingDto, InternalMeetingListParams } from "@/lib/api/clinic-appointments";
 import { toast } from "sonner";
 
 export function useClinicAppointments(params?: AppointmentListParams) {
@@ -9,10 +9,11 @@ export function useClinicAppointments(params?: AppointmentListParams) {
   });
 }
 
-export function useMyAppointments(params?: AppointmentListParams) {
+export function useMyAppointments(params?: AppointmentListParams, enabled = true) {
   return useQuery({
     queryKey: ["my-appointments", params],
     queryFn: () => clinicAppointmentsApi.myAppointments(params),
+    enabled,
   });
 }
 
@@ -152,5 +153,38 @@ export function useExportAppointmentStatistics() {
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تصدير الملف"),
+  });
+}
+
+export function useInternalMeetings(params?: InternalMeetingListParams, enabled = true) {
+  return useQuery({
+    queryKey: ["internal-meetings", params],
+    queryFn: () => clinicAppointmentsApi.listInternalMeetings(params),
+    enabled,
+  });
+}
+
+export function useMyStaffMeetings(params?: { dateFrom?: string; dateTo?: string }, enabled = true) {
+  return useQuery({
+    // Under the "internal-meetings" prefix so booking a meeting refreshes it too.
+    queryKey: ["internal-meetings", "my", params],
+    queryFn: () => clinicAppointmentsApi.listMyStaffMeetings(params),
+    enabled,
+  });
+}
+
+/**
+ * The server's message is shown as-is: on ATTENDEE_NOT_AVAILABLE it already
+ * names who is busy. The caller reads details.conflictedUserIds off the error.
+ */
+export function useCreateInternalMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateInternalMeetingDto) => clinicAppointmentsApi.createInternalMeeting(dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["internal-meetings"] });
+      toast.success("تم حجز الاجتماع");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حجز الاجتماع"),
   });
 }

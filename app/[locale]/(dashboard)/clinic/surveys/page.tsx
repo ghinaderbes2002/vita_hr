@@ -1,0 +1,83 @@
+"use client";
+
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PageHeader } from "@/components/shared/page-header";
+import { PageGuard } from "@/components/permissions/page-guard";
+import {
+  PatientSurveyDialog, PatientSurveysTable, SURVEY_DEPARTMENT_LABEL,
+} from "@/components/clinic/patient-survey";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import type { SurveyDepartment } from "@/lib/api/patient-surveys";
+
+export default function PatientSurveysPage() {
+  return (
+    <PageGuard
+      permissions={[
+        PERMISSIONS.CLINIC_PATIENTS.SURVEYS_VIEW,
+        PERMISSIONS.CLINIC_PATIENTS.SURVEYS_CREATE,
+      ]}
+    >
+      <PatientSurveys />
+    </PageGuard>
+  );
+}
+
+function PatientSurveys() {
+  const { hasPermission, isAdmin } = usePermissions();
+  const canView = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_VIEW);
+  const canCreate = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_CREATE);
+  const [department, setDepartment] = useState<SurveyDepartment | "ALL">("ALL");
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title="استبيانات رضا العملاء"
+        description="تقييم المرضى للخدمة، مربوط تلقائياً بالمعالجين المسؤولين عن حالتهم"
+        actions={
+          canCreate && (
+            <Button onClick={() => setOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              استبيان جديد
+            </Button>
+          )
+        }
+      />
+
+      {canView && (
+        <>
+          <Card>
+            <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>القسم</Label>
+                <Select value={department} onValueChange={(v) => setDepartment(v as SurveyDepartment | "ALL")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">كل الأقسام</SelectItem>
+                    {(Object.keys(SURVEY_DEPARTMENT_LABEL) as SurveyDepartment[]).map((d) => (
+                      <SelectItem key={d} value={d}>{SURVEY_DEPARTMENT_LABEL[d]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-5">
+              <PatientSurveysTable params={department !== "ALL" ? { department } : {}} />
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      <PatientSurveyDialog open={open} onOpenChange={setOpen} />
+    </div>
+  );
+}

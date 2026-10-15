@@ -47,6 +47,8 @@ import { ConvertToPhysioDialog } from "@/components/clinic/convert-to-physio-dia
 import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
 import { PhysioCase } from "@/lib/api/clinic-physio";
 import { referralSourceLabel, REFERRAL_DETAILS_LABEL, ReferralSource } from "@/lib/clinic/referral-sources";
+import { PatientSurveyDialog, PatientSurveysTable } from "@/components/clinic/patient-survey";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 
 const GENDER_LABEL: Record<string, string> = { MALE: "ذكر", FEMALE: "أنثى" };
 const IDENTITY_LABEL: Record<string, string> = { NATIONAL_ID: "هوية وطنية", PASSPORT: "جواز سفر", RESIDENCE: "إقامة" };
@@ -103,6 +105,10 @@ export default function PatientProfilePage() {
   const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [deleteLinkId, setDeleteLinkId] = useState<string | null>(null);
+  const [surveyDialogOpen, setSurveyDialogOpen] = useState(false);
+  const { hasPermission, isAdmin } = usePermissions();
+  const canViewSurveys = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_VIEW);
+  const canCreateSurvey = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_CREATE);
 
   const { data: patient, isLoading } = useClinicPatient(id);
   const { data: prostCases = [] } = useProstheticsCasesByPatient(id);
@@ -475,6 +481,7 @@ export default function PatientProfilePage() {
           <TabsTrigger value="documents">المستندات ({documents.length})</TabsTrigger>
           <TabsTrigger value="links">الروابط ({links.length})</TabsTrigger>
           <TabsTrigger value="notes">الملاحظات ({notes.length})</TabsTrigger>
+          {(canViewSurveys || canCreateSurvey) && <TabsTrigger value="surveys">الاستبيانات</TabsTrigger>}
         </TabsList>
 
         {/* Overview Tab */}
@@ -890,7 +897,21 @@ export default function PatientProfilePage() {
             </div>
           )}
         </TabsContent>
+
+        {/* Surveys Tab */}
+        {(canViewSurveys || canCreateSurvey) && (
+          <TabsContent value="surveys" className="mt-4 space-y-4">
+            {canCreateSurvey && (
+              <Button size="sm" className="gap-1.5" onClick={() => setSurveyDialogOpen(true)}>
+                <Plus className="h-4 w-4" /> استبيان جديد
+              </Button>
+            )}
+            {canViewSurveys && <PatientSurveysTable params={{ patientId: id }} />}
+          </TabsContent>
+        )}
       </Tabs>
+
+      <PatientSurveyDialog open={surveyDialogOpen} onOpenChange={setSurveyDialogOpen} patient={patient ?? null} />
 
       {/* Upload Document Dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={(o) => { if (!uploadDoc.isPending) { setUploadDialogOpen(o); if (!o) { setUploadFile(null); setUploadType("OTHER"); } } }}>

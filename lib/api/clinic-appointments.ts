@@ -187,6 +187,43 @@ export interface AppointmentStatisticsResponse {
   total: number;
 }
 
+/**
+ * An internal meeting or training: a block of time booked for a group of staff,
+ * with no patient or case behind it. The server rejects the whole booking when
+ * any attendee has an overlapping prosthetics, physio or podiatry session.
+ */
+export type InternalMeetingType = "MEETING" | "TRAINING";
+
+export interface InternalMeeting {
+  id: string;
+  title: string;
+  meetingType: InternalMeetingType;
+  /** User ids — the same ids as practitionerId / therapistIds on appointments. */
+  attendeeIds: string[];
+  startTime: string;
+  endTime: string;
+  notes?: string | null;
+  /** Always SCHEDULED for now; CANCELLED is reserved for a future cancel action. */
+  status: "SCHEDULED" | "CANCELLED";
+  createdBy?: string | null;
+  createdAt: string;
+}
+
+export interface CreateInternalMeetingDto {
+  title: string;
+  meetingType: InternalMeetingType;
+  attendeeIds: string[];
+  startTime: string;
+  endTime: string;
+  notes?: string;
+}
+
+export interface InternalMeetingListParams {
+  dateFrom?: string;
+  dateTo?: string;
+  attendeeId?: string;
+}
+
 export const clinicAppointmentsApi = {
   create: async (dto: CreateAppointmentDto): Promise<Appointment> => {
     const { data } = await apiClient.post("/appointments", dto);
@@ -291,5 +328,26 @@ export const clinicAppointmentsApi = {
       responseType: "blob",
     });
     return response.data;
+  },
+
+  createInternalMeeting: async (dto: CreateInternalMeetingDto): Promise<InternalMeeting> => {
+    // "staff-meetings" not "internal-meetings": a security rule blocks any
+    // externally reached path containing "internal".
+    const { data } = await apiClient.post("/appointments/staff-meetings", dto);
+    return data?.data ?? data;
+  },
+
+  /** Sorted by startTime ascending on the server. */
+  listInternalMeetings: async (params?: InternalMeetingListParams): Promise<InternalMeeting[]> => {
+    const { data } = await apiClient.get("/appointments/staff-meetings", { params });
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  /** Meetings the logged-in user is invited to — the server reads who from the token. */
+  listMyStaffMeetings: async (params?: Pick<InternalMeetingListParams, "dateFrom" | "dateTo">): Promise<InternalMeeting[]> => {
+    const { data } = await apiClient.get("/appointments/staff-meetings/my", { params });
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
   },
 };

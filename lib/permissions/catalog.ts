@@ -245,6 +245,9 @@ export const PERMISSIONS = {
     VIEW_DOCUMENTS:   "clinic.patients.view_documents",
     UPLOAD_DOCUMENTS: "clinic.patients.upload_documents",
     VIEW_CONSENTS:    "clinic.patients.view_consents",
+    /** استبيان رضا العملاء — منفصلة عن صلاحيات المرضى، تُمنح صراحةً. */
+    SURVEYS_CREATE:   "clinic.patients.surveys.create",
+    SURVEYS_VIEW:     "clinic.patients.surveys.view",
   },
   CLINIC_PROSTHETICS: {
     CASE_VIEW:         "clinic.prosthetics.case.view",
@@ -292,6 +295,14 @@ export const PERMISSIONS = {
      * شاشة إدارة الأدوار بعد نشر الباك.
      */
     STATISTICS_VIEW: "clinic.appointments.statistics_view",
+    /**
+     * الاجتماعات والتدريبات الداخلية — منفصلة عن صلاحيات مواعيد المرضى، فلا
+     * تكفي CREATE أعلاه. تُمنح يدوياً من شاشة إدارة الأدوار.
+     */
+    INTERNAL_MEETINGS_CREATE: "clinic.appointments.internal_meetings.create",
+    INTERNAL_MEETINGS_VIEW:   "clinic.appointments.internal_meetings.view",
+    /** الاجتماعات المدعو إليها المستخدم نفسه فقط — لصفحة "مواعيدي". VIEW تكفي عنها. */
+    INTERNAL_MEETINGS_VIEW_OWN: "clinic.appointments.internal_meetings.view_own",
   },
   /** قائمة انتظار العيادة — مرضى بانتظار جدولة موعد. */
   CLINIC_WAITING_LIST: {

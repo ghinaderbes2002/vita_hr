@@ -5,7 +5,7 @@
 // marks the current time, overlapping bookings split side-by-side.
 import { useLocale, useTranslations } from "next-intl";
 import { cn, formatClinicTime } from "@/lib/utils";
-import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
+import { Appointment, AppointmentStatus, InternalMeeting, InternalMeetingType } from "@/lib/api/clinic-appointments";
 
 // The axis is always the clinic day, whatever the bookings say.
 const DEFAULT_START = 10 * 60; // 10:00
@@ -43,6 +43,13 @@ const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
 // Order shown in the colour legend.
 const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED", "LATE"];
 
+// Staff meetings sit on the same axis as patient bookings, in colours no
+// appointment status uses, so the two never read as one another.
+export const MEETING_STYLE: Record<InternalMeetingType, { bar: string; cls: string; label: string }> = {
+  MEETING:  { bar: "#8b5cf6", cls: "bg-violet-50/90 dark:bg-violet-950/50 text-violet-950 dark:text-violet-100", label: "اجتماع" },
+  TRAINING: { bar: "#0d9488", cls: "bg-teal-50/90 dark:bg-teal-950/50 text-teal-950 dark:text-teal-100", label: "تدريب" },
+};
+
 function toMinutes(v?: string | null): number | null {
   if (!v) return null;
   if (v.length > 5) { const d = new Date(v); return d.getHours() * 60 + d.getMinutes(); }
@@ -61,19 +68,21 @@ const patientOf = (a: Appointment) =>
  */
 const CLINIC_WINDOW: Win = { start: DEFAULT_START, end: DEFAULT_END };
 
-type Placed = { a: Appointment; start: number; end: number; lane: number; lanes: number };
+/** Anything with a time span the board can lay out — an appointment or a staff meeting. */
+type Timed = { id: string; startTime: string; endTime: string };
+type Placed<T extends Timed> = { a: T; start: number; end: number; lane: number; lanes: number };
 
 /**
  * Widest stack of overlapping bookings in a column. Splitting a fixed column
  * between four of them leaves ~55px each and every name truncates, so instead
  * the grid grows and the page scrolls — nothing is hidden behind anything.
  */
-const maxLanesIn = (appts: Appointment[], win: Win) =>
-  layout(appts, win).reduce((mx, p) => Math.max(mx, p.lanes), 1);
+const maxLanesIn = (items: Timed[], win: Win) =>
+  layout(items, win).reduce((mx, p) => Math.max(mx, p.lanes), 1);
 
 // Split a column's appointments into overlap clusters and assign side-by-side
 // lanes so concurrent bookings never cover each other.
-function layout(appts: Appointment[], win: Win): Placed[] {
+function layout<T extends Timed>(appts: T[], win: Win): Placed<T>[] {
   const items = appts
     .map((a) => {
       const s = toMinutes(a.startTime);
@@ -82,11 +91,11 @@ function layout(appts: Appointment[], win: Win): Placed[] {
       if (e == null || e <= s) e = s + 30;
       return { a, start: Math.max(win.start, s), end: Math.min(win.end, Math.max(s + 15, e)) };
     })
-    .filter((x): x is { a: Appointment; start: number; end: number } => !!x && x.end > win.start && x.start < win.end)
+    .filter((x): x is { a: T; start: number; end: number } => !!x && x.end > win.start && x.start < win.end)
     .sort((x, y) => x.start - y.start || x.end - y.end);
 
-  const out: Placed[] = [];
-  let cluster: { a: Appointment; start: number; end: number }[] = [];
+  const out: Placed<T>[] = [];
+  let cluster: { a: T; start: number; end: number }[] = [];
   let clusterEnd = -1;
   const flush = () => {
     const laneEnds: number[] = [];
@@ -112,6 +121,8 @@ export interface TimelineGroup {
   title: string;
   color: string;   // header accent
   appointments: Appointment[];
+  /** Staff meetings / trainings drawn in this column instead of (or beside) appointments. */
+  meetings?: InternalMeeting[];
   /** Marks the column as the current day so it reads apart from the rest. */
   isToday?: boolean;
   /** Secondary line under the title (a date, a room, …). */
@@ -119,16 +130,19 @@ export interface TimelineGroup {
 }
 
 function Column({
-  group, win, onSelect, resolveTherapist, hideEmptyLabel,
+  group, win, onSelect, onSelectMeeting, resolveTherapist, resolveAttendees, hideEmptyLabel,
 }: {
   group: TimelineGroup;
   win: Win;
   onSelect: (a: Appointment) => void;
+  onSelectMeeting?: (m: InternalMeeting) => void;
   resolveTherapist?: (a: Appointment) => string | null;
+  resolveAttendees?: (m: InternalMeeting) => string | null;
   hideEmptyLabel?: boolean;
 }) {
   const t = useTranslations("clinic.appointments");
   const placed = layout(group.appointments, win);
+  const placedMeetings = layout(group.meetings ?? [], win);
   const slots = (win.end - win.start) / SLOT_MIN;
   return (
     <div
@@ -143,7 +157,7 @@ function Column({
           style={{ top: PAD + i * SLOT_H }}
         />
       ))}
-      {placed.length === 0 && !hideEmptyLabel && (
+      {placed.length === 0 && placedMeetings.length === 0 && !hideEmptyLabel && (
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-xs text-muted-foreground">{t("emptyDay")}</span>
         </div>
@@ -194,17 +208,61 @@ function Column({
           </button>
         );
       })}
+      {placedMeetings.map(({ a: m, start, end, lane, lanes }) => {
+        const top = PAD + ((start - win.start) / 60) * HOUR_H;
+        const height = Math.max(22, ((end - start) / 60) * HOUR_H - 2);
+        const w = 100 / lanes;
+        const st = MEETING_STYLE[m.meetingType] ?? MEETING_STYLE.MEETING;
+        const attendees = resolveAttendees?.(m);
+        return (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => onSelectMeeting?.(m)}
+            title={`${fmtTime(m.startTime)} — ${fmtTime(m.endTime)} · ${m.title}`}
+            className={cn(
+              "absolute cursor-pointer overflow-hidden rounded-md border border-dashed border-black/10 px-2 py-1 text-start shadow-sm transition-all",
+              "hover:z-10 hover:shadow-md focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "dark:border-white/15",
+              st.cls,
+            )}
+            style={{
+              top, height,
+              insetInlineStart: `calc(${lane * w}% + 2px)`,
+              width: `calc(${w}% - 4px)`,
+              borderInlineStartWidth: 3, borderInlineStartStyle: "solid", borderInlineStartColor: st.bar,
+            }}
+          >
+            <div className="flex items-center gap-1 font-mono text-[10px] font-semibold leading-tight opacity-90">
+              {fmtTime(m.startTime)}
+              {height > 56 && <span className="opacity-70">— {fmtTime(m.endTime)}</span>}
+            </div>
+            <div className="truncate text-xs font-semibold leading-tight">{m.title}</div>
+            {height > 40 && (
+              <div className="truncate text-[10px] leading-tight opacity-80">
+                {st.label} · {m.attendeeIds?.length ?? 0} حضور
+              </div>
+            )}
+            {height > 56 && attendees && (
+              <div className="truncate text-[10px] font-medium leading-tight opacity-90">{attendees}</div>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 export function AppointmentTimeline({
-  groups, isToday, onSelect, resolveTherapist, hideEmptyLabel, hideLegend,
+  groups, isToday, onSelect, onSelectMeeting, resolveTherapist, resolveAttendees, hideEmptyLabel, hideLegend,
 }: {
   groups: TimelineGroup[];
   isToday: boolean;
   onSelect: (a: Appointment) => void;
+  onSelectMeeting?: (m: InternalMeeting) => void;
   resolveTherapist?: (a: Appointment) => string | null;
+  /** Attendee names for a meeting block — the API returns ids only. */
+  resolveAttendees?: (m: InternalMeeting) => string | null;
   hideEmptyLabel?: boolean;
   /** Set when the page already shows the statuses elsewhere. */
   hideLegend?: boolean;
@@ -219,8 +277,9 @@ export function AppointmentTimeline({
   // one packed Monday would otherwise stretch every quiet day with it and push
   // the week far off the edge.
   const columnWidths = groups.map((g) =>
-    Math.max(MIN_COL_W, maxLanesIn(g.appointments, win) * MIN_LANE_W),
+    Math.max(MIN_COL_W, maxLanesIn([...g.appointments, ...(g.meetings ?? [])], win) * MIN_LANE_W),
   );
+  const hasMeetings = groups.some((g) => g.meetings !== undefined);
   // A floor, not a fixed size: `minmax(…, 1fr)` keeps a crowded column wide
   // enough to read while still letting the columns share whatever space is
   // left. Pinning them to exact pixels left a dead gap beside the board and
@@ -248,6 +307,17 @@ export function AppointmentTimeline({
               {t(`statuses.${s}`)}
             </span>
           ))}
+          {hasMeetings && (
+            <>
+              <span className="h-3 w-px bg-border" aria-hidden />
+              {(Object.keys(MEETING_STYLE) as InternalMeetingType[]).map((k) => (
+                <span key={k} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: MEETING_STYLE[k].bar }} />
+                  {MEETING_STYLE[k].label}
+                </span>
+              ))}
+            </>
+          )}
         </div>
       )}
 
@@ -255,7 +325,8 @@ export function AppointmentTimeline({
       <div className="grid border-b bg-muted/30" style={{ gridTemplateColumns: gridTemplate }}>
         <div />
         {groups.map((g) => {
-          const count = g.appointments.filter((a) => a.status !== "CANCELLED").length;
+          const count = g.appointments.filter((a) => a.status !== "CANCELLED").length
+            + (g.meetings ?? []).filter((m) => m.status !== "CANCELLED").length;
           return (
             <div
               key={g.title}
@@ -294,7 +365,12 @@ export function AppointmentTimeline({
         </div>
 
         {groups.map((g) => (
-          <Column key={g.title} group={g} win={win} onSelect={onSelect} resolveTherapist={resolveTherapist} hideEmptyLabel={hideEmptyLabel} />
+          <Column
+            key={g.title} group={g} win={win}
+            onSelect={onSelect} onSelectMeeting={onSelectMeeting}
+            resolveTherapist={resolveTherapist} resolveAttendees={resolveAttendees}
+            hideEmptyLabel={hideEmptyLabel}
+          />
         ))}
 
         {/* now indicator — spans all columns */}

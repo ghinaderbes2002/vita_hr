@@ -12,12 +12,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn, formatClinicTime } from "@/lib/utils";
-import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment } from "@/lib/hooks/use-clinic-appointments";
-import { Appointment, AppointmentStatus } from "@/lib/api/clinic-appointments";
+import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment, useMyStaffMeetings } from "@/lib/hooks/use-clinic-appointments";
+import { Appointment, AppointmentStatus, InternalMeeting } from "@/lib/api/clinic-appointments";
+import { StaffMeetingDetailsDialog } from "@/components/clinic/staff-meeting-dialogs";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicPhysioApi, PhysioCase } from "@/lib/api/clinic-physio";
 import { clinicProstheticsApi } from "@/lib/api/clinic-prosthetics";
 import { useDepartments } from "@/lib/hooks/use-departments";
-import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
+import { AppointmentTimeline, MEETING_STYLE } from "@/components/clinic/appointment-timeline";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 
@@ -81,11 +83,33 @@ export default function MyAppointmentsPage() {
   const canCreateAppt = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CREATE);
   const canChangeApptStatus = canCreateAppt || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.UPDATE_STATUS);
   const canCancelAppt = canCreateAppt || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CANCEL);
+  // Patient bookings and staff meetings have separate permissions: a user may
+  // hold either one, and the page shows whichever they can read.
+  const canSeeMyAppts = isAdmin()
+    || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.VIEW_OWN)
+    || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.VIEW);
+  const canSeeMyMeetings = isAdmin()
+    || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_VIEW_OWN)
+    || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_VIEW);
+  const [viewFilter, setViewFilter] = useState<"ALL" | "PATIENTS" | "MEETING" | "TRAINING">("ALL");
+  const showAppts = canSeeMyAppts && (viewFilter === "ALL" || viewFilter === "PATIENTS");
+  const showMeetings = canSeeMyMeetings && viewFilter !== "PATIENTS";
+  const [detailMeeting, setDetailMeeting] = useState<InternalMeeting | null>(null);
 
   // Every status is fetched and the filter is applied locally, so the counts in
   // the toolbar keep describing the whole week while the calendar narrows.
-  const { data, isLoading } = useMyAppointments({ limit: 200 });
-  const items = data?.items ?? [];
+  const { data, isLoading: apptsLoading } = useMyAppointments({ limit: 200 }, canSeeMyAppts);
+  const items = canSeeMyAppts ? data?.items ?? [] : [];
+
+  // Meeting ids come back without names.
+  const { data: staffData } = useEmployeesBasicList();
+  const staffList: any[] = Array.isArray(staffData)
+    ? staffData
+    : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
+  const staffName = (id: string) => {
+    const e = staffList.find((x: any) => x.userId === id || x.id === id);
+    return e ? `${e.firstNameAr} ${e.lastNameAr}`.trim() : id;
+  };
 
   // ── Resolvers ─────────────────────────────────────────────────────────────
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
@@ -183,7 +207,23 @@ export default function MyAppointmentsPage() {
   const weekKeys = new Set(weekDays.map(localIso));
   const weekAppts = items.filter((a) => weekKeys.has(dayKeyOf(a)));
 
-  const visibleAppts = statusFilter === "ALL" ? weekAppts : weekAppts.filter((a) => a.status === statusFilter);
+  const visibleAppts = !showAppts ? []
+    : statusFilter === "ALL" ? weekAppts : weekAppts.filter((a) => a.status === statusFilter);
+
+  // My meetings for the shown week. dateTo runs a day past the week so the last
+  // day's meetings aren't cut off by a midnight bound; the week filter below
+  // keeps only the shown days either way.
+  const { data: myMeetings = [], isLoading: meetingsLoading } = useMyStaffMeetings(
+    { dateFrom: localIso(weekDays[0]), dateTo: localIso(addDays(weekDays[weekDays.length - 1], 1)) },
+    canSeeMyMeetings,
+  );
+  const meetingDayKey = (m: InternalMeeting) => localIso(new Date(m.startTime));
+  const weekMeetings = myMeetings.filter((m) => weekKeys.has(meetingDayKey(m)) && m.status !== "CANCELLED");
+  const visibleMeetings = !showMeetings ? []
+    : viewFilter === "MEETING" || viewFilter === "TRAINING"
+    ? weekMeetings.filter((m) => m.meetingType === viewFilter)
+    : weekMeetings;
+  const isLoading = (canSeeMyAppts && apptsLoading) || (canSeeMyMeetings && meetingsLoading);
 
   // What the practitioner opens this page to find: today's load and what's next.
   const minutesOf = (a: Appointment) => {
@@ -193,11 +233,18 @@ export default function MyAppointmentsPage() {
     const m = /^(\d{1,2}):(\d{2})/.exec(v);
     return m ? Number(m[1]) * 60 + Number(m[2]) : null;
   };
-  const todayAppts = items
+  const todayAppts = (showAppts ? items : [])
     .filter((a) => dayKeyOf(a) === todayKey && !["CANCELLED", "COMPLETED", "NO_SHOW"].includes(a.status))
     .sort((a, b) => (minutesOf(a) ?? 0) - (minutesOf(b) ?? 0));
+  const todayMeetings = visibleMeetings
+    .filter((m) => meetingDayKey(m) === todayKey)
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
   const nextAppt = todayAppts.find((a) => (minutesOf(a) ?? 0) >= nowMinutes) ?? null;
+  const meetingMinutes = (m: InternalMeeting) => { const d = new Date(m.startTime); return d.getHours() * 60 + d.getMinutes(); };
+  const nextMeeting = todayMeetings.find((m) => meetingMinutes(m) >= nowMinutes) ?? null;
+  // Whichever starts first — a patient visit or a meeting — is what's next.
+  const nextIsMeeting = !!nextMeeting && (!nextAppt || meetingMinutes(nextMeeting) < (minutesOf(nextAppt) ?? 0));
   const patientOf = (a: Appointment) =>
     a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : (a.patientName || "—");
 
@@ -208,6 +255,7 @@ export default function MyAppointmentsPage() {
     color: dayColor(d),
     isToday: localIso(d) === todayKey,
     appointments: visibleAppts.filter((a) => dayKeyOf(a) === localIso(d)),
+    meetings: visibleMeetings.filter((m) => meetingDayKey(m) === localIso(d)),
   }));
   const weekLabel = `${weekDays[0].toLocaleDateString(locale, { day: "numeric", month: "short" })} — ${weekDays[weekDays.length - 1].toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}`;
 
@@ -237,24 +285,45 @@ export default function MyAppointmentsPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <p className="text-xs font-medium text-muted-foreground">{t("myAppointments.todayLoad")}</p>
-          <p className="mt-1 flex items-baseline gap-2">
-            <span className="text-3xl font-bold tabular-nums">{todayAppts.length}</span>
+          <p className="mt-1 flex flex-wrap items-baseline gap-2">
+            <span className="text-3xl font-bold tabular-nums">{todayAppts.length + todayMeetings.length}</span>
             <span className="text-xs text-muted-foreground">
               {today.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}
             </span>
+            {todayMeetings.length > 0 && (
+              <span className="text-xs text-violet-600 dark:text-violet-400">
+                · منها {todayMeetings.length} اجتماع/تدريب
+              </span>
+            )}
           </p>
         </div>
         <button
           type="button"
-          disabled={!nextAppt}
-          onClick={() => nextAppt && setDetailAppt(nextAppt)}
+          disabled={!nextAppt && !nextMeeting}
+          onClick={() => {
+            if (nextIsMeeting && nextMeeting) setDetailMeeting(nextMeeting);
+            else if (nextAppt) setDetailAppt(nextAppt);
+          }}
           className={cn(
             "rounded-xl border bg-card p-4 text-start shadow-sm transition-colors",
-            nextAppt ? "hover:border-primary/50" : "cursor-default",
+            nextAppt || nextMeeting ? "hover:border-primary/50" : "cursor-default",
           )}
         >
           <p className="text-xs font-medium text-muted-foreground">{t("myAppointments.nextUp")}</p>
-          {nextAppt ? (
+          {nextIsMeeting && nextMeeting ? (
+            <div className="mt-1 flex items-center gap-3">
+              <span className="font-mono text-2xl font-bold tabular-nums">{fmtTime(nextMeeting.startTime)}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">{nextMeeting.title}</span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {nextMeeting.attendeeIds?.length ?? 0} حضور
+                </span>
+              </span>
+              <Badge variant="outline" className={cn("shrink-0 text-[10px]", MEETING_STYLE[nextMeeting.meetingType]?.cls)}>
+                {MEETING_STYLE[nextMeeting.meetingType]?.label ?? nextMeeting.meetingType}
+              </Badge>
+            </div>
+          ) : nextAppt ? (
             <div className="mt-1 flex items-center gap-3">
               <span className="font-mono text-2xl font-bold tabular-nums">{fmtTime(nextAppt.startTime)}</span>
               <span className="min-w-0 flex-1">
@@ -291,12 +360,54 @@ export default function MyAppointmentsPage() {
             )}
           </div>
           <span className="text-sm font-semibold">{weekLabel}</span>
+          {/* What the week shows: patient visits, meetings, trainings, or all of them. */}
+          {canSeeMyAppts && canSeeMyMeetings && (
+            <div role="tablist" aria-label="نوع العرض" className="inline-flex flex-wrap items-center gap-1 rounded-lg border bg-muted/40 p-1">
+              {([
+                { key: "ALL", label: "الكل", dot: null },
+                { key: "PATIENTS", label: "مواعيد المرضى", dot: "#3b82f6" },
+                { key: "MEETING", label: "اجتماعات", dot: MEETING_STYLE.MEETING.bar },
+                { key: "TRAINING", label: "تدريبات", dot: MEETING_STYLE.TRAINING.bar },
+              ] as const).map((o) => {
+                const active = viewFilter === o.key;
+                return (
+                  <button
+                    key={o.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setViewFilter(o.key)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                      active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {o.dot && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: o.dot }} />}
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <span className="ms-auto text-xs text-muted-foreground">
-            <span className="text-lg font-bold tabular-nums text-foreground">{weekTotal}</span>{" "}
-            {t("board.appointments")}
+            {showAppts && (
+              <>
+                <span className="text-lg font-bold tabular-nums text-foreground">{weekTotal}</span>{" "}
+                {t("board.appointments")}
+              </>
+            )}
+            {showMeetings && (
+              <span className="text-violet-600 dark:text-violet-400">
+                {showAppts && " · "}
+                <span className="text-lg font-bold tabular-nums">{visibleMeetings.length}</span>{" "}
+                {viewFilter === "MEETING" ? "اجتماع" : viewFilter === "TRAINING" ? "تدريب" : "اجتماع/تدريب"}
+              </span>
+            )}
           </span>
         </div>
 
+        {showAppts && (
+        <>
         <div className="flex flex-wrap items-center gap-1.5 border-t px-3 py-2">
           {chips.map((c) => {
             const active = statusFilter === c.key;
@@ -326,6 +437,8 @@ export default function MyAppointmentsPage() {
             <div key={b.status} style={{ flexGrow: b.value, backgroundColor: STATUS_BAR[b.status] }} />
           ))}
         </div>
+        </>
+        )}
       </div>
 
       {/* ── Week timeline ── */}
@@ -337,6 +450,8 @@ export default function MyAppointmentsPage() {
             groups={timelineGroups}
             isToday={weekDays.some((d) => localIso(d) === todayKey)}
             onSelect={setDetailAppt}
+            onSelectMeeting={setDetailMeeting}
+            resolveAttendees={(m) => (m.attendeeIds ?? []).map(staffName).join("، ") || null}
             hideEmptyLabel
             hideLegend
           />
@@ -428,6 +543,13 @@ export default function MyAppointmentsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <StaffMeetingDetailsDialog
+        meeting={detailMeeting}
+        onClose={() => setDetailMeeting(null)}
+        staffName={staffName}
+        locale={locale}
+      />
 
       {/* ── Cancel dialog ── */}
       <Dialog open={cancelOpen} onOpenChange={(o) => { if (!cancelAppt.isPending) setCancelOpen(o); }}>

@@ -4,7 +4,7 @@ import { useState, useMemo, type ReactNode } from "react";
 import { formatClockTime } from "@/lib/utils/date";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight, ChevronDown, Plus, X, Loader2, UserRound, Search, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Loader2, UserRound, Search, Pencil, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,16 +14,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
+import { TherapistPicker } from "@/components/clinic/therapist-picker";
+import { StaffMeetingDialog, StaffMeetingDetailsDialog } from "@/components/clinic/staff-meeting-dialogs";
 import { PageHeader } from "@/components/shared/page-header";
 import { WhatsappConfirmButton } from "@/components/clinic/whatsapp-confirm-button";
 import { CLINIC_WHATSAPP_NUMBER } from "@/lib/clinic/whatsapp";
 import { cn, formatClinicTime } from "@/lib/utils";
-import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment, useUpdateAppointment } from "@/lib/hooks/use-clinic-appointments";
+import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment, useUpdateAppointment, useInternalMeetings } from "@/lib/hooks/use-clinic-appointments";
 import {
-  Appointment, AppointmentType, AppointmentStatus,
+  Appointment, AppointmentType, AppointmentStatus, InternalMeeting,
   ALL_APPOINTMENT_TYPES, PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
   MEDICAL_ADMIN_APPOINTMENT_TYPES, PHYSIO_APPOINTMENT_TYPES,
 } from "@/lib/api/clinic-appointments";
@@ -78,53 +79,6 @@ function editFormOf(a: Appointment) {
   };
 }
 
-/** Multi-select of specialist therapists, shared by the new and edit dialogs. */
-function TherapistPicker({
-  staff, value, onChange, placeholder, labelOf,
-}: {
-  staff: any[];
-  value: string[];
-  onChange: (ids: string[]) => void;
-  placeholder: string;
-  labelOf: (id: string) => string;
-}) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className="w-full justify-between font-normal h-auto min-h-10 py-2">
-          <span className={cn("truncate text-start", value.length === 0 && "text-muted-foreground")}>
-            {value.length ? value.map(labelOf).join("، ") : placeholder}
-          </span>
-          <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-(--radix-popover-trigger-width) p-1" align="start">
-        {staff.length === 0 ? (
-          <p className="px-2 py-1.5 text-sm text-muted-foreground">—</p>
-        ) : (
-          <div className="max-h-60 overflow-y-auto">
-            {staff.map((emp: any) => {
-              const val = emp.userId ?? emp.id;
-              const active = value.includes(val);
-              return (
-                <button
-                  key={emp.id}
-                  type="button"
-                  onClick={() => onChange(active ? value.filter((x) => x !== val) : [...value, val])}
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent text-start"
-                >
-                  <Checkbox checked={active} className="pointer-events-none" />
-                  <span className="flex-1 truncate">{emp.firstNameAr} {emp.lastNameAr}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function AppointmentsPage() {
@@ -144,6 +98,11 @@ export default function AppointmentsPage() {
   // CANCELLED needs update_status (or create); CANCELLED needs cancel (or create).
   const canChangeApptStatus = canCreateAppt || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.UPDATE_STATUS);
   const canCancelAppt = canCreateAppt || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CANCEL);
+  // Staff meetings have their own permissions, apart from patient bookings.
+  const canViewMeetings = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_VIEW);
+  const canCreateMeeting = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_CREATE);
+  const [newMeetingOpen, setNewMeetingOpen] = useState(false);
+  const [detailMeeting, setDetailMeeting] = useState<InternalMeeting | null>(null);
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
   const departments: { id: string; code?: string; nameAr: string; nameEn?: string }[] =
     (depsData as any)?.data?.items ?? (depsData as any)?.items ?? [];
@@ -199,6 +158,7 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState<string>(toISO(today));
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL");
   const [departmentFilter, setDepartmentFilter] = useState<string>("ALL");
+  const [viewFilter, setViewFilter] = useState<"ALL" | "PATIENTS" | "MEETING" | "TRAINING">("ALL");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<string>("");
   const [cancelReason, setCancelReason] = useState("");
@@ -267,6 +227,25 @@ export default function AppointmentsPage() {
 
   const dayAppointments = dayData?.items ?? [];
 
+  // Staff meetings for the viewed month: one request feeds both the calendar
+  // dots and the selected day's column.
+  const { data: monthMeetings = [] } = useInternalMeetings({ dateFrom: from, dateTo: to }, canViewMeetings);
+  const meetingDay = (m: InternalMeeting) => {
+    const dt = new Date(m.startTime);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+  };
+  // What the board shows: everything, patient bookings only, or one kind of
+  // staff meeting. Drives the columns, the calendar dots and the day counter.
+  const showAppts = viewFilter === "ALL" || viewFilter === "PATIENTS";
+  const showMeetings = canViewMeetings && viewFilter !== "PATIENTS";
+  const visibleMeetings = viewFilter === "MEETING" || viewFilter === "TRAINING"
+    ? monthMeetings.filter((m) => m.meetingType === viewFilter)
+    : monthMeetings;
+  const meetingDays = new Set(showMeetings ? visibleMeetings.map(meetingDay) : []);
+  const dayMeetings = visibleMeetings.filter((m) => meetingDay(m) === selectedDate);
+  const meetingsColumnTitle =
+    viewFilter === "MEETING" ? "الاجتماعات" : viewFilter === "TRAINING" ? "التدريبات" : "الاجتماعات والتدريبات";
+
   // ── Department board (selected day, split by clinical department) ──────────
   const deptNameOf = (a: Appointment) =>
     a.department?.nameAr ?? (a.departmentId ? (departments.find((x) => x.id === a.departmentId)?.nameAr ?? "") : "");
@@ -309,7 +288,17 @@ export default function AppointmentsPage() {
     ...(medicalAdminDept
       ? [{ key: "medicalAdmin", title: MEDICAL_ADMIN_DEPT_ALIAS, color: "#f59e0b", appointments: dayScoped.filter(isMedicalAdmin) }]
       : []),
-  ].filter((g) => !selectedColumn || g.key === selectedColumn);
+    // Staff meetings share the axis, so a busy therapist reads as busy at a
+    // glance. They belong to no department and drop out when one is picked.
+    ...(showMeetings
+      ? [{ key: "meetings", title: meetingsColumnTitle, color: "#8b5cf6", appointments: [] as Appointment[], meetings: dayMeetings }]
+      : []),
+  ].filter((g) =>
+    g.key === "meetings"
+      // Meetings-only views ignore the department filter, which governs patient bookings.
+      ? !selectedColumn || !showAppts
+      : showAppts && (!selectedColumn || g.key === selectedColumn),
+  );
 
   // Group appointments by date for calendar dots
   const apptsByDate = useMemo(() => {
@@ -436,17 +425,56 @@ export default function AppointmentsPage() {
         title={t("title")}
         description={t("description")}
         actions={
-          canCreateAppt ? (
-            <Button onClick={() => setNewApptOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              {t("newAppointment")}
-            </Button>
+          canCreateAppt || canCreateMeeting ? (
+            <div className="flex flex-wrap gap-2">
+              {canCreateMeeting && (
+                <Button variant="outline" onClick={() => setNewMeetingOpen(true)} className="gap-2">
+                  <Users className="h-4 w-4 text-violet-600" />
+                  اجتماع / تدريب
+                </Button>
+              )}
+              {canCreateAppt && (
+                <Button onClick={() => setNewApptOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  {t("newAppointment")}
+                </Button>
+              )}
+            </div>
           ) : undefined
         }
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as AppointmentStatus | "ALL")}>
+        {canViewMeetings && (
+          <div role="tablist" aria-label="نوع العرض" className="inline-flex flex-wrap items-center gap-1 rounded-lg border bg-muted/40 p-1">
+            {([
+              { key: "ALL", label: "الكل", dot: null },
+              { key: "PATIENTS", label: "مواعيد المرضى", dot: "#3b82f6" },
+              { key: "MEETING", label: "اجتماعات", dot: "#8b5cf6" },
+              { key: "TRAINING", label: "تدريبات", dot: "#0d9488" },
+            ] as const).map((o) => {
+              const active = viewFilter === o.key;
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setViewFilter(o.key)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {o.dot && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: o.dot }} />}
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {/* Status and department describe patient bookings only. */}
+        <Select disabled={!showAppts} value={statusFilter} onValueChange={(v) => setStatusFilter(v as AppointmentStatus | "ALL")}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder={t("filter.allStatuses")} />
           </SelectTrigger>
@@ -457,7 +485,7 @@ export default function AppointmentsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+        <Select disabled={!showAppts} value={departmentFilter} onValueChange={setDepartmentFilter}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder={t("filter.allDepartments")} />
           </SelectTrigger>
@@ -498,7 +526,8 @@ export default function AppointmentsPage() {
                 const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                 const isToday = dateStr === toISO(today);
                 const isSelected = dateStr === selectedDate;
-                const hasAppts = (apptsByDate[dateStr]?.length ?? 0) > 0;
+                const hasAppts = showAppts && (apptsByDate[dateStr]?.length ?? 0) > 0;
+                const hasMeetings = meetingDays.has(dateStr);
                 return (
                   <button
                     key={i}
@@ -509,8 +538,11 @@ export default function AppointmentsPage() {
                     )}
                   >
                     {day}
-                    {hasAppts && !isSelected && (
-                      <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-primary" />
+                    {(hasAppts || hasMeetings) && !isSelected && (
+                      <span className="absolute bottom-0.5 flex gap-0.5">
+                        {hasAppts && <span className="w-1 h-1 rounded-full bg-primary" />}
+                        {hasMeetings && <span className="w-1 h-1 rounded-full bg-violet-500" />}
+                      </span>
                     )}
                   </button>
                 );
@@ -527,7 +559,14 @@ export default function AppointmentsPage() {
             <h2 className="text-base font-semibold">
               {new Date(selectedDate + "T00:00:00").toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
             </h2>
-            <span className="text-xs text-muted-foreground">{dayScoped.filter((a: Appointment) => a.status !== "CANCELLED").length} {t("board.appointments")}</span>
+            <span className="text-xs text-muted-foreground">
+              {showAppts && <>{dayScoped.filter((a: Appointment) => a.status !== "CANCELLED").length} {t("board.appointments")}</>}
+              {showMeetings && (showAppts ? dayMeetings.length > 0 : true) && (
+                <span className="text-violet-600 dark:text-violet-400">
+                  {showAppts && " · "}{dayMeetings.length} {viewFilter === "MEETING" ? "اجتماع" : viewFilter === "TRAINING" ? "تدريب" : "اجتماع/تدريب"}
+                </span>
+              )}
+            </span>
           </div>
           {dayLoading ? (
             <Skeleton className="h-[560px] w-full rounded-xl" />
@@ -540,6 +579,8 @@ export default function AppointmentsPage() {
               groups={timelineGroups}
               isToday={isSelectedToday}
               onSelect={setDetailAppt}
+              onSelectMeeting={setDetailMeeting}
+              resolveAttendees={(m) => (m.attendeeIds ?? []).map((id) => staffName(id)).filter(Boolean).join("، ") || null}
               resolveTherapist={(a) => {
                 if (a.therapists?.length) {
                   return a.therapists
@@ -554,6 +595,21 @@ export default function AppointmentsPage() {
           )}
         </div>
       </div>
+
+      {/* Staff meetings / trainings — booked and viewed from the same board */}
+      <StaffMeetingDialog
+        open={newMeetingOpen}
+        onOpenChange={setNewMeetingOpen}
+        defaultDate={selectedDate}
+        staff={clinicalStaff}
+        staffName={(id) => staffName(id) ?? id}
+      />
+      <StaffMeetingDetailsDialog
+        meeting={detailMeeting}
+        onClose={() => setDetailMeeting(null)}
+        staffName={(id) => staffName(id) ?? id}
+        locale={locale}
+      />
 
       {/* Send the patient their confirmation right after booking */}
       <Dialog open={!!whatsappPrompt} onOpenChange={(o) => { if (!o) setWhatsappPrompt(null); }}>

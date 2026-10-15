@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCreateRole, useUpdateRolePermissions, usePermissions, useRole, useUpdateRole } from "@/lib/hooks/use-roles";
 import { Role } from "@/types";
-import { Loader2, Search } from "lucide-react";
+import { ChevronDown, Loader2, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const formSchema = z.object({
@@ -196,6 +196,20 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     acc[module].push(permission);
     return acc;
   }, {});
+  // Modules as collapsible sections sorted by their label. With hundreds of
+  // permissions in one flat list, a module far down (المواعيد) was only
+  // reachable by searching for it.
+  const moduleEntries = (Object.entries(groupedPermissions) as [string, any[]][])
+    .sort(([a], [b]) => getModuleLabel(a).localeCompare(getModuleLabel(b), locale));
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleModule = (module: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(module)) next.delete(module); else next.add(module);
+      return next;
+    });
+  // A search opens every section it matched, so the hits are visible at once.
+  const isSearching = !!permSearch.trim();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -311,14 +325,48 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                         dir="rtl"
                       />
                     </div>
-                    <ScrollArea className="h-[200px] rounded-md border p-4">
-                      {Object.keys(groupedPermissions).length === 0 && (
+                    <ScrollArea className="h-[360px] rounded-md border">
+                      {moduleEntries.length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-4">لا توجد صلاحيات مطابقة</p>
                       )}
-                      {Object.entries(groupedPermissions).map(([module, perms]: [string, any]) => (
-                        <div key={module} className="mb-4">
-                          <h4 className="font-semibold mb-2 text-sm capitalize">{getModuleLabel(module)}</h4>
-                          <div className="space-y-2 mr-4">
+                      {moduleEntries.map(([module, perms]) => {
+                        const selected: string[] = form.watch("permissionIds") ?? [];
+                        const ids = perms.map((p: any) => p.id);
+                        const selectedCount = ids.filter((id: string) => selected.includes(id)).length;
+                        const allOn = selectedCount === ids.length;
+                        const open = isSearching || expanded.has(module);
+                        return (
+                        <div key={module} className="border-b last:border-b-0">
+                          <div className="flex items-center gap-2 bg-muted/40 px-3 py-2">
+                            <Checkbox
+                              aria-label={`تحديد كل صلاحيات ${getModuleLabel(module)}`}
+                              checked={allOn ? true : selectedCount > 0 ? "indeterminate" : false}
+                              onCheckedChange={() =>
+                                form.setValue(
+                                  "permissionIds",
+                                  allOn
+                                    ? selected.filter((id) => !ids.includes(id))
+                                    : Array.from(new Set([...selected, ...ids])),
+                                  { shouldDirty: true },
+                                )
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() => toggleModule(module)}
+                              className="flex flex-1 items-center justify-between gap-2 text-start"
+                            >
+                              <span className="text-sm font-semibold">{getModuleLabel(module)}</span>
+                              <span className="flex items-center gap-2">
+                                <span className={`text-xs tabular-nums ${selectedCount ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                                  {selectedCount}/{ids.length}
+                                </span>
+                                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+                              </span>
+                            </button>
+                          </div>
+                          {open && (
+                          <div className="space-y-2 px-4 py-3 mr-4">
                             {perms.map((permission: any) => (
                               <FormField
                                 key={permission.id}
@@ -355,8 +403,10 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                               />
                             ))}
                           </div>
+                          )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </ScrollArea>
                     <FormMessage />
                   </FormItem>
