@@ -317,6 +317,10 @@ export const PERMISSIONS = {
     CREATE: "clinic.potential_clients.create",
     EDIT:   "clinic.potential_clients.edit",
     DELETE: "clinic.potential_clients.delete",
+    /** رفع مرفق وحذفه (صور و PDF). */
+    UPLOAD_ATTACHMENTS: "clinic.potential_clients.upload_attachments",
+    /** عرض المرفقات وتنزيلها. */
+    VIEW_ATTACHMENTS:   "clinic.potential_clients.view_attachments",
   },
   CLINIC_INVENTORY: {
     VIEW:   "clinic.inventory.view",

@@ -62,6 +62,38 @@ export function useDeletePotentialClient() {
   });
 }
 
+export function usePotentialClientAttachments(id: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: [KEY, id, "attachments"],
+    queryFn: () => clinicPotentialClientsApi.listAttachments(id!),
+    enabled: !!id && enabled,
+  });
+}
+
+export function useUploadPotentialClientAttachment(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => clinicPotentialClientsApi.uploadAttachment(id, file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY, id, "attachments"] });
+      toast.success("تم رفع المرفق");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل رفع المرفق"),
+  });
+}
+
+export function useDeletePotentialClientAttachment(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (attachmentId: string) => clinicPotentialClientsApi.removeAttachment(id, attachmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY, id, "attachments"] });
+      toast.success("تم حذف المرفق");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حذف المرفق"),
+  });
+}
+
 /** Downloads the potential-clients list as Excel, narrowed by the given filters. */
 export function useExportPotentialClients() {
   return useMutation({

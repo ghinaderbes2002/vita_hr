@@ -50,6 +50,23 @@ export interface CreatePotentialClientDto {
 /** PUT takes only the fields that changed. */
 export type UpdatePotentialClientDto = Partial<CreatePotentialClientDto>;
 
+/** A photo or PDF kept on a potential client's record. */
+export interface PotentialClientAttachment {
+  id: string;
+  potentialClientId: string;
+  /** A path on the server's disk — never a link. The file comes from `downloadAttachment`. */
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: string;
+  uploadedBy?: string | null;
+}
+
+/** What the server accepts on upload; anything else comes back as 400. */
+export const POTENTIAL_CLIENT_ATTACHMENT_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+export const POTENTIAL_CLIENT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+
 export interface PotentialClientFilters {
   /** Exact match on the service text. */
   interestedService?: string;
@@ -113,5 +130,33 @@ export const clinicPotentialClientsApi = {
 
   remove: async (id: string): Promise<void> => {
     await apiClient.delete(`${BASE}/${id}`);
+  },
+
+  /** Newest first, as the server orders them. */
+  listAttachments: async (id: string): Promise<PotentialClientAttachment[]> => {
+    const { data } = await apiClient.get(`${BASE}/${id}/attachments`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : [];
+  },
+
+  uploadAttachment: async (id: string, file: File): Promise<PotentialClientAttachment> => {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await apiClient.post(`${BASE}/${id}/attachments`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data?.data ?? data;
+  },
+
+  /** The file itself. An <img src> cannot carry the token, so callers show it through an object URL. */
+  downloadAttachment: async (id: string, attachmentId: string): Promise<Blob> => {
+    const response = await apiClient.get(`${BASE}/${id}/attachments/${attachmentId}/download`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+
+  removeAttachment: async (id: string, attachmentId: string): Promise<void> => {
+    await apiClient.delete(`${BASE}/${id}/attachments/${attachmentId}`);
   },
 };

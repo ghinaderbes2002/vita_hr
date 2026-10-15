@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { POTENTIAL_CLIENT_ARRIVAL_METHODS, yesNoLabel } from "@/components/clinic/potential-client-dialog";
+import { PotentialClientAttachments } from "@/components/clinic/potential-client-attachments";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { PotentialClient } from "@/lib/api/clinic-potential-clients";
 
@@ -69,6 +70,8 @@ export function PotentialClientDetailsDialog({
                 {client.notes || "—"}
               </p>
             </div>
+
+            <PotentialClientAttachments clientId={client.id} />
           </div>
         )}
 
