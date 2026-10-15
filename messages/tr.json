@@ -1233,8 +1233,8 @@
       "choose": "Seç",
       "chooseEmployee": "Bir çalışan seçin",
       "resignation": {
-        "effectiveDateLabel": "Fiili İstifa Tarihi *",
-        "effectiveDateHint": "Bugünden en az 30 gün sonra olmalıdır",
+        "effectiveDateLabel": "İstifa Tarihi / Son Çalışma Günü *",
+        "effectiveDateHint": "Bugünden en az 30 gün sonra olmalıdır. Nihai onaydan sonra bu, ayrılış tarihiniz olur ve hesabınız bu tarihten sonra pasifleştirilir.",
         "reasonsLabel": "İstifa Nedenleri *",
         "reasonsPlaceholder": "İstifa nedenlerini belirtin..."
       },

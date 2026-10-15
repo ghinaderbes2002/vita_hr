@@ -304,6 +304,13 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
     }
   };
 
+  // Today + 30 days as YYYY-MM-DD in local time — the earliest resignation date allowed.
+  const minResignationDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+
   const onSubmit = async (data: FormData) => {
     try {
       const actualType = data.type as RequestType;
@@ -313,6 +320,15 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
         if (!data.overtimeEndDate) { toast.error(t("requests.dialog.overtime.endDate")); return; }
         if (!data.purpose?.trim()) { toast.error(t("requests.dialog.overtime.purposeLabel")); return; }
         if (overtimeManagerEmployeeIds.length === 0) { toast.error(t("requests.dialog.overtime.assignedEmployees")); return; }
+      }
+
+      // The resignation date is now the separation date itself, so it is
+      // checked here rather than left for the server to reject.
+      if (actualType === "RESIGNATION") {
+        if (!data.effectiveDate) { toast.error("تاريخ الاستقالة / آخر يوم عمل مطلوب"); return; }
+        if (data.effectiveDate < minResignationDate) {
+          toast.error("تاريخ الاستقالة يجب أن يكون بعد 30 يوماً على الأقل من اليوم"); return;
+        }
       }
 
       if (actualType === "REMOTE_WORK") {
@@ -415,7 +431,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultType, title }: New
                 <FormField control={form.control} name="effectiveDate" render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("requests.dialog.resignation.effectiveDateLabel")}</FormLabel>
-                    <FormControl><Input {...field} type="date" /></FormControl>
+                    <FormControl><Input {...field} type="date" min={minResignationDate} /></FormControl>
                     <p className="text-xs text-muted-foreground">{t("requests.dialog.resignation.effectiveDateHint")}</p>
                   </FormItem>
                 )} />

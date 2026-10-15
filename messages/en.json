@@ -1235,8 +1235,8 @@
       "choose": "Choose",
       "chooseEmployee": "Choose an employee",
       "resignation": {
-        "effectiveDateLabel": "Actual Resignation Date *",
-        "effectiveDateHint": "Must be at least 30 days from today",
+        "effectiveDateLabel": "Resignation Date / Last Working Day *",
+        "effectiveDateHint": "Must be at least 30 days from today. Once finally approved, this becomes your separation date and your account is deactivated after it.",
         "reasonsLabel": "Resignation Reasons *",
         "reasonsPlaceholder": "State the reasons for resignation..."
       },

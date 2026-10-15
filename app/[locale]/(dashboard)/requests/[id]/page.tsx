@@ -61,7 +61,7 @@ const DETAIL_KEY_LABELS: Record<string, string> = {
   delegationType: "نوع التفويض",
   delegateEmployeeId: "الموظف المفوَّض إليه",
   delegateJobTitle: "مسمى المفوَّض إليه",
-  effectiveDate: "تاريخ الاستقالة",
+  effectiveDate: "تاريخ الاستقالة / آخر يوم عمل",
   reasons: "أسباب الاستقالة",
   currentDepartmentId: "القسم الحالي",
   currentJobTitleId: "المسمى الحالي",

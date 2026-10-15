@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { ArrowRight, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { separationNotice } from "@/lib/api/work-schedules";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -150,6 +151,7 @@ export default function WorkScheduleDetailPage() {
               ) : (
                 activeEmployees.map((es) => {
                   const emp = es.employee || employeeMap.get(es.employeeId);
+                  const separation = separationNotice(es.employee);
                   return (
                   <TableRow key={es.id}>
                     <TableCell>
@@ -162,6 +164,11 @@ export default function WorkScheduleDetailPage() {
                             <div className="text-xs text-muted-foreground">
                               {emp.firstNameEn} {emp.lastNameEn}
                             </div>
+                          )}
+                          {separation && (
+                            <Badge variant="outline" className="mt-1 text-xs border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                              {separation}
+                            </Badge>
                           )}
                         </div>
                       ) : (

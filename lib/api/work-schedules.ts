@@ -3,6 +3,26 @@ import { ApiResponse } from "@/types";
 
 export type ShiftType = "DAY" | "NIGHT" | "FLEXIBLE";
 
+/** What schedule responses now carry about the employee's end of service. */
+export interface ScheduleEmployeeSeparation {
+  employmentStatus?: string;
+  /** The last working day, set when a resignation is finally approved; null when there is none. */
+  separationDate?: string | null;
+}
+
+/**
+ * "مستقيل — آخر يوم عمل dd/mm/yyyy" for someone still active who has a
+ * separation date, null otherwise. Once the day passes the backend turns them
+ * INACTIVE, so the notice only covers the notice period.
+ */
+export function separationNotice(employee?: ScheduleEmployeeSeparation | null): string | null {
+  if (!employee?.separationDate || employee.employmentStatus !== "ACTIVE") return null;
+  const d = new Date(employee.separationDate);
+  if (isNaN(d.getTime())) return null;
+  // Stored as midnight UTC: read it in UTC so the day never shifts.
+  return `مستقيل — آخر يوم عمل ${d.toLocaleDateString("en-GB", { timeZone: "UTC" })}`;
+}
+
 export interface WorkSchedule {
   id: string;
   code: string;
@@ -29,7 +49,7 @@ export interface WorkSchedule {
     effectiveFrom: string;
     effectiveTo: string | null;
     isActive: boolean;
-    employee?: {
+    employee?: ScheduleEmployeeSeparation & {
       id: string;
       employeeNumber: string;
       firstNameAr: string;
@@ -77,6 +97,7 @@ export interface EmployeeSchedule {
   employeeId: string;
   scheduleId: string;
   schedule?: WorkSchedule;
+  employee?: ScheduleEmployeeSeparation & { id?: string; employeeNumber?: string };
   effectiveFrom: string;
   effectiveTo: string | null;
   isActive: boolean;

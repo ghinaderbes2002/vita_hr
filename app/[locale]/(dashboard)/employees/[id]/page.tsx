@@ -46,7 +46,7 @@ import { EmployeeFingerprint } from "@/lib/api/employee-fingerprints";
 import { BiometricDevice } from "@/lib/api/biometric-devices";
 import { useEmployeeWorkflows, useOnboardingTemplates, useCreateOnboardingWorkflow } from "@/lib/hooks/use-onboarding";
 import { useEmployeeSchedules, useWorkSchedules, useAssignSchedule, useUpdateEmployeeSchedule, useDeleteEmployeeSchedule } from "@/lib/hooks/use-work-schedules";
-import { EmployeeSchedule } from "@/lib/api/work-schedules";
+import { EmployeeSchedule, separationNotice } from "@/lib/api/work-schedules";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -653,6 +653,8 @@ export default function EmployeeDetailsPage() {
   const deleteEmpSchedule = useDeleteEmployeeSchedule();
 
   const scheduleList: EmployeeSchedule[] = Array.isArray(empSchedules) ? empSchedules : [];
+  // Every row carries the same employee, so any one of them tells.
+  const scheduleSeparation = scheduleList.map((es) => separationNotice(es.employee)).find(Boolean) ?? null;
   const allSchedules: any[] = (workSchedulesData as any)?.data || (workSchedulesData as any) || [];
 
   const [schedDialogOpen, setSchedDialogOpen] = useState(false);
@@ -1651,6 +1653,12 @@ export default function EmployeeDetailsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {scheduleSeparation && (
+            <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {scheduleSeparation}
+            </div>
+          )}
           {scheduleList.length === 0 ? (
             <div className="flex items-center gap-2 justify-center py-6 text-sm text-muted-foreground">
               <AlertTriangle className="h-4 w-4 text-amber-500" />

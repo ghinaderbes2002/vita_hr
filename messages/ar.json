@@ -1471,8 +1471,8 @@
       "choose": "اختر",
       "chooseEmployee": "اختر موظفاً",
       "resignation": {
-        "effectiveDateLabel": "تاريخ الاستقالة الفعلي *",
-        "effectiveDateHint": "يجب أن يكون بعد 30 يوماً على الأقل من اليوم",
+        "effectiveDateLabel": "تاريخ الاستقالة / آخر يوم عمل *",
+        "effectiveDateHint": "يجب أن يكون بعد 30 يوماً على الأقل من اليوم. بعد الموافقة النهائية يصبح هذا تاريخ انفكاكك، ويتوقف حسابك بعد نهايته.",
         "reasonsLabel": "أسباب الاستقالة *",
         "reasonsPlaceholder": "اذكر أسباب الاستقالة..."
       },
