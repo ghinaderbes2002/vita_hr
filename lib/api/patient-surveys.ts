@@ -12,6 +12,8 @@ export type SurveyAgeGroup =
   | "FROM_41_50" | "FROM_51_60" | "OVER_60";
 export type ComplaintStage = "ASSESSMENT" | "MEASUREMENT" | "TRAINING_REHAB" | "SOCKET_FITTING" | "NONE";
 export type PodiatryServiceType = "ANALYSIS_ONLY" | "ANALYSIS_AND_FITTING";
+/** Why an analysis-only patient did not get an insole fitted. */
+export type NoFittingReason = "TIMING" | "PRICE" | "OTHER";
 
 /** تقييم من 1 إلى 5. */
 export type SurveyRating = 1 | 2 | 3 | 4 | 5;
@@ -36,6 +38,10 @@ export interface CreatePatientSurveyDto {
   // PODIATRY
   podiatryServiceType?: PodiatryServiceType;
   medicalRecommendationRating?: number;
+  /** ANALYSIS_AND_FITTING only. */
+  insoleComfortRating?: number;
+  /** ANALYSIS_ONLY only. */
+  noFittingReason?: NoFittingReason;
   // PHYSIO
   exerciseQualityRating?: number;
   mobilityImprovementRating?: number;

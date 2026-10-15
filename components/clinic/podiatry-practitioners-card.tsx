@@ -44,13 +44,7 @@ const GONE = ["TERMINATED", "RESIGNED", "INACTIVE", "SUSPENDED", "RETIRED"];
 const sortedKey = (ids: string[]) => [...ids].sort().join(",");
 const fullName = (e: StaffRow) => `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim();
 
-/**
- * فريق المعالجين المعيّنين على حالة طب الأقدام.
- *
- * The API replaces the team wholesale on every PATCH, so the draft below is
- * always the complete list — removing a chip and saving is what unassigns
- * someone, and adding one still sends the people who were already there.
- */
+/** فريق المعالجين المعيّنين على حالة طب الأقدام. */
 export function PodiatryPractitionersCard({
   receptionId,
   practitionerIds,
@@ -58,13 +52,41 @@ export function PodiatryPractitionersCard({
   receptionId: string;
   practitionerIds: string[];
 }) {
-  const t = useTranslations("clinic.podiatry.practitioners");
   const { hasPermission, isAdmin } = usePermissions();
-  const canEdit = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PODIATRY.RECEPTION_EDIT);
+  const assign = useAssignPodiatryPractitioners();
+  return (
+    <PractitionersCard
+      practitionerIds={practitionerIds}
+      canEdit={isAdmin() || hasPermission(PERMISSIONS.CLINIC_PODIATRY.RECEPTION_EDIT)}
+      isPending={assign.isPending}
+      onSave={(ids) => assign.mutate({ id: receptionId, practitionerIds: ids })}
+    />
+  );
+}
+
+/**
+ * The practitioner team on a clinic reception, shared by podiatry and orthotics.
+ *
+ * Both APIs replace the team wholesale on every PATCH, so the draft below is
+ * always the complete list — removing a chip and saving is what unassigns
+ * someone, and adding one still sends the people who were already there.
+ */
+export function PractitionersCard({
+  practitionerIds,
+  canEdit,
+  isPending,
+  onSave,
+}: {
+  practitionerIds: string[];
+  canEdit: boolean;
+  isPending: boolean;
+  /** Receives the complete team. */
+  onSave: (practitionerIds: string[]) => void;
+}) {
+  const t = useTranslations("clinic.podiatry.practitioners");
 
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(practitionerIds);
-  const assign = useAssignPodiatryPractitioners();
 
   // The saved team is the source of truth: re-sync when the reception reloads
   // so a change made elsewhere doesn't leave a stale draft on screen.
@@ -194,10 +216,10 @@ export function PodiatryPractitionersCard({
                 type="button"
                 size="sm"
                 className="h-8 gap-1.5 bg-orange-500 hover:bg-orange-600 text-white"
-                disabled={!dirty || assign.isPending}
-                onClick={() => assign.mutate({ id: receptionId, practitionerIds: selected })}
+                disabled={!dirty || isPending}
+                onClick={() => onSave(selected)}
               >
-                {assign.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                 {t("save")}
               </Button>
             </div>

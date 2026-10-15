@@ -27,6 +27,9 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
+import { OrthoticsReceptionDialog } from "@/components/clinic/orthotics-reception-dialog";
+import { sectionsFilled } from "@/components/clinic/orthotics-labels";
+import { useOrthoticsReceptions } from "@/lib/hooks/use-clinic-orthotics";
 import { useClickCooldown } from "@/lib/hooks/use-click-cooldown";
 import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
@@ -125,6 +128,10 @@ export default function PatientProfilePage() {
   // physio, so the file just reads whatever exists.
   const { data: appAccount, isLoading: accountLoading } = usePatientAppAccount(id);
   const [podiatryDialogOpen, setPodiatryDialogOpen] = useState(false);
+  // Only fetched for someone who may read orthotics — anyone else would get a 403.
+  const canViewOrthotics = isAdmin() || hasPermission(PERMISSIONS.CLINIC_ORTHOTICS.VIEW);
+  const { data: orthoticsReceptions = [] } = useOrthoticsReceptions(id, canViewOrthotics);
+  const [orthoticsDialogOpen, setOrthoticsDialogOpen] = useState(false);
   const { data: notes = [] } = usePatientNotes(id);
 
   const deletePatient = useDeleteClinicPatient();
@@ -477,6 +484,7 @@ export default function PatientProfilePage() {
           <TabsTrigger value="prosthetics">الأطراف الصناعية ({prostCases.length})</TabsTrigger>
           <TabsTrigger value="physio">العلاج الفيزيائي ({physioCases.length})</TabsTrigger>
           <TabsTrigger value="podiatry">طب الأقدام ({podiatryReceptions.length})</TabsTrigger>
+          {canViewOrthotics && <TabsTrigger value="orthotics">المقومات ({orthoticsReceptions.length})</TabsTrigger>}
           <TabsTrigger value="doctor_exam">معاينة الطبيب ({doctorExams.length})</TabsTrigger>
           <TabsTrigger value="documents">المستندات ({documents.length})</TabsTrigger>
           <TabsTrigger value="links">الروابط ({links.length})</TabsTrigger>
@@ -714,6 +722,52 @@ export default function PatientProfilePage() {
             </div>
           )}
         </TabsContent>
+
+        {/* Orthotics Tab */}
+        {canViewOrthotics && (
+          <TabsContent value="orthotics" className="mt-4 space-y-4">
+            <div className="flex flex-wrap gap-2 justify-between items-center">
+              <h3 className="font-semibold">استقبالات المقومات</h3>
+              <ActionGuard permission={PERMISSIONS.CLINIC_ORTHOTICS.CREATE}>
+                <Button size="sm" onClick={() => setOrthoticsDialogOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  استقبال جديد
+                </Button>
+              </ActionGuard>
+            </div>
+            {orthoticsReceptions.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground border rounded-lg">لا توجد استقبالات مقومات</div>
+            ) : (
+              <div className="space-y-3">
+                {orthoticsReceptions.map((r) => {
+                  const filled = sectionsFilled(r);
+                  const sections = [
+                    filled.doctor && "طبيب العظمية",
+                    filled.physio && "العلاج الفيزيائي",
+                    filled.prosthetist && "الأطراف الصناعية",
+                  ].filter(Boolean);
+                  return (
+                    <Card key={r.id} className="cursor-pointer hover:border-primary/50 transition-colors"
+                      onClick={() => router.push(`/${locale}/clinic/orthotics/${r.id}`)}>
+                      <CardContent className="pt-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="space-y-1 min-w-0">
+                          <p className="text-sm">
+                            {sections.length ? `مُعبّأ: ${sections.join("، ")}` : "لم يُعبّأ أي تقييم بعد"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-GB") : "—"}
+                            {r.guardianName ? ` — ولي الأمر: ${r.guardianName}` : ""}
+                          </p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+        )}
 
         {/* Doctor Exam Tab */}
         <TabsContent value="doctor_exam" className="mt-4 space-y-4">
@@ -999,6 +1053,13 @@ export default function PatientProfilePage() {
         onOpenChange={setPodiatryDialogOpen}
         patientId={id}
         onCreated={(receptionId) => router.push(`/${locale}/clinic/podiatry/${receptionId}`)}
+      />
+
+      <OrthoticsReceptionDialog
+        open={orthoticsDialogOpen}
+        onOpenChange={setOrthoticsDialogOpen}
+        patientId={id}
+        onCreated={(receptionId) => router.push(`/${locale}/clinic/orthotics/${receptionId}`)}
       />
 
       <ConvertToPhysioDialog

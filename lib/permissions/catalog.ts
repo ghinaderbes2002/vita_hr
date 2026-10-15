@@ -278,6 +278,20 @@ export const PERMISSIONS = {
     SESSION_EDIT:     "clinic.podiatry.session.edit",
     SESSION_ARCHIVE:  "clinic.podiatry.session.archive",
   },
+  /**
+   * قسم المقومات. Everyone with VIEW reads the whole reception; each of the
+   * three assessment sections is written only by its own permission.
+   */
+  CLINIC_ORTHOTICS: {
+    VIEW:                     "clinic.orthotics.view",
+    CREATE:                   "clinic.orthotics.create",
+    /** Guardian details and the practitioner team. */
+    EDIT:                     "clinic.orthotics.edit",
+    DELETE:                   "clinic.orthotics.delete",
+    DOCTOR_ASSESSMENT_EDIT:   "clinic.orthotics.doctor_assessment.edit",
+    PHYSIO_ASSESSMENT_EDIT:   "clinic.orthotics.physio_assessment.edit",
+    PROSTHETIST_OPINION_EDIT: "clinic.orthotics.prosthetist_opinion.edit",
+  },
   CLINIC_APPOINTMENTS: {
     VIEW:   "clinic.appointments.view",
     /** مواعيد المستخدم نفسه فقط — تُمنح للموظف العادي */

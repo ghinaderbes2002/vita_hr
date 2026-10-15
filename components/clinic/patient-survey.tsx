@@ -18,7 +18,7 @@ import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useCreatePatientSurvey, usePatientSurvey, usePatientSurveys } from "@/lib/hooks/use-patient-surveys";
 import type { Patient } from "@/lib/api/clinic-patients";
 import type {
-  ComplaintStage, CreatePatientSurveyDto, PatientSurvey, PatientSurveyListParams,
+  ComplaintStage, CreatePatientSurveyDto, NoFittingReason, PatientSurvey, PatientSurveyListParams,
   PodiatryServiceType, SurveyAgeGroup, SurveyDepartment, SurveyGender,
 } from "@/lib/api/patient-surveys";
 
@@ -59,10 +59,19 @@ const PODIATRY_SERVICE_LABEL: Record<PodiatryServiceType, string> = {
   ANALYSIS_AND_FITTING: "تحليل وتركيب",
 };
 
+/** «تحليل فقط» — سبب عدم التركيب، بنص استمارة الورق. */
+const NO_FITTING_REASON_LABEL: Record<NoFittingReason, string> = {
+  TIMING: "التوقيت غير مناسب",
+  PRICE: "ثمن الضبان غير مناسب",
+  OTHER: "أخرى",
+};
+
+const NO_FITTING_REASON_QUESTION = "ما سبب عدم تركيبك للضبان";
+
 type RatingKey =
   | "staffExplanationRating" | "specialistCareRating" | "waitingAreaRating" | "waitingDurationRating"
   | "measurementAccuracyRating" | "movementEaseRating"
-  | "medicalRecommendationRating"
+  | "medicalRecommendationRating" | "insoleComfortRating"
   | "exerciseQualityRating" | "mobilityImprovementRating"
   | "overallCompanyRating";
 
@@ -74,6 +83,7 @@ const RATING_LABEL: Record<RatingKey, string> = {
   measurementAccuracyRating: "دقة القياسات",
   movementEaseRating: "سهولة الحركة بالطرف",
   medicalRecommendationRating: "وضوح التوصيات الطبية والاستفادة منها",
+  insoleComfortRating: "ملاءمة الضبان لراحة القدم",
   exerciseQualityRating: "جودة التمارين",
   mobilityImprovementRating: "التحسّن في الحركة",
   overallCompanyRating: "التقييم العام للمركز",
@@ -87,7 +97,7 @@ const SHARED_RATINGS: RatingKey[] = [
 /** أسئلة كل قسم — تُعرض وتُرسل فقط مع قسمها. */
 const DEPARTMENT_RATINGS: Record<SurveyDepartment, RatingKey[]> = {
   PROSTHETICS: ["measurementAccuracyRating", "movementEaseRating"],
-  PODIATRY: ["medicalRecommendationRating"],
+  PODIATRY: ["medicalRecommendationRating", "insoleComfortRating"],
   PHYSIO: ["exerciseQualityRating", "mobilityImprovementRating"],
 };
 
@@ -98,6 +108,8 @@ const DEPARTMENT_RATINGS: Record<SurveyDepartment, RatingKey[]> = {
 interface PaperForm {
   /** أسئلة التقييم بترتيب الاستمارة، عدا التقييم العام الذي يأتي آخراً دائماً. */
   order: RatingKey[];
+  /** طب الأقدام: لكل نوع خدمة استمارة مختلفة، فتحل محل `order`. */
+  orderByService?: Record<PodiatryServiceType, RatingKey[]>;
   labels: Partial<Record<RatingKey, string>>;
   /** سطر توضيح تحت السؤال، كما في الاستمارة. */
   notes?: Partial<Record<RatingKey, string>>;
@@ -126,12 +138,27 @@ const PAPER_FORM: Partial<Record<SurveyDepartment, PaperForm>> = {
     },
     notes: { measurementAccuracyRating: "المؤشر هو عدم وجود ألم في الجذمور" },
   },
+  // «تحليل فقط» يبدأ بسؤال سبب عدم التركيب قبل هذه الأسئلة.
   PODIATRY: {
     order: [
       "medicalRecommendationRating", "staffExplanationRating", "specialistCareRating",
       "waitingAreaRating", "waitingDurationRating",
     ],
-    labels: { ...PAPER_COMMON_LABEL, medicalRecommendationRating: "وضوح التوصية بالضبانات الطبية" },
+    orderByService: {
+      ANALYSIS_ONLY: [
+        "medicalRecommendationRating", "staffExplanationRating", "specialistCareRating",
+        "waitingAreaRating", "waitingDurationRating",
+      ],
+      ANALYSIS_AND_FITTING: [
+        "medicalRecommendationRating", "insoleComfortRating", "staffExplanationRating",
+        "specialistCareRating", "waitingAreaRating", "waitingDurationRating",
+      ],
+    },
+    labels: {
+      ...PAPER_COMMON_LABEL,
+      medicalRecommendationRating: "وضوح التوصية بالضبانات الطبية",
+      insoleComfortRating: "ملاءمة الضبان لراحة قدمك",
+    },
   },
   PHYSIO: {
     order: [
@@ -160,8 +187,11 @@ const PAPER_NOTES_LABEL = "هل يوجد أي إضافات أخرى أو توص�
 const paperForm = (dep: SurveyDepartment | null | undefined) => (dep ? PAPER_FORM[dep] : undefined);
 
 /** أسئلة التقييم المعروضة للقسم بترتيبها، عدا التقييم العام. */
-const ratingKeysFor = (dep: SurveyDepartment): RatingKey[] =>
-  paperForm(dep)?.order ?? [...SHARED_RATINGS, ...DEPARTMENT_RATINGS[dep]];
+const ratingKeysFor = (dep: SurveyDepartment, service?: PodiatryServiceType | "" | null): RatingKey[] => {
+  const pf = paperForm(dep);
+  if (!pf) return [...SHARED_RATINGS, ...DEPARTMENT_RATINGS[dep]];
+  return (service && pf.orderByService?.[service]) || pf.order;
+};
 
 const isRequiredRating = (dep: SurveyDepartment, key: RatingKey) =>
   key === "overallCompanyRating" || !!paperForm(dep) || DEPARTMENT_RATINGS[dep].includes(key);
@@ -399,6 +429,7 @@ const emptyForm = () => ({
   ratings: {} as Partial<Record<RatingKey, number>>,
   complaintStage: "" as ComplaintStage | "",
   podiatryServiceType: "" as PodiatryServiceType | "",
+  noFittingReason: "" as NoFittingReason | "",
   additionalNotes: "",
 });
 
@@ -451,13 +482,19 @@ export function PatientSurveyDialog({
     setForm((f) => ({ ...f, ratings: { ...f.ratings, [key]: v || undefined } }));
 
   const dep = form.department || null;
+  const service = dep === "PODIATRY" ? form.podiatryServiceType : "";
+  const asksNoFittingReason = service === "ANALYSIS_ONLY";
+  // Podiatry's questions depend on the service type, so they wait until it is chosen.
+  const questionsReady = !!dep && (dep !== "PODIATRY" || !!service);
+  const questionKeys = dep ? ratingKeysFor(dep, service) : [];
   const requiredRatings: RatingKey[] = dep
-    ? [...ratingKeysFor(dep), "overallCompanyRating" as RatingKey].filter((k) => isRequiredRating(dep, k))
+    ? [...questionKeys, "overallCompanyRating" as RatingKey].filter((k) => isRequiredRating(dep, k))
     : [];
   const missing =
     !target || !dep || !form.customerName.trim() || !form.gender || !form.ageGroup
     || requiredRatings.some((k) => !form.ratings[k])
     || (dep === "PODIATRY" && !form.podiatryServiceType)
+    || (asksNoFittingReason && !form.noFittingReason)
     || (dep === "PROSTHETICS" && !form.complaintStage);
 
   const handleSubmit = async () => {
@@ -472,9 +509,11 @@ export function PatientSurveyDialog({
       overallCompanyRating: form.ratings.overallCompanyRating!,
       ...SHARED_RATINGS.reduce((acc, k) => ({ ...acc, ...rating(k) }), {}),
       // حقول القسم المختار فقط — حقول الأقسام الأخرى لا تُرسل.
-      ...DEPARTMENT_RATINGS[dep].reduce((acc, k) => ({ ...acc, ...rating(k) }), {}),
+      // and of those, only the ones this service type asks (insole comfort is fitting-only).
+      ...DEPARTMENT_RATINGS[dep].filter((k) => questionKeys.includes(k)).reduce((acc, k) => ({ ...acc, ...rating(k) }), {}),
       ...(dep === "PROSTHETICS" && form.complaintStage ? { complaintStage: form.complaintStage } : {}),
       ...(dep === "PODIATRY" && form.podiatryServiceType ? { podiatryServiceType: form.podiatryServiceType } : {}),
+      ...(asksNoFittingReason && form.noFittingReason ? { noFittingReason: form.noFittingReason } : {}),
       ...(form.additionalNotes.trim() ? { additionalNotes: form.additionalNotes.trim() } : {}),
     };
     await createSurvey.mutateAsync(dto);
@@ -482,14 +521,18 @@ export function PatientSurveyDialog({
   };
 
   // Questions are numbered in the order they appear, like the paper form.
-  const questionKeys = dep ? ratingKeysFor(dep) : [];
-  const complaintNo = questionKeys.length + 1;
+  const firstRatingNo = asksNoFittingReason ? 2 : 1;
+  const complaintNo = firstRatingNo + questionKeys.length;
   const overallNo = complaintNo + (dep === "PROSTHETICS" ? 1 : 0);
   const notesNo = overallNo + 1;
 
-  const requiredQuestions = requiredRatings.length + (dep === "PROSTHETICS" ? 1 : 0);
+  const choiceQuestions = [
+    ...(asksNoFittingReason ? [!!form.noFittingReason] : []),
+    ...(dep === "PROSTHETICS" ? [!!form.complaintStage] : []),
+  ];
+  const requiredQuestions = requiredRatings.length + choiceQuestions.length;
   const answeredQuestions =
-    requiredRatings.filter((k) => form.ratings[k]).length + (dep === "PROSTHETICS" && form.complaintStage ? 1 : 0);
+    requiredRatings.filter((k) => form.ratings[k]).length + choiceQuestions.filter(Boolean).length;
 
   const ratingCard = (key: RatingKey, n: number, highlight = false) => (
     <QuestionCard
@@ -515,7 +558,16 @@ export function PatientSurveyDialog({
     ),
     complaintStage: "",
     podiatryServiceType: "",
+    noFittingReason: "",
   }));
+
+  // Each service type has its own form, so the answers only one of them asks are dropped.
+  const changeService = (s: PodiatryServiceType) => setForm((f) => {
+    if (s === f.podiatryServiceType) return f;
+    const ratings = { ...f.ratings };
+    delete ratings.insoleComfortRating;
+    return { ...f, podiatryServiceType: s, ratings, noFittingReason: "" };
+  });
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!createSurvey.isPending) onOpenChange(o); }}>
@@ -603,7 +655,7 @@ export function PatientSurveyDialog({
                   <ChoiceChips
                     options={PODIATRY_SERVICE_LABEL}
                     value={form.podiatryServiceType}
-                    onChange={(s) => setForm((f) => ({ ...f, podiatryServiceType: s as PodiatryServiceType }))}
+                    onChange={(s) => changeService(s as PodiatryServiceType)}
                     className="grid-cols-2 sm:max-w-sm"
                   />
                 </Field>
@@ -612,11 +664,30 @@ export function PatientSurveyDialog({
           )}
           </SurveySection>
 
-          {dep && (
+          {dep && questionsReady && (
             <>
               {/* ── 2. تقييم الخدمة ── */}
-              <SurveySection n={2} title={`تقييم الخدمة — ${SURVEY_DEPARTMENT_LABEL[dep]}`}>
-                {questionKeys.map((k, i) => ratingCard(k, i + 1))}
+              <SurveySection
+                n={2}
+                title={`تقييم الخدمة — ${SURVEY_DEPARTMENT_LABEL[dep]}${service ? ` (${PODIATRY_SERVICE_LABEL[service]})` : ""}`}
+              >
+                {asksNoFittingReason && (
+                  <QuestionCard
+                    n={1}
+                    label={NO_FITTING_REASON_QUESTION}
+                    required
+                    answered={!!form.noFittingReason}
+                  >
+                    <ChoiceChips
+                      options={NO_FITTING_REASON_LABEL}
+                      value={form.noFittingReason}
+                      onChange={(r) => setForm((f) => ({ ...f, noFittingReason: r as NoFittingReason }))}
+                      className="grid-cols-1 sm:grid-cols-3"
+                    />
+                  </QuestionCard>
+                )}
+
+                {questionKeys.map((k, i) => ratingCard(k, firstRatingNo + i))}
 
                 {dep === "PROSTHETICS" && (
                   <QuestionCard
@@ -654,7 +725,11 @@ export function PatientSurveyDialog({
 
         <DialogFooter className="px-6 py-4 border-t bg-muted/30 sm:justify-between items-center gap-3">
           <p className="text-xs text-muted-foreground order-last sm:order-first">
-            {dep ? `تمت الإجابة على ${answeredQuestions} من ${requiredQuestions} أسئلة إجبارية` : "اختر القسم لعرض الأسئلة"}
+            {!dep
+              ? "اختر القسم لعرض الأسئلة"
+              : !questionsReady
+                ? "اختر نوع الخدمة لعرض الأسئلة"
+                : `تمت الإجابة على ${answeredQuestions} من ${requiredQuestions} أسئلة إجبارية`}
           </p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={createSurvey.isPending}>إلغاء</Button>
@@ -710,7 +785,14 @@ export function PatientSurveyDetailsDialog({ surveyId, onClose }: { surveyId: st
               <DetailRow label="تاريخ التعبئة">{new Date(s.createdAt).toLocaleString("en-GB", { hour12: true })}</DetailRow>
             </div>
             <div className="rounded-md border px-3 py-1">
-              {answered(DEPARTMENT_RATINGS[s.department] ? ratingKeysFor(s.department) : SHARED_RATINGS).map((k) => (
+              {s.noFittingReason && (
+                <DetailRow label={NO_FITTING_REASON_QUESTION}>
+                  {NO_FITTING_REASON_LABEL[s.noFittingReason] ?? s.noFittingReason}
+                </DetailRow>
+              )}
+              {answered(
+                DEPARTMENT_RATINGS[s.department] ? ratingKeysFor(s.department, s.podiatryServiceType) : SHARED_RATINGS,
+              ).map((k) => (
                 <DetailRow key={k} label={ratingLabel(s.department, k)}><StarRating value={s[k]} size="sm" /></DetailRow>
               ))}
               {s.complaintStage && (
