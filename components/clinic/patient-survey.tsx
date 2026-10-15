@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, Loader2, Star } from "lucide-react";
+import { Check, Eye, Loader2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -43,13 +42,17 @@ const AGE_GROUP_LABEL: Record<SurveyAgeGroup, string> = {
   OVER_60: "أكثر من 60",
 };
 
+/** نص الخيارات كما في استمارة الورق. */
 const COMPLAINT_STAGE_LABEL: Record<ComplaintStage, string> = {
-  ASSESSMENT: "التقييم",
-  MEASUREMENT: "أخذ القياسات",
+  ASSESSMENT: "المعاينة",
+  MEASUREMENT: "أخذ القياس",
   TRAINING_REHAB: "التدريب والتأهيل",
-  SOCKET_FITTING: "تركيب السوكيت",
+  SOCKET_FITTING: "تركيب الحاضنة التجريبية / النهائية",
   NONE: "لا يوجد",
 };
+
+const COMPLAINT_STAGE_QUESTION =
+  "في حال وجود أي شكوى أو ملاحظة أو سوء تعامل خلال رحلة علاجك في قسم الأطراف الصناعية، فيرجى التوضيح بأي مرحلة كانت بالتحديد؟";
 
 const PODIATRY_SERVICE_LABEL: Record<PodiatryServiceType, string> = {
   ANALYSIS_ONLY: "تحليل فقط",
@@ -87,6 +90,90 @@ const DEPARTMENT_RATINGS: Record<SurveyDepartment, RatingKey[]> = {
   PODIATRY: ["medicalRecommendationRating"],
   PHYSIO: ["exerciseQualityRating", "mobilityImprovementRating"],
 };
+
+/**
+ * أقسام تطابق استمارة الورق (SurveyMars) حرفياً: نص الأسئلة وترتيبها، وكلها
+ * إجبارية. الحقول نفسها المشتركة مع باقي الأقسام، بنص مختلف فقط.
+ */
+interface PaperForm {
+  /** أسئلة التقييم بترتيب الاستمارة، عدا التقييم العام الذي يأتي آخراً دائماً. */
+  order: RatingKey[];
+  labels: Partial<Record<RatingKey, string>>;
+  /** سطر توضيح تحت السؤال، كما في الاستمارة. */
+  notes?: Partial<Record<RatingKey, string>>;
+}
+
+/** أسئلة نصها واحد في كل استمارات الورق. */
+const PAPER_COMMON_LABEL: Partial<Record<RatingKey, string>> = {
+  staffExplanationRating: "الشرح الكافي والتعامل الجيد من قبل الفنيين",
+  specialistCareRating: "مقدار شعورك باهتمام الاخصائيين اتجاهك",
+  waitingAreaRating: "تقييمك لراحة مكان الانتظار وطريقة الاستقبال",
+  waitingDurationRating: "متوسط مدة الانتظار قبل الدخول الى الجلسات بشكل عام",
+  overallCompanyRating: "تقييمك العام للشركة وكوادر العمل",
+};
+
+const PAPER_FORM: Partial<Record<SurveyDepartment, PaperForm>> = {
+  // سؤال مرحلة الشكوى (11) يأتي بعد هذه الأسئلة وقبل التقييم العام.
+  PROSTHETICS: {
+    order: [
+      "staffExplanationRating", "measurementAccuracyRating", "movementEaseRating",
+      "specialistCareRating", "waitingAreaRating", "waitingDurationRating",
+    ],
+    labels: {
+      ...PAPER_COMMON_LABEL,
+      measurementAccuracyRating: "دقة القياس والتركيب",
+      movementEaseRating: "سهولة الحركة بالطرف الصناعي",
+    },
+    notes: { measurementAccuracyRating: "المؤشر هو عدم وجود ألم في الجذمور" },
+  },
+  PODIATRY: {
+    order: [
+      "medicalRecommendationRating", "staffExplanationRating", "specialistCareRating",
+      "waitingAreaRating", "waitingDurationRating",
+    ],
+    labels: { ...PAPER_COMMON_LABEL, medicalRecommendationRating: "وضوح التوصية بالضبانات الطبية" },
+  },
+  PHYSIO: {
+    order: [
+      "staffExplanationRating", "exerciseQualityRating", "mobilityImprovementRating",
+      "specialistCareRating", "waitingAreaRating", "waitingDurationRating",
+    ],
+    labels: {
+      ...PAPER_COMMON_LABEL,
+      exerciseQualityRating: "جودة التمارين والإرشادات",
+      mobilityImprovementRating: "مدى تحسن حركتك ومقدار شعورك بالراحة بعد اتمام جميع جلساتك",
+    },
+  },
+};
+
+/** معنى طرفي السلّم كما في الاستمارة: [5، 1]. */
+const PAPER_HINT: Partial<Record<RatingKey, [string, string]>> = {
+  waitingDurationRating: ["مدة انتظار بسيطة جداً ومثالية", "مدة انتظار طويلة جداً تتجاوز 60 دقيقة"],
+  overallCompanyRating: [
+    "لقد قامت الشركة وفريقها بتلبية توقعاتك التي بنيتها قبل البدء بتجربتك معنا بشكل تام",
+    "لم تكن الشركة وفريق عملها ملبية لتوقعاتي نهائياً",
+  ],
+};
+
+const PAPER_NOTES_LABEL = "هل يوجد أي إضافات أخرى أو توصيات تريد أن تقدمها لنا؟";
+
+const paperForm = (dep: SurveyDepartment | null | undefined) => (dep ? PAPER_FORM[dep] : undefined);
+
+/** أسئلة التقييم المعروضة للقسم بترتيبها، عدا التقييم العام. */
+const ratingKeysFor = (dep: SurveyDepartment): RatingKey[] =>
+  paperForm(dep)?.order ?? [...SHARED_RATINGS, ...DEPARTMENT_RATINGS[dep]];
+
+const isRequiredRating = (dep: SurveyDepartment, key: RatingKey) =>
+  key === "overallCompanyRating" || !!paperForm(dep) || DEPARTMENT_RATINGS[dep].includes(key);
+
+const ratingLabel = (dep: SurveyDepartment | null | undefined, key: RatingKey) =>
+  paperForm(dep)?.labels[key] ?? RATING_LABEL[key];
+
+const ratingHint = (dep: SurveyDepartment | null | undefined, key: RatingKey) =>
+  paperForm(dep) ? PAPER_HINT[key] : undefined;
+
+const notesLabel = (dep: SurveyDepartment | null | undefined) =>
+  paperForm(dep) ? PAPER_NOTES_LABEL : "ملاحظات إضافية";
 
 const DEPARTMENT_BADGE: Record<SurveyDepartment, string> = {
   PROSTHETICS: "bg-indigo-100 text-indigo-800",
@@ -154,6 +241,154 @@ function StarRating({ value, onChange, size = "md" }: { value?: number; onChange
   );
 }
 
+// ─── Form building blocks ─────────────────────────────────────────────────────
+
+function SurveySection({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h3 className="flex items-center gap-2 text-sm font-semibold">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
+          {n}
+        </span>
+        {title}
+      </h3>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}{required && <span className="text-destructive"> *</span>}</Label>
+      {children}
+    </div>
+  );
+}
+
+/** A short list of options as buttons — one tap instead of opening a dropdown. */
+function ChoiceChips({
+  options, value, onChange, className,
+}: {
+  options: Record<string, string>;
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+}) {
+  return (
+    <div role="radiogroup" className={cn("grid gap-2", className)}>
+      {Object.entries(options).map(([k, label]) => {
+        const on = value === k;
+        return (
+          <button
+            key={k}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(k)}
+            className={cn(
+              "rounded-md border px-3 py-2 text-sm text-center transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              on ? "border-primary bg-primary/10 text-primary font-medium" : "hover:bg-accent",
+            )}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * 1 to 5 as on the paper form: 1 (very dissatisfied) on the right, 5 on the
+ * left. Tapping the chosen value again clears it, for the optional questions.
+ */
+function RatingScale({ value, onChange }: { value?: number; onChange: (v: number) => void }) {
+  return (
+    <div className="space-y-1">
+      <div role="radiogroup" className="grid grid-cols-5 gap-2">
+        {[1, 2, 3, 4, 5].map((n) => {
+          const on = value === n;
+          return (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              aria-label={`${n} من 5`}
+              onClick={() => onChange(on ? 0 : n)}
+              className={cn(
+                "h-10 rounded-md border text-sm font-semibold tabular-nums transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent",
+              )}
+            >
+              {n}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex justify-between text-[11px] text-muted-foreground">
+        <span>غير راضٍ جداً</span>
+        <span>راضٍ جداً</span>
+      </div>
+    </div>
+  );
+}
+
+function QuestionCard({
+  n, label, required, optional, answered, note, hint, highlight, children,
+}: {
+  n: number;
+  label: string;
+  required?: boolean;
+  optional?: boolean;
+  answered: boolean;
+  /** سطر توضيح تحت السؤال. */
+  note?: string;
+  /** معنى طرفي السلّم: [5، 1]. */
+  hint?: [string, string];
+  highlight?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg border p-4 space-y-3 transition-colors",
+        highlight && "bg-muted/40",
+        answered && "border-primary/40",
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className={cn(
+            "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
+            answered ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+          )}
+        >
+          {answered ? <Check className="h-3.5 w-3.5" /> : n}
+        </span>
+        <div className="flex-1 space-y-1 min-w-0">
+          <p className="text-sm font-medium leading-relaxed">
+            {label}
+            {required && <span className="text-destructive"> *</span>}
+            {optional && <span className="text-xs font-normal text-muted-foreground"> (اختياري)</span>}
+          </p>
+          {note && <p className="text-xs text-muted-foreground">{note}</p>}
+          {hint && (
+            <div className="text-xs text-emerald-700 dark:text-emerald-400 space-y-0.5">
+              <p>5 = {hint[0]}</p>
+              <p>1 = {hint[1]}</p>
+            </div>
+          )}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 // ─── Create dialog ────────────────────────────────────────────────────────────
 
 const emptyForm = () => ({
@@ -216,11 +451,14 @@ export function PatientSurveyDialog({
     setForm((f) => ({ ...f, ratings: { ...f.ratings, [key]: v || undefined } }));
 
   const dep = form.department || null;
-  const requiredRatings: RatingKey[] = dep ? [...DEPARTMENT_RATINGS[dep], "overallCompanyRating"] : [];
+  const requiredRatings: RatingKey[] = dep
+    ? [...ratingKeysFor(dep), "overallCompanyRating" as RatingKey].filter((k) => isRequiredRating(dep, k))
+    : [];
   const missing =
     !target || !dep || !form.customerName.trim() || !form.gender || !form.ageGroup
     || requiredRatings.some((k) => !form.ratings[k])
-    || (dep === "PODIATRY" && !form.podiatryServiceType);
+    || (dep === "PODIATRY" && !form.podiatryServiceType)
+    || (dep === "PROSTHETICS" && !form.complaintStage);
 
   const handleSubmit = async () => {
     if (missing || !target || !dep || !form.gender || !form.ageGroup) return;
@@ -243,25 +481,55 @@ export function PatientSurveyDialog({
     onOpenChange(false);
   };
 
-  const ratingRow = (key: RatingKey, required: boolean) => (
-    <div key={key} className="flex flex-wrap items-center justify-between gap-2 py-1.5 border-b last:border-0">
-      <Label className="font-normal">
-        {RATING_LABEL[key]}
-        {required && <span className="text-destructive"> *</span>}
-      </Label>
-      <StarRating value={form.ratings[key]} onChange={(v) => setRating(key, v)} />
-    </div>
+  // Questions are numbered in the order they appear, like the paper form.
+  const questionKeys = dep ? ratingKeysFor(dep) : [];
+  const complaintNo = questionKeys.length + 1;
+  const overallNo = complaintNo + (dep === "PROSTHETICS" ? 1 : 0);
+  const notesNo = overallNo + 1;
+
+  const requiredQuestions = requiredRatings.length + (dep === "PROSTHETICS" ? 1 : 0);
+  const answeredQuestions =
+    requiredRatings.filter((k) => form.ratings[k]).length + (dep === "PROSTHETICS" && form.complaintStage ? 1 : 0);
+
+  const ratingCard = (key: RatingKey, n: number, highlight = false) => (
+    <QuestionCard
+      key={key}
+      n={n}
+      label={ratingLabel(dep, key)}
+      required={!!dep && isRequiredRating(dep, key)}
+      answered={!!form.ratings[key]}
+      note={paperForm(dep)?.notes?.[key]}
+      hint={ratingHint(dep, key)}
+      highlight={highlight}
+    >
+      <RatingScale value={form.ratings[key]} onChange={(v) => setRating(key, v)} />
+    </QuestionCard>
   );
+
+  const resetForDepartment = (d: SurveyDepartment) => setForm((f) => ({
+    ...f,
+    department: d,
+    // أسئلة القسم السابق لا تنتقل للقسم الجديد.
+    ratings: Object.fromEntries(
+      Object.entries(f.ratings).filter(([k]) => SHARED_RATINGS.includes(k as RatingKey) || k === "overallCompanyRating"),
+    ),
+    complaintStage: "",
+    podiatryServiceType: "",
+  }));
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!createSurvey.isPending) onOpenChange(o); }}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0" dir="rtl">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>استبيان تقييم رضا العملاء</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            قيّم كل سؤال من 1 (غير راضٍ جداً) إلى 5 (راضٍ جداً).
+          </p>
         </DialogHeader>
 
-        <div className="space-y-5">
-          {/* المريض */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {/* ── 1. بيانات العميل ── */}
+          <SurveySection n={1} title="بيانات العميل">
           {!patient && (
             <div className="space-y-1.5">
               <Label>المريض <span className="text-destructive">*</span></Label>
@@ -300,122 +568,101 @@ export function PatientSurveyDialog({
           )}
 
           {/* القسم أولاً — يحدد أي أسئلة تظهر */}
-          <div className="space-y-1.5">
-            <Label>القسم الذي تلقيت فيه الخدمة <span className="text-destructive">*</span></Label>
-            <Select
+          <Field label="القسم الذي تلقيت فيه الخدمة" required>
+            <ChoiceChips
+              options={SURVEY_DEPARTMENT_LABEL}
               value={form.department}
-              onValueChange={(v) => setForm((f) => ({
-                ...f,
-                department: v as SurveyDepartment,
-                // أسئلة القسم السابق لا تنتقل للقسم الجديد.
-                ratings: Object.fromEntries(
-                  Object.entries(f.ratings).filter(([k]) => SHARED_RATINGS.includes(k as RatingKey) || k === "overallCompanyRating"),
-                ),
-                complaintStage: "",
-                podiatryServiceType: "",
-              }))}
-            >
-              <SelectTrigger><SelectValue placeholder="اختر القسم" /></SelectTrigger>
-              <SelectContent>
-                {(Object.keys(SURVEY_DEPARTMENT_LABEL) as SurveyDepartment[]).map((d) => (
-                  <SelectItem key={d} value={d}>{SURVEY_DEPARTMENT_LABEL[d]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              onChange={(d) => resetForDepartment(d as SurveyDepartment)}
+              className="grid-cols-1 sm:grid-cols-3"
+            />
+          </Field>
 
           {dep && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="space-y-1.5 sm:col-span-3">
-                  <Label>اسم العميل الثلاثي <span className="text-destructive">*</span></Label>
-                  <Input value={form.customerName} onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>الجنس <span className="text-destructive">*</span></Label>
-                  <Select value={form.gender} onValueChange={(v) => setForm((f) => ({ ...f, gender: v as SurveyGender }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(GENDER_LABEL) as SurveyGender[]).map((g) => (
-                        <SelectItem key={g} value={g}>{GENDER_LABEL[g]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label>الفئة العمرية <span className="text-destructive">*</span></Label>
-                  <Select value={form.ageGroup} onValueChange={(v) => setForm((f) => ({ ...f, ageGroup: v as SurveyAgeGroup }))}>
-                    <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(AGE_GROUP_LABEL) as SurveyAgeGroup[]).map((a) => (
-                        <SelectItem key={a} value={a}>{AGE_GROUP_LABEL[a]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {dep === "PODIATRY" && (
-                <div className="space-y-1.5">
-                  <Label>نوع الخدمة <span className="text-destructive">*</span></Label>
-                  <Select
-                    value={form.podiatryServiceType}
-                    onValueChange={(v) => setForm((f) => ({ ...f, podiatryServiceType: v as PodiatryServiceType }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(PODIATRY_SERVICE_LABEL) as PodiatryServiceType[]).map((s) => (
-                        <SelectItem key={s} value={s}>{PODIATRY_SERVICE_LABEL[s]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="rounded-md border px-3 py-1">
-                {SHARED_RATINGS.map((k) => ratingRow(k, false))}
-                {DEPARTMENT_RATINGS[dep].map((k) => ratingRow(k, true))}
-              </div>
-
-              {dep === "PROSTHETICS" && (
-                <div className="space-y-1.5">
-                  <Label>هل واجهت مشكلة في إحدى المراحل؟</Label>
-                  <Select
-                    value={form.complaintStage}
-                    onValueChange={(v) => setForm((f) => ({ ...f, complaintStage: v as ComplaintStage }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(COMPLAINT_STAGE_LABEL) as ComplaintStage[]).map((s) => (
-                        <SelectItem key={s} value={s}>{COMPLAINT_STAGE_LABEL[s]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="rounded-md border px-3 py-1 bg-muted/30">
-                {ratingRow("overallCompanyRating", true)}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>ملاحظات إضافية (اختياري)</Label>
-                <Textarea
-                  rows={3}
-                  value={form.additionalNotes}
-                  onChange={(e) => setForm((f) => ({ ...f, additionalNotes: e.target.value }))}
+              <Field label="اسم العميل الثلاثي" required>
+                <Input value={form.customerName} onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))} />
+              </Field>
+              <Field label="الجنس" required>
+                <ChoiceChips
+                  options={GENDER_LABEL}
+                  value={form.gender}
+                  onChange={(g) => setForm((f) => ({ ...f, gender: g as SurveyGender }))}
+                  className="grid-cols-2 sm:max-w-xs"
                 />
-              </div>
+              </Field>
+              <Field label="الفئة العمرية" required>
+                <ChoiceChips
+                  options={AGE_GROUP_LABEL}
+                  value={form.ageGroup}
+                  onChange={(a) => setForm((f) => ({ ...f, ageGroup: a as SurveyAgeGroup }))}
+                  className="grid-cols-3 sm:grid-cols-4"
+                />
+              </Field>
+              {dep === "PODIATRY" && (
+                <Field label="نوع الخدمة" required>
+                  <ChoiceChips
+                    options={PODIATRY_SERVICE_LABEL}
+                    value={form.podiatryServiceType}
+                    onChange={(s) => setForm((f) => ({ ...f, podiatryServiceType: s as PodiatryServiceType }))}
+                    className="grid-cols-2 sm:max-w-sm"
+                  />
+                </Field>
+              )}
+            </>
+          )}
+          </SurveySection>
+
+          {dep && (
+            <>
+              {/* ── 2. تقييم الخدمة ── */}
+              <SurveySection n={2} title={`تقييم الخدمة — ${SURVEY_DEPARTMENT_LABEL[dep]}`}>
+                {questionKeys.map((k, i) => ratingCard(k, i + 1))}
+
+                {dep === "PROSTHETICS" && (
+                  <QuestionCard
+                    n={complaintNo}
+                    label={COMPLAINT_STAGE_QUESTION}
+                    required
+                    answered={!!form.complaintStage}
+                  >
+                    <ChoiceChips
+                      options={COMPLAINT_STAGE_LABEL}
+                      value={form.complaintStage}
+                      onChange={(s) => setForm((f) => ({ ...f, complaintStage: s as ComplaintStage }))}
+                      className="grid-cols-1 sm:grid-cols-2"
+                    />
+                  </QuestionCard>
+                )}
+
+                {ratingCard("overallCompanyRating", overallNo, true)}
+              </SurveySection>
+
+              {/* ── 3. ملاحظات ── */}
+              <SurveySection n={3} title="ملاحظات">
+                <QuestionCard n={notesNo} label={notesLabel(dep)} answered={!!form.additionalNotes.trim()} optional>
+                  <Textarea
+                    rows={3}
+                    value={form.additionalNotes}
+                    placeholder="اختياري"
+                    onChange={(e) => setForm((f) => ({ ...f, additionalNotes: e.target.value }))}
+                  />
+                </QuestionCard>
+              </SurveySection>
             </>
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={createSurvey.isPending}>إلغاء</Button>
-          <Button onClick={handleSubmit} disabled={missing || createSurvey.isPending} className="gap-1.5">
-            {createSurvey.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            حفظ الاستبيان
-          </Button>
+        <DialogFooter className="px-6 py-4 border-t bg-muted/30 sm:justify-between items-center gap-3">
+          <p className="text-xs text-muted-foreground order-last sm:order-first">
+            {dep ? `تمت الإجابة على ${answeredQuestions} من ${requiredQuestions} أسئلة إجبارية` : "اختر القسم لعرض الأسئلة"}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={createSurvey.isPending}>إلغاء</Button>
+            <Button onClick={handleSubmit} disabled={missing || createSurvey.isPending} className="gap-1.5">
+              {createSurvey.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              حفظ الاستبيان
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -463,19 +710,21 @@ export function PatientSurveyDetailsDialog({ surveyId, onClose }: { surveyId: st
               <DetailRow label="تاريخ التعبئة">{new Date(s.createdAt).toLocaleString("en-GB", { hour12: true })}</DetailRow>
             </div>
             <div className="rounded-md border px-3 py-1">
-              {answered([...SHARED_RATINGS, ...DEPARTMENT_RATINGS[s.department] ?? []]).map((k) => (
-                <DetailRow key={k} label={RATING_LABEL[k]}><StarRating value={s[k]} size="sm" /></DetailRow>
+              {answered(DEPARTMENT_RATINGS[s.department] ? ratingKeysFor(s.department) : SHARED_RATINGS).map((k) => (
+                <DetailRow key={k} label={ratingLabel(s.department, k)}><StarRating value={s[k]} size="sm" /></DetailRow>
               ))}
               {s.complaintStage && (
                 <DetailRow label="مرحلة الشكوى">{COMPLAINT_STAGE_LABEL[s.complaintStage] ?? s.complaintStage}</DetailRow>
               )}
-              <DetailRow label={RATING_LABEL.overallCompanyRating}>
+              <DetailRow label={ratingLabel(s.department, "overallCompanyRating")}>
                 <StarRating value={s.overallCompanyRating} size="sm" />
               </DetailRow>
             </div>
             {s.additionalNotes && (
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">ملاحظات إضافية</p>
+                <p className="text-sm text-muted-foreground">
+                  {notesLabel(s.department)}
+                </p>
                 <p className="text-sm whitespace-pre-wrap">{s.additionalNotes}</p>
               </div>
             )}
