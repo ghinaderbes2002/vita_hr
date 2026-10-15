@@ -4,6 +4,8 @@
 // سجل مستقل عن قائمة الانتظار — بلا أولوية ولا حالة.
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Plus, Search, Pencil, Trash2, UserSearch, Users, Download, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +32,9 @@ import {
   usePotentialClients, useCreatePotentialClient, useUpdatePotentialClient,
   useDeletePotentialClient, useExportPotentialClients, usePotentialClientServices,
 } from "@/lib/hooks/use-clinic-potential-clients";
-import { CreatePotentialClientDto, PotentialClient } from "@/lib/api/clinic-potential-clients";
+import {
+  clinicPotentialClientsApi, CreatePotentialClientDto, PotentialClient,
+} from "@/lib/api/clinic-potential-clients";
 
 const LIMIT = 15;
 
@@ -58,6 +62,8 @@ function PotentialClientsList() {
   const [editing, setEditing] = useState<PotentialClient | null>(null);
   const [viewing, setViewing] = useState<PotentialClient | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const queryClient = useQueryClient();
 
   // The search hits the server, so wait for the typing to pause.
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -96,14 +102,33 @@ function PotentialClientsList() {
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
   const openEdit = (c: PotentialClient) => { setEditing(c); setDialogOpen(true); };
 
-  const handleSubmit = async (dto: Record<string, unknown>) => {
+  const handleSubmit = async (dto: Record<string, unknown>, files: File[]) => {
     if (editing) {
       // Nothing changed — close without a request.
       if (Object.keys(dto).length > 0) await updateClient.mutateAsync({ id: editing.id, dto });
     } else {
-      await createClient.mutateAsync(dto as unknown as CreatePotentialClientDto);
+      const created = await createClient.mutateAsync(dto as unknown as CreatePotentialClientDto);
+      if (files.length > 0 && created?.id) await uploadNewClientFiles(created.id, files);
     }
     setDialogOpen(false);
+  };
+
+  // The client is already saved by now, so a failed file never undoes it —
+  // the user is told which files to add again from the edit dialog.
+  const uploadNewClientFiles = async (clientId: string, files: File[]) => {
+    setUploadingFiles(true);
+    const failed: string[] = [];
+    for (const file of files) {
+      try { await clinicPotentialClientsApi.uploadAttachment(clientId, file); }
+      catch { failed.push(file.name); }
+    }
+    setUploadingFiles(false);
+    queryClient.invalidateQueries({ queryKey: ["clinic-potential-clients", clientId, "attachments"] });
+    if (failed.length > 0) {
+      toast.error(`تم حفظ العميل، لكن فشل رفع: ${failed.join("، ")}. يمكن رفعها من نافذة التعديل.`);
+    } else {
+      toast.success(files.length === 1 ? "تم رفع المرفق" : `تم رفع ${files.length} مرفقات`);
+    }
   };
 
   const handleDelete = async () => {
@@ -291,7 +316,7 @@ function PotentialClientsList() {
         onOpenChange={setDialogOpen}
         client={editing}
         onSubmit={handleSubmit}
-        isPending={createClient.isPending || updateClient.isPending}
+        isPending={createClient.isPending || updateClient.isPending || uploadingFiles}
       />
 
       <ConfirmDialog

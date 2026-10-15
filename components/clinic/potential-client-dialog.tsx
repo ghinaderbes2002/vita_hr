@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PendingAttachmentsPicker, PotentialClientAttachments } from "@/components/clinic/potential-client-attachments";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -93,11 +94,15 @@ export function PotentialClientDialog({
   onOpenChange: (open: boolean) => void;
   /** Present when editing. */
   client?: PotentialClient | null;
-  /** On edit, receives only the fields that changed — possibly none. */
-  onSubmit: (dto: Record<string, unknown>) => void;
+  /**
+   * On edit, receives only the fields that changed — possibly none. On add,
+   * also the files to upload once the record exists.
+   */
+  onSubmit: (dto: Record<string, unknown>, files: File[]) => void;
   isPending?: boolean;
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const isEdit = !!client;
   const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -105,6 +110,7 @@ export function PotentialClientDialog({
   useEffect(() => {
     if (!open) return;
     setForm(client ? formOf(client) : emptyForm);
+    setPendingFiles([]);
   }, [open, client]);
 
   const missing =
@@ -116,13 +122,13 @@ export function PotentialClientDialog({
     const next = toDto(form);
     // A new record has nothing to blank, so unanswered questions are left out.
     if (!client) {
-      onSubmit(Object.fromEntries(Object.entries(next).filter(([, v]) => v !== null)));
+      onSubmit(Object.fromEntries(Object.entries(next).filter(([, v]) => v !== null)), pendingFiles);
       return;
     }
     // PUT takes only what changed. An optional field the user cleared is not
     // sent — the API has no documented way to blank one.
     const prev = toDto(formOf(client));
-    onSubmit(Object.fromEntries(Object.entries(next).filter(([k, v]) => prev[k] !== v)));
+    onSubmit(Object.fromEntries(Object.entries(next).filter(([k, v]) => prev[k] !== v)), []);
   };
 
   return (
@@ -217,6 +223,11 @@ export function PotentialClientDialog({
             <Label>ملاحظات</Label>
             <Textarea rows={3} value={form.notes} onChange={(e) => set({ notes: e.target.value })} />
           </div>
+
+          {/* Attachments hang off a saved record: on add they wait until the client has an id. */}
+          {client
+            ? <PotentialClientAttachments clientId={client.id} />
+            : <PendingAttachmentsPicker files={pendingFiles} onChange={setPendingFiles} disabled={isPending} />}
         </div>
 
         <DialogFooter>

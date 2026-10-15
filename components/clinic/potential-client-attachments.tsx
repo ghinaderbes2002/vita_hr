@@ -113,6 +113,93 @@ function AttachmentCard({
   );
 }
 
+/** Keeps the files the server would accept; tells the user about the rest. */
+function acceptableFiles(files: File[]): File[] {
+  const wrongType = files.filter((f) => !POTENTIAL_CLIENT_ATTACHMENT_TYPES.includes(f.type));
+  const tooLarge = files.filter(
+    (f) => POTENTIAL_CLIENT_ATTACHMENT_TYPES.includes(f.type) && f.size > POTENTIAL_CLIENT_ATTACHMENT_MAX_BYTES,
+  );
+  if (wrongType.length > 0) {
+    toast.error(`نوع الملف غير مسموح (JPG أو PNG أو PDF فقط): ${wrongType.map((f) => f.name).join("، ")}`);
+  }
+  if (tooLarge.length > 0) {
+    toast.error(`الملفات التالية أكبر من 10MB: ${tooLarge.map((f) => f.name).join("، ")}`);
+  }
+  return files.filter((f) => !wrongType.includes(f) && !tooLarge.includes(f));
+}
+
+const ACCEPT = ".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf";
+
+/**
+ * Files chosen while adding a client. Nothing is uploaded here — the record
+ * has no id yet — so the caller uploads them once the client is saved.
+ */
+export function PendingAttachmentsPicker({
+  files, onChange, disabled,
+}: {
+  files: File[];
+  onChange: (files: File[]) => void;
+  disabled?: boolean;
+}) {
+  const { hasPermission, isAdmin } = usePermissions();
+  const fileRef = useRef<HTMLInputElement>(null);
+  if (!isAdmin() && !hasPermission(PERMISSIONS.CLINIC_POTENTIAL_CLIENTS.UPLOAD_ATTACHMENTS)) return null;
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = acceptableFiles(Array.from(e.target.files ?? []));
+    e.target.value = "";
+    const names = new Set(files.map((f) => f.name));
+    onChange([...files, ...picked.filter((f) => !names.has(f.name))]);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <Paperclip className="h-3.5 w-3.5" />
+          المرفقات{files.length > 0 ? ` (${files.length})` : ""}
+        </p>
+        <input ref={fileRef} type="file" multiple accept={ACCEPT} className="hidden" onChange={handleFiles} />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5 h-8"
+          disabled={disabled}
+          onClick={() => fileRef.current?.click()}
+        >
+          <Upload className="h-3.5 w-3.5" />
+          إضافة مرفق
+        </Button>
+      </div>
+      {files.length === 0 ? (
+        <p className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+          صور أو ملفات PDF حتى 10MB. تُرفع بعد حفظ العميل.
+        </p>
+      ) : (
+        <ul className="space-y-1">
+          {files.map((f) => (
+            <li key={f.name} className="flex items-center gap-2 rounded-md border px-2 py-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="flex-1 truncate" dir="auto">{f.name}</span>
+              <span className="text-muted-foreground shrink-0">{fmtSize(f.size)}</span>
+              <button
+                type="button"
+                aria-label={`إزالة ${f.name}`}
+                disabled={disabled}
+                onClick={() => onChange(files.filter((x) => x !== f))}
+                className="text-muted-foreground hover:text-destructive disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Photos and PDFs on one potential client's record. */
 export function PotentialClientAttachments({ clientId }: { clientId: string }) {
   const { hasPermission, isAdmin } = usePermissions();
@@ -128,18 +215,8 @@ export function PotentialClientAttachments({ clientId }: { clientId: string }) {
   if (!canView && !canUpload) return null;
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
+    const files = acceptableFiles(Array.from(e.target.files ?? []));
     e.target.value = "";
-    const wrongType = files.filter((f) => !POTENTIAL_CLIENT_ATTACHMENT_TYPES.includes(f.type));
-    const tooLarge = files.filter((f) => f.size > POTENTIAL_CLIENT_ATTACHMENT_MAX_BYTES);
-    if (wrongType.length > 0) {
-      toast.error(`نوع الملف غير مسموح (JPG أو PNG أو PDF فقط): ${wrongType.map((f) => f.name).join("، ")}`);
-      return;
-    }
-    if (tooLarge.length > 0) {
-      toast.error(`الملفات التالية أكبر من 10MB: ${tooLarge.map((f) => f.name).join("، ")}`);
-      return;
-    }
     // One at a time, so each failure gets its own message and the rest still land.
     for (const file of files) {
       try { await upload.mutateAsync(file); } catch { /* toast shown by the hook */ }
@@ -159,7 +236,7 @@ export function PotentialClientAttachments({ clientId }: { clientId: string }) {
               ref={fileRef}
               type="file"
               multiple
-              accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+              accept={ACCEPT}
               className="hidden"
               onChange={handleFiles}
             />
