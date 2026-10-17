@@ -144,7 +144,7 @@ export function OrthoticsReceptionDialog({ open, onOpenChange, reception, patien
           )}
 
           <div className="space-y-1.5">
-            <Label>اسم ولي الأمر</Label>
+            <Label>اسم ولي الأمر / المرافق (في حال الأطفال)</Label>
             <Input value={form.guardianName} onChange={(e) => set({ guardianName: e.target.value })} />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -153,7 +153,7 @@ export function OrthoticsReceptionDialog({ open, onOpenChange, reception, patien
               <Input value={form.guardianRelation} onChange={(e) => set({ guardianRelation: e.target.value })} placeholder="مثال: الأب" />
             </div>
             <div className="space-y-1.5">
-              <Label>هاتف ولي الأمر</Label>
+              <Label>رقم هاتف المرافق</Label>
               <Input dir="ltr" value={form.guardianPhone} onChange={(e) => set({ guardianPhone: e.target.value })} placeholder="09xxxxxxxx" />
             </div>
           </div>

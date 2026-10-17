@@ -7,6 +7,7 @@ import type {
   OrthoticsKneeRom, OrthoticsMobilityLevel, OrthoticsMuscleMovement, OrthoticsMuscleStrength,
   OrthoticsMuscleTone, OrthoticsPhysioAssessment, OrthoticsReception, OrthoticsSensation,
   OrthoticsSkinCondition, OrthoticsTrunkMovement, OrthoticsTrunkScale,
+  OrthoticsDailyUseSetting, OrthoticsRecommendedDevice, OrthoticsProsthetistAssessment,
 } from "@/lib/api/clinic-orthotics";
 
 /** An ordered option list: the order is the order the form shows them in. */
@@ -14,28 +15,28 @@ export type Options<T extends string> = { value: T; label: string }[];
 
 export const DIAGNOSIS_TYPES: Options<OrthoticsDiagnosisType> = [
   { value: "POLIO", label: "شلل الأطفال" },
-  { value: "CEREBRAL_PALSY", label: "الشلل الدماغي" },
-  { value: "SPINA_BIFIDA", label: "السنسنة المشقوقة" },
+  { value: "CEREBRAL_PALSY", label: "نقص الأكسجة الدماغية / الشلل الدماغي" },
+  { value: "SPINA_BIFIDA", label: "الشوك المشقوق" },
   { value: "FOOT_DROP", label: "هبوط القدم" },
   { value: "OTHER", label: "أخرى" },
 ];
 
 export const CEREBRAL_PALSY_TYPES: Options<OrthoticsCerebralPalsyType> = [
-  { value: "SPASTIC", label: "تشنّجي" },
-  { value: "HYPOTONIC", label: "رخو" },
-  { value: "ATAXIC", label: "رنحي" },
+  { value: "SPASTIC", label: "تشنجي" },
+  { value: "HYPOTONIC", label: "ارتخائي" },
+  { value: "ATAXIC", label: "حركي التَّرَنُّح" },
 ];
 
 export const MUSCLE_TONES: Options<OrthoticsMuscleTone> = [
   { value: "NORMAL", label: "طبيعية" },
-  { value: "SPASTIC", label: "تشنّجية" },
-  { value: "HYPOTONIC", label: "رخوة" },
+  { value: "SPASTIC", label: "تشنجية" },
+  { value: "HYPOTONIC", label: "ارتخاء" },
 ];
 
 export const SENSATIONS: Options<OrthoticsSensation> = [
-  { value: "INTACT", label: "سليم" },
-  { value: "REDUCED", label: "ناقص" },
-  { value: "ABSENT", label: "معدوم" },
+  { value: "INTACT", label: "سليمة" },
+  { value: "REDUCED", label: "مخفضة" },
+  { value: "ABSENT", label: "غائبة" },
 ];
 
 export const MUSCLE_STRENGTHS: Options<OrthoticsMuscleStrength> = [
@@ -45,81 +46,81 @@ export const MUSCLE_STRENGTHS: Options<OrthoticsMuscleStrength> = [
 ];
 
 export const SKIN_CONDITIONS: Options<OrthoticsSkinCondition> = [
-  { value: "INTACT", label: "سليم" },
-  { value: "PRESSURE_POINTS", label: "نقاط ضغط" },
-  { value: "EDEMA", label: "وذمة" },
+  { value: "INTACT", label: "سليمة تماماً" },
+  { value: "PRESSURE_POINTS", label: "وجود قرح فراش / نقاط ضغط" },
+  { value: "EDEMA", label: "تورم أو وذمة في الطرف" },
 ];
 
 export const MOBILITY_LEVELS: Options<OrthoticsMobilityLevel> = [
-  { value: "INDEPENDENT", label: "مستقل" },
-  { value: "WALKS_WITH_AIDS", label: "يمشي بمساعدة" },
+  { value: "INDEPENDENT", label: "مستقل تماماً" },
+  { value: "WALKS_WITH_AIDS", label: "يمشي بمساعدة أدوات" },
   { value: "WHEELCHAIR_USER", label: "مستخدم كرسي متحرك" },
 ];
 
 export const ASSISTIVE_DEVICES: Options<OrthoticsAssistiveDevice> = [
   { value: "CRUTCHES", label: "عكازات" },
-  { value: "WALKER", label: "مشّاية" },
+  { value: "WALKER", label: "مشاية" },
   { value: "CANE", label: "عصا" },
   { value: "NONE", label: "لا يوجد" },
 ];
 
 export const GAIT_PROBLEMS: Options<OrthoticsGaitProblem> = [
-  { value: "TOE_DRAG", label: "جرّ أصابع القدم" },
-  { value: "KNEE_INSTABILITY", label: "عدم ثبات الركبة" },
-  { value: "PELVIS_TRUNK_TILT", label: "ميلان الحوض / الجذع" },
-  { value: "SCISSORING_GAIT", label: "المشية المقصّية" },
+  { value: "TOE_DRAG", label: "سحب القدم أثناء المشي" },
+  { value: "KNEE_INSTABILITY", label: "عدم استقرار الركبة" },
+  { value: "PELVIS_TRUNK_TILT", label: "ميلان الحوض أو الجذع أثناء المشي" },
+  { value: "SCISSORING_GAIT", label: "مشية المقص" },
 ];
 
 export const HIP_ROM: Options<OrthoticsHipRom> = [
   { value: "FREE", label: "حر" },
-  { value: "LIMITED", label: "محدود" },
-  { value: "DISLOCATED_SUBLUXED", label: "خلع / خلع جزئي" },
+  { value: "LIMITED", label: "محدد المدى" },
+  { value: "DISLOCATED_SUBLUXED", label: "خلع/تحت خلع" },
 ];
 
 export const KNEE_ROM: Options<OrthoticsKneeRom> = [
   { value: "NORMAL", label: "طبيعي" },
-  { value: "FLEXION_CONTRACTURE", label: "تقفّع انثنائي" },
-  { value: "VALGUS_VARUS", label: "روح / فحج" },
-  { value: "GENU_RECURVATUM", label: "فرط بسط الركبة" },
+  { value: "FLEXION_CONTRACTURE", label: "ثني ثابت" },
+  { value: "VALGUS_VARUS", label: "ركبة روحاء/فحجاء" },
+  { value: "GENU_RECURVATUM", label: "ارتداد للخلف" },
 ];
 
 export const ANKLE_ROM: Options<OrthoticsAnkleRom> = [
   { value: "FREE", label: "حر" },
-  { value: "EQUINUS", label: "قدم خيلية" },
-  { value: "VARUS_VALGUS", label: "روح / فحج" },
+  { value: "EQUINUS", label: "تشوه قدم قفداء" },
+  { value: "VARUS_VALGUS", label: "تشوه منقلب للداخل/الخارج" },
 ];
 
 export const MUSCLE_MOVEMENTS: Options<OrthoticsMuscleMovement> = [
-  { value: "HIP_FLEXION", label: "ثني الورك" },
+  { value: "HIP_FLEXION", label: "عطف الورك" },
   { value: "HIP_EXTENSION", label: "بسط الورك" },
   { value: "HIP_ABDUCTION", label: "تبعيد الورك" },
   { value: "HIP_ADDUCTION", label: "تقريب الورك" },
-  { value: "KNEE_FLEXION", label: "ثني الركبة" },
+  { value: "KNEE_FLEXION", label: "عطف الركبة" },
   { value: "KNEE_EXTENSION", label: "بسط الركبة" },
   { value: "ANKLE_DORSIFLEXION", label: "عطف ظهري للكاحل" },
-  { value: "ANKLE_PLANTARFLEXION", label: "عطف أخمصي للكاحل" },
-  { value: "ANKLE_EVERSION", label: "قلب الكاحل للخارج" },
-  { value: "ANKLE_INVERSION", label: "قلب الكاحل للداخل" },
-  { value: "GREAT_TOE_FLEXION", label: "ثني إصبع القدم الكبير" },
+  { value: "ANKLE_PLANTARFLEXION", label: "عطف اخمصي للكاحل" },
+  { value: "ANKLE_EVERSION", label: "انقلاب وحشي للكاحل" },
+  { value: "ANKLE_INVERSION", label: "انقلاب انسي للكاحل" },
+  { value: "GREAT_TOE_FLEXION", label: "عطف الاصبع الكبير" },
 ];
 
 export const DEFORMITY_FLEXIBILITY: Options<OrthoticsDeformityFlexibility> = [
-  { value: "FLEXIBLE", label: "مرن" },
-  { value: "RIGID", label: "متصلّب" },
+  { value: "FLEXIBLE", label: "مرنة وقابلة للتعديل" },
+  { value: "RIGID", label: "ثابتة وغير قابلة للتعديل" },
 ];
 
 export const DEFORMITY_STATUS: Options<OrthoticsDeformityStatus> = [
   { value: "ACTIVE", label: "نشط" },
-  { value: "DORMANT", label: "خامد" },
+  { value: "DORMANT", label: "خامل" },
 ];
 
 export const TRUNK_MOVEMENTS: Options<OrthoticsTrunkMovement> = [
-  { value: "TRUNK_FLEXION", label: "ثني الجذع" },
+  { value: "TRUNK_FLEXION", label: "عطف الجذع" },
   { value: "TRUNK_EXTENSION", label: "بسط الجذع" },
-  { value: "RIGHT_LATERAL_TILT", label: "ميلان جانبي أيمن" },
-  { value: "LEFT_LATERAL_TILT", label: "ميلان جانبي أيسر" },
-  { value: "ROTATION_RIGHT", label: "دوران لليمين" },
-  { value: "ROTATION_LEFT", label: "دوران لليسار" },
+  { value: "RIGHT_LATERAL_TILT", label: "الميلان الجانبي الأيمن" },
+  { value: "LEFT_LATERAL_TILT", label: "الميلان الجانبي الأيسر" },
+  { value: "ROTATION_RIGHT", label: "الدوران يميناً" },
+  { value: "ROTATION_LEFT", label: "الدوران يساراً" },
 ];
 
 export const TRUNK_SCALE: Options<OrthoticsTrunkScale> = [
@@ -131,19 +132,33 @@ export const TRUNK_SCALE: Options<OrthoticsTrunkScale> = [
 
 /** The five trunk fields, each graded on TRUNK_SCALE on its own. */
 export const TRUNK_SCALE_FIELDS = [
-  { key: "trunkControlSitting", label: "التحكم بالجذع — جلوس" },
-  { key: "trunkBalanceDynamicSitting", label: "التوازن الديناميكي — جلوس" },
-  { key: "trunkControlStanding", label: "التحكم بالجذع — وقوف" },
-  { key: "trunkBalanceStaticStanding", label: "التوازن الثابت — وقوف" },
-  { key: "trunkBalanceDynamicStanding", label: "التوازن الديناميكي — وقوف" },
+  { key: "trunkControlSitting", label: "التحكم بالجذع أثناء الجلوس" },
+  { key: "trunkBalanceDynamicSitting", label: "التوازن الديناميكي أثناء الجلوس" },
+  { key: "trunkControlStanding", label: "التحكم بالجذع أثناء الوقوف" },
+  { key: "trunkBalanceStaticStanding", label: "التوازن الثابت أثناء الوقوف" },
+  { key: "trunkBalanceDynamicStanding", label: "التوازن الديناميكي أثناء الوقوف" },
 ] as const satisfies readonly { key: keyof OrthoticsPhysioAssessment; label: string }[];
 
 export const ACTIVITY_LEVELS: Options<OrthoticsActivityLevel> = [
-  { value: "K0", label: "K0 — لا يمشي" },
-  { value: "K1", label: "K1 — مشي داخل المنزل" },
-  { value: "K2", label: "K2 — مشي محدود خارج المنزل" },
-  { value: "K3", label: "K3 — مشي بسرعات متغيرة" },
-  { value: "K4", label: "K4 — نشاط عالٍ" },
+  { value: "K0", label: "k0" },
+  { value: "K1", label: "k1" },
+  { value: "K2", label: "k2" },
+  { value: "K3", label: "k3" },
+  { value: "K4", label: "k4" },
+];
+
+export const DAILY_USE_SETTINGS: Options<OrthoticsDailyUseSetting> = [
+  { value: "HOME", label: "المنزل" },
+  { value: "SCHOOL", label: "المدرسة" },
+  { value: "SPORTS", label: "الرياضة" },
+  { value: "OTHER", label: "أخرى" },
+];
+
+export const RECOMMENDED_DEVICES: Options<OrthoticsRecommendedDevice> = [
+  { value: "KAFO", label: "KAFO" },
+  { value: "AFO", label: "AFO" },
+  { value: "ORTHOSIS_WITH_FES", label: "جهاز تقويمي + FES" },
+  { value: "OTHER", label: "أخرى" },
 ];
 
 export const labelOf = <T extends string>(options: Options<T>, value?: T | null) =>
@@ -173,6 +188,17 @@ export function prosthetistOpinionOf(r: OrthoticsReception): string {
   return (typeof v === "string" ? v : v?.prosthetistOpinion) ?? "";
 }
 
+/** The prosthetist's section: the opinion plus the device recommendation. */
+export function prosthetistAssessmentOf(r: OrthoticsReception): OrthoticsProsthetistAssessment {
+  return {
+    prosthetistOpinion: prosthetistOpinionOf(r),
+    recommendedDeviceTypes: r.recommendedDeviceTypes ?? undefined,
+    recommendedDeviceOther: r.recommendedDeviceOther ?? undefined,
+    dailyWearHours: r.dailyWearHours ?? undefined,
+    additionalNotes: r.additionalNotes ?? undefined,
+  };
+}
+
 /** Which of the three sections hold anything yet — drives the progress badges. */
 export function sectionsFilled(r: OrthoticsReception) {
   const d = doctorAssessmentOf(r);
@@ -181,5 +207,7 @@ export function sectionsFilled(r: OrthoticsReception) {
     doctor: !!(d.diagnosisTypes?.length || d.chiefComplaint || d.muscleTone || d.doctorOpinion),
     physio: !!(p.mobilityLevel || p.gaitProblems?.length || p.activityLevel || p.physioOpinion),
     prosthetist: !!prosthetistOpinionOf(r).trim(),
+    clinicalHistory: !!(d.birthHistory || d.medicalHistory || d.functionalGoals?.length
+      || r.recommendedDeviceTypes?.length || r.dailyWearHours != null),
   };
 }

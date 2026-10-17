@@ -14,7 +14,7 @@ import { PatientPhoto } from "@/components/clinic/patient-photo";
 import { PractitionersCard } from "@/components/clinic/podiatry-practitioners-card";
 import { OrthoticsReceptionDialog } from "@/components/clinic/orthotics-reception-dialog";
 import {
-  OrthoticsDoctorSection, OrthoticsPhysioSection, OrthoticsProsthetistSection,
+  OrthoticsDoctorSection, OrthoticsPhysioSection, OrthoticsProsthetistSection, OrthoticsClinicalHistoryTab,
 } from "@/components/clinic/orthotics-assessment-sections";
 import { sectionsFilled } from "@/components/clinic/orthotics-labels";
 import {
@@ -102,6 +102,7 @@ export default function OrthoticsReceptionPage() {
           <TabsTrigger value="doctor" className={TAB_CLASS}>طبيب العظمية{done(filled.doctor)}</TabsTrigger>
           <TabsTrigger value="physio" className={TAB_CLASS}>العلاج الفيزيائي{done(filled.physio)}</TabsTrigger>
           <TabsTrigger value="prosthetist" className={TAB_CLASS}>الأطراف الصناعية{done(filled.prosthetist)}</TabsTrigger>
+          <TabsTrigger value="clinical-history" className={TAB_CLASS}>التاريخ السريري والتوصيات{done(filled.clinicalHistory)}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="reception" className="mt-4 space-y-4">
@@ -115,7 +116,7 @@ export default function OrthoticsReceptionPage() {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle className="text-base">بيانات ولي الأمر</CardTitle>
+                <CardTitle className="text-base">ولي الأمر / المرافق</CardTitle>
                 <ActionGuard permission={PERMISSIONS.CLINIC_ORTHOTICS.EDIT}>
                   <Button size="sm" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600" onClick={() => setEditOpen(true)}>
                     <Pencil className="h-3.5 w-3.5" />
@@ -126,22 +127,26 @@ export default function OrthoticsReceptionPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
-                <Row label="اسم ولي الأمر" value={reception.guardianName} />
+                <Row label="اسم ولي الأمر / المرافق (في حال الأطفال)" value={reception.guardianName} />
                 <Row label="صلة القرابة" value={reception.guardianRelation} />
-                <Row label="هاتف ولي الأمر" value={reception.guardianPhone} dir="ltr" />
+                <Row label="رقم هاتف المرافق" value={reception.guardianPhone} dir="ltr" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">معلومات المريض</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">معلومات المريض العامة</CardTitle></CardHeader>
             <CardContent>
               <div className="flex items-start gap-6">
                 <div className="grid flex-1 grid-cols-2 gap-x-8 gap-y-3 md:grid-cols-3">
                   <Row label="رقم المريض" value={patientNumber} />
-                  <Row label="اسم المريض" value={patientName} />
-                  <Row label="الهاتف" value={patient?.phone} dir="ltr" />
+                  <Row label="الاسم الكامل" value={patientName} />
+                  <Row label="تاريخ الميلاد" value={patient?.dateOfBirth ? patient.dateOfBirth.slice(0, 10) : null} dir="ltr" />
                   <Row label="العمر" value={age != null ? `${age} سنة` : null} />
+                  <Row label="الجنس" value={patient?.gender === "MALE" ? "ذكر" : patient?.gender === "FEMALE" ? "أنثى" : null} />
+                  <Row label="الرقم الوطني" value={patient?.idNumber} dir="ltr" />
+                  <Row label="رقم الهاتف" value={patient?.phone} dir="ltr" />
+                  <Row label="العنوان الحالي" value={patient?.currentAddress ?? patient?.addressDetails} />
                   <Row label="الطول" value={patient?.heightCm ? `${patient.heightCm} cm` : null} />
                   <Row label="الوزن" value={patient?.weightKg ? `${patient.weightKg} kg` : null} />
                 </div>
@@ -161,6 +166,14 @@ export default function OrthoticsReceptionPage() {
 
         <TabsContent value="prosthetist" className="mt-4">
           <OrthoticsProsthetistSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />
+        </TabsContent>
+
+        <TabsContent value="clinical-history" className="mt-4">
+          <OrthoticsClinicalHistoryTab
+            reception={reception}
+            canEditHistory={can(PERMISSIONS.CLINIC_ORTHOTICS.DOCTOR_ASSESSMENT_EDIT)}
+            canEditDevice={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)}
+          />
         </TabsContent>
       </Tabs>
 

@@ -6,6 +6,7 @@ import {
   OrthoticsDoctorAssessment,
   OrthoticsGuardianDto,
   OrthoticsPhysioAssessment,
+  OrthoticsProsthetistAssessment,
 } from "@/lib/api/clinic-orthotics";
 
 type ApiError = { response?: { data?: { message?: string; error?: { message?: string } } } };
@@ -117,8 +118,8 @@ export function useSaveOrthoticsPhysioAssessment() {
 export function useSaveOrthoticsProsthetistOpinion() {
   const invalidate = useInvalidateReception();
   return useMutation({
-    mutationFn: ({ id, opinion }: { id: string; opinion: string }) =>
-      clinicOrthoticsApi.saveProsthetistOpinion(id, opinion),
+    mutationFn: ({ id, dto }: { id: string; dto: OrthoticsProsthetistAssessment }) =>
+      clinicOrthoticsApi.saveProsthetistAssessment(id, dto),
     onSuccess: (_, { id }) => {
       invalidate(id);
       toast.success("تم حفظ رأي أخصائي الأطراف الصناعية");

@@ -32,6 +32,9 @@ export type OrthoticsTrunkMovement =
 /** The one scale shared by all five trunk control / balance fields. */
 export type OrthoticsTrunkScale = "GOOD" | "MODERATE" | "WEAK" | "ABSENT";
 export type OrthoticsActivityLevel = "K0" | "K1" | "K2" | "K3" | "K4";
+/** Where the orthosis will be worn day to day. */
+export type OrthoticsDailyUseSetting = "HOME" | "SCHOOL" | "SPORTS" | "OTHER";
+export type OrthoticsRecommendedDevice = "AFO" | "KAFO" | "ORTHOSIS_WITH_FES" | "OTHER";
 
 /** طبيب العظمية. Every field is optional — the API upserts what it is sent. */
 export interface OrthoticsDoctorAssessment {
@@ -43,6 +46,14 @@ export interface OrthoticsDoctorAssessment {
   injuryStartDate?: string;
   surgicalHistory?: string;
   familyHistory?: string;
+  birthHistory?: string;
+  medicalHistory?: string;
+  previousOrthosisUse?: boolean;
+  previousOrthosisDetails?: string;
+  /** Up to three goals, free text. */
+  functionalGoals?: string[];
+  dailyUseSettings?: OrthoticsDailyUseSetting[];
+  dailyUseOther?: string;
   chiefComplaint?: string;
   muscleTone?: OrthoticsMuscleTone;
   /** Free text — the Ashworth scale reading. */
@@ -77,12 +88,24 @@ export interface OrthoticsPhysioAssessment {
   physioOpinion?: string;
 }
 
+/** أخصائي الأطراف الصناعية — the opinion plus the device recommendation. All optional. */
+export interface OrthoticsProsthetistAssessment {
+  prosthetistOpinion?: string;
+  recommendedDeviceTypes?: OrthoticsRecommendedDevice[];
+  recommendedDeviceOther?: string;
+  /** Hours a day; null clears it. */
+  dailyWearHours?: number | null;
+  additionalNotes?: string;
+}
+
 /**
  * The reception as the API returns it. The three assessments come back flat on
- * the reception — every field listed in the two interfaces above, plus the
- * prosthetist's opinion — so they are merged in rather than nested.
+ * the reception — every field listed in the interfaces above — so they are
+ * merged in rather than nested.
  */
-export interface OrthoticsReception extends OrthoticsDoctorAssessment, OrthoticsPhysioAssessment {
+export interface OrthoticsReception
+  extends OrthoticsDoctorAssessment, OrthoticsPhysioAssessment,
+    Omit<OrthoticsProsthetistAssessment, "prosthetistOpinion"> {
   id: string;
   patientId: string;
   /** Resolved by the API from the patients service on GET / POST. */
@@ -160,8 +183,9 @@ export const clinicOrthoticsApi = {
     return unwrap(data) as OrthoticsReception;
   },
 
-  saveProsthetistOpinion: async (id: string, prosthetistOpinion: string): Promise<OrthoticsReception> => {
-    const { data } = await apiClient.patch(`${BASE}/${id}/prosthetist-opinion`, { prosthetistOpinion });
+  /** Same endpoint as the opinion alone, extended with the device recommendation. */
+  saveProsthetistAssessment: async (id: string, dto: OrthoticsProsthetistAssessment): Promise<OrthoticsReception> => {
+    const { data } = await apiClient.patch(`${BASE}/${id}/prosthetist-opinion`, dto);
     return unwrap(data) as OrthoticsReception;
   },
 
