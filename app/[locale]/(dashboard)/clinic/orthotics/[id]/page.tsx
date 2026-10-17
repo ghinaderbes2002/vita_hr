@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowRight, Check, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +53,7 @@ export default function OrthoticsReceptionPage() {
   const router = useRouter();
   const locale = useLocale();
   const isRtl = locale === "ar";
+  const t = useTranslations("clinic.orthotics");
 
   const { data: reception, isLoading } = useOrthoticsReception(id);
   const { data: patient } = useClinicPatient(reception?.patientId ?? "");
@@ -67,7 +68,7 @@ export default function OrthoticsReceptionPage() {
     return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>;
   }
   if (!reception) {
-    return <p className="py-12 text-center text-muted-foreground">لم يُعثر على الاستقبال</p>;
+    return <p className="py-12 text-center text-muted-foreground">{t("page.notFound")}</p>;
   }
 
   const patientName =
@@ -86,7 +87,7 @@ export default function OrthoticsReceptionPage() {
             onClick={() => router.push(`/${locale}/clinic/orthotics`)}
           >
             <ArrowRight className="h-3.5 w-3.5 ltr:rotate-180" />
-            قسم المقومات
+            {t("page.back")}
           </button>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-xl font-bold">{patientName}</h1>
@@ -98,11 +99,11 @@ export default function OrthoticsReceptionPage() {
 
       <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1" dir={isRtl ? "rtl" : "ltr"}>
-          <TabsTrigger value="reception" className={TAB_CLASS}>الاستقبال</TabsTrigger>
-          <TabsTrigger value="doctor" className={TAB_CLASS}>طبيب العظمية{done(filled.doctor)}</TabsTrigger>
-          <TabsTrigger value="physio" className={TAB_CLASS}>العلاج الفيزيائي{done(filled.physio)}</TabsTrigger>
-          <TabsTrigger value="prosthetist" className={TAB_CLASS}>الأطراف الصناعية{done(filled.prosthetist)}</TabsTrigger>
-          <TabsTrigger value="clinical-history" className={TAB_CLASS}>التاريخ السريري والتوصيات{done(filled.clinicalHistory)}</TabsTrigger>
+          <TabsTrigger value="reception" className={TAB_CLASS}>{t("tabs.reception")}</TabsTrigger>
+          <TabsTrigger value="doctor" className={TAB_CLASS}>{t("tabs.doctor")}{done(filled.doctor)}</TabsTrigger>
+          <TabsTrigger value="physio" className={TAB_CLASS}>{t("tabs.physio")}{done(filled.physio)}</TabsTrigger>
+          <TabsTrigger value="prosthetist" className={TAB_CLASS}>{t("tabs.prosthetist")}{done(filled.prosthetist)}</TabsTrigger>
+          <TabsTrigger value="clinical-history" className={TAB_CLASS}>{t("tabs.clinicalHistory")}{done(filled.clinicalHistory)}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="reception" className="mt-4 space-y-4">
@@ -116,39 +117,39 @@ export default function OrthoticsReceptionPage() {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle className="text-base">ولي الأمر / المرافق</CardTitle>
+                <CardTitle className="text-base">{t("guardian.title")}</CardTitle>
                 <ActionGuard permission={PERMISSIONS.CLINIC_ORTHOTICS.EDIT}>
                   <Button size="sm" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600" onClick={() => setEditOpen(true)}>
                     <Pencil className="h-3.5 w-3.5" />
-                    تعديل
+                    {t("common.edit")}
                   </Button>
                 </ActionGuard>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
-                <Row label="اسم ولي الأمر / المرافق (في حال الأطفال)" value={reception.guardianName} />
-                <Row label="صلة القرابة" value={reception.guardianRelation} />
-                <Row label="رقم هاتف المرافق" value={reception.guardianPhone} dir="ltr" />
+                <Row label={t("guardian.name")} value={reception.guardianName} />
+                <Row label={t("guardian.relation")} value={reception.guardianRelation} />
+                <Row label={t("guardian.phone")} value={reception.guardianPhone} dir="ltr" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">معلومات المريض العامة</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">{t("patient.title")}</CardTitle></CardHeader>
             <CardContent>
               <div className="flex items-start gap-6">
                 <div className="grid flex-1 grid-cols-2 gap-x-8 gap-y-3 md:grid-cols-3">
-                  <Row label="رقم المريض" value={patientNumber} />
-                  <Row label="الاسم الكامل" value={patientName} />
-                  <Row label="تاريخ الميلاد" value={patient?.dateOfBirth ? patient.dateOfBirth.slice(0, 10) : null} dir="ltr" />
-                  <Row label="العمر" value={age != null ? `${age} سنة` : null} />
-                  <Row label="الجنس" value={patient?.gender === "MALE" ? "ذكر" : patient?.gender === "FEMALE" ? "أنثى" : null} />
-                  <Row label="الرقم الوطني" value={patient?.idNumber} dir="ltr" />
-                  <Row label="رقم الهاتف" value={patient?.phone} dir="ltr" />
-                  <Row label="العنوان الحالي" value={patient?.currentAddress ?? patient?.addressDetails} />
-                  <Row label="الطول" value={patient?.heightCm ? `${patient.heightCm} cm` : null} />
-                  <Row label="الوزن" value={patient?.weightKg ? `${patient.weightKg} kg` : null} />
+                  <Row label={t("patient.number")} value={patientNumber} />
+                  <Row label={t("patient.fullName")} value={patientName} />
+                  <Row label={t("patient.dob")} value={patient?.dateOfBirth ? patient.dateOfBirth.slice(0, 10) : null} dir="ltr" />
+                  <Row label={t("patient.age")} value={age != null ? t("patient.ageValue", { n: age }) : null} />
+                  <Row label={t("patient.gender")} value={patient?.gender === "MALE" ? t("patient.male") : patient?.gender === "FEMALE" ? t("patient.female") : null} />
+                  <Row label={t("patient.nationalId")} value={patient?.idNumber} dir="ltr" />
+                  <Row label={t("patient.phone")} value={patient?.phone} dir="ltr" />
+                  <Row label={t("patient.address")} value={patient?.currentAddress ?? patient?.addressDetails} />
+                  <Row label={t("patient.height")} value={patient?.heightCm ? `${patient.heightCm} cm` : null} />
+                  <Row label={t("patient.weight")} value={patient?.weightKg ? `${patient.weightKg} kg` : null} />
                 </div>
                 <PatientPhoto patientId={reception.patientId} className="h-28 w-28 shrink-0" />
               </div>

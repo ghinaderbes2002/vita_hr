@@ -83,10 +83,32 @@ export interface AnnualLeaveSummary {
     lastNameEn?: string;
   };
   year: number;
-  /** Allocated for the year plus whatever carried over from the previous one. */
+  /** Annual leave only. Allocated for the year plus whatever carried over from the previous one. */
   entitled: number;
   used: number;
   remaining: number;
+  /** Every leave type the employee has a balance for this year, most used first. */
+  byType?: LeaveTypeSummary[];
+}
+
+/** One leave type in the annual summary. Day counts, except the hourly fields. */
+export interface LeaveTypeSummary {
+  nameAr: string;
+  nameEn?: string;
+  code: string;
+  entitled: number;
+  used: number;
+  /** Requests not decided yet. */
+  pending: number;
+  /** entitled − used − pending. */
+  remaining: number;
+  carriedOverDays?: number;
+  /** Hourly leave is counted in hours; its day fields are not the real unit. */
+  usedHours?: number;
+  pendingHours?: number;
+  /** Set for hourly leave only, null for the rest. */
+  maxHoursPerMonth?: number | null;
+  isUnlimited?: boolean;
 }
 
 export const leaveBalancesApi = {

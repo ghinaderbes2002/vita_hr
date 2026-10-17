@@ -2112,6 +2112,257 @@
     }
   },
   "clinic": {
+    "orthotics": {
+      "common": {
+        "cancel": "İptal",
+        "save": "Kaydet",
+        "edit": "Düzenle",
+        "other": "Diğer"
+      },
+      "tabs": {
+        "reception": "Kabul",
+        "doctor": "Ortopedi Doktoru",
+        "physio": "Fizyoterapi",
+        "prosthetist": "Protez",
+        "clinicalHistory": "Klinik Öykü ve Öneriler"
+      },
+      "page": {
+        "back": "Ortez Bölümü",
+        "notFound": "Kabul bulunamadı"
+      },
+      "guardian": {
+        "title": "Veli / Refakatçi",
+        "name": "Veli / Refakatçi Adı (çocuklar için)",
+        "relation": "Yakınlık Derecesi",
+        "relationPlaceholder": "örn. Baba",
+        "phone": "Refakatçi Telefon Numarası"
+      },
+      "patient": {
+        "title": "Genel Hasta Bilgileri",
+        "number": "Hasta Numarası",
+        "fullName": "Ad Soyad",
+        "dob": "Doğum Tarihi",
+        "age": "Yaş",
+        "ageValue": "{n} yaş",
+        "gender": "Cinsiyet",
+        "male": "Erkek",
+        "female": "Kadın",
+        "nationalId": "Kimlik Numarası",
+        "phone": "Telefon Numarası",
+        "address": "Mevcut Adres",
+        "height": "Boy",
+        "weight": "Kilo"
+      },
+      "dialog": {
+        "editTitle": "Kabul Bilgilerini Düzenle",
+        "newTitle": "Yeni Ortez Kabulü",
+        "patient": "Hasta",
+        "search": "Ad veya hasta numarasıyla ara...",
+        "loading": "Yükleniyor...",
+        "noMatch": "Eşleşen hasta yok",
+        "create": "Kabul Oluştur"
+      },
+      "doctor": {
+        "title": "Ortopedi Doktoru Formu",
+        "medicalHistory": "Tıbbi Öykü",
+        "diagnosis": "Birincil Tıbbi Tanı",
+        "cpType": "Serebral Palsi — Tipi",
+        "footDropCause": "Düşük Ayak Nedeni",
+        "injuryDate": "Yaralanma / Belirti Başlangıç Tarihi",
+        "chiefComplaint": "Hastanın Mevcut Ana Şikayeti",
+        "surgicalHistory": "Cerrahi Öykü",
+        "surgicalHint": "Önceki kemik veya sinir ameliyatları",
+        "familyHistory": "Benzer Hastalıkların Aile Öyküsü",
+        "clinicalExam": "Klinik Muayene — Nöromüsküler Durum",
+        "muscleTone": "Kas Tonusu",
+        "spasticity": "Spastisite Düzeyi",
+        "spasticityHint": "Varsa Modifiye Ashworth Ölçeği",
+        "spasticityPlaceholder": "örn. 1+",
+        "sensation": "Duyu",
+        "muscleStrength": "Kas Gücü",
+        "thigh": "Uyluk Kasları",
+        "legFoot": "Bacak ve Ayak Kasları",
+        "skin": "Cilt ve Doku Bütünlüğü",
+        "pressureLocation": "Bası Yarası / Bası Noktası Bölgesi",
+        "finalOpinion": "Nihai Görüş",
+        "opinion": "Ortopedi Doktorunun Görüşü"
+      },
+      "physio": {
+        "title": "Fizyoterapist Formu",
+        "gait": "Yürüyüş ve Fonksiyonel Değerlendirme",
+        "mobility": "Mevcut Hareket Kabiliyeti",
+        "assistive": "Şu Anda Kullanılan Yardımcı Cihazlar",
+        "gaitProblems": "Yürüyüş Analizi — Gözlenen Başlıca Sorunlar",
+        "rom": "Eklem Hareket Açıklığı ve Deformiteler",
+        "hip": "Kalça Eklemi",
+        "knee": "Diz Eklemi",
+        "ankle": "Ayak Bileği Eklemi",
+        "mmt": "Manuel Kas Testi",
+        "movements": "Hareketler",
+        "deformityFlexibility": "Deformite Esnekliği",
+        "deformityStatus": "Durum",
+        "trunk": "Gövde Değerlendirmesi",
+        "trunkStrength": "Birinci: Gövde Kas Gücü",
+        "trunkBalance": "İkinci: Gövde Dengesi ve Kontrolü",
+        "activityOpinion": "Aktivite Düzeyi ve Görüş",
+        "activity": "Aktivite Düzeyi",
+        "opinion": "Fizyoterapistin Görüşü",
+        "trunkFields": {
+          "trunkControlSitting": "Oturmada gövde kontrolü",
+          "trunkBalanceDynamicSitting": "Oturmada dinamik denge",
+          "trunkControlStanding": "Ayakta gövde kontrolü",
+          "trunkBalanceStaticStanding": "Ayakta statik denge",
+          "trunkBalanceDynamicStanding": "Ayakta dinamik denge"
+        }
+      },
+      "prosthetist": {
+        "title": "Protez Uzmanı Formu",
+        "opinion": "Protez Uzmanının Görüşü"
+      },
+      "history": {
+        "title": "Klinik Öykü ve Genel Bilgiler",
+        "birth": "Doğum Öyküsü / Risk Faktörleri",
+        "previousUse": "Ortez Cihazlarının Önceki Kullanımı",
+        "previousDetails": "Cihaz Tipi ve Kullanım Süresi",
+        "surgicalHint": "Kemik ameliyatları, tendon transferleri vb.",
+        "medical": "Tıbbi Öykü / İlaçlar",
+        "goals": "Fonksiyonel Hedefler ve Kullanım Alanları",
+        "goal": "Hedef {n}",
+        "dailyUse": "Günlük Aktivitelerde Kullanım"
+      },
+      "device": {
+        "title": "Cihaz Değerlendirmesi ve Öneriler",
+        "type": "Önerilen Cihaz Tipi",
+        "hours": "Günlük Kullanım Süresi",
+        "hoursHint": "saat",
+        "notes": "Ek Notlar / Dikkat Gerektiren Durumlar"
+      },
+      "options": {
+        "YES_NO": {
+          "YES": "Evet",
+          "NO": "Hayır"
+        },
+        "DIAGNOSIS_TYPES": {
+          "POLIO": "Çocuk Felci",
+          "CEREBRAL_PALSY": "Serebral Hipoksi / Serebral Palsi",
+          "SPINA_BIFIDA": "Spina Bifida",
+          "FOOT_DROP": "Düşük Ayak",
+          "OTHER": "Diğer"
+        },
+        "CEREBRAL_PALSY_TYPES": {
+          "SPASTIC": "Spastik",
+          "HYPOTONIC": "Hipotonik",
+          "ATAXIC": "Ataksik"
+        },
+        "MUSCLE_TONES": {
+          "NORMAL": "Normal",
+          "SPASTIC": "Spastisite",
+          "HYPOTONIC": "Hipotoni"
+        },
+        "SENSATIONS": {
+          "INTACT": "Sağlam",
+          "REDUCED": "Azalmış",
+          "ABSENT": "Yok"
+        },
+        "MUSCLE_STRENGTHS": {
+          "EXCELLENT": "Mükemmel",
+          "MODERATE": "Orta",
+          "WEAK": "Zayıf"
+        },
+        "SKIN_CONDITIONS": {
+          "INTACT": "Tamamen sağlam",
+          "PRESSURE_POINTS": "Bası yaraları / bası noktaları",
+          "EDEMA": "Uzuvda şişlik veya ödem"
+        },
+        "MOBILITY_LEVELS": {
+          "INDEPENDENT": "Tamamen bağımsız",
+          "WALKS_WITH_AIDS": "Yardımcı cihazla yürür",
+          "WHEELCHAIR_USER": "Tekerlekli sandalye kullanıcısı"
+        },
+        "ASSISTIVE_DEVICES": {
+          "CRUTCHES": "Koltuk değneği",
+          "WALKER": "Yürüteç",
+          "CANE": "Baston",
+          "NONE": "Yok"
+        },
+        "GAIT_PROBLEMS": {
+          "TOE_DRAG": "Yürürken ayak sürüme",
+          "KNEE_INSTABILITY": "Diz instabilitesi",
+          "PELVIS_TRUNK_TILT": "Yürürken pelvis veya gövde eğilmesi",
+          "SCISSORING_GAIT": "Makas yürüyüşü"
+        },
+        "HIP_ROM": {
+          "FREE": "Serbest",
+          "LIMITED": "Kısıtlı hareket",
+          "DISLOCATED_SUBLUXED": "Çıkık / yarı çıkık"
+        },
+        "KNEE_ROM": {
+          "NORMAL": "Normal",
+          "FLEXION_CONTRACTURE": "Fleksiyon kontraktürü",
+          "VALGUS_VARUS": "Valgus / varus diz",
+          "GENU_RECURVATUM": "Genu rekurvatum"
+        },
+        "ANKLE_ROM": {
+          "FREE": "Serbest",
+          "EQUINUS": "Ekin deformitesi",
+          "VARUS_VALGUS": "Varus / valgus deformitesi"
+        },
+        "MUSCLE_MOVEMENTS": {
+          "HIP_FLEXION": "Kalça fleksiyonu",
+          "HIP_EXTENSION": "Kalça ekstansiyonu",
+          "HIP_ABDUCTION": "Kalça abdüksiyonu",
+          "HIP_ADDUCTION": "Kalça addüksiyonu",
+          "KNEE_FLEXION": "Diz fleksiyonu",
+          "KNEE_EXTENSION": "Diz ekstansiyonu",
+          "ANKLE_DORSIFLEXION": "Ayak bileği dorsifleksiyonu",
+          "ANKLE_PLANTARFLEXION": "Ayak bileği plantar fleksiyonu",
+          "ANKLE_EVERSION": "Ayak bileği eversiyonu",
+          "ANKLE_INVERSION": "Ayak bileği inversiyonu",
+          "GREAT_TOE_FLEXION": "Ayak başparmağı fleksiyonu"
+        },
+        "DEFORMITY_FLEXIBILITY": {
+          "FLEXIBLE": "Esnek ve düzeltilebilir",
+          "RIGID": "Sert ve düzeltilemez"
+        },
+        "DEFORMITY_STATUS": {
+          "ACTIVE": "Aktif",
+          "DORMANT": "Pasif"
+        },
+        "TRUNK_MOVEMENTS": {
+          "TRUNK_FLEXION": "Gövde fleksiyonu",
+          "TRUNK_EXTENSION": "Gövde ekstansiyonu",
+          "RIGHT_LATERAL_TILT": "Sağa lateral eğilme",
+          "LEFT_LATERAL_TILT": "Sola lateral eğilme",
+          "ROTATION_RIGHT": "Sağa rotasyon",
+          "ROTATION_LEFT": "Sola rotasyon"
+        },
+        "TRUNK_SCALE": {
+          "GOOD": "İyi",
+          "MODERATE": "Orta",
+          "WEAK": "Zayıf",
+          "ABSENT": "Yok"
+        },
+        "ACTIVITY_LEVELS": {
+          "K0": "k0",
+          "K1": "k1",
+          "K2": "k2",
+          "K3": "k3",
+          "K4": "k4"
+        },
+        "DAILY_USE_SETTINGS": {
+          "HOME": "Ev",
+          "SCHOOL": "Okul",
+          "SPORTS": "Spor",
+          "OTHER": "Diğer"
+        },
+        "RECOMMENDED_DEVICES": {
+          "KAFO": "KAFO",
+          "AFO": "AFO",
+          "ORTHOSIS_WITH_FES": "Ortez + FES",
+          "OTHER": "Diğer"
+        }
+      }
+    },
     "patients": {
       "title": "Hastalar",
       "description": "Tıbbi kliniğin hasta kaydı",

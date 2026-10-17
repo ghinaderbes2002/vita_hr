@@ -5,6 +5,7 @@
 // all three; each section turns editable only for its own permission. A section
 // is the same form in both modes, so what was entered reads back in its shape.
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, Pencil, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +45,7 @@ function SingleChips<T extends string>({
   onChange: (v: T) => void;
   readOnly: boolean;
 }) {
+  const t = useTranslations("clinic.orthotics");
   return (
     <div className="flex flex-wrap gap-1.5">
       {options.map((o) => (
@@ -54,7 +56,7 @@ function SingleChips<T extends string>({
           onClick={() => onChange(o.value)}
           className={chipClass(value === o.value, readOnly)}
         >
-          {o.label}
+          {t(o.label)}
         </button>
       ))}
     </div>
@@ -75,6 +77,7 @@ function MultiChips<T extends string>({
   readOnly: boolean;
   exclusive?: T;
 }) {
+  const t = useTranslations("clinic.orthotics");
   const selected = value ?? [];
   const toggle = (v: T) => {
     if (selected.includes(v)) return onChange(selected.filter((x) => x !== v));
@@ -91,7 +94,7 @@ function MultiChips<T extends string>({
           onClick={() => toggle(o.value)}
           className={chipClass(selected.includes(o.value), readOnly)}
         >
-          {o.label}
+          {t(o.label)}
         </button>
       ))}
     </div>
@@ -181,6 +184,7 @@ function SectionCard({
   dirty: boolean;
   children: ReactNode;
 }) {
+  const t = useTranslations("clinic.orthotics");
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -188,7 +192,7 @@ function SectionCard({
           <CardTitle className="text-base">{title}</CardTitle>
           {canEdit && (editing ? (
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={onCancel} disabled={saving}>إلغاء</Button>
+              <Button size="sm" variant="outline" onClick={onCancel} disabled={saving}>{t("common.cancel")}</Button>
               <Button
                 size="sm"
                 className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600"
@@ -196,13 +200,13 @@ function SectionCard({
                 disabled={saving || !dirty}
               >
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                حفظ
+                {t("common.save")}
               </Button>
             </div>
           ) : (
             <Button size="sm" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600" onClick={onEdit}>
               <Pencil className="h-3.5 w-3.5" />
-              تعديل
+              {t("common.edit")}
             </Button>
           ))}
         </div>
@@ -233,14 +237,15 @@ const DOCTOR_KEYS: (keyof OrthoticsDoctorAssessment)[] = [
 ];
 
 const YES_NO: Options<"YES" | "NO"> = [
-  { value: "YES", label: "نعم" },
-  { value: "NO", label: "لا" },
+  { value: "YES", label: "options.YES_NO.YES" },
+  { value: "NO", label: "options.YES_NO.NO" },
 ];
 
 const pick = <T extends object>(src: T, keys: (keyof T)[]) =>
   Object.fromEntries(keys.map((k) => [k, src[k] ?? undefined])) as T;
 
 export function OrthoticsDoctorSection({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
+  const t = useTranslations("clinic.orthotics");
   const saved = pick(doctorAssessmentOf(reception), DOCTOR_KEYS);
   const s = useSectionDraft(saved);
   const save = useSaveOrthoticsDoctorAssessment();
@@ -250,7 +255,7 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
 
   return (
     <SectionCard
-      title="نموذج طبيب العظمية"
+      title={t("doctor.title")}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}
@@ -259,73 +264,73 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
       dirty={s.dirty}
       onSave={() => save.mutate({ id: reception.id, dto: s.changes }, { onSuccess: () => s.setEditing(false) })}
     >
-      <SubHeading>التاريخ والقصة المرضية</SubHeading>
-      <Field label="التشخيص الطبي الأساسي">
+      <SubHeading>{t("doctor.medicalHistory")}</SubHeading>
+      <Field label={t("doctor.diagnosis")}>
         <MultiChips options={DIAGNOSIS_TYPES} value={dx} onChange={(x) => s.set({ diagnosisTypes: x })} readOnly={ro} />
       </Field>
       {(dx.includes("CEREBRAL_PALSY") || v.cerebralPalsyType) && (
-        <Field label="الشلل الدماغي — النوع">
+        <Field label={t("doctor.cpType")}>
           <SingleChips options={CEREBRAL_PALSY_TYPES} value={v.cerebralPalsyType} onChange={(x) => s.set({ cerebralPalsyType: x })} readOnly={ro} />
         </Field>
       )}
       {(dx.includes("FOOT_DROP") || v.footDropCause) && (
-        <Field label="هبوط القدم ناتج عن">
+        <Field label={t("doctor.footDropCause")}>
           <TextValue value={v.footDropCause} onChange={(x) => s.set({ footDropCause: x })} readOnly={ro} />
         </Field>
       )}
       {(dx.includes("OTHER") || v.diagnosisOther) && (
-        <Field label="أخرى">
+        <Field label={t("common.other")}>
           <TextValue value={v.diagnosisOther} onChange={(x) => s.set({ diagnosisOther: x })} readOnly={ro} />
         </Field>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="تاريخ الإصابة / بداية ظهور الأعراض">
+        <Field label={t("doctor.injuryDate")}>
           <TextValue type="date" dir="ltr" value={v.injuryStartDate} onChange={(x) => s.set({ injuryStartDate: x })} readOnly={ro} />
         </Field>
-        <Field label="الشكوى الرئيسية للمريض الحالية">
+        <Field label={t("doctor.chiefComplaint")}>
           <TextValue value={v.chiefComplaint} onChange={(x) => s.set({ chiefComplaint: x })} readOnly={ro} />
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="التاريخ الجراحي" hint="أي عمليات جراحية سابقة في العظام أو الأعصاب">
+        <Field label={t("doctor.surgicalHistory")} hint={t("doctor.surgicalHint")}>
           <TextValue multiline value={v.surgicalHistory} onChange={(x) => s.set({ surgicalHistory: x })} readOnly={ro} />
         </Field>
-        <Field label="التاريخ العائلي للأمراض المشابهة">
+        <Field label={t("doctor.familyHistory")}>
           <TextValue multiline value={v.familyHistory} onChange={(x) => s.set({ familyHistory: x })} readOnly={ro} />
         </Field>
       </div>
-      <SubHeading>الفحص السريري — الحالة العصبية والعضلية</SubHeading>
-      <Field label="المقوية العضلية">
+      <SubHeading>{t("doctor.clinicalExam")}</SubHeading>
+      <Field label={t("doctor.muscleTone")}>
         <SingleChips options={MUSCLE_TONES} value={v.muscleTone} onChange={(x) => s.set({ muscleTone: x })} readOnly={ro} />
       </Field>
-      <Field label="مستوى التشنج" hint="مقياس أشورث المعدل إن وجد">
-        <TextValue value={v.spasticityLevel} onChange={(x) => s.set({ spasticityLevel: x })} readOnly={ro} placeholder="مثال: 1+" />
+      <Field label={t("doctor.spasticity")} hint={t("doctor.spasticityHint")}>
+        <TextValue value={v.spasticityLevel} onChange={(x) => s.set({ spasticityLevel: x })} readOnly={ro} placeholder={t("doctor.spasticityPlaceholder")} />
       </Field>
-      <Field label="القدرة الحسية">
+      <Field label={t("doctor.sensation")}>
         <SingleChips options={SENSATIONS} value={v.sensation} onChange={(x) => s.set({ sensation: x })} readOnly={ro} />
       </Field>
-      <p className="text-xs font-semibold">القوة العضلية</p>
+      <p className="text-xs font-semibold">{t("doctor.muscleStrength")}</p>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="عضلات الفخذ">
+        <Field label={t("doctor.thigh")}>
           <SingleChips options={MUSCLE_STRENGTHS} value={v.thighMuscleStrength} onChange={(x) => s.set({ thighMuscleStrength: x })} readOnly={ro} />
         </Field>
-        <Field label="عضلات الساق والقدم">
+        <Field label={t("doctor.legFoot")}>
           <SingleChips options={MUSCLE_STRENGTHS} value={v.legFootMuscleStrength} onChange={(x) => s.set({ legFootMuscleStrength: x })} readOnly={ro} />
         </Field>
       </div>
-      <SubHeading>حالة الجلد والأنسجة</SubHeading>
-      <Field label="حالة الجلد والأنسجة">
+      <SubHeading>{t("doctor.skin")}</SubHeading>
+      <Field label={t("doctor.skin")}>
         <MultiChips options={SKIN_CONDITIONS} exclusive="INTACT" value={v.skinConditions} onChange={(x) => s.set({ skinConditions: x })} readOnly={ro} />
       </Field>
       {((v.skinConditions ?? []).includes("PRESSURE_POINTS") || v.pressurePointsLocation) && (
-        <Field label="قرح فراش / نقاط ضغط في منطقة">
+        <Field label={t("doctor.pressureLocation")}>
           <TextValue value={v.pressurePointsLocation} onChange={(x) => s.set({ pressurePointsLocation: x })} readOnly={ro} />
         </Field>
       )}
 
-      <SubHeading>الرأي النهائي</SubHeading>
-      <Field label="رأي طبيب العظمية">
+      <SubHeading>{t("doctor.finalOpinion")}</SubHeading>
+      <Field label={t("doctor.opinion")}>
         <TextValue multiline value={v.doctorOpinion} onChange={(x) => s.set({ doctorOpinion: x })} readOnly={ro} />
       </Field>
     </SectionCard>
@@ -341,6 +346,7 @@ const PHYSIO_KEYS: (keyof OrthoticsPhysioAssessment)[] = [
 ];
 
 export function OrthoticsPhysioSection({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
+  const t = useTranslations("clinic.orthotics");
   const saved = pick(physioAssessmentOf(reception), PHYSIO_KEYS);
   const s = useSectionDraft(saved);
   const save = useSaveOrthoticsPhysioAssessment();
@@ -349,7 +355,7 @@ export function OrthoticsPhysioSection({ reception, canEdit }: { reception: Orth
 
   return (
     <SectionCard
-      title="نموذج أخصائي العلاج الفيزيائي"
+      title={t("physio.title")}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}
@@ -358,59 +364,59 @@ export function OrthoticsPhysioSection({ reception, canEdit }: { reception: Orth
       dirty={s.dirty}
       onSave={() => save.mutate({ id: reception.id, dto: s.changes }, { onSuccess: () => s.setEditing(false) })}
     >
-      <SubHeading>تقييم المشية والوظيفة الحركية</SubHeading>
-      <Field label="القدرة الحالية على الحركة">
+      <SubHeading>{t("physio.gait")}</SubHeading>
+      <Field label={t("physio.mobility")}>
         <SingleChips options={MOBILITY_LEVELS} value={v.mobilityLevel} onChange={(x) => s.set({ mobilityLevel: x })} readOnly={ro} />
       </Field>
-      <Field label="الأدوات المساعدة المستخدمة حالياً">
+      <Field label={t("physio.assistive")}>
         <MultiChips options={ASSISTIVE_DEVICES} exclusive="NONE" value={v.assistiveDevices} onChange={(x) => s.set({ assistiveDevices: x })} readOnly={ro} />
       </Field>
-      <Field label="تحليل المشية - أبرز المشاكل الملاحظة">
+      <Field label={t("physio.gaitProblems")}>
         <MultiChips options={GAIT_PROBLEMS} value={v.gaitProblems} onChange={(x) => s.set({ gaitProblems: x })} readOnly={ro} />
       </Field>
 
-      <SubHeading>المدى الحركي للمفاصل والتشوهات</SubHeading>
-      <Field label="مفصل الورك">
+      <SubHeading>{t("physio.rom")}</SubHeading>
+      <Field label={t("physio.hip")}>
         <SingleChips options={HIP_ROM} value={v.hipROM} onChange={(x) => s.set({ hipROM: x })} readOnly={ro} />
       </Field>
-      <Field label="مفصل الركبة">
+      <Field label={t("physio.knee")}>
         <SingleChips options={KNEE_ROM} value={v.kneeROM} onChange={(x) => s.set({ kneeROM: x })} readOnly={ro} />
       </Field>
-      <Field label="مفصل الكاحل">
+      <Field label={t("physio.ankle")}>
         <SingleChips options={ANKLE_ROM} value={v.ankleROM} onChange={(x) => s.set({ ankleROM: x })} readOnly={ro} />
       </Field>
 
-      <SubHeading>فحص القوة العضلية</SubHeading>
-      <Field label="الحركات">
+      <SubHeading>{t("physio.mmt")}</SubHeading>
+      <Field label={t("physio.movements")}>
         <MultiChips options={MUSCLE_MOVEMENTS} value={v.muscleStrengthMovements} onChange={(x) => s.set({ muscleStrengthMovements: x })} readOnly={ro} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="مرونة التشوهات">
+        <Field label={t("physio.deformityFlexibility")}>
           <SingleChips options={DEFORMITY_FLEXIBILITY} value={v.deformityFlexibility} onChange={(x) => s.set({ deformityFlexibility: x })} readOnly={ro} />
         </Field>
-        <Field label="الحالة">
+        <Field label={t("physio.deformityStatus")}>
           <SingleChips options={DEFORMITY_STATUS} value={v.deformityStatus} onChange={(x) => s.set({ deformityStatus: x })} readOnly={ro} />
         </Field>
       </div>
 
-      <SubHeading>تقييم الجذع</SubHeading>
-      <Field label="أولاً: تقييم القوة العضلية للجذع -">
+      <SubHeading>{t("physio.trunk")}</SubHeading>
+      <Field label={t("physio.trunkStrength")}>
         <MultiChips options={TRUNK_MOVEMENTS} value={v.trunkStrengthMovements} onChange={(x) => s.set({ trunkStrengthMovements: x })} readOnly={ro} />
       </Field>
-      <p className="text-xs font-semibold">ثانيًا: تقييم التوازن والتحكم بالجذع</p>
+      <p className="text-xs font-semibold">{t("physio.trunkBalance")}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         {TRUNK_SCALE_FIELDS.map((f) => (
-          <Field key={f.key} label={f.label}>
+          <Field key={f.key} label={t(f.label)}>
             <SingleChips options={TRUNK_SCALE} value={v[f.key]} onChange={(x) => s.set({ [f.key]: x } as Partial<OrthoticsPhysioAssessment>)} readOnly={ro} />
           </Field>
         ))}
       </div>
 
-      <SubHeading>مستوى النشاط والرأي</SubHeading>
-      <Field label="مستوى النشاط">
+      <SubHeading>{t("physio.activityOpinion")}</SubHeading>
+      <Field label={t("physio.activity")}>
         <SingleChips options={ACTIVITY_LEVELS} value={v.activityLevel} onChange={(x) => s.set({ activityLevel: x })} readOnly={ro} />
       </Field>
-      <Field label="رأي أخصائي العلاج الفيزيائي">
+      <Field label={t("physio.opinion")}>
         <TextValue multiline value={v.physioOpinion} onChange={(x) => s.set({ physioOpinion: x })} readOnly={ro} />
       </Field>
     </SectionCard>
@@ -420,6 +426,7 @@ export function OrthoticsPhysioSection({ reception, canEdit }: { reception: Orth
 // ── أخصائي الأطراف الصناعية ───────────────────────────────────────────────────
 
 export function OrthoticsProsthetistSection({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
+  const t = useTranslations("clinic.orthotics");
   const s = useSectionDraft<OrthoticsProsthetistAssessment>({
     prosthetistOpinion: prosthetistAssessmentOf(reception).prosthetistOpinion,
   });
@@ -427,7 +434,7 @@ export function OrthoticsProsthetistSection({ reception, canEdit }: { reception:
 
   return (
     <SectionCard
-      title="نموذج أخصائي الأطراف الصناعية"
+      title={t("prosthetist.title")}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}
@@ -436,7 +443,7 @@ export function OrthoticsProsthetistSection({ reception, canEdit }: { reception:
       dirty={s.dirty}
       onSave={() => save.mutate({ id: reception.id, dto: s.changes }, { onSuccess: () => s.setEditing(false) })}
     >
-      <Field label="رأي أخصائي الأطراف الصناعية">
+      <Field label={t("prosthetist.opinion")}>
         <TextValue
           multiline
           value={s.current.prosthetistOpinion}
@@ -460,6 +467,7 @@ const HISTORY_KEYS: (keyof OrthoticsDoctorAssessment)[] = [
 ];
 
 function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
+  const t = useTranslations("clinic.orthotics");
   const saved = pick(doctorAssessmentOf(reception), HISTORY_KEYS);
   const s = useSectionDraft(saved);
   const save = useSaveOrthoticsDoctorAssessment();
@@ -468,7 +476,7 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
 
   return (
     <SectionCard
-      title="التاريخ السريري والمعلومات العامة"
+      title={t("history.title")}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}
@@ -477,10 +485,10 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
       dirty={s.dirty}
       onSave={() => save.mutate({ id: reception.id, dto: s.changes }, { onSuccess: () => s.setEditing(false) })}
     >
-      <Field label="قصة الولادة / عوامل الخطورة">
+      <Field label={t("history.birth")}>
         <TextValue multiline value={v.birthHistory} onChange={(x) => s.set({ birthHistory: x })} readOnly={ro} />
       </Field>
-      <Field label="الاستخدام السابق للأجهزة التقويمية">
+      <Field label={t("history.previousUse")}>
         <SingleChips
           options={YES_NO}
           value={v.previousOrthosisUse == null ? undefined : v.previousOrthosisUse ? "YES" : "NO"}
@@ -489,23 +497,23 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
         />
       </Field>
       {(v.previousOrthosisUse || v.previousOrthosisDetails) && (
-        <Field label="نوع الجهاز ومدة الاستخدام">
+        <Field label={t("history.previousDetails")}>
           <TextValue multiline value={v.previousOrthosisDetails} onChange={(x) => s.set({ previousOrthosisDetails: x })} readOnly={ro} />
         </Field>
       )}
       {/* The same field as the doctor's form — editing it here updates both. */}
-      <Field label="التاريخ الجراحي" hint="جراحات العظام، نقل الأوتار، وغيرها">
+      <Field label={t("doctor.surgicalHistory")} hint={t("history.surgicalHint")}>
         <TextValue multiline value={v.surgicalHistory} onChange={(x) => s.set({ surgicalHistory: x })} readOnly={ro} />
       </Field>
-      <Field label="التاريخ المرضي / الأدوية">
+      <Field label={t("history.medical")}>
         <TextValue multiline value={v.medicalHistory} onChange={(x) => s.set({ medicalHistory: x })} readOnly={ro} />
       </Field>
 
-      <SubHeading>الأهداف الوظيفية ومجالات الاستخدام</SubHeading>
+      <SubHeading>{t("history.goals")}</SubHeading>
       {ro ? (
         <div className="grid gap-4 sm:grid-cols-3">
           {[0, 1, 2].map((i) => (
-            <Field key={i} label={`الهدف ${i + 1}`}>
+            <Field key={i} label={t("history.goal", { n: i + 1 })}>
               <TextValue value={v.functionalGoals?.[i]} onChange={() => {}} readOnly />
             </Field>
           ))}
@@ -513,7 +521,7 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
       ) : (
         <div className="grid gap-4 sm:grid-cols-3">
           {[0, 1, 2].map((i) => (
-            <Field key={i} label={`الهدف ${i + 1}`}>
+            <Field key={i} label={t("history.goal", { n: i + 1 })}>
               <Input
                 value={v.functionalGoals?.[i] ?? ""}
                 onChange={(e) => {
@@ -527,11 +535,11 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
           ))}
         </div>
       )}
-      <Field label="الاستخدام في أنشطة الحياة اليومية">
+      <Field label={t("history.dailyUse")}>
         <MultiChips options={DAILY_USE_SETTINGS} value={v.dailyUseSettings} onChange={(x) => s.set({ dailyUseSettings: x })} readOnly={ro} />
       </Field>
       {((v.dailyUseSettings ?? []).includes("OTHER") || v.dailyUseOther) && (
-        <Field label="أخرى">
+        <Field label={t("common.other")}>
           <TextValue value={v.dailyUseOther} onChange={(x) => s.set({ dailyUseOther: x })} readOnly={ro} />
         </Field>
       )}
@@ -540,6 +548,7 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
 }
 
 function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
+  const t = useTranslations("clinic.orthotics");
   // The opinion stays on the prosthetist's own tab; this card holds the rest.
   const a = prosthetistAssessmentOf(reception);
   const s = useSectionDraft<OrthoticsProsthetistAssessment>({
@@ -554,7 +563,7 @@ function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsRecep
 
   return (
     <SectionCard
-      title="تقييم الجهاز والتوصيات"
+      title={t("device.title")}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}
@@ -563,15 +572,15 @@ function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsRecep
       dirty={s.dirty}
       onSave={() => save.mutate({ id: reception.id, dto: s.changes }, { onSuccess: () => s.setEditing(false) })}
     >
-      <Field label="نوع الجهاز المقترح">
+      <Field label={t("device.type")}>
         <MultiChips options={RECOMMENDED_DEVICES} value={v.recommendedDeviceTypes} onChange={(x) => s.set({ recommendedDeviceTypes: x })} readOnly={ro} />
       </Field>
       {((v.recommendedDeviceTypes ?? []).includes("OTHER") || v.recommendedDeviceOther) && (
-        <Field label="أخرى">
+        <Field label={t("common.other")}>
           <TextValue value={v.recommendedDeviceOther} onChange={(x) => s.set({ recommendedDeviceOther: x })} readOnly={ro} />
         </Field>
       )}
-      <Field label="مدة الاستخدام يومياً" hint="ساعة">
+      <Field label={t("device.hours")} hint={t("device.hoursHint")}>
         <TextValue
           type="number"
           dir="ltr"
@@ -581,7 +590,7 @@ function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsRecep
           readOnly={ro}
         />
       </Field>
-      <Field label="ملاحظات إضافية / الحالات التي تستدعي الانتباه">
+      <Field label={t("device.notes")}>
         <TextValue multiline value={v.additionalNotes} onChange={(x) => s.set({ additionalNotes: x })} readOnly={ro} />
       </Field>
     </SectionCard>

@@ -3028,6 +3028,257 @@
     }
   },
   "clinic": {
+    "orthotics": {
+      "common": {
+        "cancel": "Cancel",
+        "save": "Save",
+        "edit": "Edit",
+        "other": "Other"
+      },
+      "tabs": {
+        "reception": "Reception",
+        "doctor": "Orthopedic Doctor",
+        "physio": "Physiotherapy",
+        "prosthetist": "Prosthetics",
+        "clinicalHistory": "Clinical History & Recommendations"
+      },
+      "page": {
+        "back": "Orthotics Department",
+        "notFound": "Reception not found"
+      },
+      "guardian": {
+        "title": "Guardian / Companion",
+        "name": "Guardian / Companion Name (for children)",
+        "relation": "Relationship",
+        "relationPlaceholder": "e.g. Father",
+        "phone": "Companion Phone Number"
+      },
+      "patient": {
+        "title": "General Patient Information",
+        "number": "Patient Number",
+        "fullName": "Full Name",
+        "dob": "Date of Birth",
+        "age": "Age",
+        "ageValue": "{n} years",
+        "gender": "Gender",
+        "male": "Male",
+        "female": "Female",
+        "nationalId": "National ID",
+        "phone": "Phone Number",
+        "address": "Current Address",
+        "height": "Height",
+        "weight": "Weight"
+      },
+      "dialog": {
+        "editTitle": "Edit Reception Details",
+        "newTitle": "New Orthotics Reception",
+        "patient": "Patient",
+        "search": "Search by name or patient number...",
+        "loading": "Loading...",
+        "noMatch": "No matching patient",
+        "create": "Create Reception"
+      },
+      "doctor": {
+        "title": "Orthopedic Doctor Form",
+        "medicalHistory": "Medical History",
+        "diagnosis": "Primary Medical Diagnosis",
+        "cpType": "Cerebral Palsy — Type",
+        "footDropCause": "Foot Drop Caused By",
+        "injuryDate": "Date of Injury / Symptom Onset",
+        "chiefComplaint": "Patient's Current Chief Complaint",
+        "surgicalHistory": "Surgical History",
+        "surgicalHint": "Any previous bone or nerve surgery",
+        "familyHistory": "Family History of Similar Conditions",
+        "clinicalExam": "Clinical Examination — Neuromuscular Status",
+        "muscleTone": "Muscle Tone",
+        "spasticity": "Spasticity Level",
+        "spasticityHint": "Modified Ashworth Scale, if available",
+        "spasticityPlaceholder": "e.g. 1+",
+        "sensation": "Sensation",
+        "muscleStrength": "Muscle Strength",
+        "thigh": "Thigh Muscles",
+        "legFoot": "Leg and Foot Muscles",
+        "skin": "Skin & Tissue Integrity",
+        "pressureLocation": "Bedsores / Pressure Points Location",
+        "finalOpinion": "Final Opinion",
+        "opinion": "Orthopedic Doctor's Opinion"
+      },
+      "physio": {
+        "title": "Physiotherapist Form",
+        "gait": "Gait & Functional Assessment",
+        "mobility": "Current Mobility",
+        "assistive": "Assistive Devices Currently Used",
+        "gaitProblems": "Gait Analysis — Main Observed Problems",
+        "rom": "Joint Range of Motion & Deformities",
+        "hip": "Hip Joint",
+        "knee": "Knee Joint",
+        "ankle": "Ankle Joint",
+        "mmt": "Manual Muscle Testing",
+        "movements": "Movements",
+        "deformityFlexibility": "Deformity Flexibility",
+        "deformityStatus": "Status",
+        "trunk": "Trunk Assessment",
+        "trunkStrength": "First: Trunk Muscle Strength",
+        "trunkBalance": "Second: Trunk Balance and Control",
+        "activityOpinion": "Activity Level & Opinion",
+        "activity": "Activity Level",
+        "opinion": "Physiotherapist's Opinion",
+        "trunkFields": {
+          "trunkControlSitting": "Trunk control while sitting",
+          "trunkBalanceDynamicSitting": "Dynamic balance while sitting",
+          "trunkControlStanding": "Trunk control while standing",
+          "trunkBalanceStaticStanding": "Static balance while standing",
+          "trunkBalanceDynamicStanding": "Dynamic balance while standing"
+        }
+      },
+      "prosthetist": {
+        "title": "Prosthetist Form",
+        "opinion": "Prosthetist's Opinion"
+      },
+      "history": {
+        "title": "Clinical History & General Information",
+        "birth": "Birth History / Risk Factors",
+        "previousUse": "Previous Use of Orthotic Devices",
+        "previousDetails": "Device Type and Duration of Use",
+        "surgicalHint": "Bone surgery, tendon transfers, etc.",
+        "medical": "Medical History / Medications",
+        "goals": "Functional Goals & Areas of Use",
+        "goal": "Goal {n}",
+        "dailyUse": "Use in Daily Activities"
+      },
+      "device": {
+        "title": "Device Evaluation & Recommendations",
+        "type": "Proposed Device Type",
+        "hours": "Daily Usage Duration",
+        "hoursHint": "hours",
+        "notes": "Additional Notes / Cases Requiring Attention"
+      },
+      "options": {
+        "YES_NO": {
+          "YES": "Yes",
+          "NO": "No"
+        },
+        "DIAGNOSIS_TYPES": {
+          "POLIO": "Polio",
+          "CEREBRAL_PALSY": "Cerebral Hypoxia / Cerebral Palsy",
+          "SPINA_BIFIDA": "Spina Bifida",
+          "FOOT_DROP": "Foot Drop",
+          "OTHER": "Other"
+        },
+        "CEREBRAL_PALSY_TYPES": {
+          "SPASTIC": "Spastic",
+          "HYPOTONIC": "Hypotonic",
+          "ATAXIC": "Ataxic"
+        },
+        "MUSCLE_TONES": {
+          "NORMAL": "Normal",
+          "SPASTIC": "Spasticity",
+          "HYPOTONIC": "Hypotonia"
+        },
+        "SENSATIONS": {
+          "INTACT": "Intact",
+          "REDUCED": "Reduced",
+          "ABSENT": "Absent"
+        },
+        "MUSCLE_STRENGTHS": {
+          "EXCELLENT": "Excellent",
+          "MODERATE": "Moderate",
+          "WEAK": "Weak"
+        },
+        "SKIN_CONDITIONS": {
+          "INTACT": "Completely intact",
+          "PRESSURE_POINTS": "Bedsores / pressure points",
+          "EDEMA": "Swelling or edema in the limb"
+        },
+        "MOBILITY_LEVELS": {
+          "INDEPENDENT": "Fully independent",
+          "WALKS_WITH_AIDS": "Walks with aids",
+          "WHEELCHAIR_USER": "Wheelchair user"
+        },
+        "ASSISTIVE_DEVICES": {
+          "CRUTCHES": "Crutches",
+          "WALKER": "Walker",
+          "CANE": "Cane",
+          "NONE": "None"
+        },
+        "GAIT_PROBLEMS": {
+          "TOE_DRAG": "Toe drag while walking",
+          "KNEE_INSTABILITY": "Knee instability",
+          "PELVIS_TRUNK_TILT": "Pelvic or trunk tilt while walking",
+          "SCISSORING_GAIT": "Scissoring gait"
+        },
+        "HIP_ROM": {
+          "FREE": "Free",
+          "LIMITED": "Limited range",
+          "DISLOCATED_SUBLUXED": "Dislocated / subluxed"
+        },
+        "KNEE_ROM": {
+          "NORMAL": "Normal",
+          "FLEXION_CONTRACTURE": "Flexion contracture",
+          "VALGUS_VARUS": "Valgus / varus knee",
+          "GENU_RECURVATUM": "Genu recurvatum"
+        },
+        "ANKLE_ROM": {
+          "FREE": "Free",
+          "EQUINUS": "Equinus deformity",
+          "VARUS_VALGUS": "Varus / valgus deformity"
+        },
+        "MUSCLE_MOVEMENTS": {
+          "HIP_FLEXION": "Hip flexion",
+          "HIP_EXTENSION": "Hip extension",
+          "HIP_ABDUCTION": "Hip abduction",
+          "HIP_ADDUCTION": "Hip adduction",
+          "KNEE_FLEXION": "Knee flexion",
+          "KNEE_EXTENSION": "Knee extension",
+          "ANKLE_DORSIFLEXION": "Ankle dorsiflexion",
+          "ANKLE_PLANTARFLEXION": "Ankle plantarflexion",
+          "ANKLE_EVERSION": "Ankle eversion",
+          "ANKLE_INVERSION": "Ankle inversion",
+          "GREAT_TOE_FLEXION": "Great toe flexion"
+        },
+        "DEFORMITY_FLEXIBILITY": {
+          "FLEXIBLE": "Flexible and correctable",
+          "RIGID": "Rigid and not correctable"
+        },
+        "DEFORMITY_STATUS": {
+          "ACTIVE": "Active",
+          "DORMANT": "Dormant"
+        },
+        "TRUNK_MOVEMENTS": {
+          "TRUNK_FLEXION": "Trunk flexion",
+          "TRUNK_EXTENSION": "Trunk extension",
+          "RIGHT_LATERAL_TILT": "Right lateral flexion",
+          "LEFT_LATERAL_TILT": "Left lateral flexion",
+          "ROTATION_RIGHT": "Rotation right",
+          "ROTATION_LEFT": "Rotation left"
+        },
+        "TRUNK_SCALE": {
+          "GOOD": "Good",
+          "MODERATE": "Moderate",
+          "WEAK": "Weak",
+          "ABSENT": "Absent"
+        },
+        "ACTIVITY_LEVELS": {
+          "K0": "k0",
+          "K1": "k1",
+          "K2": "k2",
+          "K3": "k3",
+          "K4": "k4"
+        },
+        "DAILY_USE_SETTINGS": {
+          "HOME": "Home",
+          "SCHOOL": "School",
+          "SPORTS": "Sports",
+          "OTHER": "Other"
+        },
+        "RECOMMENDED_DEVICES": {
+          "KAFO": "KAFO",
+          "AFO": "AFO",
+          "ORTHOSIS_WITH_FES": "Orthosis + FES",
+          "OTHER": "Other"
+        }
+      }
+    },
     "patients": {
       "title": "Patients",
       "description": "Patient registry in the medical clinic",

@@ -3,6 +3,7 @@
 // Creates an orthotics reception for a patient, or edits the guardian details of
 // an existing one. The assessments are filled in on the reception page.
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, Search, UserRound, X } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -29,6 +30,7 @@ interface Props {
 const EMPTY = { guardianName: "", guardianRelation: "", guardianPhone: "" };
 
 export function OrthoticsReceptionDialog({ open, onOpenChange, reception, patientId, onCreated }: Props) {
+  const t = useTranslations("clinic.orthotics");
   const isEdit = !!reception;
   const needsPicker = !isEdit && !patientId;
   const [form, setForm] = useState(EMPTY);
@@ -93,13 +95,13 @@ export function OrthoticsReceptionDialog({ open, onOpenChange, reception, patien
     <Dialog open={open} onOpenChange={(o) => { if (!isPending) onOpenChange(o); }}>
       <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "تعديل بيانات الاستقبال" : "استقبال مقومات جديد"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("dialog.editTitle") : t("dialog.newTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {needsPicker && (
             <div className="space-y-1.5">
-              <Label>المريض <span className="text-destructive">*</span></Label>
+              <Label>{t("dialog.patient")} <span className="text-destructive">*</span></Label>
               {picked ? (
                 <div className="flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-2">
                   <UserRound className="h-4 w-4 shrink-0 text-primary" />
@@ -115,15 +117,15 @@ export function OrthoticsReceptionDialog({ open, onOpenChange, reception, patien
                     <Input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="ابحث بالاسم أو رقم المريض..."
+                      placeholder={t("dialog.search")}
                       className="pr-9"
                     />
                   </div>
                   <div className="max-h-48 overflow-y-auto rounded-md border">
                     {patientsLoading ? (
-                      <p className="px-3 py-4 text-center text-sm text-muted-foreground">جارِ التحميل...</p>
+                      <p className="px-3 py-4 text-center text-sm text-muted-foreground">{t("dialog.loading")}</p>
                     ) : patients.length === 0 ? (
-                      <p className="px-3 py-4 text-center text-sm text-muted-foreground">لا يوجد مريض مطابق</p>
+                      <p className="px-3 py-4 text-center text-sm text-muted-foreground">{t("dialog.noMatch")}</p>
                     ) : (
                       patients.map((p) => (
                         <button
@@ -144,26 +146,26 @@ export function OrthoticsReceptionDialog({ open, onOpenChange, reception, patien
           )}
 
           <div className="space-y-1.5">
-            <Label>اسم ولي الأمر / المرافق (في حال الأطفال)</Label>
+            <Label>{t("guardian.name")}</Label>
             <Input value={form.guardianName} onChange={(e) => set({ guardianName: e.target.value })} />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>صلة القرابة</Label>
-              <Input value={form.guardianRelation} onChange={(e) => set({ guardianRelation: e.target.value })} placeholder="مثال: الأب" />
+              <Label>{t("guardian.relation")}</Label>
+              <Input value={form.guardianRelation} onChange={(e) => set({ guardianRelation: e.target.value })} placeholder={t("guardian.relationPlaceholder")} />
             </div>
             <div className="space-y-1.5">
-              <Label>رقم هاتف المرافق</Label>
+              <Label>{t("guardian.phone")}</Label>
               <Input dir="ltr" value={form.guardianPhone} onChange={(e) => set({ guardianPhone: e.target.value })} placeholder="09xxxxxxxx" />
             </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>إلغاء</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>{t("common.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={isPending || (!isEdit && !targetPatientId)}>
             {isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-            {isEdit ? "حفظ" : "إنشاء الاستقبال"}
+            {isEdit ? t("common.save") : t("dialog.create")}
           </Button>
         </DialogFooter>
       </DialogContent>

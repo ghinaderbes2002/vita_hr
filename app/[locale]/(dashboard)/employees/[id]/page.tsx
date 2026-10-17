@@ -319,6 +319,9 @@ const EDUCATION_LEVEL_VALUES = [
   "PRIMARY", "INTERMEDIATE", "SECONDARY", "DIPLOMA", "BACHELOR", "POSTGRADUATE",
 ];
 
+/** Up to two decimals, no trailing zeros: 9 → "9", 0.5 → "0.5". */
+const fmtDays = (n: number) => Number(n ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800 border-green-200",
   INACTIVE: "bg-gray-100 text-gray-700 border-gray-200",
@@ -1794,7 +1797,7 @@ export default function EmployeeDetailsPage() {
 
       {/* ─── Unused Annual Leave ───────────────────────────── */}
       <Dialog open={leaveDuesOpen} onOpenChange={setLeaveDuesOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarX className="h-4 w-4 text-primary" />
@@ -1830,8 +1833,10 @@ export default function EmployeeDetailsPage() {
               </p>
             ) : (
               <>
-                {/* The figure the dialog exists for: entitlement not taken. */}
+                {/* The figure the dialog exists for: annual entitlement not taken.
+                    It covers annual leave only — the table below has the other types. */}
                 <div className="rounded-lg border bg-muted/30 px-4 py-5 text-center">
+                  <p className="text-xs font-medium text-primary">الإجازة السنوية</p>
                   <p className="text-sm text-muted-foreground">أيام لم يستفد منها الموظف</p>
                   <p className="text-4xl font-bold text-primary mt-1">
                     {annualLeave?.remaining ?? 0}
@@ -1847,15 +1852,65 @@ export default function EmployeeDetailsPage() {
                     <p className="text-lg font-semibold">{annualLeave?.entitled ?? 0}</p>
                   </div>
                   <div className="rounded-lg border px-3 py-2 text-center">
-                    <p className="text-xs text-muted-foreground">المستخدم فعلياً</p>
+                    <p className="text-xs text-muted-foreground">المستخدم فعلياً (سنوية)</p>
                     <p className="text-lg font-semibold">{annualLeave?.used ?? 0}</p>
                   </div>
                 </div>
 
                 {(annualLeave?.entitled ?? 0) === 0 && (
                   <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                    لا يوجد رصيد إجازات مُهيّأ لهذا الموظف في سنة {leaveDuesYear}.
+                    لا يوجد رصيد إجازات سنوية مُهيّأ لهذا الموظف في سنة {leaveDuesYear}.
                   </p>
+                )}
+
+                {(annualLeave?.byType?.length ?? 0) > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">تفصيل حسب نوع الإجازة</p>
+                    <div className="overflow-x-auto rounded-lg border">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40 text-xs text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 text-start font-medium">النوع</th>
+                            <th className="px-3 py-2 text-center font-medium">المستحق</th>
+                            <th className="px-3 py-2 text-center font-medium">المستخدم</th>
+                            <th className="px-3 py-2 text-center font-medium">المتبقي</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {annualLeave!.byType!.map((lt) => {
+                            const hourly = lt.maxHoursPerMonth != null;
+                            return (
+                              <tr key={lt.code} className="border-t">
+                                <td className="px-3 py-2">{lt.nameAr}</td>
+                                <td className="px-3 py-2 text-center tabular-nums">
+                                  {lt.isUnlimited ? "بلا سقف" : hourly ? `${lt.maxHoursPerMonth} س/شهر` : fmtDays(lt.entitled)}
+                                  {!!lt.carriedOverDays && (
+                                    <span className="block text-[11px] text-muted-foreground">
+                                      منها {fmtDays(lt.carriedOverDays)} مرحّلة
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2 text-center tabular-nums">
+                                  {hourly ? `${fmtDays(lt.usedHours ?? 0)} ساعة` : fmtDays(lt.used)}
+                                  {(hourly ? (lt.pendingHours ?? 0) : lt.pending) > 0 && (
+                                    <span className="block text-[11px] text-amber-700 dark:text-amber-400">
+                                      +{fmtDays(hourly ? lt.pendingHours ?? 0 : lt.pending)}{hourly ? " ساعة" : ""} معلّقة
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2 text-center tabular-nums font-medium">
+                                  {lt.isUnlimited || hourly ? "—" : fmtDays(lt.remaining)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      الأرقام بالأيام، ما عدا الإجازة الساعية فبالساعات. المتبقي = المستحق − المستخدم − المعلّق.
+                    </p>
+                  </div>
                 )}
 
               </>

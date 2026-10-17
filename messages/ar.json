@@ -3162,6 +3162,257 @@
     }
   },
   "clinic": {
+    "orthotics": {
+      "common": {
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "edit": "تعديل",
+        "other": "أخرى"
+      },
+      "tabs": {
+        "reception": "الاستقبال",
+        "doctor": "طبيب العظمية",
+        "physio": "العلاج الفيزيائي",
+        "prosthetist": "الأطراف الصناعية",
+        "clinicalHistory": "التاريخ السريري والتوصيات"
+      },
+      "page": {
+        "back": "قسم المقومات",
+        "notFound": "لم يُعثر على الاستقبال"
+      },
+      "guardian": {
+        "title": "ولي الأمر / المرافق",
+        "name": "اسم ولي الأمر / المرافق (في حال الأطفال)",
+        "relation": "صلة القرابة",
+        "relationPlaceholder": "مثال: الأب",
+        "phone": "رقم هاتف المرافق"
+      },
+      "patient": {
+        "title": "معلومات المريض العامة",
+        "number": "رقم المريض",
+        "fullName": "الاسم الكامل",
+        "dob": "تاريخ الميلاد",
+        "age": "العمر",
+        "ageValue": "{n} سنة",
+        "gender": "الجنس",
+        "male": "ذكر",
+        "female": "أنثى",
+        "nationalId": "الرقم الوطني",
+        "phone": "رقم الهاتف",
+        "address": "العنوان الحالي",
+        "height": "الطول",
+        "weight": "الوزن"
+      },
+      "dialog": {
+        "editTitle": "تعديل بيانات الاستقبال",
+        "newTitle": "استقبال مقومات جديد",
+        "patient": "المريض",
+        "search": "ابحث بالاسم أو رقم المريض...",
+        "loading": "جارِ التحميل...",
+        "noMatch": "لا يوجد مريض مطابق",
+        "create": "إنشاء الاستقبال"
+      },
+      "doctor": {
+        "title": "نموذج طبيب العظمية",
+        "medicalHistory": "التاريخ والقصة المرضية",
+        "diagnosis": "التشخيص الطبي الأساسي",
+        "cpType": "الشلل الدماغي — النوع",
+        "footDropCause": "هبوط القدم ناتج عن",
+        "injuryDate": "تاريخ الإصابة / بداية ظهور الأعراض",
+        "chiefComplaint": "الشكوى الرئيسية للمريض الحالية",
+        "surgicalHistory": "التاريخ الجراحي",
+        "surgicalHint": "أي عمليات جراحية سابقة في العظام أو الأعصاب",
+        "familyHistory": "التاريخ العائلي للأمراض المشابهة",
+        "clinicalExam": "الفحص السريري — الحالة العصبية والعضلية",
+        "muscleTone": "المقوية العضلية",
+        "spasticity": "مستوى التشنج",
+        "spasticityHint": "مقياس أشورث المعدل إن وجد",
+        "spasticityPlaceholder": "مثال: 1+",
+        "sensation": "القدرة الحسية",
+        "muscleStrength": "القوة العضلية",
+        "thigh": "عضلات الفخذ",
+        "legFoot": "عضلات الساق والقدم",
+        "skin": "حالة الجلد والأنسجة",
+        "pressureLocation": "قرح فراش / نقاط ضغط في منطقة",
+        "finalOpinion": "الرأي النهائي",
+        "opinion": "رأي طبيب العظمية"
+      },
+      "physio": {
+        "title": "نموذج أخصائي العلاج الفيزيائي",
+        "gait": "تقييم المشية والوظيفة الحركية",
+        "mobility": "القدرة الحالية على الحركة",
+        "assistive": "الأدوات المساعدة المستخدمة حالياً",
+        "gaitProblems": "تحليل المشية - أبرز المشاكل الملاحظة",
+        "rom": "المدى الحركي للمفاصل والتشوهات",
+        "hip": "مفصل الورك",
+        "knee": "مفصل الركبة",
+        "ankle": "مفصل الكاحل",
+        "mmt": "فحص القوة العضلية",
+        "movements": "الحركات",
+        "deformityFlexibility": "مرونة التشوهات",
+        "deformityStatus": "الحالة",
+        "trunk": "تقييم الجذع",
+        "trunkStrength": "أولاً: تقييم القوة العضلية للجذع",
+        "trunkBalance": "ثانيًا: تقييم التوازن والتحكم بالجذع",
+        "activityOpinion": "مستوى النشاط والرأي",
+        "activity": "مستوى النشاط",
+        "opinion": "رأي أخصائي العلاج الفيزيائي",
+        "trunkFields": {
+          "trunkControlSitting": "التحكم بالجذع أثناء الجلوس",
+          "trunkBalanceDynamicSitting": "التوازن الديناميكي أثناء الجلوس",
+          "trunkControlStanding": "التحكم بالجذع أثناء الوقوف",
+          "trunkBalanceStaticStanding": "التوازن الثابت أثناء الوقوف",
+          "trunkBalanceDynamicStanding": "التوازن الديناميكي أثناء الوقوف"
+        }
+      },
+      "prosthetist": {
+        "title": "نموذج أخصائي الأطراف الصناعية",
+        "opinion": "رأي أخصائي الأطراف الصناعية"
+      },
+      "history": {
+        "title": "التاريخ السريري والمعلومات العامة",
+        "birth": "قصة الولادة / عوامل الخطورة",
+        "previousUse": "الاستخدام السابق للأجهزة التقويمية",
+        "previousDetails": "نوع الجهاز ومدة الاستخدام",
+        "surgicalHint": "جراحات العظام، نقل الأوتار، وغيرها",
+        "medical": "التاريخ المرضي / الأدوية",
+        "goals": "الأهداف الوظيفية ومجالات الاستخدام",
+        "goal": "الهدف {n}",
+        "dailyUse": "الاستخدام في أنشطة الحياة اليومية"
+      },
+      "device": {
+        "title": "تقييم الجهاز والتوصيات",
+        "type": "نوع الجهاز المقترح",
+        "hours": "مدة الاستخدام يومياً",
+        "hoursHint": "ساعة",
+        "notes": "ملاحظات إضافية / الحالات التي تستدعي الانتباه"
+      },
+      "options": {
+        "YES_NO": {
+          "YES": "نعم",
+          "NO": "لا"
+        },
+        "DIAGNOSIS_TYPES": {
+          "POLIO": "شلل الأطفال",
+          "CEREBRAL_PALSY": "نقص الأكسجة الدماغية / الشلل الدماغي",
+          "SPINA_BIFIDA": "الشوك المشقوق",
+          "FOOT_DROP": "هبوط القدم",
+          "OTHER": "أخرى"
+        },
+        "CEREBRAL_PALSY_TYPES": {
+          "SPASTIC": "تشنجي",
+          "HYPOTONIC": "ارتخائي",
+          "ATAXIC": "حركي التَّرَنُّح"
+        },
+        "MUSCLE_TONES": {
+          "NORMAL": "طبيعية",
+          "SPASTIC": "تشنجية",
+          "HYPOTONIC": "ارتخاء"
+        },
+        "SENSATIONS": {
+          "INTACT": "سليمة",
+          "REDUCED": "مخفضة",
+          "ABSENT": "غائبة"
+        },
+        "MUSCLE_STRENGTHS": {
+          "EXCELLENT": "ممتازة",
+          "MODERATE": "متوسطة",
+          "WEAK": "ضعيفة"
+        },
+        "SKIN_CONDITIONS": {
+          "INTACT": "سليمة تماماً",
+          "PRESSURE_POINTS": "وجود قرح فراش / نقاط ضغط",
+          "EDEMA": "تورم أو وذمة في الطرف"
+        },
+        "MOBILITY_LEVELS": {
+          "INDEPENDENT": "مستقل تماماً",
+          "WALKS_WITH_AIDS": "يمشي بمساعدة أدوات",
+          "WHEELCHAIR_USER": "مستخدم كرسي متحرك"
+        },
+        "ASSISTIVE_DEVICES": {
+          "CRUTCHES": "عكازات",
+          "WALKER": "مشاية",
+          "CANE": "عصا",
+          "NONE": "لا يوجد"
+        },
+        "GAIT_PROBLEMS": {
+          "TOE_DRAG": "سحب القدم أثناء المشي",
+          "KNEE_INSTABILITY": "عدم استقرار الركبة",
+          "PELVIS_TRUNK_TILT": "ميلان الحوض أو الجذع أثناء المشي",
+          "SCISSORING_GAIT": "مشية المقص"
+        },
+        "HIP_ROM": {
+          "FREE": "حر",
+          "LIMITED": "محدد المدى",
+          "DISLOCATED_SUBLUXED": "خلع/تحت خلع"
+        },
+        "KNEE_ROM": {
+          "NORMAL": "طبيعي",
+          "FLEXION_CONTRACTURE": "ثني ثابت",
+          "VALGUS_VARUS": "ركبة روحاء/فحجاء",
+          "GENU_RECURVATUM": "ارتداد للخلف"
+        },
+        "ANKLE_ROM": {
+          "FREE": "حر",
+          "EQUINUS": "تشوه قدم قفداء",
+          "VARUS_VALGUS": "تشوه منقلب للداخل/الخارج"
+        },
+        "MUSCLE_MOVEMENTS": {
+          "HIP_FLEXION": "عطف الورك",
+          "HIP_EXTENSION": "بسط الورك",
+          "HIP_ABDUCTION": "تبعيد الورك",
+          "HIP_ADDUCTION": "تقريب الورك",
+          "KNEE_FLEXION": "عطف الركبة",
+          "KNEE_EXTENSION": "بسط الركبة",
+          "ANKLE_DORSIFLEXION": "عطف ظهري للكاحل",
+          "ANKLE_PLANTARFLEXION": "عطف اخمصي للكاحل",
+          "ANKLE_EVERSION": "انقلاب وحشي للكاحل",
+          "ANKLE_INVERSION": "انقلاب انسي للكاحل",
+          "GREAT_TOE_FLEXION": "عطف الاصبع الكبير"
+        },
+        "DEFORMITY_FLEXIBILITY": {
+          "FLEXIBLE": "مرنة وقابلة للتعديل",
+          "RIGID": "ثابتة وغير قابلة للتعديل"
+        },
+        "DEFORMITY_STATUS": {
+          "ACTIVE": "نشط",
+          "DORMANT": "خامل"
+        },
+        "TRUNK_MOVEMENTS": {
+          "TRUNK_FLEXION": "عطف الجذع",
+          "TRUNK_EXTENSION": "بسط الجذع",
+          "RIGHT_LATERAL_TILT": "الميلان الجانبي الأيمن",
+          "LEFT_LATERAL_TILT": "الميلان الجانبي الأيسر",
+          "ROTATION_RIGHT": "الدوران يميناً",
+          "ROTATION_LEFT": "الدوران يساراً"
+        },
+        "TRUNK_SCALE": {
+          "GOOD": "جيد",
+          "MODERATE": "متوسط",
+          "WEAK": "ضعيف",
+          "ABSENT": "معدوم"
+        },
+        "ACTIVITY_LEVELS": {
+          "K0": "k0",
+          "K1": "k1",
+          "K2": "k2",
+          "K3": "k3",
+          "K4": "k4"
+        },
+        "DAILY_USE_SETTINGS": {
+          "HOME": "المنزل",
+          "SCHOOL": "المدرسة",
+          "SPORTS": "الرياضة",
+          "OTHER": "أخرى"
+        },
+        "RECOMMENDED_DEVICES": {
+          "KAFO": "KAFO",
+          "AFO": "AFO",
+          "ORTHOSIS_WITH_FES": "جهاز تقويمي + FES",
+          "OTHER": "أخرى"
+        }
+      }
+    },
     "patients": {
       "title": "المرضى",
       "description": "سجل المرضى في العيادة الطبية",
