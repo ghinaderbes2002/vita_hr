@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   Eye, Users, Clock, CheckCircle, XCircle, Briefcase, UserCheck,
-  LayoutList, Kanban, Star, GripVertical, ExternalLink,
+  LayoutList, Kanban, Star, GripVertical, ExternalLink, Search, X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -235,14 +236,26 @@ export default function JobApplicationsPage() {
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission("job-applications:update");
 
+  // Search filters. The API only filters by status and talent, so the whole
+  // list is fetched once and these narrow it here; the volume is small.
+  const [search, setSearch] = useState("");
+  const [specFilter, setSpecFilter] = useState("ALL");
+  const [eduSearch, setEduSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const hasSearchFilters = !!(search.trim() || specFilter !== "ALL" || eduSearch.trim() || dateFrom || dateTo);
+  const clearSearchFilters = () => {
+    setSearch(""); setSpecFilter("ALL"); setEduSearch(""); setDateFrom(""); setDateTo(""); setPage(1);
+  };
+
   const { data, isLoading } = useJobApplications(
     view === "pipeline"
       ? { limit: 500 }
       : {
           status: statusFilter !== "ALL" ? statusFilter : undefined,
           isTalent: showFavorites ? true : undefined,
-          page,
-          limit: 20,
+          page: 1,
+          limit: 500,
         }
   );
   const { data: talentsData } = useJobApplications({ isTalent: true, page: 1, limit: 1 });
@@ -251,9 +264,39 @@ export default function JobApplicationsPage() {
   const ceoApprove = useApproveJobApplicationCEO();
   const setTalent = useSetJobApplicationTalent();
 
-  const applications: JobApplication[] =
-    (data as any)?.data?.data || (data as any)?.data || [];
-  const pagination = (data as any)?.data?.pagination;
+  const allApplications: JobApplication[] = useMemo(
+    () => (data as any)?.data?.data || (data as any)?.data || [],
+    [data],
+  );
+
+  // Specializations actually present, for the dropdown.
+  const specOptions = useMemo(
+    () => Array.from(new Set(allApplications.map((a) => a.specialization?.trim()).filter(Boolean) as string[]))
+      .sort((a, b) => a.localeCompare(b, "ar")),
+    [allApplications],
+  );
+
+  const norm = (v?: string | null) => (v ?? "").toLowerCase().trim();
+  const filteredApplications = allApplications.filter((a) => {
+    const q = norm(search);
+    if (q && !norm(a.fullName).includes(q) && !norm(a.email).includes(q) && !norm(a.phone).includes(q)) return false;
+    if (specFilter !== "ALL" && a.specialization?.trim() !== specFilter) return false;
+    if (eduSearch.trim() && !norm(a.education).includes(norm(eduSearch))) return false;
+    // Compared on the local calendar day the application was submitted.
+    const day = a.createdAt ? format(new Date(a.createdAt), "yyyy-MM-dd") : "";
+    if (dateFrom && day < dateFrom) return false;
+    if (dateTo && day > dateTo) return false;
+    return true;
+  });
+
+  // The list paginates locally now that it holds every match.
+  const PAGE_SIZE = 20;
+  const totalPages = Math.max(1, Math.ceil(filteredApplications.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const applications: JobApplication[] = view === "pipeline"
+    ? filteredApplications
+    : filteredApplications.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pagination = { total: filteredApplications.length, totalPages };
   const statsData = stats as any;
 
   // Only migrate once the server actually returns isTalent — otherwise the
@@ -347,6 +390,55 @@ export default function JobApplicationsPage() {
         ))}
       </div>
 
+      {/* ── Search filters (both views) ── */}
+      <div className="rounded-lg border bg-card p-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+          <div className="relative">
+            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="بحث بالاسم أو البريد أو الهاتف..."
+              className="ps-9"
+            />
+          </div>
+          <Select value={specFilter} onValueChange={(v) => { setSpecFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-full min-w-0 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate">
+              <SelectValue placeholder={t("jobApplications.fields.specialization")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">كل التخصصات</SelectItem>
+              {specOptions.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            value={eduSearch}
+            onChange={(e) => { setEduSearch(e.target.value); setPage(1); }}
+            placeholder="المؤهل العلمي (مثال: بكالوريوس)"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground shrink-0">من</span>
+            <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="w-full lg:w-40" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground shrink-0">إلى</span>
+            <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="w-full lg:w-40" />
+          </div>
+        </div>
+        {hasSearchFilters && (
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-muted-foreground">
+              <span className="font-semibold text-foreground">{filteredApplications.length}</span> نتيجة من أصل {allApplications.length}
+            </span>
+            <Button variant="ghost" size="sm" className="gap-1.5 h-7" onClick={clearSearchFilters}>
+              <X className="h-3.5 w-3.5" /> مسح الفلاتر
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* ── Pipeline view ── */}
       {view === "pipeline" && (
         <>
@@ -427,7 +519,7 @@ export default function JobApplicationsPage() {
                 ) : applications.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
-                      {showFavorites ? t("jobApplications.noFavorites") : t("common.noData")}
+                      {hasSearchFilters ? "لا توجد طلبات مطابقة للبحث" : showFavorites ? t("jobApplications.noFavorites") : t("common.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -487,10 +579,10 @@ export default function JobApplicationsPage() {
                 {t("common.of")} {pagination.total} {t("jobApplications.fields.application")}
               </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+                <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
                   {t("common.previous")}
                 </Button>
-                <Button variant="outline" size="sm" disabled={page >= pagination.totalPages} onClick={() => setPage((p) => p + 1)}>
+                <Button variant="outline" size="sm" disabled={currentPage >= pagination.totalPages} onClick={() => setPage(currentPage + 1)}>
                   {t("common.next")}
                 </Button>
               </div>

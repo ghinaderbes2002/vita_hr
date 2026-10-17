@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { ArrowRight, Check, Pencil, Trash2 } from "lucide-react";
+import { ArrowRight, Check, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PatientPhoto } from "@/components/clinic/patient-photo";
 import { PractitionersCard } from "@/components/clinic/podiatry-practitioners-card";
@@ -19,7 +18,7 @@ import {
 } from "@/components/clinic/orthotics-assessment-sections";
 import { sectionsFilled } from "@/components/clinic/orthotics-labels";
 import {
-  useAssignOrthoticsPractitioners, useDeleteOrthoticsReception, useOrthoticsReception,
+  useAssignOrthoticsPractitioners, useOrthoticsReception,
 } from "@/lib/hooks/use-clinic-orthotics";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -58,13 +57,11 @@ export default function OrthoticsReceptionPage() {
   const { data: reception, isLoading } = useOrthoticsReception(id);
   const { data: patient } = useClinicPatient(reception?.patientId ?? "");
   const assign = useAssignOrthoticsPractitioners();
-  const remove = useDeleteOrthoticsReception();
 
   const { hasPermission, isAdmin } = usePermissions();
   const can = (p: Parameters<typeof hasPermission>[0]) => isAdmin() || hasPermission(p);
 
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading) {
     return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>;
@@ -97,12 +94,6 @@ export default function OrthoticsReceptionPage() {
             <span className="text-xs text-muted-foreground">{fmt(reception.createdAt)}</span>
           </div>
         </div>
-        <ActionGuard permission={PERMISSIONS.CLINIC_ORTHOTICS.DELETE}>
-          <Button variant="outline" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="h-4 w-4" />
-            حذف الاستقبال
-          </Button>
-        </ActionGuard>
       </div>
 
       <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
@@ -175,17 +166,6 @@ export default function OrthoticsReceptionPage() {
 
       <OrthoticsReceptionDialog open={editOpen} onOpenChange={setEditOpen} reception={reception} />
 
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title="حذف استقبال المقومات"
-        description="سيُحذف الاستقبال مع كل التقييمات المسجّلة عليه. لا يمكن التراجع عن هذا الإجراء."
-        confirmText="حذف"
-        variant="destructive"
-        onConfirm={() =>
-          remove.mutate(id, { onSuccess: () => router.push(`/${locale}/clinic/orthotics`) })
-        }
-      />
     </div>
   );
 }
