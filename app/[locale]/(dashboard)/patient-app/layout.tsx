@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 
 /** المسارات المفتوحة لمن يملك صلاحيتها رغم قفل القسم على الأدمن. */
-const OPEN_PATHS = ["/patient-app/chat"];
+const OPEN_PATHS = ["/patient-app/chat", "/patient-app/exercises", "/patient-app/programs"];
 
 /**
  * مؤقت: قسم التطبيق للأدمن فقط ريثما يُعتمد (القسم مخفي أيضاً من الشريط

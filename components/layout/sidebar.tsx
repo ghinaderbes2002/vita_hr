@@ -368,31 +368,21 @@ const navigation: NavItem[] = [
       },
     ],
   },
-  // محادثات المرضى لغير الأدمن: بند مستقل بدل فتح قسم التطبيق كله، والأدمن
-  // يصل إليها من داخل القسم نفسه.
-  {
-    title: "nav.patientChats",
-    href: "/patient-app/chat",
-    icon: MessageSquare,
-    permission: "clinic.patient_app.chat.use",
-    hiddenForAdmin: true,
-    separator: true,
-  },
   {
     title: "nav.patientApp",
     icon: Smartphone,
     separator: true,
-    // مؤقتاً للأدمن فقط ريثما يُعتمد التطبيق. المحادثات وحدها مفتوحة، وتظهر
-    // لغير الأدمن كبند مستقل (nav.patientChats) خارج هذا القسم. عند فتح القسم
-    // كله يكفي حذف السطر (وحذف app/[locale]/(dashboard)/patient-app/layout.tsx).
-    adminOnly: true,
+    // القسم يظهر لمن يملك صلاحية أي بند فيه. المحادثات والمكتبة والبرامج مفتوحة
+    // بصلاحياتها؛ الباقي مؤقتاً للأدمن فقط ريثما يُعتمد التطبيق — يطابق
+    // OPEN_PATHS في app/[locale]/(dashboard)/patient-app/layout.tsx. عند فتح
+    // القسم كله: احذف adminOnly من البنود واحذف ذلك الملف.
     children: [
-      { title: "nav.patientAppAccounts", href: "/patient-app/accounts", icon: KeyRound, permission: "clinic.patient_app.account.manage" },
-      { title: "nav.patientAppTaxonomy", href: "/patient-app/taxonomy", icon: Tags, permission: "clinic.patient_app.taxonomy.manage" },
+      { title: "nav.patientAppAccounts", href: "/patient-app/accounts", icon: KeyRound, permission: "clinic.patient_app.account.manage", adminOnly: true },
+      { title: "nav.patientAppTaxonomy", href: "/patient-app/taxonomy", icon: Tags, permission: "clinic.patient_app.taxonomy.manage", adminOnly: true },
       { title: "nav.patientAppExercises", href: "/patient-app/exercises", icon: Dumbbell, permission: "clinic.patient_app.exercise_library.manage" },
       { title: "nav.patientAppPrograms", href: "/patient-app/programs", icon: ClipboardList, permissions: ["clinic.patient_app.assignment.create", "clinic.patient_app.assignment.edit", "clinic.patient_app.assignment.cancel", "clinic.patient_app.execution.view"] },
-      { title: "nav.patientAppChat", href: "/patient-app/chat", icon: MessageSquare, permission: "clinic.patient_app.chat.use" },
-      { title: "nav.patientAppRatings", href: "/patient-app/ratings", icon: Star, requiredRoles: ["clinic_physio_dept_head", "رئيس قسم العلاج الفيزيائي"] },
+      { title: "nav.patientChats", href: "/patient-app/chat", icon: MessageSquare, permission: "clinic.patient_app.chat.use" },
+      { title: "nav.patientAppRatings", href: "/patient-app/ratings", icon: Star, requiredRoles: ["clinic_physio_dept_head", "رئيس قسم العلاج الفيزيائي"], adminOnly: true },
     ],
   },
   {
