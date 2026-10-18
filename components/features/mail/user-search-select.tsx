@@ -158,6 +158,26 @@ export function UserSearchSelect({ value, onChange, placeholder, exclude = [], r
     ? photoById[preview.id] ?? hoveredEmployee?.profilePhoto ?? null
     : null;
 
+  // mouseleave alone is not enough: removing the hovered chip (its ✕, or
+  // "clear all") unmounts it under the pointer and the event never fires, and a
+  // scroll moves the chip away from a preview that is fixed in place. Any of
+  // these drops the preview.
+  useEffect(() => {
+    setPreview(null);
+  }, [value]);
+  useEffect(() => {
+    if (!preview) return;
+    const hide = () => setPreview(null);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("blur", hide);
+    document.addEventListener("pointerdown", hide, true);
+    return () => {
+      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("blur", hide);
+      document.removeEventListener("pointerdown", hide, true);
+    };
+  }, [preview]);
+
   const { data: deptData2, isLoading: deptLoading } = useEmployeesByDepartment(
     selectedDeptId !== "__all__" ? selectedDeptId : ""
   );
