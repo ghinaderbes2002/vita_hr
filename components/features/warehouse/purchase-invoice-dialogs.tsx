@@ -122,7 +122,7 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
           </div>
 
           <Field label={t("warehouse.shared.items")} required>
-            <LineItemsEditor lines={lines} onChange={setLines} items={items} withPrice />
+            <LineItemsEditor lines={lines} onChange={setLines} items={items} withPrice allowCreateItem />
           </Field>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -45,9 +45,32 @@ const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLET
 
 // Staff meetings sit on the same axis as patient bookings, in colours no
 // appointment status uses, so the two never read as one another.
-export const MEETING_STYLE: Record<InternalMeetingType, { bar: string; cls: string; label: string }> = {
-  MEETING:  { bar: "#8b5cf6", cls: "bg-violet-50/90 dark:bg-violet-950/50 text-violet-950 dark:text-violet-100", label: "اجتماع" },
-  TRAINING: { bar: "#0d9488", cls: "bg-teal-50/90 dark:bg-teal-950/50 text-teal-950 dark:text-teal-100", label: "تدريب" },
+// Key order is the order the type picker and the filters show them in.
+export const MEETING_STYLE: Record<InternalMeetingType, { bar: string; cls: string; label: string; plural: string }> = {
+  MEETING:          { bar: "#8b5cf6", cls: "bg-violet-50/90 dark:bg-violet-950/50 text-violet-950 dark:text-violet-100", label: "اجتماع", plural: "اجتماعات" },
+  TRAINING:         { bar: "#0d9488", cls: "bg-teal-50/90 dark:bg-teal-950/50 text-teal-950 dark:text-teal-100", label: "تدريب", plural: "تدريبات" },
+  LECTURE:          { bar: "#4f46e5", cls: "bg-indigo-50/90 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-100", label: "محاضرة", plural: "محاضرات" },
+  PHOTOGRAPHY:      { bar: "#ec4899", cls: "bg-pink-50/90 dark:bg-pink-950/50 text-pink-950 dark:text-pink-100", label: "تصوير", plural: "تصوير" },
+  EVENT:            { bar: "#06b6d4", cls: "bg-cyan-50/90 dark:bg-cyan-950/50 text-cyan-950 dark:text-cyan-100", label: "فعالية", plural: "فعاليات" },
+  EXTERNAL_MISSION: { bar: "#65a30d", cls: "bg-lime-50/90 dark:bg-lime-950/50 text-lime-950 dark:text-lime-100", label: "مهمة خارجية", plural: "مهام خارجية" },
+  VISIT:            { bar: "#92400e", cls: "bg-amber-50/90 dark:bg-amber-950/50 text-amber-950 dark:text-amber-100", label: "زيارة", plural: "زيارات" },
+  OTHER:            { bar: "#475569", cls: "bg-slate-100/90 dark:bg-slate-900/60 text-slate-900 dark:text-slate-100", label: "أخرى", plural: "أخرى" },
+};
+
+export const MEETING_TYPES = Object.keys(MEETING_STYLE) as InternalMeetingType[];
+
+export const isMeetingType = (v: string): v is InternalMeetingType => v in MEETING_STYLE;
+
+export const meetingStyle = (m: Pick<InternalMeeting, "meetingType">) => MEETING_STYLE[m.meetingType] ?? MEETING_STYLE.OTHER;
+
+/** The type as people should read it: OTHER shows what was typed for it, when anything was. */
+export const meetingTypeLabel = (m: Pick<InternalMeeting, "meetingType" | "meetingTypeOther">) =>
+  (m.meetingType === "OTHER" && m.meetingTypeOther?.trim()) || meetingStyle(m).label;
+
+/** The meeting types that occur in `meetings`, in picker order — for legends and filters. */
+export const meetingTypesIn = (meetings: Pick<InternalMeeting, "meetingType">[]) => {
+  const present = new Set(meetings.map((m) => m.meetingType));
+  return MEETING_TYPES.filter((k) => present.has(k));
 };
 
 function toMinutes(v?: string | null): number | null {
@@ -212,7 +235,7 @@ function Column({
         const top = PAD + ((start - win.start) / 60) * HOUR_H;
         const height = Math.max(22, ((end - start) / 60) * HOUR_H - 2);
         const w = 100 / lanes;
-        const st = MEETING_STYLE[m.meetingType] ?? MEETING_STYLE.MEETING;
+        const st = meetingStyle(m);
         const attendees = resolveAttendees?.(m);
         return (
           <button
@@ -240,7 +263,7 @@ function Column({
             <div className="truncate text-xs font-semibold leading-tight">{m.title}</div>
             {height > 40 && (
               <div className="truncate text-[10px] leading-tight opacity-80">
-                {st.label} · {m.attendeeIds?.length ?? 0} حضور
+                {meetingTypeLabel(m)} · {m.attendeeIds?.length ?? 0} حضور
               </div>
             )}
             {height > 56 && attendees && (
@@ -280,6 +303,7 @@ export function AppointmentTimeline({
     Math.max(MIN_COL_W, maxLanesIn([...g.appointments, ...(g.meetings ?? [])], win) * MIN_LANE_W),
   );
   const hasMeetings = groups.some((g) => g.meetings !== undefined);
+  const legendMeetingTypes = meetingTypesIn(groups.flatMap((g) => g.meetings ?? []));
   // A floor, not a fixed size: `minmax(…, 1fr)` keeps a crowded column wide
   // enough to read while still letting the columns share whatever space is
   // left. Pinning them to exact pixels left a dead gap beside the board and
@@ -310,7 +334,8 @@ export function AppointmentTimeline({
           {hasMeetings && (
             <>
               <span className="h-3 w-px bg-border" aria-hidden />
-              {(Object.keys(MEETING_STYLE) as InternalMeetingType[]).map((k) => (
+              {/* Only the types on screen — eight swatches for one meeting would be noise. */}
+              {legendMeetingTypes.map((k) => (
                 <span key={k} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: MEETING_STYLE[k].bar }} />
                   {MEETING_STYLE[k].label}

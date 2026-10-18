@@ -19,7 +19,10 @@ import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicPhysioApi, PhysioCase } from "@/lib/api/clinic-physio";
 import { clinicProstheticsApi } from "@/lib/api/clinic-prosthetics";
 import { useDepartments } from "@/lib/hooks/use-departments";
-import { AppointmentTimeline, MEETING_STYLE } from "@/components/clinic/appointment-timeline";
+import {
+  AppointmentTimeline, MEETING_STYLE, isMeetingType, meetingStyle, meetingTypeLabel, meetingTypesIn,
+} from "@/components/clinic/appointment-timeline";
+import type { InternalMeetingType } from "@/lib/api/clinic-appointments";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 
@@ -91,7 +94,7 @@ export default function MyAppointmentsPage() {
   const canSeeMyMeetings = isAdmin()
     || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_VIEW_OWN)
     || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_VIEW);
-  const [viewFilter, setViewFilter] = useState<"ALL" | "PATIENTS" | "MEETING" | "TRAINING">("ALL");
+  const [viewFilter, setViewFilter] = useState<"ALL" | "PATIENTS" | InternalMeetingType>("ALL");
   const showAppts = canSeeMyAppts && (viewFilter === "ALL" || viewFilter === "PATIENTS");
   const showMeetings = canSeeMyMeetings && viewFilter !== "PATIENTS";
   const [detailMeeting, setDetailMeeting] = useState<InternalMeeting | null>(null);
@@ -220,9 +223,19 @@ export default function MyAppointmentsPage() {
   const meetingDayKey = (m: InternalMeeting) => localIso(new Date(m.startTime));
   const weekMeetings = myMeetings.filter((m) => weekKeys.has(meetingDayKey(m)) && m.status !== "CANCELLED");
   const visibleMeetings = !showMeetings ? []
-    : viewFilter === "MEETING" || viewFilter === "TRAINING"
+    : isMeetingType(viewFilter)
     ? weekMeetings.filter((m) => m.meetingType === viewFilter)
     : weekMeetings;
+  // Chips only for the types this week has, plus the picked one so it stays put.
+  const filterTypes = meetingTypesIn([
+    ...weekMeetings,
+    ...(isMeetingType(viewFilter) ? [{ meetingType: viewFilter }] : []),
+  ]);
+  const viewOptions: { key: "ALL" | "PATIENTS" | InternalMeetingType; label: string; dot: string | null }[] = [
+    { key: "ALL", label: "الكل", dot: null },
+    { key: "PATIENTS", label: "مواعيد المرضى", dot: "#3b82f6" },
+    ...filterTypes.map((k) => ({ key: k, label: MEETING_STYLE[k].plural, dot: MEETING_STYLE[k].bar })),
+  ];
   const isLoading = (canSeeMyAppts && apptsLoading) || (canSeeMyMeetings && meetingsLoading);
 
   // What the practitioner opens this page to find: today's load and what's next.
@@ -292,7 +305,7 @@ export default function MyAppointmentsPage() {
             </span>
             {todayMeetings.length > 0 && (
               <span className="text-xs text-violet-600 dark:text-violet-400">
-                · منها {todayMeetings.length} اجتماع/تدريب
+                · منها {todayMeetings.length} اجتماع/نشاط
               </span>
             )}
           </p>
@@ -319,8 +332,8 @@ export default function MyAppointmentsPage() {
                   {nextMeeting.attendeeIds?.length ?? 0} حضور
                 </span>
               </span>
-              <Badge variant="outline" className={cn("shrink-0 text-[10px]", MEETING_STYLE[nextMeeting.meetingType]?.cls)}>
-                {MEETING_STYLE[nextMeeting.meetingType]?.label ?? nextMeeting.meetingType}
+              <Badge variant="outline" className={cn("shrink-0 text-[10px]", meetingStyle(nextMeeting).cls)}>
+                {meetingTypeLabel(nextMeeting)}
               </Badge>
             </div>
           ) : nextAppt ? (
@@ -363,12 +376,7 @@ export default function MyAppointmentsPage() {
           {/* What the week shows: patient visits, meetings, trainings, or all of them. */}
           {canSeeMyAppts && canSeeMyMeetings && (
             <div role="tablist" aria-label="نوع العرض" className="inline-flex flex-wrap items-center gap-1 rounded-lg border bg-muted/40 p-1">
-              {([
-                { key: "ALL", label: "الكل", dot: null },
-                { key: "PATIENTS", label: "مواعيد المرضى", dot: "#3b82f6" },
-                { key: "MEETING", label: "اجتماعات", dot: MEETING_STYLE.MEETING.bar },
-                { key: "TRAINING", label: "تدريبات", dot: MEETING_STYLE.TRAINING.bar },
-              ] as const).map((o) => {
+              {viewOptions.map((o) => {
                 const active = viewFilter === o.key;
                 return (
                   <button
@@ -400,7 +408,7 @@ export default function MyAppointmentsPage() {
               <span className="text-violet-600 dark:text-violet-400">
                 {showAppts && " · "}
                 <span className="text-lg font-bold tabular-nums">{visibleMeetings.length}</span>{" "}
-                {viewFilter === "MEETING" ? "اجتماع" : viewFilter === "TRAINING" ? "تدريب" : "اجتماع/تدريب"}
+                {isMeetingType(viewFilter) ? MEETING_STYLE[viewFilter].label : "اجتماع/نشاط"}
               </span>
             )}
           </span>

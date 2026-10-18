@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { WarehouseItem } from "@/lib/api/warehouse";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { ItemDialog } from "./item-dialog";
 import { RETURN_CONDITIONS, ReturnCondition } from "@/lib/api/warehouse-operations";
 import { OptionSelect, toQty } from "./shared";
 import { localizedName } from "./utils";
@@ -20,18 +23,21 @@ interface ItemComboboxProps {
   value: string;
   onChange: (id: string) => void;
   className?: string;
+  /** Shows "add new item" at the foot of the list; gets whatever was typed in the search. */
+  onCreateItem?: (search: string) => void;
 }
 
 // Searchable item picker — the catalog is too long for a plain <Select>.
 // Matches on name (both languages), SKU and part code.
-export function ItemCombobox({ items, value, onChange, className }: ItemComboboxProps) {
+export function ItemCombobox({ items, value, onChange, className, onCreateItem }: ItemComboboxProps) {
   const t = useTranslations("warehouse.shared");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const selected = items.find((i) => i.id === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSearch(""); }}>
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -48,7 +54,7 @@ export function ItemCombobox({ items, value, onChange, className }: ItemCombobox
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] min-w-64 p-0" align="start">
         <Command>
-          <CommandInput placeholder={t("searchItem")} />
+          <CommandInput placeholder={t("searchItem")} value={search} onValueChange={setSearch} />
           <CommandList>
             <CommandEmpty>{t("noItems")}</CommandEmpty>
             <CommandGroup>
@@ -65,6 +71,19 @@ export function ItemCombobox({ items, value, onChange, className }: ItemCombobox
               ))}
             </CommandGroup>
           </CommandList>
+          {/* Outside the list so filtering never hides it — it is the way out when nothing matches. */}
+          {onCreateItem && (
+            <div className="border-t p-1">
+              <button
+                type="button"
+                onClick={() => { const s = search.trim(); setOpen(false); setSearch(""); onCreateItem(s); }}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary hover:bg-accent"
+              >
+                <Plus className="h-4 w-4" />
+                {search.trim() ? t("addNewItemNamed", { name: search.trim() }) : t("addNewItem")}
+              </button>
+            </div>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
@@ -102,14 +121,23 @@ interface LineItemsEditorProps {
   withPrice?: boolean;
   withCondition?: boolean;
   withNote?: boolean;
+  /**
+   * Lets the user add a missing item from the line itself, in a dialog over the
+   * form, without losing what was filled in. Needs the item-create permission.
+   */
+  allowCreateItem?: boolean;
 }
 
 // The item/quantity rows shared by every document form: material requests,
 // purchase invoices, transfers and returns differ only in the extra columns.
 export function LineItemsEditor({
-  lines, onChange, items, qtyLabel, withPrice, withCondition, withNote,
+  lines, onChange, items, qtyLabel, withPrice, withCondition, withNote, allowCreateItem,
 }: LineItemsEditorProps) {
   const t = useTranslations("warehouse");
+  const { hasPermission, isAdmin } = usePermissions();
+  const canCreateItem = !!allowCreateItem && (isAdmin() || hasPermission(PERMISSIONS.WAREHOUSE_ITEMS.CREATE));
+  // The line waiting for the item being created, and the name to start it with.
+  const [creating, setCreating] = useState<{ lineKey: string; name: string } | null>(null);
   const update = (key: string, patch: Partial<LineDraft>) =>
     onChange(lines.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
@@ -119,7 +147,12 @@ export function LineItemsEditor({
         {lines.map((line) => (
           <div key={line.key} className="flex flex-wrap items-start gap-2 rounded-lg border p-2">
             <div className="min-w-48 flex-1">
-              <ItemCombobox items={items} value={line.itemId} onChange={(itemId) => update(line.key, { itemId })} />
+              <ItemCombobox
+                items={items}
+                value={line.itemId}
+                onChange={(itemId) => update(line.key, { itemId })}
+                onCreateItem={canCreateItem ? (name) => setCreating({ lineKey: line.key, name }) : undefined}
+              />
             </div>
             <Input
               type="number"
@@ -179,6 +212,14 @@ export function LineItemsEditor({
         <Plus className="h-3.5 w-3.5" />
         {t("shared.addLine")}
       </Button>
+      {canCreateItem && (
+        <ItemDialog
+          open={!!creating}
+          onOpenChange={(o) => { if (!o) setCreating(null); }}
+          defaultName={creating?.name}
+          onCreated={(item) => { if (creating) update(creating.lineKey, { itemId: item.id }); }}
+        />
+      )}
     </div>
   );
 }

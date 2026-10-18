@@ -15,7 +15,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AppointmentTimeline } from "@/components/clinic/appointment-timeline";
+import {
+  AppointmentTimeline, MEETING_STYLE, isMeetingType, meetingTypesIn,
+} from "@/components/clinic/appointment-timeline";
+import type { InternalMeetingType } from "@/lib/api/clinic-appointments";
 import { TherapistPicker } from "@/components/clinic/therapist-picker";
 import { StaffMeetingDialog, StaffMeetingDetailsDialog } from "@/components/clinic/staff-meeting-dialogs";
 import { PageHeader } from "@/components/shared/page-header";
@@ -158,7 +161,7 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState<string>(toISO(today));
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL");
   const [departmentFilter, setDepartmentFilter] = useState<string>("ALL");
-  const [viewFilter, setViewFilter] = useState<"ALL" | "PATIENTS" | "MEETING" | "TRAINING">("ALL");
+  const [viewFilter, setViewFilter] = useState<"ALL" | "PATIENTS" | InternalMeetingType>("ALL");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<string>("");
   const [cancelReason, setCancelReason] = useState("");
@@ -238,13 +241,24 @@ export default function AppointmentsPage() {
   // staff meeting. Drives the columns, the calendar dots and the day counter.
   const showAppts = viewFilter === "ALL" || viewFilter === "PATIENTS";
   const showMeetings = canViewMeetings && viewFilter !== "PATIENTS";
-  const visibleMeetings = viewFilter === "MEETING" || viewFilter === "TRAINING"
+  const visibleMeetings = isMeetingType(viewFilter)
     ? monthMeetings.filter((m) => m.meetingType === viewFilter)
     : monthMeetings;
+  // One chip per meeting type this month actually has (plus the one picked,
+  // so it doesn't vanish on a month without it) — not all eight every time.
+  const filterTypes = meetingTypesIn([
+    ...monthMeetings,
+    ...(isMeetingType(viewFilter) ? [{ meetingType: viewFilter }] : []),
+  ]);
+  const viewOptions: { key: "ALL" | "PATIENTS" | InternalMeetingType; label: string; dot: string | null }[] = [
+    { key: "ALL", label: "الكل", dot: null },
+    { key: "PATIENTS", label: "مواعيد المرضى", dot: "#3b82f6" },
+    ...filterTypes.map((k) => ({ key: k, label: MEETING_STYLE[k].plural, dot: MEETING_STYLE[k].bar })),
+  ];
   const meetingDays = new Set(showMeetings ? visibleMeetings.map(meetingDay) : []);
   const dayMeetings = visibleMeetings.filter((m) => meetingDay(m) === selectedDate);
   const meetingsColumnTitle =
-    viewFilter === "MEETING" ? "الاجتماعات" : viewFilter === "TRAINING" ? "التدريبات" : "الاجتماعات والتدريبات";
+    isMeetingType(viewFilter) ? MEETING_STYLE[viewFilter].plural : "الاجتماعات والأنشطة";
 
   // ── Department board (selected day, split by clinical department) ──────────
   const deptNameOf = (a: Appointment) =>
@@ -430,7 +444,7 @@ export default function AppointmentsPage() {
               {canCreateMeeting && (
                 <Button variant="outline" onClick={() => setNewMeetingOpen(true)} className="gap-2">
                   <Users className="h-4 w-4 text-violet-600" />
-                  اجتماع / تدريب
+                  اجتماع / نشاط
                 </Button>
               )}
               {canCreateAppt && (
@@ -447,12 +461,7 @@ export default function AppointmentsPage() {
       <div className="flex flex-wrap items-center gap-2">
         {canViewMeetings && (
           <div role="tablist" aria-label="نوع العرض" className="inline-flex flex-wrap items-center gap-1 rounded-lg border bg-muted/40 p-1">
-            {([
-              { key: "ALL", label: "الكل", dot: null },
-              { key: "PATIENTS", label: "مواعيد المرضى", dot: "#3b82f6" },
-              { key: "MEETING", label: "اجتماعات", dot: "#8b5cf6" },
-              { key: "TRAINING", label: "تدريبات", dot: "#0d9488" },
-            ] as const).map((o) => {
+            {viewOptions.map((o) => {
               const active = viewFilter === o.key;
               return (
                 <button
@@ -563,7 +572,7 @@ export default function AppointmentsPage() {
               {showAppts && <>{dayScoped.filter((a: Appointment) => a.status !== "CANCELLED").length} {t("board.appointments")}</>}
               {showMeetings && (showAppts ? dayMeetings.length > 0 : true) && (
                 <span className="text-violet-600 dark:text-violet-400">
-                  {showAppts && " · "}{dayMeetings.length} {viewFilter === "MEETING" ? "اجتماع" : viewFilter === "TRAINING" ? "تدريب" : "اجتماع/تدريب"}
+                  {showAppts && " · "}{dayMeetings.length} {isMeetingType(viewFilter) ? MEETING_STYLE[viewFilter].label : "اجتماع/نشاط"}
                 </span>
               )}
             </span>

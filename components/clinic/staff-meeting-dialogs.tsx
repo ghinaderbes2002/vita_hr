@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { TherapistPicker } from "@/components/clinic/therapist-picker";
-import { MEETING_STYLE } from "@/components/clinic/appointment-timeline";
+import { MEETING_STYLE, MEETING_TYPES, meetingStyle, meetingTypeLabel } from "@/components/clinic/appointment-timeline";
 import { useCreateInternalMeeting } from "@/lib/hooks/use-clinic-appointments";
 import { InternalMeeting, InternalMeetingType } from "@/lib/api/clinic-appointments";
 import { formatClinicTime } from "@/lib/utils";
@@ -16,6 +16,7 @@ import { formatClinicTime } from "@/lib/utils";
 const emptyForm = (date: string) => ({
   title: "",
   meetingType: "MEETING" as InternalMeetingType,
+  meetingTypeOther: "",
   attendeeIds: [] as string[],
   date,
   startTime: "10:00",
@@ -62,6 +63,10 @@ export function StaffMeetingDialog({
       await createMeeting.mutateAsync({
         title: form.title.trim(),
         meetingType: form.meetingType,
+        // Only OTHER takes a free-text type; left blank, the title stands for it.
+        ...(form.meetingType === "OTHER" && form.meetingTypeOther.trim()
+          ? { meetingTypeOther: form.meetingTypeOther.trim() }
+          : {}),
         attendeeIds: form.attendeeIds,
         startTime: new Date(`${form.date}T${form.startTime}:00`).toISOString(),
         endTime: new Date(`${form.date}T${form.endTime}:00`).toISOString(),
@@ -79,19 +84,19 @@ export function StaffMeetingDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!createMeeting.isPending) onOpenChange(o); }}>
       <DialogContent className="sm:max-w-lg" dir="rtl">
         <DialogHeader>
-          <DialogTitle>اجتماع / تدريب جديد</DialogTitle>
+          <DialogTitle>اجتماع / نشاط جديد</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          {/* النوع كزرّين ظاهرين بدل قائمة — خياران فقط */}
-          <div className="grid grid-cols-2 gap-2">
-            {(Object.keys(MEETING_STYLE) as InternalMeetingType[]).map((k) => {
+          {/* النوع كأزرار ظاهرة بدل قائمة — نقرة واحدة */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {MEETING_TYPES.map((k) => {
               const active = form.meetingType === k;
               return (
                 <button
                   key={k}
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, meetingType: k }))}
-                  className={`flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`flex items-center justify-center gap-2 rounded-md border px-2 py-2 text-sm font-medium transition-colors ${
                     active ? MEETING_STYLE[k].cls : "text-muted-foreground hover:bg-muted"
                   }`}
                   style={active ? { borderColor: MEETING_STYLE[k].bar } : undefined}
@@ -102,6 +107,16 @@ export function StaffMeetingDialog({
               );
             })}
           </div>
+          {form.meetingType === "OTHER" && (
+            <div className="space-y-1.5">
+              <Label>نوع النشاط <span className="text-xs font-normal text-muted-foreground">(اختياري)</span></Label>
+              <Input
+                value={form.meetingTypeOther}
+                onChange={(e) => setForm((f) => ({ ...f, meetingTypeOther: e.target.value }))}
+                placeholder="مثال: ورشة عمل"
+              />
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label>العنوان</Label>
             <Input
@@ -171,7 +186,7 @@ export function StaffMeetingDetailsDialog({
   staffName: (id: string) => string;
   locale: string;
 }) {
-  const st = meeting ? MEETING_STYLE[meeting.meetingType] ?? MEETING_STYLE.MEETING : null;
+  const st = meeting ? meetingStyle(meeting) : null;
   return (
     <Dialog open={!!meeting} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md" dir="rtl">
@@ -183,7 +198,7 @@ export function StaffMeetingDetailsDialog({
         </DialogHeader>
         {meeting && st && (
           <div className="space-y-4 text-sm">
-            <span className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${st.cls}`}>{st.label}</span>
+            <span className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${st.cls}`}>{meetingTypeLabel(meeting)}</span>
             <div className="space-y-2">
               <p className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-muted-foreground" />

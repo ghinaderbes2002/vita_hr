@@ -163,7 +163,7 @@
     "clinicAppointmentStats": "إحصائيات المواعيد",
     "clinicSurveys": "استبيانات رضا العملاء",
     "clinicInventory": "المخزون الطبي",
-    "warehouse": "المستودعات",
+    "warehouse": "نظام المستودع",
     "warehouseWarehouses": "المستودعات",
     "warehouseItems": "الأصناف",
     "warehouseCategories": "التصنيفات",
@@ -6733,7 +6733,13 @@
       "completed": "مكتمل {count}",
       "inProgress": "جارٍ {count}",
       "skipped": "متخطّى {count}",
-      "notStarted": "لم يبدأ {count}"
+      "notStarted": "لم يبدأ {count}",
+      "statusCompleted": "مكتمل",
+      "statusInProgress": "قيد التنفيذ",
+      "statusSkipped": "متخطّى",
+      "statusNotStarted": "لم يبدأ",
+      "skipReason": "سبب التخطي: {reason}",
+      "unnamedExercise": "تمرين"
     },
     "chat": {
       "title": "محادثات المرضى",
@@ -6974,6 +6980,8 @@
       "selectItem": "اختر الصنف...",
       "searchItem": "ابحث بالاسم أو الكود...",
       "noItems": "لا توجد أصناف",
+      "addNewItem": "إضافة صنف جديد",
+      "addNewItemNamed": "إضافة «{name}» كصنف جديد",
       "selectSupplier": "اختر المورد",
       "selectCurrency": "اختر العملة",
       "selectPatient": "اختر المريض...",

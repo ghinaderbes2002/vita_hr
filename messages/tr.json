@@ -300,7 +300,7 @@
     "clinicAppointmentStats": "Randevu İstatistikleri",
     "clinicSurveys": "Memnuniyet Anketleri",
     "clinicInventory": "Tıbbi Stok",
-    "warehouse": "Depolar",
+    "warehouse": "Depo Sistemi",
     "warehouseWarehouses": "Depolar",
     "warehouseItems": "Ürünler",
     "warehouseCategories": "Kategoriler",
@@ -5589,7 +5589,13 @@
       "completed": "Tamamlanan {count}",
       "inProgress": "Devam eden {count}",
       "skipped": "Atlanan {count}",
-      "notStarted": "Başlamayan {count}"
+      "notStarted": "Başlamayan {count}",
+      "statusCompleted": "Tamamlandı",
+      "statusInProgress": "Devam ediyor",
+      "statusSkipped": "Atlandı",
+      "statusNotStarted": "Başlamadı",
+      "skipReason": "Atlama nedeni: {reason}",
+      "unnamedExercise": "Egzersiz"
     },
     "chat": {
       "title": "Hasta Sohbetleri",
@@ -5830,6 +5836,8 @@
       "selectItem": "Ürün seçin...",
       "searchItem": "Ad veya koda göre ara...",
       "noItems": "Ürün bulunamadı",
+      "addNewItem": "Yeni kalem ekle",
+      "addNewItemNamed": "“{name}” yeni kalem olarak ekle",
       "selectSupplier": "Tedarikçi seçin",
       "selectCurrency": "Para birimi seçin",
       "selectPatient": "Hasta seçin...",

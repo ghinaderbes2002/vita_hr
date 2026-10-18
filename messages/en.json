@@ -300,7 +300,7 @@
     "clinicAppointmentStats": "Appointment Statistics",
     "clinicSurveys": "Satisfaction Surveys",
     "clinicInventory": "Medical Inventory",
-    "warehouse": "Warehouses",
+    "warehouse": "Warehouse System",
     "warehouseWarehouses": "Warehouses",
     "warehouseItems": "Items",
     "warehouseCategories": "Categories",
@@ -6507,7 +6507,13 @@
       "completed": "Completed {count}",
       "inProgress": "In progress {count}",
       "skipped": "Skipped {count}",
-      "notStarted": "Not started {count}"
+      "notStarted": "Not started {count}",
+      "statusCompleted": "Completed",
+      "statusInProgress": "In progress",
+      "statusSkipped": "Skipped",
+      "statusNotStarted": "Not started",
+      "skipReason": "Skip reason: {reason}",
+      "unnamedExercise": "Exercise"
     },
     "chat": {
       "title": "Patient Chats",
@@ -6748,6 +6754,8 @@
       "selectItem": "Select item...",
       "searchItem": "Search by name or code...",
       "noItems": "No items found",
+      "addNewItem": "Add new item",
+      "addNewItemNamed": "Add “{name}” as a new item",
       "selectSupplier": "Select supplier",
       "selectCurrency": "Select currency",
       "selectPatient": "Select patient...",

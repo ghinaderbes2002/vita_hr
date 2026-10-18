@@ -27,9 +27,13 @@ interface ItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item?: WarehouseItem;
+  /** Called with the new item after a create — lets a document form pick it straight away. */
+  onCreated?: (item: WarehouseItem) => void;
+  /** Starting name for a new item, e.g. what was typed into a search that found nothing. */
+  defaultName?: string;
 }
 
-export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
+export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }: ItemDialogProps) {
   const t = useTranslations();
   const locale = useLocale();
   const isEdit = !!item;
@@ -69,7 +73,7 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
       sku: item?.sku ?? "",
       partCode: item?.partCode ?? "",
       barcode: item?.barcode ?? "",
-      name: item?.name ?? "",
+      name: item?.name ?? defaultName ?? "",
       nameAr: item?.nameAr ?? "",
       itemType: item?.itemType ?? "COMPONENT",
       categoryId: item?.categoryId ?? "",
@@ -88,7 +92,8 @@ export function ItemDialog({ open, onOpenChange, item }: ItemDialogProps) {
       if (isEdit) {
         await updateItem.mutateAsync({ id: item.id, dto: { ...nullEmpty(rest), minStock: min, isActive } });
       } else {
-        await createItem.mutateAsync({ ...omitEmpty(rest), ...(min !== null ? { minStock: min } : {}) });
+        const created = await createItem.mutateAsync({ ...omitEmpty(rest), ...(min !== null ? { minStock: min } : {}) });
+        if (created?.id) onCreated?.(created);
       }
       onOpenChange(false);
     } catch {

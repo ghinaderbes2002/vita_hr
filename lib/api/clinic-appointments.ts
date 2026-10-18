@@ -192,12 +192,16 @@ export interface AppointmentStatisticsResponse {
  * with no patient or case behind it. The server rejects the whole booking when
  * any attendee has an overlapping prosthetics, physio or podiatry session.
  */
-export type InternalMeetingType = "MEETING" | "TRAINING";
+export type InternalMeetingType =
+  | "MEETING" | "TRAINING" | "PHOTOGRAPHY" | "LECTURE"
+  | "EVENT" | "EXTERNAL_MISSION" | "VISIT" | "OTHER";
 
 export interface InternalMeeting {
   id: string;
   title: string;
   meetingType: InternalMeetingType;
+  /** What the activity is, when meetingType is OTHER; null otherwise or when left blank. */
+  meetingTypeOther?: string | null;
   /** User ids — the same ids as practitionerId / therapistIds on appointments. */
   attendeeIds: string[];
   startTime: string;
@@ -212,6 +216,8 @@ export interface InternalMeeting {
 export interface CreateInternalMeetingDto {
   title: string;
   meetingType: InternalMeetingType;
+  /** Sent only with OTHER. */
+  meetingTypeOther?: string;
   attendeeIds: string[];
   startTime: string;
   endTime: string;
