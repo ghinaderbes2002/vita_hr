@@ -213,6 +213,38 @@ export function useAssignExercise() {
   });
 }
 
+/**
+ * Assigns several exercises to one session in order. One failure does not stop
+ * the rest, and the whole batch reports once instead of a toast per exercise.
+ */
+export function useAssignExercises() {
+  const t = useTranslations("patientApp.toasts");
+  const invalidate = useInvalidatePrograms();
+  return useMutation({
+    mutationFn: async ({ sessionId, dtos }: { sessionId: string; dtos: AssignExerciseDto[] }) => {
+      let assigned = 0;
+      let lastError: unknown = null;
+      for (const dto of dtos) {
+        try {
+          await patientAppApi.programs.assign(sessionId, dto);
+          assigned++;
+        } catch (e) {
+          lastError = e;
+        }
+      }
+      return { assigned, failed: dtos.length - assigned, lastError };
+    },
+    onSuccess: ({ assigned, failed, lastError }) => {
+      if (assigned > 0) invalidate();
+      if (assigned === 1 && failed === 0) toast.success(t("exerciseAssigned"));
+      else if (assigned > 1 && failed === 0) toast.success(t("exercisesAssigned", { count: assigned }));
+      if (failed > 0) {
+        toast.error(`${errorMessage(lastError, t("assignFailed"))} (${t("exercisesFailed", { count: failed })})`);
+      }
+    },
+  });
+}
+
 export function useUpdateAssignment() {
   const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidatePrograms();

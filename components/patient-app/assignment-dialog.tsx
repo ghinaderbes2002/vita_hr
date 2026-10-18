@@ -13,6 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { localizedName, type Assignment } from "@/lib/api/patient-app";
 import {
+  ExerciseRegionFilters, emptyRegionFilter, regionFilterParams, type ExerciseRegionFilter,
+} from "@/components/patient-app/session-exercise-fields";
+import {
   useAssignExercise, useExercises, useUpdateAssignment,
 } from "@/lib/hooks/use-patient-app";
 
@@ -55,6 +58,7 @@ export function AssignmentDialog({
   const [term, setTerm] = useState("");
   // The library list stays out of the way until the field is actually used.
   const [listOpen, setListOpen] = useState(false);
+  const [regions, setRegions] = useState<ExerciseRegionFilter>(emptyRegionFilter);
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
 
   const [wasOpen, setWasOpen] = useState(open);
@@ -62,6 +66,7 @@ export function AssignmentDialog({
     setWasOpen(open);
     if (open) {
       setSearch("");
+      setRegions(emptyRegionFilter);
       setTerm("");
       setListOpen(false);
       const str = (n?: number | null) => (n != null ? String(n) : "");
@@ -89,7 +94,7 @@ export function AssignmentDialog({
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data: exercises = [], isFetching } = useExercises({ search: term || undefined }, open && !isEdit);
+  const { data: exercises = [], isFetching } = useExercises({ search: term || undefined, ...regionFilterParams(regions) }, open && !isEdit);
   const assign = useAssignExercise();
   const update = useUpdateAssignment();
   const isPending = assign.isPending || update.isPending;
@@ -160,6 +165,11 @@ export function AssignmentDialog({
           {!isEdit && (
             <div className="space-y-1.5">
               <Label>{t("exercise")} <span className="text-destructive">*</span></Label>
+              <ExerciseRegionFilters
+                value={regions}
+                // A new filter is a request to browse, so the list opens on it.
+                onChange={(next) => { setRegions(next); setListOpen(true); }}
+              />
               {/* Opening is tied to click/typing, not focus: the dialog puts the
                   caret in this field on open, which would pop the list every time.
                   Closing follows focus leaving the whole block, so a click on a
@@ -221,6 +231,10 @@ export function AssignmentDialog({
             </div>
           )}
 
+          {/* The dosage only means something for a chosen exercise, and picking
+              one seeds it from the library — so it waits for the pick. */}
+          {(isEdit || !!form.exerciseId) && (
+          <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {NUMBER_FIELDS.map((key) => (
               <div key={key} className="space-y-1.5">
@@ -265,6 +279,8 @@ export function AssignmentDialog({
               <Textarea dir="ltr" rows={3} value={form.customInstructionEn} onChange={(e) => set({ customInstructionEn: e.target.value })} />
             </div>
           </div>
+          </>
+          )}
         </div>
 
         <DialogFooter>

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, Loader2, Search } from "lucide-react";
+import { Check, Loader2, Plus, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useExercises, useSessionExercises } from "@/lib/hooks/use-patient-app";
+import { useExercises, useSessionExercises, useTaxonomy } from "@/lib/hooks/use-patient-app";
 import { localizedName, type Assignment } from "@/lib/api/patient-app";
 
 /** Everything the assignment endpoint takes, held as strings while being typed. */
@@ -24,6 +26,8 @@ export interface SessionExerciseForm {
   frequencyTextEn: string;
   customInstructionAr: string;
   customInstructionEn: string;
+  /** Keys a row in an exercise list; never sent to the API. */
+  uid?: string;
 }
 
 export const emptySessionExerciseForm: SessionExerciseForm = {
@@ -33,6 +37,13 @@ export const emptySessionExerciseForm: SessionExerciseForm = {
   frequencyTextAr: "", frequencyTextEn: "",
   customInstructionAr: "", customInstructionEn: "",
 };
+
+let uidSeq = 0;
+/** A blank row for an exercise list, with its own key. */
+export const newSessionExerciseEntry = (): SessionExerciseForm => ({
+  ...emptySessionExerciseForm,
+  uid: `ex-${Date.now()}-${++uidSeq}`,
+});
 
 /** Seeded from the exercise library's defaults when an exercise is picked. */
 const SEEDED_NUMBER_FIELDS = ["sets", "reps", "durationSeconds", "holdSeconds", "restSeconds"] as const;
@@ -85,6 +96,74 @@ export const sessionExerciseDto = (f: SessionExerciseForm) => ({
   customInstructionEn: f.customInstructionEn.trim() || null,
 });
 
+/** Region filters for an exercise picker; "" means no filter. */
+export interface ExerciseRegionFilter {
+  bodyRegionId: string;
+  targetRegionId: string;
+}
+
+export const emptyRegionFilter: ExerciseRegionFilter = { bodyRegionId: "", targetRegionId: "" };
+
+/** As the list endpoint takes them — unset filters are left out. */
+export const regionFilterParams = (f: ExerciseRegionFilter) => ({
+  bodyRegionId: f.bodyRegionId || undefined,
+  targetRegionId: f.targetRegionId || undefined,
+});
+
+/** Radix rejects an empty option value, so "all" needs a sentinel. */
+const ALL = "__all__";
+
+/**
+ * Body region, then target region — the same pair the exercise library filters
+ * by. Target regions belong to a body region, so that one waits for the first.
+ */
+export function ExerciseRegionFilters({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: ExerciseRegionFilter;
+  onChange: (next: ExerciseRegionFilter) => void;
+  disabled?: boolean;
+}) {
+  const tt = useTranslations("patientApp.taxonomy");
+  const locale = useLocale();
+  const { data: bodyRegions = [] } = useTaxonomy("body-regions");
+  const { data: allTargets = [] } = useTaxonomy("target-regions");
+  const targets = value.bodyRegionId ? allTargets.filter((x) => x.bodyRegionId === value.bodyRegionId) : [];
+
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <Select
+        value={value.bodyRegionId || ALL}
+        disabled={disabled}
+        onValueChange={(v) => onChange({ bodyRegionId: v === ALL ? "" : v, targetRegionId: "" })}
+      >
+        <SelectTrigger className="w-full" aria-label={tt("bodyRegion")}><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>{tt("allBodyRegions")}</SelectItem>
+          {bodyRegions.map((r) => (
+            <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={value.targetRegionId || ALL}
+        disabled={disabled || !value.bodyRegionId}
+        onValueChange={(v) => onChange({ ...value, targetRegionId: v === ALL ? "" : v })}
+      >
+        <SelectTrigger className="w-full" aria-label={tt("targetRegion")}><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>{tt("allTargetRegions")}</SelectItem>
+          {targets.map((r) => (
+            <SelectItem key={r.id} value={r.id}>{localizedName(r, locale)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 /**
  * The exercise half of "add a session": the same fields as the standalone assign
  * dialog, laid out inline so a session and its exercise are filled in as one form.
@@ -94,25 +173,35 @@ export function SessionExerciseFields({
   onChange,
   disabled,
   lockedExerciseName,
+  excludeIds,
 }: {
   value: SessionExerciseForm;
   onChange: (next: SessionExerciseForm) => void;
   disabled?: boolean;
   /** Set when editing a saved assignment: the exercise is shown, not re-picked. */
   lockedExerciseName?: string;
+  /** Exercises already chosen in other rows, left out of this row's list. */
+  excludeIds?: string[];
 }) {
   const t = useTranslations("patientApp.programs");
   const locale = useLocale();
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
   const [listOpen, setListOpen] = useState(false);
+  const [regions, setRegions] = useState<ExerciseRegionFilter>(emptyRegionFilter);
 
   useEffect(() => {
     const timer = setTimeout(() => setTerm(search.trim()), 300);
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data: exercises = [], isFetching } = useExercises({ search: term || undefined });
+  const { data: allExercises = [], isFetching } = useExercises({
+    search: term || undefined,
+    ...regionFilterParams(regions),
+  });
+  const exercises = excludeIds?.length
+    ? allExercises.filter((e) => e.id === value.exerciseId || !excludeIds.includes(e.id))
+    : allExercises;
   const set = (patch: Partial<SessionExerciseForm>) => onChange({ ...value, ...patch });
 
   const pick = (id: string) => {
@@ -141,7 +230,14 @@ export function SessionExerciseFields({
             {lockedExerciseName || "—"}
           </p>
         ) : (
-        /* Opening is tied to click/typing so the list stays out of the way. */
+        <div className="space-y-1.5">
+        <ExerciseRegionFilters
+          value={regions}
+          disabled={disabled}
+          // A new filter is a request to browse, so the list opens on it.
+          onChange={(next) => { setRegions(next); setListOpen(true); }}
+        />
+        {/* Opening is tied to click/typing so the list stays out of the way. */}
         <div
           className="space-y-1.5"
           onBlur={(e) => {
@@ -188,9 +284,13 @@ export function SessionExerciseFields({
             </div>
           )}
         </div>
+        </div>
         )}
       </div>
 
+      {/* The dosage waits for an exercise: picking one seeds it from the library. */}
+      {(lockedExerciseName !== undefined || !!value.exerciseId) && (
+      <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {NUMBER_FIELDS.map((key) => (
           <div key={key} className="space-y-1.5 min-w-0">
@@ -229,9 +329,78 @@ export function SessionExerciseFields({
             onChange={(e) => set({ customInstructionEn: e.target.value })} />
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
+
+/**
+ * Several exercises for one session: a picker per row, and a button for the
+ * next one once the current last row has an exercise. Blank rows are ignored
+ * on save (see `pickedExercises`).
+ */
+export function SessionExerciseList({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: SessionExerciseForm[];
+  onChange: (next: SessionExerciseForm[]) => void;
+  disabled?: boolean;
+}) {
+  const t = useTranslations("patientApp.programs");
+  const rows = value.length ? value : [newSessionExerciseEntry()];
+  const update = (i: number, next: SessionExerciseForm) => onChange(rows.map((r, j) => (j === i ? next : r)));
+  // The last row can't vanish — removing it just clears it.
+  const remove = (i: number) =>
+    onChange(rows.length > 1 ? rows.filter((_, j) => j !== i) : [newSessionExerciseEntry()]);
+  const picked = rows.map((r) => r.exerciseId).filter(Boolean);
+  const canAddMore = !!rows[rows.length - 1]?.exerciseId;
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row, i) => (
+        <div key={row.uid ?? i} className={cn(rows.length > 1 && "rounded-lg border p-3 space-y-2")}>
+          {(rows.length > 1 || row.exerciseId) && (
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-muted-foreground">{t("exerciseN", { n: i + 1 })}</span>
+              <Button
+                type="button" variant="ghost" size="sm" disabled={disabled}
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
+                onClick={() => remove(i)}
+              >
+                <X className="h-3.5 w-3.5" />
+                {t("removeExercise")}
+              </Button>
+            </div>
+          )}
+          <SessionExerciseFields
+            value={row}
+            onChange={(next) => update(i, next)}
+            disabled={disabled}
+            excludeIds={picked.filter((id) => id !== row.exerciseId)}
+          />
+        </div>
+      ))}
+      {canAddMore && (
+        <Button
+          type="button" variant="outline" size="sm" disabled={disabled} className="gap-1.5"
+          onClick={() => onChange([...rows, newSessionExerciseEntry()])}
+        >
+          <Plus className="h-4 w-4" />
+          {t("addAnotherExercise")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** The rows that have an exercise, as assign DTOs numbered from `firstSortOrder`. */
+export const pickedExercises = (rows: SessionExerciseForm[], firstSortOrder = 1) =>
+  rows
+    .filter((r) => r.exerciseId)
+    .map((r, i) => ({ ...sessionExerciseDto(r), sortOrder: firstSortOrder + i }));
 
 /**
  * Read-only list of the exercises assigned to one session, for places outside the

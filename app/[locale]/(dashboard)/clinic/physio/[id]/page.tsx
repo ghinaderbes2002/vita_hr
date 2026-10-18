@@ -42,11 +42,11 @@ import { BodyPainMap } from "@/components/clinic/body-pain-map";
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { ConvertToPhysioDialog } from "@/components/clinic/convert-to-physio-dialog";
 import {
-  SessionExerciseFields, SessionAssignments, emptySessionExerciseForm, sessionExerciseDto,
+  SessionExerciseFields, SessionExerciseList, SessionAssignments, newSessionExerciseEntry, pickedExercises,
   formFromAssignment, assignmentUpdateDto,
   type SessionExerciseForm,
 } from "@/components/patient-app/session-exercise-fields";
-import { useAssignExercise, useSessionExercises, useUpdateAssignment } from "@/lib/hooks/use-patient-app";
+import { useAssignExercises, useSessionExercises, useUpdateAssignment } from "@/lib/hooks/use-patient-app";
 import { localizedName, type Assignment } from "@/lib/api/patient-app";
 import { PatientSessionsProgress } from "@/components/patient-app/patient-sessions-progress";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
@@ -321,13 +321,13 @@ export default function PhysioCasePage() {
   const addSession = useAddPhysioSession();
   // A physio session is the same record the patient app assigns exercises to,
   // so both halves of the form are saved one after the other.
-  const assignExercise = useAssignExercise();
-  const [sessionExercise, setSessionExercise] = useState<SessionExerciseForm>(emptySessionExerciseForm);
+  const assignExercises = useAssignExercises();
+  const [sessionExercises, setSessionExercises] = useState<SessionExerciseForm[]>(() => [newSessionExerciseEntry()]);
   // Editing a session edits its exercises in the same form: one entry per saved
   // assignment, plus a blank one for adding another.
   const updateAssignment = useUpdateAssignment();
   const [editedAssignments, setEditedAssignments] = useState<Record<string, SessionExerciseForm>>({});
-  const [editingNewExercise, setEditingNewExercise] = useState<SessionExerciseForm>(emptySessionExerciseForm);
+  const [editingNewExercises, setEditingNewExercises] = useState<SessionExerciseForm[]>(() => [newSessionExerciseEntry()]);
   const deleteSession = useDeletePhysioSession();
   const updateSessionMut = useUpdatePhysioSession();
   const submitFinalSummary = useSubmitFinalSummary();
@@ -1272,20 +1272,15 @@ export default function PhysioCasePage() {
           modalities: sessionForm.modalities.length ? sessionForm.modalities : undefined,
         },
       });
-      // The exercise half is optional, and its failure must not read as the
-      // session having failed — that one is already saved by this point.
-      if (sessionExercise.exerciseId && created?.id) {
-        try {
-          await assignExercise.mutateAsync({
-            sessionId: created.id,
-            dto: sessionExerciseDto(sessionExercise),
-          });
-        } catch {
-          // the assign hook already explained itself in a toast
-        }
+      // The exercises are optional, and their failure must not read as the
+      // session having failed — that one is already saved by this point. The
+      // hook reports failures itself and never throws.
+      const dtos = pickedExercises(sessionExercises);
+      if (dtos.length > 0 && created?.id) {
+        await assignExercises.mutateAsync({ sessionId: created.id, dtos });
       }
       setSessionForm({ date: new Date().toISOString().slice(0, 10), sessionTime: "", notes: "", supervisorOpinion: "", doctorDecision: "", modalities: [] });
-      setSessionExercise(emptySessionExerciseForm);
+      setSessionExercises([newSessionExerciseEntry()]);
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message ?? err?.response?.data?.message;
       toast.error(msg || t("sessions.addError"));
@@ -1321,17 +1316,12 @@ export default function PhysioCasePage() {
         // the hook already reported it; the session edit itself is saved
       }
     }
-    if (editingNewExercise.exerciseId) {
-      try {
-        await assignExercise.mutateAsync({
-          sessionId,
-          dto: sessionExerciseDto(editingNewExercise),
-        });
-      } catch {
-        // same here — reported by the hook
-      }
+    // New exercises go after the ones already on the session.
+    const newDtos = pickedExercises(editingNewExercises, editingSessionAssignments.length + 1);
+    if (newDtos.length > 0) {
+      await assignExercises.mutateAsync({ sessionId, dtos: newDtos });
     }
-    setEditingNewExercise(emptySessionExerciseForm);
+    setEditingNewExercises([newSessionExerciseEntry()]);
     setEditingSession(null);
   };
 
@@ -3594,15 +3584,15 @@ export default function PhysioCasePage() {
                   </div>
                 </div>
                 <div className="mt-4 border-t pt-4">
-                  <SessionExerciseFields
-                    value={sessionExercise}
-                    onChange={setSessionExercise}
-                    disabled={addSession.isPending || assignExercise.isPending}
+                  <SessionExerciseList
+                    value={sessionExercises}
+                    onChange={setSessionExercises}
+                    disabled={addSession.isPending || assignExercises.isPending}
                   />
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <Button onClick={handleAddSession} disabled={!sessionForm.date || addSession.isPending || assignExercise.isPending} className="flex-1 gap-2">
-                    {addSession.isPending || assignExercise.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  <Button onClick={handleAddSession} disabled={!sessionForm.date || addSession.isPending || assignExercises.isPending} className="flex-1 gap-2">
+                    {addSession.isPending || assignExercises.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     {t("sessions.addSession")}
                   </Button>
                   <Button variant="outline" onClick={() => tryAdvanceStatus("ACTIVE_TREATMENT", "SUPERVISOR_REVIEW")} disabled={sessions.length === 0}>
@@ -3658,18 +3648,18 @@ export default function PhysioCasePage() {
                           </div>
                         ))}
                         <div className="border-t pt-3">
-                          <SessionExerciseFields
-                            value={editingNewExercise}
-                            onChange={setEditingNewExercise}
-                            disabled={updateSessionMut.isPending || assignExercise.isPending}
+                          <SessionExerciseList
+                            value={editingNewExercises}
+                            onChange={setEditingNewExercises}
+                            disabled={updateSessionMut.isPending || assignExercises.isPending}
                           />
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <Button size="sm" onClick={handleUpdateSession} disabled={updateSessionMut.isPending || updateAssignment.isPending || assignExercise.isPending} className="gap-1">
-                            {updateSessionMut.isPending || updateAssignment.isPending || assignExercise.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          <Button size="sm" onClick={handleUpdateSession} disabled={updateSessionMut.isPending || updateAssignment.isPending || assignExercises.isPending} className="gap-1">
+                            {updateSessionMut.isPending || updateAssignment.isPending || assignExercises.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                             {t("sessions.save")}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => { setEditingSession(null); setEditingNewExercise(emptySessionExerciseForm); }}>
+                          <Button size="sm" variant="outline" onClick={() => { setEditingSession(null); setEditingNewExercises([newSessionExerciseEntry()]); }}>
                             {t("sessions.cancel")}
                           </Button>
                         </div>
