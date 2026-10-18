@@ -2361,6 +2361,32 @@
           "ORTHOSIS_WITH_FES": "Ortez + FES",
           "OTHER": "Diğer"
         }
+      },
+      "list": {
+        "title": "Ortez Bölümü",
+        "descriptionAll": "Ortez kabulleri ile ortopedi, fizyoterapi ve protez değerlendirmeleri",
+        "descriptionMine": "Uygulayıcı olarak atandığınız kabuller",
+        "patients": "Hastalar",
+        "receptions": "Kabuller",
+        "unassigned": "Uygulayıcı yok",
+        "newReception": "Yeni kabul",
+        "searchPlaceholder": "Hasta adı, numarası veya veliye göre ara...",
+        "filterAll": "Tüm kabuller",
+        "filterAssigned": "Uygulayıcısı var",
+        "filterUnassigned": "Uygulayıcı yok",
+        "noMatches": "Eşleşen sonuç yok",
+        "empty": "Kabul yok",
+        "emptyHintAll": "Burada görünmesi için yeni bir kabul oluşturun",
+        "emptyHintMine": "Henüz hiçbir kabule atanmadınız",
+        "colPatientNumber": "Hasta no.",
+        "colPatient": "Hasta",
+        "colGuardian": "Veli",
+        "colPractitioners": "Uygulayıcılar",
+        "colAssessments": "Değerlendirmeler",
+        "colReceptionDate": "Kabul tarihi",
+        "sectionDoctor": "Ortopedi",
+        "sectionPhysio": "Fizyoterapi",
+        "sectionProsthetist": "Protez"
       }
     },
     "patients": {

@@ -3277,6 +3277,32 @@
           "ORTHOSIS_WITH_FES": "Orthosis + FES",
           "OTHER": "Other"
         }
+      },
+      "list": {
+        "title": "Orthotics Department",
+        "descriptionAll": "Orthotics receptions and the orthopaedic, physiotherapy and prosthetics assessments",
+        "descriptionMine": "Receptions you are assigned to as a practitioner",
+        "patients": "Patients",
+        "receptions": "Receptions",
+        "unassigned": "No practitioner",
+        "newReception": "New reception",
+        "searchPlaceholder": "Search by patient name, number or guardian...",
+        "filterAll": "All receptions",
+        "filterAssigned": "Has a practitioner",
+        "filterUnassigned": "No practitioner",
+        "noMatches": "No matching results",
+        "empty": "No receptions",
+        "emptyHintAll": "Create a new reception and it will show here",
+        "emptyHintMine": "You have not been assigned to any reception yet",
+        "colPatientNumber": "Patient no.",
+        "colPatient": "Patient",
+        "colGuardian": "Guardian",
+        "colPractitioners": "Practitioners",
+        "colAssessments": "Assessments",
+        "colReceptionDate": "Reception date",
+        "sectionDoctor": "Orthopaedics",
+        "sectionPhysio": "Physio",
+        "sectionProsthetist": "Prosthetics"
       }
     },
     "patients": {

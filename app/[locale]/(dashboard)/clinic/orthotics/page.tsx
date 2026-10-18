@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Accessibility, Check, Eye, Plus, Search, Users, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,14 +34,15 @@ const PAGE_SIZE = 20;
 const isAssigned = (r: OrthoticsReception) => (r.practitionerIds ?? []).length > 0;
 
 const SECTION_BADGES = [
-  { key: "doctor", label: "العظمية" },
-  { key: "physio", label: "الفيزيائي" },
-  { key: "prosthetist", label: "الأطراف" },
+  { key: "doctor", label: "sectionDoctor" },
+  { key: "physio", label: "sectionPhysio" },
+  { key: "prosthetist", label: "sectionProsthetist" },
 ] as const;
 
 export default function OrthoticsListPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.orthotics.list");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [assignFilter, setAssignFilter] = useState<"all" | "assigned" | "unassigned">("all");
@@ -67,7 +68,9 @@ export default function OrthoticsListPage() {
   const { data: staffData } = useEmployeesBasicList();
   const staffName = (id: string) => {
     const e = (Array.isArray(staffData) ? staffData : []).find((x) => x.id === id);
-    return e ? `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim() : "";
+    if (!e) return "";
+    const en = `${e.firstNameEn ?? ""} ${e.lastNameEn ?? ""}`.trim();
+    return (locale !== "ar" && en) || `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim();
   };
 
   const unassignedCount = receptions.filter((r) => !isAssigned(r)).length;
@@ -94,24 +97,22 @@ export default function OrthoticsListPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="قسم المقومات"
-        description={seesAll
-          ? "استقبالات المقومات وتقييمات طبيب العظمية والعلاج الفيزيائي والأطراف الصناعية"
-          : "الاستقبالات المعيَّن عليها كمعالج"}
+        title={t("title")}
+        description={seesAll ? t("descriptionAll") : t("descriptionMine")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <ClinicCountChips
               isLoading={isLoading}
               counts={[
-                { icon: Users, label: "المرضى", value: patientCount },
-                { icon: Accessibility, label: "الاستقبالات", value: receptions.length },
-                ...(seesAll ? [{ icon: UserX, label: "بدون معالج", value: unassignedCount }] : []),
+                { icon: Users, label: t("patients"), value: patientCount },
+                { icon: Accessibility, label: t("receptions"), value: receptions.length },
+                ...(seesAll ? [{ icon: UserX, label: t("unassigned"), value: unassignedCount }] : []),
               ]}
             />
             <ActionGuard permission={PERMISSIONS.CLINIC_ORTHOTICS.CREATE}>
               <Button className="gap-2" onClick={() => setCreateOpen(true)}>
                 <Plus className="h-4 w-4" />
-                استقبال جديد
+                {t("newReception")}
               </Button>
             </ActionGuard>
           </div>
@@ -120,12 +121,12 @@ export default function OrthoticsListPage() {
 
       <div className="flex flex-wrap gap-3">
         <div className="relative min-w-56 flex-1">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="ابحث باسم المريض أو رقمه أو ولي الأمر..."
-            className="pr-9"
+            placeholder={t("searchPlaceholder")}
+            className="ps-9"
           />
         </div>
         {seesAll && (
@@ -135,9 +136,9 @@ export default function OrthoticsListPage() {
           >
             <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل الاستقبالات</SelectItem>
-              <SelectItem value="assigned">معيَّن لها معالج</SelectItem>
-              <SelectItem value="unassigned">بدون معالج</SelectItem>
+              <SelectItem value="all">{t("filterAll")}</SelectItem>
+              <SelectItem value="assigned">{t("filterAssigned")}</SelectItem>
+              <SelectItem value="unassigned">{t("filterUnassigned")}</SelectItem>
             </SelectContent>
           </Select>
         )}
@@ -151,19 +152,19 @@ export default function OrthoticsListPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<Accessibility className="h-8 w-8 text-muted-foreground" />}
-            title={search || assignFilter !== "all" ? "لا توجد نتائج مطابقة" : "لا توجد استقبالات"}
-            description={seesAll ? "أنشئ استقبالاً جديداً لتظهر السجلات هنا" : "لم تُعيَّن على أي استقبال بعد"}
+            title={search || assignFilter !== "all" ? t("noMatches") : t("empty")}
+            description={seesAll ? t("emptyHintAll") : t("emptyHintMine")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>رقم المريض</TableHead>
-                <TableHead>المريض</TableHead>
-                <TableHead>ولي الأمر</TableHead>
-                <TableHead>المعالجون</TableHead>
-                <TableHead>التقييمات</TableHead>
-                <TableHead>تاريخ الاستقبال</TableHead>
+                <TableHead>{t("colPatientNumber")}</TableHead>
+                <TableHead>{t("colPatient")}</TableHead>
+                <TableHead>{t("colGuardian")}</TableHead>
+                <TableHead>{t("colPractitioners")}</TableHead>
+                <TableHead>{t("colAssessments")}</TableHead>
+                <TableHead>{t("colReceptionDate")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -193,7 +194,7 @@ export default function OrthoticsListPage() {
                       ) : (
                         <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-xs text-amber-700">
                           <UserX className="h-3 w-3" />
-                          بدون معالج
+                          {t("unassigned")}
                         </Badge>
                       )}
                     </TableCell>
@@ -206,7 +207,7 @@ export default function OrthoticsListPage() {
                             className={`gap-1 text-[10px] ${filled[key] ? "border-green-300 bg-green-50 text-green-700" : "text-muted-foreground"}`}
                           >
                             {filled[key] && <Check className="h-3 w-3" />}
-                            {label}
+                            {t(label)}
                           </Badge>
                         ))}
                       </div>

@@ -3411,6 +3411,32 @@
           "ORTHOSIS_WITH_FES": "جهاز تقويمي + FES",
           "OTHER": "أخرى"
         }
+      },
+      "list": {
+        "title": "قسم المقومات",
+        "descriptionAll": "استقبالات المقومات وتقييمات طبيب العظمية والعلاج الفيزيائي والأطراف الصناعية",
+        "descriptionMine": "الاستقبالات المعيَّن عليها كمعالج",
+        "patients": "المرضى",
+        "receptions": "الاستقبالات",
+        "unassigned": "بدون معالج",
+        "newReception": "استقبال جديد",
+        "searchPlaceholder": "ابحث باسم المريض أو رقمه أو ولي الأمر...",
+        "filterAll": "كل الاستقبالات",
+        "filterAssigned": "معيَّن لها معالج",
+        "filterUnassigned": "بدون معالج",
+        "noMatches": "لا توجد نتائج مطابقة",
+        "empty": "لا توجد استقبالات",
+        "emptyHintAll": "أنشئ استقبالاً جديداً لتظهر السجلات هنا",
+        "emptyHintMine": "لم تُعيَّن على أي استقبال بعد",
+        "colPatientNumber": "رقم المريض",
+        "colPatient": "المريض",
+        "colGuardian": "ولي الأمر",
+        "colPractitioners": "المعالجون",
+        "colAssessments": "التقييمات",
+        "colReceptionDate": "تاريخ الاستقبال",
+        "sectionDoctor": "العظمية",
+        "sectionPhysio": "الفيزيائي",
+        "sectionProsthetist": "الأطراف"
       }
     },
     "patients": {
