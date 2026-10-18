@@ -5590,6 +5590,10 @@
       "daysPerWeek": "Haftada kaç gün",
       "frequencyAr": "Günlük sıklık (Arapça)",
       "exerciseN": "Egzersiz {n}",
+      "generalExercises": "Genel egzersizler",
+      "generalExercisesHint": "Bir seansa bağlı değil",
+      "generalExercisesDescription": "Hastanın uygulamada seanslardan bağımsız, kendi sırasıyla takip ettiği egzersizler.",
+      "generalBadge": "Genel",
       "addAnotherExercise": "Başka egzersiz ekle",
       "removeExercise": "Egzersizi kaldır",
       "frequencyEn": "Günlük sıklık (İngilizce)",
@@ -5621,7 +5625,8 @@
       "statusSkipped": "Atlandı",
       "statusNotStarted": "Başlamadı",
       "skipReason": "Atlama nedeni: {reason}",
-      "unnamedExercise": "Egzersiz"
+      "unnamedExercise": "Egzersiz",
+      "generalTitle": "Genel egzersizler"
     },
     "chat": {
       "title": "Hasta Sohbetleri",

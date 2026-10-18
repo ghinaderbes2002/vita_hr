@@ -1,10 +1,10 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { CheckCircle2, CircleDashed } from "lucide-react";
+import { CheckCircle2, CircleDashed, Dumbbell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePatientExecutions, usePatientSessionsProgress } from "@/lib/hooks/use-patient-app";
+import { usePatientExecutions, usePatientGeneralExercises, usePatientSessionsProgress } from "@/lib/hooks/use-patient-app";
 import { localizedName, type Exercise, type SessionProgress } from "@/lib/api/patient-app";
 
 const fmtDate = (d?: string | null) =>
@@ -50,14 +50,15 @@ function toExerciseRows(items: any[]): ExerciseRow[] {
     const assignment = perExercise ? it : it?.assignment ?? {};
     const key = (perExercise ? it.id : it?.assignmentId ?? assignment?.id) ?? it?.id;
     const sessionId = assignment?.erpSessionId ?? it?.erpSessionId ?? run?.erpSessionId;
-    if (!key || !sessionId) continue;
+    if (!key) continue;
     const at = run?.completedAt ?? run?.skippedAt ?? run?.startedAt ?? run?.createdAt ?? "";
     const prev = rows.get(key);
     if (prev && prev.at >= at) continue;
     const reason = run?.skipReason?.nameAr ?? run?.skipReason?.labelAr ?? run?.skipReason?.textAr;
     rows.set(key, {
       key,
-      sessionId,
+      // No session: a general exercise.
+      sessionId: sessionId ?? "",
       sortOrder: assignment?.sortOrder ?? 0,
       exercise: assignment?.exercise ?? it?.exercise ?? null,
       status: toStatus(run?.status ?? (perExercise ? null : it?.status)),
@@ -79,10 +80,71 @@ export function PatientSessionsProgress({ erpPatientId }: { erpPatientId?: strin
   const { data = [], isLoading } = usePatientSessionsProgress(erpPatientId);
   // The per-exercise detail behind each session's counters, skip reasons included.
   const { data: executions = [] } = usePatientExecutions(erpPatientId);
+  const runRows = toExerciseRows(executions);
   const bySession = new Map<string, ExerciseRow[]>();
-  for (const r of toExerciseRows(executions)) {
+  for (const r of runRows) {
+    if (!r.sessionId) continue;
     bySession.set(r.sessionId, [...(bySession.get(r.sessionId) ?? []), r]);
   }
+  // General exercises aren't in sessions-progress: the list comes from their own
+  // endpoint (so not-yet-started ones show too), the status from the runs.
+  const { data: generalList = [] } = usePatientGeneralExercises(erpPatientId);
+  const runByAssignment = new Map(runRows.map((r) => [r.key, r]));
+  const generalRows: ExerciseRow[] = generalList
+    .filter((a) => a.status !== "CANCELLED")
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((a) => {
+      const run = runByAssignment.get(a.id);
+      return {
+        key: a.id,
+        sessionId: "",
+        sortOrder: a.sortOrder ?? 0,
+        exercise: a.exercise ?? run?.exercise ?? null,
+        status: run?.status ?? "NOT_STARTED",
+        skipReason: run?.skipReason,
+      };
+    });
+
+  const exerciseList = (rows: ExerciseRow[]) => (
+    <ul className="divide-y rounded-md border bg-muted/20">
+      {rows.map((ex) => {
+        const st = STATUS_BADGE[ex.status];
+        return (
+          <li key={ex.key} className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 px-3 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">
+                {localizedName(ex.exercise, locale) || t("unnamedExercise")}
+              </p>
+              {ex.status === "SKIPPED" && ex.skipReason && (
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  {t("skipReason", { reason: ex.skipReason })}
+                </p>
+              )}
+            </div>
+            <Badge variant="outline" className={`shrink-0 text-[10px] ${st.className}`}>{t(st.key)}</Badge>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const generalCard = generalRows.length > 0 && (
+    <div className="rounded-lg border border-dashed p-3 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-sm font-medium">
+          <Dumbbell className="h-4 w-4 text-primary" />
+          {t("generalTitle")}
+        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {t("ratio", {
+            done: generalRows.filter((r) => r.status === "COMPLETED").length,
+            total: generalRows.length,
+          })}
+        </span>
+      </div>
+      {exerciseList(generalRows)}
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -93,7 +155,9 @@ export function PatientSessionsProgress({ erpPatientId }: { erpPatientId?: strin
   }
 
   if (data.length === 0) {
-    return <p className="py-6 text-center text-sm text-muted-foreground">{t("empty")}</p>;
+    return generalCard
+      ? <div className="space-y-2">{generalCard}</div>
+      : <p className="py-6 text-center text-sm text-muted-foreground">{t("empty")}</p>;
   }
 
   const counters = (row: SessionProgress) => [
@@ -105,6 +169,7 @@ export function PatientSessionsProgress({ erpPatientId }: { erpPatientId?: strin
 
   return (
     <div className="space-y-2">
+      {generalCard}
       {data.map((row) => (
         <div key={row.session.id} className="rounded-lg border p-3 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -145,28 +210,7 @@ export function PatientSessionsProgress({ erpPatientId }: { erpPatientId?: strin
             </div>
           )}
 
-          {(bySession.get(row.session.id)?.length ?? 0) > 0 && (
-            <ul className="divide-y rounded-md border bg-muted/20">
-              {bySession.get(row.session.id)!.map((ex) => {
-                const st = STATUS_BADGE[ex.status];
-                return (
-                  <li key={ex.key} className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 px-3 py-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">
-                        {localizedName(ex.exercise, locale) || t("unnamedExercise")}
-                      </p>
-                      {ex.status === "SKIPPED" && ex.skipReason && (
-                        <p className="text-xs text-amber-700 dark:text-amber-400">
-                          {t("skipReason", { reason: ex.skipReason })}
-                        </p>
-                      )}
-                    </div>
-                    <Badge variant="outline" className={`shrink-0 text-[10px] ${st.className}`}>{t(st.key)}</Badge>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          {(bySession.get(row.session.id)?.length ?? 0) > 0 && exerciseList(bySession.get(row.session.id)!)}
         </div>
       ))}
     </div>

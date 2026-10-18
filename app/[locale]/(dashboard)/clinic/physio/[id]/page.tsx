@@ -49,6 +49,7 @@ import {
 import { useAssignExercises, useSessionExercises, useUpdateAssignment } from "@/lib/hooks/use-patient-app";
 import { localizedName, type Assignment } from "@/lib/api/patient-app";
 import { PatientSessionsProgress } from "@/components/patient-app/patient-sessions-progress";
+import { AssignmentsPanel } from "@/components/patient-app/assignments-panel";
 import { PdfExportButton } from "@/components/clinic/pdf-export-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -252,6 +253,7 @@ export default function PhysioCasePage() {
   const locale = useLocale();
   const t = useTranslations("clinic.physio.case");
   const tProgress = useTranslations("patientApp.progress");
+  const tPrograms = useTranslations("patientApp.programs");
   const physioLabel = usePhysioLabels();
   const isRtl = locale === "ar";
 
@@ -278,6 +280,12 @@ export default function PhysioCasePage() {
     postural_assessment: [PH.ASSESSMENT_CREATE], evaluation: [PH.ASSESSMENT_CREATE],
     treatment_plan: [PH.ASSESSMENT_CREATE, PH.PLAN_SIGN],
     sessions: [PH.SESSIONS_CREATE],
+    // The patient's exercises outside any session, managed like the programs screen.
+    general_exercises: [
+      PERMISSIONS.PATIENT_APP.ASSIGN_EXERCISE,
+      PERMISSIONS.PATIENT_APP.EDIT_ASSIGNED_EXERCISE,
+      PERMISSIONS.PATIENT_APP.CANCEL_ASSIGNED_EXERCISE,
+    ],
     // A follow-up is a session-shaped record, so it rides the same permission.
     follow_ups: [PH.SESSIONS_CREATE],
     // Read-only view of what the patient did in the app.
@@ -2669,6 +2677,7 @@ export default function PhysioCasePage() {
               {showPhysioTab("treatment_plan") && <TabsTrigger value="treatment_plan" className="text-sm py-1.5">{t("tabs.treatmentPlan")}</TabsTrigger>}
               {showPhysioTab("evaluation") && <TabsTrigger value="evaluation" className="text-sm py-1.5">{t("tabs.evaluation")}</TabsTrigger>}
               {showPhysioTab("sessions") && <TabsTrigger value="sessions" className="text-sm py-1.5">{`${t("tabs.sessions")} (${sessions.length})`}</TabsTrigger>}
+              {showPhysioTab("general_exercises") && <TabsTrigger value="general_exercises" className="text-sm py-1.5">{tPrograms("generalExercises")}</TabsTrigger>}
               {showPhysioTab("summary") && <TabsTrigger value="summary" className="text-sm py-1.5">{t("tabs.summary")}</TabsTrigger>}
               {showPhysioTab("follow_ups") && <TabsTrigger value="follow_ups" className="text-sm py-1.5">{t("tabs.followUps")}</TabsTrigger>}
               {showPhysioTab("app_progress") && <TabsTrigger value="app_progress" className="text-sm py-1.5">{tProgress("tab")}</TabsTrigger>}
@@ -3744,6 +3753,13 @@ export default function PhysioCasePage() {
         <TabsContent value="follow_ups" className="mt-4">
           <Section title={t("tabs.followUps")}>
             <PhysioFollowUps caseId={id} canEdit={canEdit} />
+          </Section>
+        </TabsContent>
+
+        {/* ── GENERAL EXERCISES (no session) ──────────────────────────────── */}
+        <TabsContent value="general_exercises" className="mt-4">
+          <Section title={tPrograms("generalExercises")}>
+            <AssignmentsPanel patientId={caseData.patientId} hideGeneralHeading />
           </Section>
         </TabsContent>
 

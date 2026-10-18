@@ -16,7 +16,7 @@ import {
   ExerciseRegionFilters, emptyRegionFilter, regionFilterParams, type ExerciseRegionFilter,
 } from "@/components/patient-app/session-exercise-fields";
 import {
-  useAssignExercise, useExercises, useUpdateAssignment,
+  useAssignExercise, useExercises, useUpdateAssignment, type AssignmentTarget,
 } from "@/lib/hooks/use-patient-app";
 
 /** Each key is both the form field and its label under `patientApp.programs`. */
@@ -38,13 +38,14 @@ type Form = typeof emptyForm;
 export function AssignmentDialog({
   open,
   onOpenChange,
-  sessionId,
+  target,
   assignment,
   nextSortOrder,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sessionId: string;
+  /** A session, or the patient's general exercises (no session). */
+  target: AssignmentTarget;
   /** Present when editing; the exercise itself can't be swapped then. */
   assignment?: Assignment | null;
   nextSortOrder: number;
@@ -143,7 +144,7 @@ export function AssignmentDialog({
       await update.mutateAsync({ id: assignment!.id, dto: common });
     } else {
       await assign.mutateAsync({
-        sessionId,
+        ...target,
         dto: { exerciseId: form.exerciseId, sortOrder: nextSortOrder, ...common },
       });
     }

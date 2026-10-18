@@ -6508,6 +6508,10 @@
       "daysPerWeek": "Days / week",
       "frequencyAr": "Daily frequency (Arabic)",
       "exerciseN": "Exercise {n}",
+      "generalExercises": "General exercises",
+      "generalExercisesHint": "Not tied to a session",
+      "generalExercisesDescription": "Exercises the patient follows in the app apart from any session, in their own order.",
+      "generalBadge": "General",
       "addAnotherExercise": "Add another exercise",
       "removeExercise": "Remove exercise",
       "frequencyEn": "Daily frequency (English)",
@@ -6539,7 +6543,8 @@
       "statusSkipped": "Skipped",
       "statusNotStarted": "Not started",
       "skipReason": "Skip reason: {reason}",
-      "unnamedExercise": "Exercise"
+      "unnamedExercise": "Exercise",
+      "generalTitle": "General exercises"
     },
     "chat": {
       "title": "Patient Chats",

@@ -429,6 +429,16 @@ export const patientAppApi = {
       unwrap<Assignment[]>(
         await apiClient.patch(`${BASE}/sessions/${erpSessionId}/exercises/reorder`, { items }),
       ),
+    /** Exercises given to the patient outside any session, in their own order. */
+    patientExercises: async (erpPatientId: string) =>
+      unwrapList<Assignment>(await apiClient.get(`${BASE}/patients/${erpPatientId}/exercises`)),
+    assignToPatient: async (erpPatientId: string, dto: AssignExerciseDto) =>
+      unwrap<Assignment>(await apiClient.post(`${BASE}/patients/${erpPatientId}/exercises`, dto)),
+    reorderPatient: async (erpPatientId: string, items: { id: string; sortOrder: number }[]) =>
+      unwrap<Assignment[]>(
+        await apiClient.patch(`${BASE}/patients/${erpPatientId}/exercises/reorder`, { items }),
+      ),
+    // Edit and cancel are the same for session and general exercises.
     updateAssignment: async (id: string, dto: UpdateAssignmentDto) =>
       unwrap<Assignment>(await apiClient.patch(`${BASE}/assignments/${id}`, dto)),
     cancelAssignment: async (id: string, reason?: string) =>

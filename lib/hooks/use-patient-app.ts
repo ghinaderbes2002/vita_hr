@@ -182,6 +182,26 @@ export function useSessionExercises(erpSessionId?: string | null) {
   });
 }
 
+/**
+ * The patient's general exercises (no session). Keyed under "session-exercises"
+ * so every assign / edit / cancel / reorder refreshes it with the session lists.
+ */
+export function usePatientGeneralExercises(erpPatientId?: string | null, enabled = true) {
+  return useQuery({
+    queryKey: [KEY, "session-exercises", "patient", erpPatientId],
+    queryFn: () => patientAppApi.programs.patientExercises(erpPatientId!),
+    enabled: !!erpPatientId && enabled,
+  });
+}
+
+/** Where an assignment goes: one session, or the patient's general list. */
+export type AssignmentTarget = { sessionId: string } | { patientId: string };
+
+const assignTo = (target: AssignmentTarget, dto: AssignExerciseDto) =>
+  "sessionId" in target
+    ? patientAppApi.programs.assign(target.sessionId, dto)
+    : patientAppApi.programs.assignToPatient(target.patientId, dto);
+
 export function usePatientExecutions(erpPatientId?: string, enabled = true) {
   return useQuery({
     queryKey: [KEY, "executions", erpPatientId],
@@ -203,8 +223,7 @@ export function useAssignExercise() {
   const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidatePrograms();
   return useMutation({
-    mutationFn: ({ sessionId, dto }: { sessionId: string; dto: AssignExerciseDto }) =>
-      patientAppApi.programs.assign(sessionId, dto),
+    mutationFn: ({ dto, ...target }: AssignmentTarget & { dto: AssignExerciseDto }) => assignTo(target, dto),
     onSuccess: () => {
       invalidate();
       toast.success(t("exerciseAssigned"));
@@ -221,12 +240,12 @@ export function useAssignExercises() {
   const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidatePrograms();
   return useMutation({
-    mutationFn: async ({ sessionId, dtos }: { sessionId: string; dtos: AssignExerciseDto[] }) => {
+    mutationFn: async ({ dtos, ...target }: AssignmentTarget & { dtos: AssignExerciseDto[] }) => {
       let assigned = 0;
       let lastError: unknown = null;
       for (const dto of dtos) {
         try {
-          await patientAppApi.programs.assign(sessionId, dto);
+          await assignTo(target, dto);
           assigned++;
         } catch (e) {
           lastError = e;
@@ -263,8 +282,10 @@ export function useReorderAssignments() {
   const t = useTranslations("patientApp.toasts");
   const invalidate = useInvalidatePrograms();
   return useMutation({
-    mutationFn: ({ sessionId, items }: { sessionId: string; items: { id: string; sortOrder: number }[] }) =>
-      patientAppApi.programs.reorder(sessionId, items),
+    mutationFn: ({ items, ...target }: AssignmentTarget & { items: { id: string; sortOrder: number }[] }) =>
+      "sessionId" in target
+        ? patientAppApi.programs.reorder(target.sessionId, items)
+        : patientAppApi.programs.reorderPatient(target.patientId, items),
     onSuccess: invalidate,
     onError: (e: any) => toast.error(errorMessage(e, t("reorderFailed"))),
   });

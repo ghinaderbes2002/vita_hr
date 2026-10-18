@@ -6734,6 +6734,10 @@
       "daysPerWeek": "أيام بالأسبوع",
       "frequencyAr": "التكرار اليومي بالعربية",
       "exerciseN": "تمرين {n}",
+      "generalExercises": "تمارين عامة",
+      "generalExercisesHint": "غير مرتبطة بجلسة",
+      "generalExercisesDescription": "تمارين يتابعها المريض بالتطبيق بشكل مستقل عن الجلسات، بترتيبها الخاص.",
+      "generalBadge": "عام",
       "addAnotherExercise": "إضافة تمرين آخر",
       "removeExercise": "إزالة التمرين",
       "frequencyEn": "التكرار اليومي بالإنجليزية",
@@ -6765,7 +6769,8 @@
       "statusSkipped": "متخطّى",
       "statusNotStarted": "لم يبدأ",
       "skipReason": "سبب التخطي: {reason}",
-      "unnamedExercise": "تمرين"
+      "unnamedExercise": "تمرين",
+      "generalTitle": "تمارين عامة"
     },
     "chat": {
       "title": "محادثات المرضى",
