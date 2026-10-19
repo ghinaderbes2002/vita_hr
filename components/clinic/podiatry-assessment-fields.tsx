@@ -122,6 +122,9 @@ export const assessmentOf = (s?: PodiatrySession | null): AssessmentValue => {
   };
 };
 
+/** Pain location "none": the pain-nature questions don't apply. */
+const isPainFree = (sub: { painLocation: PodiatryPainLocation[] }) => sub.painLocation.includes("none");
+
 /** Blank text is dropped, so an untouched field never overwrites a stored one. */
 export const assessmentToDto = (v: AssessmentValue): PodiatrySessionDto => {
   const text = (x: string) => (x.trim() ? x.trim() : undefined);
@@ -129,7 +132,9 @@ export const assessmentToDto = (v: AssessmentValue): PodiatrySessionDto => {
     Object.entries(v.footMeasurements).filter(([, x]) => x.trim() !== ""),
   );
   return {
-    subjectiveHistory: { ...v.subjectiveHistory, vasScore: text(v.subjectiveHistory.vasScore) },
+    subjectiveHistory: isPainFree(v.subjectiveHistory)
+      ? { ...v.subjectiveHistory, vasScore: undefined, painCharacteristics: [] }
+      : { ...v.subjectiveHistory, vasScore: text(v.subjectiveHistory.vasScore) },
     visualInspection: v.visualInspection,
     palpation: v.palpation,
     rangeOfMotion: v.rangeOfMotion,
@@ -158,8 +163,11 @@ export function missingAssessmentFields(v: AssessmentValue, t: FormT): string[] 
 
   need(filled(sub.mainCause), t("labels.mainCause"));
   need(filled(sub.painLocation), t("labels.painLocation"));
-  need(filled(sub.vasScore), t("labels.painNature"));
-  need(filled(sub.painCharacteristics), t("labels.painNature"));
+  // No pain ("none" location) means no pain to rate or describe.
+  if (!isPainFree(sub)) {
+    need(filled(sub.vasScore), t("labels.painNature"));
+    need(filled(sub.painCharacteristics), t("labels.painNature"));
+  }
 
   need(filled(vis.rightRearfootAlignment) && filled(vis.leftRearfootAlignment), t("labels.rearfootAlignment"));
   need(filled(vis.rightTooManyToes) && filled(vis.leftTooManyToes), t("labels.tooManyToes"));
@@ -215,6 +223,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function FieldLabel({ text }: { text: string }) {
   return <p className="text-xs font-medium">{text}</p>;
 }
+
+/** "None" and "unknown" can't sit beside an actual cause — each pick of one side clears the other. */
+const EXCLUSIVE_CAUSES: PodiatryMainCause[] = ["none", "unknown"];
+const withExclusiveCause = (prev: PodiatryMainCause[], next: PodiatryMainCause[]): PodiatryMainCause[] => {
+  const added = next.find((c) => !prev.includes(c));
+  if (!added) return next;
+  return EXCLUSIVE_CAUSES.includes(added) ? [added] : next.filter((c) => !EXCLUSIVE_CAUSES.includes(c));
+};
 
 function Chips<T extends string>({
   label, opts, value, onChange, t, single = false, readOnly = false,
@@ -431,15 +447,17 @@ export function PodiatryAssessmentFields({
   return (
     <div className="space-y-4">
       <Section title={t("sections.subjective")}>
-        <Chips label={t("labels.mainCause")} opts={MAIN_CAUSE} value={sub.mainCause} single t={t}
-          onChange={(v) => setSub({ mainCause: v })} readOnly={readOnly} />
+        <Chips label={t("labels.mainCause")} opts={MAIN_CAUSE} value={sub.mainCause} t={t}
+          onChange={(v) => setSub({ mainCause: withExclusiveCause(sub.mainCause, v) })} readOnly={readOnly} />
         <Chips label={t("labels.painLocation")} opts={PAIN_LOCATION} value={sub.painLocation} t={t}
           // "لا يوجد" لا يجتمع مع موقع: اختياره يلغي المواقع، واختيار موقع يلغيه.
-          onChange={(v) => setSub({
-            painLocation: v.includes("none") && !sub.painLocation.includes("none")
-              ? ["none"]
-              : v.filter((x) => x !== "none"),
-          })} readOnly={readOnly} />
+          // "لا يوجد" يخفي أيضاً سؤال طبيعة الألم ويمسح ما عُبّئ فيه.
+          onChange={(v) => setSub(
+            v.includes("none") && !sub.painLocation.includes("none")
+              ? { painLocation: ["none"], vasScore: "", painCharacteristics: [] }
+              : { painLocation: v.filter((x) => x !== "none") },
+          )} readOnly={readOnly} />
+        {!isPainFree(sub) && (
         <div className="space-y-2.5">
           <FieldLabel text={`${t("labels.painNature")}${sub.vasScore ? ` — ${sub.vasScore}/10` : ""}`} />
           <div className="flex flex-wrap gap-1.5">
@@ -462,6 +480,7 @@ export function PodiatryAssessmentFields({
           <Chips opts={PAIN_CHARACTERISTIC} value={sub.painCharacteristics} t={t}
             onChange={(v) => setSub({ painCharacteristics: v })} readOnly={readOnly} />
         </div>
+        )}
       </Section>
 
       <Section title={t("sections.visual")}>

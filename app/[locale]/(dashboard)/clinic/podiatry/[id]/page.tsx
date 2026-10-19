@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, Download, ExternalLink, Link2, Loader2, Pencil } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardCheck, Download, ExternalLink, Link2, Loader2, Pencil } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -157,6 +160,9 @@ export default function PodiatryReceptionPage() {
   const install = useInstallPodiatrySession();
 
   const [editOpen, setEditOpen] = useState(false);
+  // Fitting is when the with-orthotic readings can be taken, so it prompts for them.
+  const [installReminder, setInstallReminder] = useState(false);
+  const [tab, setTab] = useState("reception");
   const [pdfBusy, setPdfBusy] = useState(false);
 
   // The sheet pairs the reception data with the reception's assessment.
@@ -247,7 +253,10 @@ export default function PodiatryReceptionPage() {
               <Button
                 className="gap-1.5"
                 disabled={install.isPending}
-                onClick={() => install.mutate({ receptionId: id, sessionId: session.id })}
+                onClick={() => install.mutate(
+                  { receptionId: id, sessionId: session.id },
+                  { onSuccess: () => setInstallReminder(true) },
+                )}
               >
                 {install.isPending
                   ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -259,7 +268,7 @@ export default function PodiatryReceptionPage() {
         )}
       </div>
 
-      <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
+      <Tabs value={tab} onValueChange={setTab} dir={isRtl ? "rtl" : "ltr"}>
         <TabsList className="flex-wrap h-auto gap-1 w-full justify-start" dir={isRtl ? "rtl" : "ltr"}>
           <TabsTrigger value="reception" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabReception")}</TabsTrigger>
           <TabsTrigger value="patient_info" className="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">{t("tabPatientInfo")}{links.length > 0 && <span className="ms-1.5 inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold"><Link2 className="h-3 w-3" />{links.length}</span>}</TabsTrigger>
@@ -464,6 +473,36 @@ export default function PodiatryReceptionPage() {
           <PodiatryDoctorDecisionCard receptionId={id} canEdit={canEditAssessment} />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={installReminder} onOpenChange={setInstallReminder}>
+        <DialogContent className="sm:max-w-md" dir={isRtl ? "rtl" : "ltr"}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-orange-500" />
+              {t("installReminderTitle")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p className="text-muted-foreground">{t("installReminderIntro")}</p>
+            <ul className="space-y-1.5 rounded-md border border-orange-200 bg-orange-50 p-3 text-orange-900 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-200">
+              <li>• {t("installReminderNavHeight")}</li>
+              <li>• {t("installReminderNavDrop")}</li>
+              <li>• {t("installReminderInsole")}</li>
+            </ul>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setInstallReminder(false)}>{t("installReminderLater")}</Button>
+            {showSessionsTab && (
+              <Button
+                className="bg-orange-500 text-white hover:bg-orange-600"
+                onClick={() => { setTab("sessions"); setInstallReminder(false); }}
+              >
+                {t("installReminderOpenForm")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <PodiatryReceptionDialog open={editOpen} onOpenChange={setEditOpen} reception={reception} />
     </div>

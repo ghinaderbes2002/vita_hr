@@ -105,7 +105,6 @@ export default function PatientProfilePage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadType, setUploadType] = useState<DocumentType>("OTHER");
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [deleteLinkId, setDeleteLinkId] = useState<string | null>(null);
   const [surveyDialogOpen, setSurveyDialogOpen] = useState(false);
@@ -255,10 +254,11 @@ export default function PatientProfilePage() {
   })();
 
   const handleAddLink = async () => {
-    if (!linkTitle.trim() || !normalizedLinkUrl) return;
-    await addLink.mutateAsync({ patientId: id, title: linkTitle.trim(), url: normalizedLinkUrl });
+    if (!normalizedLinkUrl) return;
+    // The API still takes a title; with no name asked for, the site's host stands in.
+    const title = new URL(normalizedLinkUrl).hostname.replace(/^www\./, "");
+    await addLink.mutateAsync({ patientId: id, title, url: normalizedLinkUrl });
     setLinkDialogOpen(false);
-    setLinkTitle("");
     setLinkUrl("");
   };
 
@@ -1014,16 +1014,12 @@ export default function PatientProfilePage() {
       </Dialog>
 
       {/* Add Link Dialog */}
-      <Dialog open={linkDialogOpen} onOpenChange={(o) => { if (!addLink.isPending) { setLinkDialogOpen(o); if (!o) { setLinkTitle(""); setLinkUrl(""); } } }}>
+      <Dialog open={linkDialogOpen} onOpenChange={(o) => { if (!addLink.isPending) { setLinkDialogOpen(o); if (!o) setLinkUrl(""); } }}>
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
             <DialogTitle>إضافة رابط</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label>اسم الرابط</Label>
-              <Input value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} />
-            </div>
             <div className="space-y-1.5">
               <Label>الرابط</Label>
               <Input
@@ -1040,7 +1036,7 @@ export default function PatientProfilePage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLinkDialogOpen(false)} disabled={addLink.isPending}>إلغاء</Button>
-            <Button onClick={handleAddLink} disabled={!linkTitle.trim() || !normalizedLinkUrl || addLink.isPending}>
+            <Button onClick={handleAddLink} disabled={!normalizedLinkUrl || addLink.isPending}>
               {addLink.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Plus className="h-4 w-4 ml-2" />}
               إضافة
             </Button>

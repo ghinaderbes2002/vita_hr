@@ -83,16 +83,16 @@ export const FOOT_MEASUREMENT_KEYS = [
 ] as const;
 
 /** Arch height is a choice, not a measurement; stored in its free-text field. */
-export const ARCH_HEIGHT_VALUES = ["high", "low"] as const;
+export const ARCH_HEIGHT_VALUES = ["high", "normal", "low"] as const;
 
 /**
- * Reads a stored arch height. The two choices read "High" / "Low" in English in
+ * Reads a stored arch height. The choices read "High" / "Normal" / "Low" in English in
  * every locale (the clinic's wording); older free text shows as typed. `t` is
  * kept so callers need not change if this is ever localised.
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const archHeightLabel = (_t: FormT, v?: string | null): string =>
-  v === "high" ? "High" : v === "low" ? "Low" : (v ?? "");
+  v === "high" ? "High" : v === "normal" ? "Normal" : v === "low" ? "Low" : (v ?? "");
 
 /** The label one picked value reads as. */
 export const labelOf = <T extends string>(t: FormT, o: OptGroup<T>, v?: string | null): string =>
