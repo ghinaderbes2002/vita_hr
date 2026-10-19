@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { toUploadableImage } from "@/lib/utils/heic";
 
 export type AmputationType = "UPPER" | "LOWER" | "BOTH";
 export type AmputationSide = "RIGHT" | "LEFT" | "BILATERAL";
@@ -795,7 +796,7 @@ export const clinicProstheticsApi = {
 
   uploadAttachment: async (id: string, file: File, caption?: string): Promise<ProstheticsAttachment> => {
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", await toUploadableImage(file));
     if (caption) fd.append("caption", caption);
     const { data } = await apiClient.post(`/prosthetics/cases/${id}/attachments`, fd, {
       headers: { "Content-Type": "multipart/form-data" },

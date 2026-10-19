@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { toUploadableImage } from "@/lib/utils/heic";
 
 /** How the person found the clinic — the same set the waiting list uses. */
 export type PotentialClientArrivalMethod =
@@ -141,7 +142,7 @@ export const clinicPotentialClientsApi = {
 
   uploadAttachment: async (id: string, file: File): Promise<PotentialClientAttachment> => {
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", await toUploadableImage(file));
     const { data } = await apiClient.post(`${BASE}/${id}/attachments`, form, {
       headers: { "Content-Type": "multipart/form-data" },
     });

@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { toUploadableImage } from "@/lib/utils/heic";
 
 export type DocumentType =
   | "ID_COPY" | "PERSONAL_PHOTO" | "AMPUTATION_PHOTO"
@@ -269,7 +270,7 @@ export const clinicPatientsApi = {
 
   uploadDocument: async (patientId: string, file: File, type: DocumentType): Promise<PatientDocument> => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", await toUploadableImage(file));
     formData.append("type", type);
     const { data } = await apiClient.post(`/patients/${patientId}/documents`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
