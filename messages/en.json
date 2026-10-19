@@ -6601,6 +6601,7 @@
     },
     "validation": {
       "required": "This field is required",
+      "nameRequired": "Enter the name in Arabic or English",
       "nonNegative": "Value must be 0 or more",
       "positive": "Value must be greater than 0",
       "email": "Invalid email address"
@@ -6686,7 +6687,7 @@
         "sku": "SKU",
         "partCode": "Part Code",
         "barcode": "Barcode",
-        "name": "Name",
+        "name": "Name (English)",
         "nameAr": "Name (Arabic)",
         "itemType": "Type",
         "category": "Category",

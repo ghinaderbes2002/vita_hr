@@ -5683,6 +5683,7 @@
     },
     "validation": {
       "required": "Bu alan zorunludur",
+      "nameRequired": "Adı Arapça veya İngilizce girin",
       "nonNegative": "Değer 0 veya daha büyük olmalıdır",
       "positive": "Değer 0'dan büyük olmalıdır",
       "email": "Geçersiz e-posta adresi"
@@ -5768,7 +5769,7 @@
         "sku": "Stok Kodu (SKU)",
         "partCode": "Parça Kodu",
         "barcode": "Barkod",
-        "name": "Ad",
+        "name": "Ad (İngilizce)",
         "nameAr": "Ad (Arapça)",
         "itemType": "Tür",
         "category": "Kategori",
