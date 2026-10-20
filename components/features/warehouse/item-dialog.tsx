@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -18,10 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   useCreateWarehouseItem, useUpdateWarehouseItem,
-  useWarehouseCategories, useWarehouseUnits,
+  useWarehouseCategories, useWarehouseManufacturers, useWarehouseUnits,
 } from "@/lib/hooks/use-warehouse";
 import { WarehouseItem, WarehouseUnit } from "@/lib/api/warehouse";
 import { localizedName, nullEmpty, omitEmpty, NONE } from "./utils";
+import { ManufacturerDialog } from "./manufacturer-dialog";
 
 interface ItemDialogProps {
   open: boolean;
@@ -33,14 +34,7 @@ interface ItemDialogProps {
   defaultName?: string;
 }
 
-/**
- * The item code is no longer asked for, but the API still requires a unique
- * one: until it generates its own, a time-based code is sent — base36 of the
- * millisecond plus a random tail, so two saves can't collide. Existing items
- * keep theirs (an edit never sends it).
- */
-const newSku = () =>
-  `ITM-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+// The item code (SKU) is not asked for: the API generates one (VTX-ITM-000001…).
 
 const DEFAULT_MIN_STOCK = "2";
 
@@ -59,6 +53,8 @@ export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }:
   const updateItem = useUpdateWarehouseItem();
   const { data: categories = [] } = useWarehouseCategories();
   const { data: units = [] } = useWarehouseUnits();
+  const { data: manufacturers = [] } = useWarehouseManufacturers();
+  const [manufacturerDialogOpen, setManufacturerDialogOpen] = useState(false);
 
   const formSchema = z.object({
     partCode: z.string(),
@@ -67,13 +63,18 @@ export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }:
     nameAr: z.string(),
     categoryId: z.string(),
     unitId: z.string().min(1, t("warehouse.validation.required")),
-    manufacturer: z.string(),
+    manufacturerId: z.string(),
     // Kept as text so the field can be left blank; sent as a number.
     minStock: z.string().refine((v) => v.trim() === "" || Number(v) >= 0, t("warehouse.validation.nonNegative")),
+    stockAlert: z.boolean(),
     isActive: z.boolean(),
   }).refine((d) => d.name.trim() !== "" || d.nameAr.trim() !== "", {
     message: t("warehouse.validation.nameRequired"),
     path: ["nameAr"],
+  }).refine((d) => !d.stockAlert || d.minStock.trim() !== "", {
+    // An alert with no minimum has nothing to compare against.
+    message: t("warehouse.validation.minStockForAlert"),
+    path: ["minStock"],
   });
   type FormData = z.infer<typeof formSchema>;
 
@@ -81,7 +82,7 @@ export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }:
     resolver: zodResolver(formSchema),
     defaultValues: {
       partCode: "", name: "", nameAr: "",
-      categoryId: "", unitId: "", manufacturer: "", minStock: "", isActive: true,
+      categoryId: "", unitId: "", manufacturerId: "", minStock: "", stockAlert: false, isActive: true,
     },
   });
 
@@ -93,9 +94,10 @@ export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }:
       nameAr: item?.nameAr ?? "",
       categoryId: item?.categoryId ?? "",
       unitId: item?.unitId ?? defaultUnitId(units),
-      manufacturer: item?.manufacturer ?? "",
+      manufacturerId: item?.manufacturerId ?? item?.manufacturer?.id ?? "",
       // A new item starts at the clinic's usual minimum of 2; an existing one keeps its own.
       minStock: item ? (item.minStock != null ? String(Number(item.minStock)) : "") : DEFAULT_MIN_STOCK,
+      stockAlert: item?.stockAlert ?? false,
       isActive: item?.isActive ?? true,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,16 +112,15 @@ export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }:
   }, [open, isEdit, units, form]);
 
   const onSubmit = async (data: FormData) => {
-    const { isActive, minStock, ...fields } = data;
-    // The API still requires "name"; with only an Arabic name, that stands in.
-    const rest = { ...fields, name: fields.name.trim() || fields.nameAr.trim() };
+    // Either name alone is accepted now; an empty one is left out (or cleared on edit).
+    const { isActive, minStock, stockAlert, ...rest } = data;
     const min = minStock.trim() !== "" ? Number(minStock) : null;
     try {
       if (isEdit) {
-        await updateItem.mutateAsync({ id: item.id, dto: { ...nullEmpty(rest), minStock: min, isActive } });
+        await updateItem.mutateAsync({ id: item.id, dto: { ...nullEmpty(rest), minStock: min, stockAlert, isActive } });
       } else {
         const created = await createItem.mutateAsync({
-          sku: newSku(), ...omitEmpty(rest), ...(min !== null ? { minStock: min } : {}),
+          ...omitEmpty(rest), ...(min !== null ? { minStock: min } : {}), stockAlert,
         });
         if (created?.id) onCreated?.(created);
       }
@@ -256,14 +257,60 @@ export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }:
 
             <FormField
               control={form.control}
-              name="manufacturer"
+              name="manufacturerId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("warehouse.items.fields.manufacturer")}</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
+                  <div className="flex gap-2">
+                    <Select
+                      value={field.value || NONE}
+                      onValueChange={(v) => field.onChange(v === NONE ? "" : v)}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="flex-1"><SelectValue placeholder={t("warehouse.items.selectManufacturer")} /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NONE}>{t("warehouse.common.none")}</SelectItem>
+                        {manufacturers.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>{localizedName(m, locale)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label={t("warehouse.items.addManufacturer")}
+                      title={t("warehouse.items.addManufacturer")}
+                      onClick={() => setManufacturerDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="stockAlert"
+              render={({ field }) => (
+                <FormItem className="flex flex-wrap gap-2 items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel className="cursor-pointer">{t("warehouse.items.fields.stockAlert")}</FormLabel>
+                    <FormDescription>{t("warehouse.items.stockAlertHint")}</FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(on) => {
+                        field.onChange(on);
+                        // Point at the minimum straight away when it is still blank.
+                        if (on && !form.getValues("minStock").trim()) form.trigger("minStock");
+                      }}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />
@@ -295,6 +342,11 @@ export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }:
           </form>
         </Form>
       </DialogContent>
+      <ManufacturerDialog
+        open={manufacturerDialogOpen}
+        onOpenChange={setManufacturerDialogOpen}
+        onCreated={(m) => form.setValue("manufacturerId", m.id, { shouldDirty: true })}
+      />
     </Dialog>
   );
 }

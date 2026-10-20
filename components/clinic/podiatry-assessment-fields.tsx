@@ -16,7 +16,7 @@ import {
   PodiatryInsoleType, PodiatryJackTest, PodiatryMainCause, PodiatryOutsoleWear,
   PodiatryPainCharacteristic, PodiatryPainLocation, PodiatryRearfootAlignment,
   PodiatryRomState, PodiatrySession, PodiatrySessionDto, PodiatryTooManyToes,
-  PodiatryWalkingLine,
+  PodiatryWalkingLine, PODIATRY_SHOE_SIZES,
 } from "@/lib/api/clinic-podiatry";
 import {
   ARCH_ARCHITECTURE, DEFORMITY_TYPE, EDEMA_TYPE, FOOTWEAR, FOOT_MEASUREMENT_KEYS,
@@ -72,6 +72,8 @@ export interface AssessmentValue {
   shoeWearPattern: { currentFootwear: PodiatryFootwear[]; outsoleWear: PodiatryOutsoleWear[] };
   footMeasurements: Record<string, string>;
   insoleType: PodiatryInsoleType[];
+  /** "" until a size is picked. */
+  shoeSize: string;
   notes: string;
 }
 
@@ -102,6 +104,7 @@ export const emptyAssessment = (): AssessmentValue => ({
   shoeWearPattern: { currentFootwear: [], outsoleWear: [] },
   footMeasurements: emptyMeasurements(),
   insoleType: [],
+  shoeSize: "",
   notes: "",
 });
 
@@ -118,6 +121,7 @@ export const assessmentOf = (s?: PodiatrySession | null): AssessmentValue => {
     shoeWearPattern: { ...e.shoeWearPattern, ...(s.shoeWearPattern ?? {}) },
     footMeasurements: { ...e.footMeasurements, ...(s.footMeasurements ?? {}) },
     insoleType: s.insoleType ?? [],
+    shoeSize: s.shoeSize != null ? String(s.shoeSize) : "",
     notes: s.notes ?? "",
   };
 };
@@ -142,6 +146,8 @@ export const assessmentToDto = (v: AssessmentValue): PodiatrySessionDto => {
     shoeWearPattern: v.shoeWearPattern,
     footMeasurements: measurements,
     insoleType: v.insoleType,
+    // Optional: left out until a size is picked.
+    ...(v.shoeSize ? { shoeSize: Number(v.shoeSize) } : {}),
     notes: text(v.notes),
   };
 };
@@ -652,6 +658,23 @@ export function PodiatryAssessmentFields({
             onChange={(v) => onChange({ ...value, insoleType: v })}
             readOnly={readOnly}
           />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel text={t("labels.shoeSize")} />
+          {readOnly ? (
+            <Val value={value.shoeSize} />
+          ) : (
+            <Select value={value.shoeSize} onValueChange={(v) => onChange({ ...value, shoeSize: v })}>
+              <SelectTrigger className="h-9 w-full sm:w-40" dir="ltr">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                {PODIATRY_SHOE_SIZES.map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <div className="space-y-1.5">
           <FieldLabel text={t("labels.notes")} />

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Boxes, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { BellRing, Boxes, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -148,7 +148,7 @@ function ItemsContent() {
                   <TableCell className="font-medium">
                     {localizedName(item, locale)}
                     {item.manufacturer && (
-                      <p className="text-xs text-muted-foreground">{item.manufacturer}</p>
+                      <p className="text-xs text-muted-foreground">{localizedName(item.manufacturer, locale)}</p>
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">{item.partCode || "—"}</TableCell>
@@ -157,7 +157,17 @@ function ItemsContent() {
                   </TableCell>
                   <TableCell className="text-sm">{categoryName(item)}</TableCell>
                   <TableCell className="text-sm">{unitName(item)}</TableCell>
-                  <TableCell className="text-sm">{item.minStock ?? "—"}</TableCell>
+                  <TableCell className="text-sm">
+                    <span className="inline-flex items-center gap-1.5">
+                      {item.minStock ?? "—"}
+                      {item.stockAlert && (
+                        <BellRing
+                          className="h-3.5 w-3.5 text-amber-500"
+                          aria-label={t("warehouse.items.fields.stockAlert")}
+                        />
+                      )}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={item.isActive !== false ? "default" : "secondary"}>
                       {item.isActive !== false ? t("warehouse.common.active") : t("warehouse.common.inactive")}

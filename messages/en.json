@@ -213,6 +213,7 @@
     }
   },
   "nav": {
+    "warehouseManufacturers": "Manufacturers",
     "dashboard": "Dashboard",
     "employeePortal": "My Portal",
     "management": "Management",
@@ -4663,6 +4664,7 @@
           "currentFootwear": "Current Footwear in Use",
           "outsoleWear": "Outsole Wear Characteristics",
           "insoleType": "Insole Type",
+          "shoeSize": "Insole Size",
           "notes": "Notes",
           "affectedToes": "Affected Toes",
           "affectedToesExample": "e.g. 2, 3",
@@ -6591,6 +6593,19 @@
     }
   },
   "warehouse": {
+    "manufacturers": {
+      "title": "Manufacturers",
+      "description": "Item manufacturers",
+      "add": "Add Manufacturer",
+      "edit": "Edit Manufacturer",
+      "empty": "No manufacturers",
+      "deleteTitle": "Delete manufacturer “{name}”?",
+      "deleteDescription": "A manufacturer linked to existing items cannot be deleted.",
+      "fields": {
+        "name": "Name (English)",
+        "nameAr": "Name (Arabic)"
+      }
+    },
     "common": {
       "active": "Active",
       "inactive": "Inactive",
@@ -6606,6 +6621,7 @@
       "rateAdded": "Exchange rate recorded"
     },
     "validation": {
+      "minStockForAlert": "Set a minimum stock to turn the alert on",
       "required": "This field is required",
       "nameRequired": "Enter the name in Arabic or English",
       "nonNegative": "Value must be 0 or more",
@@ -6677,6 +6693,9 @@
       }
     },
     "items": {
+      "addManufacturer": "Add a new manufacturer",
+      "selectManufacturer": "Select manufacturer",
+      "stockAlertHint": "When on, the item shows in the below-minimum stock report",
       "title": "Items",
       "description": "Warehouse item catalog",
       "add": "Add Item",
@@ -6690,6 +6709,7 @@
       "partCodeHint": "Links the item to prosthetic parts",
       "selectUnit": "Select unit",
       "fields": {
+        "stockAlert": "Stock alert",
         "sku": "SKU",
         "partCode": "Part Code",
         "barcode": "Barcode",

@@ -7,6 +7,7 @@ import {
   CreateWarehouseDto,
   UpdateWarehouseDto,
   WarehouseUnitDto,
+  WarehouseManufacturerDto,
   CreateWarehouseCategoryDto,
   UpdateWarehouseCategoryDto,
   CreateWarehouseSupplierDto,
@@ -220,6 +221,58 @@ export function useDeleteWarehouseItem() {
     mutationFn: (id: string) => warehouseApi.deleteItem(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      toast.success(t("deleted"));
+    },
+    onError,
+  });
+}
+
+// ── Manufacturers ──
+export function useWarehouseManufacturers() {
+  return useQuery({
+    queryKey: ["warehouse-manufacturers"],
+    queryFn: () => warehouseApi.getManufacturers(),
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useCreateWarehouseManufacturer() {
+  const qc = useQueryClient();
+  const { t, onError } = useWarehouseToasts();
+  return useMutation({
+    mutationFn: (dto: WarehouseManufacturerDto) => warehouseApi.createManufacturer(dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["warehouse-manufacturers"] });
+      toast.success(t("created"));
+    },
+    onError,
+  });
+}
+
+export function useUpdateWarehouseManufacturer() {
+  const qc = useQueryClient();
+  const { t, onError } = useWarehouseToasts();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: Clearable<Partial<WarehouseManufacturerDto>> }) =>
+      warehouseApi.updateManufacturer(id, dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["warehouse-manufacturers"] });
+      // Items embed their manufacturer.
+      qc.invalidateQueries({ queryKey: ["warehouse-items"] });
+      toast.success(t("updated"));
+    },
+    onError,
+  });
+}
+
+/** The API's MANUFACTURER_IN_USE message is shown as-is when it refuses. */
+export function useDeleteWarehouseManufacturer() {
+  const qc = useQueryClient();
+  const { t, onError } = useWarehouseToasts();
+  return useMutation({
+    mutationFn: (id: string) => warehouseApi.deleteManufacturer(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["warehouse-manufacturers"] });
       toast.success(t("deleted"));
     },
     onError,

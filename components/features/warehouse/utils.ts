@@ -1,10 +1,11 @@
 /** Arabic name where the locale is Arabic and one exists, else the base name. */
 export function localizedName(
-  entity: { name: string; nameAr?: string | null } | null | undefined,
+  entity: { name?: string | null; nameAr?: string | null } | null | undefined,
   locale: string,
 ): string {
   if (!entity) return "";
-  return locale === "ar" ? entity.nameAr || entity.name : entity.name;
+  // Either name may be missing, so each locale falls back to the other.
+  return (locale === "ar" ? entity.nameAr || entity.name : entity.name || entity.nameAr) ?? "";
 }
 
 /**

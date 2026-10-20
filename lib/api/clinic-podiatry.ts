@@ -121,6 +121,8 @@ export interface PodiatrySession {
   shoeWearPattern?: PodiatryShoeWearPattern | null;
   footMeasurements?: PodiatryFootMeasurements | null;
   insoleType?: PodiatryInsoleType[] | null;
+  /** نمرة الضبان — one of PODIATRY_SHOE_SIZES; null on sessions saved before it existed. */
+  shoeSize?: number | null;
   notes?: string | null;
   clinicianName?: string | null;
   clinicianSignature?: string | null;
@@ -146,6 +148,7 @@ export interface PodiatrySessionDto {
   shoeWearPattern?: PodiatryShoeWearPattern;
   footMeasurements?: PodiatryFootMeasurements;
   insoleType?: PodiatryInsoleType[];
+  shoeSize?: number;
   notes?: string;
   clinicianName?: string;
   clinicianSignature?: string;
@@ -225,6 +228,9 @@ const unwrap = (data: { data?: unknown } | unknown) =>
   (data as { data?: unknown })?.data ?? data;
 const asArray = <T>(d: unknown): T[] =>
   Array.isArray(d) ? (d as T[]) : ((d as { items?: T[] })?.items ?? []);
+
+/** The only sizes the API accepts for `shoeSize`: 28 to 52 in steps of 2. */
+export const PODIATRY_SHOE_SIZES = [28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52] as const;
 
 export const clinicPodiatryApi = {
   getReceptions: async (patientId?: string): Promise<PodiatryReception[]> => {

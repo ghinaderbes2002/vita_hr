@@ -214,6 +214,7 @@
     }
   },
   "nav": {
+    "warehouseManufacturers": "Üreticiler",
     "dashboard": "Kontrol Paneli",
     "employeePortal": "Çalışan Portalı",
     "management": "Yönetim",
@@ -3749,6 +3750,7 @@
           "currentFootwear": "Kullanılan Mevcut Ayakkabılar",
           "outsoleWear": "Dış Taban Aşınma Özellikleri",
           "insoleType": "Tabanlık Tipi",
+          "shoeSize": "Tabanlık Numarası",
           "notes": "Notlar",
           "affectedToes": "Etkilenen Parmaklar",
           "affectedToesExample": "örn. 2, 3",
@@ -5673,6 +5675,19 @@
     }
   },
   "warehouse": {
+    "manufacturers": {
+      "title": "Üreticiler",
+      "description": "Ürün üreticileri",
+      "add": "Üretici Ekle",
+      "edit": "Üreticiyi Düzenle",
+      "empty": "Üretici yok",
+      "deleteTitle": "“{name}” üreticisi silinsin mi?",
+      "deleteDescription": "Mevcut ürünlere bağlı bir üretici silinemez.",
+      "fields": {
+        "name": "Ad (İngilizce)",
+        "nameAr": "Ad (Arapça)"
+      }
+    },
     "common": {
       "active": "Aktif",
       "inactive": "Pasif",
@@ -5688,6 +5703,7 @@
       "rateAdded": "Döviz kuru kaydedildi"
     },
     "validation": {
+      "minStockForAlert": "Uyarıyı açmak için minimum stok belirleyin",
       "required": "Bu alan zorunludur",
       "nameRequired": "Adı Arapça veya İngilizce girin",
       "nonNegative": "Değer 0 veya daha büyük olmalıdır",
@@ -5759,6 +5775,9 @@
       }
     },
     "items": {
+      "addManufacturer": "Yeni üretici ekle",
+      "selectManufacturer": "Üretici seçin",
+      "stockAlertHint": "Açıkken ürün, minimum stok altı raporunda görünür",
       "title": "Ürünler",
       "description": "Depo ürün kataloğu",
       "add": "Ürün Ekle",
@@ -5772,6 +5791,7 @@
       "partCodeHint": "Ürünü protez parçalarına bağlar",
       "selectUnit": "Birim seçin",
       "fields": {
+        "stockAlert": "Stok uyarısı",
         "sku": "Stok Kodu (SKU)",
         "partCode": "Parça Kodu",
         "barcode": "Barkod",

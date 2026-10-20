@@ -55,6 +55,7 @@
     "errorCredentials": "اسم المستخدم أو كلمة المرور غير صحيحة"
   },
   "nav": {
+    "warehouseManufacturers": "الشركات المصنّعة",
     "dashboard": "لوحة التحكم",
     "employeePortal": "شؤون الموظف",
     "management": "الإدارة",
@@ -4798,6 +4799,7 @@
           "currentFootwear": "الأحذية الحالية المستخدمة",
           "outsoleWear": "خصائص تآكل النعل الخارجي للحذاء",
           "insoleType": "نوع الضبانة",
+          "shoeSize": "نمرة الضبان",
           "notes": "ملاحظات",
           "affectedToes": "الأصابع المصابة",
           "affectedToesExample": "مثال: 2، 3",
@@ -6817,6 +6819,19 @@
     }
   },
   "warehouse": {
+    "manufacturers": {
+      "title": "الشركات المصنّعة",
+      "description": "الشركات المصنّعة للأصناف",
+      "add": "إضافة شركة",
+      "edit": "تعديل الشركة",
+      "empty": "لا توجد شركات مصنّعة",
+      "deleteTitle": "حذف الشركة «{name}»؟",
+      "deleteDescription": "لا يمكن حذف شركة مرتبطة بأصناف موجودة.",
+      "fields": {
+        "name": "الاسم (إنكليزي)",
+        "nameAr": "الاسم (عربي)"
+      }
+    },
     "common": {
       "active": "نشط",
       "inactive": "غير نشط",
@@ -6832,6 +6847,7 @@
       "rateAdded": "تم تسجيل سعر الصرف"
     },
     "validation": {
+      "minStockForAlert": "حدّد الحد الأدنى لتفعيل الإنذار",
       "required": "هذا الحقل مطلوب",
       "nameRequired": "أدخل الاسم بالعربي أو بالإنكليزي",
       "nonNegative": "يجب أن تكون القيمة 0 أو أكثر",
@@ -6903,6 +6919,9 @@
       }
     },
     "items": {
+      "addManufacturer": "إضافة شركة جديدة",
+      "selectManufacturer": "اختر الشركة",
+      "stockAlertHint": "عند التفعيل يظهر الصنف في تقرير المخزون تحت الحد الأدنى",
       "title": "الأصناف",
       "description": "كتالوج أصناف المستودعات",
       "add": "إضافة صنف",
@@ -6916,6 +6935,7 @@
       "partCodeHint": "يربط الصنف بقطع الأطراف الصناعية",
       "selectUnit": "اختر الوحدة",
       "fields": {
+        "stockAlert": "إنذار المخزون",
         "sku": "رمز الصنف (SKU)",
         "partCode": "كود القطعة",
         "barcode": "الباركود",
