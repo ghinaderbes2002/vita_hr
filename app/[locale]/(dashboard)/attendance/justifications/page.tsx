@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
+import { EmployeeFilterCombobox } from "@/components/shared/employee-filter-combobox";
 import {
   useAllJustifications,
   useMyTeamJustifications,
@@ -83,6 +84,8 @@ export default function JustificationsPage() {
   const [reviewType, setReviewType] = useState<"manager" | "hr">("manager");
   const [decision, setDecision] = useState<HrDecision>("APPROVE");
   const [notes, setNotes] = useState("");
+  // Filtered on the server, so it reaches every page, not just the one shown.
+  const [employeeId, setEmployeeId] = useState("");
 
   const LIMIT = 10;
   // الحالة مثبّتة على "بانتظار المدير" لأصحاب هذه المسمّيات — لا تبويبات تُغيّرها.
@@ -92,11 +95,11 @@ export default function JustificationsPage() {
   // لا يُطلب أي من القائمتين قبل وصول الملف الشخصي: المسمّى غير معروف قبله،
   // فكانت قائمة الشركة كاملة تُجلب وتُعرض للحظة لمن لا يُفترض أن يراها.
   const { data: allData, isLoading: allLoading } = useAllJustifications(
-    { status: statusFilter, page, limit: LIMIT },
+    { status: statusFilter, employeeId: employeeId || undefined, page, limit: LIMIT },
     !meLoading && !teamListOnly,
   );
   const { data: teamData, isLoading: teamLoading } = useMyTeamJustifications(
-    { status: statusFilter, page, limit: LIMIT },
+    { status: statusFilter, employeeId: employeeId || undefined, page, limit: LIMIT },
     !meLoading && teamListOnly,
   );
   const data = teamListOnly ? teamData : allData;
@@ -161,6 +164,15 @@ export default function JustificationsPage() {
           <TabsTrigger value="HR_APPROVED_WITH_DEDUCTION">{t("attendance.justificationStatuses.hrApprovedWithDeduction")}</TabsTrigger>
           <TabsTrigger value="HR_REJECTED">{t("attendance.justificationStatuses.hrRejected")}</TabsTrigger>
         </TabsList>}
+
+        <EmployeeFilterCombobox
+          className="mt-3"
+          value={employeeId}
+          onChange={(id) => { setEmployeeId(id); setPage(1); }}
+          placeholder={t("attendance.employeeFilter.placeholder")}
+          allLabel={t("attendance.employeeFilter.all")}
+          emptyLabel={t("attendance.employeeFilter.empty")}
+        />
 
         <TabsContent value={activeTab}>
           <div className="rounded-md border">

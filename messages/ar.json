@@ -809,6 +809,11 @@
     "cancelReasonPlaceholder": "اكتب سبب التراجع..."
   },
   "attendance": {
+    "employeeFilter": {
+      "placeholder": "ابحث بالاسم أو الرقم الوظيفي...",
+      "all": "كل الموظفين",
+      "empty": "لا يوجد موظف مطابق"
+    },
     "title": "الحضور والانصراف",
     "description": "إدارة حضور الموظفين وساعات العمل",
     "myAttendance": "حضوري",

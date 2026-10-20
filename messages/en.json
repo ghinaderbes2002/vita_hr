@@ -930,6 +930,11 @@
     "cancelReasonPlaceholder": "Write the reason for cancellation..."
   },
   "attendance": {
+    "employeeFilter": {
+      "placeholder": "Search by name or employee number...",
+      "all": "All employees",
+      "empty": "No matching employee"
+    },
     "title": "Attendance & Time Tracking",
     "description": "Manage employee attendance and work hours",
     "myAttendance": "My Attendance",

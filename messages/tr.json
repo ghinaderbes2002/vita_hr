@@ -928,6 +928,11 @@
     "cancelReasonPlaceholder": "İptal nedenini yazın..."
   },
   "attendance": {
+    "employeeFilter": {
+      "placeholder": "Ad veya sicil numarasıyla ara...",
+      "all": "Tüm çalışanlar",
+      "empty": "Eşleşen çalışan yok"
+    },
     "title": "Devam ve Zaman Takibi",
     "description": "Çalışan devam ve çalışma saatlerini yönetin",
     "myAttendance": "Devamım",
