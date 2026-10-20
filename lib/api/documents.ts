@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { toUploadableImage } from "@/lib/utils/heic";
 
 export const DOCUMENT_TYPES = [
   "PHOTO", "CONTRACT", "NATIONAL_ID", "PASSPORT", "RESIDENCE",
@@ -24,8 +25,9 @@ export const documentsApi = {
     type: DocumentType | string;
     titleAr: string;
   }): Promise<{ fileUrl: string; fileName: string }> => {
+    const file = await toUploadableImage(params.file);
     const fd = new FormData();
-    fd.append("file", params.file);
+    fd.append("file", file);
     fd.append("employeeId", params.employeeId);
     fd.append("type", params.type);
     fd.append("titleAr", params.titleAr);
@@ -33,7 +35,7 @@ export const documentsApi = {
       headers: { "Content-Type": undefined },
     });
     const data = res.data?.data || res.data;
-    return { fileUrl: data.fileUrl, fileName: params.file.name };
+    return { fileUrl: data.fileUrl, fileName: file.name };
   },
 
   list: async (employeeId: string): Promise<EmployeeDocument[]> => {

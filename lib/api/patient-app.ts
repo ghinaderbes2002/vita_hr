@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { toUploadableImage } from "@/lib/utils/heic";
 
 /**
  * خدمة تطبيق المريض (apps/patient-app) — جهة الداشبورد فقط.
@@ -406,7 +407,7 @@ export const patientAppApi = {
     },
     uploadMedia: async (id: string, file: File, onProgress?: (percent: number) => void) => {
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", await toUploadableImage(file));
       return unwrap<Exercise>(
         await apiClient.post(`${BASE}/exercises/${id}/media`, form, {
           headers: { "Content-Type": "multipart/form-data" },
