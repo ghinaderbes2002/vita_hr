@@ -68,9 +68,10 @@ export default function PodiatryListPage() {
   };
 
   // المشرفون يرون كل مرضى القسم؛ من عداهم يرى حالاته المعيَّن عليها فقط.
-  const { isAdmin } = usePermissions();
+  const { hasRole, isAdmin } = usePermissions();
   const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
-  const seesAll = isAdmin() || FULL_CASELOAD_JOB_CODES.includes(myEmployee?.jobTitle?.code ?? "");
+  // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
+  const seesAll = isAdmin() || hasRole("QS") || FULL_CASELOAD_JOB_CODES.includes(myEmployee?.jobTitle?.code ?? "");
   const mineOnly = !seesAll;
 
   // Exactly one of the two runs: the mode is unknown until the profile

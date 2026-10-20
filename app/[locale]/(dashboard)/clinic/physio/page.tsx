@@ -56,14 +56,15 @@ export default function PhysioListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PhysioStatus | "all">("all");
 
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, hasRole, isAdmin } = usePermissions();
   const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
   // Everyone else — inside the department or outside it — sees only the cases
   // carrying their own id. The old rule read `department.managerId` and applied
   // only to members of the physio department, so changing someone's job title
   // left them supervising, and anyone outside the department saw everything.
-  const seesAll = isAdmin() || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
+  // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
+  const seesAll = isAdmin() || hasRole("QS") || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
   const shouldFilter = !seesAll;
 
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
