@@ -122,9 +122,12 @@ export default function PodiatryReceptionPage() {
 
   // The assessment (sessions) tab is a clinical activity: a supervisor who can
   // only receive patients sees the reception + patient info only.
-  const { hasAnyPermission, isAdmin } = usePermissions();
+  const { hasAnyPermission, hasRole, isAdmin } = usePermissions();
+  // مشرف الجودة (role QS) reads the assessment, review and doctor decision too;
+  // editing them still needs the session permissions (canEditAssessment below).
   const showSessionsTab =
     isAdmin() ||
+    hasRole("QS") ||
     hasAnyPermission([
       PERMISSIONS.CLINIC_PODIATRY.SESSION_CREATE,
       PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT,

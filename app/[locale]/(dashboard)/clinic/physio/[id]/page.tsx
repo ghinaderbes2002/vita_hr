@@ -265,7 +265,11 @@ export default function PhysioCasePage() {
   // Tab access by permission, so a supervisor with only case.create+view reaches
   // the intake form but not the clinical tabs — matching the prosthetics page.
   // The VTX-JTL-000011 job title keeps its existing intake-only shortcut.
-  const { hasAnyPermission, isAdmin } = usePermissions();
+  const { hasAnyPermission, hasRole, isAdmin } = usePermissions();
+  // مشرف الجودة (role QS) reads the whole file — every tab, not just intake —
+  // whatever their job title. What they may change still follows their permissions.
+  const isQualitySupervisor = hasRole("QS");
+  const intakeOnly = myJobTitleCode === "VTX-JTL-000011" && !isQualitySupervisor;
   const PH = PERMISSIONS.CLINIC_PHYSIO;
   // Any clinical permission means more than a pure "reception only" supervisor,
   // so the read-only summary and timeline are shown to them.
@@ -299,7 +303,7 @@ export default function PhysioCasePage() {
   const showPhysioTab = (key: string) => {
     if (caseData && isDoctorExamCase(caseData) && !DOCTOR_EXAM_TABS.includes(key)) return false;
     const perms = physioTabPerm[key] ?? null;
-    return !perms || isAdmin() || hasAnyPermission(perms);
+    return !perms || isAdmin() || isQualitySupervisor || hasAnyPermission(perms);
   };
   const { data: caseData, isLoading } = usePhysioCase(id);
   const { data: sessions = [] } = usePhysioSessions(id);
@@ -1433,7 +1437,7 @@ export default function PhysioCasePage() {
   // parent when the case stage lands on one of them.
   const NESTED_FORM_TABS = INTAKE_SUB_TABS;
   const resolvedTab = (() => {
-    if (myJobTitleCode === "VTX-JTL-000011") return "intake";
+    if (intakeOnly) return "intake";
     // Never resolve to a tab the user can't see — fall back to the intake form.
     const stageTab = (() => {
       if (["DISCHARGED", "CANCELLED"].includes(c.status)) return "timeline";
@@ -1562,7 +1566,7 @@ export default function PhysioCasePage() {
           className="flex-wrap h-auto gap-1 w-full justify-start"
           dir={isRtl ? "rtl" : "ltr"}
         >
-          {(myJobTitleCode === "VTX-JTL-000011"
+          {(intakeOnly
             ? ["intake"]
             : [
                 "intake", "patient_info", "physio_form",
@@ -1585,7 +1589,7 @@ export default function PhysioCasePage() {
               </TabsTrigger>
             );
           })}
-          {myJobTitleCode !== "VTX-JTL-000011" && showPhysioTab("emergency") && (
+          {!intakeOnly && showPhysioTab("emergency") && (
             <TabsTrigger value="emergency" className="text-sm py-1.5 gap-1.5 text-destructive data-[state=active]:text-destructive">
               <AlertTriangle className="h-3.5 w-3.5" />
               تنبيه طارئ

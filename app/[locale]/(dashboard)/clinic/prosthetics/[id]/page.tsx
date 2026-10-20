@@ -3754,8 +3754,11 @@ export default function ProstheticsCasePage() {
     P.ASSESSMENT_CREATE, P.COMMITTEE_OPINION, P.COMMITTEE_DECIDE, P.COMMITTEE_SIGN,
     P.COMPONENTS_ADD, P.GAIT_CREATE, P.DELIVERY_CREATE, P.DELIVERY_APPROVE,
   ];
+  // مشرف الجودة (role QS) reads the whole file — every tab, not just intake —
+  // whatever their job title. What they may change still follows their permissions.
+  const isQualitySupervisor = hasRole("QS" as any);
   const canTab = (perms: string[] | null): boolean =>
-    !perms || isAdmin() || hasAnyPermission(perms);
+    !perms || isAdmin() || isQualitySupervisor || hasAnyPermission(perms);
   const tabPerm: Record<string, string[] | null> = {
     intake: null,
     patient_info: null,
@@ -3781,7 +3784,7 @@ export default function ProstheticsCasePage() {
     "intake", "patient_info", "assessment", "committee_review", "final_evaluation",
   ];
   const isPhysioOnly =
-    !isAdmin() && hasRole("PT" as any) && !hasAnyPermission(PROSTHETICS_WORK_PERMS);
+    !isAdmin() && !isQualitySupervisor && hasRole("PT" as any) && !hasAnyPermission(PROSTHETICS_WORK_PERMS);
 
   /**
    * مشرف المركز registers cases and follows the whole caseload from the list,
@@ -3793,7 +3796,7 @@ export default function ProstheticsCasePage() {
     "VTX-JTL-000035", // رئيس قسم الأطراف الصناعية وطب الأقدام
     "VTX-JTL-000034", // رئيس قسم العلاج الفيزيائي
   ];
-  const isCenterSupervisor = !isAdmin() && myJobTitleCode === CENTER_SUPERVISOR_JOB_CODE;
+  const isCenterSupervisor = !isAdmin() && !isQualitySupervisor && myJobTitleCode === CENTER_SUPERVISOR_JOB_CODE;
 
   // Permission decides first; a role can only narrow what is left, never widen it.
   const showTab = (key: string) => {

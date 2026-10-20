@@ -85,11 +85,12 @@ export default function ProstheticsListPage() {
   // Only the overseeing job titles and system admins get the whole caseload.
   // Everyone else — including a physiotherapist from another department who is
   // attached to some of these cases — sees just the cases carrying their own id.
-  const { isAdmin, hasPermission } = usePermissions();
+  const { isAdmin, hasPermission, hasRole } = usePermissions();
   const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
-  const seesAll = isAdmin() || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
+  // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
+  const seesAll = isAdmin() || hasRole("QS") || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
   const mineOnly = USE_PRACTITIONER_CASELOAD && !seesAll;
 
   // Only one of the two runs — the mode isn't known until the profile lands, so
