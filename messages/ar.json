@@ -2681,7 +2681,6 @@
       "TERMINATE": "إنهاء الخدمة"
     },
     "historyActions": {
-      "SKIP_MEETING": "تخطي جدولة الاجتماع",
       "MEETING_SKIPPED": "تخطي جدولة الاجتماع",
       "CREATE": "إنشاء التقييم",
       "SELF_EVALUATE": "تقييم ذاتي من الموظف",

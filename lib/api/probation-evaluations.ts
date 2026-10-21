@@ -97,6 +97,8 @@ export interface ProbationEvaluation {
   meetingSkipped?: boolean;
   meetingSkippedAt?: string | null;
   meetingSkippedBy?: string | null;
+  /** Full name of the HR user who skipped it; null when it wasn't skipped. */
+  meetingSkippedByName?: string | null;
   meetingSkipReason?: string | null;
   seniorIsCeo?: boolean;
 }

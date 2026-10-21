@@ -2547,7 +2547,6 @@
       "TERMINATE": "Terminate Contract"
     },
     "historyActions": {
-      "SKIP_MEETING": "Meeting scheduling skipped",
       "MEETING_SKIPPED": "Meeting scheduling skipped",
       "CREATE": "Evaluation Created",
       "SUBMIT": "Submitted to Senior Manager",

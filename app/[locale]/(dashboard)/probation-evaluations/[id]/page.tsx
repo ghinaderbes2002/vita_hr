@@ -589,6 +589,7 @@ export default function ProbationEvaluationDetailPage() {
                   </span>
                 )}
               </p>
+              {ev.meetingSkippedByName && <p className="text-muted-foreground">بواسطة: {ev.meetingSkippedByName}</p>}
               {ev.meetingSkipReason && <p className="text-muted-foreground">السبب: {ev.meetingSkipReason}</p>}
             </div>
           </CardContent>

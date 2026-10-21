@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Eye, Loader2, Star } from "lucide-react";
+import { Check, Download, Eye, Loader2, Star } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useCreatePatientSurvey, usePatientSurvey, usePatientSurveys } from "@/lib/hooks/use-patient-surveys";
 import type { Patient } from "@/lib/api/clinic-patients";
+import { patientSurveysApi } from "@/lib/api/patient-surveys";
+import type { SurveyPdfData } from "@/components/clinic/patient-survey-pdf";
 import type {
   ComplaintStage, CreatePatientSurveyDto, NoFittingReason, PatientSurvey, PatientSurveyListParams,
   PodiatryServiceType, SurveyAgeGroup, SurveyDepartment, SurveyGender,
@@ -817,6 +820,47 @@ export function PatientSurveyDetailsDialog({ surveyId, onClose }: { surveyId: st
   );
 }
 
+// ─── PDF ──────────────────────────────────────────────────────────────────────
+
+/** One survey as the PDF sheet prints it — the same questions, wording and order as the form. */
+function surveyPdfData(s: PatientSurvey, staffName: (id: string) => string): SurveyPdfData {
+  const dep = s.department;
+  const keys = DEPARTMENT_RATINGS[dep] ? ratingKeysFor(dep, s.podiatryServiceType) : SHARED_RATINGS;
+  const rating = (k: RatingKey) => ({
+    label: ratingLabel(dep, k),
+    value: s[k] ?? null,
+    hint: ratingHint(dep, k),
+    note: paperForm(dep)?.notes?.[k],
+  });
+  return {
+    info: [
+      { label: "القسم", value: SURVEY_DEPARTMENT_LABEL[dep] ?? dep },
+      { label: "اسم العميل", value: s.customerName },
+      { label: "رقم المريض", value: s.patient?.patientNumber },
+      { label: "الجنس", value: GENDER_LABEL[s.gender] ?? s.gender },
+      { label: "الفئة العمرية", value: AGE_GROUP_LABEL[s.ageGroup] ?? s.ageGroup },
+      ...(s.podiatryServiceType
+        ? [{ label: "نوع الخدمة", value: PODIATRY_SERVICE_LABEL[s.podiatryServiceType] ?? s.podiatryServiceType }]
+        : []),
+      { label: "المعالجون المسؤولون", value: s.practitionerIds?.length ? s.practitionerIds.map(staffName).join("، ") : "—" },
+      { label: "تاريخ التعبئة", value: new Date(s.createdAt).toLocaleDateString("en-GB") },
+    ],
+    ratings: keys.map(rating),
+    choices: [
+      ...(s.noFittingReason
+        ? [{ label: NO_FITTING_REASON_QUESTION, value: NO_FITTING_REASON_LABEL[s.noFittingReason] ?? s.noFittingReason }]
+        : []),
+      ...(s.complaintStage
+        ? [{ label: COMPLAINT_STAGE_QUESTION, value: COMPLAINT_STAGE_LABEL[s.complaintStage] ?? s.complaintStage }]
+        : []),
+    ],
+    overall: rating("overallCompanyRating"),
+    notesLabel: notesLabel(dep),
+    notes: s.additionalNotes,
+    fileTag: `${s.customerName}-${s.createdAt?.slice(0, 10) ?? ""}`,
+  };
+}
+
 // ─── List ─────────────────────────────────────────────────────────────────────
 
 /** جدول الاستبيانات مع صفحات — الأحدث أولاً كما يرتبها الباك. */
@@ -827,6 +871,24 @@ export function PatientSurveysTable({ params }: { params: Omit<PatientSurveyList
   const page = paging.key === paramsKey ? paging.page : 1;
   const setPage = (fn: (p: number) => number) => setPaging({ key: paramsKey, page: fn(page) });
   const [openId, setOpenId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  // The full record is fetched first: a list row may not carry every answer.
+  const exportPdf = async (id: string) => {
+    if (exportingId) return;
+    setExportingId(id);
+    try {
+      const [survey, { downloadPatientSurveyPdf }] = await Promise.all([
+        patientSurveysApi.get(id),
+        import("@/components/clinic/patient-survey-pdf"),
+      ]);
+      await downloadPatientSurveyPdf(surveyPdfData(survey, staffName));
+    } catch {
+      toast.error("تعذّر تصدير الاستبيان");
+    } finally {
+      setExportingId(null);
+    }
+  };
   const staffName = useStaffName();
   const { data, isLoading, isFetching } = usePatientSurveys({ ...params, page, limit: 20 });
   const items: PatientSurvey[] = data?.items ?? [];
@@ -867,9 +929,19 @@ export function PatientSurveysTable({ params }: { params: Omit<PatientSurveyList
                   {s.practitionerIds?.length ? s.practitionerIds.map(staffName).join("، ") : "—"}
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" className="gap-1" onClick={() => setOpenId(s.id)}>
-                    <Eye className="h-4 w-4" /> عرض
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="gap-1" onClick={() => setOpenId(s.id)}>
+                      <Eye className="h-4 w-4" /> عرض
+                    </Button>
+                    <Button
+                      variant="ghost" size="sm" className="gap-1"
+                      disabled={!!exportingId}
+                      onClick={() => exportPdf(s.id)}
+                    >
+                      {exportingId === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      تصدير PDF
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
