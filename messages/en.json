@@ -2547,6 +2547,8 @@
       "TERMINATE": "Terminate Contract"
     },
     "historyActions": {
+      "SKIP_MEETING": "Meeting scheduling skipped",
+      "MEETING_SKIPPED": "Meeting scheduling skipped",
       "CREATE": "Evaluation Created",
       "SUBMIT": "Submitted to Senior Manager",
       "SENIOR_APPROVE": "Senior Manager Approved",
@@ -5750,8 +5752,8 @@
         "WHEELCHAIR_DELIVERY": "Wheelchair Delivery",
         "WARRANTY_DELIVERY": "Warranty Delivery",
         "COSMETIC_DELIVERY": "Cosmetic Delivery",
-        "ANALYSIS": "Analysis",
-        "INSTALLATION": "Installation",
+        "ANALYSIS": "Foot analysis",
+        "INSTALLATION": "Insole fitting",
         "REHABILITATION": "Rehabilitation",
         "ORTHOPEDIC_EXAMINATION": "Orthopedic Examination",
         "FOOT_ANALYSIS_EXAMINATION": "Foot Analysis Examination",

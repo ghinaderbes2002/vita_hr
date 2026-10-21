@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import {
   ArrowRight, CheckCircle2, XCircle, FileCheck, Paperclip, Loader2, X, Download,
   Gavel, History, CalendarClock, CalendarCheck, ClipboardEdit, AlertCircle,
+  SkipForward,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ import {
   useHrRejectProbation,
   useCeoDecideProbation,
   useProposeMeeting,
+  useSkipMeeting,
   useConfirmMeeting,
   useSuggestMeetingChange,
   usePendingMyAction,
@@ -97,6 +99,7 @@ type ActionType =
   | "confirm-employee"
   | "confirm-direct-manager"
   | "suggest-meeting-change"
+  | "skip-meeting"
   | "complete";
 
 function ScoreLabel({ score }: { score: number | null }) {
@@ -133,7 +136,7 @@ function ScoreInput({
   );
 }
 
-function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
+function WorkflowStepper({ status, t, meetingSkipped }: { status: ProbationStatus; t: any; meetingSkipped?: boolean }) {
   const isRejected = status.startsWith("REJECTED");
   const currentIdx = WORKFLOW_STATUSES.findIndex((s) => s === (STEPPER_ALIAS[status] ?? status));
   const activeIdx = isRejected ? -1 : currentIdx;
@@ -143,19 +146,23 @@ function WorkflowStepper({ status, t }: { status: ProbationStatus; t: any }) {
       {WORKFLOW_STATUSES.map((step, i) => {
         const done = activeIdx > i;
         const active = activeIdx === i;
+        // HR skipped scheduling: the step is passed, but no meeting took place.
+        const skipped = done && meetingSkipped && step === "PENDING_MEETING_SCHEDULE";
         return (
           <div key={step} className="flex items-center">
             <div className={`flex flex-col items-center gap-1 ${i < WORKFLOW_STATUSES.length - 1 ? "w-20 sm:w-28" : ""}`}>
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                 isRejected ? "bg-red-100 text-red-500" :
+                skipped ? "border-2 border-dashed border-muted-foreground/50 bg-muted text-muted-foreground" :
                 done ? "bg-primary text-primary-foreground" :
                 active ? "bg-primary/20 text-primary border-2 border-primary animate-pulse" :
                 "bg-muted text-muted-foreground"
               }`}>
-                {done ? <CheckCircle2 className="h-4 w-4" /> : active ? "●" : "○"}
+                {skipped ? <SkipForward className="h-3.5 w-3.5" /> : done ? <CheckCircle2 className="h-4 w-4" /> : active ? "●" : "○"}
               </div>
               <span className="text-[10px] text-center text-muted-foreground leading-tight hidden sm:block w-20">
                 {t(`workflow.${step}`)}
+                {skipped && <span className="block text-[9px] text-amber-600">(متخطّاة)</span>}
               </span>
             </div>
             {i < WORKFLOW_STATUSES.length - 1 && (
@@ -303,6 +310,7 @@ export default function ProbationEvaluationDetailPage() {
   const hrReject        = useHrRejectProbation();
   const ceoDecide       = useCeoDecideProbation();
   const proposeMeeting  = useProposeMeeting();
+  const skipMeeting     = useSkipMeeting();
   const confirmMeeting  = useConfirmMeeting();
   const suggestChange   = useSuggestMeetingChange();
   // The backend already decides who still owes an action on this evaluation —
@@ -461,6 +469,9 @@ export default function ProbationEvaluationDetailPage() {
         case "suggest-meeting-change":
           await suggestChange.mutateAsync({ id, data: { note: actionNotes.trim() } });
           break;
+        case "skip-meeting":
+          await skipMeeting.mutateAsync({ id, data: { reason: actionNotes.trim() } });
+          break;
         case "complete":
           await completeProbation.mutateAsync({ id, employeeId: ev.employeeId, data: {} });
           break;
@@ -475,7 +486,7 @@ export default function ProbationEvaluationDetailPage() {
     selfEvaluate.isPending || seniorApprove.isPending || seniorReject.isPending ||
     dmApprove.isPending || dmReject.isPending ||
     hrDocument.isPending || hrReject.isPending || ceoDecide.isPending ||
-    proposeMeeting.isPending || confirmMeeting.isPending || suggestChange.isPending ||
+    proposeMeeting.isPending || confirmMeeting.isPending || suggestChange.isPending || skipMeeting.isPending ||
     completeProbation.isPending;
 
   const dialogTitles: Partial<Record<ActionType, string>> = {
@@ -491,6 +502,7 @@ export default function ProbationEvaluationDetailPage() {
     "confirm-employee":       "تأكيد الموعد كموظف",
     "confirm-direct-manager": "تأكيد الموعد كمدير مباشر",
     "suggest-meeting-change": "اقتراح تغيير موعد الاجتماع",
+    "skip-meeting":           "تخطي جدولة الاجتماع",
     complete:           "إغلاق التقييم ورفع وثيقة القرار",
   };
 
@@ -504,6 +516,7 @@ export default function ProbationEvaluationDetailPage() {
     (actionType === "ceo" && !recommendation) ||
     (actionType === "propose-meeting" && !meetingDate) ||
     (actionType === "suggest-meeting-change" && !actionNotes.trim()) ||
+    (actionType === "skip-meeting" && !actionNotes.trim()) ||
     // لا يُرسل التقييم ومرفق الإنجاز ما زال قيد الرفع، وإلا ضاع الرابط.
     (actionType === "self-evaluate" && uploadAchievement.isPending);
 
@@ -540,7 +553,7 @@ export default function ProbationEvaluationDetailPage() {
       {/* Workflow Stepper */}
       <Card>
         <CardContent className="py-4 overflow-x-auto">
-          <WorkflowStepper status={ev.status} t={t} />
+          <WorkflowStepper status={ev.status} t={t} meetingSkipped={!!ev.meetingSkipped} />
         </CardContent>
       </Card>
 
@@ -563,7 +576,26 @@ export default function ProbationEvaluationDetailPage() {
       </div>
 
       {/* Meeting info */}
-      {(ev.meetingProposedAt || ev.confirmedMeetingDate || ev.status === "PENDING_MEETING_SCHEDULE") && (
+      {ev.meetingSkipped && (
+        <Card className="border-dashed border-amber-300 bg-amber-50/40">
+          <CardContent className="flex items-start gap-3 py-4">
+            <SkipForward className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+            <div className="space-y-1 text-sm">
+              <p className="font-medium text-amber-800">
+                تم تخطي جدولة الاجتماع
+                {ev.meetingSkippedAt && (
+                  <span className="ms-2 text-xs font-normal text-muted-foreground">
+                    {new Date(ev.meetingSkippedAt).toLocaleString(undefined, { hour12: true })}
+                  </span>
+                )}
+              </p>
+              {ev.meetingSkipReason && <p className="text-muted-foreground">السبب: {ev.meetingSkipReason}</p>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!ev.meetingSkipped && (ev.meetingProposedAt || ev.confirmedMeetingDate || ev.status === "PENDING_MEETING_SCHEDULE") && (
         <Card className="border-orange-200 bg-orange-50/40">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2 text-orange-700">
@@ -842,6 +874,13 @@ export default function ProbationEvaluationDetailPage() {
                         : ev.meetingProposedAt
                           ? "تعديل الموعد"
                           : t("actions.proposeMeeting")}
+                    </Button>
+                  )}
+                  {/* HR may also skip the meeting altogether — straight to the outcomes stage. */}
+                  {isHrActor && (
+                    <Button variant="outline" className="gap-2" onClick={() => openAction("skip-meeting")}>
+                      <SkipForward className="h-4 w-4" />
+                      تخطي جدولة الاجتماع
                     </Button>
                   )}
                   {/* Confirmation is for the employee and the direct manager only;
@@ -1135,6 +1174,8 @@ export default function ProbationEvaluationDetailPage() {
                 <Label>
                   {actionType === "self-evaluate"
                     ? t("actionDialog.selfEvaluateNotes")
+                    : actionType === "skip-meeting"
+                      ? "سبب تخطي الاجتماع (إلزامي)"
                     : actionType === "reject" || actionType === "hr-reject"
                       ? t("actionDialog.notesRequired")
                       : t("actionDialog.notesOptional")}

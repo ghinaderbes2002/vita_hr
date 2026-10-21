@@ -10,6 +10,7 @@ import {
   WorkflowNotesData,
   ProposeMeetingData,
   ConfirmMeetingData,
+  SkipMeetingData,
   SuggestMeetingChangeData,
   CompleteProbationData,
 } from "@/lib/api/probation-evaluations";
@@ -230,6 +231,19 @@ export function useProposeMeeting() {
     onSuccess: (_, { id }) => {
       invalidateAll(qc, id);
       toast.success("تم اقتراح موعد الاجتماع");
+    },
+    onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
+  });
+}
+
+export function useSkipMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: SkipMeetingData }) =>
+      probationEvaluationsApi.skipMeeting(id, data),
+    onSuccess: (_, { id }) => {
+      invalidateAll(qc, id);
+      toast.success("تم تخطي جدولة الاجتماع");
     },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),
   });

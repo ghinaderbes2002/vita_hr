@@ -39,7 +39,7 @@ export const PROBATION_RECOMMENDATION_LABELS: Record<ProbationRecommendation, st
   CONFIRM_POSITION:  "تثبيت في المنصب",
   EXTEND_PROBATION:  "تمديد فترة التجربة",
   TRANSFER_POSITION: "نقل إلى منصب آخر",
-  SALARY_RAISE:      "رفع الراتب",
+  SALARY_RAISE:      "تثبيت في المنصب + رفع الراتب",
   TERMINATE:         "إنهاء الخدمة",
 };
 
@@ -93,6 +93,11 @@ export interface ProbationEvaluation {
   meetingConfirmedByManager?: boolean;
   /** Filled when the direct manager asked HR for a different date. */
   meetingRescheduleNote?: string | null;
+  /** HR skipped the scheduling stage (POST /:id/skip-meeting) — no meeting was held. */
+  meetingSkipped?: boolean;
+  meetingSkippedAt?: string | null;
+  meetingSkippedBy?: string | null;
+  meetingSkipReason?: string | null;
   seniorIsCeo?: boolean;
 }
 
@@ -152,6 +157,12 @@ export interface ConfirmMeetingData {
 // POST /:id/suggest-meeting-change — direct manager asks HR for another date.
 export interface SuggestMeetingChangeData {
   note: string;
+}
+
+// POST /:id/skip-meeting — HR moves PENDING_MEETING_SCHEDULE straight to
+// PENDING_HR; any proposed date is dropped.
+export interface SkipMeetingData {
+  reason: string;
 }
 
 // POST /:id/close-evaluation
@@ -293,6 +304,11 @@ export const probationEvaluationsApi = {
   suggestMeetingChange: async (id: string, data: SuggestMeetingChangeData) => {
     const response = await apiClient.post(`/probation-evaluations/${id}/suggest-meeting-change`, data);
     return response.data?.data || response.data;
+  },
+
+  skipMeeting: async (id: string, data: SkipMeetingData) => {
+    const response = await apiClient.post(`/probation-evaluations/${id}/skip-meeting`, data);
+    return response.data?.data ?? response.data;
   },
 
   confirmMeeting: async (id: string, data: ConfirmMeetingData) => {
