@@ -24,7 +24,7 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { PageGuard } from "@/components/permissions/page-guard";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import {
-  PotentialClientDialog, POTENTIAL_CLIENT_ARRIVAL_METHODS, yesNoLabel,
+  PotentialClientDialog, POTENTIAL_CLIENT_ARRIVAL_METHODS, yesNoLabel, inquiryMethodLabel,
 } from "@/components/clinic/potential-client-dialog";
 import { PotentialClientDetailsDialog } from "@/components/clinic/potential-client-details-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -187,17 +187,17 @@ function PotentialClientsList() {
         <Select value={visited} onValueChange={(v) => { setVisited(v); setPage(1); }}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value={ANY}>زيارة المركز: الكل</SelectItem>
-            <SelectItem value="yes">زار المركز</SelectItem>
-            <SelectItem value="no">لم يزر المركز</SelectItem>
+            <SelectItem value={ANY}>طريقة الاستفسار: الكل</SelectItem>
+            <SelectItem value="yes">حضوري</SelectItem>
+            <SelectItem value="no">هاتفي</SelectItem>
           </SelectContent>
         </Select>
         <Select value={paid} onValueChange={(v) => { setPaid(v); setPage(1); }}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value={ANY}>الدفع: الكل</SelectItem>
-            <SelectItem value="yes">دفع فعلياً</SelectItem>
-            <SelectItem value="no">لم يدفع</SelectItem>
+            <SelectItem value={ANY}>الاستفادة: الكل</SelectItem>
+            <SelectItem value="yes">استفاد من خدمة/منتج</SelectItem>
+            <SelectItem value="no">لم يستفد</SelectItem>
           </SelectContent>
         </Select>
         {/* Registration date range; either end may be left open. */}
@@ -235,8 +235,8 @@ function PotentialClientsList() {
               <TableHead>رقم التواصل</TableHead>
               <TableHead>طريقة الوصول</TableHead>
               <TableHead>تاريخ التسجيل</TableHead>
-              <TableHead>زار المركز</TableHead>
-              <TableHead>دفع فعلي</TableHead>
+              <TableHead>طريقة الاستفسار</TableHead>
+              <TableHead>استفادة من خدمة/منتج</TableHead>
               <TableHead>ملاحظات</TableHead>
               <TableHead className="w-20" />
             </TableRow>
@@ -273,7 +273,7 @@ function PotentialClientsList() {
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {fmt(c.registrationDate ?? c.createdAt)}
                   </TableCell>
-                  <TableCell className="text-sm">{yesNoLabel(c.visitedCenter)}</TableCell>
+                  <TableCell className="text-sm">{inquiryMethodLabel(c.visitedCenter)}</TableCell>
                   <TableCell className="text-sm">{yesNoLabel(c.paidVisit)}</TableCell>
                   <TableCell className="max-w-56 truncate text-sm text-muted-foreground" title={c.notes ?? undefined}>
                     {c.notes || "—"}

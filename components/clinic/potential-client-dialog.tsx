@@ -34,6 +34,12 @@ const triOf = (v?: boolean | null) => (v == null ? NONE : v ? "yes" : "no");
 const triToValue = (v: string) => (v === NONE ? null : v === "yes");
 
 export const yesNoLabel = (v?: boolean | null) => (v == null ? "—" : v ? "نعم" : "لا");
+/**
+ * How the person got in touch, read off `visitedCenter`: came in (true) is an
+ * in-person inquiry, did not (false) a phone one — so older records, saved as
+ * yes/no, read the same way.
+ */
+export const inquiryMethodLabel = (v?: boolean | null) => (v == null ? "—" : v ? "حضوري" : "هاتفي");
 
 const emptyForm = {
   patientName: "",
@@ -196,18 +202,18 @@ export function PotentialClientDialog({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>زار المركز؟</Label>
+              <Label>طريقة الاستفسار</Label>
               <Select value={form.visitedCenter} onValueChange={(v) => set({ visitedCenter: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE}>غير محدد</SelectItem>
-                  <SelectItem value="yes">نعم</SelectItem>
-                  <SelectItem value="no">لا</SelectItem>
+                  <SelectItem value="yes">حضوري</SelectItem>
+                  <SelectItem value="no">هاتفي</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>استفاد بدفع فعلي؟</Label>
+              <Label>استفادة من خدمة/منتج</Label>
               <Select value={form.paidVisit} onValueChange={(v) => set({ paidVisit: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

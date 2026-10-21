@@ -293,7 +293,6 @@ const navigation: NavItem[] = [
       "clinic.appointments.internal_meetings.view",
       "clinic.patients.surveys.view",
       "clinic.patients.surveys.create",
-      "clinic.potential_clients.view",
       "clinic.inventory.view",
       "clinic.reports.view_donor",
     ],
@@ -317,7 +316,6 @@ const navigation: NavItem[] = [
       // from every other job title even when they hold the physio permission.
       { title: "nav.clinicDoctorExams", href: "/clinic/doctor-exams", icon: Stethoscope, permission: "clinic.physio.case.view", showForJobTitleCodes: ["VTX-JTL-000007"] },
       { title: "nav.clinicWaitingList", href: "/clinic/waiting-list", icon: ListOrdered, permission: "clinic.waiting_list.view" },
-      { title: "nav.clinicPotentialClients", href: "/clinic/potential-clients", icon: UserSearch, permission: "clinic.potential_clients.view" },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
       { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permissions: ["clinic.appointments.view_own", "clinic.appointments.internal_meetings.view_own", "clinic.appointments.internal_meetings.view"] },
       { title: "nav.clinicAppointmentStats", href: "/clinic/appointment-statistics", icon: BarChart3, permission: "clinic.appointments.statistics_view" },
@@ -332,12 +330,14 @@ const navigation: NavItem[] = [
     title: "nav.clinicSales",
     icon: Share2,
     separator: true,
-    permission: "clinic.referrals.view",
-    // مشرف المركز لا يرى قسم المبيعات حتى لو كان يملك clinic.referrals.view
-    hiddenForJobTitleCodes: ["VTX-JTL-000011"],
+    // القسم يفتح بأيٍّ من صلاحيات أبنائه — من له العملاء المحتملون وحدهم يراه أيضاً.
+    permissions: ["clinic.referrals.view", "clinic.potential_clients.view"],
     children: [
-      { title: "nav.clinicContacts", href: "/clinic/referrals", icon: Users, permission: "clinic.referrals.view" },
-      { title: "nav.clinicSalesOverview", href: "/clinic/referrals/sales", icon: Trophy, permission: "clinic.referrals.view" },
+      // مشرف المركز لا يرى جهات الاتصال ولا ملخص المبيعات حتى لو كان يملك
+      // clinic.referrals.view — لكنه يبقى يرى العملاء المحتملين كما كان في العيادة.
+      { title: "nav.clinicContacts", href: "/clinic/referrals", icon: Users, permission: "clinic.referrals.view", hiddenForJobTitleCodes: ["VTX-JTL-000011"] },
+      { title: "nav.clinicSalesOverview", href: "/clinic/referrals/sales", icon: Trophy, permission: "clinic.referrals.view", hiddenForJobTitleCodes: ["VTX-JTL-000011"] },
+      { title: "nav.clinicPotentialClients", href: "/clinic/potential-clients", icon: UserSearch, permission: "clinic.potential_clients.view" },
     ],
   },
   {
