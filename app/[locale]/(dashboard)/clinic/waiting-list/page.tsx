@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Search, Pencil, Trash2, ListOrdered, Users, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,15 @@ const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—"
 export default function WaitingListPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  // The search runs on the server, so it waits for the typing to pause.
+  const [term, setTerm] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTerm(search.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
   // تفتح الصفحة على من ينتظرون فعلاً؛ "جميع الحالات" تبقى خياراً في القائمة.
   const [statusFilter, setStatusFilter] = useState<WaitingStatus | "all">("WAITING");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -65,18 +74,15 @@ export default function WaitingListPage() {
     page,
     limit: LIMIT,
     status: statusFilter !== "all" ? statusFilter : undefined,
+    search: term || undefined,
   });
 
   const createEntry = useCreateWaitingListEntry();
   const updateEntry = useUpdateWaitingListEntry();
   const deleteEntry = useDeleteWaitingListEntry();
 
-  // The API has no search parameter, so the name/phone filter runs over the
-  // page in hand — the same limitation the other clinic lists carry.
-  const q = search.trim().toLowerCase();
-  const entries = (data?.items ?? []).filter((e) =>
-    !q || e.patientName.toLowerCase().includes(q) || e.contactNumber.toLowerCase().includes(q),
-  );
+  // Already filtered by the server, across every page.
+  const entries = data?.items ?? [];
   const exportXlsx = useExportWaitingList();
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 0;
@@ -110,7 +116,10 @@ export default function WaitingListPage() {
             {/* يتبع فلتر الحالة المختار؛ "جميع الحالات" تصدّر القائمة كاملة. */}
             <Button
               variant="outline" className="gap-2" disabled={exportXlsx.isPending}
-              onClick={() => exportXlsx.mutate(statusFilter !== "all" ? statusFilter : undefined)}
+              onClick={() => exportXlsx.mutate({
+                status: statusFilter !== "all" ? statusFilter : undefined,
+                search: term || undefined,
+              })}
             >
               {exportXlsx.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               تصدير Excel
@@ -131,7 +140,7 @@ export default function WaitingListPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="ابحث بالاسم أو رقم التواصل..."
+            placeholder="ابحث بالاسم أو رقم التواصل أو الخدمة..."
             className="pr-9"
           />
         </div>

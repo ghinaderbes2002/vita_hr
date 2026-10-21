@@ -234,9 +234,9 @@ function NewPatientForm() {
 
     const patient = await createPatient.mutateAsync(dto);
 
-    // Consent is only valid once signed, so it is recorded only when both the
-    // choice and the signature are present.
-    if (consentChoice && consentSignature) {
+    // The choice is recorded with or without a signature; unsigned, the
+    // patient's name stands in (consentSignedByValue) and no signature image is kept.
+    if (consentChoice) {
       try {
         await clinicPatientsApi.createConsent(patient.id, {
           type:     "DOCUMENTATION",
@@ -249,8 +249,6 @@ function NewPatientForm() {
       } catch {
         toast.error("تم تسجيل المريض، لكن حفظ الموافقة فشل");
       }
-    } else if (consentChoice) {
-      toast.warning("لم تُحفظ الموافقة — يجب توقيع المريض لاعتمادها");
     }
     // Notes via POST /patients/:id/notes
     if (v4.notes?.trim()) {

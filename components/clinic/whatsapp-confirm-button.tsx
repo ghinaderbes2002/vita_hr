@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   CLINIC_WHATSAPP_NUMBER,
-  appointmentConfirmationMessage,
+  appointmentsConfirmationMessage,
   whatsappChatUrl,
 } from "@/lib/clinic/whatsapp";
 
@@ -23,6 +23,8 @@ interface WhatsappConfirmButtonProps {
   /** Already-formatted date and time, as they should read in the message. */
   date: string;
   time: string;
+  /** Several bookings in one message; replaces `date`/`time` when given. */
+  slots?: { date: string; time: string }[];
   className?: string;
   size?: "sm" | "default" | "icon";
   /** Hides the label, leaving just the glyph — for table rows. */
@@ -40,6 +42,7 @@ export function WhatsappConfirmButton({
   patientName,
   date,
   time,
+  slots,
   className,
   size = "sm",
   iconOnly = false,
@@ -48,7 +51,10 @@ export function WhatsappConfirmButton({
   const name = (patientName ?? "").trim();
   const url = whatsappChatUrl(
     phone,
-    appointmentConfirmationMessage({ patientName: name || "المريض", date, time }),
+    appointmentsConfirmationMessage({
+      patientName: name || "المريض",
+      slots: slots?.length ? slots : [{ date, time }],
+    }),
   );
 
   return (

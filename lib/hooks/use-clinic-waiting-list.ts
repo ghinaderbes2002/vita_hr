@@ -4,8 +4,8 @@ import {
   clinicWaitingListApi,
   CreateWaitingListDto,
   UpdateWaitingListDto,
+  WaitingListExportFilters,
   WaitingListParams,
-  WaitingStatus,
 } from "@/lib/api/clinic-waiting-list";
 
 const KEY = "clinic-waiting-list";
@@ -66,8 +66,9 @@ export function useDeleteWaitingListEntry() {
 /** Downloads the waiting list as Excel — under one status, or all when none is given. */
 export function useExportWaitingList() {
   return useMutation({
-    mutationFn: (status?: WaitingStatus) => clinicWaitingListApi.exportXlsx(status),
-    onSuccess: (blob, status) => {
+    mutationFn: (filters?: WaitingListExportFilters) => clinicWaitingListApi.exportXlsx(filters),
+    onSuccess: (blob, filters) => {
+      const status = filters?.status;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

@@ -54,7 +54,12 @@ export interface WaitingListParams {
   page?: number;
   limit?: number;
   status?: WaitingStatus;
+  /** Partial, case-insensitive match on name, contact number or service — over the whole list. */
+  search?: string;
 }
+
+/** What narrows the export: the same filters the list screen shows. */
+export type WaitingListExportFilters = Pick<WaitingListParams, "status" | "search">;
 
 const BASE = "/appointments/waiting-list";
 
@@ -72,10 +77,13 @@ export const clinicWaitingListApi = {
     };
   },
 
-  /** The whole list as an .xlsx file; `status` narrows it, omitted means every status. */
-  exportXlsx: async (status?: WaitingStatus): Promise<Blob> => {
+  /** The list as an .xlsx file, narrowed by the same status and search as the screen. */
+  exportXlsx: async (filters?: WaitingListExportFilters): Promise<Blob> => {
     const response = await apiClient.get(`${BASE}/export-xlsx`, {
-      params: status ? { status } : undefined,
+      params: {
+        ...(filters?.status ? { status: filters.status } : {}),
+        ...(filters?.search ? { search: filters.search } : {}),
+      },
       responseType: "blob",
     });
     return response.data;

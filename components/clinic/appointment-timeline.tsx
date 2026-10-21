@@ -153,7 +153,7 @@ export interface TimelineGroup {
 }
 
 function Column({
-  group, win, onSelect, onSelectMeeting, resolveTherapist, resolveAttendees, hideEmptyLabel,
+  group, win, onSelect, onSelectMeeting, resolveTherapist, resolveAttendees, hideEmptyLabel, highlightIds,
 }: {
   group: TimelineGroup;
   win: Win;
@@ -162,6 +162,7 @@ function Column({
   resolveTherapist?: (a: Appointment) => string | null;
   resolveAttendees?: (m: InternalMeeting) => string | null;
   hideEmptyLabel?: boolean;
+  highlightIds?: string[];
 }) {
   const t = useTranslations("clinic.appointments");
   const placed = layout(group.appointments, win);
@@ -203,6 +204,8 @@ function Column({
               "hover:z-10 hover:shadow-md focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               "dark:border-white/10",
               st.cls,
+              // Named by the server as the booking a new or moved one collides with.
+              highlightIds?.includes(a.id) && "z-10 ring-2 ring-red-500 ring-offset-1 animate-pulse",
             )}
             style={{
               top, height,
@@ -277,7 +280,7 @@ function Column({
 }
 
 export function AppointmentTimeline({
-  groups, isToday, onSelect, onSelectMeeting, resolveTherapist, resolveAttendees, hideEmptyLabel, hideLegend,
+  groups, isToday, onSelect, onSelectMeeting, resolveTherapist, resolveAttendees, hideEmptyLabel, hideLegend, highlightIds,
 }: {
   groups: TimelineGroup[];
   isToday: boolean;
@@ -289,6 +292,8 @@ export function AppointmentTimeline({
   hideEmptyLabel?: boolean;
   /** Set when the page already shows the statuses elsewhere. */
   hideLegend?: boolean;
+  /** Appointment ids to ring in red — the ones a booking conflicted with. */
+  highlightIds?: string[];
 }) {
   const locale = useLocale();
   const isRtl = locale === "ar";
@@ -395,6 +400,7 @@ export function AppointmentTimeline({
             onSelect={onSelect} onSelectMeeting={onSelectMeeting}
             resolveTherapist={resolveTherapist} resolveAttendees={resolveAttendees}
             hideEmptyLabel={hideEmptyLabel}
+            highlightIds={highlightIds}
           />
         ))}
 

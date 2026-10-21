@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clinicPatientsApi, cleanIdNumber } from "@/lib/api/clinic-patients";
@@ -42,6 +43,7 @@ import {
   usePatientConsents,
 } from "@/lib/hooks/use-clinic-patients";
 import { DocumentType, DOCUMENT_ACCEPT } from "@/lib/api/clinic-patients";
+import { matchesAccept, withCleanName } from "@/lib/utils/heic";
 import { usePatientAppointments } from "@/lib/hooks/use-clinic-appointments";
 import { AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { useProstheticsCasesByPatient, useCreateProstheticsCase } from "@/lib/hooks/use-clinic-prosthetics";
@@ -989,11 +991,25 @@ export default function PatientProfilePage() {
             </div>
             <div className="space-y-1.5">
               <Label>اختر الملف</Label>
+              {/* No `accept` on the input: a name carrying an invisible mark after its
+                  extension (common on Arabic names from WhatsApp/Telegram) would be
+                  refused by the picker itself. The type is checked here instead, on
+                  the cleaned name. */}
               <Input
                 key={uploadType}
                 type="file"
-                accept={DOCUMENT_ACCEPT[uploadType]}
-                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  const picked = e.target.files?.[0];
+                  if (!picked) { setUploadFile(null); return; }
+                  const file = withCleanName(picked);
+                  if (!matchesAccept(file, DOCUMENT_ACCEPT[uploadType])) {
+                    toast.error("نوع الملف غير مدعوم لهذا المستند");
+                    e.target.value = "";
+                    setUploadFile(null);
+                    return;
+                  }
+                  setUploadFile(file);
+                }}
               />
               {uploadFile && (
                 <p className="text-xs text-muted-foreground">{uploadFile.name}</p>

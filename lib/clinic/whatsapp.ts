@@ -37,9 +37,26 @@ export function appointmentConfirmationMessage(opts: {
   date: string;
   time: string;
 }): string {
+  return appointmentsConfirmationMessage({ patientName: opts.patientName, slots: [{ date: opts.date, time: opts.time }] });
+}
+
+/**
+ * The same confirmation for one or several bookings at once — several are
+ * listed one per line, with the rest of the wording unchanged.
+ */
+export function appointmentsConfirmationMessage(opts: {
+  patientName: string;
+  slots: { date: string; time: string }[];
+}): string {
+  const [first] = opts.slots;
+  const opening = opts.slots.length === 1
+    ? `نؤكد لكم تأكيد حجز موعدكم لدى مركزنا، المحدد يوم ${first.date} الساعة ${first.time}.`
+    : `نؤكد لكم تأكيد حجز مواعيدكم لدى مركزنا، المحددة كالتالي:\n${opts.slots
+        .map((s, i) => `${i + 1}. يوم ${s.date} الساعة ${s.time}`)
+        .join("\n")}`;
   return `السيد/السيدة ${opts.patientName}،
 
-نؤكد لكم تأكيد حجز موعدكم لدى مركزنا، المحدد يوم ${opts.date} الساعة ${opts.time}.
+${opening}
 
 نُود التنويه على أن الالتزام بالموعد المحدد أمر أساسي لتنظيم جدول العمل، وأي تخلف عنه دون سابق إنذار يُلحق ضرراً وتأخيراً مباشراً بمواعيد العملاء الآخرين وهذا يؤثر على مهنيتنا.
 

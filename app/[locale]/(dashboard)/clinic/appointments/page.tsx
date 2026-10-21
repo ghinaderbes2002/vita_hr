@@ -23,6 +23,7 @@ import { TherapistPicker } from "@/components/clinic/therapist-picker";
 import { StaffMeetingDialog, StaffMeetingDetailsDialog } from "@/components/clinic/staff-meeting-dialogs";
 import { PageHeader } from "@/components/shared/page-header";
 import { WhatsappConfirmButton } from "@/components/clinic/whatsapp-confirm-button";
+import { WhatsappAppointmentsButton } from "@/components/clinic/whatsapp-appointments-button";
 import { CLINIC_WHATSAPP_NUMBER } from "@/lib/clinic/whatsapp";
 import { cn, formatClinicTime } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment, useUpdateAppointment, useInternalMeetings } from "@/lib/hooks/use-clinic-appointments";
@@ -186,6 +187,25 @@ export default function AppointmentsPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [rescheduleFor, setRescheduleFor] = useState<Appointment | null>(null);
   const [rsForm, setRsForm] = useState({ date: "", startTime: "", endTime: "", isOpenEnded: false });
+  // A refused booking — CONFLICTING_APPOINTMENT or OUTSIDE_WORKING_HOURS: the
+  // server's Arabic message, the day being booked, and for a clash the
+  // appointment it collided with, ringed on the board.
+  const [conflict, setConflict] = useState<{ message: string; date: string; ids: string[] } | null>(null);
+  const conflictOf = (e: unknown, date: string) => {
+    const data = (e as { response?: { data?: { code?: string; message?: string; details?: { conflictingAppointmentIds?: string[] } } } })?.response?.data;
+    if (data?.code !== "CONFLICTING_APPOINTMENT" && data?.code !== "OUTSIDE_WORKING_HOURS") return null;
+    return { message: data.message ?? "", date, ids: data.details?.conflictingAppointmentIds ?? [] };
+  };
+  // Takes the user to the conflicting booking: its day on the board, ringed.
+  const showConflict = () => {
+    if (!conflict) return;
+    setSelectedDate(conflict.date);
+    const d = new Date(`${conflict.date}T00:00:00`);
+    setViewYear(d.getFullYear());
+    setViewMonth(d.getMonth());
+    setRescheduleFor(null);
+    setNewApptOpen(false);
+  };
   const [editFor, setEditFor] = useState<Appointment | null>(null);
   const [editForm, setEditForm] = useState<ReturnType<typeof editFormOf> | null>(null);
   const [newApptOpen, setNewApptOpen] = useState(false);
@@ -227,17 +247,8 @@ export default function AppointmentsPage() {
     status: statusFilter !== "ALL" ? statusFilter : undefined,
     departmentId: departmentFilter !== "ALL" ? departmentFilter : undefined,
   };
+  // ?date= is a Damascus calendar day on the server, the same day the board shows.
   const { data: dayData, isLoading: dayLoading } = useClinicAppointments({ ...dayQuery, date: selectedDate });
-  // The API reads ?date= as a UTC day, but the clinic runs on local time (UTC+3):
-  // a booking between midnight and 3 a.m. local is filed under the previous UTC
-  // day and vanished from both. Both days are fetched; isSelectedDay keeps the
-  // local one.
-  const prevDate = (() => {
-    const d = new Date(`${selectedDate}T00:00:00`);
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  })();
-  const { data: prevDayData, isLoading: prevDayLoading } = useClinicAppointments({ ...dayQuery, date: prevDate });
   const { data: patientsData } = useClinicPatients({ search: patientSearch, limit: 50 });
   const createAppt = useCreateAppointment();
   const cancelAppt = useCancelAppointment();
@@ -257,12 +268,7 @@ export default function AppointmentsPage() {
     .filter((c) => c.status !== "CLOSED" && c.status !== "CANCELLED")
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
-  const dayAppointments = useMemo(() => {
-    const seen = new Set<string>();
-    return [...(dayData?.items ?? []), ...(prevDayData?.items ?? [])].filter((a: Appointment) =>
-      seen.has(a.id) ? false : (seen.add(a.id), true),
-    );
-  }, [dayData, prevDayData]);
+  const dayAppointments = dayData?.items ?? [];
 
   // Staff meetings for the viewed month: one request feeds both the calendar
   // dots and the selected day's column.
@@ -393,6 +399,8 @@ export default function AppointmentsPage() {
     if (!newForm.patientId && !walkIn) return;
     const startISO = new Date(`${newForm.date}T${newForm.startTime}:00`).toISOString();
     const endISO = new Date(`${newForm.date}T${newForm.endTime}:00`).toISOString();
+    setConflict(null);
+    try {
     await createAppt.mutateAsync({
       ...(newForm.patientId ? { patientId: newForm.patientId } : { patientName: walkIn }),
       practitionerId: (myEmployee as any)?.userId ?? "",
@@ -410,6 +418,11 @@ export default function AppointmentsPage() {
         ? { caseId: activeProstheticsCase.id, caseType: "PROSTHETICS" as const }
         : {}),
     });
+    } catch (e) {
+      // The hook already toasts the message; a conflict is also kept on screen.
+      setConflict(conflictOf(e, newForm.date));
+      return;
+    }
     // New appointments start as SCHEDULED (مجدول); confirmed manually afterwards.
     setNewApptOpen(false);
     setSelectedDate(newForm.date);
@@ -463,14 +476,6 @@ export default function AppointmentsPage() {
     : detailAppt.patient
       ? `${detailAppt.patient.firstName} ${detailAppt.patient.lastName}`
       : (detailAppt.patientName || "");
-  const detailDateLabel = !detailAppt
-    ? ""
-    : detailAppt.startTime && detailAppt.startTime.length > 5
-      ? new Date(detailAppt.startTime).toLocaleDateString(locale, {
-          weekday: "long", year: "numeric", month: "long", day: "numeric",
-        })
-      : (detailAppt.date ?? "");
-  const detailTimeLabel = detailAppt ? formatClinicTime(detailAppt.startTime) : "";
 
   // Both the list and the calendar carry the patient's number — already resolved
   // to `whatsapp` when there is one, otherwise the plain phone. It comes back
@@ -502,7 +507,7 @@ export default function AppointmentsPage() {
                 </Button>
               )}
               {canCreateAppt && (
-                <Button onClick={() => setNewApptOpen(true)} className="gap-2">
+                <Button onClick={() => { setConflict(null); setNewApptOpen(true); }} className="gap-2">
                   <Plus className="h-4 w-4" />
                   {t("newAppointment")}
                 </Button>
@@ -655,7 +660,7 @@ export default function AppointmentsPage() {
               </div>
             </div>
           )}
-          {dayLoading || prevDayLoading ? (
+          {dayLoading ? (
             <Skeleton className="h-[560px] w-full rounded-xl" />
           ) : (
             /* Two department columns beside a 56px time gutter don't fit a phone.
@@ -666,6 +671,7 @@ export default function AppointmentsPage() {
               groups={timelineGroups}
               isToday={isSelectedToday}
               onSelect={setDetailAppt}
+              highlightIds={conflict && conflict.date === selectedDate ? conflict.ids : undefined}
               onSelectMeeting={setDetailMeeting}
               resolveAttendees={(m) => (m.attendeeIds ?? []).map((id) => staffName(id)).filter(Boolean).join("، ") || null}
               resolveTherapist={(a) => {
@@ -817,6 +823,7 @@ export default function AppointmentsPage() {
                         endTime: eObj ? `${pad(eObj.getHours())}:${pad(eObj.getMinutes())}` : "",
                         isOpenEnded: detailAppt.isOpenEnded === true,
                       });
+                      setConflict(null);
                       setRescheduleFor(detailAppt);
                       setDetailAppt(null);
                     } else {
@@ -837,11 +844,11 @@ export default function AppointmentsPage() {
               </div>
             )}
             {detailAppt && (
-              <WhatsappConfirmButton
+              <WhatsappAppointmentsButton
+                appointment={detailAppt}
                 phone={detailPatientPhone}
                 patientName={detailPatientName}
-                date={detailDateLabel}
-                time={detailTimeLabel}
+                locale={locale}
                 disabledReason={
                   detailAppt.patientId
                     ? "لا يوجد رقم هاتف محفوظ في ملف هذا المريض"
@@ -1026,6 +1033,16 @@ export default function AppointmentsPage() {
               </span>
             </label>
           </div>
+          {conflict && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+              <p className="text-destructive">{conflict.message}</p>
+              {conflict.ids.length > 0 && (
+                <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={showConflict}>
+                  عرض الموعد المتعارض على اللوح
+                </Button>
+              )}
+            </div>
+          )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setRescheduleFor(null)} disabled={rescheduleAppt.isPending}>
               {t("form.cancel")}
@@ -1048,10 +1065,16 @@ export default function AppointmentsPage() {
                       endTime: new Date(`${rsForm.date}T${rsForm.endTime}:00`).toISOString(),
                       ...(rescheduleFor.isOpenEnded ? { isOpenEnded: false } : {}),
                     };
-                await rescheduleAppt.mutateAsync({
-                  id: rescheduleFor.id,
-                  dto: { startTime: startISO, ...timing },
-                });
+                setConflict(null);
+                try {
+                  await rescheduleAppt.mutateAsync({
+                    id: rescheduleFor.id,
+                    dto: { startTime: startISO, ...timing },
+                  });
+                } catch (e) {
+                  setConflict(conflictOf(e, rsForm.date));
+                  return;
+                }
                 setRescheduleFor(null);
               }}
             >
@@ -1254,7 +1277,17 @@ export default function AppointmentsPage() {
               <Label>{t("form.notes")}</Label>
               <Textarea rows={2} value={newForm.notes} onChange={(e) => setNewForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
-          </div>
+                      {conflict && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                <p className="text-destructive">{conflict.message}</p>
+                {conflict.ids.length > 0 && (
+                  <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={showConflict}>
+                    عرض الموعد المتعارض على اللوح
+                  </Button>
+                )}
+              </div>
+            )}
+</div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewApptOpen(false)}>{t("form.cancel")}</Button>
             <Button onClick={handleCreateAppt} disabled={(!newForm.patientId && !unregisteredName.trim()) || !newForm.departmentId || !(myEmployee as any)?.userId || createAppt.isPending

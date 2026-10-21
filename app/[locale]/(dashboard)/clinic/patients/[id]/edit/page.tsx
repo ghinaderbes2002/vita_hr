@@ -234,13 +234,15 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
         referralSourceId: values.referralSourceId ?? null,
         referralStaffId:  values.referralStaffId ?? "",
       }),
-      // Consent is deliberately NOT written here: it counts only when signed,
-      // and is recorded below as a signed consent record instead.
+      // Consent is not written on the patient: it is recorded below as a
+      // consent record of its own.
       notes:           values.notes || undefined,
     };
     await updatePatient.mutateAsync({ id, dto });
 
-    if (consentSignature && consentChoice) {
+    // A new signature, or a changed choice even unsigned, makes a new record;
+    // unsigned, the patient's name stands in and no signature image is kept.
+    if (consentChoice && (consentSignature || consentChanged)) {
       try {
         await clinicPatientsApi.createConsent(id, {
           type:     "DOCUMENTATION",
@@ -251,12 +253,8 @@ function EditPatientForm({ patient, cities }: { patient: Patient; cities: City[]
           ),
         });
       } catch {
-        toast.error("تم حفظ البيانات، لكن تسجيل الموافقة الموقّعة فشل");
+        toast.error("تم حفظ البيانات، لكن تسجيل الموافقة فشل");
       }
-    } else if (consentChanged) {
-      // Changing the choice without signing records nothing, so say so rather
-      // than let the user leave believing the new choice was saved.
-      toast.warning("لم يُحفظ تغيير الموافقة — يجب توقيع المريض لاعتمادها");
     }
 
     router.push(`/${locale}/clinic/patients/${id}`);
