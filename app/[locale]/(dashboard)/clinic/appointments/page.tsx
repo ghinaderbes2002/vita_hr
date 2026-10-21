@@ -68,6 +68,25 @@ function daysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
 
+// Clinic working hours, local time. A booking must start and end inside them.
+const WORK_START = "10:00";
+const WORK_END = "18:00";
+/**
+ * Why a slot can't be booked, or null when it can. "HH:mm" strings compare
+ * correctly as text. An open-ended booking reserves 15 minutes, so it must
+ * start by 17:45.
+ */
+function workHoursError(start: string, end: string, openEnded: boolean): string | null {
+  if (!start) return null;
+  if (start < WORK_START || start >= WORK_END)
+    return "وقت البداية خارج ساعات الدوام (10:00 صباحاً – 6:00 مساءً) — تأكد من AM/PM";
+  if (openEnded) return start > "17:45" ? "الموعد المفتوح يجب أن يبدأ قبل 5:45 مساءً" : null;
+  if (!end) return null;
+  if (end <= start) return "وقت النهاية يجب أن يكون بعد وقت البداية";
+  if (end > WORK_END) return "وقت النهاية بعد نهاية الدوام (6:00 مساءً)";
+  return null;
+}
+
 function toISO(d: Date) {
   return d.toISOString().slice(0, 10);
 }
@@ -189,7 +208,7 @@ export default function AppointmentsPage() {
     appointmentType: "ASSESSMENT" as AppointmentType,
     departmentId: "",
     therapistIds: [] as string[],
-    date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "",
+    date: toISO(today), startTime: "10:00", endTime: "10:30", notes: "",
     isOpenEnded: false,
   });
   const allowedTypes = typesForDepartment(newForm.departmentId);
@@ -203,12 +222,22 @@ export default function AppointmentsPage() {
   // Scoped to the selected day on the server: unscoped, the 500 cap was filled
   // by other days and the board silently dropped appointments once the clinic
   // had more than that in total.
-  const { data: dayData, isLoading: dayLoading } = useClinicAppointments({
-    date: selectedDate,
+  const dayQuery = {
     limit: 500,
     status: statusFilter !== "ALL" ? statusFilter : undefined,
     departmentId: departmentFilter !== "ALL" ? departmentFilter : undefined,
-  });
+  };
+  const { data: dayData, isLoading: dayLoading } = useClinicAppointments({ ...dayQuery, date: selectedDate });
+  // The API reads ?date= as a UTC day, but the clinic runs on local time (UTC+3):
+  // a booking between midnight and 3 a.m. local is filed under the previous UTC
+  // day and vanished from both. Both days are fetched; isSelectedDay keeps the
+  // local one.
+  const prevDate = (() => {
+    const d = new Date(`${selectedDate}T00:00:00`);
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  const { data: prevDayData, isLoading: prevDayLoading } = useClinicAppointments({ ...dayQuery, date: prevDate });
   const { data: patientsData } = useClinicPatients({ search: patientSearch, limit: 50 });
   const createAppt = useCreateAppointment();
   const cancelAppt = useCancelAppointment();
@@ -228,7 +257,12 @@ export default function AppointmentsPage() {
     .filter((c) => c.status !== "CLOSED" && c.status !== "CANCELLED")
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
-  const dayAppointments = dayData?.items ?? [];
+  const dayAppointments = useMemo(() => {
+    const seen = new Set<string>();
+    return [...(dayData?.items ?? []), ...(prevDayData?.items ?? [])].filter((a: Appointment) =>
+      seen.has(a.id) ? false : (seen.add(a.id), true),
+    );
+  }, [dayData, prevDayData]);
 
   // Staff meetings for the viewed month: one request feeds both the calendar
   // dots and the selected day's column.
@@ -272,6 +306,26 @@ export default function AppointmentsPage() {
     return a.date === selectedDate;
   };
   const dayScoped = dayAppointments.filter(isSelectedDay);
+  // 24-hour local clock, so 3:00 a.m. and 3:00 p.m. can't be mistaken for each other.
+  const localClock = (iso?: string | null) => {
+    if (!iso || iso.length <= 5) return iso ?? "";
+    const d = new Date(iso);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+  const minutesOfDay = (iso?: string | null) => {
+    if (!iso || iso.length <= 5) return null;
+    const d = new Date(iso);
+    return d.getHours() * 60 + d.getMinutes();
+  };
+  const outOfHours = dayScoped.filter((a: Appointment) => {
+    if (a.status === "CANCELLED") return false;
+    const start = minutesOfDay(a.startTime);
+    if (start === null) return false;
+    const end = minutesOfDay(a.endTime) ?? start;
+    // Starts before 10:00 or at/after 18:00, or runs past midnight.
+    const crossesMidnight = !!a.endTime && new Date(a.endTime).toDateString() !== new Date(a.startTime).toDateString();
+    return start < 10 * 60 || start >= 18 * 60 || crossesMidnight || end < start;
+  });
   const isPhysio = (n: string) => n.includes("العلاج الفيزيائي");
   const isProsth = (n: string) =>
     n.includes("الأطراف الصناعية") || n.includes("الاطراف الصناعية") || n.includes("طب الأقدام") || n.includes("طب الاقدام");
@@ -372,7 +426,7 @@ export default function AppointmentsPage() {
     setSelectedPatientLabel("");
     setSelectedPatientPhone("");
     setUnregisteredName("");
-    setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "09:00", endTime: "09:30", notes: "", isOpenEnded: false });
+    setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "10:00", endTime: "10:30", notes: "", isOpenEnded: false });
   };
 
   // PUT /appointments/:id takes only what changed. Date and time are not edited
@@ -577,7 +631,31 @@ export default function AppointmentsPage() {
               )}
             </span>
           </div>
-          {dayLoading ? (
+          {/* The board draws 10:00–18:00 only. A booking outside it — usually an
+              a.m./p.m. slip, like 3:00 a.m. for 3:00 p.m. — would otherwise
+              be on no screen at all, so it is listed here to be opened and fixed. */}
+          {!dayLoading && outOfHours.length > 0 && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950/40">
+              <p className="mb-2 font-medium text-amber-900 dark:text-amber-200">
+                مواعيد خارج ساعات الدوام ({outOfHours.length}) — لا تظهر على اللوح، تأكد من وقتها:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {outOfHours.map((a: Appointment) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setDetailAppt(a)}
+                    className="rounded-md border border-amber-300 bg-background px-2.5 py-1 text-xs hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900/40"
+                  >
+                    <span className="font-mono" dir="ltr">{localClock(a.startTime)}–{localClock(a.endTime)}</span>
+                    {" · "}
+                    {a.patient ? `${a.patient.firstName} ${a.patient.lastName}` : a.patientName || "—"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {dayLoading || prevDayLoading ? (
             <Skeleton className="h-[560px] w-full rounded-xl" />
           ) : (
             /* Two department columns beside a 56px time gutter don't fit a phone.
@@ -922,15 +1000,20 @@ export default function AppointmentsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>{t("form.startTime")}</Label>
-                <Input type="time" value={rsForm.startTime} onChange={(e) => setRsForm((f) => ({ ...f, startTime: e.target.value }))} />
+                <Input type="time" min={WORK_START} max={WORK_END} step={300} value={rsForm.startTime} onChange={(e) => setRsForm((f) => ({ ...f, startTime: e.target.value }))} />
               </div>
               {!rsForm.isOpenEnded && (
                 <div className="space-y-1.5">
                   <Label>{t("form.endTime")}</Label>
-                  <Input type="time" value={rsForm.endTime} onChange={(e) => setRsForm((f) => ({ ...f, endTime: e.target.value }))} />
+                  <Input type="time" min={WORK_START} max={WORK_END} step={300} value={rsForm.endTime} onChange={(e) => setRsForm((f) => ({ ...f, endTime: e.target.value }))} />
                 </div>
               )}
             </div>
+            {workHoursError(rsForm.startTime, rsForm.endTime, rsForm.isOpenEnded) && (
+              <p className="text-xs text-destructive">
+                {workHoursError(rsForm.startTime, rsForm.endTime, rsForm.isOpenEnded)}
+              </p>
+            )}
             <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border p-3">
               <Checkbox
                 checked={rsForm.isOpenEnded}
@@ -950,7 +1033,8 @@ export default function AppointmentsPage() {
             <Button
               disabled={
                 rescheduleAppt.isPending || !rsForm.date || !rsForm.startTime ||
-                (!rsForm.isOpenEnded && !rsForm.endTime)
+                (!rsForm.isOpenEnded && !rsForm.endTime) ||
+                !!workHoursError(rsForm.startTime, rsForm.endTime, rsForm.isOpenEnded)
               }
               onClick={async () => {
                 if (!rescheduleFor) return;
@@ -1141,15 +1225,20 @@ export default function AppointmentsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>{t("form.startTime")}</Label>
-                <Input type="time" value={newForm.startTime} onChange={(e) => setNewForm((f) => ({ ...f, startTime: e.target.value }))} />
+                <Input type="time" min={WORK_START} max={WORK_END} step={300} value={newForm.startTime} onChange={(e) => setNewForm((f) => ({ ...f, startTime: e.target.value }))} />
               </div>
               {!newForm.isOpenEnded && (
                 <div className="space-y-1.5">
                   <Label>{t("form.endTime")}</Label>
-                  <Input type="time" value={newForm.endTime} onChange={(e) => setNewForm((f) => ({ ...f, endTime: e.target.value }))} />
+                  <Input type="time" min={WORK_START} max={WORK_END} step={300} value={newForm.endTime} onChange={(e) => setNewForm((f) => ({ ...f, endTime: e.target.value }))} />
                 </div>
               )}
             </div>
+            {workHoursError(newForm.startTime, newForm.endTime, newForm.isOpenEnded) && (
+              <p className="text-xs text-destructive">
+                {workHoursError(newForm.startTime, newForm.endTime, newForm.isOpenEnded)}
+              </p>
+            )}
             <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border p-3">
               <Checkbox
                 checked={newForm.isOpenEnded}
@@ -1168,7 +1257,8 @@ export default function AppointmentsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewApptOpen(false)}>{t("form.cancel")}</Button>
-            <Button onClick={handleCreateAppt} disabled={(!newForm.patientId && !unregisteredName.trim()) || !newForm.departmentId || !(myEmployee as any)?.userId || createAppt.isPending}>
+            <Button onClick={handleCreateAppt} disabled={(!newForm.patientId && !unregisteredName.trim()) || !newForm.departmentId || !(myEmployee as any)?.userId || createAppt.isPending
+              || !!workHoursError(newForm.startTime, newForm.endTime, newForm.isOpenEnded)}>
               {createAppt.isPending ? t("form.saving") : t("form.create")}
             </Button>
           </DialogFooter>
