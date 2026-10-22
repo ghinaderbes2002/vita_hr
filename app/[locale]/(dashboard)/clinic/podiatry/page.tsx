@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Footprints, Users, UserX } from "lucide-react";
+import { Search, Eye, CheckCircle2, CircleDashed, Footprints, UserCheck, Users, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +86,8 @@ export default function PodiatryListPage() {
   const isLoading = meLoading || (mineOnly ? mineLoading : allLoading);
 
   const unassignedCount = (receptions as PodiatryReception[]).filter((r) => !isAssigned(r)).length;
+  // The whole list is loaded, so the fitting split is counted here over every reception.
+  const fittedCount = (receptions as PodiatryReception[]).filter(isFitted).length;
 
   const filtered = (receptions as PodiatryReception[]).filter((r) => {
     if (assignFilter === "assigned" && !isAssigned(r)) return false;
@@ -119,7 +121,14 @@ export default function PodiatryListPage() {
             counts={[
               { icon: Users, label: tCommon("patients"), value: patientCount },
               { icon: Footprints, label: tCommon("receptions"), value: (receptions as PodiatryReception[]).length },
-              ...(seesAll ? [{ icon: UserX, label: t("noPractitioner"), value: unassignedCount }] : []),
+              { icon: CheckCircle2, label: t("statFitted"), value: fittedCount },
+              { icon: CircleDashed, label: t("statNotFitted"), value: (receptions as PodiatryReception[]).length - fittedCount },
+              ...(seesAll
+                ? [
+                    { icon: UserCheck, label: t("statAssigned"), value: (receptions as PodiatryReception[]).length - unassignedCount },
+                    { icon: UserX, label: t("noPractitioner"), value: unassignedCount },
+                  ]
+                : []),
             ]}
           />
         }

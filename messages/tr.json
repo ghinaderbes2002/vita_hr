@@ -4024,6 +4024,9 @@
       "installedBadge": "Takıldı",
       "notInstalledBadge": "Takılmadı",
       "noPractitioner": "Uygulayıcı yok",
+      "statFitted": "Takıldı",
+      "statNotFitted": "Takılmadı",
+      "statAssigned": "Uygulayıcılı",
       "assignFilter": { "all": "Tüm hastalar", "assigned": "Atanmış", "unassigned": "Atanmamış" },
       "detail": {
         "back": "Ayak Sağlığı",

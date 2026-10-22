@@ -5075,6 +5075,9 @@
       "installedBadge": "رُكّب",
       "notInstalledBadge": "لم يُركّب",
       "noPractitioner": "بدون معالج",
+      "statFitted": "ركّبت",
+      "statNotFitted": "لم تركّب",
+      "statAssigned": "مع معالج",
       "assignFilter": { "all": "كل المرضى", "assigned": "لهم معالج", "unassigned": "بدون معالج" },
       "detail": {
         "back": "طب الأقدام",

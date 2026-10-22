@@ -4939,6 +4939,9 @@
       "installedBadge": "Fitted",
       "notInstalledBadge": "Not fitted",
       "noPractitioner": "No practitioner",
+      "statFitted": "Fitted",
+      "statNotFitted": "Not fitted",
+      "statAssigned": "With practitioner",
       "assignFilter": { "all": "All patients", "assigned": "Assigned", "unassigned": "Unassigned" },
       "detail": {
         "back": "Podiatry",
