@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, CheckCircle2, CircleDashed, Footprints, UserCheck, Users, UserX } from "lucide-react";
+import { Search, Eye, Footprints, Users, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
-import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
+import { PodiatryStats } from "@/components/clinic/podiatry-stats";
 import { usePodiatryReceptions, usePodiatryMyPatients } from "@/lib/hooks/use-clinic-podiatry";
 import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import {
@@ -115,23 +115,15 @@ export default function PodiatryListPage() {
       <PageHeader
         title={t("title")}
         description={mineOnly ? tMine("description") : t("description")}
-        actions={
-          <ClinicCountChips
-            isLoading={isLoading}
-            counts={[
-              { icon: Users, label: tCommon("patients"), value: patientCount },
-              { icon: Footprints, label: tCommon("receptions"), value: (receptions as PodiatryReception[]).length },
-              { icon: CheckCircle2, label: t("statFitted"), value: fittedCount },
-              { icon: CircleDashed, label: t("statNotFitted"), value: (receptions as PodiatryReception[]).length - fittedCount },
-              ...(seesAll
-                ? [
-                    { icon: UserCheck, label: t("statAssigned"), value: (receptions as PodiatryReception[]).length - unassignedCount },
-                    { icon: UserX, label: t("noPractitioner"), value: unassignedCount },
-                  ]
-                : []),
-            ]}
-          />
-        }
+      />
+
+      <PodiatryStats
+        isLoading={isLoading}
+        total={(receptions as PodiatryReception[]).length}
+        patients={patientCount}
+        fitted={fittedCount}
+        assigned={(receptions as PodiatryReception[]).length - unassignedCount}
+        showAssignment={seesAll}
       />
 
       <div className="flex flex-wrap gap-3">

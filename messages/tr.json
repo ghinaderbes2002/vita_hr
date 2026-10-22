@@ -4027,6 +4027,10 @@
       "statFitted": "Takıldı",
       "statNotFitted": "Takılmadı",
       "statAssigned": "Uygulayıcılı",
+      "statTotal": "Toplam vaka",
+      "statPatients": "{count} hasta",
+      "statOfTotal": "Toplamın %{pct}'i",
+      "statUnassigned": "Uygulayıcısız: {count}",
       "assignFilter": { "all": "Tüm hastalar", "assigned": "Atanmış", "unassigned": "Atanmamış" },
       "detail": {
         "back": "Ayak Sağlığı",

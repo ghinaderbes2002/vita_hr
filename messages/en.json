@@ -4942,6 +4942,10 @@
       "statFitted": "Fitted",
       "statNotFitted": "Not fitted",
       "statAssigned": "With practitioner",
+      "statTotal": "Total cases",
+      "statPatients": "{count} patients",
+      "statOfTotal": "{pct}% of total",
+      "statUnassigned": "No practitioner: {count}",
       "assignFilter": { "all": "All patients", "assigned": "Assigned", "unassigned": "Unassigned" },
       "detail": {
         "back": "Podiatry",

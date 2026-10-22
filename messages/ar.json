@@ -5078,6 +5078,10 @@
       "statFitted": "ركّبت",
       "statNotFitted": "لم تركّب",
       "statAssigned": "مع معالج",
+      "statTotal": "إجمالي الحالات",
+      "statPatients": "{count} مريض",
+      "statOfTotal": "{pct}% من الإجمالي",
+      "statUnassigned": "بدون معالج: {count}",
       "assignFilter": { "all": "كل المرضى", "assigned": "لهم معالج", "unassigned": "بدون معالج" },
       "detail": {
         "back": "طب الأقدام",
