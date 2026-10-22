@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Footprints, Users, UserX } from "lucide-react";
+import { Search, Eye, Footprints, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +53,6 @@ export default function PodiatryListPage() {
   const locale = useLocale();
   const t = useTranslations("clinic.podiatry");
   const tMine = useTranslations("clinic.podiatry.myPatients");
-  const tCommon = useTranslations("clinic.common");
   const enumLabel = usePodiatryEnumLabels();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
