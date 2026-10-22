@@ -22,7 +22,7 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { OrthoticsReceptionDialog } from "@/components/clinic/orthotics-reception-dialog";
 import { sectionsFilled } from "@/components/clinic/orthotics-labels";
 import { useOrthoticsMyPatients, useOrthoticsReceptions } from "@/lib/hooks/use-clinic-orthotics";
-import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import type { OrthoticsReception } from "@/lib/api/clinic-orthotics";
@@ -32,6 +32,15 @@ const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—"
 const PAGE_SIZE = 20;
 
 const isAssigned = (r: OrthoticsReception) => (r.practitionerIds ?? []).length > 0;
+
+/** Job titles that oversee the whole caseload instead of just their own receptions — as on the prosthetics page. */
+const FULL_CASELOAD_JOB_CODES = [
+  "VTX-JTL-000035", // رئيس قسم الأطراف الصناعية وطب الأقدام
+  "VTX-JTL-000011", // مشرف المركز
+  "VTX-JTL-000007", // المدير الطبي
+  "VTX-JTL-000014", // مشرف المبيعات
+  "VTX-JTL-000024", // مندوب المبيعات
+];
 
 const SECTION_BADGES = [
   { key: "doctor", label: "sectionDoctor" },
@@ -48,21 +57,18 @@ export default function OrthoticsListPage() {
   const [assignFilter, setAssignFilter] = useState<"all" | "assigned" | "unassigned">("all");
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Whoever runs the reception desk — creating receptions or managing the team —
-  // sees the whole caseload; a practitioner who only fills in their own section
-  // sees the receptions they are assigned to.
-  const { hasAnyPermission, isAdmin } = usePermissions();
-  const seesAll = isAdmin() || hasAnyPermission([
-    PERMISSIONS.CLINIC_ORTHOTICS.CREATE,
-    PERMISSIONS.CLINIC_ORTHOTICS.EDIT,
-    PERMISSIONS.CLINIC_ORTHOTICS.DELETE,
-  ]);
+  // المشرفون يرون كل مرضى القسم؛ من عداهم يرى الاستقبالات المعيَّن عليها فقط.
+  const { hasRole, isAdmin } = usePermissions();
+  const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
+  // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
+  const seesAll = isAdmin() || hasRole("QS") || FULL_CASELOAD_JOB_CODES.includes((myEmployee as any)?.jobTitle?.code ?? "");
 
-  // Exactly one of the two runs, so a practitioner never pulls the whole list.
-  const { data: allReceptions = [], isLoading: allLoading } = useOrthoticsReceptions(undefined, seesAll);
-  const { data: myReceptions = [], isLoading: mineLoading } = useOrthoticsMyPatients(!seesAll);
+  // Exactly one of the two runs: the mode is unknown until the profile lands, so
+  // neither fires before then and a practitioner never pulls the whole list.
+  const { data: allReceptions = [], isLoading: allLoading } = useOrthoticsReceptions(undefined, !meLoading && seesAll);
+  const { data: myReceptions = [], isLoading: mineLoading } = useOrthoticsMyPatients(!meLoading && !seesAll);
   const receptions = seesAll ? allReceptions : myReceptions;
-  const isLoading = seesAll ? allLoading : mineLoading;
+  const isLoading = meLoading || (seesAll ? allLoading : mineLoading);
 
   // The reception carries practitioner ids only; names come from the staff list.
   const { data: staffData } = useEmployeesBasicList();

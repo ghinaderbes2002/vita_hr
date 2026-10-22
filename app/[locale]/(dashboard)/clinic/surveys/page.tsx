@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import {
 } from "@/components/clinic/patient-survey";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import type { SurveyDepartment } from "@/lib/api/patient-surveys";
 
 export default function PatientSurveysPage() {
@@ -29,11 +31,36 @@ export default function PatientSurveysPage() {
 }
 
 function PatientSurveys() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { hasPermission, isAdmin } = usePermissions();
   const canView = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_VIEW);
   const canCreate = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_CREATE);
   const [department, setDepartment] = useState<SurveyDepartment | "ALL">("ALL");
   const [open, setOpen] = useState(false);
+
+  // Deep-link from a PATIENT_SURVEY_REQUIRED notification:
+  // ?patientId=…&department=… opens a new survey already tied to that patient
+  // and department. The dialog waits for the patient so it never shows the
+  // patient search first.
+  const linkedPatientId = searchParams.get("patientId") ?? "";
+  const linkedDeptParam = searchParams.get("department");
+  const linkedDept = linkedDeptParam && linkedDeptParam in SURVEY_DEPARTMENT_LABEL
+    ? (linkedDeptParam as SurveyDepartment)
+    : undefined;
+  const { data: linkedPatient, isError: linkedFailed } = useClinicPatient(canCreate ? linkedPatientId : "");
+  const [linkedOpen, setLinkedOpen] = useState(false);
+  useEffect(() => {
+    // If the patient can't be read (e.g. no patient-view permission), still open
+    // the survey — with the department set and the patient search instead.
+    if (linkedPatient || linkedFailed) setLinkedOpen(true);
+  }, [linkedPatient?.id, linkedFailed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const closeLinked = (o: boolean) => {
+    setLinkedOpen(o);
+    // Drop the query so a refresh doesn't reopen the dialog.
+    if (!o) router.replace(window.location.pathname);
+  };
 
   return (
     <div className="space-y-4">
@@ -78,6 +105,14 @@ function PatientSurveys() {
       )}
 
       <PatientSurveyDialog open={open} onOpenChange={setOpen} />
+      {(linkedPatient || linkedFailed) && (
+        <PatientSurveyDialog
+          open={linkedOpen}
+          onOpenChange={closeLinked}
+          patient={linkedPatient ?? null}
+          department={linkedDept}
+        />
+      )}
     </div>
   );
 }

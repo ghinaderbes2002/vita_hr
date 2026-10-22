@@ -44,7 +44,9 @@ export type NotificationType =
   | "INVENTORY_REQUEST_UPDATE"
   // إشعارات الأطراف الصناعية
   | "CASE_ALERT"
-  | "CASE_ALERT_RESPONSE";
+  | "CASE_ALERT_RESPONSE"
+  // استبيان رضا مطلوب — لمندوبي المبيعات: { patientId, department, caseId }
+  | "PATIENT_SURVEY_REQUIRED";
 
 export interface Notification {
   id: string;

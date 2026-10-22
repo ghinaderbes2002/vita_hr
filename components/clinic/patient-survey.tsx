@@ -433,6 +433,7 @@ const emptyForm = () => ({
   complaintStage: "" as ComplaintStage | "",
   podiatryServiceType: "" as PodiatryServiceType | "",
   noFittingReason: "" as NoFittingReason | "",
+  noFittingReasonOther: "",
   additionalNotes: "",
 });
 
@@ -441,11 +442,13 @@ const emptyForm = () => ({
  * بدونه يظهر بحث لاختيار المريض أولاً.
  */
 export function PatientSurveyDialog({
-  open, onOpenChange, patient,
+  open, onOpenChange, patient, department,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   patient?: Patient | null;
+  /** Preselected department — e.g. from a PATIENT_SURVEY_REQUIRED notification. */
+  department?: SurveyDepartment;
 }) {
   const [form, setForm] = useState(emptyForm);
   const [picked, setPicked] = useState<Patient | null>(null);
@@ -461,6 +464,7 @@ export function PatientSurveyDialog({
   const prefill = (p: Patient | null) => {
     setForm({
       ...emptyForm(),
+      department: department ?? "",
       customerName: patientFullName(p),
       gender: p?.gender === "MALE" || p?.gender === "FEMALE" ? p.gender : "",
       ageGroup: ageGroupOf(p?.dateOfBirth),
@@ -474,7 +478,7 @@ export function PatientSurveyDialog({
       prefill(patient ?? null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, patient?.id]);
+  }, [open, patient?.id, department]);
 
   const pickPatient = (p: Patient) => {
     setPicked(p);
@@ -517,6 +521,9 @@ export function PatientSurveyDialog({
       ...(dep === "PROSTHETICS" && form.complaintStage ? { complaintStage: form.complaintStage } : {}),
       ...(dep === "PODIATRY" && form.podiatryServiceType ? { podiatryServiceType: form.podiatryServiceType } : {}),
       ...(asksNoFittingReason && form.noFittingReason ? { noFittingReason: form.noFittingReason } : {}),
+      ...(asksNoFittingReason && form.noFittingReason === "OTHER" && form.noFittingReasonOther.trim()
+        ? { noFittingReasonOther: form.noFittingReasonOther.trim() }
+        : {}),
       ...(form.additionalNotes.trim() ? { additionalNotes: form.additionalNotes.trim() } : {}),
     };
     await createSurvey.mutateAsync(dto);
@@ -562,6 +569,7 @@ export function PatientSurveyDialog({
     complaintStage: "",
     podiatryServiceType: "",
     noFittingReason: "",
+    noFittingReasonOther: "",
   }));
 
   // Each service type has its own form, so the answers only one of them asks are dropped.
@@ -569,7 +577,7 @@ export function PatientSurveyDialog({
     if (s === f.podiatryServiceType) return f;
     const ratings = { ...f.ratings };
     delete ratings.insoleComfortRating;
-    return { ...f, podiatryServiceType: s, ratings, noFittingReason: "" };
+    return { ...f, podiatryServiceType: s, ratings, noFittingReason: "", noFittingReasonOther: "" };
   });
 
   return (
@@ -687,6 +695,15 @@ export function PatientSurveyDialog({
                       onChange={(r) => setForm((f) => ({ ...f, noFittingReason: r as NoFittingReason }))}
                       className="grid-cols-1 sm:grid-cols-3"
                     />
+                    {form.noFittingReason === "OTHER" && (
+                      <Textarea
+                        rows={2}
+                        className="mt-3"
+                        value={form.noFittingReasonOther}
+                        placeholder="وضّح السبب (اختياري)"
+                        onChange={(e) => setForm((f) => ({ ...f, noFittingReasonOther: e.target.value }))}
+                      />
+                    )}
                   </QuestionCard>
                 )}
 
@@ -791,6 +808,7 @@ export function PatientSurveyDetailsDialog({ surveyId, onClose }: { surveyId: st
               {s.noFittingReason && (
                 <DetailRow label={NO_FITTING_REASON_QUESTION}>
                   {NO_FITTING_REASON_LABEL[s.noFittingReason] ?? s.noFittingReason}
+                  {s.noFittingReasonOther && ` — ${s.noFittingReasonOther}`}
                 </DetailRow>
               )}
               {answered(
@@ -848,7 +866,11 @@ function surveyPdfData(s: PatientSurvey, staffName: (id: string) => string): Sur
     ratings: keys.map(rating),
     choices: [
       ...(s.noFittingReason
-        ? [{ label: NO_FITTING_REASON_QUESTION, value: NO_FITTING_REASON_LABEL[s.noFittingReason] ?? s.noFittingReason }]
+        ? [{
+            label: NO_FITTING_REASON_QUESTION,
+            value: (NO_FITTING_REASON_LABEL[s.noFittingReason] ?? s.noFittingReason)
+              + (s.noFittingReasonOther ? ` — ${s.noFittingReasonOther}` : ""),
+          }]
         : []),
       ...(s.complaintStage
         ? [{ label: COMPLAINT_STAGE_QUESTION, value: COMPLAINT_STAGE_LABEL[s.complaintStage] ?? s.complaintStage }]
@@ -939,7 +961,7 @@ export function PatientSurveysTable({ params }: { params: Omit<PatientSurveyList
                       onClick={() => exportPdf(s.id)}
                     >
                       {exportingId === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                      تصدير PDF
+                      PDF
                     </Button>
                   </div>
                 </TableCell>

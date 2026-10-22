@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   clinicOrthoticsApi,
+  CreateOrthoticsMeasurementDto,
   CreateOrthoticsReceptionDto,
   OrthoticsDoctorAssessment,
   OrthoticsGuardianDto,
@@ -137,5 +138,61 @@ export function useDeleteOrthoticsReception() {
       toast.success("تم حذف الاستقبال");
     },
     onError: (e: unknown) => toast.error(errMsg(e, "فشل حذف الاستقبال")),
+  });
+}
+
+const measurementsKey = (id: string) => ["orthotics-reception", id, "measurements"];
+
+export function useOrthoticsMeasurements(id: string) {
+  return useQuery({
+    queryKey: measurementsKey(id),
+    queryFn: () => clinicOrthoticsApi.listMeasurements(id),
+    enabled: !!id,
+  });
+}
+
+export function useAddOrthoticsMeasurement(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateOrthoticsMeasurementDto) => clinicOrthoticsApi.addMeasurement(id, dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: measurementsKey(id) });
+      toast.success("تم حفظ ورقة القياس");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل حفظ ورقة القياس")),
+  });
+}
+
+const attachmentsKey =(id: string) => ["orthotics-reception", id, "attachments"];
+
+export function useOrthoticsAttachments(id: string, enabled = true) {
+  return useQuery({
+    queryKey: attachmentsKey(id),
+    queryFn: () => clinicOrthoticsApi.listAttachments(id),
+    enabled: !!id && enabled,
+  });
+}
+
+export function useUploadOrthoticsAttachment(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => clinicOrthoticsApi.uploadAttachment(id, file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: attachmentsKey(id) });
+      toast.success("تم رفع المرفق");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل رفع المرفق")),
+  });
+}
+
+export function useDeleteOrthoticsAttachment(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (attachmentId: string) => clinicOrthoticsApi.removeAttachment(id, attachmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: attachmentsKey(id) });
+      toast.success("تم حذف المرفق");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل حذف المرفق")),
   });
 }

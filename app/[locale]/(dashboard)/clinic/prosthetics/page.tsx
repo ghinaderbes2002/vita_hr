@@ -47,12 +47,11 @@ const STATUS_VALUES: ProstheticsStatus[] = [
 ];
 
 /**
- * مؤقتاً: الجميع يرى قائمة الحالات الكاملة (GET /prosthetics/cases) بدل قصرها
- * على حالات الممارس (GET /prosthetics/cases/by-practitioner).
- * للعودة إلى السلوك السابق: اجعل القيمة true — كل كود by-practitioner (الدالة،
- * الـ hook، والفلترة والترقيم المحليان أدناه) ما زال في مكانه بلا تغيير.
+ * true: كل ممارس يرى حالاته فقط (GET /prosthetics/cases/by-practitioner)، ومن
+ * يملك الصلاحية الكاملة (seesAll) يرى القائمة كاملة (GET /prosthetics/cases).
+ * false: الجميع يرى القائمة الكاملة.
  */
-const USE_PRACTITIONER_CASELOAD = false;
+const USE_PRACTITIONER_CASELOAD = true;
 
 const fmt = (d: string) => {
   const date = new Date(d);

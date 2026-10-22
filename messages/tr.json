@@ -2178,6 +2178,11 @@
       "doctor": {
         "title": "Ortopedi Doktoru Formu",
         "medicalHistory": "Tıbbi Öykü",
+        "appliances": "Gerekli Ortezler",
+        "appliancesCount": "Ortez sayısı",
+        "affectedLimbType": "Etkilenen uzuv",
+        "affectedSide": "Taraf",
+        "soundLimb": "Sağlam uzuv açıklaması",
         "diagnosis": "Birincil Tıbbi Tanı",
         "cpType": "Serebral Palsi — Tipi",
         "footDropCause": "Düşük Ayak Nedeni",
@@ -2250,6 +2255,23 @@
         "hoursHint": "saat",
         "notes": "Ek Notlar / Dikkat Gerektiren Durumlar"
       },
+      "measurement": {
+        "title": "Ölçü Formu",
+        "new": "Yeni ölçü formu",
+        "sheet": "Form",
+        "sheets": {
+          "BELOW_KNEE": "Diz altı / ayak bileği",
+          "FULL_LEG": "Uyluk (tam bacak)",
+          "FOOT_ACCESSORIES": "Ayak aksesuarları"
+        },
+        "side": "Taraf",
+        "notes": "Notlar",
+        "notesPlaceholder": "İsteğe bağlı",
+        "save": "Ölçü formunu kaydet",
+        "empty": "Henüz ölçü formu yok.",
+        "hint": "Her değeri çizimdeki kutusuna yazın. Her form yeni bir ölçü olarak kaydedilir ve sonradan düzenlenemez.",
+        "emptySheet": "En az bir ölçü girin"
+      },
       "options": {
         "YES_NO": {
           "YES": "Evet",
@@ -2271,6 +2293,14 @@
           "NORMAL": "Normal",
           "SPASTIC": "Spastisite",
           "HYPOTONIC": "Hipotoni"
+        },
+        "LIMB_TYPES": {
+          "UPPER": "Üst",
+          "LOWER": "Alt"
+        },
+        "SIDES": {
+          "RIGHT": "Sağ",
+          "LEFT": "Sol"
         },
         "SENSATIONS": {
           "INTACT": "Sağlam",

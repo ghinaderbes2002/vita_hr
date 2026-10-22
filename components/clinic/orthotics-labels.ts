@@ -8,6 +8,7 @@ import type {
   OrthoticsMuscleTone, OrthoticsPhysioAssessment, OrthoticsReception, OrthoticsSensation,
   OrthoticsSkinCondition, OrthoticsTrunkMovement, OrthoticsTrunkScale,
   OrthoticsDailyUseSetting, OrthoticsRecommendedDevice, OrthoticsProsthetistAssessment,
+  OrthoticsLimbType, OrthoticsSide,
 } from "@/lib/api/clinic-orthotics";
 
 /**
@@ -34,6 +35,16 @@ export const MUSCLE_TONES: Options<OrthoticsMuscleTone> = [
   { value: "NORMAL", label: "options.MUSCLE_TONES.NORMAL" },
   { value: "SPASTIC", label: "options.MUSCLE_TONES.SPASTIC" },
   { value: "HYPOTONIC", label: "options.MUSCLE_TONES.HYPOTONIC" },
+];
+
+export const LIMB_TYPES: Options<OrthoticsLimbType> = [
+  { value: "UPPER", label: "options.LIMB_TYPES.UPPER" },
+  { value: "LOWER", label: "options.LIMB_TYPES.LOWER" },
+];
+
+export const SIDES: Options<OrthoticsSide> = [
+  { value: "RIGHT", label: "options.SIDES.RIGHT" },
+  { value: "LEFT", label: "options.SIDES.LEFT" },
 ];
 
 export const SENSATIONS: Options<OrthoticsSensation> = [
@@ -197,7 +208,6 @@ export function prosthetistAssessmentOf(r: OrthoticsReception): OrthoticsProsthe
     prosthetistOpinion: prosthetistOpinionOf(r),
     recommendedDeviceTypes: r.recommendedDeviceTypes ?? undefined,
     recommendedDeviceOther: r.recommendedDeviceOther ?? undefined,
-    dailyWearHours: r.dailyWearHours ?? undefined,
     additionalNotes: r.additionalNotes ?? undefined,
   };
 }
@@ -211,6 +221,6 @@ export function sectionsFilled(r: OrthoticsReception) {
     physio: !!(p.mobilityLevel || p.gaitProblems?.length || p.activityLevel || p.physioOpinion),
     prosthetist: !!prosthetistOpinionOf(r).trim(),
     clinicalHistory: !!(d.birthHistory || d.medicalHistory || d.functionalGoals?.length
-      || r.recommendedDeviceTypes?.length || r.dailyWearHours != null),
+      || r.recommendedDeviceTypes?.length),
   };
 }

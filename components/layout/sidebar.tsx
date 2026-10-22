@@ -309,9 +309,9 @@ const navigation: NavItem[] = [
       // titles the tab used to be hidden from by code.
       { title: "nav.clinicPatients", href: "/clinic/patients", icon: Users, permission: "clinic.patients.create" },
       { title: "nav.clinicProsthetics", href: "/clinic/prosthetics", icon: Activity, permission: "clinic.prosthetics.case.view" },
+      { title: "nav.clinicOrthotics", href: "/clinic/orthotics", icon: Accessibility, permission: "clinic.orthotics.view" },
       { title: "nav.clinicPhysio", href: "/clinic/physio", icon: Heart, permission: "clinic.physio.case.view" },
       { title: "nav.clinicPodiatry", href: "/clinic/podiatry", icon: Footprints, permission: "clinic.podiatry.reception.view" },
-      { title: "nav.clinicOrthotics", href: "/clinic/orthotics", icon: Accessibility, permission: "clinic.orthotics.view" },
       // Only the medical director gets this tab; showForJobTitleCodes hides it
       // from every other job title even when they hold the physio permission.
       { title: "nav.clinicDoctorExams", href: "/clinic/doctor-exams", icon: Stethoscope, permission: "clinic.physio.case.view", showForJobTitleCodes: ["VTX-JTL-000007"] },

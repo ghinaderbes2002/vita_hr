@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { toUploadableImage } from "@/lib/utils/heic";
 
 // ── Enums, mirrored from the orthotics API ────────────────────────────────────
 // قسم المقومات: one reception per patient, filled in over time by three roles —
@@ -34,7 +35,9 @@ export type OrthoticsTrunkScale = "GOOD" | "MODERATE" | "WEAK" | "ABSENT";
 export type OrthoticsActivityLevel = "K0" | "K1" | "K2" | "K3" | "K4";
 /** Where the orthosis will be worn day to day. */
 export type OrthoticsDailyUseSetting = "HOME" | "SCHOOL" | "SPORTS" | "OTHER";
-export type OrthoticsRecommendedDevice = "AFO" | "KAFO" | "ORTHOSIS_WITH_FES" | "OTHER";
+export type OrthoticsLimbType = "UPPER" | "LOWER";
+export type OrthoticsSide = "RIGHT" | "LEFT";
+export type OrthoticsRecommendedDevice ="AFO" | "KAFO" | "ORTHOSIS_WITH_FES" | "OTHER";
 
 /** طبيب العظمية. Every field is optional — the API upserts what it is sent. */
 export interface OrthoticsDoctorAssessment {
@@ -64,6 +67,11 @@ export interface OrthoticsDoctorAssessment {
   skinConditions?: OrthoticsSkinCondition[];
   pressurePointsLocation?: string;
   doctorOpinion?: string;
+  /** How many orthoses the patient needs. */
+  appliancesCount?: number | null;
+  affectedLimbType?: OrthoticsLimbType;
+  affectedSide?: OrthoticsSide;
+  soundLimbDescription?: string;
 }
 
 /** أخصائي العلاج الفيزيائي. Every field is optional, upserted the same way. */
@@ -86,6 +94,8 @@ export interface OrthoticsPhysioAssessment {
   trunkBalanceDynamicStanding?: OrthoticsTrunkScale;
   activityLevel?: OrthoticsActivityLevel;
   physioOpinion?: string;
+  /** Hours a day; null clears it. Moved here from the prosthetist's opinion. */
+  dailyWearHours?: number | null;
 }
 
 /** أخصائي الأطراف الصناعية — the opinion plus the device recommendation. All optional. */
@@ -93,9 +103,12 @@ export interface OrthoticsProsthetistAssessment {
   prosthetistOpinion?: string;
   recommendedDeviceTypes?: OrthoticsRecommendedDevice[];
   recommendedDeviceOther?: string;
-  /** Hours a day; null clears it. */
-  dailyWearHours?: number | null;
   additionalNotes?: string;
+  /**
+   * How many of each device type are needed, set with − / + in the form. Sent
+   * whole on save — it replaces what was there; a missing type means 0.
+   */
+  deviceUsageCounts?: Partial<Record<OrthoticsRecommendedDevice, number>> | null;
 }
 
 /**
@@ -129,6 +142,50 @@ export interface OrthoticsGuardianDto {
 export interface CreateOrthoticsReceptionDto extends OrthoticsGuardianDto {
   patientId: string;
 }
+
+/**
+ * One filled measurement sheet (public/orthotics/form_orthotics.svg). Every
+ * save appends a new sheet; a saved one is never edited. `values` is keyed by
+ * the drawing's field ids (circ_01…circ_07, len_01…len_13), each value the text
+ * as typed.
+ */
+/** Which drawing a sheet was filled on — the same field id means a different spot on each. */
+export type OrthoticsMeasurementSheet = "BELOW_KNEE" | "FULL_LEG" | "FOOT_ACCESSORIES";
+
+export interface OrthoticsMeasurement {
+  id: string;
+  receptionId?: string;
+  sheet: OrthoticsMeasurementSheet;
+  side: OrthoticsSide;
+  notes?: string | null;
+  values: Record<string, string>;
+  examinedAt: string;
+  createdBy?: string | null;
+}
+
+export interface CreateOrthoticsMeasurementDto {
+  sheet: OrthoticsMeasurementSheet;
+  side: OrthoticsSide;
+  notes?: string;
+  values: Record<string, string>;
+}
+
+export interface OrthoticsAttachment {
+  id: string;
+  receptionId: string;
+  /** A path on the server's disk — never a link. The file comes from `downloadAttachment`. */
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: string;
+  uploadedBy?: string | null;
+}
+
+/** Any image or a PDF, up to 15MB; anything else comes back as 400. */
+export const ORTHOTICS_ATTACHMENT_MAX_BYTES = 15 * 1024 * 1024;
+export const isOrthoticsAttachmentType = (mime: string) =>
+  mime.startsWith("image/") || mime === "application/pdf";
 
 const BASE = "/orthotics/receptions";
 
@@ -191,5 +248,44 @@ export const clinicOrthoticsApi = {
 
   deleteReception: async (id: string): Promise<void> => {
     await apiClient.delete(`${BASE}/${id}`);
+  },
+
+  /** Newest first. */
+  listMeasurements: async (id: string): Promise<OrthoticsMeasurement[]> => {
+    const { data } = await apiClient.get(`${BASE}/${id}/measurements`);
+    return asArray<OrthoticsMeasurement>(unwrap(data));
+  },
+
+  /** Appends a new sheet. */
+  addMeasurement: async (id: string, dto: CreateOrthoticsMeasurementDto): Promise<OrthoticsMeasurement> => {
+    const { data } = await apiClient.post(`${BASE}/${id}/measurements`, dto);
+    return unwrap(data) as OrthoticsMeasurement;
+  },
+
+  /** Newest first. */
+  listAttachments: async (id: string): Promise<OrthoticsAttachment[]> => {
+    const { data } = await apiClient.get(`${BASE}/${id}/attachments`);
+    return asArray<OrthoticsAttachment>(unwrap(data));
+  },
+
+  uploadAttachment: async (id: string, file: File): Promise<OrthoticsAttachment> => {
+    const form = new FormData();
+    form.append("file", await toUploadableImage(file));
+    const { data } = await apiClient.post(`${BASE}/${id}/attachments`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return unwrap(data) as OrthoticsAttachment;
+  },
+
+  /** The file itself. An <img src> cannot carry the token, so callers show it through an object URL. */
+  downloadAttachment: async (id: string, attachmentId: string): Promise<Blob> => {
+    const response = await apiClient.get(`${BASE}/${id}/attachments/${attachmentId}/download`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+
+  removeAttachment: async (id: string, attachmentId: string): Promise<void> => {
+    await apiClient.delete(`${BASE}/${id}/attachments/${attachmentId}`);
   },
 };

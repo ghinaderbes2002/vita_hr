@@ -3095,6 +3095,11 @@
       "doctor": {
         "title": "Orthopedic Doctor Form",
         "medicalHistory": "Medical History",
+        "appliances": "Required Orthoses",
+        "appliancesCount": "Number of orthoses",
+        "affectedLimbType": "Affected limb",
+        "affectedSide": "Side",
+        "soundLimb": "Sound limb description",
         "diagnosis": "Primary Medical Diagnosis",
         "cpType": "Cerebral Palsy — Type",
         "footDropCause": "Foot Drop Caused By",
@@ -3167,6 +3172,23 @@
         "hoursHint": "hours",
         "notes": "Additional Notes / Cases Requiring Attention"
       },
+      "measurement": {
+        "title": "Measurement Sheet",
+        "new": "New measurement sheet",
+        "sheet": "Form",
+        "sheets": {
+          "BELOW_KNEE": "Below knee / ankle",
+          "FULL_LEG": "Full leg (thigh)",
+          "FOOT_ACCESSORIES": "Foot accessories"
+        },
+        "side": "Side",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional",
+        "save": "Save measurement sheet",
+        "empty": "No measurement sheets yet.",
+        "hint": "Write each value inside its box on the drawing. Every sheet is saved as a new measurement and can't be edited afterwards.",
+        "emptySheet": "Enter at least one measurement"
+      },
       "options": {
         "YES_NO": {
           "YES": "Yes",
@@ -3188,6 +3210,14 @@
           "NORMAL": "Normal",
           "SPASTIC": "Spasticity",
           "HYPOTONIC": "Hypotonia"
+        },
+        "LIMB_TYPES": {
+          "UPPER": "Upper",
+          "LOWER": "Lower"
+        },
+        "SIDES": {
+          "RIGHT": "Right",
+          "LEFT": "Left"
         },
         "SENSATIONS": {
           "INTACT": "Intact",

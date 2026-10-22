@@ -8,7 +8,7 @@ import { ar } from "date-fns/locale";
 import {
   Bell, CheckCheck, AlertTriangle, CheckCircle2, XCircle, Info, ExternalLink,
   Clock, FileWarning, CalendarX, CalendarClock, User, ClipboardList, FileCheck, Briefcase,
-  Cake, UserPlus, FileX, ListTodo, UserX, Filter, ChevronDown, Mail, Trophy,
+  Cake, UserPlus, FileX, ListTodo, UserX, Filter, ChevronDown, Mail, Trophy, Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +59,8 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   TARDINESS_DEDUCTION_PENDING:    { icon: AlertTriangle, color: "text-orange-600", bg: "bg-orange-100", label: "خصم تأخير معلق" },
   INVENTORY_REQUEST:              { icon: Briefcase,     color: "text-indigo-600", bg: "bg-indigo-100", label: "طلب قطعة جديد" },
   INVENTORY_REQUEST_UPDATE:       { icon: CheckCircle2,  color: "text-green-600",  bg: "bg-green-100",  label: "تحديث طلب قطعة" },
-  GENERAL:                        { icon: Info,          color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },
+  PATIENT_SURVEY_REQUIRED:        { icon: Star,          color: "text-amber-600",  bg: "bg-amber-100",  label: "استبيان رضا مطلوب" },
+  GENERAL:                        { icon: Info,         color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },
 };
 
 const EVAL_TYPES = ["PROBATION_END_REMINDER", "EVALUATION_ASSIGNED", "PROBATION_REMINDER"];

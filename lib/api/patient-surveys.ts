@@ -42,6 +42,8 @@ export interface CreatePatientSurveyDto {
   insoleComfortRating?: number;
   /** ANALYSIS_ONLY only. */
   noFittingReason?: NoFittingReason;
+  /** Free-text detail for noFittingReason = "OTHER" — always optional; null when left empty. */
+  noFittingReasonOther?: string | null;
   // PHYSIO
   exerciseQualityRating?: number;
   mobilityImprovementRating?: number;

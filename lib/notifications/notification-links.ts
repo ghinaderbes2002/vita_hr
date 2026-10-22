@@ -120,6 +120,15 @@ export function resolveNotificationLink(
     case "CASE_ALERT_RESPONSE":
       return d.caseId ? `/clinic/prosthetics/${d.caseId}?tab=treatment_program` : null;
 
+    // Open a new survey already tied to the patient and department.
+    case "PATIENT_SURVEY_REQUIRED": {
+      const params = new URLSearchParams();
+      if (d.patientId) params.set("patientId", d.patientId);
+      if (d.department) params.set("department", d.department);
+      const qs = params.toString();
+      return qs ? `/clinic/surveys?${qs}` : "/clinic/surveys";
+    }
+
     case "INVENTORY_REQUEST": {
       // The request review UI (approve / not-available) lives in the requests
       // tab; open it and focus the specific request card by id.

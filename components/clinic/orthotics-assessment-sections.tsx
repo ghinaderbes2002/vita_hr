@@ -6,24 +6,29 @@
 // is the same form in both modes, so what was entered reads back in its shape.
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Pencil, Save } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Minus, Pencil, Plus, Save } from "lucide-react";
+import { MeasurementDiagram } from "@/components/clinic/measurement-diagram";
+import {
+  ORTHOTICS_MEASUREMENT_FIELDS, ORTHOTICS_MEASUREMENT_IMAGE, ORTHOTICS_MEASUREMENT_SHEETS,
+} from "@/lib/clinic/orthotics-measurement-fields";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useSaveOrthoticsDoctorAssessment, useSaveOrthoticsPhysioAssessment,
-  useSaveOrthoticsProsthetistOpinion,
+  useSaveOrthoticsProsthetistOpinion, useOrthoticsMeasurements, useAddOrthoticsMeasurement,
 } from "@/lib/hooks/use-clinic-orthotics";
 import type {
   OrthoticsDoctorAssessment, OrthoticsPhysioAssessment, OrthoticsProsthetistAssessment, OrthoticsReception,
+  OrthoticsSide, OrthoticsRecommendedDevice, OrthoticsMeasurementSheet,
 } from "@/lib/api/clinic-orthotics";
 import {
   ACTIVITY_LEVELS, ANKLE_ROM, ASSISTIVE_DEVICES, CEREBRAL_PALSY_TYPES, DEFORMITY_FLEXIBILITY,
   DEFORMITY_STATUS, DIAGNOSIS_TYPES, GAIT_PROBLEMS, HIP_ROM, KNEE_ROM, MOBILITY_LEVELS,
   MUSCLE_MOVEMENTS, MUSCLE_STRENGTHS, MUSCLE_TONES, SENSATIONS, SKIN_CONDITIONS,
   TRUNK_MOVEMENTS, TRUNK_SCALE, TRUNK_SCALE_FIELDS, type Options,
-  DAILY_USE_SETTINGS, RECOMMENDED_DEVICES,
+  DAILY_USE_SETTINGS, RECOMMENDED_DEVICES, LIMB_TYPES, SIDES,
   doctorAssessmentOf, physioAssessmentOf, prosthetistAssessmentOf,
 } from "./orthotics-labels";
 
@@ -342,7 +347,7 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
 const PHYSIO_KEYS: (keyof OrthoticsPhysioAssessment)[] = [
   "mobilityLevel", "assistiveDevices", "gaitProblems", "hipROM", "kneeROM", "ankleROM",
   "muscleStrengthMovements", "deformityFlexibility", "deformityStatus", "trunkStrengthMovements",
-  ...TRUNK_SCALE_FIELDS.map((f) => f.key), "activityLevel", "physioOpinion",
+  ...TRUNK_SCALE_FIELDS.map((f) => f.key), "activityLevel", "dailyWearHours", "physioOpinion",
 ];
 
 export function OrthoticsPhysioSection({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
@@ -416,6 +421,16 @@ export function OrthoticsPhysioSection({ reception, canEdit }: { reception: Orth
       <Field label={t("physio.activity")}>
         <SingleChips options={ACTIVITY_LEVELS} value={v.activityLevel} onChange={(x) => s.set({ activityLevel: x })} readOnly={ro} />
       </Field>
+      <Field label={t("device.hours")} hint={t("device.hoursHint")}>
+        <TextValue
+          type="number"
+          dir="ltr"
+          value={v.dailyWearHours == null ? "" : String(v.dailyWearHours)}
+          // A cleared field goes as null so the API blanks it.
+          onChange={(x) => s.set({ dailyWearHours: x === "" ? null : Number(x) })}
+          readOnly={ro}
+        />
+      </Field>
       <Field label={t("physio.opinion")}>
         <TextValue multiline value={v.physioOpinion} onChange={(x) => s.set({ physioOpinion: x })} readOnly={ro} />
       </Field>
@@ -464,6 +479,7 @@ export function OrthoticsProsthetistSection({ reception, canEdit }: { reception:
 const HISTORY_KEYS: (keyof OrthoticsDoctorAssessment)[] = [
   "birthHistory", "previousOrthosisUse", "previousOrthosisDetails", "surgicalHistory", "medicalHistory",
   "functionalGoals", "dailyUseSettings", "dailyUseOther",
+  "appliancesCount", "affectedLimbType", "affectedSide", "soundLimbDescription",
 ];
 
 function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
@@ -487,6 +503,27 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
     >
       <Field label={t("history.birth")}>
         <TextValue multiline value={v.birthHistory} onChange={(x) => s.set({ birthHistory: x })} readOnly={ro} />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field label={t("doctor.appliancesCount")}>
+          <TextValue
+            type="number"
+            dir="ltr"
+            value={v.appliancesCount == null ? "" : String(v.appliancesCount)}
+            // A cleared field goes as null so the API blanks it.
+            onChange={(x) => s.set({ appliancesCount: x === "" ? null : Math.max(0, Math.trunc(Number(x))) })}
+            readOnly={ro}
+          />
+        </Field>
+        <Field label={t("doctor.affectedLimbType")}>
+          <SingleChips options={LIMB_TYPES} value={v.affectedLimbType} onChange={(x) => s.set({ affectedLimbType: x })} readOnly={ro} />
+        </Field>
+        <Field label={t("doctor.affectedSide")}>
+          <SingleChips options={SIDES} value={v.affectedSide} onChange={(x) => s.set({ affectedSide: x })} readOnly={ro} />
+        </Field>
+      </div>
+      <Field label={t("doctor.soundLimb")}>
+        <TextValue multiline value={v.soundLimbDescription} onChange={(x) => s.set({ soundLimbDescription: x })} readOnly={ro} />
       </Field>
       <Field label={t("history.previousUse")}>
         <SingleChips
@@ -547,15 +584,83 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
   );
 }
 
+type DeviceCounts = Partial<Record<OrthoticsRecommendedDevice, number>>;
+
+/**
+ * Every device type in form order, missing ones as 0 — one fixed shape, so a
+ * draft compares equal to what was saved and the whole object can be sent as
+ * the replacement the API expects.
+ */
+const normalizeCounts = (c?: DeviceCounts | null): DeviceCounts =>
+  Object.fromEntries(RECOMMENDED_DEVICES.map((o) => [o.value, Math.max(0, c?.[o.value] ?? 0)]));
+
+/**
+ * The device types as chips, each with how many of it are needed. Ticking a
+ * type is the chip; the count is set with − / +. Raising the count of an
+ * unticked type ticks it, and unticking a type clears its count.
+ */
+function DeviceCountChips({
+  value, counts, onChange, readOnly,
+}: {
+  value?: OrthoticsRecommendedDevice[];
+  counts: DeviceCounts;
+  onChange: (types: OrthoticsRecommendedDevice[], counts: DeviceCounts) => void;
+  readOnly: boolean;
+}) {
+  const t = useTranslations("clinic.orthotics");
+  const selected = value ?? [];
+  const toggle = (d: OrthoticsRecommendedDevice) =>
+    selected.includes(d)
+      ? onChange(selected.filter((x) => x !== d), { ...counts, [d]: 0 })
+      : onChange([...selected, d], counts);
+  const step = (d: OrthoticsRecommendedDevice, by: 1 | -1) => {
+    const n = Math.max(0, (counts[d] ?? 0) + by);
+    onChange(by > 0 && !selected.includes(d) ? [...selected, d] : selected, { ...counts, [d]: n });
+  };
+  const stepBtn = "flex h-6 w-6 items-center justify-center rounded-full border text-muted-foreground hover:bg-muted disabled:opacity-40";
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {RECOMMENDED_DEVICES.map((o) => {
+        const on = selected.includes(o.value);
+        const n = counts[o.value] ?? 0;
+        return (
+          <div
+            key={o.value}
+            className={`flex items-center gap-1 rounded-full border p-0.5 ${on ? "border-orange-500" : "border-border"}`}
+          >
+            <button type="button" disabled={readOnly} onClick={() => toggle(o.value)} className={chipClass(on, readOnly)}>
+              {t(o.label)}
+            </button>
+            {!readOnly && (
+              <button type="button" className={stepBtn} onClick={() => step(o.value, -1)} disabled={n === 0} aria-label="−">
+                <Minus className="h-3 w-3" />
+              </button>
+            )}
+            <span className={`min-w-6 text-center text-xs font-semibold tabular-nums ${n ? "text-foreground" : "text-muted-foreground"}`}>
+              {n}
+            </span>
+            {!readOnly && (
+              <button type="button" className={stepBtn} onClick={() => step(o.value, 1)} aria-label="+">
+                <Plus className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
   const t = useTranslations("clinic.orthotics");
-  // The opinion stays on the prosthetist's own tab; this card holds the rest.
+  // The opinion stays on the prosthetist's own card; this card holds the rest.
   const a = prosthetistAssessmentOf(reception);
   const s = useSectionDraft<OrthoticsProsthetistAssessment>({
     recommendedDeviceTypes: a.recommendedDeviceTypes,
     recommendedDeviceOther: a.recommendedDeviceOther,
-    dailyWearHours: a.dailyWearHours,
     additionalNotes: a.additionalNotes,
+    deviceUsageCounts: normalizeCounts(reception.deviceUsageCounts),
   });
   const save = useSaveOrthoticsProsthetistOpinion();
   const v = s.current;
@@ -573,27 +678,170 @@ function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsRecep
       onSave={() => save.mutate({ id: reception.id, dto: s.changes }, { onSuccess: () => s.setEditing(false) })}
     >
       <Field label={t("device.type")}>
-        <MultiChips options={RECOMMENDED_DEVICES} value={v.recommendedDeviceTypes} onChange={(x) => s.set({ recommendedDeviceTypes: x })} readOnly={ro} />
+        <DeviceCountChips
+          value={v.recommendedDeviceTypes}
+          counts={v.deviceUsageCounts ?? {}}
+          onChange={(types, counts) => s.set({ recommendedDeviceTypes: types, deviceUsageCounts: counts })}
+          readOnly={ro}
+        />
       </Field>
       {((v.recommendedDeviceTypes ?? []).includes("OTHER") || v.recommendedDeviceOther) && (
         <Field label={t("common.other")}>
           <TextValue value={v.recommendedDeviceOther} onChange={(x) => s.set({ recommendedDeviceOther: x })} readOnly={ro} />
         </Field>
       )}
-      <Field label={t("device.hours")} hint={t("device.hoursHint")}>
-        <TextValue
-          type="number"
-          dir="ltr"
-          value={v.dailyWearHours == null ? "" : String(v.dailyWearHours)}
-          // A cleared field goes as null so the API blanks it.
-          onChange={(x) => s.set({ dailyWearHours: x === "" ? null : Number(x) })}
-          readOnly={ro}
-        />
-      </Field>
       <Field label={t("device.notes")}>
         <TextValue multiline value={v.additionalNotes} onChange={(x) => s.set({ additionalNotes: x })} readOnly={ro} />
       </Field>
     </SectionCard>
+  );
+}
+
+// ── ورقة القياس ───────────────────────────────────────────────────────────────
+// Like the prosthetics measurement sheets: each save appends a new sheet, a
+// saved sheet reads back on the same drawing and is never edited.
+
+const MEASUREMENT_SHEET_OPTIONS: Options<OrthoticsMeasurementSheet> =
+  ORTHOTICS_MEASUREMENT_SHEETS.map((s) => ({ value: s, label: `measurement.sheets.${s}` }));
+
+export function OrthoticsMeasurementCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
+  const t = useTranslations("clinic.orthotics");
+  const { data: sheets = [], isLoading } = useOrthoticsMeasurements(reception.id);
+  const add = useAddOrthoticsMeasurement(reception.id);
+  const defaultSide = doctorAssessmentOf(reception).affectedSide ?? "RIGHT";
+  // A KAFO is measured on the full-leg drawing; anything else starts below the knee.
+  const defaultSheet: OrthoticsMeasurementSheet =
+    (reception.recommendedDeviceTypes ?? []).includes("KAFO") ? "FULL_LEG" : "BELOW_KNEE";
+  const [adding, setAdding] = useState(false);
+  const [sheet, setSheet] = useState<OrthoticsMeasurementSheet>(defaultSheet);
+  const [side, setSide] = useState<OrthoticsSide>(defaultSide);
+  const [notes, setNotes] = useState("");
+  // Kept per drawing, so switching to look at another sheet loses nothing typed.
+  const [values, setValues] = useState<Partial<Record<OrthoticsMeasurementSheet, Record<string, string>>>>({});
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const start = () => {
+    setSheet(defaultSheet); setSide(defaultSide); setNotes(""); setValues({}); setAdding(true);
+  };
+  const current = values[sheet] ?? {};
+  // Blank boxes are left out, so a sheet only carries what was measured.
+  const filled = Object.fromEntries(
+    Object.entries(current).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v !== ""),
+  );
+  const save = () => add.mutate(
+    { sheet, side, values: filled, ...(notes.trim() ? { notes: notes.trim() } : {}) },
+    { onSuccess: () => setAdding(false) },
+  );
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">{t("measurement.title")}</CardTitle>
+          {canEdit && (adding ? (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setAdding(false)} disabled={add.isPending}>{t("common.cancel")}</Button>
+              <Button
+                size="sm"
+                className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600"
+                onClick={save}
+                disabled={add.isPending || Object.keys(filled).length === 0}
+                title={Object.keys(filled).length === 0 ? t("measurement.emptySheet") : undefined}
+              >
+                {add.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                {t("measurement.save")}
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600" onClick={start}>
+              <Plus className="h-3.5 w-3.5" />
+              {t("measurement.new")}
+            </Button>
+          ))}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {adding && (
+          <div className="space-y-4 rounded-lg border border-orange-200 p-3">
+            <p className="text-xs text-muted-foreground">{t("measurement.hint")}</p>
+            <Field label={t("measurement.sheet")}>
+              <SingleChips options={MEASUREMENT_SHEET_OPTIONS} value={sheet} onChange={setSheet} readOnly={false} />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label={t("measurement.side")}>
+                <SingleChips options={SIDES} value={side} onChange={setSide} readOnly={false} />
+              </Field>
+              <div className="sm:col-span-2">
+                <Field label={t("measurement.notes")}>
+                  <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("measurement.notesPlaceholder")} />
+                </Field>
+              </div>
+            </div>
+            <div className="overflow-x-auto rounded-lg bg-white">
+              <div className="min-w-170 sm:min-w-0">
+                <MeasurementDiagram
+                  key={sheet}
+                  imageSrc={ORTHOTICS_MEASUREMENT_IMAGE[sheet]}
+                  fields={ORTHOTICS_MEASUREMENT_FIELDS[sheet]}
+                  sound={{}}
+                  affected={current}
+                  onChange={(_, k, v) => setValues((s) => ({ ...s, [sheet]: { ...(s[sheet] ?? {}), [k]: v } }))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : sheets.length === 0 ? (
+          !adding && <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">{t("measurement.empty")}</p>
+        ) : (
+          <div className="space-y-2">
+            {sheets.map((m) => {
+              const open = openId === m.id;
+              // Sheets saved before the picker existed were all below-knee.
+              const mSheet: OrthoticsMeasurementSheet = m.sheet in ORTHOTICS_MEASUREMENT_FIELDS ? m.sheet : "BELOW_KNEE";
+              return (
+                <div key={m.id} className="overflow-hidden rounded-lg border">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 p-3 text-sm hover:bg-muted/40"
+                    onClick={() => setOpenId(open ? null : m.id)}
+                  >
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-xs text-orange-700">
+                        {t(`measurement.sheets.${mSheet}`)}
+                      </span>
+                      <span className="rounded-full border px-2 py-0.5 text-xs">{t(`options.SIDES.${m.side}`)}</span>
+                      <span className="text-muted-foreground" dir="ltr">
+                        {new Date(m.examinedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", hour12: true })}
+                      </span>
+                      {m.notes && <span className="text-xs text-muted-foreground">— {m.notes}</span>}
+                    </span>
+                    {open ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+                  </button>
+                  {open && (
+                    <div className="overflow-x-auto border-t bg-white p-3">
+                      <div className="min-w-170 sm:min-w-0">
+                        <MeasurementDiagram
+                          imageSrc={ORTHOTICS_MEASUREMENT_IMAGE[mSheet]}
+                          fields={ORTHOTICS_MEASUREMENT_FIELDS[mSheet]}
+                          sound={{}}
+                          affected={m.values ?? {}}
+                          onChange={() => {}}
+                          disabled
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

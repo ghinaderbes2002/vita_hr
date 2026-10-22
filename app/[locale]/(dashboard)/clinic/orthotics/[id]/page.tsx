@@ -13,8 +13,10 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { PatientPhoto } from "@/components/clinic/patient-photo";
 import { PractitionersCard } from "@/components/clinic/podiatry-practitioners-card";
 import { OrthoticsReceptionDialog } from "@/components/clinic/orthotics-reception-dialog";
+import { OrthoticsAttachments } from "@/components/clinic/orthotics-attachments";
 import {
   OrthoticsDoctorSection, OrthoticsPhysioSection, OrthoticsProsthetistSection, OrthoticsClinicalHistoryTab,
+  OrthoticsMeasurementCard,
 } from "@/components/clinic/orthotics-assessment-sections";
 import { sectionsFilled } from "@/components/clinic/orthotics-labels";
 import {
@@ -102,8 +104,7 @@ export default function OrthoticsReceptionPage() {
           <TabsTrigger value="reception" className={TAB_CLASS}>{t("tabs.reception")}</TabsTrigger>
           <TabsTrigger value="doctor" className={TAB_CLASS}>{t("tabs.doctor")}{done(filled.doctor)}</TabsTrigger>
           <TabsTrigger value="physio" className={TAB_CLASS}>{t("tabs.physio")}{done(filled.physio)}</TabsTrigger>
-          <TabsTrigger value="prosthetist" className={TAB_CLASS}>{t("tabs.prosthetist")}{done(filled.prosthetist)}</TabsTrigger>
-          <TabsTrigger value="clinical-history" className={TAB_CLASS}>{t("tabs.clinicalHistory")}{done(filled.clinicalHistory)}</TabsTrigger>
+          <TabsTrigger value="prosthetist" className={TAB_CLASS}>{t("tabs.prosthetist")}{done(filled.prosthetist && filled.clinicalHistory)}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="reception" className="mt-4 space-y-4">
@@ -155,22 +156,21 @@ export default function OrthoticsReceptionPage() {
               </div>
             </CardContent>
           </Card>
+
+          <OrthoticsAttachments receptionId={id} />
         </TabsContent>
 
         <TabsContent value="doctor" className="mt-4">
           <OrthoticsDoctorSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.DOCTOR_ASSESSMENT_EDIT)} />
         </TabsContent>
 
-        <TabsContent value="physio" className="mt-4">
-          <OrthoticsPhysioSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PHYSIO_ASSESSMENT_EDIT)} />
-        </TabsContent>
+        <TabsContent value="physio" className="mt-4 space-y-4">
+          <OrthoticsPhysioSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PHYSIO_ASSESSMENT_EDIT)} />        </TabsContent>
 
-        <TabsContent value="prosthetist" className="mt-4">
+        {/* التاريخ السريري والتوصيات يُعرض ضمن تبويب الأطراف الصناعية، تحت رأي الفني. */}
+        <TabsContent value="prosthetist" className="mt-4 space-y-4">
           <OrthoticsProsthetistSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />
-        </TabsContent>
-
-        <TabsContent value="clinical-history" className="mt-4">
-          <OrthoticsClinicalHistoryTab
+          <OrthoticsMeasurementCard reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />          <OrthoticsClinicalHistoryTab
             reception={reception}
             canEditHistory={can(PERMISSIONS.CLINIC_ORTHOTICS.DOCTOR_ASSESSMENT_EDIT)}
             canEditDevice={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)}

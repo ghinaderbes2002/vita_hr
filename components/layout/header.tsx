@@ -6,7 +6,7 @@ import {
   Bell, Moon, Sun, Globe, LogOut, CheckCheck, ExternalLink, AlertTriangle,
   Clock, AlertCircle, RotateCcw, FileText, AlertOctagon, Coffee, DollarSign,
   Mail, Trophy, CheckCircle2, XCircle, ClipboardList, FileWarning,
-  Cake, UserPlus, FileCheck, UserX, ListTodo, Briefcase,
+  Cake, UserPlus, FileCheck, UserX, ListTodo, Briefcase, Star,
   Settings, Users, Building2, GraduationCap, Shield, UserCog, Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -93,7 +93,8 @@ export function Header() {
     REWARD_DECISION:                 { icon: Trophy,        iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
     ADDITIONAL_ASSIGNMENT_REQUEST:   { icon: Briefcase,     iconClass: "text-indigo-500", bgClass: "bg-indigo-50/60 dark:bg-indigo-950/20", dotClass: "bg-indigo-500" },
     ADDITIONAL_ASSIGNMENT_DECISION:  { icon: CheckCircle2,  iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
-    GENERAL:                         { icon: Mail,          iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
+    PATIENT_SURVEY_REQUIRED:         { icon: Star,          iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
+    GENERAL:                         { icon: Mail,         iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
   };
 
   const DEFAULT_NOTIF_CFG: NotifCfg = {
