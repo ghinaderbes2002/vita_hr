@@ -801,8 +801,9 @@ export default function ProbationEvaluationDetailPage() {
         </Card>
       )}
 
-      {/* Workflow Actions — مخفي عند الاطلاع من تاب "جميع التقييمات" إلا للـ super admin */}
-      {(!isReadonly || isAdmin()) && <Card>
+      {/* Workflow Actions — مخفي عند الاطلاع من تاب "جميع التقييمات" إلا للـ super admin
+          وللـ HR، الذي يتابع كل التقييمات من هناك (موعد الاجتماع، تخطيه، الإغلاق…). */}
+      {(!isReadonly || isAdmin() || isHrActor) && <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">{t("detail.availableActions")}</CardTitle>
         </CardHeader>

@@ -165,12 +165,14 @@ export default function OrthoticsReceptionPage() {
         </TabsContent>
 
         <TabsContent value="physio" className="mt-4 space-y-4">
-          <OrthoticsPhysioSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PHYSIO_ASSESSMENT_EDIT)} />        </TabsContent>
+          <OrthoticsPhysioSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PHYSIO_ASSESSMENT_EDIT)} />
+        </TabsContent>
 
         {/* التاريخ السريري والتوصيات يُعرض ضمن تبويب الأطراف الصناعية، تحت رأي الفني. */}
         <TabsContent value="prosthetist" className="mt-4 space-y-4">
           <OrthoticsProsthetistSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />
-          <OrthoticsMeasurementCard reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />          <OrthoticsClinicalHistoryTab
+          <OrthoticsMeasurementCard reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.MEASUREMENT_CREATE)} />
+          <OrthoticsClinicalHistoryTab
             reception={reception}
             canEditHistory={can(PERMISSIONS.CLINIC_ORTHOTICS.DOCTOR_ASSESSMENT_EDIT)}
             canEditDevice={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)}

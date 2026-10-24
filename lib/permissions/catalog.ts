@@ -295,6 +295,8 @@ export const PERMISSIONS = {
     UPLOAD_ATTACHMENTS:       "clinic.orthotics.upload_attachments",
     /** عرض المرفقات وتنزيلها. */
     VIEW_ATTACHMENTS:         "clinic.orthotics.view_attachments",
+    /** إضافة ورقة قياس (لا تعديل ولا حذف). العرض بـ VIEW. */
+    MEASUREMENT_CREATE:       "clinic.orthotics.measurement.create",
   },
   CLINIC_APPOINTMENTS: {
     VIEW:   "clinic.appointments.view",
