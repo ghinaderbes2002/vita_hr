@@ -20,6 +20,7 @@ import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
 import { useProstheticsCases, useProstheticsCasesByPractitioner } from "@/lib/hooks/use-clinic-prosthetics";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { ROLES } from "@/lib/permissions/roles";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { ProstheticsCase, ProstheticsStatus, clinicProstheticsApi } from "@/lib/api/clinic-prosthetics";
@@ -89,7 +90,7 @@ export default function ProstheticsListPage() {
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
   const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
   // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
-  const seesAll = isAdmin() || hasRole("QS") || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
+  const seesAll = isAdmin() || hasRole("QS") || hasRole(ROLES.FOLLOW_UP_OFFICER) || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
   const mineOnly = USE_PRACTITIONER_CASELOAD && !seesAll;
 
   // Only one of the two runs — the mode isn't known until the profile lands, so

@@ -21,6 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { ROLES } from "@/lib/permissions/roles";
 import { PodiatryReception } from "@/lib/api/clinic-podiatry";
 import { usePodiatryEnumLabels } from "@/components/clinic/podiatry-labels";
 
@@ -70,7 +71,7 @@ export default function PodiatryListPage() {
   const { hasRole, isAdmin } = usePermissions();
   const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
   // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
-  const seesAll = isAdmin() || hasRole("QS") || FULL_CASELOAD_JOB_CODES.includes(myEmployee?.jobTitle?.code ?? "");
+  const seesAll = isAdmin() || hasRole("QS") || hasRole(ROLES.FOLLOW_UP_OFFICER) || FULL_CASELOAD_JOB_CODES.includes(myEmployee?.jobTitle?.code ?? "");
   const mineOnly = !seesAll;
 
   // Exactly one of the two runs: the mode is unknown until the profile

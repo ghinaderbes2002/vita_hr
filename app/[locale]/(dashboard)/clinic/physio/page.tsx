@@ -21,6 +21,7 @@ import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { ROLES } from "@/lib/permissions/roles";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const LIMIT = 15;
@@ -64,7 +65,7 @@ export default function PhysioListPage() {
   // only to members of the physio department, so changing someone's job title
   // left them supervising, and anyone outside the department saw everything.
   // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
-  const seesAll = isAdmin() || hasRole("QS") || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
+  const seesAll = isAdmin() || hasRole("QS") || hasRole(ROLES.FOLLOW_UP_OFFICER) || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
   const shouldFilter = !seesAll;
 
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;

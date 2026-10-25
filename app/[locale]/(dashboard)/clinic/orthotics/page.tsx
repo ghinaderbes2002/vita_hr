@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Accessibility, Check, Eye, Plus, Search, Users, UserX } from "lucide-react";
+import { Accessibility, Check, Eye, Search, Users, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,13 +18,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
-import { ActionGuard } from "@/components/permissions/action-guard";
-import { OrthoticsReceptionDialog } from "@/components/clinic/orthotics-reception-dialog";
 import { sectionsFilled } from "@/components/clinic/orthotics-labels";
 import { useOrthoticsMyPatients, useOrthoticsReceptions } from "@/lib/hooks/use-clinic-orthotics";
 import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { ROLES } from "@/lib/permissions/roles";
 import type { OrthoticsReception } from "@/lib/api/clinic-orthotics";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
@@ -55,13 +53,12 @@ export default function OrthoticsListPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [assignFilter, setAssignFilter] = useState<"all" | "assigned" | "unassigned">("all");
-  const [createOpen, setCreateOpen] = useState(false);
 
   // المشرفون يرون كل مرضى القسم؛ من عداهم يرى الاستقبالات المعيَّن عليها فقط.
   const { hasRole, isAdmin } = usePermissions();
   const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
   // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
-  const seesAll = isAdmin() || hasRole("QS") || FULL_CASELOAD_JOB_CODES.includes((myEmployee as any)?.jobTitle?.code ?? "");
+  const seesAll = isAdmin() || hasRole("QS") || hasRole(ROLES.FOLLOW_UP_OFFICER) || FULL_CASELOAD_JOB_CODES.includes(myEmployee?.jobTitle?.code ?? "");
 
   // Exactly one of the two runs: the mode is unknown until the profile lands, so
   // neither fires before then and a practitioner never pulls the whole list.
@@ -106,22 +103,15 @@ export default function OrthoticsListPage() {
         title={t("title")}
         description={seesAll ? t("descriptionAll") : t("descriptionMine")}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ClinicCountChips
-              isLoading={isLoading}
-              counts={[
-                { icon: Users, label: t("patients"), value: patientCount },
-                { icon: Accessibility, label: t("receptions"), value: receptions.length },
-                ...(seesAll ? [{ icon: UserX, label: t("unassigned"), value: unassignedCount }] : []),
-              ]}
-            />
-            <ActionGuard permission={PERMISSIONS.CLINIC_ORTHOTICS.CREATE}>
-              <Button className="gap-2" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
-                {t("newReception")}
-              </Button>
-            </ActionGuard>
-          </div>
+          // New receptions are opened from the patient's page, not from here.
+          <ClinicCountChips
+            isLoading={isLoading}
+            counts={[
+              { icon: Users, label: t("patients"), value: patientCount },
+              { icon: Accessibility, label: t("receptions"), value: receptions.length },
+              ...(seesAll ? [{ icon: UserX, label: t("unassigned"), value: unassignedCount }] : []),
+            ]}
+          />
         }
       />
 
@@ -241,8 +231,6 @@ export default function OrthoticsListPage() {
           onPageChange={setPage}
         />
       )}
-
-      <OrthoticsReceptionDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={open} />
     </div>
   );
 }

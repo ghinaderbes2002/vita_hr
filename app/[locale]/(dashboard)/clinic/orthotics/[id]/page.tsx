@@ -24,6 +24,8 @@ import {
 } from "@/lib/hooks/use-clinic-orthotics";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { ROLES } from "@/lib/permissions/roles";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
@@ -48,7 +50,9 @@ function Row({ label, value, dir }: { label: string; value?: React.ReactNode; di
   );
 }
 
-const TAB_CLASS = "text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white";
+const CENTER_SUPERVISOR_JOB_CODE = "VTX-JTL-000011"; // مشرف المركز
+
+const TAB_CLASS ="text-sm py-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white";
 
 export default function OrthoticsReceptionPage() {
   const { id } = useParams<{ id: string }>();
@@ -61,8 +65,13 @@ export default function OrthoticsReceptionPage() {
   const { data: patient } = useClinicPatient(reception?.patientId ?? "");
   const assign = useAssignOrthoticsPractitioners();
 
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, hasRole, isAdmin } = usePermissions();
   const can = (p: Parameters<typeof hasPermission>[0]) => isAdmin() || hasPermission(p);
+  // مشرف المركز يتابع الاستقبال وحده — تبويبات التقييم السريري لا تظهر له.
+  const { data: myEmployee } = useMyEmployee();
+  const receptionOnly = !isAdmin() && (
+    hasRole(ROLES.FOLLOW_UP_OFFICER) || myEmployee?.jobTitle?.code === CENTER_SUPERVISOR_JOB_CODE
+  );
 
   const [editOpen, setEditOpen] = useState(false);
 
@@ -102,9 +111,13 @@ export default function OrthoticsReceptionPage() {
       <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1" dir={isRtl ? "rtl" : "ltr"}>
           <TabsTrigger value="reception" className={TAB_CLASS}>{t("tabs.reception")}</TabsTrigger>
-          <TabsTrigger value="doctor" className={TAB_CLASS}>{t("tabs.doctor")}{done(filled.doctor)}</TabsTrigger>
-          <TabsTrigger value="physio" className={TAB_CLASS}>{t("tabs.physio")}{done(filled.physio)}</TabsTrigger>
-          <TabsTrigger value="prosthetist" className={TAB_CLASS}>{t("tabs.prosthetist")}{done(filled.prosthetist && filled.clinicalHistory)}</TabsTrigger>
+          {!receptionOnly && (
+            <>
+              <TabsTrigger value="doctor" className={TAB_CLASS}>{t("tabs.doctor")}{done(filled.doctor)}</TabsTrigger>
+              <TabsTrigger value="physio" className={TAB_CLASS}>{t("tabs.physio")}{done(filled.physio)}</TabsTrigger>
+              <TabsTrigger value="prosthetist" className={TAB_CLASS}>{t("tabs.prosthetist")}{done(filled.prosthetist && filled.clinicalHistory)}</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="reception" className="mt-4 space-y-4">
