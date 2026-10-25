@@ -162,6 +162,9 @@ export default function AppointmentsPage() {
   const staffList: any[] = Array.isArray(staffData)
     ? staffData
     : (staffData as any)?.data?.items ?? (staffData as any)?.items ?? [];
+  // Meeting invitees: everyone still employed — on leave or with no status on
+  // record included; only those who have left are dropped.
+  const activeStaff = staffList.filter((e: any) => e.employmentStatus !== "TERMINATED");
   const clinicalStaff = staffList.filter(
     (e: any) => e.employmentStatus === "ACTIVE" && isClinicalDepartmentName(e.department?.nameAr),
   );
@@ -694,7 +697,8 @@ export default function AppointmentsPage() {
         open={newMeetingOpen}
         onOpenChange={setNewMeetingOpen}
         defaultDate={selectedDate}
-        staff={clinicalStaff}
+        // A meeting can bring in anyone, not just clinical staff.
+        staff={activeStaff}
         staffName={(id) => staffName(id) ?? id}
       />
       <StaffMeetingDetailsDialog

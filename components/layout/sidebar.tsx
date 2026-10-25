@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { isClinicalDepartmentCode, isClinicalDepartmentName } from "@/lib/clinic/departments";
 import {
   LayoutDashboard,
   ChevronDown,
@@ -105,8 +106,20 @@ interface NavItem {
   adminOnly?: boolean;
   /** يُخفى عن الأدمن — لبند يظهر للأدمن من مكان آخر */
   hiddenForAdmin?: boolean;
+  /**
+   * حسب قسم المستخدم: "only" لموظفي الإدارة الطبية وأقسامها فقط، "exclude" لغيرهم
+   * فقط. لبند يظهر في مكانين ويُراد أن يراه كل موظف في واحد منهما. الأدمن يرى "only".
+   */
+  clinicalStaff?: "only" | "exclude";
   children?: NavItem[];
 }
+
+/** «مواعيدي» — مواعيد المستخدم نفسه أو الاجتماعات التي هو فيها. */
+const MY_APPOINTMENTS_PERMISSIONS = [
+  "clinic.appointments.view_own",
+  "clinic.appointments.internal_meetings.view_own",
+  "clinic.appointments.internal_meetings.view",
+];
 
 const navigation: NavItem[] = [
   { title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -117,6 +130,7 @@ const navigation: NavItem[] = [
     children: [
       { title: "nav.newRequest", href: "/requests/new", icon: PlusCircle, permission: "leave_requests:create" },
       { title: "nav.myProfile", href: "/my-profile", icon: UserCircle },
+      { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permissions: MY_APPOINTMENTS_PERMISSIONS, clinicalStaff: "exclude" },
       { title: "nav.myAttendance", href: "/attendance/my-attendance", icon: ClipboardCheck, permission: "attendance.records.read-own" },
       // { title: "nav.checkInOut", href: "/attendance/check-in-out", icon: LogIn, permission: "attendance.records.check-in" },
       { title: "nav.myAlerts", href: "/attendance/my-alerts", icon: Bell, permission: "attendance.alerts.read-own" },
@@ -317,7 +331,8 @@ const navigation: NavItem[] = [
       { title: "nav.clinicDoctorExams", href: "/clinic/doctor-exams", icon: Stethoscope, permission: "clinic.physio.case.view", showForJobTitleCodes: ["VTX-JTL-000007"] },
       { title: "nav.clinicWaitingList", href: "/clinic/waiting-list", icon: ListOrdered, permission: "clinic.waiting_list.view" },
       { title: "nav.clinicAppointments", href: "/clinic/appointments", icon: Calendar, permission: "clinic.appointments.view" },
-      { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permissions: ["clinic.appointments.view_own", "clinic.appointments.internal_meetings.view_own", "clinic.appointments.internal_meetings.view"] },
+      // الكادر الطبي يجد «مواعيدي» هنا، وبقية الموظفين تحت «شؤون الموظف».
+      { title: "nav.clinicMyAppointments", href: "/clinic/my-appointments", icon: CalendarDays, permissions: MY_APPOINTMENTS_PERMISSIONS, clinicalStaff: "only" },
       { title: "nav.clinicAppointmentStats", href: "/clinic/appointment-statistics", icon: BarChart3, permission: "clinic.appointments.statistics_view" },
       { title: "nav.clinicSurveys", href: "/clinic/surveys", icon: Star, permissions: ["clinic.patients.surveys.view", "clinic.patients.surveys.create"] },
       { title: "nav.clinicInventory", href: "/clinic/inventory", icon: Package, permission: "clinic.inventory.view" },
@@ -420,6 +435,14 @@ export function Sidebar() {
   const authUser = useAuthStore((s) => s.user);
   const { data: currentEmployee } = useMyEmployee();
   const currentJobTitleCode: string = (currentEmployee as any)?.jobTitle?.code ?? "";
+  // الإدارة الطبية وأقسامها (الأطراف، طب الأقدام، الفيزيائي). null حتى يصل ملف
+  // الموظف، فلا يقفز بند بين مكانين أثناء التحميل.
+  const currentDept = (currentEmployee as any)?.department;
+  const isClinicalStaff: boolean | null = currentEmployee === undefined
+    ? null
+    : isClinicalDepartmentCode(currentDept?.code)
+      || isClinicalDepartmentName(currentDept?.nameAr)
+      || isClinicalDepartmentName(currentDept?.parent?.nameAr);
 
   // مستخدم بدون دور — يرى لوحة التحكم فقط
   const userRoles = authUser?.roles ?? [];
@@ -558,6 +581,11 @@ export function Sidebar() {
     if (isHiddenByJobTitle(item)) return false;
     if (item.adminOnly && !isAdmin()) return false;
     if (item.hiddenForAdmin && isAdmin()) return false;
+    if (item.clinicalStaff && !isAdmin()) {
+      if (isClinicalStaff === null) return false;
+      if ((item.clinicalStaff === "only") !== isClinicalStaff) return false;
+    }
+    if (item.clinicalStaff === "exclude" && isAdmin()) return false;
     // المحصور بأدوار لا تفتحه أي صلاحية
     if (item.requiredRoles && !isAdmin() && !item.requiredRoles.some((role) => hasRole(role))) return false;
     // إذا العنصر مجبر على الظهور لدور معين، نظهره — حتى لو المستخدم عنده كمان
