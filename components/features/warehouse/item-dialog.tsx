@@ -272,7 +272,8 @@ export function ItemDialog({ open, onOpenChange, item, onCreated, defaultName }:
                       <SelectContent>
                         <SelectItem value={NONE}>{t("warehouse.common.none")}</SelectItem>
                         {manufacturers.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>{localizedName(m, locale)}</SelectItem>
+                          // Brand names read in English in every locale; the Arabic one only stands in when missing.
+                          <SelectItem key={m.id} value={m.id}>{m.name || m.nameAr}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

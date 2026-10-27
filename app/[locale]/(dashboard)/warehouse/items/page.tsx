@@ -148,7 +148,7 @@ function ItemsContent() {
                   <TableCell className="font-medium">
                     {localizedName(item, locale)}
                     {item.manufacturer && (
-                      <p className="text-xs text-muted-foreground">{localizedName(item.manufacturer, locale)}</p>
+                      <p className="text-xs text-muted-foreground">{item.manufacturer.name || item.manufacturer.nameAr}</p>
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">{item.partCode || "—"}</TableCell>
