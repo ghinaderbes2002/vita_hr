@@ -6747,6 +6747,7 @@
       "empty": "No items",
       "searchPlaceholder": "Search by name or code...",
       "allTypes": "All types",
+      "allManufacturers": "All manufacturers",
       "allCategories": "All categories",
       "deleteTitle": "Delete item “{name}”?",
       "deleteDescription": "The item will be hidden from the catalog (soft delete).",

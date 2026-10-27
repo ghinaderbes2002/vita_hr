@@ -5828,6 +5828,7 @@
       "empty": "Ürün yok",
       "searchPlaceholder": "Ad veya koda göre ara...",
       "allTypes": "Tüm türler",
+      "allManufacturers": "Tüm üreticiler",
       "allCategories": "Tüm kategoriler",
       "deleteTitle": "“{name}” ürünü silinsin mi?",
       "deleteDescription": "Ürün katalogdan gizlenecek (geçici silme).",

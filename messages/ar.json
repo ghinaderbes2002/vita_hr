@@ -6973,6 +6973,7 @@
       "empty": "لا توجد أصناف",
       "searchPlaceholder": "ابحث بالاسم أو الكود...",
       "allTypes": "كل الأنواع",
+      "allManufacturers": "كل الشركات",
       "allCategories": "كل التصنيفات",
       "deleteTitle": "حذف الصنف «{name}»؟",
       "deleteDescription": "سيتم إخفاء الصنف من الكتالوج (حذف ناعم).",

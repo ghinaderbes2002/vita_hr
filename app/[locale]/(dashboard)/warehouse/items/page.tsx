@@ -18,9 +18,10 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { PageGuard } from "@/components/permissions/page-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import {
-  useDeleteWarehouseItem, useWarehouseCategories, useWarehouseItems, useWarehouseUnits,
+  useDeleteWarehouseItem, useWarehouseCategories, useWarehouseItems, useWarehouseManufacturers,
+  useWarehouseUnits,
 } from "@/lib/hooks/use-warehouse";
-import { WarehouseItem, WarehouseItemType, WAREHOUSE_ITEM_TYPES } from "@/lib/api/warehouse";
+import { WarehouseItem } from "@/lib/api/warehouse";
 import { ItemDialog } from "@/components/features/warehouse/item-dialog";
 import { localizedName } from "@/components/features/warehouse/utils";
 
@@ -38,17 +39,21 @@ function ItemsContent() {
   const t = useTranslations();
   const locale = useLocale();
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<WarehouseItemType | typeof ALL>(ALL);
+  const [manufacturerFilter, setManufacturerFilter] = useState<string>(ALL);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selected, setSelected] = useState<WarehouseItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WarehouseItem | null>(null);
 
-  const { data: items = [], isLoading } = useWarehouseItems({
+  const { data: allItems = [], isLoading } = useWarehouseItems({
     search: search.trim() || undefined,
-    itemType: typeFilter !== ALL ? typeFilter : undefined,
     categoryId: categoryFilter !== ALL ? categoryFilter : undefined,
   });
+  // The API takes no manufacturer filter; the list comes back whole, so it is narrowed here.
+  const items = manufacturerFilter === ALL
+    ? allItems
+    : allItems.filter((i) => (i.manufacturerId ?? i.manufacturer?.id) === manufacturerFilter);
+  const { data: manufacturers = [] } = useWarehouseManufacturers();
   const { data: categories = [] } = useWarehouseCategories();
   const { data: units = [] } = useWarehouseUnits();
   const deleteItem = useDeleteWarehouseItem();
@@ -88,12 +93,12 @@ function ItemsContent() {
             className="ps-9"
           />
         </div>
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as WarehouseItemType | typeof ALL)}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+        <Select value={manufacturerFilter} onValueChange={setManufacturerFilter}>
+          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>{t("warehouse.items.allTypes")}</SelectItem>
-            {WAREHOUSE_ITEM_TYPES.map((v) => (
-              <SelectItem key={v} value={v}>{t(`warehouse.items.types.${v}`)}</SelectItem>
+            <SelectItem value={ALL}>{t("warehouse.items.allManufacturers")}</SelectItem>
+            {manufacturers.map((m) => (
+              <SelectItem key={m.id} value={m.id}>{m.name || m.nameAr}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -115,7 +120,7 @@ function ItemsContent() {
               <TableHead>{t("warehouse.items.fields.sku")}</TableHead>
               <TableHead>{t("warehouse.items.fields.name")}</TableHead>
               <TableHead>{t("warehouse.items.fields.partCode")}</TableHead>
-              <TableHead>{t("warehouse.items.fields.itemType")}</TableHead>
+              <TableHead>{t("warehouse.items.fields.manufacturer")}</TableHead>
               <TableHead>{t("warehouse.items.fields.category")}</TableHead>
               <TableHead>{t("warehouse.items.fields.unit")}</TableHead>
               <TableHead>{t("warehouse.items.fields.minStock")}</TableHead>
@@ -147,13 +152,10 @@ function ItemsContent() {
                   <TableCell className="font-mono text-sm">{item.sku}</TableCell>
                   <TableCell className="font-medium">
                     {localizedName(item, locale)}
-                    {item.manufacturer && (
-                      <p className="text-xs text-muted-foreground">{item.manufacturer.name || item.manufacturer.nameAr}</p>
-                    )}
                   </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">{item.partCode || "—"}</TableCell>
                   <TableCell className="text-sm">
-                    {item.itemType ? t(`warehouse.items.types.${item.itemType}`) : "—"}
+                    {item.manufacturer ? (item.manufacturer.name || item.manufacturer.nameAr) : "—"}
                   </TableCell>
                   <TableCell className="text-sm">{categoryName(item)}</TableCell>
                   <TableCell className="text-sm">{unitName(item)}</TableCell>
