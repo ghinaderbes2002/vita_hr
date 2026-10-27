@@ -25,6 +25,7 @@ import {
 } from "@/lib/hooks/use-leave-requests";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useEmployeeBasic } from "@/lib/hooks/use-employees";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
@@ -64,6 +65,13 @@ export default function ViewLeaveRequestPage() {
   const rejectManager = useRejectManager();
   const { hasPermission, isAdmin, hasRole } = usePermissions();
   const currentUser = useAuthStore((s) => s.user);
+  // The name usually comes with the request; when it doesn't, the employee's
+  // basic record is fetched for it (and only then).
+  const inlineName = `${request?.employeeFirstNameAr ?? request?.employee?.firstNameAr ?? ""} ${
+    request?.employeeLastNameAr ?? request?.employee?.lastNameAr ?? ""}`.trim();
+  const { data: basicEmployee } = useEmployeeBasic(!inlineName && request?.employeeId ? request.employeeId : "");
+  const employeeName = inlineName
+    || `${basicEmployee?.firstNameAr ?? ""} ${basicEmployee?.lastNameAr ?? ""}`.trim();
   const isCeo = hasRole("CEO") || hasRole("CEOO");
   const isOwner = !!request && (request.employeeId === currentUser?.employeeId || request.employeeId === currentUser?.id);
 
@@ -174,6 +182,11 @@ export default function ViewLeaveRequestPage() {
             <CardDescription>التفاصيل الأساسية لطلب الإجازة</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>الموظف</Label>
+              <div className="text-sm font-medium">{employeeName || "—"}</div>
+            </div>
+
             <div className="space-y-2">
               <Label>نوع الإجازة</Label>
               <div>
