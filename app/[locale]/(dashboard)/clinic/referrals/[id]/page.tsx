@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
-  ArrowRight, CalendarClock, MapPin, Pencil, Phone, Plus, Star, Trash2, Users,
+  ArrowRight, CalendarClock, MapPin, Pencil, Phone, Plus, ShoppingBag, Star, Trash2, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,10 +72,17 @@ export default function ReferralSourceDetailPage() {
   const { data: visitsData } = useReferralVisits(id);
   // The stats endpoints are separately permissioned, so the count is only
   // requested for users who are allowed to see it.
-  const { data: countFromStats } = useReferralSourcePatientCount(canSeeStats ? id : "");
+  const { data: counts } = useReferralSourcePatientCount(canSeeStats ? id : "");
   const [patientsPage, setPatientsPage] = useState(1);
+  // "Sales" narrows the list to the patients who actually entered a service.
+  const [salesOnly, setSalesOnly] = useState(false);
   const { data: patientsData, isLoading: patientsLoading } =
-    useReferralSourcePatients(canSeeStats ? id : "", patientsPage);
+    useReferralSourcePatients(canSeeStats ? id : "", patientsPage, 20, salesOnly);
+  const showPatients = (onlySales: boolean) => {
+    setSalesOnly(onlySales);
+    setPatientsPage(1);
+    document.getElementById("referred-patients")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const deleteVisit = useDeleteReferralVisit();
 
   // The detail response already embeds the visits; the dedicated list endpoint
@@ -120,7 +127,8 @@ export default function ReferralSourceDetailPage() {
   const isProject = source.type === "ASSOCIATION";
   // patientCount is the real number of patients attributed to this source (the
   // "case density" management asked for) — not the manual 1-5 patientDensityRating.
-  const patientCount = source.patientCount ?? countFromStats;
+  const patientCount = source.patientCount ?? counts?.patientCount;
+  const sales = source.sales ?? source.realPatientCount ?? counts?.sales;
 
   return (
     <PageGuard permission={PERMISSIONS.CLINIC_REFERRALS.VIEW}>
@@ -168,7 +176,7 @@ export default function ReferralSourceDetailPage() {
         ) : (
         <>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardContent className="flex items-center gap-3 pt-4 pb-3">
               <div className="rounded-lg bg-muted p-2"><CalendarClock className="h-5 w-5 text-muted-foreground" /></div>
@@ -179,7 +187,7 @@ export default function ReferralSourceDetailPage() {
             </CardContent>
           </Card>
           {canSeeStats && (
-            <Card>
+            <Card className="cursor-pointer transition-colors hover:bg-muted/40" onClick={() => showPatients(false)}>
               <CardContent className="flex items-center gap-3 pt-4 pb-3">
                 <div className="rounded-lg bg-muted p-2"><Users className="h-5 w-5 text-muted-foreground" /></div>
                 <div>
@@ -190,6 +198,18 @@ export default function ReferralSourceDetailPage() {
                       <span className="tabular-nums">{Number(source.densityPercent).toFixed(1)}%</span> من مرضى نفس النوع ({REFERRAL_SOURCE_TYPE_LABEL[source.type]})
                     </p>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {canSeeStats && (
+            <Card className="cursor-pointer transition-colors hover:bg-muted/40" onClick={() => showPatients(true)}>
+              <CardContent className="flex items-center gap-3 pt-4 pb-3">
+                <div className="rounded-lg bg-muted p-2"><ShoppingBag className="h-5 w-5 text-muted-foreground" /></div>
+                <div>
+                  <p className="mb-0.5 text-sm text-muted-foreground">المبيعات</p>
+                  <p className="text-2xl font-bold">{sales ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">مرضى دخلوا خدمة فعلاً — اضغط لعرضهم</p>
                 </div>
               </CardContent>
             </Card>
@@ -359,13 +379,31 @@ export default function ReferralSourceDetailPage() {
         </Card>
 
         {canSeeStats && (
-          <Card>
-            <CardHeader className="pb-2">
+          <Card id="referred-patients" className="scroll-mt-4">
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                المرضى المُحالون
+                {salesOnly ? "المبيعات" : "المرضى المُحالون"}
                 {patientsData && <Badge variant="secondary" className="text-xs">{patientsData.total}</Badge>}
               </CardTitle>
+              <div className="inline-flex rounded-lg border bg-muted/40 p-1">
+                {[
+                  { only: false, label: "كل المسجّلين" },
+                  { only: true, label: "المبيعات" },
+                ].map((o) => (
+                  <button
+                    key={o.label}
+                    type="button"
+                    onClick={() => { setSalesOnly(o.only); setPatientsPage(1); }}
+                    aria-pressed={salesOnly === o.only}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                      salesOnly === o.only ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {patientsLoading ? (
@@ -373,7 +411,7 @@ export default function ReferralSourceDetailPage() {
               ) : !patientsData?.items.length ? (
                 <EmptyState
                   icon={<Users className="h-8 w-8 text-muted-foreground" />}
-                  title="لا يوجد مرضى منسوبون لهذا المصدر"
+                  title={salesOnly ? "لا توجد مبيعات لهذا المصدر بعد" : "لا يوجد مرضى منسوبون لهذا المصدر"}
                 />
               ) : (
                 <>

@@ -5,7 +5,7 @@
 // on patients is costing the team time, and one high on both is worth keeping.
 import { useState } from "react";
 import {
-  REFERRAL_SOURCE_TYPE_LABEL, ReferralSource, ReferralSourceType, visitsCountOf,
+  REFERRAL_SOURCE_TYPE_LABEL, ReferralSource, ReferralSourceType, salesOf, visitsCountOf,
 } from "@/lib/api/clinic-referrals";
 
 const W = 720;
@@ -53,7 +53,7 @@ export function ReferralPerformanceMatrix({
     name: s.name,
     type: s.type,
     x: visitsOf(s),
-    y: s.realPatientCount ?? 0,
+    y: salesOf(s),
     registered: s.patientCount ?? 0,
   }));
 
@@ -108,7 +108,7 @@ export function ReferralPerformanceMatrix({
         <text x={PAD.left + PLOT_W / 2} y={H - 6} textAnchor="middle"
           className="fill-muted-foreground text-[11px]">زيارات الفريق ←</text>
         <text transform={`translate(12 ${PAD.top + PLOT_H / 2}) rotate(-90)`} textAnchor="middle"
-          className="fill-muted-foreground text-[11px]">مرضى فعليون ←</text>
+          className="fill-muted-foreground text-[11px]">المبيعات ←</text>
 
         {/* dots — 2px surface ring so overlapping sources stay separable */}
         {points.map((p) => (

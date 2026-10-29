@@ -10,6 +10,15 @@ export function usePatientSurveys(params?: PatientSurveyListParams, enabled = tr
   });
 }
 
+// Under the "patient-surveys" prefix, so saving a survey refreshes it too.
+export function usePatientSurveyStats(enabled = true) {
+  return useQuery({
+    queryKey: ["patient-surveys", "stats"],
+    queryFn: () => patientSurveysApi.stats(),
+    enabled,
+  });
+}
+
 export function usePatientSurvey(id?: string | null) {
   return useQuery({
     queryKey: ["patient-surveys", "one", id],

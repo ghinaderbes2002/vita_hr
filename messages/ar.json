@@ -784,6 +784,7 @@
     "balances": "أرصدة الإجازات",
     "form": {
       "selectDate": "اختر التاريخ",
+      "unpaidOnlyNote": "يحق للموظفين بنمط الدوام الجزئي أو العمل عن بُعد الإجازات غير المدفوعة فقط.",
       "halfDay": "نصف يوم",
       "halfDayDescription": "هل تريد طلب نصف يوم فقط؟",
       "halfDayPeriod": "فترة نصف اليوم",
@@ -1748,6 +1749,7 @@
     "title": "شؤون الموظف",
     "description": "بياناتك الشخصية والوظيفية",
     "leaveBalancesTitle": "أرصدة الإجازات ({year})",
+    "noPaidLeaveForWorkType": "نمط الدوام الحالي (جزئي / عن بُعد) لا يستحق إجازات مدفوعة، لذلك لا يوجد رصيد إجازات.",
     "hourlyLeaveTitle": "رصيد الإجازة الساعية — {month}",
     "contractTypes": {
       "FIXED_TERM": "عقد محدد المدة",

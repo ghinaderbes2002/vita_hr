@@ -15,6 +15,7 @@ import {
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
+import { usePatientSurveyStats } from "@/lib/hooks/use-patient-surveys";
 import type { SurveyDepartment } from "@/lib/api/patient-surveys";
 
 export default function PatientSurveysPage() {
@@ -27,6 +28,50 @@ export default function PatientSurveysPage() {
     >
       <PatientSurveys />
     </PageGuard>
+  );
+}
+
+/** Survey counts per department and the centre-wide satisfaction rate. */
+function SurveyStatsStrip() {
+  const { data: s, isLoading } = usePatientSurveyStats();
+  if (isLoading) return <div className="h-24 animate-pulse rounded-lg bg-muted" />;
+  if (!s) return null;
+  const pct = Math.max(0, Math.min(100, Number(s.satisfactionPercent) || 0));
+  const depts = [
+    { label: SURVEY_DEPARTMENT_LABEL.PROSTHETICS, n: s.byDepartment.prosthetics },
+    { label: SURVEY_DEPARTMENT_LABEL.PODIATRY, n: s.byDepartment.podiatry },
+    { label: SURVEY_DEPARTMENT_LABEL.PHYSIO, n: s.byDepartment.physio },
+  ];
+  return (
+    <Card>
+      <CardContent className="grid gap-6 pt-5 md:grid-cols-[auto_1fr]">
+        <div className="flex flex-wrap gap-6">
+          <div className="border-s-2 border-primary ps-3">
+            <p className="text-xs text-muted-foreground">إجمالي الاستبيانات</p>
+            <p className="text-3xl font-bold tabular-nums leading-tight">{s.total}</p>
+          </div>
+          {depts.map((d) => (
+            <div key={d.label} className="border-s-2 ps-3">
+              <p className="text-xs text-muted-foreground">{d.label}</p>
+              <p className="text-3xl font-bold tabular-nums leading-tight">{d.n}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col justify-center gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-xs text-muted-foreground">نسبة الرضى العامة</span>
+            <span className="text-lg font-bold tabular-nums">{s.total ? `${pct.toFixed(1)}%` : "—"}</span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-e-full bg-primary" style={{ width: `${pct}%` }} />
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            متوسط التقييم العام للشركة عبر كل الاستبيانات:{" "}
+            <span className="font-medium tabular-nums text-foreground">{Number(s.averageRating || 0).toFixed(2)} / 5</span>
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -79,6 +124,8 @@ function PatientSurveys() {
 
       {canView && (
         <>
+          <SurveyStatsStrip />
+
           <Card>
             <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">

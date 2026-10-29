@@ -928,6 +928,7 @@
     "balances": "Leave Balances",
     "form": {
       "selectDate": "Select Date",
+      "unpaidOnlyNote": "Part-time and remote employees are entitled to unpaid leave only.",
       "halfDay": "Half Day",
       "halfDayDescription": "Do you want to request only half a day?",
       "halfDayPeriod": "Half Day Period",
@@ -1511,6 +1512,7 @@
     "title": "Employee Affairs",
     "description": "Your personal and professional information",
     "leaveBalancesTitle": "Leave Balances ({year})",
+    "noPaidLeaveForWorkType": "Your work type (part-time / remote) isn't entitled to paid leave, so there is no leave balance.",
     "hourlyLeaveTitle": "Hourly Leave Balance — {month}",
     "contractTypes": {
       "FIXED_TERM": "Fixed-Term Contract",

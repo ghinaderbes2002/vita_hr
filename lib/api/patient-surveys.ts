@@ -75,7 +75,31 @@ export interface PaginatedPatientSurveys {
   totalPages: number;
 }
 
+export interface PatientSurveyStats {
+  total: number;
+  byDepartment: { prosthetics: number; podiatry: number; physio: number };
+  /** Out of 5. */
+  averageRating: number;
+  /** Mean overallCompanyRating across every survey ÷ 5 × 100. */
+  satisfactionPercent: number;
+}
+
 export const patientSurveysApi = {
+  stats: async (): Promise<PatientSurveyStats> => {
+    const { data } = await apiClient.get("/patients/surveys/stats");
+    const d = data?.data ?? data;
+    return {
+      total: d?.total ?? 0,
+      byDepartment: {
+        prosthetics: d?.byDepartment?.prosthetics ?? 0,
+        podiatry: d?.byDepartment?.podiatry ?? 0,
+        physio: d?.byDepartment?.physio ?? 0,
+      },
+      averageRating: d?.averageRating ?? 0,
+      satisfactionPercent: d?.satisfactionPercent ?? 0,
+    };
+  },
+
   create: async (dto: CreatePatientSurveyDto): Promise<PatientSurvey> => {
     const { data } = await apiClient.post("/patients/surveys", dto);
     return data?.data ?? data;

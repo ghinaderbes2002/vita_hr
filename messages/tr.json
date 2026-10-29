@@ -926,6 +926,7 @@
     "balances": "İzin Bakiyeleri",
     "form": {
       "selectDate": "Tarih Seç",
+      "unpaidOnlyNote": "Yarı zamanlı ve uzaktan çalışanlar yalnızca ücretsiz izin hakkına sahiptir.",
       "halfDay": "Yarım Gün",
       "halfDayDescription": "Sadece yarım gün talep etmek istiyor musunuz?",
       "halfDayPeriod": "Yarım Gün Dönemi",
@@ -1509,6 +1510,7 @@
     "title": "Çalışan İşleri",
     "description": "Kişisel ve mesleki bilgileriniz",
     "leaveBalancesTitle": "İzin Bakiyeleri ({year})",
+    "noPaidLeaveForWorkType": "Çalışma şekliniz (yarı zamanlı / uzaktan) ücretli izin hakkı tanımıyor, bu yüzden izin bakiyeniz yok.",
     "hourlyLeaveTitle": "Saatlik İzin Bakiyesi — {month}",
     "contractTypes": {
       "FIXED_TERM": "Belirli Süreli Sözleşme",

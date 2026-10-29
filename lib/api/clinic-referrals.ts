@@ -89,6 +89,8 @@ export interface ReferralSource {
   patientCount?: number;
   /** This source's share (%) of all patients of sources of the same type, 1 decimal. */
   densityPercent?: number;
+  /** "Sales": patients who actually entered a service — same value as realPatientCount. */
+  sales?: number;
   /** Those who actually entered a service (physio / prosthetics / podiatry). */
   realPatientCount?: number;
   isActive?: boolean;
@@ -163,11 +165,37 @@ export interface PaginatedReferralSources {
   totalPages: number;
 }
 
+/** Sales = patients who actually entered a service; older payloads only carry realPatientCount. */
+export const salesOf = (s: { sales?: number; realPatientCount?: number }) =>
+  s.sales ?? s.realPatientCount ?? 0;
+
+export interface ReferralSourceRef {
+  id: string;
+  name: string;
+  type: ReferralSourceType;
+}
+
+export interface ReferralTypeRanking {
+  topByDensity?: (ReferralSourceRef & { densityPercent: number }) | null;
+  /** Already sorted, most referrals this month first. */
+  top10ThisMonth: { id: string; name: string; referralsThisMonth: number }[];
+}
+
 export interface ReferralStats {
   byType: { type: ReferralSourceType; _count: { id: number } }[];
   topSources: ReferralSource[];
   /** Every visit the team logged, centre-wide — not just the top sources. */
   totalVisits: number;
+  /** Leaders across all source types together. */
+  summary?: {
+    topRating?: (ReferralSourceRef & { rating: number }) | null;
+    topCases?: (ReferralSourceRef & { patientCount: number }) | null;
+    topVisits?: (ReferralSourceRef & { visitCount: number }) | null;
+  };
+  byTypeRanking?: Partial<Record<ReferralSourceType, ReferralTypeRanking>>;
+  teamVisitsThisMonth?: number;
+  /** Last 6 months including the current one, "YYYY-MM", empty months zeroed. */
+  monthlyTrend?: { month: string; referrals: number; visits: number }[];
 }
 
 const BASE = "/referrals/sources";
@@ -195,6 +223,10 @@ export const clinicReferralsApi = {
       byType: d?.byType ?? [],
       topSources: d?.topSources ?? [],
       totalVisits: d?.totalVisits ?? 0,
+      summary: d?.summary,
+      byTypeRanking: d?.byTypeRanking,
+      teamVisitsThisMonth: d?.teamVisitsThisMonth,
+      monthlyTrend: d?.monthlyTrend ?? [],
     };
   },
 
@@ -218,16 +250,19 @@ export const clinicReferralsApi = {
     await apiClient.delete(`${BASE}/${id}`);
   },
 
-  getPatientCount: async (id: string): Promise<number> => {
+  getPatientCount: async (id: string): Promise<{ patientCount: number; sales: number }> => {
     const { data } = await apiClient.get(`${BASE}/${id}/patient-count`);
     const d = data?.data ?? data;
-    return d?.patientCount ?? 0;
+    return { patientCount: d?.patientCount ?? 0, sales: salesOf(d ?? {}) };
   },
 
+  /** realOnly: just the patients who entered a service — the source's "sales". */
   listPatients: async (
-    sourceId: string, page = 1, limit = 20,
+    sourceId: string, page = 1, limit = 20, realOnly = false,
   ): Promise<{ items: ReferralSourcePatient[]; page: number; limit: number; total: number; totalPages: number }> => {
-    const { data } = await apiClient.get(`${BASE}/${sourceId}/patients`, { params: { page, limit } });
+    const { data } = await apiClient.get(`${BASE}/${sourceId}/patients`, {
+      params: { page, limit, ...(realOnly ? { realOnly: true } : {}) },
+    });
     const d = data?.data ?? data;
     const items = Array.isArray(d) ? d : d?.items ?? [];
     return {

@@ -15,11 +15,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageGuard } from "@/components/permissions";
 import { ReferralPerformanceMatrix } from "@/components/clinic/referral-performance-matrix";
+import { ReferralSalesInsights } from "@/components/clinic/referral-sales-insights";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useReferralStats, useReferralVisitsBySources } from "@/lib/hooks/use-clinic-referrals";
 import {
   REFERRAL_SOURCE_TYPES, REFERRAL_SOURCE_TYPE_LABEL, ReferralSourceType, ReferralStats,
-  visitedByNameOf, visitsCountOf,
+  salesOf, visitedByNameOf, visitsCountOf,
 } from "@/lib/api/clinic-referrals";
 
 const TYPE_BADGE: Record<ReferralSourceType, string> = {
@@ -50,7 +51,7 @@ type ReferralStatsSource = ReferralStats["topSources"][number];
 
 const SORT_LABEL: Record<SortKey, string> = {
   registered: "مرضى مسجّلون",
-  actual: "مرضى فعليون",
+  actual: "المبيعات",
   visits: "زيارات الفريق",
 };
 
@@ -92,7 +93,7 @@ export default function ReferralSalesPage() {
 
   const metricOf = (s: ReferralStatsSource) =>
     sortBy === "registered" ? (s.patientCount ?? 0)
-      : sortBy === "actual" ? (s.realPatientCount ?? 0)
+      : sortBy === "actual" ? salesOf(s)
         : visitsCountOf(s);
 
   const allSources = stats?.topSources ?? [];
@@ -125,7 +126,7 @@ export default function ReferralSalesPage() {
   // The API only returns the leading sources, so the patient figures are
   // explicitly about those rather than pretending to be centre-wide.
   const sumRegistered = rows.reduce((n, s) => n + (s.patientCount ?? 0), 0);
-  const sumActual = rows.reduce((n, s) => n + (s.realPatientCount ?? 0), 0);
+  const sumActual = rows.reduce((n, s) => n + salesOf(s), 0);
   // Visits are the exception: the API totals them centre-wide, so the figure no
   // longer under-reports by counting only the ten rows below. A staff filter
   // still has to be counted here — the total knows nothing of who visited.
@@ -148,6 +149,8 @@ export default function ReferralSalesPage() {
           description="أداء مصادر الإحالة: زيارات الفريق وما ينتج عنها من مرضى"
         />
 
+        <ReferralSalesInsights stats={stats} isLoading={isLoading} onOpenSource={openSource} />
+
         {/* ── الخلاصة: رقم رئيسي + مقياس نسبة التحويل ── */}
         <Card>
           <CardContent className="pt-4">
@@ -159,7 +162,7 @@ export default function ReferralSalesPage() {
                   {[
                     { label: "زيارات الفريق", value: sumVisits, color: C_VISITS },
                     { label: "مرضى مسجّلون", value: sumRegistered, color: C_PENDING },
-                    { label: "مرضى فعليون", value: sumActual, color: C_ACTUAL },
+                    { label: "المبيعات", value: sumActual, color: C_ACTUAL },
                   ].map((k) => (
                     <div key={k.label} className="border-s-2 ps-3" style={{ borderColor: k.color }}>
                       <p className="text-xs text-muted-foreground">{k.label}</p>
@@ -310,13 +313,13 @@ export default function ReferralSalesPage() {
             <div>
               <p className="font-semibold">المرضى لكل مصدر</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                «مرضى مسجّلون» كل من أُدرج باسم المصدر، و«مرضى فعليون» من دخل خدمة فعلاً —
+                «مرضى مسجّلون» كل من أُدرج باسم المصدر، و«المبيعات» من دخل خدمة فعلاً —
                 والفرق بينهما هم من لم يحضروا بعد.
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: C_ACTUAL }} />
-                  مرضى فعليون
+                  المبيعات
                 </span>
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: C_PENDING }} />
@@ -343,7 +346,7 @@ export default function ReferralSalesPage() {
               <div className="divide-y">
                 {rows.map((s) => {
                   const registered = s.patientCount ?? 0;
-                  const actual = s.realPatientCount ?? 0;
+                  const actual = salesOf(s);
                   const pending = Math.max(0, registered - actual);
                   const visits = visitsOf(s.id, visitsCountOf(s));
                   const pct = (n: number) => (n / maxPatients) * 100;
@@ -366,7 +369,7 @@ export default function ReferralSalesPage() {
                       <div className="flex h-full flex-col justify-center gap-1">
                         <div className="flex h-3.5 items-center gap-0.5">
                           {[
-                            { n: actual, color: C_ACTUAL, title: `مرضى فعليون: ${actual}` },
+                            { n: actual, color: C_ACTUAL, title: `المبيعات: ${actual}` },
                             { n: pending, color: C_PENDING, title: `لم يحضروا بعد: ${pending}` },
                           ]
                             .filter((seg) => seg.n > 0)
@@ -420,7 +423,7 @@ export default function ReferralSalesPage() {
                       <TableHead>المدينة</TableHead>
                       <TableHead>زيارات الفريق</TableHead>
                       <TableHead>مرضى مسجّلون</TableHead>
-                      <TableHead>مرضى فعليون</TableHead>
+                      <TableHead>المبيعات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -439,7 +442,7 @@ export default function ReferralSalesPage() {
                         <TableCell className="text-sm text-muted-foreground">{s.city || "—"}</TableCell>
                         <TableCell className="font-medium">{visitsOf(s.id, visitsCountOf(s))}</TableCell>
                         <TableCell className="font-medium">{s.patientCount ?? 0}</TableCell>
-                        <TableCell className="font-medium text-green-600">{s.realPatientCount ?? 0}</TableCell>
+                        <TableCell className="font-medium text-green-600">{salesOf(s)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

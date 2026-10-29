@@ -214,7 +214,11 @@ export default function MyProfilePage() {
               ))}
             </div>
           ) : balances.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">{t("common.noData")}</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {emp?.workType === "PART_TIME" || emp?.workType === "REMOTE"
+                ? t("myProfile.noPaidLeaveForWorkType")
+                : t("common.noData")}
+            </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {balances.map((b: any) => {

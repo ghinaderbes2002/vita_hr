@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLeaveTypes } from "@/lib/hooks/use-leave-types";
-import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees";
 import { useMyLeaveBalances } from "@/lib/hooks/use-leave-balances";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { CreateLeaveRequestData, CreateHourlyLeaveData, LeaveRequest } from "@/lib/api/leave-requests";
@@ -160,9 +160,14 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
     return [];
   };
 
+  // Part-time and remote employees are entitled to unpaid leave only (the
+  // backend rejects paid types for them), so they are only offered those. A
+  // request being edited keeps its own type so the form still shows it.
+  const { data: myEmployee } = useMyEmployee();
+  const unpaidOnly = myEmployee?.workType === "PART_TIME" || myEmployee?.workType === "REMOTE";
   const leaveTypes = extractArray(leaveTypesData).filter(
     (lt: any) => !lt.nameAr?.includes("طارئ") && !lt.nameEn?.toLowerCase().includes("emergency")
-  );
+  ).filter((lt: any) => !unpaidOnly || lt.isPaid === false || lt.id === initialData?.leaveTypeId);
   const employees = extractArray(employeesData);
 
   const form = useForm<FormData>({
@@ -331,6 +336,11 @@ export function LeaveRequestForm({ onSubmit, onHourlySubmit, initialData, isLoad
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t("leaves.fields.leaveType")}</FormLabel>
+              {unpaidOnly && (
+                <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                  {t("leaves.form.unpaidOnlyNote")}
+                </p>
+              )}
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>

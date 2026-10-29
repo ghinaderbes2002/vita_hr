@@ -40,10 +40,10 @@ export function useReferralSource(id: string) {
   });
 }
 
-export function useReferralSourcePatients(id: string, page: number, limit = 20) {
+export function useReferralSourcePatients(id: string, page: number, limit = 20, realOnly = false) {
   return useQuery({
-    queryKey: ["referral-source-patients", id, page, limit],
-    queryFn: () => clinicReferralsApi.listPatients(id, page, limit),
+    queryKey: ["referral-source-patients", id, page, limit, realOnly],
+    queryFn: () => clinicReferralsApi.listPatients(id, page, limit, realOnly),
     enabled: !!id,
     placeholderData: (prev) => prev,
   });
