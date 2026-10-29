@@ -42,6 +42,9 @@ const TYPE_META: Record<ReferralSourceType, {
 type SortKey = "patients" | "visits" | "name";
 
 const patientsOf = (s: ReferralSource) => s.patientCount ?? 0;
+// Share of patients among sources of the same type (doctors vs doctors, …).
+const densityOf = (s: ReferralSource) =>
+  s.densityPercent != null ? `${Number(s.densityPercent).toFixed(1)}%` : null;
 /** Two letters for the avatar, skipping a "د." title. */
 const initialsOf = (name: string) =>
   name.replace(/^د\.?\s*/, "").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("") || "؟";
@@ -316,6 +319,9 @@ export default function ReferralSourcesPage() {
                   <div className="mt-auto flex items-center justify-between gap-2 border-t pt-3 mt-3">
                     <div className="flex gap-4 text-xs">
                       <span><b className="text-base tabular-nums">{patientsOf(s)}</b> <span className="text-muted-foreground">مريض</span></span>
+                      {densityOf(s) && (
+                        <span title="كثافة الحالات: نسبته من مرضى نفس النوع"><b className="text-base tabular-nums">{densityOf(s)}</b> <span className="text-muted-foreground">كثافة</span></span>
+                      )}
                       <span><b className="text-base tabular-nums">{visitsCountOf(s)}</b> <span className="text-muted-foreground">زيارة</span></span>
                     </div>
                     {(s.mobile || s.clinicPhone) && (
@@ -345,6 +351,7 @@ export default function ReferralSourcesPage() {
                   <TableHead>الهاتف</TableHead>
                   <TableHead>الزيارات</TableHead>
                   <TableHead>المرضى</TableHead>
+                  <TableHead>كثافة الحالات</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -357,6 +364,7 @@ export default function ReferralSourcesPage() {
                     <TableCell className="text-sm text-muted-foreground" dir="ltr">{s.mobile || s.clinicPhone || "—"}</TableCell>
                     <TableCell className="font-medium tabular-nums">{visitsCountOf(s)}</TableCell>
                     <TableCell className="font-medium tabular-nums">{s.patientCount ?? "—"}</TableCell>
+                    <TableCell className="font-medium tabular-nums">{densityOf(s) ?? "—"}</TableCell>
                     <TableCell>{rowActions(s)}</TableCell>
                   </TableRow>
                 ))}

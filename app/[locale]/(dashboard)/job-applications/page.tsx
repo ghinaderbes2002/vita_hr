@@ -578,7 +578,7 @@ export default function JobApplicationsPage() {
               <p className="text-sm text-muted-foreground">
                 {t("common.of")} {pagination.total} {t("jobApplications.fields.application")}
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 rtl:flex-row-reverse">
                 <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
                   {t("common.previous")}
                 </Button>

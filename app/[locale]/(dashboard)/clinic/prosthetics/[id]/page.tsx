@@ -9,7 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowRight, User, Clock, Trash2, Plus, Download, Loader2,
   CheckCircle2, ChevronDown, ChevronUp, Check, X, Camera, Archive, Bell, Reply, Save,
-  Pencil, CalendarCheck,
+  Pencil, CalendarCheck, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,7 @@ import { useClinicPatient, useUpdateClinicPatient, usePatientDocuments } from "@
 import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { useInventoryItems } from "@/lib/hooks/use-clinic-inventory";
+import { useWarehouseItems, useWarehouses } from "@/lib/hooks/use-warehouse";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { isMedicalAdminDepartmentName } from "@/lib/clinic/departments";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
@@ -3738,6 +3739,7 @@ export default function ProstheticsCasePage() {
   const t = useTranslations("clinic.prosthetics.case");
   const tMonth = useTranslations("payroll.months");
   const tStatus = useTranslations("clinic.prosthetics.statuses");
+  const tWhStatus = useTranslations("warehouse.statuses");
 
   // Tab access: intake, patient info and the read-only timeline need only
   // case.view; every clinical tab needs its own action permission, so a user
@@ -3988,12 +3990,16 @@ export default function ProstheticsCasePage() {
     supplier: "OTTOBOCK" as "OTTOBOCK" | "OTHER",
     supplierOther: "",
   });
-  const [compRows, setCompRows] = useState<Array<{ inventoryItemId: string }>>(
-    Array.from({ length: 10 }, () => ({ inventoryItemId: "" }))
+  // Parts are picked from the warehouse catalog; the API fills the code and name
+  // from the item and opens a material request against `compWarehouseId`.
+  const [compRows, setCompRows] = useState<Array<{ warehouseItemId: string }>>(
+    Array.from({ length: 10 }, () => ({ warehouseItemId: "" }))
   );
-  // Scenario 2 — a free-text part not in the inventory catalog, entered via the
-  // "add new item" dialog inside the combobox. Submitted without an
-  // inventoryItemId; the backend saves it unlinked and notifies the admin.
+  /** "" → the API's default, the main warehouse (WH-MAIN). */
+  const [compWarehouseId, setCompWarehouseId] = useState("");
+  // Scenario 2 — a free-text part not in the catalog, entered via the "add new
+  // item" dialog inside the combobox. Submitted with a code and name and no
+  // item link; the backend saves it unlinked.
   const [customPartDialog, setCustomPartDialog] = useState<{ open: boolean; name: string; code: string }>(
     { open: false, name: "", code: "" }
   );
@@ -4144,7 +4150,13 @@ export default function ProstheticsCasePage() {
   // the catalog item's code). The picker must offer only real catalog items,
   // otherwise the same code appears once per request. The full list is kept
   // for resolving a component's linked request status elsewhere.
-  const catalogInventoryItems = inventoryItems.filter((it: any) => it.status == null);
+  // The parts picker's catalog: active warehouse items, labelled by their part
+  // code (or SKU) the way the technician knows them. Needs warehouse.items.read.
+  const { data: warehouseItems = [] } = useWarehouseItems();
+  const { data: warehouses = [] } = useWarehouses();
+  const warehouseCatalog = warehouseItems
+    .filter((it) => it.isActive !== false)
+    .map((it) => ({ id: it.id, name: it.name || it.nameAr || it.sku, code: it.partCode || it.sku }));
 
   const { data: staffData } = useEmployeesBasicList();
   const staffList: any[] = Array.isArray(staffData)
@@ -5226,24 +5238,22 @@ export default function ProstheticsCasePage() {
     STATUS_ORDER.indexOf(STATUS_BY_TAB.measurement_sheet);
 
   const handleAddComponents = async () => {
-    const filled = compRows.filter((r) => r.inventoryItemId);
+    const filled = compRows.filter((r) => r.warehouseItemId);
     if (!filled.length) return;
-    // Scenario 1 — parts picked from the inventory catalog.
+    // Scenario 1 — parts picked from the warehouse catalog. The API takes the
+    // code and name from the item, so only the link is sent.
     for (const row of filled) {
-      const item = inventoryItems.find((it: any) => it.id === row.inventoryItemId);
-      if (!item) continue;
       await addComponent.mutateAsync({
         id,
         dto: {
-          inventoryItemId: item.id,
-          partCode: item.code ?? item.partCode ?? "",
-          partName: item.name ?? "",
+          warehouseItemId: row.warehouseItemId,
+          ...(compWarehouseId ? { warehouseId: compWarehouseId } : {}),
           supplier: supplierValue(),
           sourceLocation: compShared.sourceLocation,
         },
       });
     }
-    setCompRows(Array.from({ length: 10 }, () => ({ inventoryItemId: "" })));
+    setCompRows(Array.from({ length: 10 }, () => ({ warehouseItemId: "" })));
     // The first save closes the fitting stage — move the case to "أخذ قياس" and
     // open that tab. Once the case has already reached it, later saves just add
     // parts without advancing again.
@@ -7324,15 +7334,16 @@ export default function ProstheticsCasePage() {
                   </thead>
                   <tbody>
                     {compRows.map((row, i) => {
-                      const selectedItem = inventoryItems.find((it: any) => it.id === row.inventoryItemId);
+                      const selectedItem = warehouseCatalog.find((it) => it.id === row.warehouseItemId);
                       return (
                         <tr key={i}>
                           <td className="border border-border px-2 py-0.5 text-center text-muted-foreground text-xs">{i + 1}</td>
                           <td className="border border-border p-0.5">
                             <InventoryItemCombobox
-                              items={catalogInventoryItems}
-                              value={row.inventoryItemId}
-                              onChange={(v) => setCompRows((prev) => prev.map((r, j) => j === i ? { inventoryItemId: v } : r))}
+                              items={warehouseCatalog}
+                              value={row.warehouseItemId}
+                              placeholder={t("fitting.pickFromWarehouse")}
+                              onChange={(v) => setCompRows((prev) => prev.map((r, j) => j === i ? { warehouseItemId: v } : r))}
                               onAddCustom={(search) => setCustomPartDialog({ open: true, name: "", code: search })}
                               className="h-7 border-0 shadow-none text-sm bg-transparent"
                             />
@@ -7348,11 +7359,27 @@ export default function ProstheticsCasePage() {
                 </div>
               </div>
 
+              {/* المستودع الذي يُفتح منه طلب المواد — اختياري، الرئيسي افتراضياً */}
+              {warehouses.length > 1 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold">{t("fitting.requestWarehouse")}</p>
+                  <Select value={compWarehouseId || "__main__"} onValueChange={(v) => setCompWarehouseId(v === "__main__" ? "" : v)}>
+                    <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__main__">{t("fitting.mainWarehouseDefault")}</SelectItem>
+                      {warehouses.filter((w) => w.isActive !== false).map((w) => (
+                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <Button
                 onClick={handleAddComponents}
                 disabled={
                   addComponent.isPending || updateStatus.isPending
-                  || !compRows.some((r) => r.inventoryItemId)
+                  || !compRows.some((r) => r.warehouseItemId)
                   // اسم المورّد مطلوب متى اختير "أخرى".
                   || !filledWhen(compShared.supplier === "OTHER", compShared.supplierOther)
                 }
@@ -7403,15 +7430,27 @@ export default function ProstheticsCasePage() {
                                 : comp.inventoryRequest !== null);
                           return (
                           <tr key={comp.id} className="border-t">
-                            <td className="p-2 font-mono text-xs">{comp.partCode ?? comp.code ?? "—"}</td>
-                            <td className="p-2">{comp.partName ?? comp.name ?? "—"}</td>
+                            <td className="p-2 font-mono text-xs">{comp.partCode ?? comp.warehouseItem?.partCode ?? comp.code ?? "—"}</td>
+                            <td className="p-2">
+                              {comp.partName ?? comp.warehouseItem?.name ?? comp.warehouseItem?.nameAr ?? comp.name ?? "—"}
+                              {comp.warehouseItemId && (
+                                <span className="ms-1.5 inline-flex items-center gap-0.5 text-[10px] text-blue-600" title={t("fitting.linkedToWarehouse")}>
+                                  <Package className="h-3 w-3" />
+                                </span>
+                              )}
+                            </td>
                             <td className="p-2 text-muted-foreground">{comp.supplier ?? "—"}</td>
                             <td className="p-2 text-muted-foreground">{(() => { const k = (comp.sourceLocation ?? comp.source) as string; return k ? tl(t, `fitting.srcLoc.${k}`) : "—"; })()}</td>
                             <td className="p-2 text-muted-foreground text-xs">
                               {comp.addedAt ? new Date(comp.addedAt).toLocaleDateString("en-GB") : "—"}
                             </td>
                             <td className="p-2">
-                              {!reqStatus ? (
+                              {comp.materialRequest ? (
+                                // Parts linked to the warehouse carry a material request instead.
+                                <Badge variant="outline" className="text-xs">
+                                  {tWhStatus(comp.materialRequest.status)}
+                                </Badge>
+                              ) : !reqStatus ? (
                                 <span className="text-muted-foreground text-xs">—</span>
                               ) : reqNotes ? (
                                 <Popover>

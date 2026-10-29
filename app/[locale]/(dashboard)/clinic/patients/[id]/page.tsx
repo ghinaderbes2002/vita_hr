@@ -78,6 +78,7 @@ const DOC_TYPE_LABEL: Record<string, string> = {
   RESIDUAL_LIMB_PHOTO: "صورة الطرف المتبقي",
   MEDICAL_REPORT:      "تقرير طبي",
   IMAGING_PROCEDURE:   "الإجراءات التصويرية",
+  WARRANTY_BOND:       "سند كفالة",
   OTHER:               "أخرى",
 };
 
@@ -417,7 +418,7 @@ export default function PatientProfilePage() {
               {[
                 { label: "إجمالي المواعيد", value: apptStats.total, color: "#64748b" },
                 { label: "حضر", value: apptStats.attended, color: "#22c55e" },
-                { label: "لم يحضر", value: apptStats.noShow, color: "#f97316" },
+                { label: "تغيّب", value: apptStats.noShow, color: "#f97316" },
                 { label: "ملغي", value: apptStats.cancelled, color: "#ef4444" },
                 { label: "قادمة", value: apptStats.upcoming, color: "#3b82f6" },
               ].map((s) => (

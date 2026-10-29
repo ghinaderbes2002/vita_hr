@@ -165,13 +165,16 @@ const navigation: NavItem[] = [
     showForRoles: ["DIRECT_MANAGER", "المدير المباشر"],
     hiddenForRoles: ["employee", "موظف", "QS", "مشرف مركز"],
     children: [
+      // Login-only: the API returns the signed-in manager's own reports.
+      { title: "nav.mySubordinates", href: "/employees/my-subordinates", icon: Users, showForRoles: ["DIRECT_MANAGER", "المدير المباشر"] },
       {
         title: "nav.attendance",
         icon: ClipboardCheck,
         hiddenForRoles: ["IT", "تقنية المعلومات", "CEO", "المدير التنفيذي", "General Manager", "المدير العام", "CFO"],
         children: [
           { title: "nav.teamAttendance", href: "/attendance/my-team", icon: Users, permission: "attendance.records.read-team" },
-          { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read" },
+          // Shift setup is HR's job; a direct manager sees their team's attendance, not the shifts.
+          { title: "nav.workSchedules", href: "/work-schedules", icon: Clock3, permission: "attendance.work-schedules.read", hiddenForRoles: ["DIRECT_MANAGER", "المدير المباشر"] },
           { title: "nav.attendanceRecords", href: "/attendance/records", icon: ClipboardList, permission: "attendance.records.read" },
           { title: "nav.needsReview", href: "/attendance/needs-review", icon: AlertCircle, permission: "attendance.records.read" },
           { title: "nav.attendanceAlerts", href: "/attendance/alerts", icon: AlertCircle, permission: "attendance.alerts.read" },
@@ -507,6 +510,7 @@ export function Sidebar() {
       // But exclude specific known sub-routes
       const knownSubRoutes = [
         "/employees/subordinates",
+        "/employees/my-subordinates",
         "/leaves/new-request",
         "/requests/new",
         "/leaves/pending-approval",

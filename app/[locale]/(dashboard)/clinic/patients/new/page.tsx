@@ -92,6 +92,7 @@ const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: "RESIDUAL_LIMB_PHOTO", label: "صورة الطرف المتبقي" },
   { value: "MEDICAL_REPORT",      label: "تقرير طبي" },
   { value: "IMAGING_PROCEDURE",   label: "الإجراءات التصويرية" },
+  { value: "WARRANTY_BOND",       label: "سند كفالة" },
   { value: "OTHER",               label: "أخرى" },
 ];
 

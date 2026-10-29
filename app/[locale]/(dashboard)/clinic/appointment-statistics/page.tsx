@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocale } from "next-intl";
-import { CalendarDays, CheckCircle2, Clock, Download, Loader2, Search, UserX, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Download, Loader2, MessageCircleX, Search, UserX, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -121,7 +121,7 @@ function AppointmentStatisticsReport() {
     (a, b) => a.localeCompare(b, "ar"),
   );
   // بند "العدد الكلي" يأتي من الباك؛ ومع البحث يُحسب من الأسطر الظاهرة وحدها.
-  const count = (key: "attended" | "cancelled" | "postponed" | "noShow") =>
+  const count = (key: "attended" | "cancelled" | "postponed" | "noShow" | "apologized") =>
     filtered ? rows.filter((r) => r[key]).length : (totals[key] ?? rows.filter((r) => r[key]).length);
 
   const totalShown: number = filtered ? rows.length : (data?.total ?? rows.length);
@@ -173,13 +173,14 @@ function AppointmentStatisticsReport() {
 
       {/* الأعداد في الأعلى: نفس أرقام سطر "العدد الكلي" أسفل الجدول، وتتبع البحث
           والفلاتر مثله. المحجوز والمؤكد والمتأخر يدخل في الإجمالي دون البطاقات الأربع. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {([
           { label: "إجمالي المواعيد", value: totalShown, icon: CalendarDays, tone: "bg-slate-500", text: "" },
           { label: "حضر", value: count("attended"), icon: CheckCircle2, tone: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
           { label: "ألغى", value: count("cancelled"), icon: XCircle, tone: "bg-rose-500", text: "text-rose-600 dark:text-rose-400" },
+          { label: "اعتذر", value: count("apologized"), icon: MessageCircleX, tone: "bg-sky-500", text: "text-sky-600 dark:text-sky-400" },
           { label: "أجّل", value: count("postponed"), icon: Clock, tone: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
-          { label: "لم يحضر", value: count("noShow"), icon: UserX, tone: "bg-violet-500", text: "text-violet-600 dark:text-violet-400" },
+          { label: "تغيّب", value: count("noShow"), icon: UserX, tone: "bg-violet-500", text: "text-violet-600 dark:text-violet-400" },
         ] as const).map((s, i) => (
           <Card key={s.label} className="relative overflow-hidden">
             <div className={`absolute inset-x-0 top-0 h-0.5 ${s.tone}`} />
@@ -262,8 +263,9 @@ function AppointmentStatisticsReport() {
                     <TableHead>تاريخ الزيارة</TableHead>
                     <TableHead className="text-center">حضر</TableHead>
                     <TableHead className="text-center">ألغى</TableHead>
+                    <TableHead className="text-center">اعتذر</TableHead>
                     <TableHead className="text-center">أجّل</TableHead>
-                    <TableHead className="text-center">لم يحضر</TableHead>
+                    <TableHead className="text-center">تغيّب</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -276,6 +278,7 @@ function AppointmentStatisticsReport() {
                       <TableCell className="font-mono text-xs">{visitDateOf(r)}</TableCell>
                       <TableCell className="text-center"><Tick on={r.attended} /></TableCell>
                       <TableCell className="text-center"><Tick on={r.cancelled} reason={r.cancelledReason} /></TableCell>
+                      <TableCell className="text-center"><Tick on={r.apologized} /></TableCell>
                       <TableCell className="text-center"><Tick on={r.postponed} /></TableCell>
                       <TableCell className="text-center"><Tick on={r.noShow} /></TableCell>
                     </TableRow>
@@ -287,6 +290,7 @@ function AppointmentStatisticsReport() {
                     </TableCell>
                     <TableCell className="text-center">{count("attended")}</TableCell>
                     <TableCell className="text-center">{count("cancelled")}</TableCell>
+                    <TableCell className="text-center">{count("apologized")}</TableCell>
                     <TableCell className="text-center">{count("postponed")}</TableCell>
                     <TableCell className="text-center">{count("noShow")}</TableCell>
                   </TableRow>

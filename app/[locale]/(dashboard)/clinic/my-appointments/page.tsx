@@ -38,14 +38,15 @@ const STATUS_COLOR: Record<AppointmentStatus, string> = {
   COMPLETED: "bg-gray-100 text-gray-600",
   CANCELLED: "bg-red-100 text-red-700",
   NO_SHOW: "bg-orange-100 text-orange-700",
+  APOLOGIZED: "bg-sky-100 text-sky-800",
   LATE: "bg-yellow-100 text-yellow-800",
   RESCHEDULED: "bg-purple-100 text-purple-800",
 };
 const STATUS_BAR: Record<AppointmentStatus, string> = {
   SCHEDULED: "#3b82f6", CONFIRMED: "#22c55e", COMPLETED: "#6b7280",
-  CANCELLED: "#ef4444", NO_SHOW: "#f97316", RESCHEDULED: "#a855f7", LATE: "#eab308",
+  CANCELLED: "#ef4444", NO_SHOW: "#f97316", APOLOGIZED: "#0ea5e9", RESCHEDULED: "#a855f7", LATE: "#eab308",
 };
-const STATUS_ORDER: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "RESCHEDULED", "CANCELLED"];
+const STATUS_ORDER: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "APOLOGIZED", "RESCHEDULED", "CANCELLED"];
 
 const deptDot = (name: string) =>
   name.includes("العلاج الفيزيائي") ? "#10b981"
@@ -247,7 +248,7 @@ export default function MyAppointmentsPage() {
     return m ? Number(m[1]) * 60 + Number(m[2]) : null;
   };
   const todayAppts = (showAppts ? items : [])
-    .filter((a) => dayKeyOf(a) === todayKey && !["CANCELLED", "COMPLETED", "NO_SHOW"].includes(a.status))
+    .filter((a) => dayKeyOf(a) === todayKey && !["CANCELLED", "COMPLETED", "NO_SHOW", "APOLOGIZED"].includes(a.status))
     .sort((a, b) => (minutesOf(a) ?? 0) - (minutesOf(b) ?? 0));
   const todayMeetings = visibleMeetings
     .filter((m) => meetingDayKey(m) === todayKey)

@@ -25,27 +25,30 @@ export function Pagination({ page, totalPages, total, limit, onPageChange }: Pag
       <p className="text-xs sm:text-sm text-muted-foreground">
         {from}–{to} {t("of")} {total}
       </p>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
-        >
-          <ChevronRight className="h-4 w-4" />
-          {t("previous")}
-        </Button>
-        <span className="text-sm font-medium px-2">
-          {page} / {totalPages}
-        </span>
+      {/* The labels sit where they always did ("previous" left, "next" right), but
+          the left button moves forward and the right one back — the clinic's choice. */}
+      <div className="flex items-center gap-2 rtl:flex-row-reverse">
         <Button
           variant="outline"
           size="sm"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
         >
-          {t("next")}
           <ChevronLeft className="h-4 w-4" />
+          {t("previous")}
+        </Button>
+        {/* Spelled out: "1 / 5" reads as "5 / 1" in Arabic. */}
+        <span className="text-sm font-medium px-2 tabular-nums">
+          {t("pageOf", { page, total: totalPages })}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+        >
+          {t("next")}
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
     </div>

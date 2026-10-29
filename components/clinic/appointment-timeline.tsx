@@ -37,11 +37,12 @@ const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
   CANCELLED:   { bar: "#ef4444", cls: "bg-red-50/80 dark:bg-red-950/40 text-red-800/70 dark:text-red-200/70" },
   NO_SHOW:     { bar: "#f97316", cls: "bg-orange-50/90 dark:bg-orange-950/50 text-orange-950 dark:text-orange-100" },
   LATE:        { bar: "#eab308", cls: "bg-yellow-50/90 dark:bg-yellow-950/50 text-yellow-950 dark:text-yellow-100" },
+  APOLOGIZED:  { bar: "#0ea5e9", cls: "bg-sky-50/80 dark:bg-sky-950/40 text-sky-900/80 dark:text-sky-100/80" },
   RESCHEDULED: { bar: "#a855f7", cls: "bg-purple-50/90 dark:bg-purple-950/50 text-purple-950 dark:text-purple-100" },
 };
 
 // Order shown in the colour legend.
-const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "NO_SHOW", "RESCHEDULED", "LATE"];
+const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "APOLOGIZED", "NO_SHOW", "RESCHEDULED", "LATE"];
 
 // Staff meetings sit on the same axis as patient bookings, in colours no
 // appointment status uses, so the two never read as one another.

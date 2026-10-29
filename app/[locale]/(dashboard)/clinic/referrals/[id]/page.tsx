@@ -24,8 +24,10 @@ import { LocationMap } from "@/components/clinic/location-map";
 import { ReferralSourceFormDialog } from "@/components/clinic/referral-source-form-dialog";
 import { ReferralVisitDialog } from "@/components/clinic/referral-visit-dialog";
 import {
-  useDeleteReferralVisit, useReferralSource, useReferralSourcePatientCount, useReferralVisits,
+  useDeleteReferralVisit, useReferralSource, useReferralSourcePatientCount, useReferralSourcePatients,
+  useReferralVisits,
 } from "@/lib/hooks/use-clinic-referrals";
+import { Pagination } from "@/components/shared/pagination";
 import {
   REFERRAL_SOURCE_TYPE_LABEL, REFERRAL_VISIT_TYPE_LABEL, ReferralVisit, visitedByNameOf,
 } from "@/lib/api/clinic-referrals";
@@ -70,7 +72,10 @@ export default function ReferralSourceDetailPage() {
   const { data: visitsData } = useReferralVisits(id);
   // The stats endpoints are separately permissioned, so the count is only
   // requested for users who are allowed to see it.
-  const { data: patientCount } = useReferralSourcePatientCount(canSeeStats ? id : "");
+  const { data: countFromStats } = useReferralSourcePatientCount(canSeeStats ? id : "");
+  const [patientsPage, setPatientsPage] = useState(1);
+  const { data: patientsData, isLoading: patientsLoading } =
+    useReferralSourcePatients(canSeeStats ? id : "", patientsPage);
   const deleteVisit = useDeleteReferralVisit();
 
   // The detail response already embeds the visits; the dedicated list endpoint
@@ -113,6 +118,9 @@ export default function ReferralSourceDetailPage() {
   // dates and notes. The visits, address, phones, ratings and map of the other
   // source types do not apply to it and are left out.
   const isProject = source.type === "ASSOCIATION";
+  // patientCount is the real number of patients attributed to this source (the
+  // "case density" management asked for) — not the manual 1-5 patientDensityRating.
+  const patientCount = source.patientCount ?? countFromStats;
 
   return (
     <PageGuard permission={PERMISSIONS.CLINIC_REFERRALS.VIEW}>
@@ -175,8 +183,13 @@ export default function ReferralSourceDetailPage() {
               <CardContent className="flex items-center gap-3 pt-4 pb-3">
                 <div className="rounded-lg bg-muted p-2"><Users className="h-5 w-5 text-muted-foreground" /></div>
                 <div>
-                  <p className="mb-0.5 text-sm text-muted-foreground">المرضى المُحالون</p>
+                  <p className="mb-0.5 text-sm text-muted-foreground">كثافة الحالات (المرضى المُحالون)</p>
                   <p className="text-2xl font-bold">{patientCount ?? "—"}</p>
+                  {source.densityPercent != null && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="tabular-nums">{Number(source.densityPercent).toFixed(1)}%</span> من مرضى نفس النوع ({REFERRAL_SOURCE_TYPE_LABEL[source.type]})
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -216,7 +229,7 @@ export default function ReferralSourceDetailPage() {
               )} />
               <InfoRow label="الجوال" value={source.mobile && <WhatsAppLink phone={source.mobile} />} />
               <InfoRow label="تقييم العيادة" value={source.clinicRating ? <Stars value={source.clinicRating} /> : null} />
-              <InfoRow label="كثافة المرضى" value={source.patientDensityRating ? <Stars value={source.patientDensityRating} /> : null} />
+              <InfoRow label="تقييم كثافة المرضى (يدوي)" value={source.patientDensityRating ? <Stars value={source.patientDensityRating} /> : null} />
               <InfoRow label="تقييم الطبيب" value={source.doctorRating ? <Stars value={source.doctorRating} /> : null} />
               <InfoRow label="أوقات الزيارة" value={source.visitTimes} />
               <InfoRow label="الاهتمامات" value={source.interests?.length ? (
@@ -344,6 +357,66 @@ export default function ReferralSourceDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {canSeeStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                المرضى المُحالون
+                {patientsData && <Badge variant="secondary" className="text-xs">{patientsData.total}</Badge>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {patientsLoading ? (
+                <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+              ) : !patientsData?.items.length ? (
+                <EmptyState
+                  icon={<Users className="h-8 w-8 text-muted-foreground" />}
+                  title="لا يوجد مرضى منسوبون لهذا المصدر"
+                />
+              ) : (
+                <>
+                  <div className="rounded-md border">
+                    <Table dir="rtl">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>رقم المريض</TableHead>
+                          <TableHead>الاسم</TableHead>
+                          <TableHead>الهاتف</TableHead>
+                          <TableHead>تاريخ الإحالة</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {patientsData.items.map((p) => (
+                          <TableRow
+                            key={p.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => router.push(`/${locale}/clinic/patients/${p.id}`)}
+                          >
+                            <TableCell className="font-mono text-xs">{p.patientNumber || "—"}</TableCell>
+                            <TableCell className="font-medium">{p.name || "—"}</TableCell>
+                            <TableCell className="text-sm" dir="ltr">{p.phone || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{formatDate(p.referredAt)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {patientsData.totalPages > 1 && (
+                    <Pagination
+                      page={patientsData.page}
+                      totalPages={patientsData.totalPages}
+                      total={patientsData.total}
+                      limit={patientsData.limit}
+                      onPageChange={setPatientsPage}
+                    />
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         </>
         )}

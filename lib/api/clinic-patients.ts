@@ -3,7 +3,7 @@ import { toUploadableImage } from "@/lib/utils/heic";
 
 export type DocumentType =
   | "ID_COPY" | "PERSONAL_PHOTO" | "AMPUTATION_PHOTO"
-  | "RESIDUAL_LIMB_PHOTO" | "MEDICAL_REPORT" | "IMAGING_PROCEDURE" | "OTHER";
+  | "RESIDUAL_LIMB_PHOTO" | "MEDICAL_REPORT" | "IMAGING_PROCEDURE" | "WARRANTY_BOND" | "OTHER";
 
 /** Imaging procedures may be video clips; everything else is a still or a PDF. */
 export const DOCUMENT_ACCEPT: Record<DocumentType, string> = {
@@ -13,6 +13,7 @@ export const DOCUMENT_ACCEPT: Record<DocumentType, string> = {
   RESIDUAL_LIMB_PHOTO: "image/*,application/pdf",
   MEDICAL_REPORT:      "image/*,application/pdf",
   IMAGING_PROCEDURE:   "image/*,application/pdf,video/mp4,video/quicktime,video/webm",
+  WARRANTY_BOND:       "image/*,application/pdf",
   OTHER:               "image/*,application/pdf",
 };
 

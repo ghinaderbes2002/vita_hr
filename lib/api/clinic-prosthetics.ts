@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import { toUploadableImage } from "@/lib/utils/heic";
+import type { MaterialRequestStatus } from "./warehouse-operations";
 
 export type AmputationType = "UPPER" | "LOWER" | "BOTH";
 export type AmputationSide = "RIGHT" | "LEFT" | "BILATERAL";
@@ -385,6 +386,11 @@ export interface CaseComponent {
   addedAt?: string;
   addedBy?: string | null;
   inventoryItemId?: string | null;
+  /** The warehouse item the part was picked from — null for parts added before the link existed. */
+  warehouseItemId?: string | null;
+  warehouseItem?: { name?: string | null; nameAr?: string | null; partCode?: string | null } | null;
+  /** The material request opened for it automatically; null when none was opened. */
+  materialRequest?: { materialRequestId: string; status: MaterialRequestStatus } | null;
   // legacy fields (kept for backward compat with old saved data)
   source?: ComponentSource;
   code?: string | null;
@@ -394,11 +400,18 @@ export interface CaseComponent {
 }
 
 export interface AddComponentDto {
-  // Send when the part maps to an existing inventory item (scenario 1). Omit for
-  // a free-text part (scenario 2) — the backend auto-matches by partCode.
+  /**
+   * A part picked from the warehouse catalog. With it the API fills partCode /
+   * partName from the item and opens a material request on its own.
+   */
+  warehouseItemId?: string;
+  /** Warehouse the material request is raised against; the main one (WH-MAIN) when left out. */
+  warehouseId?: string;
+  // Legacy clinic-inventory link — no longer sent by the picker.
   inventoryItemId?: string;
-  partCode: string;
-  partName: string;
+  /** Required when warehouseItemId is not sent (a free-text part). */
+  partCode?: string;
+  partName?: string;
   supplier?: string;
   sourceLocation?: "WAREHOUSE" | "EXTERNAL" | "PATIENT_OWNED" | "OTHER";
   reason?: string;

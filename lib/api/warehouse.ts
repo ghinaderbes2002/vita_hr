@@ -5,11 +5,9 @@ import { apiClient } from "./client";
 // Reference: Warehouse_API_Frontend_Guide_AR (2026-09-28).
 
 export type WarehouseType = "MAIN" | "QUARANTINE" | "OTHER";
-export type WarehouseItemType = "COMPONENT" | "CONSUMABLE" | "SERVICE";
 export type CostingMethod = "HIGHEST_PRICE" | "LAST_PRICE" | "AVERAGE_PRICE";
 
 export const WAREHOUSE_TYPES: WarehouseType[] = ["MAIN", "QUARANTINE", "OTHER"];
-export const WAREHOUSE_ITEM_TYPES: WarehouseItemType[] = ["COMPONENT", "CONSUMABLE", "SERVICE"];
 
 export interface Warehouse {
   id: string;
@@ -106,7 +104,6 @@ export interface WarehouseItem {
   /** Either name may be empty, but not both. */
   name: string;
   nameAr?: string | null;
-  itemType?: WarehouseItemType | null;
   categoryId?: string | null;
   category?: Pick<WarehouseCategory, "id" | "name" | "nameAr"> | null;
   unitId: string;
@@ -130,7 +127,6 @@ export interface CreateWarehouseItemDto {
   /** One of name / nameAr is required (400 NAME_REQUIRED otherwise). */
   name?: string;
   nameAr?: string;
-  itemType?: WarehouseItemType;
   categoryId?: string;
   unitId: string;
   manufacturerId?: string;
@@ -144,7 +140,6 @@ export interface UpdateWarehouseItemDto extends Partial<CreateWarehouseItemDto> 
 
 export interface WarehouseItemListParams {
   search?: string;
-  itemType?: WarehouseItemType;
   categoryId?: string;
 }
 

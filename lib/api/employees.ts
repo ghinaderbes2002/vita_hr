@@ -73,6 +73,16 @@ export interface EmployeeListParams extends PaginationParams {
   employmentStatus?: Employee["employmentStatus"];
 }
 
+export interface MySubordinate {
+  employeeId: string;
+  employeeNumber?: string;
+  name?: string;
+  nameEn?: string;
+  jobTitle?: string;
+  jobTitleEn?: string;
+  jobTitleDescription?: string;
+}
+
 export const employeesApi = {
   getAll: async (
     params?: EmployeeListParams
@@ -108,6 +118,13 @@ export const employeesApi = {
   getMyProfile: async (): Promise<Employee> => {
     const response = await apiClient.get("/employees/my");
     return response.data?.data || response.data;
+  },
+
+  /** The signed-in user's direct reports (identified from the token). */
+  getMySubordinates: async (): Promise<MySubordinate[]> => {
+    const response = await apiClient.get("/employees/my/subordinates");
+    const d = response.data;
+    return Array.isArray(d?.data) ? d.data : Array.isArray(d) ? d : [];
   },
 
   create: async (data: Record<string, any>): Promise<Employee> => {

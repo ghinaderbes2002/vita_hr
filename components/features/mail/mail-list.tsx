@@ -343,7 +343,7 @@ export function MailList({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 px-4 py-2 border-t text-sm">
+        <div className="flex items-center justify-center gap-3 px-4 py-2 border-t text-sm rtl:flex-row-reverse">
           <Button
             size="sm"
             variant="ghost"
@@ -352,7 +352,7 @@ export function MailList({
           >
             {t("previous")}
           </Button>
-          <span className="text-muted-foreground">{page} / {totalPages}</span>
+          <span dir="ltr" className="text-muted-foreground tabular-nums">{page} / {totalPages}</span>
           <Button
             size="sm"
             variant="ghost"

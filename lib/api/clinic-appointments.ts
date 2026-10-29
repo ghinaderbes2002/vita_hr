@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 
-export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "RESCHEDULED" | "LATE";
+/** APOLOGIZED: the patient told the clinic ahead that they won't come — frees the slot like CANCELLED. */
+export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "APOLOGIZED" | "RESCHEDULED" | "LATE";
 export type AppointmentType =
   // Prosthetics & Podiatry
   | "COMPANY_EXAMINATION" | "REFERRAL_EXAMINATION" | "TRIAL_DELIVERY" | "FINAL_DELIVERY"
@@ -163,6 +164,8 @@ export interface AppointmentStatisticsRow {
   cancelled?: boolean;
   postponed?: boolean;
   noShow?: boolean;
+  /** The patient told the clinic ahead that they won't come (APOLOGIZED). */
+  apologized?: boolean;
   /** Why the visit was cancelled; empty for a visit that was not. */
   cancelledReason?: string | null;
 }
@@ -172,6 +175,7 @@ export interface AppointmentStatisticsTotals {
   cancelled?: number;
   postponed?: number;
   noShow?: number;
+  apologized?: number;
   total?: number;
 }
 

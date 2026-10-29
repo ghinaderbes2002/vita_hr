@@ -35,6 +35,12 @@ export interface TurnoverReport {
   year: number;
   hired: { month: number; count: number }[];
   terminated: { month: number; count: number }[];
+  /** separations ÷ average headcount × 100, one decimal. */
+  turnoverRate?: number;
+  /** Active employees on 1 January of the year, and at its end (or now). */
+  headcountStart?: number;
+  headcountEnd?: number;
+  separations?: number;
 }
 
 export interface SalaryReport {

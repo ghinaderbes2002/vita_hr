@@ -129,6 +129,13 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Tailwind v4 leaves buttons on the arrow cursor; anything clickable shows
+     the hand. Disabled ones (e.g. a dashboard figure that opens nothing) don't. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
   /* ── Page background ── */
   body {
     @apply text-foreground;

@@ -107,7 +107,7 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-end gap-2 py-4">
+      <div className="flex items-center justify-end gap-2 py-4 rtl:flex-row-reverse">
         <Button
           variant="outline"
           size="sm"

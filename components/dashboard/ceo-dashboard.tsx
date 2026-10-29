@@ -16,17 +16,18 @@ import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, Bell, Briefcase, Building2, CalendarCheck,
-  CalendarClock, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, FileText, Gavel, Inbox,
-  Activity, Footprints, Hourglass, PackageCheck, ShieldCheck, Sparkles, Stethoscope, Timer, TrendingUp, UserPlus,
-  UserX, Users, Wrench, XCircle,
+  CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, FileText, Gavel, Inbox,
+  Activity, Footprints, HeartPulse, Hourglass, PackageCheck, ShieldCheck, Sparkles, Stethoscope, Timer, TrendingUp, UserPlus,
+  Users, Wrench, XCircle,
 } from "lucide-react";
-import {
-  Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { PodiatryMonthlyChart } from "@/components/dashboard/podiatry-monthly-chart";
+import {
+  InterviewsDialog, WorkforceDialog, type InterviewItem, type WorkforceItem,
+} from "@/components/dashboard/hr-people-dialogs";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
@@ -74,11 +75,6 @@ const KIND_META: Record<Kind, { icon: any; color: string; chip: string }> = {
   probation:   { icon: ShieldCheck, color: "#8b5cf6", chip: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
 };
 
-const TOOLTIP_STYLE = {
-  background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12,
-  color: "var(--popover-foreground)", fontSize: 12,
-};
-
 const itemsOf = (res: any): any[] => {
   const v = res?.data?.items ?? res?.items ?? res?.data?.data?.items ?? res?.data ?? res;
   return Array.isArray(v) ? v : [];
@@ -89,21 +85,26 @@ const nameOf = (e?: { firstNameAr?: string; lastNameAr?: string } | null) =>
 const daysSince = (iso?: string) => (iso ? Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / DAY)) : 0);
 const countOf = (v: unknown): number | null =>
   Array.isArray(v) ? v.length : typeof v === "number" ? v : null;
-const sum = (rows?: { count: number }[]) => (rows ?? []).reduce((a, r) => a + (Number(r.count) || 0), 0);
-/** The month of a report row as 1–12, whether it arrives as 3, "3", "03" or "2026-03". */
-const monthNum = (v: unknown) => {
-  const str = String(v ?? "");
-  return Number(str.includes("-") ? str.split("-")[1] : str);
+/**
+ * Days off across this month's approved requests: the API's own total when it
+ * sends one, otherwise added up from the requests themselves (an hourly leave
+ * counts by its day-equivalent). Null when neither is there.
+ */
+const approvedDaysOf = (d: any): number | null => {
+  // Hourly leave turns into fractions of a day, so the total is shown to one decimal.
+  const round1 = (n: number) => Math.round(n * 10) / 10;
+  if (typeof d?.approvedLeaveDaysThisMonth === "number") return round1(d.approvedLeaveDaysThisMonth);
+  const rows = d?.approvedLeavesThisMonth;
+  if (!Array.isArray(rows)) return null;
+  return round1(rows.reduce((a: number, r: any) => a + (Number(r?.equivalentDays ?? r?.totalDays ?? r?.days) || 0), 0));
 };
-/** A month can span several rows, so its rows are added up rather than picked. */
-const monthCount = (rows: { month: unknown; count: number }[] | undefined, m: number) =>
-  (rows ?? []).filter((r) => monthNum(r.month) === m).reduce((a, r) => a + (Number(r.count) || 0), 0);
+const sum = (rows?: { count: number }[]) => (rows ?? []).reduce((a, r) => a + (Number(r.count) || 0), 0);
 
 /** Report queries are optional extras: one failed call must not retry or toast. */
 const reportQuery = { staleTime: FIVE_MIN, retry: false as const };
 
 /** Eases a number up from zero the first time it arrives. */
-function useCountUp(target: number | null, ms = 800) {
+function useCountUp(target: number | null, ms = 800, decimals = 0) {
   const [value, setValue] = useState(0);
   useEffect(() => {
     if (target === null) return;
@@ -113,25 +114,42 @@ function useCountUp(target: number | null, ms = 800) {
     const start = performance.now();
     const tick = (now: number) => {
       const p = duration ? Math.min(1, (now - start) / duration) : 1;
-      setValue(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      const f = 10 ** decimals;
+      setValue(Math.round(target * (1 - Math.pow(1 - p, 3)) * f) / f);
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target, ms]);
+  }, [target, ms, decimals]);
   return value;
 }
 
-function Num({ value, className }: { value: number | null; className?: string }) {
-  const shown = useCountUp(value);
-  return <span dir="ltr" className={`inline-block tabular-nums ${className ?? ""}`}>{value === null ? "—" : shown.toLocaleString("en-US")}</span>;
+function Num({ value, className, decimals = 0, suffix }: { value: number | null; className?: string; decimals?: number; suffix?: string }) {
+  const shown = useCountUp(value, 800, decimals);
+  return (
+    <span dir="ltr" className={`inline-block tabular-nums ${className ?? ""}`}>
+      {value === null ? "—" : shown.toLocaleString("en-US", { maximumFractionDigits: decimals })}
+      {value !== null && suffix}
+    </span>
+  );
 }
 
+/** Departments in the "new patients" breakdown, in display order. */
+const PATIENT_DEPTS = ["prosthetics", "physio", "orthotics", "podiatry", "doctorExamination"] as const;
+type PatientDept = (typeof PATIENT_DEPTS)[number];
+
 function Kpi({
-  label, value, loading, hint, hintTone, icon: Icon, tone, onClick,
+  label, value, loading, hint, hintTone, icon: Icon, tone, onClick, details, note, decimals, suffix,
 }: {
   label: string; value: number | null; loading?: boolean; hint?: React.ReactNode;
   hintTone?: "up" | "down"; icon: any; tone: string; onClick?: () => void;
+  /** A breakdown listed under the figure — independent counts, not shares of it. */
+  details?: { label: string; value: number }[];
+  /** A short line saying what the figure counts. */
+  note?: string;
+  /** For a rate: digits after the point, and a sign after it such as "%". */
+  decimals?: number;
+  suffix?: string;
 }) {
   return (
     <button
@@ -150,7 +168,7 @@ function Kpi({
       {loading ? (
         <Skeleton className="mt-2 h-8 w-16" />
       ) : (
-        <p className="mt-1.5 text-3xl font-bold tracking-tight"><Num value={value} /></p>
+        <p className="mt-1.5 text-3xl font-bold tracking-tight"><Num value={value} decimals={decimals} suffix={suffix} /></p>
       )}
       {hint && (
         <p className={`mt-1 flex items-center gap-1 truncate text-[11px] ${
@@ -161,6 +179,17 @@ function Kpi({
           {hintTone === "down" && <ArrowDownRight className="h-3 w-3" />}
           {hint}
         </p>
+      )}
+      {note && <p className="mt-1.5 text-[10.5px] leading-snug text-muted-foreground/80">{note}</p>}
+      {details && details.length > 0 && (
+        <ul className="mt-2 space-y-0.5 border-t pt-2">
+          {details.map((d) => (
+            <li key={d.label} className="flex items-center justify-between gap-2 text-[11px]">
+              <span className="truncate text-muted-foreground">{d.label}</span>
+              <span className="font-semibold tabular-nums">{d.value}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </button>
   );
@@ -330,7 +359,6 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
 
   const [filter, setFilter] = useState<Filter>("all");
   const shown = filter === "all" ? decisions : decisions.filter((x) => x.kind === filter);
-  const oldest = decisions[0];
 
   const mix = visibleKinds
     .map((k) => ({ kind: k, name: t(`ceo.filters.${k}`), value: byKind(k) }))
@@ -358,18 +386,23 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
   const headcount: number | null = summary?.total ?? (deptTotal > 0 ? deptTotal : null) ?? activeCountQ.data ?? null;
 
   const turnover = turnoverQ.data;
+  const approvedLeaveDays = approvedDaysOf(d);
+  // Where the HR blocks sit in the response — top level or under "hr".
+  const interviews = (d?.interviews ?? d?.hr?.interviews) as {
+    qualifiedTotal?: number; conductedThisMonth?: number; conductedThisMonthItems?: InterviewItem[];
+  } | undefined;
+  const workforce = (d?.workforce ?? d?.hr?.workforce) as {
+    employeesTotal?: number; joinedThisMonth?: number; joinedThisMonthItems?: WorkforceItem[];
+    separatedThisMonth?: number; separatedThisMonthItems?: WorkforceItem[];
+  } | undefined;
+  const [peopleDialog, setPeopleDialog] = useState<"interviews" | "workforce" | null>(null);
   const hiredYtd = sum(turnover?.hired);
   const leftYtd = sum(turnover?.terminated);
   const netGrowth = turnover ? hiredYtd - leftYtd : null;
-  const monthLabel = (m: number) =>
-    new Date(year, m - 1, 1).toLocaleDateString(locale === "ar" ? "ar" : locale, { month: "short" });
-  const movement = turnover
-    ? Array.from({ length: month }, (_, i) => ({
-        name: monthLabel(i + 1),
-        hired: monthCount(turnover.hired, i + 1),
-        left: monthCount(turnover.terminated, i + 1),
-      }))
-    : [];
+  const turnoverRate = typeof turnover?.turnoverRate === "number" ? turnover.turnoverRate : null;
+  const avgHeadcount = typeof turnover?.headcountStart === "number" && typeof turnover?.headcountEnd === "number"
+    ? Math.round(((turnover.headcountStart + turnover.headcountEnd) / 2) * 10) / 10
+    : null;
 
   const stats = statsQ.data as { total?: number; pending?: number; interviewReady?: number; accepted?: number; rejected?: number; hired?: number } | undefined;
   const pipelineOpen = stats ? (stats.pending ?? 0) + (stats.interviewReady ?? 0) + (stats.accepted ?? 0) : null;
@@ -391,27 +424,64 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
   // compute arrives as null and shows as a dash.
   const clinic = d?.clinic as {
     newPatientsThisMonth?: number | null; newPatientsPreviousMonth?: number | null;
+    // How many of this month's patients have a case in each department. One
+    // patient can count in several, so these never add up to the total.
+    newPatientsThisMonthByDepartment?: Partial<Record<PatientDept, number>> | null;
     openProstheticsCasesByStatus?: { status: string; count: number }[] | null;
     prostheticsDeliveredThisMonth?: number | null; prostheticsDeliveredTotal?: number | null;
     avgDaysIntakeToDelivery?: number | null;
     waitingListCount?: number | null; appointmentsThisMonth?: number | null;
     appointmentsNoShowThisMonth?: number | null;
+    /** This month's appointments by outcome; the parts add up to appointmentsThisMonth. */
+    appointmentsThisMonthByStatus?: {
+      completed?: number; noShow?: number; cancelled?: number; apologized?: number; upcoming?: number;
+    } | null;
+    /** Cases at COMMITTEE_REVIEW by the committee's call; NEEDS_ADJUSTMENT counts as pending. */
+    committeeReviewByDecision?: { suitable?: number; notSuitable?: number; pending?: number } | null;
     // طب الأقدام: a reception counts as fitted once any of its sessions has an
     // installed insole (installedAt set).
     podiatryReceptionsTotal?: number | null;
     podiatryInsolesFittedTotal?: number | null;
     podiatryNotFittedTotal?: number | null;
     podiatryInsolesFittedThisMonth?: number | null;
+    /** Receptions opened this month, and of those not fitted — not sent by the API yet. */
+    podiatryReceptionsThisMonth?: number | null;
+    podiatryNotFittedThisMonth?: number | null;
+    // العلاج الفيزيائي: every recorded session, attended or not (the API's current definition).
+    physioSessionsTotal?: number | null;
+    physioSessionsThisMonth?: number | null;
+    physioSessionsPatientsTotal?: number | null;
+    physioSessionsPatientsThisMonth?: number | null;
   } | undefined;
   // The by-status list covers open cases only; the all-time delivered count
   // comes as its own figure and is shown as the last row. It is read from the
   // dashboard block rather than the case list, which the CEO role has no
   // permission for (granting it would also put the clinic tab in the sidebar).
   const deliveredTotal = clinic?.prostheticsDeliveredTotal ?? null;
-  const openCases = [
+  // The case's own path, in the order the clinic walks it. Gait training is
+  // part of the trial fitting here, so the two are one row.
+  const STAGE_ORDER = [
+    "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "COMMITTEE_APPROVED", "FITTING",
+    "SOCKET_TRIAL", "FINAL_REVIEW", "DELIVERED",
+  ];
+  const stageOf = (s: string) => (s === "GAIT_TRAINING" ? "SOCKET_TRIAL" : s);
+  const merged = new Map<string, number>();
+  for (const c of [
     ...(clinic?.openProstheticsCasesByStatus ?? []),
     ...(deliveredTotal !== null ? [{ status: "DELIVERED", count: deliveredTotal }] : []),
-  ];
+  ]) {
+    const k = stageOf(c.status);
+    merged.set(k, (merged.get(k) ?? 0) + (c.count ?? 0));
+  }
+  const rank = (s: string) => { const i = STAGE_ORDER.indexOf(s); return i === -1 ? STAGE_ORDER.length : i; };
+  const openCases = [...merged.entries()]
+    .map(([status, count]) => ({ status, count }))
+    .sort((x, y) => rank(x.status) - rank(y.status));
+  // Dashboard wording; any other stage keeps the case screen's own name.
+  const stageLabel = (s: string) =>
+    tr.has(`dashboard.ceo.stages.${s}`)
+      ? tr(`dashboard.ceo.stages.${s}` as any)
+      : tr.has(`clinic.prosthetics.statuses.${s}`) ? tr(`clinic.prosthetics.statuses.${s}` as any) : s;
   const openCasesTotal = openCases.reduce((a, c) => a + (c.count ?? 0), 0);
   const openCasesMax = Math.max(1, ...openCases.map((c) => c.count ?? 0));
   const patientsDelta = clinic?.newPatientsThisMonth != null && clinic?.newPatientsPreviousMonth
@@ -422,7 +492,20 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
   const podFitted = clinic?.podiatryInsolesFittedTotal ?? null;
   const podNotFitted = clinic?.podiatryNotFittedTotal
     ?? (podTotal != null && podFitted != null ? Math.max(0, podTotal - podFitted) : null);
+  // "This month: N" under each figure — left out when the API doesn't send it.
+  const podThisMonth = (n?: number | null) => (n == null ? undefined : t("ceo.podiatryThisMonth", { count: n }));
+  const joinHints = (...parts: (string | undefined)[]) => parts.filter(Boolean).join(" · ") || undefined;
   const podFittedPct = podTotal && podFitted != null ? Math.round((podFitted / podTotal) * 100) : null;
+  const byStatus = clinic?.appointmentsThisMonthByStatus;
+  const apptParts = byStatus ? [
+    { key: "completed", label: t("ceo.apptCompleted"), value: byStatus.completed ?? 0, bar: "bg-emerald-500" },
+    { key: "noShow", label: t("ceo.apptNoShow"), value: byStatus.noShow ?? 0, bar: "bg-orange-500" },
+    { key: "cancelled", label: t("ceo.apptCancelled"), value: byStatus.cancelled ?? 0, bar: "bg-rose-500" },
+    { key: "apologized", label: t("ceo.apptApologized"), value: byStatus.apologized ?? 0, bar: "bg-sky-500" },
+    { key: "upcoming", label: t("ceo.apptUpcoming"), value: byStatus.upcoming ?? 0, bar: "bg-slate-400" },
+  ] : null;
+  const apptPartsTotal = apptParts ? apptParts.reduce((a, p) => a + p.value, 0) || 1 : 1;
+  const committee = clinic?.committeeReviewByDecision;
   const noShowRate = clinic?.appointmentsThisMonth && clinic.appointmentsNoShowThisMonth != null
     ? Math.round((clinic.appointmentsNoShowThisMonth / clinic.appointmentsThisMonth) * 100)
     : null;
@@ -545,6 +628,9 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
               <Kpi label={t("ceo.newPatients")} value={clinic.newPatientsThisMonth ?? null}
                 hint={patientsDelta === null ? undefined : t("ceo.vsLastMonth", { pct: Math.abs(patientsDelta) })}
                 hintTone={patientsDelta === null || patientsDelta === 0 ? undefined : patientsDelta > 0 ? "up" : "down"}
+                details={PATIENT_DEPTS
+                  .map((k) => ({ label: t(`ceo.patientDepts.${k}`), value: clinic.newPatientsThisMonthByDepartment?.[k] ?? 0 }))
+                  .filter((x) => x.value > 0)}
                 icon={Users} tone="bg-sky-500" />
               <Kpi label={t("ceo.delivered")} value={clinic.prostheticsDeliveredThisMonth ?? null}
                 hint={t("ceo.thisMonth")} icon={PackageCheck} tone="bg-emerald-500" />
@@ -560,16 +646,40 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
               </div>
               <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-2">
                 <p className="text-3xl font-bold tracking-tight"><Num value={clinic.appointmentsThisMonth ?? null} /></p>
-                <p className="text-xs text-muted-foreground">
+                {!apptParts && <p className="text-xs text-muted-foreground">
                   {t("ceo.noShow", { count: clinic.appointmentsNoShowThisMonth ?? 0 })}
                   {noShowRate !== null && (
                     <span className={`ms-2 rounded-full px-2 py-0.5 font-medium ${
                       noShowRate > 15 ? "bg-red-500/10 text-red-600 dark:text-red-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                     }`}>{noShowRate}%</span>
                   )}
-                </p>
+                </p>}
               </div>
-              {noShowRate !== null && (
+              {apptParts ? (
+                <>
+                  <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-muted">
+                    {apptParts.map((p) => p.value > 0 && (
+                      <div key={p.key} className={`h-full transition-all duration-700 ${p.bar}`}
+                        style={{ width: `${(p.value / apptPartsTotal) * 100}%` }} title={`${p.label}: ${p.value}`} />
+                    ))}
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                    {apptParts.map((p) => (
+                      <div key={p.key} className="rounded-lg border px-2.5 py-1.5">
+                        <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <span className={`h-2 w-2 rounded-full ${p.bar}`} />{p.label}
+                        </p>
+                        <p className="text-lg font-bold tabular-nums leading-tight">
+                          {p.value}
+                          <span className="ms-1 text-[11px] font-normal text-muted-foreground">
+                            {apptPartsTotal ? Math.round((p.value / apptPartsTotal) * 100) : 0}%
+                          </span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : noShowRate !== null && (
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-emerald-500/25">
                   <div className="h-full rounded-full bg-red-500 transition-all duration-700" style={{ width: `${noShowRate}%` }} />
                 </div>
@@ -589,12 +699,25 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
                   <li key={c.status}>
                     <div className="flex items-center justify-between gap-2 text-sm">
                       <span className="truncate">
-                        {c.status === "GAIT_TRAINING"
-                          ? tr("clinic.prosthetics.statuses.SOCKET_TRIAL")
-                          : tr.has(`clinic.prosthetics.statuses.${c.status}`) ? tr(`clinic.prosthetics.statuses.${c.status}` as any) : c.status}
+                        {stageLabel(c.status)}
                       </span>
                       <b className="shrink-0 tabular-nums">{c.count}</b>
                     </div>
+                    {c.status === "COMMITTEE_REVIEW" && committee && (
+                      <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-400">
+                          {t("ceo.committeeSuitable", { count: committee.suitable ?? 0 })}
+                        </span>
+                        <span className="rounded-full bg-rose-500/10 px-2 py-0.5 font-medium text-rose-700 dark:text-rose-400">
+                          {t("ceo.committeeNotSuitable", { count: committee.notSuitable ?? 0 })}
+                        </span>
+                        {(committee.pending ?? 0) > 0 && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                            {t("ceo.committeePending", { count: committee.pending ?? 0 })}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                       <div className={`h-full rounded-full transition-all duration-700 ${c.status === "DELIVERED" ? "bg-emerald-500" : "bg-sky-500"}`}
                         style={{ width: `${(c.count / openCasesMax) * 100}%`, opacity: c.status === "DELIVERED" ? 1 : Math.max(0.4, 1 - i * 0.1) }} />
@@ -609,17 +732,23 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
 
       {/* ── Podiatry insoles — shown once the dashboard block carries the figures ── */}
       {clinic && podTotal != null && (
-        <Panel title={t("ceo.podiatryTitle")} icon={Footprints}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Kpi label={t("ceo.podiatryTotal")} value={podTotal} icon={Users} tone="bg-sky-500" />
+        <Panel title={t("ceo.podiatryTitle")} icon={Footprints} action={<PodiatryMonthlyChart />}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Kpi label={t("ceo.podiatryTotal")} value={podTotal}
+              hint={podThisMonth(clinic.podiatryReceptionsThisMonth)}
+              icon={Users} tone="bg-sky-500" />
             <Kpi label={t("ceo.podiatryFitted")} value={podFitted}
-              hint={podFittedPct === null ? undefined : t("ceo.podiatryShare", { pct: podFittedPct })}
+              hint={joinHints(
+                podFittedPct === null ? undefined : t("ceo.podiatryShare", { pct: podFittedPct }),
+                podThisMonth(clinic.podiatryInsolesFittedThisMonth),
+              )}
               icon={CheckCircle2} tone="bg-emerald-500" />
             <Kpi label={t("ceo.podiatryNotFitted")} value={podNotFitted}
-              hint={podFittedPct === null ? undefined : t("ceo.podiatryShare", { pct: 100 - podFittedPct })}
+              hint={joinHints(
+                podFittedPct === null ? undefined : t("ceo.podiatryShare", { pct: 100 - podFittedPct }),
+                podThisMonth(clinic.podiatryNotFittedThisMonth),
+              )}
               icon={XCircle} tone="bg-rose-500" />
-            <Kpi label={t("ceo.podiatryFittedThisMonth")} value={clinic.podiatryInsolesFittedThisMonth ?? null}
-              hint={t("ceo.thisMonth")} icon={PackageCheck} tone="bg-violet-500" />
           </div>
           {podFittedPct !== null && (
             <div className="mt-4">
@@ -635,23 +764,64 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
         </Panel>
       )}
 
+      {/* ── Physiotherapy sessions — shown once the dashboard block carries them ── */}
+      {clinic && clinic.physioSessionsTotal != null && (
+        <Panel title={t("ceo.physioTitle")} icon={HeartPulse}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Kpi label={t("ceo.physioSessionsTotal")} value={clinic.physioSessionsTotal ?? null}
+              icon={Activity} tone="bg-emerald-500" />
+            <Kpi label={t("ceo.physioSessionsThisMonth")} value={clinic.physioSessionsThisMonth ?? null}
+              hint={t("ceo.thisMonth")} icon={CalendarCheck} tone="bg-sky-500" />
+            <Kpi label={t("ceo.physioPatients")} value={clinic.physioSessionsPatientsTotal ?? null}
+              hint={podThisMonth(clinic.physioSessionsPatientsThisMonth)}
+              icon={Users} tone="bg-violet-500" />
+          </div>
+        </Panel>
+      )}
+
       {/* ── KPIs ──────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        {interviews && (
+          <Kpi label={t("ceo.interviewsThisMonth")} value={interviews.conductedThisMonth ?? null}
+            hint={t("ceo.interviewsQualified", { count: interviews.qualifiedTotal ?? 0 })}
+            icon={UserPlus} tone="bg-teal-500" onClick={() => setPeopleDialog("interviews")} />
+        )}
+        {workforce && (
+          <Kpi label={t("ceo.workforceTotal")} value={workforce.employeesTotal ?? null}
+            hint={t("ceo.workforceHint", { joined: workforce.joinedThisMonth ?? 0, left: workforce.separatedThisMonth ?? 0 })}
+            icon={Users} tone="bg-slate-500" onClick={() => setPeopleDialog("workforce")} />
+        )}
+        <Kpi label={t("ceo.employeeFiles")} value={activeCountQ.data ?? null} loading={activeCountQ.isLoading}
+          hint={t("ceo.employeeFilesHint")} icon={FileText} tone="bg-orange-500" onClick={() => go("/employees")} />
         <Kpi label={t("ceo.leavesPendingCEO")} value={totalOf(leavesQ.data)} loading={leavesQ.isLoading}
           icon={CalendarCheck} tone="bg-emerald-500" onClick={() => go("/leaves/pending-approval")} />
-        <Kpi label={t("ceo.absencesThisMonth")} value={countOf(d?.monthlyAbsences) ?? 0}
-          icon={UserX} tone="bg-rose-500" onClick={() => go("/reports/attendance")} />
         <Kpi label={t("ceo.approvedLeavesThisMonth")} value={countOf(d?.approvedLeavesThisMonth) ?? 0}
+          hint={approvedLeaveDays === null ? undefined : t("ceo.approvedLeaveDays", { days: approvedLeaveDays })}
+          note={t("ceo.approvedLeavesNote")}
           icon={CheckCircle2} tone="bg-sky-500" />
-        <Kpi label={t("ceo.netGrowth")} value={netGrowth} loading={turnoverQ.isLoading}
+        {/* The turnover rate once the report carries it; until then, hires minus leavers. */}
+        <Kpi label={t("ceo.netGrowth")}
+          value={turnoverRate ?? netGrowth} loading={turnoverQ.isLoading}
+          decimals={turnoverRate !== null ? 1 : 0} suffix={turnoverRate !== null ? "%" : undefined}
           hint={turnover ? t("ceo.netGrowthHint", { hired: hiredYtd, left: leftYtd }) : undefined}
-          hintTone={netGrowth === null || netGrowth === 0 ? undefined : netGrowth > 0 ? "up" : "down"}
+          hintTone={turnoverRate !== null || netGrowth === null || netGrowth === 0 ? undefined : netGrowth > 0 ? "up" : "down"}
+          note={turnoverRate !== null && avgHeadcount !== null ? t("ceo.turnoverNote", { avg: avgHeadcount }) : undefined}
           icon={TrendingUp} tone="bg-violet-500" onClick={() => go("/reports/hr")} />
-        <Kpi label={t("ceo.contractsExpiring")} value={expiryQ.isError ? null : expiringItems.length} loading={expiryQ.isLoading}
-          hint={t("ceo.within90")} icon={CalendarClock} tone="bg-amber-500" onClick={() => go(`/reports/contract-ending?days=${EXPIRY_DAYS}`)} />
         <Kpi label={t("ceo.probationEnding")} value={probationEndQ.isError ? null : probationEnding.length} loading={probationEndQ.isLoading}
           hint={t("ceo.within30")} icon={ShieldCheck} tone="bg-indigo-500" onClick={() => go("/reports/probation-ending")} />
       </div>
+
+      <InterviewsDialog
+        open={peopleDialog === "interviews"}
+        onOpenChange={(o) => { if (!o) setPeopleDialog(null); }}
+        items={interviews?.conductedThisMonthItems ?? []}
+      />
+      <WorkforceDialog
+        open={peopleDialog === "workforce"}
+        onOpenChange={(o) => { if (!o) setPeopleDialog(null); }}
+        joined={workforce?.joinedThisMonthItems ?? []}
+        separated={workforce?.separatedThisMonthItems ?? []}
+      />
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* ── Decision center ─────────────────────────────────────────────── */}
@@ -773,56 +943,6 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
 
         {/* ── Side column ─────────────────────────────────────────────────── */}
         <div className="space-y-5">
-          <Panel title={t("ceo.mixTitle")} icon={Gavel}>
-            {loading ? (
-              <Skeleton className="mx-auto h-36 w-36 rounded-full" />
-            ) : mix.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">{t("ceo.emptyTitle")}</p>
-            ) : (
-              <div className="flex items-center gap-4">
-                <div className="relative h-32 w-32 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={mix} dataKey="value" nameKey="name" innerRadius={40} outerRadius={60}
-                        paddingAngle={3} stroke="none" cornerRadius={4}>
-                        {mix.map((m) => <Cell key={m.kind} fill={KIND_META[m.kind].color} />)}
-                      </Pie>
-                      <Tooltip contentStyle={TOOLTIP_STYLE} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold tabular-nums">{decisions.length}</span>
-                  </div>
-                </div>
-                <ul className="min-w-0 flex-1 space-y-2">
-                  {mix.map((m) => (
-                    <li key={m.kind}>
-                      <button type="button" onClick={() => setFilter(m.kind)}
-                        className="flex w-full items-center justify-between gap-2 text-sm hover:text-primary">
-                        <span className="flex min-w-0 items-center gap-2">
-                          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: KIND_META[m.kind].color }} />
-                          <span className="truncate">{m.name}</span>
-                        </span>
-                        <span className="font-semibold tabular-nums">{m.value}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {oldest && (
-              <button type="button" onClick={() => go(oldest.href)}
-                className="mt-4 flex w-full items-center gap-3 rounded-xl border border-dashed p-3 text-start transition-colors hover:border-primary/40 hover:bg-muted/40">
-                <Clock className="h-4 w-4 shrink-0 text-amber-500" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-muted-foreground">{t("ceo.oldestTitle")}</p>
-                  <p className="truncate text-sm font-semibold">{oldest.who} · {t(`ceo.kinds.${oldest.kind}`)}</p>
-                </div>
-                <AgeChip days={daysSince(oldest.since)} t={t as any} />
-              </button>
-            )}
-          </Panel>
-
           <Panel
             title={t("ceo.notificationsTitle")} icon={Bell}
             action={<button type="button" onClick={() => go("/notifications")} className="text-xs text-primary hover:underline">{t("ceo.viewAll")}</button>}
@@ -859,44 +979,8 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
       </div>
 
       {/* ── Company pulse ─────────────────────────────────────────────────── */}
-      {(!turnoverQ.isError || !summaryQ.isError) && (
-        <div className="grid gap-5 lg:grid-cols-3">
-          {!turnoverQ.isError && (
-            <Panel
-              className="lg:col-span-2" title={t("ceo.movementTitle", { year })} icon={TrendingUp}
-              action={
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />{t("ceo.hired")}</span>
-                  <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-500" />{t("ceo.left")}</span>
-                </div>
-              }
-            >
-              {turnoverQ.isLoading ? (
-                <Skeleton className="h-56 w-full rounded-xl" />
-              ) : hiredYtd + leftYtd === 0 ? (
-                <p className="py-16 text-center text-sm text-muted-foreground">{t("ceo.noMovement")}</p>
-              ) : (
-                <div className="h-56" dir="ltr">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={movement} barGap={4} margin={{ top: 8, right: 4, left: -22, bottom: 0 }}>
-                      <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-                      <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                      <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.5 }} contentStyle={TOOLTIP_STYLE} />
-                      <Bar dataKey="hired" name={t("ceo.hired")} fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={22} />
-                      <Bar dataKey="left" name={t("ceo.left")} fill="#f43f5e" radius={[6, 6, 0, 0]} maxBarSize={22} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-              {/* Separation dates are only recorded from June 2026 on, so the earlier
-                  months of that year show no departures. */}
-              {year === 2026 && !turnoverQ.isLoading && (
-                <p className="mt-2 text-[11px] text-muted-foreground">{t("ceo.movementNote")}</p>
-              )}
-            </Panel>
-          )}
-
+      {!summaryQ.isError && (
+        <div className="grid gap-5">
           {!summaryQ.isError && (
             <Panel
               title={t("ceo.departmentsTitle")} icon={Building2}

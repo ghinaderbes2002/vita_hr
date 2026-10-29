@@ -33,6 +33,10 @@ export function useCreateInterviewEvaluation() {
       qc.invalidateQueries({ queryKey: ["interview-evaluations"] });
       qc.invalidateQueries({ queryKey: ["interview-evaluation-by-app", vars.jobApplicationId] });
       qc.invalidateQueries({ queryKey: ["interview-position-comparison", vars.positionId] });
+      // The backend moves the linked application to ACCEPTED on save, so refresh its status.
+      qc.invalidateQueries({ queryKey: ["job-applications"] });
+      qc.invalidateQueries({ queryKey: ["job-applications-stats"] });
+      if (vars.jobApplicationId) qc.invalidateQueries({ queryKey: ["job-application", vars.jobApplicationId] });
       toast.success("تم حفظ التقييم بنجاح");
     },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),

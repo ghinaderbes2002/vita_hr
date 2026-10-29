@@ -548,7 +548,7 @@ export function ReferralSourceFormDialog({
                   <StarRating value={form.clinicRating} onChange={(v) => set("clinicRating", v)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>كثافة المرضى</Label>
+                  <Label>تقييم كثافة المرضى (يدوي)</Label>
                   <StarRating value={form.patientDensityRating} onChange={(v) => set("patientDensityRating", v)} />
                 </div>
                 <div className="space-y-1.5">

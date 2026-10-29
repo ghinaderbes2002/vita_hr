@@ -42,6 +42,15 @@ export const visitedByNameOf = (v: ReferralVisit): string | null =>
   ?? (typeof v.visitedBy === "object" ? v.visitedBy?.fullName ?? null : null)
   ?? null;
 
+/** A patient attributed to a referral source. */
+export interface ReferralSourcePatient {
+  id: string;
+  patientNumber?: string;
+  name?: string;
+  phone?: string;
+  referredAt?: string;
+}
+
 export interface ReferralSource {
   id: string;
   type: ReferralSourceType;
@@ -78,6 +87,8 @@ export interface ReferralSource {
   visitsCount?: number;
   /** Everyone recorded under this source, whether or not they ever showed up. */
   patientCount?: number;
+  /** This source's share (%) of all patients of sources of the same type, 1 decimal. */
+  densityPercent?: number;
   /** Those who actually entered a service (physio / prosthetics / podiatry). */
   realPatientCount?: number;
   isActive?: boolean;
@@ -211,6 +222,21 @@ export const clinicReferralsApi = {
     const { data } = await apiClient.get(`${BASE}/${id}/patient-count`);
     const d = data?.data ?? data;
     return d?.patientCount ?? 0;
+  },
+
+  listPatients: async (
+    sourceId: string, page = 1, limit = 20,
+  ): Promise<{ items: ReferralSourcePatient[]; page: number; limit: number; total: number; totalPages: number }> => {
+    const { data } = await apiClient.get(`${BASE}/${sourceId}/patients`, { params: { page, limit } });
+    const d = data?.data ?? data;
+    const items = Array.isArray(d) ? d : d?.items ?? [];
+    return {
+      items,
+      page: d?.page ?? page,
+      limit: d?.limit ?? limit,
+      total: d?.total ?? items.length,
+      totalPages: d?.totalPages ?? 1,
+    };
   },
 
   listVisits: async (sourceId: string): Promise<ReferralVisit[]> => {

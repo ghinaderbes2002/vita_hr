@@ -976,7 +976,7 @@ export function PatientSurveysTable({ params }: { params: Omit<PatientSurveyList
             صفحة {page} من {data?.totalPages} — {data?.total} استبيان
             {isFetching && " · جارِ التحديث..."}
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 rtl:flex-row-reverse">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>السابق</Button>
             <Button variant="outline" size="sm" disabled={page >= (data?.totalPages ?? 1)} onClick={() => setPage((p) => p + 1)}>التالي</Button>
           </div>
