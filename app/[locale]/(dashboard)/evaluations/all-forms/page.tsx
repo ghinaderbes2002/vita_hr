@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAllEvaluationForms } from "@/lib/hooks/use-evaluation-forms";
 import { Pagination } from "@/components/shared/pagination";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { EvaluationForm, EvaluationFormStatus } from "@/lib/api/evaluation-forms";
 
 export default function AllEvaluationFormsPage() {
@@ -30,29 +31,19 @@ export default function AllEvaluationFormsPage() {
   const [activeTab, setActiveTab] = useState<"all" | EvaluationFormStatus>("all");
 
   const LIMIT = 10;
-  const { data, isLoading } = useAllEvaluationForms({ page, limit: LIMIT });
+  // Search and tab are both filtered on the server, so they reach every page.
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const { data, isLoading } = useAllEvaluationForms({
+    page,
+    limit: LIMIT,
+    ...(activeTab === "all" ? {} : { status: activeTab }),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  });
 
   const forms = (data as any)?.items || (data as any)?.data?.items || [];
   const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
   const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
-
-  const filteredForms = forms.filter((form: EvaluationForm) => {
-    // إذا ما في بحث، نتحقق بس من التاب
-    if (!search) {
-      if (activeTab === "all") return true;
-      return form.status === activeTab;
-    }
-
-    const searchLower = search.toLowerCase();
-    const matchesSearch =
-      form.employee?.firstNameAr?.toLowerCase().includes(searchLower) ||
-      form.employee?.lastNameAr?.toLowerCase().includes(searchLower) ||
-      form.employee?.employeeNumber?.toLowerCase().includes(searchLower);
-
-    if (activeTab === "all") return matchesSearch;
-    return matchesSearch && form.status === activeTab;
-  });
 
   const getStatusBadge = (status: EvaluationFormStatus) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
@@ -169,7 +160,7 @@ export default function AllEvaluationFormsPage() {
           <Input
             placeholder={t("allForms.searchPlaceholder")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="pr-10"
           />
         </div>
@@ -185,12 +176,12 @@ export default function AllEvaluationFormsPage() {
           <TabsTrigger value="COMPLETED">{t("allForms.tabs.completed")}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all">{renderTable(filteredForms)}</TabsContent>
-        <TabsContent value="SELF_EVALUATION">{renderTable(filteredForms)}</TabsContent>
-        <TabsContent value="MANAGER_EVALUATION">{renderTable(filteredForms)}</TabsContent>
-        <TabsContent value="HR_REVIEW">{renderTable(filteredForms)}</TabsContent>
-        <TabsContent value="GM_APPROVAL">{renderTable(filteredForms)}</TabsContent>
-        <TabsContent value="COMPLETED">{renderTable(filteredForms)}</TabsContent>
+        <TabsContent value="all">{renderTable(forms)}</TabsContent>
+        <TabsContent value="SELF_EVALUATION">{renderTable(forms)}</TabsContent>
+        <TabsContent value="MANAGER_EVALUATION">{renderTable(forms)}</TabsContent>
+        <TabsContent value="HR_REVIEW">{renderTable(forms)}</TabsContent>
+        <TabsContent value="GM_APPROVAL">{renderTable(forms)}</TabsContent>
+        <TabsContent value="COMPLETED">{renderTable(forms)}</TabsContent>
       </Tabs>
 
       {meta && (

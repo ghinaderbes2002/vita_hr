@@ -10,7 +10,7 @@ import {
 } from "@/lib/api/evaluation-forms";
 
 // Get all evaluation forms
-export function useAllEvaluationForms(params?: { page?: number; limit?: number; periodId?: string; status?: string; employeeId?: string }) {
+export function useAllEvaluationForms(params?: { page?: number; limit?: number; search?: string; periodId?: string; status?: string; employeeId?: string }) {
   return useQuery({
     queryKey: ["evaluation-forms", "all", params],
     queryFn: () => evaluationFormsApi.getAll(params),
@@ -35,7 +35,7 @@ export function useEvaluationForm(id: string) {
 }
 
 // Get pending my review
-export function usePendingMyReview(params?: { page?: number; limit?: number }) {
+export function usePendingMyReview(params?: { page?: number; limit?: number; search?: string }) {
   return useQuery({
     queryKey: ["evaluation-forms", "pending-my-review", params],
     queryFn: () => evaluationFormsApi.getPendingMyReview(params),

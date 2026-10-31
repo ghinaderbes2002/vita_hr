@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { Footprints, Search } from "lucide-react";
@@ -14,57 +14,27 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
 import { PageGuard } from "@/components/permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
-import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
-import { PodiatryReception, PodiatrySession } from "@/lib/api/clinic-podiatry";
+import { usePodiatrySales } from "@/lib/hooks/use-clinic-podiatry";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 
 const PAGE_SIZE = 20;
 
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
-const installTime = (s: PodiatrySession) => new Date(s.installedAt!).getTime();
-
-/** One row per patient: every live fitting across their receptions, latest details shown. */
-const groupSales = (receptions: PodiatryReception[]) => {
-  const byPatient = new Map<string, { reception: PodiatryReception; session: PodiatrySession; count: number }>();
-  for (const r of receptions) {
-    for (const s of r.sessions ?? []) {
-      if (!s.installedAt || s.archivedAt) continue;
-      const row = byPatient.get(r.patientId);
-      if (!row) byPatient.set(r.patientId, { reception: r, session: s, count: 1 });
-      else {
-        row.count += 1;
-        if (installTime(s) > installTime(row.session)) {
-          row.session = s;
-          row.reception = r;
-        }
-      }
-    }
-  }
-  return [...byPatient.values()]
-    .map((row) => ({
-      ...row,
-      name: `${row.reception.patient?.firstName ?? ""} ${row.reception.patient?.lastName ?? ""}`.trim(),
-    }))
-    // Latest fitting first, so a new sale shows at the top.
-    .sort((a, b) => installTime(b.session) - installTime(a.session));
-};
-
-/** VitaFoot sales: every podiatry patient whose insole has been fitted. */
+/** VitaFoot sales: every podiatry patient whose insole has been fitted, one row each. */
 export default function VitaFootSalesPage() {
   const router = useRouter();
   const locale = useLocale();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(search.trim());
 
-  const { data = [], isLoading, isError } = usePodiatryReceptions();
-
-  const sales = useMemo(() => groupSales(data), [data]);
-
-  const q = search.trim().toLowerCase();
-  const rows = sales.filter((s) =>
-    !q || s.name.toLowerCase().includes(q) || s.reception.patient?.patientNumber?.toLowerCase().includes(q));
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const shown = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { data, isLoading, isError } = usePodiatrySales({
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  });
+  const rows = data?.items ?? [];
 
   return (
     <PageGuard permission={PERMISSIONS.CLINIC_REFERRALS.VIEW}>
@@ -72,7 +42,7 @@ export default function VitaFootSalesPage() {
         <PageHeader
           title="مبيعات فيتافوت"
           description="المرضى الذين تم تركيب الضبان لهم"
-          count={isLoading ? undefined : rows.length}
+          count={data?.total}
         />
 
         <div className="relative max-w-md">
@@ -90,10 +60,10 @@ export default function VitaFootSalesPage() {
             <div className="space-y-2 p-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           ) : isError ? (
             <p className="py-10 text-center text-sm text-destructive">تعذّر تحميل المبيعات</p>
-          ) : shown.length === 0 ? (
+          ) : rows.length === 0 ? (
             <EmptyState
               icon={<Footprints className="h-8 w-8 text-muted-foreground" />}
-              title={q ? "لا توجد نتائج مطابقة" : "لا توجد مبيعات بعد"}
+              title={debouncedSearch ? "لا توجد نتائج مطابقة" : "لا توجد مبيعات بعد"}
             />
           ) : (
             <Table dir="rtl">
@@ -108,17 +78,17 @@ export default function VitaFootSalesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shown.map(({ reception: r, session: s, count, name }) => (
+                {rows.map((s) => (
                   <TableRow
-                    key={r.patientId}
+                    key={s.patientId}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => router.push(`/${locale}/clinic/podiatry/${r.id}`)}
+                    onClick={() => router.push(`/${locale}/clinic/podiatry/${s.receptionId}`)}
                   >
-                    <TableCell className="font-mono text-xs">{r.patient?.patientNumber ?? "—"}</TableCell>
-                    <TableCell className="font-medium">{name || "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">{s.patientNumber ?? "—"}</TableCell>
+                    <TableCell className="font-medium">{s.patientName || "—"}</TableCell>
                     <TableCell className="text-sm">{s.insoleType?.join("، ") || "—"}</TableCell>
                     <TableCell className="tabular-nums">{s.shoeSize ?? "—"}</TableCell>
-                    <TableCell className="font-medium tabular-nums">{count}</TableCell>
+                    <TableCell className="font-medium tabular-nums">{s.installCount}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fmt(s.installedAt)}</TableCell>
                   </TableRow>
                 ))}
@@ -127,8 +97,14 @@ export default function VitaFootSalesPage() {
           )}
         </div>
 
-        {totalPages > 1 && (
-          <Pagination page={page} totalPages={totalPages} total={rows.length} limit={PAGE_SIZE} onPageChange={setPage} />
+        {(data?.totalPages ?? 1) > 1 && (
+          <Pagination
+            page={data!.page}
+            totalPages={data!.totalPages}
+            total={data!.total}
+            limit={data!.limit}
+            onPageChange={setPage}
+          />
         )}
       </div>
     </PageGuard>

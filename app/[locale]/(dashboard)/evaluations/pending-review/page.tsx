@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePendingMyReview } from "@/lib/hooks/use-evaluation-forms";
 import { Pagination } from "@/components/shared/pagination";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { EvaluationForm, EvaluationFormStatus } from "@/lib/api/evaluation-forms";
 
 export default function PendingReviewPage() {
@@ -28,21 +29,18 @@ export default function PendingReviewPage() {
   const [page, setPage] = useState(1);
 
   const LIMIT = 10;
-  const { data, isLoading } = usePendingMyReview({ page, limit: LIMIT });
+  // Searched on the server, so it reaches every page, not just the one shown.
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const { data, isLoading } = usePendingMyReview({
+    page,
+    limit: LIMIT,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  });
 
   const forms = (data as any)?.items || (data as any)?.data?.items || [];
   const total = (data as any)?.total ?? (data as any)?.data?.total ?? 0;
   const totalPages = (data as any)?.totalPages ?? (data as any)?.data?.totalPages ?? Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
-
-  const filteredForms = forms.filter((form: EvaluationForm) => {
-    const searchLower = search.toLowerCase();
-    return (
-      form.employee?.firstNameAr?.toLowerCase().includes(searchLower) ||
-      form.employee?.lastNameAr?.toLowerCase().includes(searchLower) ||
-      form.employee?.employeeNumber?.toLowerCase().includes(searchLower)
-    );
-  });
 
   const getStatusBadge = (status: EvaluationFormStatus) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
@@ -86,7 +84,7 @@ export default function PendingReviewPage() {
           <Input
             placeholder={t("pendingReview.searchPlaceholder")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="pr-10"
           />
         </div>
@@ -116,14 +114,14 @@ export default function PendingReviewPage() {
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredForms.length === 0 ? (
+            ) : forms.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredForms.map((form: EvaluationForm) => (
+              forms.map((form: EvaluationForm) => (
                 <TableRow key={form.id}>
                   <TableCell>
                     <div>

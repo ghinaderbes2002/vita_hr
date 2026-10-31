@@ -70,6 +70,7 @@ import {
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { Pagination } from "@/components/shared/pagination";
 import { format } from "date-fns";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { formatDate } from "@/lib/utils/date";
 
 const ALERT_TYPE_VALUES: AlertType[] = [
@@ -112,10 +113,14 @@ export default function AttendanceAlertsPage() {
   });
 
   const LIMIT = 10;
-  const queryParams =
-    activeTab === "all"
-      ? { page, limit: LIMIT }
-      : { status: activeTab, page, limit: LIMIT };
+  // Searched on the server, so it reaches every page, not just the one shown.
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const queryParams = {
+    page,
+    limit: LIMIT,
+    ...(activeTab === "all" ? {} : { status: activeTab }),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  };
   const { data: allData, isLoading: allLoading } = useAttendanceAlerts(queryParams);
   const { data: teamData, isLoading: teamLoading } = useMyTeamAlerts(queryParams);
   const data = isDirectManager ? teamData : allData;
@@ -135,21 +140,6 @@ export default function AttendanceAlertsPage() {
     (data as any)?.data?.totalPages ??
     Math.ceil(total / LIMIT);
   const meta = total > 0 ? { total, totalPages } : null;
-
-  const filteredAlerts = alerts.filter((alert: AttendanceAlert) => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    const employeeNameAr =
-      `${alert.employee?.firstNameAr || ""} ${alert.employee?.lastNameAr || ""}`.trim();
-    const employeeNameEn =
-      `${alert.employee?.firstNameEn || ""} ${alert.employee?.lastNameEn || ""}`.trim();
-    return (
-      employeeNameAr.toLowerCase().includes(searchLower) ||
-      employeeNameEn.toLowerCase().includes(searchLower) ||
-      alert.employee?.employeeNumber?.toLowerCase().includes(searchLower) ||
-      alert.messageAr?.toLowerCase().includes(searchLower)
-    );
-  });
 
   const handleResolve = (alert: AttendanceAlert) => {
     setSelectedAlert(alert);
@@ -337,7 +327,7 @@ export default function AttendanceAlertsPage() {
           <Input
             placeholder={t("attendance.alertSearchPlaceholder")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="pr-10"
           />
         </div>
@@ -358,16 +348,16 @@ export default function AttendanceAlertsPage() {
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
-          {renderTable(filteredAlerts)}
+          {renderTable(alerts)}
         </TabsContent>
         <TabsContent value="OPEN" className="space-y-4">
-          {renderTable(filteredAlerts.filter((a: AttendanceAlert) => a.status === "OPEN"))}
+          {renderTable(alerts.filter((a: AttendanceAlert) => a.status === "OPEN"))}
         </TabsContent>
         <TabsContent value="ACKNOWLEDGED" className="space-y-4">
-          {renderTable(filteredAlerts.filter((a: AttendanceAlert) => a.status === "ACKNOWLEDGED"))}
+          {renderTable(alerts.filter((a: AttendanceAlert) => a.status === "ACKNOWLEDGED"))}
         </TabsContent>
         <TabsContent value="RESOLVED" className="space-y-4">
-          {renderTable(filteredAlerts.filter((a: AttendanceAlert) => a.status === "RESOLVED"))}
+          {renderTable(alerts.filter((a: AttendanceAlert) => a.status === "RESOLVED"))}
         </TabsContent>
       </Tabs>
 

@@ -233,7 +233,42 @@ const asArray = <T>(d: unknown): T[] =>
 /** The only sizes the API accepts for `shoeSize`: 28 to 52 in steps of 2. */
 export const PODIATRY_SHOE_SIZES = [28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52] as const;
 
+/** One patient, shown with their latest fitting. */
+export interface PodiatrySale {
+  receptionId: string;
+  patientId: string;
+  patientNumber?: string | null;
+  patientName?: string | null;
+  insoleType?: PodiatryInsoleType[] | null;
+  shoeSize?: number | null;
+  installedAt?: string | null;
+  /** Every live fitting of this patient, across all their receptions. */
+  installCount: number;
+}
+
+export interface PaginatedPodiatrySales {
+  items: PodiatrySale[];
+  page: number;
+  limit: number;
+  /** Counts patients, not fittings. */
+  total: number;
+  totalPages: number;
+}
+
 export const clinicPodiatryApi = {
+  getSales: async (params?: { page?: number; limit?: number; search?: string }): Promise<PaginatedPodiatrySales> => {
+    const { data } = await apiClient.get("/podiatry/sales", { params });
+    const d = data?.data ?? data;
+    const items: PodiatrySale[] = d?.items ?? [];
+    return {
+      items,
+      page: d?.page ?? params?.page ?? 1,
+      limit: d?.limit ?? params?.limit ?? 20,
+      total: d?.total ?? items.length,
+      totalPages: d?.totalPages ?? 1,
+    };
+  },
+
   getReceptions: async (patientId?: string): Promise<PodiatryReception[]> => {
     const { data } = await apiClient.get("/podiatry/receptions", {
       params: patientId ? { patientId } : undefined,

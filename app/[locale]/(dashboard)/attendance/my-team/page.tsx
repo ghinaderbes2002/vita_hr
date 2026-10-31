@@ -20,6 +20,7 @@ import { useMyTeamAttendance } from "@/lib/hooks/use-attendance-records";
 import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
 import { AttendanceRecord, AttendanceStatus } from "@/lib/api/attendance-records";
 import { format } from "date-fns";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { formatDate, formatDuration, formatTime } from "@/lib/utils/date";
 
 const PUNCH_STATUS_CFG: Record<string, { label: string; className: string }> = {
@@ -54,26 +55,22 @@ function MyTeamAttendance() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
 
+  // Searched on the server, so it reaches every page, not just the one shown.
+  const debouncedSearch = useDebouncedValue(search.trim());
   const { data, isLoading } = useMyTeamAttendance({
     dateFrom,
     dateTo,
     page,
     limit: LIMIT,
     ...(statusFilter !== "ALL" ? { status: statusFilter as AttendanceStatus } : {}),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   });
 
   const payload = data as { items?: AttendanceRecord[]; total?: number; totalPages?: number;
     data?: { items?: AttendanceRecord[]; total?: number; totalPages?: number } } | undefined;
-  const allRecords: AttendanceRecord[] = payload?.items ?? payload?.data?.items ?? [];
+  const records: AttendanceRecord[] = payload?.items ?? payload?.data?.items ?? [];
   const total = payload?.total ?? payload?.data?.total ?? 0;
   const totalPages = payload?.totalPages ?? payload?.data?.totalPages ?? Math.ceil(total / LIMIT);
-
-  // البحث بالاسم يضيّق الصفحة المعروضة فقط — الترقيم يبقى من السيرفر.
-  const term = search.trim().toLowerCase();
-  const records = term
-    ? allRecords.filter((r) =>
-        `${employeeName(r)} ${r.employee?.employeeNumber ?? ""}`.toLowerCase().includes(term))
-    : allRecords;
 
   const lateMinutes = (minutes?: number) => (minutes ? `${minutes} دقيقة` : "—");
 
@@ -109,7 +106,7 @@ function MyTeamAttendance() {
           <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="بحث باسم الموظف أو رقمه..."
             className="ps-9 bg-background"
           />

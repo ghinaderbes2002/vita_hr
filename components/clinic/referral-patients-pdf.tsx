@@ -1,16 +1,13 @@
 // Client-only — imported via dynamic import() to avoid SSR issues.
-// The patients attributed to one referral source, as a VitaSyr sheet.
+// The patients attributed to one referral source, on the VitaFoot letterhead.
 import React from "react";
-import { Document, Page, Text, View, pdf } from "@react-pdf/renderer";
-import {
-  BORDER, BRAND, BRAND_LIGHT, InfoGrid, PageFooter, PageHeader, S, SecHead, TEXT,
-  ar, ensureAmiriFonts, saveBlob,
-} from "./pdf-kit";
+import { Document, Image, Page, Text, View, pdf } from "@react-pdf/renderer";
+import { ensureCairoFonts, saveBlob } from "./pdf-kit";
 import type { ReferralSourcePatient } from "@/lib/api/clinic-referrals";
 
 export interface ReferralPatientsPdfData {
-  sourceName: string;
-  sourceType: string;
+  /** Who referred them, as it reads after "من قبل". */
+  referrerLabel: string;
   /** "المرضى المُحالون" or "المبيعات". */
   listLabel: string;
   /** The referral-date filter in force, YYYY-MM-DD; empty when unset. */
@@ -19,69 +16,103 @@ export interface ReferralPatientsPdfData {
   patients: ReferralSourcePatient[];
 }
 
-const RTL = { direction: "rtl" as const, textAlign: "right" as const };
-const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
+const LINE = "#808080";
+const HEAD_BG = "#D9D9D9";
+const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
-// Widths in reading order, right to left.
-const COLS = { n: "6%", number: "20%", name: "38%", phone: "20%", date: "16%" };
+// Widths in reading order, right to left, as in the Word template.
+const COLS = { n: "5%", name: "21%", service: "27%", visit: "16%", fitted: "16%", insole: "15%" };
 
-const Cell = ({ width, children, bold, color }: {
-  width: string; children: string; bold?: boolean; color?: string;
+// The page margins leave the letterhead's logo and footer clear on every page.
+const PAGE = {
+  fontFamily: "Cairo", fontSize: 10, color: "#000000",
+  paddingTop: 113, paddingBottom: 99, paddingHorizontal: 42.5,
+};
+
+const Cell = ({ width, children, bold, last }: {
+  width: string; children: string; bold?: boolean; last?: boolean;
 }) => (
-  <Text style={{ ...RTL, width, fontSize: 9, paddingHorizontal: 4, color: color ?? TEXT, fontWeight: bold ? "bold" : "normal" }}>
-    {children}
-  </Text>
+  <View style={{
+    width, justifyContent: "center", paddingVertical: 3, paddingHorizontal: 4,
+    borderLeftWidth: last ? 0 : 0.5, borderLeftColor: LINE,
+  }}>
+    <Text style={{ textAlign: "center", fontSize: 9, fontWeight: bold ? "bold" : "normal" }}>{children}</Text>
+  </View>
 );
 
-const ReferralPatientsDoc = ({ data }: { data: ReferralPatientsPdfData }) => (
-  <Document title={`${data.listLabel} - ${data.sourceName}`}>
-    <Page size="A4" style={S.page}>
-      <PageHeader />
+const fittedLabel = (p: ReferralSourcePatient) =>
+  p.installedAt === undefined ? "—" : p.installedAt ? "نعم" : "لا";
 
-      <SecHead label={data.listLabel} />
-      <InfoGrid items={[
-        { label: "المصدر", value: data.sourceName },
-        { label: "النوع", value: data.sourceType },
-        { label: "العدد", value: data.patients.length },
-        ...(data.dateFrom || data.dateTo
-          ? [{ label: "فترة الإحالة", value: `${fmt(data.dateFrom)} - ${fmt(data.dateTo)}` }]
-          : []),
-        { label: "تاريخ التصدير", value: fmt(new Date().toISOString()) },
-      ]} />
+export const ReferralPatientsDoc = ({ data, letterhead }: { data: ReferralPatientsPdfData; letterhead: string }) => {
+  const isSales = data.listLabel === "المبيعات";
+  // undefined means the API did not send the field, which is not the same as nobody fitted.
+  const hasFittingData = data.patients.some((p) => p.installedAt !== undefined);
+  const fittedCount = data.patients.filter((p) => p.installedAt).length;
+  return (
+    <Document title={`${data.listLabel} - ${data.referrerLabel}`}>
+      <Page size="A4" style={PAGE}>
+        <Image fixed src={letterhead} style={{ position: "absolute", top: 0, left: 0, width: 595.28, height: 841.89 }} />
 
-      <View style={{ marginTop: 8 }}>
-        <View style={{ flexDirection: "row-reverse", backgroundColor: BRAND, paddingVertical: 4 }}>
-          <Cell width={COLS.n} bold color="#ffffff">#</Cell>
-          <Cell width={COLS.number} bold color="#ffffff">{ar("رقم المريض")}</Cell>
-          <Cell width={COLS.name} bold color="#ffffff">{ar("الاسم")}</Cell>
-          <Cell width={COLS.phone} bold color="#ffffff">{ar("الهاتف")}</Cell>
-          <Cell width={COLS.date} bold color="#ffffff">{ar("تاريخ الإحالة")}</Cell>
+        <Text style={{ textAlign: "center", fontWeight: "bold", marginBottom: data.dateFrom || data.dateTo ? 2 : 14 }}>
+          {`قائمة ${isSales ? "مبيعات" : "المُستفيدين"} المُحالين من قبل ${data.referrerLabel}`}
+        </Text>
+        {(data.dateFrom || data.dateTo) && (
+          <Text style={{ textAlign: "center", fontSize: 9, marginBottom: 12 }}>
+            {`فترة الإحالة: ${fmt(data.dateFrom)} - ${fmt(data.dateTo)}`}
+          </Text>
+        )}
+
+        <View fixed style={{ flexDirection: "row-reverse", backgroundColor: HEAD_BG, borderWidth: 0.5, borderColor: LINE }}>
+          <Cell width={COLS.n} bold>#</Cell>
+          <Cell width={COLS.name} bold>اسم المستفيد</Cell>
+          <Cell width={COLS.service} bold>نوع الخدمة</Cell>
+          <Cell width={COLS.visit} bold>تاريخ الزيارة</Cell>
+          <Cell width={COLS.fitted} bold>تركيب الضبان</Cell>
+          <Cell width={COLS.insole} bold last>اسم الضبان</Cell>
         </View>
         {data.patients.map((p, i) => (
           <View
             key={p.id}
             wrap={false}
             style={{
-              flexDirection: "row-reverse", paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: BORDER,
-              backgroundColor: i % 2 ? BRAND_LIGHT : "transparent",
+              flexDirection: "row-reverse", borderWidth: 0.5, borderTopWidth: 0, borderColor: LINE,
             }}
           >
             <Cell width={COLS.n}>{String(i + 1)}</Cell>
-            <Cell width={COLS.number}>{p.patientNumber || "—"}</Cell>
-            <Cell width={COLS.name}>{p.name ? ar(p.name) : "—"}</Cell>
-            <Cell width={COLS.phone}>{p.phone || "—"}</Cell>
-            <Cell width={COLS.date}>{fmt(p.referredAt)}</Cell>
+            <Cell width={COLS.name}>{p.name || "—"}</Cell>
+            <Cell width={COLS.service}>{p.serviceName || "—"}</Cell>
+            <Cell width={COLS.visit}>{fmt(p.lastVisitDate)}</Cell>
+            <Cell width={COLS.fitted}>{fittedLabel(p)}</Cell>
+            <Cell width={COLS.insole} last>{p.insoleType?.join("، ") || "—"}</Cell>
           </View>
         ))}
-      </View>
 
-      <PageFooter />
-    </Page>
-  </Document>
-);
+        <View wrap={false} style={{ marginTop: 24, borderWidth: 0.5, borderColor: "#000000" }}>
+          {[
+            { label: "العدد الإجمالي للمُستفيدين المُحالين", value: String(data.patients.length) },
+            { label: "عدد المُستفيدين المُحالين تم تركيب الضبان لهم", value: hasFittingData ? String(fittedCount) : "—" },
+          ].map((row, i) => (
+            <View
+              key={row.label}
+              style={{ flexDirection: "row-reverse", borderTopWidth: i ? 0.5 : 0, borderTopColor: "#000000" }}
+            >
+              <View style={{ width: "50%", paddingVertical: 5, borderLeftWidth: 0.5, borderLeftColor: "#000000" }}>
+                <Text style={{ textAlign: "center" }}>{row.label}</Text>
+              </View>
+              <View style={{ width: "50%", paddingVertical: 5 }}>
+                <Text style={{ textAlign: "center" }}>{row.value}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </Page>
+    </Document>
+  );
+};
 
 export async function downloadReferralPatientsPdf(data: ReferralPatientsPdfData): Promise<void> {
-  ensureAmiriFonts();
-  const blob = await pdf(<ReferralPatientsDoc data={data} />).toBlob();
-  saveBlob(blob, `referral-patients-${data.sourceName.replace(/\s+/g, "-")}.pdf`);
+  ensureCairoFonts();
+  const letterhead = `${window.location.origin}/assets/images/vitafoot-letterhead.jpg`;
+  const blob = await pdf(<ReferralPatientsDoc data={data} letterhead={letterhead} />).toBlob();
+  saveBlob(blob, `referral-patients-${data.referrerLabel.replace(/\s+/g, "-")}.pdf`);
 }

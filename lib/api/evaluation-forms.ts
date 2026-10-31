@@ -122,7 +122,7 @@ export interface GmApprovalData {
 
 export const evaluationFormsApi = {
   // Get all forms
-  getAll: async (params?: { page?: number; limit?: number; periodId?: string; status?: string; employeeId?: string }): Promise<ApiResponse<EvaluationForm[]>> => {
+  getAll: async (params?: { page?: number; limit?: number; search?: string; periodId?: string; status?: string; employeeId?: string }): Promise<ApiResponse<EvaluationForm[]>> => {
     const response = await apiClient.get("/evaluation-forms", { params });
     return response.data;
   },
@@ -146,7 +146,7 @@ export const evaluationFormsApi = {
   },
 
   // Get pending my review
-  getPendingMyReview: async (params?: { page?: number; limit?: number }): Promise<ApiResponse<EvaluationForm[]>> => {
+  getPendingMyReview: async (params?: { page?: number; limit?: number; search?: string }): Promise<ApiResponse<EvaluationForm[]>> => {
     const response = await apiClient.get("/evaluation-forms/pending-my-review", { params });
     return response.data;
   },

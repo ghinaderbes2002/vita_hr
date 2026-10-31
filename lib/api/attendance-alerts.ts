@@ -53,6 +53,7 @@ export interface ResolveAlertData {
 }
 
 export interface AlertQueryParams {
+  search?: string;
   status?: AlertStatus;
   employeeId?: string;
   type?: AlertType;

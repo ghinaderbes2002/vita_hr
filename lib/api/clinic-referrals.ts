@@ -49,6 +49,13 @@ export interface ReferralSourcePatient {
   name?: string;
   phone?: string;
   referredAt?: string;
+  /** The service the patient received, ready to display. */
+  serviceName?: string | null;
+  lastVisitDate?: string | null;
+  /** When the insole was fitted; null if it was not, absent on older API responses. */
+  installedAt?: string | null;
+  /** Insole codes, e.g. VF01. */
+  insoleType?: string[] | null;
 }
 
 export interface ReferralSourcePatientFilters {

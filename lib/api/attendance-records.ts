@@ -128,6 +128,7 @@ export interface UpdateAttendanceRecordData {
 }
 
 export interface AttendanceQueryParams {
+  search?: string;
   dateFrom?: string;
   dateTo?: string;
   employeeId?: string;

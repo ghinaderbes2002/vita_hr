@@ -108,8 +108,9 @@ export default function ReferralSourceDetailPage() {
       } while (page <= totalPages);
       const { downloadReferralPatientsPdf } = await import("@/components/clinic/referral-patients-pdf");
       await downloadReferralPatientsPdf({
-        sourceName: source.name,
-        sourceType: REFERRAL_SOURCE_TYPE_LABEL[source.type],
+        referrerLabel: source.type === "DOCTOR" && !/^(د\.|د\s|دكتور|الدكتور)/.test(source.name)
+          ? `الدكتور ${source.name}`
+          : source.name,
         listLabel: salesOnly ? "المبيعات" : "المرضى المُحالون",
         dateFrom,
         dateTo,

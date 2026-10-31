@@ -20,6 +20,14 @@ export function usePodiatryReceptions(patientId?: string, enabled = true) {
   });
 }
 
+export function usePodiatrySales(params: { page?: number; limit?: number; search?: string }) {
+  return useQuery({
+    queryKey: ["podiatry-sales", params],
+    queryFn: () => clinicPodiatryApi.getSales(params),
+    placeholderData: (prev) => prev,
+  });
+}
+
 export function usePodiatryReception(id: string) {
   return useQuery({
     queryKey: ["podiatry-reception", id],
