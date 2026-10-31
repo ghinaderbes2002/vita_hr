@@ -116,8 +116,10 @@ export default function ReferralSourceDetailPage() {
         dateTo,
         patients,
       });
-    } catch {
-      toast.error("تعذّر تصدير المرضى");
+    } catch (e) {
+      console.error(e);
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`تعذّر تصدير المرضى: ${msg.slice(0, 120)}`);
     } finally {
       setExporting(false);
     }

@@ -2,7 +2,7 @@
 // The patients attributed to one referral source, on the VitaFoot letterhead.
 import React from "react";
 import { Document, Image, Page, Text, View, pdf } from "@react-pdf/renderer";
-import { ensureCairoFonts, saveBlob } from "./pdf-kit";
+import { freshCairoFamily, saveBlob } from "./pdf-kit";
 import type { ReferralSourcePatient } from "@/lib/api/clinic-referrals";
 
 export interface ReferralPatientsPdfData {
@@ -25,7 +25,7 @@ const COLS = { n: "5%", name: "21%", service: "27%", visit: "16%", fitted: "16%"
 
 // The page margins leave the letterhead's logo and footer clear on every page.
 const PAGE = {
-  fontFamily: "Cairo", fontSize: 10, color: "#000000",
+  fontSize: 10, color: "#000000",
   paddingTop: 113, paddingBottom: 99, paddingHorizontal: 42.5,
 };
 
@@ -43,14 +43,16 @@ const Cell = ({ width, children, bold, last }: {
 const fittedLabel = (p: ReferralSourcePatient) =>
   p.installedAt === undefined ? "—" : p.installedAt ? "نعم" : "لا";
 
-export const ReferralPatientsDoc = ({ data, letterhead }: { data: ReferralPatientsPdfData; letterhead: string }) => {
+export const ReferralPatientsDoc = ({ data, letterhead, fontFamily }: {
+  data: ReferralPatientsPdfData; letterhead: string; fontFamily: string;
+}) => {
   const isSales = data.listLabel === "المبيعات";
   // undefined means the API did not send the field, which is not the same as nobody fitted.
   const hasFittingData = data.patients.some((p) => p.installedAt !== undefined);
   const fittedCount = data.patients.filter((p) => p.installedAt).length;
   return (
     <Document title={`${data.listLabel} - ${data.referrerLabel}`}>
-      <Page size="A4" style={PAGE}>
+      <Page size="A4" style={{ ...PAGE, fontFamily }}>
         <Image fixed src={letterhead} style={{ position: "absolute", top: 0, left: 0, width: 595.28, height: 841.89 }} />
 
         <Text style={{ textAlign: "center", fontWeight: "bold", marginBottom: data.dateFrom || data.dateTo ? 2 : 14 }}>
@@ -111,8 +113,8 @@ export const ReferralPatientsDoc = ({ data, letterhead }: { data: ReferralPatien
 };
 
 export async function downloadReferralPatientsPdf(data: ReferralPatientsPdfData): Promise<void> {
-  ensureCairoFonts();
+  const fontFamily = freshCairoFamily();
   const letterhead = `${window.location.origin}/assets/images/vitafoot-letterhead.jpg`;
-  const blob = await pdf(<ReferralPatientsDoc data={data} letterhead={letterhead} />).toBlob();
+  const blob = await pdf(<ReferralPatientsDoc data={data} letterhead={letterhead} fontFamily={fontFamily} />).toBlob();
   saveBlob(blob, `referral-patients-${data.referrerLabel.replace(/\s+/g, "-")}.pdf`);
 }

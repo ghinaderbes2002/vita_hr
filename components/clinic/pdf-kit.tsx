@@ -325,6 +325,24 @@ export function ensureCairoFonts() {
   cairoRegistered = true;
 }
 
+// react-pdf crashes ("reading 'id'") in bidi reordering when a Cairo font instance
+// is reused for a second document, so a repeatable export needs its own instance.
+// Registering under a new family name loads one without touching other fonts.
+let cairoInstances = 0;
+export function freshCairoFamily(): string {
+  const origin = window.location.origin;
+  const family = `Cairo-${++cairoInstances}`;
+  Font.register({
+    family,
+    fonts: [
+      { src: `${origin}/fonts/cairo-regular.ttf`, fontWeight: "normal" },
+      { src: `${origin}/fonts/cairo-bold.ttf`,    fontWeight: "bold" },
+    ],
+  });
+  Font.registerHyphenationCallback((word) => [word]);
+  return family;
+}
+
 export function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
