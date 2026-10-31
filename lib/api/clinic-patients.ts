@@ -19,7 +19,8 @@ export const DOCUMENT_ACCEPT: Record<DocumentType, string> = {
 
 export type Gender         = "MALE" | "FEMALE";
 export type IdentityType   = "NATIONAL_ID" | "PASSPORT" | "UNHCR" | "OTHER";
-export type EducationLevel = "ILLITERATE" | "PRIMARY" | "SECONDARY" | "HIGH_SCHOOL" | "UNIVERSITY" | "POSTGRADUATE";
+export const EDUCATION_LEVELS = ["ILLITERATE", "PRIMARY", "SECONDARY", "HIGH_SCHOOL", "UNIVERSITY", "POSTGRADUATE"] as const;
+export type EducationLevel = (typeof EDUCATION_LEVELS)[number];
 export type MaritalStatus  = "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED";
 export type LivingCondition = "WITH_FAMILY" | "INDEPENDENT" | "SHELTER_CAMP" | "OTHER";
 export type FinancialStatus = "LOW" | "MODERATE" | "GOOD" | "NOT_WORKING" | "RETIRED";
@@ -195,6 +196,7 @@ export interface PatientListParams {
   department?: "physio" | "prosthetics";
   /** true = مرضى الشركات فقط، false = من عداهم. */
   isCompanyPatient?: boolean;
+  educationLevel?: EducationLevel;
 }
 
 export interface PaginatedPatients {

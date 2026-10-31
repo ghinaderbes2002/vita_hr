@@ -2628,9 +2628,10 @@
           "OTHER": "Diğer"
         },
         "education": {
-          "NONE": "Eğitimsiz",
+          "ILLITERATE": "Okuryazar değil",
           "PRIMARY": "İlkokul",
-          "SECONDARY": "Ortaokul/Lise",
+          "SECONDARY": "Ortaokul",
+          "HIGH_SCHOOL": "Lise",
           "UNIVERSITY": "Üniversite",
           "POSTGRADUATE": "Lisansüstü"
         },

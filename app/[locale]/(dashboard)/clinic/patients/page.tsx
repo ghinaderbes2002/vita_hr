@@ -26,7 +26,7 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useClinicPatients, useDeleteClinicPatient, useExportPatients } from "@/lib/hooks/use-clinic-patients";
-import { Patient } from "@/lib/api/clinic-patients";
+import { EDUCATION_LEVELS, EducationLevel, Patient } from "@/lib/api/clinic-patients";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const LIMIT = 15;
@@ -36,6 +36,7 @@ export default function ClinicPatientsPage() {
   const locale = useLocale();
   const t = useTranslations("clinic.patients");
   const tCommon = useTranslations("clinic.common");
+  const tNew = useTranslations("clinic.patients.new");
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -45,6 +46,7 @@ export default function ClinicPatientsPage() {
   const [consentFilter, setConsentFilter] =
     useState<"all" | "FUNDER_ONLY" | "FUNDER_AND_SOCIAL" | "REFUSED" | "NONE">("all");
   const [companyFilter, setCompanyFilter] = useState<"all" | "yes" | "no">("all");
+  const [educationFilter, setEducationFilter] = useState<"all" | EducationLevel>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Restrict the list to the user's own department: a physio-only clinician sees
@@ -73,6 +75,7 @@ export default function ClinicPatientsPage() {
     caseType: caseTypeFilter !== "all" ? (caseTypeFilter as any) : undefined,
     consentDecision: consentFilter !== "all" ? consentFilter : undefined,
     isCompanyPatient: companyFilter === "all" ? undefined : companyFilter === "yes",
+    educationLevel: educationFilter !== "all" ? educationFilter : undefined,
     department,
   });
 
@@ -91,6 +94,11 @@ export default function ClinicPatientsPage() {
   const splitReliable =
     totalAll != null && totalCompany != null && totalNonCompany != null
     && totalCompany + totalNonCompany === totalAll;
+
+  // A row of another level means the API ignored the filter, so its total would
+  // be everyone — the count is withheld rather than shown wrong.
+  const educationCountReliable = !!data && educationFilter !== "all"
+    && !data.items.some((p) => p.educationLevel && p.educationLevel !== educationFilter);
 
   const deletePatient = useDeleteClinicPatient();
 
@@ -232,6 +240,21 @@ export default function ClinicPatientsPage() {
             <SelectItem value="NONE">لم يوقّعوا</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={educationFilter} onValueChange={(v) => { setEducationFilter(v as "all" | EducationLevel); setPage(1); }}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder={tNew("fields.educationLevel")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل المستويات التعليمية</SelectItem>
+            {EDUCATION_LEVELS.map((v) => <SelectItem key={v} value={v}>{tNew(`education.${v}`)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {educationCountReliable && (
+          <div className="flex items-center gap-1.5 rounded-md border bg-muted/40 px-3 text-sm">
+            <span className="text-muted-foreground">عدد المرضى:</span>
+            <span className="font-bold tabular-nums">{total}</span>
+          </div>
+        )}
       </div>
 
       {/* Table */}
