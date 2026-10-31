@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PodiatryMonthlyChart } from "@/components/dashboard/podiatry-monthly-chart";
+import { CeoJustificationsPanel } from "@/components/dashboard/ceo-justifications-panel";
 import {
   InterviewsDialog, WorkforceDialog, type InterviewItem, type WorkforceItem,
 } from "@/components/dashboard/hr-people-dialogs";
@@ -943,6 +944,7 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
 
         {/* ── Side column ─────────────────────────────────────────────────── */}
         <div className="space-y-5">
+          <CeoJustificationsPanel />
           <Panel
             title={t("ceo.notificationsTitle")} icon={Bell}
             action={<button type="button" onClick={() => go("/notifications")} className="text-xs text-primary hover:underline">{t("ceo.viewAll")}</button>}

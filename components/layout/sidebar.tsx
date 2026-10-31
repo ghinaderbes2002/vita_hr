@@ -166,7 +166,7 @@ const navigation: NavItem[] = [
     hiddenForRoles: ["employee", "موظف", "QS", "مشرف مركز"],
     children: [
       // Login-only: the API returns the signed-in manager's own reports.
-      { title: "nav.mySubordinates", href: "/employees/my-subordinates", icon: Users, showForRoles: ["DIRECT_MANAGER", "المدير المباشر"] },
+      { title: "nav.mySubordinates", href: "/employees/my-subordinates", icon: Users, requiredRoles: ["DIRECT_MANAGER", "المدير المباشر", "مدير مباشر"], hiddenForAdmin: true },
       {
         title: "nav.attendance",
         icon: ClipboardCheck,
