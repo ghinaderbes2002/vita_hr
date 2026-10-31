@@ -15,17 +15,39 @@ import { Pagination } from "@/components/shared/pagination";
 import { PageGuard } from "@/components/permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePodiatryReceptions } from "@/lib/hooks/use-clinic-podiatry";
-import { PodiatryReception } from "@/lib/api/clinic-podiatry";
+import { PodiatryReception, PodiatrySession } from "@/lib/api/clinic-podiatry";
 
 const PAGE_SIZE = 20;
 
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
-/** The reception's most recent live fitting; null if it was never fitted. */
-const latestInstall = (r: PodiatryReception) =>
-  (r.sessions ?? [])
-    .filter((s) => !!s.installedAt && !s.archivedAt)
-    .sort((a, b) => new Date(b.installedAt!).getTime() - new Date(a.installedAt!).getTime())[0] ?? null;
+const installTime = (s: PodiatrySession) => new Date(s.installedAt!).getTime();
+
+/** One row per patient: every live fitting across their receptions, latest details shown. */
+const groupSales = (receptions: PodiatryReception[]) => {
+  const byPatient = new Map<string, { reception: PodiatryReception; session: PodiatrySession; count: number }>();
+  for (const r of receptions) {
+    for (const s of r.sessions ?? []) {
+      if (!s.installedAt || s.archivedAt) continue;
+      const row = byPatient.get(r.patientId);
+      if (!row) byPatient.set(r.patientId, { reception: r, session: s, count: 1 });
+      else {
+        row.count += 1;
+        if (installTime(s) > installTime(row.session)) {
+          row.session = s;
+          row.reception = r;
+        }
+      }
+    }
+  }
+  return [...byPatient.values()]
+    .map((row) => ({
+      ...row,
+      name: `${row.reception.patient?.firstName ?? ""} ${row.reception.patient?.lastName ?? ""}`.trim(),
+    }))
+    // Latest fitting first, so a new sale shows at the top.
+    .sort((a, b) => installTime(b.session) - installTime(a.session));
+};
 
 /** VitaFoot sales: every podiatry patient whose insole has been fitted. */
 export default function VitaFootSalesPage() {
@@ -36,15 +58,7 @@ export default function VitaFootSalesPage() {
 
   const { data = [], isLoading, isError } = usePodiatryReceptions();
 
-  // Latest fitting first, so a new sale shows at the top.
-  const sales = useMemo(() => data
-    .flatMap((r) => {
-      const session = latestInstall(r);
-      if (!session) return [];
-      const name = `${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.trim();
-      return [{ reception: r, session, name }];
-    })
-    .sort((a, b) => new Date(b.session.installedAt!).getTime() - new Date(a.session.installedAt!).getTime()), [data]);
+  const sales = useMemo(() => groupSales(data), [data]);
 
   const q = search.trim().toLowerCase();
   const rows = sales.filter((s) =>
@@ -89,13 +103,14 @@ export default function VitaFootSalesPage() {
                   <TableHead>الاسم</TableHead>
                   <TableHead>نوع الضبان</TableHead>
                   <TableHead>المقاس</TableHead>
-                  <TableHead>تاريخ التركيب</TableHead>
+                  <TableHead>عدد التركيبات</TableHead>
+                  <TableHead>آخر تركيب</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shown.map(({ reception: r, session: s, name }) => (
+                {shown.map(({ reception: r, session: s, count, name }) => (
                   <TableRow
-                    key={r.id}
+                    key={r.patientId}
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => router.push(`/${locale}/clinic/podiatry/${r.id}`)}
                   >
@@ -103,6 +118,7 @@ export default function VitaFootSalesPage() {
                     <TableCell className="font-medium">{name || "—"}</TableCell>
                     <TableCell className="text-sm">{s.insoleType?.join("، ") || "—"}</TableCell>
                     <TableCell className="tabular-nums">{s.shoeSize ?? "—"}</TableCell>
+                    <TableCell className="font-medium tabular-nums">{count}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fmt(s.installedAt)}</TableCell>
                   </TableRow>
                 ))}
