@@ -134,6 +134,7 @@ export interface PodiatrySession {
   installedAt?: string | null;
   installedBy?: string | null;
   installedByName?: string | null;
+  archivedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

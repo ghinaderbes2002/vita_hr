@@ -89,8 +89,9 @@ function workHoursError(start: string, end: string, openEnded: boolean): string 
   return null;
 }
 
+/** The local calendar date. Not toISOString: that is UTC, so local midnight lands on the day before. */
 function toISO(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /** The editable fields of an appointment, as the edit dialog holds them. */
@@ -276,11 +277,14 @@ export default function AppointmentsPage() {
 
   // Staff meetings for the viewed month: one request feeds both the calendar
   // dots and the selected day's column.
-  const { data: monthMeetings = [] } = useInternalMeetings({ dateFrom: from, dateTo: to }, canViewMeetings);
-  const meetingDay = (m: InternalMeeting) => {
-    const dt = new Date(m.startTime);
-    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-  };
+  // dateTo runs one day past the month, as on the my-appointments page, so the
+  // month's last day is covered; anything past it is dropped below.
+  const { data: fetchedMeetings = [] } = useInternalMeetings(
+    { dateFrom: from, dateTo: toISO(new Date(viewYear, viewMonth + 1, 1)) },
+    canViewMeetings,
+  );
+  const meetingDay = (m: InternalMeeting) => toISO(new Date(m.startTime));
+  const monthMeetings = fetchedMeetings.filter((m) => meetingDay(m).startsWith(from.slice(0, 7)));
   // What the board shows: everything, patient bookings only, or one kind of
   // staff meeting. Drives the columns, the calendar dots and the day counter.
   const showAppts = viewFilter === "ALL" || viewFilter === "PATIENTS";

@@ -355,6 +355,7 @@ const navigation: NavItem[] = [
       // clinic.referrals.view — لكنه يبقى يرى العملاء المحتملين كما كان في العيادة.
       { title: "nav.clinicContacts", href: "/clinic/referrals", icon: Users, permission: "clinic.referrals.view", hiddenForJobTitleCodes: ["VTX-JTL-000011"] },
       { title: "nav.clinicSalesOverview", href: "/clinic/referrals/sales", icon: Trophy, permission: "clinic.referrals.view", hiddenForJobTitleCodes: ["VTX-JTL-000011"] },
+      { title: "nav.clinicVitaFootSales", href: "/clinic/referrals/vitafoot-sales", icon: Footprints, permission: "clinic.referrals.view", hiddenForJobTitleCodes: ["VTX-JTL-000011"] },
       { title: "nav.clinicPotentialClients", href: "/clinic/potential-clients", icon: UserSearch, permission: "clinic.potential_clients.view" },
     ],
   },
@@ -548,6 +549,7 @@ export function Sidebar() {
         // Sits under the contacts route but is its own nav item — without this
         // both items light up at once.
         "/clinic/referrals/sales",
+        "/clinic/referrals/vitafoot-sales",
       ];
 
       // If current path is a known sub-route, don't match parent

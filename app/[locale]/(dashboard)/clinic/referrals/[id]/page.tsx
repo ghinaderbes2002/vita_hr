@@ -434,7 +434,7 @@ export default function ReferralSourceDetailPage() {
                           >
                             <TableCell className="font-mono text-xs">{p.patientNumber || "—"}</TableCell>
                             <TableCell className="font-medium">{p.name || "—"}</TableCell>
-                            <TableCell className="text-sm" dir="ltr">{p.phone || "—"}</TableCell>
+                            <TableCell className="text-sm"><span dir="ltr">{p.phone || "—"}</span></TableCell>
                             <TableCell className="text-sm text-muted-foreground">{formatDate(p.referredAt)}</TableCell>
                           </TableRow>
                         ))}
