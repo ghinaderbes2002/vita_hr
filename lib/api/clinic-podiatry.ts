@@ -236,6 +236,8 @@ export const PODIATRY_SHOE_SIZES = [28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 
 /** One patient, shown with their latest fitting. */
 export interface PodiatrySale {
   receptionId: string;
+  /** The latest fitting's session — the one the cost is written to. */
+  sessionId: string;
   patientId: string;
   patientNumber?: string | null;
   patientName?: string | null;
@@ -244,6 +246,19 @@ export interface PodiatrySale {
   installedAt?: string | null;
   /** Every live fitting of this patient, across all their receptions. */
   installCount: number;
+  /**
+   * Cost of the latest fitting. null covers both "not entered" and "not allowed
+   * to see it", so it must never be read as zero.
+   */
+  insoleCost?: number | null;
+  /** All the patient's live fittings; null under the same two conditions. */
+  totalCost?: number | null;
+}
+
+export interface PodiatrySaleCost {
+  sessionId: string;
+  insoleCost: number | null;
+  totalCost: number | null;
 }
 
 export interface PaginatedPodiatrySales {
@@ -267,6 +282,12 @@ export const clinicPodiatryApi = {
       total: d?.total ?? items.length,
       totalPages: d?.totalPages ?? 1,
     };
+  },
+
+  /** null clears the cost; the API rejects a body without the field. */
+  updateSaleCost: async (sessionId: string, insoleCost: number | null): Promise<PodiatrySaleCost> => {
+    const { data } = await apiClient.patch(`/podiatry/sales/${sessionId}/cost`, { insoleCost });
+    return data?.data ?? data;
   },
 
   getReceptions: async (patientId?: string): Promise<PodiatryReception[]> => {

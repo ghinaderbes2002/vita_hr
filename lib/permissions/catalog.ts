@@ -277,6 +277,8 @@ export const PERMISSIONS = {
     SESSION_CREATE:   "clinic.podiatry.session.create",
     SESSION_EDIT:     "clinic.podiatry.session.edit",
     SESSION_ARCHIVE:  "clinic.podiatry.session.archive",
+    SALES_VIEW_COST:   "clinic.podiatry.sales.view-cost",
+    SALES_UPDATE_COST: "clinic.podiatry.sales.update-cost",
   },
   /**
    * قسم المقومات. Everyone with VIEW reads the whole reception; each of the

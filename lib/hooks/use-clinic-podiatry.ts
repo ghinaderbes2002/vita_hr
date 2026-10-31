@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   clinicPodiatryApi,
+  PaginatedPodiatrySales,
   PodiatryReceptionDto,
   PodiatrySessionDto,
 } from "@/lib/api/clinic-podiatry";
@@ -25,6 +26,25 @@ export function usePodiatrySales(params: { page?: number; limit?: number; search
     queryKey: ["podiatry-sales", params],
     queryFn: () => clinicPodiatryApi.getSales(params),
     placeholderData: (prev) => prev,
+  });
+}
+
+export function useUpdatePodiatrySaleCost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sessionId, insoleCost }: { sessionId: string; insoleCost: number | null }) =>
+      clinicPodiatryApi.updateSaleCost(sessionId, insoleCost),
+    // The response carries the new total, so the row is patched in place.
+    onSuccess: ({ sessionId, insoleCost, totalCost }) => {
+      qc.setQueriesData<PaginatedPodiatrySales>({ queryKey: ["podiatry-sales"] }, (old) =>
+        old && {
+          ...old,
+          items: old.items.map((s) => (s.sessionId === sessionId ? { ...s, insoleCost, totalCost } : s)),
+        },
+      );
+      toast.success("تم حفظ التكلفة");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل حفظ التكلفة")),
   });
 }
 
