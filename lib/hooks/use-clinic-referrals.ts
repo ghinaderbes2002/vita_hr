@@ -4,6 +4,7 @@ import {
   clinicReferralsApi,
   CreateReferralSourceDto,
   CreateReferralVisitDto,
+  ReferralSourcePatientFilters,
   ReferralSourceListParams,
   UpdateReferralSourceDto,
   UpdateReferralVisitDto,
@@ -40,10 +41,12 @@ export function useReferralSource(id: string) {
   });
 }
 
-export function useReferralSourcePatients(id: string, page: number, limit = 20, realOnly = false) {
+export function useReferralSourcePatients(
+  id: string, page: number, limit = 20, filters: ReferralSourcePatientFilters = {},
+) {
   return useQuery({
-    queryKey: ["referral-source-patients", id, page, limit, realOnly],
-    queryFn: () => clinicReferralsApi.listPatients(id, page, limit, realOnly),
+    queryKey: ["referral-source-patients", id, page, limit, filters],
+    queryFn: () => clinicReferralsApi.listPatients(id, page, limit, filters),
     enabled: !!id,
     placeholderData: (prev) => prev,
   });

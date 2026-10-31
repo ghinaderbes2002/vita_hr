@@ -51,6 +51,14 @@ export interface ReferralSourcePatient {
   referredAt?: string;
 }
 
+export interface ReferralSourcePatientFilters {
+  /** Just the patients who entered a service — the source's "sales". */
+  realOnly?: boolean;
+  /** Referral date range, YYYY-MM-DD, both days included. */
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export interface ReferralSource {
   id: string;
   type: ReferralSourceType;
@@ -256,12 +264,17 @@ export const clinicReferralsApi = {
     return { patientCount: d?.patientCount ?? 0, sales: salesOf(d ?? {}) };
   },
 
-  /** realOnly: just the patients who entered a service — the source's "sales". */
   listPatients: async (
-    sourceId: string, page = 1, limit = 20, realOnly = false,
+    sourceId: string, page = 1, limit = 20, filters: ReferralSourcePatientFilters = {},
   ): Promise<{ items: ReferralSourcePatient[]; page: number; limit: number; total: number; totalPages: number }> => {
     const { data } = await apiClient.get(`${BASE}/${sourceId}/patients`, {
-      params: { page, limit, ...(realOnly ? { realOnly: true } : {}) },
+      params: {
+        page,
+        limit,
+        ...(filters.realOnly ? { realOnly: true } : {}),
+        ...(filters.dateFrom ? { dateFrom: filters.dateFrom } : {}),
+        ...(filters.dateTo ? { dateTo: filters.dateTo } : {}),
+      },
     });
     const d = data?.data ?? data;
     const items = Array.isArray(d) ? d : d?.items ?? [];

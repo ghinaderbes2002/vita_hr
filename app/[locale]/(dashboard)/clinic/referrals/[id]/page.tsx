@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
+import { toast } from "sonner";
 import {
-  ArrowRight, CalendarClock, MapPin, Pencil, Phone, Plus, ShoppingBag, Star, Trash2, Users,
+  ArrowRight, CalendarClock, FileDown, Loader2, MapPin, Pencil, Phone, Plus, ShoppingBag, Star, Trash2, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,7 +31,8 @@ import {
 } from "@/lib/hooks/use-clinic-referrals";
 import { Pagination } from "@/components/shared/pagination";
 import {
-  REFERRAL_SOURCE_TYPE_LABEL, REFERRAL_VISIT_TYPE_LABEL, ReferralVisit, visitedByNameOf,
+  REFERRAL_SOURCE_TYPE_LABEL, REFERRAL_VISIT_TYPE_LABEL, ReferralSourcePatient, ReferralVisit,
+  clinicReferralsApi, visitedByNameOf,
 } from "@/lib/api/clinic-referrals";
 
 const formatDate = (iso?: string | null) =>
@@ -76,14 +79,48 @@ export default function ReferralSourceDetailPage() {
   const [patientsPage, setPatientsPage] = useState(1);
   // "Sales" narrows the list to the patients who actually entered a service.
   const [salesOnly, setSalesOnly] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const patientFilters = { realOnly: salesOnly, dateFrom, dateTo };
   const { data: patientsData, isLoading: patientsLoading } =
-    useReferralSourcePatients(canSeeStats ? id : "", patientsPage, 20, salesOnly);
+    useReferralSourcePatients(canSeeStats ? id : "", patientsPage, 20, patientFilters);
   const showPatients = (onlySales: boolean) => {
     setSalesOnly(onlySales);
     setPatientsPage(1);
     document.getElementById("referred-patients")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const deleteVisit = useDeleteReferralVisit();
+
+  // The sheet covers the whole list in the current view, not just the page on screen.
+  const [exporting, setExporting] = useState(false);
+  const exportPatients = async () => {
+    if (exporting || !source) return;
+    setExporting(true);
+    try {
+      const patients: ReferralSourcePatient[] = [];
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const res = await clinicReferralsApi.listPatients(id, page, 100, patientFilters);
+        patients.push(...res.items);
+        totalPages = res.totalPages;
+        page += 1;
+      } while (page <= totalPages);
+      const { downloadReferralPatientsPdf } = await import("@/components/clinic/referral-patients-pdf");
+      await downloadReferralPatientsPdf({
+        sourceName: source.name,
+        sourceType: REFERRAL_SOURCE_TYPE_LABEL[source.type],
+        listLabel: salesOnly ? "المبيعات" : "المرضى المُحالون",
+        dateFrom,
+        dateTo,
+        patients,
+      });
+    } catch {
+      toast.error("تعذّر تصدير المرضى");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // The detail response already embeds the visits; the dedicated list endpoint
   // is what stays fresh after an add/edit, so it wins when both are present.
@@ -386,6 +423,17 @@ export default function ReferralSourceDetailPage() {
                 {salesOnly ? "المبيعات" : "المرضى المُحالون"}
                 {patientsData && <Badge variant="secondary" className="text-xs">{patientsData.total}</Badge>}
               </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={exportPatients}
+                disabled={exporting || !patientsData?.items.length}
+              >
+                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+                تصدير PDF
+              </Button>
               <div className="inline-flex rounded-lg border bg-muted/40 p-1">
                 {[
                   { only: false, label: "كل المسجّلين" },
@@ -404,14 +452,46 @@ export default function ReferralSourceDetailPage() {
                   </button>
                 ))}
               </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">تاريخ الإحالة من</span>
+                <Input
+                  type="date"
+                  className="h-8 w-40 text-xs"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => { setDateFrom(e.target.value); setPatientsPage(1); }}
+                />
+                <span className="text-xs text-muted-foreground">إلى</span>
+                <Input
+                  type="date"
+                  className="h-8 w-40 text-xs"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => { setDateTo(e.target.value); setPatientsPage(1); }}
+                />
+                {(dateFrom || dateTo) && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs"
+                    onClick={() => { setDateFrom(""); setDateTo(""); setPatientsPage(1); }}
+                  >
+                    مسح
+                  </Button>
+                )}
+              </div>
               {patientsLoading ? (
                 <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
               ) : !patientsData?.items.length ? (
                 <EmptyState
                   icon={<Users className="h-8 w-8 text-muted-foreground" />}
-                  title={salesOnly ? "لا توجد مبيعات لهذا المصدر بعد" : "لا يوجد مرضى منسوبون لهذا المصدر"}
+                  title={
+                    dateFrom || dateTo ? "لا يوجد مرضى ضمن هذه الفترة"
+                      : salesOnly ? "لا توجد مبيعات لهذا المصدر بعد" : "لا يوجد مرضى منسوبون لهذا المصدر"
+                  }
                 />
               ) : (
                 <>
