@@ -17,7 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, Bell, Briefcase, Building2, CalendarCheck,
   CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, FileText, Gavel, Inbox,
-  Activity, Footprints, HeartPulse, Hourglass, PackageCheck, ShieldCheck, Sparkles, Stethoscope, Timer, TrendingUp, UserPlus,
+  Activity, Handshake, ShoppingBag, Footprints, HeartPulse, Hourglass, PackageCheck, ShieldCheck, Sparkles, Stethoscope, Timer, TrendingUp, UserPlus,
   Users, Wrench, XCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -505,6 +505,23 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
           details: total == null ? undefined : [{ label: totalLabel, value: total }],
         };
   };
+  type MonthFigure = { thisMonth?: number; previousMonth?: number; total?: number };
+  const salesBlock = d?.sales as { visits?: MonthFigure; sales?: MonthFigure } | undefined;
+  // This month as the headline, last month's change and the total beneath it.
+  const salesKpi = (f?: MonthFigure) => {
+    const month = f?.thisMonth ?? null;
+    const before = f?.previousMonth ?? 0;
+    const delta = month !== null && before > 0 ? Math.round(((month - before) / before) * 100) : null;
+    return {
+      value: month,
+      hint: delta === null ? t("ceo.thisMonth") : t("ceo.vsLastMonth", { pct: Math.abs(delta) }),
+      hintTone: delta === null || delta === 0 ? undefined : delta > 0 ? "up" as const : "down" as const,
+      details: [
+        { label: t("ceo.previousMonthLabel"), value: before },
+        { label: t("ceo.totalLabel"), value: f?.total ?? 0 },
+      ],
+    };
+  };
   const podFittedPct = podTotal && podFitted != null ? Math.round((podFitted / podTotal) * 100) : null;
   const byStatus = clinic?.appointmentsThisMonthByStatus;
   const apptParts = byStatus ? [
@@ -783,6 +800,16 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
               </div>
             </Panel>
           )}
+          </div>
+        </Panel>
+      )}
+
+      {/* ── Sales: the team's visits and the patients they brought in ── */}
+      {salesBlock && (
+        <Panel title={t("ceo.salesTitle")} icon={ShoppingBag}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Kpi label={t("ceo.salesVisits")} {...salesKpi(salesBlock.visits)} icon={Handshake} tone="bg-teal-500" />
+            <Kpi label={t("ceo.salesSales")} {...salesKpi(salesBlock.sales)} icon={ShoppingBag} tone="bg-blue-600" />
           </div>
         </Panel>
       )}

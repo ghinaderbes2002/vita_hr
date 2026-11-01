@@ -188,6 +188,10 @@
       "absenceDays": "{days} gün devamsız",
       "clinicTitle": "Bu ay klinik performansı",
       "operationsTitle": "Operasyon",
+      "salesTitle": "Satışlar",
+      "salesVisits": "Ekip ziyaretleri",
+      "salesSales": "Satışlar",
+      "previousMonthLabel": "Geçen ay",
       "newPatients": "Yeni hastalar",
       "patientDepts": {
         "prosthetics": "Protez",

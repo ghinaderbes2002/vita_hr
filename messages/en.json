@@ -187,6 +187,10 @@
       "absenceDays": "{days} days absent",
       "clinicTitle": "Clinic performance this month",
       "operationsTitle": "Operations",
+      "salesTitle": "Sales",
+      "salesVisits": "Team visits",
+      "salesSales": "Sales",
+      "previousMonthLabel": "Last month",
       "newPatients": "New patients",
       "patientDepts": {
         "prosthetics": "Prosthetics",

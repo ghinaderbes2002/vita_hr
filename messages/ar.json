@@ -369,6 +369,10 @@
       "absenceDays": "{days} يوم غياب",
       "clinicTitle": "أداء العيادة هذا الشهر",
       "operationsTitle": "التشغيل",
+      "salesTitle": "المبيعات",
+      "salesVisits": "زيارات الفريق",
+      "salesSales": "مبيعات",
+      "previousMonthLabel": "الشهر الماضي",
       "newPatients": "مرضى جدد",
       "patientDepts": {
         "prosthetics": "أطراف صناعية",
