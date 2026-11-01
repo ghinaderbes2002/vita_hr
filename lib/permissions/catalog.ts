@@ -251,6 +251,7 @@ export const PERMISSIONS = {
   },
   CLINIC_PROSTHETICS: {
     CASE_VIEW:         "clinic.prosthetics.case.view",
+    NOTIFY_INCOMPLETE_FORM: "clinic.prosthetics.notify_incomplete_form",
     CASE_CREATE:       "clinic.prosthetics.case.create",
     ASSESSMENT_CREATE: "clinic.prosthetics.assessment.create",
     COMMITTEE_OPINION: "clinic.prosthetics.committee.opinion",
@@ -263,6 +264,7 @@ export const PERMISSIONS = {
   },
   CLINIC_PHYSIO: {
     CASE_VIEW:         "clinic.physio.case.view",
+    NOTIFY_INCOMPLETE_FORM: "clinic.physio.notify_incomplete_form",
     CASE_CREATE:       "clinic.physio.case.create",
     ASSESSMENT_CREATE: "clinic.physio.assessment.create",
     SUPERVISOR_REVIEW: "clinic.physio.supervisor_review",
@@ -272,6 +274,7 @@ export const PERMISSIONS = {
   },
   CLINIC_PODIATRY: {
     RECEPTION_VIEW:   "clinic.podiatry.reception.view",
+    NOTIFY_INCOMPLETE_FORM: "clinic.podiatry.notify_incomplete_form",
     RECEPTION_CREATE: "clinic.podiatry.reception.create",
     RECEPTION_EDIT:   "clinic.podiatry.reception.edit",
     SESSION_CREATE:   "clinic.podiatry.session.create",

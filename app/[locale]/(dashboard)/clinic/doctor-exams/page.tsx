@@ -187,18 +187,26 @@ export default function DoctorExamsListPage() {
                   </TableCell>
                   <TableCell>
                     <CaseStatusBadge status={c.status} />
-                    {c.convertedToCaseId && (
-                      <button
-                        type="button"
-                        className="mt-1 block whitespace-nowrap text-xs text-primary hover:underline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/${locale}/clinic/physio/${c.convertedToCaseId}`);
-                        }}
-                      >
-                        {t("convertedTo", { number: c.convertedToCaseNumber ?? "" })}
-                      </button>
-                    )}
+                    {c.convertedToCaseId && (() => {
+                      // The number's prefix names the department. Podiatry and
+                      // orthotics receptions have no number, so nothing says which
+                      // of the two it is and there is no route to link to.
+                      const number = c.convertedToCaseNumber;
+                      const target = number?.startsWith("PT-") ? "physio" : number?.startsWith("PR-") ? "prosthetics" : null;
+                      if (!target) return <span className="mt-1 block whitespace-nowrap text-xs text-muted-foreground">{t("convertedToOther")}</span>;
+                      return (
+                        <button
+                          type="button"
+                          className="mt-1 block whitespace-nowrap text-xs text-primary hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/${locale}/clinic/${target}/${c.convertedToCaseId}`);
+                          }}
+                        >
+                          {t("convertedTo", { number: number ?? "" })}
+                        </button>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {fmt(c.createdAt)}

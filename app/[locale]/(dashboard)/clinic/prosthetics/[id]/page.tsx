@@ -41,6 +41,7 @@ import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
+import { NotifyIncompleteFormButton } from "@/components/clinic/notify-incomplete-form-button";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
@@ -5531,6 +5532,7 @@ export default function ProstheticsCasePage() {
           <StepIndicator status={c.status} />
         </div>
         <div className="flex flex-wrap gap-2">
+          <NotifyIncompleteFormButton type="prosthetics" id={id} />
           <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCasePdf} disabled={casePdfExporting}>
             {casePdfExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {casePdfExporting ? "جاري التصدير..." : "تصدير PDF"}

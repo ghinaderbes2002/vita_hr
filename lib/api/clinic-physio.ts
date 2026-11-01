@@ -443,6 +443,25 @@ export interface PhysioCaseListParams {
   caseType?: PhysioCaseType;
 }
 
+/** Where a doctor exam can be converted; each value is also the department's route. */
+export const DOCTOR_EXAM_TARGETS = ["physio", "prosthetics", "podiatry", "orthotics"] as const;
+export type DoctorExamTarget = (typeof DOCTOR_EXAM_TARGETS)[number];
+
+export const DOCTOR_EXAM_TARGET_LABEL: Record<DoctorExamTarget, string> = {
+  physio: "العلاج الفيزيائي",
+  prosthetics: "الأطراف الصناعية",
+  podiatry: "طب الأقدام",
+  orthotics: "المقومات",
+};
+
+/** The body key each convert endpoint takes the specialist's employee id under. */
+const CONVERT_STAFF_KEY: Record<DoctorExamTarget, string> = {
+  physio: "physiotherapistId",
+  prosthetics: "prosthetistId",
+  podiatry: "podiatristId",
+  orthotics: "specialistId",
+};
+
 /** The statuses the doctor-exam list accepts; anything else is a 400. */
 export type DoctorExamStatus = Extract<
   PhysioStatus,
@@ -542,17 +561,19 @@ export const clinicPhysioApi = {
   },
 
   /**
-   * The only way to open a PT case: the backend rejects creating one directly,
-   * so a doctor exam is converted once it is done.
+   * The only way to open a PT case: the backend rejects creating one directly.
+   * An exam converts to one department only; repeating the same one returns the
+   * existing case, and another one answers 400.
    */
-  convertToPhysio: async (
+  convertDoctorExam: async (
     id: string,
-    /** Employee id of the therapist to assign; omitted, the case opens unassigned. */
-    physiotherapistId?: string,
+    target: DoctorExamTarget,
+    /** Employee id of the specialist to assign; omitted, it opens unassigned. */
+    staffId?: string,
   ): Promise<{ convertedCaseId: string; caseNumber?: string }> => {
     const { data } = await apiClient.post(
-      `/physio/cases/${id}/convert-to-physio`,
-      physiotherapistId ? { physiotherapistId } : undefined,
+      `/physio/cases/${id}/convert-to-${target}`,
+      staffId ? { [CONVERT_STAFF_KEY[target]]: staffId } : undefined,
     );
     const d = data?.data ?? data;
     return { convertedCaseId: d?.convertedCaseId ?? d?.id, caseNumber: d?.caseNumber };

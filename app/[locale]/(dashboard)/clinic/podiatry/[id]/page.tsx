@@ -31,6 +31,7 @@ import {
 import { PodiatryReceptionDialog } from "@/components/clinic/podiatry-reception-dialog";
 import { PodiatryPractitionersCard } from "@/components/clinic/podiatry-practitioners-card";
 import { ActionGuard } from "@/components/permissions/action-guard";
+import { NotifyIncompleteFormButton } from "@/components/clinic/notify-incomplete-form-button";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { arrivalMethodText } from "@/lib/clinic/referral-sources";
@@ -243,6 +244,8 @@ export default function PodiatryReceptionPage() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
+        <NotifyIncompleteFormButton type="podiatry" id={id} />
         {/* Recorded once, any time after the assessment exists. */}
         {session && (
           session.installedAt ? (
@@ -269,6 +272,7 @@ export default function PodiatryReceptionPage() {
             </ActionGuard>
           )
         )}
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} dir={isRtl ? "rtl" : "ltr"}>

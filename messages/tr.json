@@ -4234,6 +4234,7 @@
       "filter": {
         "all": "Tüm Durumlar"
       },
+      "convertedToOther": "Başka bir bölüme dönüştürüldü",
       "convertedTo": "{number} numaralı vakaya dönüştürüldü",
       "statuses": {
         "INTAKE": "Kabul",
@@ -4590,7 +4591,7 @@
         "pageTitle": "Fizyoterapi Vakası",
         "pageTitleDoctorExam": "Doktor Muayenesi",
         "cancelCase": "Vakayı İptal Et",
-        "convertToPhysio": "Fizyoterapiye Dönüştür",
+        "convertToPhysio": "Muayeneyi dönüştür",
         "finishExam": "Muayeneyi bitir",
         "finishExamTitle": "Muayene bitirilsin mi?",
         "finishExamDescription": "Muayene fizyoterapiye dönüşmeyecekse bunu kullanın. Bitirildikten sonra muayene formu düzenlenemez.",

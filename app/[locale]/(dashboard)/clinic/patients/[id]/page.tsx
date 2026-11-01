@@ -47,10 +47,10 @@ import { matchesAccept, withCleanName } from "@/lib/utils/heic";
 import { usePatientAppointments } from "@/lib/hooks/use-clinic-appointments";
 import { AppointmentStatus } from "@/lib/api/clinic-appointments";
 import { useProstheticsCasesByPatient, useCreateProstheticsCase } from "@/lib/hooks/use-clinic-prosthetics";
-import { usePhysioCasesByPatient, useCreatePhysioCase, useConvertToPhysio } from "@/lib/hooks/use-clinic-physio";
-import { ConvertToPhysioDialog } from "@/components/clinic/convert-to-physio-dialog";
+import { usePhysioCasesByPatient, useCreatePhysioCase, useConvertDoctorExam } from "@/lib/hooks/use-clinic-physio";
+import { CONVERT_EXAM_PERMISSIONS, ConvertExamDialog } from "@/components/clinic/convert-exam-dialog";
 import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
-import { PhysioCase } from "@/lib/api/clinic-physio";
+import { DoctorExamTarget, PhysioCase } from "@/lib/api/clinic-physio";
 import { referralSourceLabel, REFERRAL_DETAILS_LABEL, ReferralSource } from "@/lib/clinic/referral-sources";
 import { PatientSurveyDialog, PatientSurveysTable } from "@/components/clinic/patient-survey";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -111,7 +111,7 @@ export default function PatientProfilePage() {
   const [linkUrl, setLinkUrl] = useState("");
   const [deleteLinkId, setDeleteLinkId] = useState<string | null>(null);
   const [surveyDialogOpen, setSurveyDialogOpen] = useState(false);
-  const { hasPermission, isAdmin } = usePermissions();
+  const { hasPermission, hasAnyPermission, isAdmin } = usePermissions();
   const canViewSurveys = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_VIEW);
   const canCreateSurvey = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_CREATE);
 
@@ -178,7 +178,7 @@ export default function PatientProfilePage() {
   const newProstCooldown = useClickCooldown();
   const newExamCooldown = useClickCooldown();
 
-  const convertToPhysio = useConvertToPhysio();
+  const convertExam = useConvertDoctorExam();
   // Which exam the therapist picker is open for — the button sits inside a list.
   const [convertExamId, setConvertExamId] = useState<string | null>(null);
 
@@ -270,13 +270,13 @@ export default function PatientProfilePage() {
     router.push(`/${locale}/clinic/prosthetics/${c.id}`);
   });
 
-  const handleConvertToPhysio = async (physiotherapistId?: string) => {
+  const handleConvertExam = async (target: DoctorExamTarget, staffId?: string) => {
     if (!convertExamId) return;
-    const { convertedCaseId } = await convertToPhysio.mutateAsync({
-      id: convertExamId, patientId: id, physiotherapistId,
+    const { convertedCaseId } = await convertExam.mutateAsync({
+      id: convertExamId, target, patientId: id, staffId,
     });
     setConvertExamId(null);
-    if (convertedCaseId) router.push(`/${locale}/clinic/physio/${convertedCaseId}`);
+    if (convertedCaseId) router.push(`/${locale}/clinic/${target}/${convertedCaseId}`);
   };
 
   const handleNewDoctorExam = () => newExamCooldown.run(async () => {
@@ -799,18 +799,18 @@ export default function PatientProfilePage() {
                       <p className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("en-GB")}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {/* Carries the exam's data into a new PT case — the backend
-                          returns the same case if it was already converted. */}
-                      <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
+                      {/* Carries the exam's data into one department; a converted
+                          exam has nowhere left to go. */}
+                      {!c.convertedToCaseId && (isAdmin() || hasAnyPermission(CONVERT_EXAM_PERMISSIONS)) && (
                         <Button size="sm" variant="outline" className="gap-1.5"
-                          disabled={convertToPhysio.isPending}
+                          disabled={convertExam.isPending}
                           onClick={(e) => { e.stopPropagation(); setConvertExamId(c.id); }}>
-                          {convertToPhysio.isPending && convertToPhysio.variables?.id === c.id
+                          {convertExam.isPending && convertExam.variables?.id === c.id
                             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             : <ArrowLeftRight className="h-3.5 w-3.5" />}
-                          التحويل إلى العلاج الفيزيائي
+                          تحويل المعاينة
                         </Button>
-                      </ActionGuard>
+                      )}
                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </CardContent>
@@ -1075,11 +1075,11 @@ export default function PatientProfilePage() {
         onCreated={(receptionId) => router.push(`/${locale}/clinic/orthotics/${receptionId}`)}
       />
 
-      <ConvertToPhysioDialog
+      <ConvertExamDialog
         open={!!convertExamId}
         onOpenChange={(o) => { if (!o) setConvertExamId(null); }}
-        onConfirm={handleConvertToPhysio}
-        isPending={convertToPhysio.isPending}
+        onConfirm={handleConvertExam}
+        isPending={convertExam.isPending}
         patientGender={patient?.gender}
       />
 

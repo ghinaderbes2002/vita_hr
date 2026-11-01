@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { NotifyIncompleteFormButton } from "@/components/clinic/notify-incomplete-form-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +42,7 @@ import { Separator } from "@/components/ui/separator";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { BodyPainMap } from "@/components/clinic/body-pain-map";
 import { SignaturePadDialog } from "@/components/clinic/signature-pad-dialog";
-import { ConvertToPhysioDialog } from "@/components/clinic/convert-to-physio-dialog";
+import { CONVERT_EXAM_PERMISSIONS, ConvertExamDialog } from "@/components/clinic/convert-exam-dialog";
 import {
   SessionExerciseFields, SessionExerciseList, SessionAssignments, newSessionExerciseEntry, pickedExercises,
   formFromAssignment, assignmentUpdateDto,
@@ -62,7 +63,7 @@ import {
   useUpdatePhysioStatus,
   useSubmitComplaint,
   useSubmitPainMap,
-  useConvertToPhysio,
+  useConvertDoctorExam,
   useSubmitMedicalHistory,
   useAddPhysioSurgery,
   useSubmitPhysioGoals,
@@ -100,6 +101,7 @@ import {
   PHYSIO_GOAL_VALUES,
   TestType,
   PainMapDto,
+  DoctorExamTarget,
   isDoctorExamCase,
 } from "@/lib/api/clinic-physio";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
@@ -321,7 +323,7 @@ export default function PhysioCasePage() {
   const updateStatus = useUpdatePhysioStatus();
   const submitComplaint = useSubmitComplaint();
   const submitPainMap = useSubmitPainMap();
-  const convertToPhysio = useConvertToPhysio();
+  const convertExam = useConvertDoctorExam();
   const [convertOpen, setConvertOpen] = useState(false);
   const [finishExamOpen, setFinishExamOpen] = useState(false);
   const submitHistory = useSubmitMedicalHistory();
@@ -1467,12 +1469,12 @@ export default function PhysioCasePage() {
   const canOpenPatientFile = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PATIENTS.CREATE]);
   const isDoctorExam = isDoctorExamCase(c);
 
-  const handleConvertToPhysio = async (physiotherapistId?: string) => {
-    const { convertedCaseId } = await convertToPhysio.mutateAsync({
-      id, patientId: c.patientId, physiotherapistId,
+  const handleConvertExam = async (target: DoctorExamTarget, staffId?: string) => {
+    const { convertedCaseId } = await convertExam.mutateAsync({
+      id, target, patientId: c.patientId, staffId,
     });
     setConvertOpen(false);
-    if (convertedCaseId) router.push(`/${locale}/clinic/physio/${convertedCaseId}`);
+    if (convertedCaseId) router.push(`/${locale}/clinic/${target}/${convertedCaseId}`);
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1525,15 +1527,14 @@ export default function PhysioCasePage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {/* A PT case can only be opened by converting a doctor exam. */}
-          {isDoctorExam && !c.convertedToCaseId && (
-            <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
-              <Button size="sm" className="gap-2" disabled={convertToPhysio.isPending}
-                onClick={() => setConvertOpen(true)}>
-                {convertToPhysio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeftRight className="h-4 w-4" />}
-                {t("convertToPhysio")}
-              </Button>
-            </ActionGuard>
+          {isDoctorExam && !c.convertedToCaseId && (isAdmin() || hasAnyPermission(CONVERT_EXAM_PERMISSIONS)) && (
+            <Button size="sm" className="gap-2" disabled={convertExam.isPending}
+              onClick={() => setConvertOpen(true)}>
+              {convertExam.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeftRight className="h-4 w-4" />}
+              {t("convertToPhysio")}
+            </Button>
           )}
+          <NotifyIncompleteFormButton type="physio" id={id} />
           {/* For an exam that will not become a PT case. Nothing else moves an exam
               to COMPLETED; the API allows it from these three stages. */}
           {isDoctorExam && ["COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY"].includes(c.status) && (
@@ -4141,11 +4142,11 @@ export default function PhysioCasePage() {
         isLoading={signPlan.isPending}
       />
 
-      <ConvertToPhysioDialog
+      <ConvertExamDialog
         open={convertOpen}
         onOpenChange={setConvertOpen}
-        onConfirm={handleConvertToPhysio}
-        isPending={convertToPhysio.isPending}
+        onConfirm={handleConvertExam}
+        isPending={convertExam.isPending}
         patientGender={(patientFull as any)?.gender ?? (c.patient as any)?.gender}
       />
 

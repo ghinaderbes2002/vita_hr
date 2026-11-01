@@ -5,6 +5,8 @@ import {
   UpdatePhysioCaseDto,
   PhysioStatus,
   PainMapDto,
+  DOCTOR_EXAM_TARGET_LABEL,
+  DoctorExamTarget,
   EvaluationDto,
   MedicalHistoryDto,
   SurgeryDto,
@@ -71,12 +73,12 @@ export function useCreatePhysioCase() {
   });
 }
 
-export function useConvertToPhysio() {
+export function useConvertDoctorExam() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, physiotherapistId }: { id: string; patientId?: string; physiotherapistId?: string }) =>
-      clinicPhysioApi.convertToPhysio(id, physiotherapistId),
-    onSuccess: ({ convertedCaseId }, { id, patientId }) => {
+    mutationFn: ({ id, target, staffId }: { id: string; target: DoctorExamTarget; patientId?: string; staffId?: string }) =>
+      clinicPhysioApi.convertDoctorExam(id, target, staffId),
+    onSuccess: ({ convertedCaseId }, { id, target, patientId }) => {
       qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
       qc.invalidateQueries({ queryKey: ["clinic-doctor-exam-cases"] });
       qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
@@ -84,7 +86,7 @@ export function useConvertToPhysio() {
       // its cached copy would still show the previous one.
       if (convertedCaseId) qc.invalidateQueries({ queryKey: ["clinic-physio-case", convertedCaseId] });
       if (patientId) qc.invalidateQueries({ queryKey: ["clinic-physio-cases-patient", patientId] });
-      toast.success("تم تحويل المعاينة إلى حالة علاج فيزيائي");
+      toast.success(`تم تحويل المعاينة إلى ${DOCTOR_EXAM_TARGET_LABEL[target]}`);
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحويل"),
   });

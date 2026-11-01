@@ -5284,6 +5284,7 @@
       "filter": {
         "all": "جميع الحالات"
       },
+      "convertedToOther": "محوَّلة إلى قسم آخر",
       "convertedTo": "محوَّلة إلى الحالة رقم {number}",
       "statuses": {
         "INTAKE": "الاستقبال",
@@ -5667,7 +5668,7 @@
         "pageTitle": "حالة علاج فيزيائي",
         "pageTitleDoctorExam": "معاينة طبيب",
         "cancelCase": "إلغاء الحالة",
-        "convertToPhysio": "تحويل لعلاج فيزيائي",
+        "convertToPhysio": "تحويل المعاينة",
         "finishExam": "إنهاء المعاينة",
         "finishExamTitle": "إنهاء المعاينة؟",
         "finishExamDescription": "استخدم هذا الخيار إذا لن تتحول المعاينة إلى علاج فيزيائي. بعد الإنهاء لن يمكن تعديل نموذج المعاينة.",

@@ -5148,6 +5148,7 @@
       "filter": {
         "all": "All statuses"
       },
+      "convertedToOther": "Converted to another department",
       "convertedTo": "Converted to case {number}",
       "statuses": {
         "INTAKE": "Intake",
@@ -5505,7 +5506,7 @@
         "pageTitle": "Physiotherapy Case",
         "pageTitleDoctorExam": "Doctor Exam",
         "cancelCase": "Cancel Case",
-        "convertToPhysio": "Convert to Physiotherapy",
+        "convertToPhysio": "Convert exam",
         "finishExam": "Finish exam",
         "finishExamTitle": "Finish this exam?",
         "finishExamDescription": "Use this if the exam won't become a physiotherapy case. The exam form can't be edited afterwards.",
