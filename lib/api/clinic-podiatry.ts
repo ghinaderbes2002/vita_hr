@@ -234,6 +234,9 @@ const asArray = <T>(d: unknown): T[] =>
 export const PODIATRY_SHOE_SIZES = [28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52] as const;
 
 /** One patient, shown with their latest fitting. */
+export type PodiatryCurrency = "USD" | "SYP";
+export type PodiatryTotalCosts = Partial<Record<PodiatryCurrency, number>>;
+
 export interface PodiatrySale {
   receptionId: string;
   /** The latest fitting's session — the one the cost is written to. */
@@ -251,15 +254,25 @@ export interface PodiatrySale {
    * to see it", so it must never be read as zero.
    */
   insoleCost?: number | null;
-  /** All the patient's live fittings; null under the same two conditions. */
-  totalCost?: number | null;
+  /** null with a cost is an amount entered before currencies existed. */
+  insoleCostCurrency?: PodiatryCurrency | null;
+  /**
+   * All the patient's live fittings per currency. {} has none with a known
+   * currency; null means the viewer may not see costs.
+   */
+  totalCosts?: PodiatryTotalCosts | null;
 }
 
 export interface PodiatrySaleCost {
   sessionId: string;
   insoleCost: number | null;
-  totalCost: number | null;
+  insoleCostCurrency: PodiatryCurrency | null;
+  totalCosts: PodiatryTotalCosts | null;
 }
+
+export type PodiatrySaleCostDto =
+  | { insoleCost: number; insoleCostCurrency: PodiatryCurrency }
+  | { insoleCost: null };
 
 export interface PaginatedPodiatrySales {
   items: PodiatrySale[];
@@ -284,9 +297,9 @@ export const clinicPodiatryApi = {
     };
   },
 
-  /** null clears the cost; the API rejects a body without the field. */
-  updateSaleCost: async (sessionId: string, insoleCost: number | null): Promise<PodiatrySaleCost> => {
-    const { data } = await apiClient.patch(`/podiatry/sales/${sessionId}/cost`, { insoleCost });
+  /** A null cost clears the amount and its currency together. */
+  updateSaleCost: async (sessionId: string, dto: PodiatrySaleCostDto): Promise<PodiatrySaleCost> => {
+    const { data } = await apiClient.patch(`/podiatry/sales/${sessionId}/cost`, dto);
     return data?.data ?? data;
   },
 

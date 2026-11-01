@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   clinicPodiatryApi,
-  PaginatedPodiatrySales,
+  PaginatedPodiatrySales, PodiatrySaleCostDto,
   PodiatryReceptionDto,
   PodiatrySessionDto,
 } from "@/lib/api/clinic-podiatry";
@@ -32,14 +32,15 @@ export function usePodiatrySales(params: { page?: number; limit?: number; search
 export function useUpdatePodiatrySaleCost() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ sessionId, insoleCost }: { sessionId: string; insoleCost: number | null }) =>
-      clinicPodiatryApi.updateSaleCost(sessionId, insoleCost),
-    // The response carries the new total, so the row is patched in place.
-    onSuccess: ({ sessionId, insoleCost, totalCost }) => {
+    mutationFn: ({ sessionId, dto }: { sessionId: string; dto: PodiatrySaleCostDto }) =>
+      clinicPodiatryApi.updateSaleCost(sessionId, dto),
+    // The response carries the new totals, so the row is patched in place.
+    onSuccess: ({ sessionId, insoleCost, insoleCostCurrency, totalCosts }) => {
       qc.setQueriesData<PaginatedPodiatrySales>({ queryKey: ["podiatry-sales"] }, (old) =>
         old && {
           ...old,
-          items: old.items.map((s) => (s.sessionId === sessionId ? { ...s, insoleCost, totalCost } : s)),
+          items: old.items.map((s) =>
+            s.sessionId === sessionId ? { ...s, insoleCost, insoleCostCurrency, totalCosts } : s),
         },
       );
       toast.success("تم حفظ التكلفة");

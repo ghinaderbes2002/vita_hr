@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -20,13 +21,16 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePodiatrySales, useUpdatePodiatrySaleCost } from "@/lib/hooks/use-clinic-podiatry";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import type { PodiatrySale } from "@/lib/api/clinic-podiatry";
+import type { PodiatryCurrency, PodiatrySale } from "@/lib/api/clinic-podiatry";
 
 const PAGE_SIZE = 20;
 
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
-// null is "not entered or not visible", never zero.
-const fmtCost = (v?: number | null) => (v == null ? "—" : Number(v).toLocaleString("en-US"));
+const CURRENCIES: PodiatryCurrency[] = ["USD", "SYP"];
+const CURRENCY_LABEL: Record<PodiatryCurrency, string> = { USD: "دولار ($)", SYP: "ليرة سورية (ل.س)" };
+const fmtAmount = (v: number) => Number(v).toLocaleString("en-US");
+// Amounts stay apart per currency: pounds and dollars are never summed.
+const fmtMoney = (v: number, c: PodiatryCurrency) => (c === "USD" ? `$${fmtAmount(v)}` : `${fmtAmount(v)} ل.س`);
 const COST_PATTERN = /^\d+(\.\d{1,2})?$/;
 
 /** VitaFoot sales: every podiatry patient whose insole has been fitted, one row each. */
@@ -44,17 +48,26 @@ export default function VitaFootSalesPage() {
   const updateCost = useUpdatePodiatrySaleCost();
   const [costTarget, setCostTarget] = useState<PodiatrySale | null>(null);
   const [costValue, setCostValue] = useState("");
+  const [costCurrency, setCostCurrency] = useState<PodiatryCurrency | "">("");
   const trimmedCost = costValue.trim();
   const costValid = trimmedCost === "" || COST_PATTERN.test(trimmedCost);
+  // Never preselected: an amount in the wrong currency is off by a factor of thousands.
+  const needsCurrency = trimmedCost !== "" && !costCurrency;
 
   const openCost = (s: PodiatrySale) => {
     setCostTarget(s);
     setCostValue(s.insoleCost == null ? "" : String(s.insoleCost));
+    setCostCurrency(s.insoleCostCurrency ?? "");
   };
   const saveCost = () => {
-    if (!costTarget || !costValid) return;
+    if (!costTarget || !costValid || needsCurrency) return;
     updateCost.mutate(
-      { sessionId: costTarget.sessionId, insoleCost: trimmedCost === "" ? null : Number(trimmedCost) },
+      {
+        sessionId: costTarget.sessionId,
+        dto: trimmedCost === "" || !costCurrency
+          ? { insoleCost: null }
+          : { insoleCost: Number(trimmedCost), insoleCostCurrency: costCurrency },
+      },
       { onSuccess: () => setCostTarget(null) },
     );
   };
@@ -124,8 +137,19 @@ export default function VitaFootSalesPage() {
                     <TableCell className="text-sm text-muted-foreground">{fmt(s.installedAt)}</TableCell>
                     {canSeeCost && (
                       <TableCell className="tabular-nums">
-                        <div className="flex items-center gap-1">
-                          <span>{fmtCost(s.insoleCost)}</span>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {s.insoleCost == null ? (
+                            <span>—</span>
+                          ) : s.insoleCostCurrency ? (
+                            <span>{fmtMoney(s.insoleCost, s.insoleCostCurrency)}</span>
+                          ) : (
+                            <>
+                              <span>{fmtAmount(s.insoleCost)}</span>
+                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                                عملة غير محددة
+                              </span>
+                            </>
+                          )}
                           {canEditCost && (
                             <Button
                               variant="ghost"
@@ -141,7 +165,15 @@ export default function VitaFootSalesPage() {
                         </div>
                       </TableCell>
                     )}
-                    {canSeeCost && <TableCell className="font-medium tabular-nums">{fmtCost(s.totalCost)}</TableCell>}
+                    {canSeeCost && (
+                      <TableCell className="font-medium tabular-nums">
+                        {CURRENCIES.some((c) => s.totalCosts?.[c] != null)
+                          ? CURRENCIES.filter((c) => s.totalCosts?.[c] != null).map((c) => (
+                              <div key={c}>{fmtMoney(s.totalCosts![c]!, c)}</div>
+                            ))
+                          : "—"}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -179,10 +211,17 @@ export default function VitaFootSalesPage() {
               <p className={`text-xs ${costValid ? "text-muted-foreground" : "text-destructive"}`}>
                 {costValid ? "اترك الحقل فارغاً لمسح التكلفة" : "أدخل رقماً موجباً بمنزلتين عشريتين كحد أقصى"}
               </p>
+              <Label>العملة</Label>
+              <Select value={costCurrency} onValueChange={(v) => setCostCurrency(v as PodiatryCurrency)}>
+                <SelectTrigger><SelectValue placeholder="اختر العملة" /></SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((c) => <SelectItem key={c} value={c}>{CURRENCY_LABEL[c]}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCostTarget(null)}>إلغاء</Button>
-              <Button onClick={saveCost} disabled={!costValid || updateCost.isPending}>
+              <Button onClick={saveCost} disabled={!costValid || needsCurrency || updateCost.isPending}>
                 {updateCost.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                 حفظ
               </Button>
