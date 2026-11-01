@@ -368,6 +368,7 @@
       "noAbsences": "لا غيابات مسجّلة هذا الشهر",
       "absenceDays": "{days} يوم غياب",
       "clinicTitle": "أداء العيادة هذا الشهر",
+      "operationsTitle": "التشغيل",
       "newPatients": "مرضى جدد",
       "patientDepts": {
         "prosthetics": "أطراف صناعية",
@@ -443,6 +444,8 @@
       "physioSessionsThisMonth": "جلسات هذا الشهر",
       "physioPatients": "عدد المرضى",
       "podiatryThisMonth": "هذا الشهر: {count}",
+      "totalLabel": "الإجمالي",
+      "totalShare": "الإجمالي · {pct}%",
       "probationEnds": "تنتهي التجربة {date}",
       "movementNote": "بيانات المغادرة متاحة من حزيران 2026",
       "showAllDepartments": "عرض كل الأقسام ({count})",

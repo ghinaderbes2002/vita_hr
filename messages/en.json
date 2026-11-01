@@ -186,6 +186,7 @@
       "noAbsences": "No absences recorded this month",
       "absenceDays": "{days} days absent",
       "clinicTitle": "Clinic performance this month",
+      "operationsTitle": "Operations",
       "newPatients": "New patients",
       "patientDepts": {
         "prosthetics": "Prosthetics",
@@ -261,6 +262,8 @@
       "physioSessionsThisMonth": "Sessions this month",
       "physioPatients": "Patients",
       "podiatryThisMonth": "This month: {count}",
+      "totalLabel": "Total",
+      "totalShare": "Total · {pct}%",
       "probationEnds": "Probation ends {date}",
       "movementNote": "Departure data is available from June 2026",
       "showAllDepartments": "Show all departments ({count})",

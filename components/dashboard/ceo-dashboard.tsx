@@ -493,9 +493,18 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
   const podFitted = clinic?.podiatryInsolesFittedTotal ?? null;
   const podNotFitted = clinic?.podiatryNotFittedTotal
     ?? (podTotal != null && podFitted != null ? Math.max(0, podTotal - podFitted) : null);
-  // "This month: N" under each figure — left out when the API doesn't send it.
-  const podThisMonth = (n?: number | null) => (n == null ? undefined : t("ceo.podiatryThisMonth", { count: n }));
-  const joinHints = (...parts: (string | undefined)[]) => parts.filter(Boolean).join(" · ") || undefined;
+  // This month is the headline and the all-time total the small line under it.
+  // Until the API sends the month, the total stays the only figure.
+  const monthly = (month?: number | null, total?: number | null, sharePct?: number | null) => {
+    const totalLabel = sharePct == null ? t("ceo.totalLabel") : t("ceo.totalShare", { pct: sharePct });
+    return month == null
+      ? { value: total ?? null }
+      : {
+          value: month,
+          hint: t("ceo.thisMonth"),
+          details: total == null ? undefined : [{ label: totalLabel, value: total }],
+        };
+  };
   const podFittedPct = podTotal && podFitted != null ? Math.round((podFitted / podTotal) * 100) : null;
   const byStatus = clinic?.appointmentsThisMonthByStatus;
   const apptParts = byStatus ? [
@@ -621,161 +630,159 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
         </div>
       </section>
 
-      {/* ── Clinic performance — read-only: nothing in this block navigates ── */}
+      {/* ── Operations: the clinic, podiatry and physiotherapy figures in one box ── */}
       {clinic && (
-        <div className="grid gap-5 lg:grid-cols-3">
-          <Panel className="lg:col-span-2" title={t("ceo.clinicTitle")} icon={Stethoscope}>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Kpi label={t("ceo.newPatients")} value={clinic.newPatientsThisMonth ?? null}
-                hint={patientsDelta === null ? undefined : t("ceo.vsLastMonth", { pct: Math.abs(patientsDelta) })}
-                hintTone={patientsDelta === null || patientsDelta === 0 ? undefined : patientsDelta > 0 ? "up" : "down"}
-                details={PATIENT_DEPTS
-                  .map((k) => ({ label: t(`ceo.patientDepts.${k}`), value: clinic.newPatientsThisMonthByDepartment?.[k] ?? 0 }))
-                  .filter((x) => x.value > 0)}
-                icon={Users} tone="bg-sky-500" />
-              <Kpi label={t("ceo.delivered")} value={clinic.prostheticsDeliveredThisMonth ?? null}
-                hint={t("ceo.thisMonth")} icon={PackageCheck} tone="bg-emerald-500" />
-              <Kpi label={t("ceo.avgDays")} value={clinic.avgDaysIntakeToDelivery ?? null}
-                hint={t("ceo.avgDaysHint")} icon={Timer} tone="bg-violet-500" />
-              <Kpi label={t("ceo.waitingList")} value={clinic.waitingListCount ?? null}
-                icon={Hourglass} tone="bg-amber-500" />
-            </div>
-
-            <div className="mt-4 rounded-xl border bg-background p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-medium">{t("ceo.appointments")}</p>
-              </div>
-              <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-2">
-                <p className="text-3xl font-bold tracking-tight"><Num value={clinic.appointmentsThisMonth ?? null} /></p>
-                {!apptParts && <p className="text-xs text-muted-foreground">
-                  {t("ceo.noShow", { count: clinic.appointmentsNoShowThisMonth ?? 0 })}
-                  {noShowRate !== null && (
-                    <span className={`ms-2 rounded-full px-2 py-0.5 font-medium ${
-                      noShowRate > 15 ? "bg-red-500/10 text-red-600 dark:text-red-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    }`}>{noShowRate}%</span>
-                  )}
-                </p>}
-              </div>
-              {apptParts ? (
-                <>
-                  <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-muted">
-                    {apptParts.map((p) => p.value > 0 && (
-                      <div key={p.key} className={`h-full transition-all duration-700 ${p.bar}`}
-                        style={{ width: `${(p.value / apptPartsTotal) * 100}%` }} title={`${p.label}: ${p.value}`} />
-                    ))}
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
-                    {apptParts.map((p) => (
-                      <div key={p.key} className="rounded-lg border px-2.5 py-1.5">
-                        <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <span className={`h-2 w-2 rounded-full ${p.bar}`} />{p.label}
-                        </p>
-                        <p className="text-lg font-bold tabular-nums leading-tight">
-                          {p.value}
-                          <span className="ms-1 text-[11px] font-normal text-muted-foreground">
-                            {apptPartsTotal ? Math.round((p.value / apptPartsTotal) * 100) : 0}%
-                          </span>
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : noShowRate !== null && (
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-emerald-500/25">
-                  <div className="h-full rounded-full bg-red-500 transition-all duration-700" style={{ width: `${noShowRate}%` }} />
+        <Panel title={t("ceo.operationsTitle")} icon={Activity}>
+          <div className="space-y-5">
+          {/* ── Clinic performance — read-only: nothing in this block navigates ── */}
+          {clinic && (
+            <div className="grid gap-5 lg:grid-cols-3">
+              <Panel className="lg:col-span-2" title={t("ceo.clinicTitle")} icon={Stethoscope}>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <Kpi label={t("ceo.newPatients")} value={clinic.newPatientsThisMonth ?? null}
+                    hint={patientsDelta === null ? undefined : t("ceo.vsLastMonth", { pct: Math.abs(patientsDelta) })}
+                    hintTone={patientsDelta === null || patientsDelta === 0 ? undefined : patientsDelta > 0 ? "up" : "down"}
+                    details={PATIENT_DEPTS
+                      .map((k) => ({ label: t(`ceo.patientDepts.${k}`), value: clinic.newPatientsThisMonthByDepartment?.[k] ?? 0 }))
+                      .filter((x) => x.value > 0)}
+                    icon={Users} tone="bg-sky-500" />
+                  <Kpi label={t("ceo.delivered")} value={clinic.prostheticsDeliveredThisMonth ?? null}
+                    hint={t("ceo.thisMonth")} icon={PackageCheck} tone="bg-emerald-500" />
+                  <Kpi label={t("ceo.avgDays")} value={clinic.avgDaysIntakeToDelivery ?? null}
+                    hint={t("ceo.avgDaysHint")} icon={Timer} tone="bg-violet-500" />
+                  <Kpi label={t("ceo.waitingList")} value={clinic.waitingListCount ?? null}
+                    icon={Hourglass} tone="bg-amber-500" />
                 </div>
-              )}
-            </div>
-          </Panel>
 
-          <Panel
-            title={t("ceo.openCases")} icon={Activity}
-            action={<span className="text-xs text-muted-foreground">{t("ceo.openCasesTotal", { count: openCasesTotal })}</span>}
-          >
-            {openCases.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">{t("ceo.noOpenCases")}</p>
-            ) : (
-              <ul className="space-y-3">
-                {openCases.map((c, i) => (
-                  <li key={c.status}>
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="truncate">
-                        {stageLabel(c.status)}
-                      </span>
-                      <b className="shrink-0 tabular-nums">{c.count}</b>
-                    </div>
-                    {c.status === "COMMITTEE_REVIEW" && committee && (
-                      <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
-                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-400">
-                          {t("ceo.committeeSuitable", { count: committee.suitable ?? 0 })}
-                        </span>
-                        <span className="rounded-full bg-rose-500/10 px-2 py-0.5 font-medium text-rose-700 dark:text-rose-400">
-                          {t("ceo.committeeNotSuitable", { count: committee.notSuitable ?? 0 })}
-                        </span>
-                        {(committee.pending ?? 0) > 0 && (
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
-                            {t("ceo.committeePending", { count: committee.pending ?? 0 })}
-                          </span>
-                        )}
+                <div className="mt-4 rounded-xl border bg-background p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-medium">{t("ceo.appointments")}</p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-2">
+                    <p className="text-3xl font-bold tracking-tight"><Num value={clinic.appointmentsThisMonth ?? null} /></p>
+                    {!apptParts && <p className="text-xs text-muted-foreground">
+                      {t("ceo.noShow", { count: clinic.appointmentsNoShowThisMonth ?? 0 })}
+                      {noShowRate !== null && (
+                        <span className={`ms-2 rounded-full px-2 py-0.5 font-medium ${
+                          noShowRate > 15 ? "bg-red-500/10 text-red-600 dark:text-red-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        }`}>{noShowRate}%</span>
+                      )}
+                    </p>}
+                  </div>
+                  {apptParts ? (
+                    <>
+                      <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-muted">
+                        {apptParts.map((p) => p.value > 0 && (
+                          <div key={p.key} className={`h-full transition-all duration-700 ${p.bar}`}
+                            style={{ width: `${(p.value / apptPartsTotal) * 100}%` }} title={`${p.label}: ${p.value}`} />
+                        ))}
                       </div>
-                    )}
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div className={`h-full rounded-full transition-all duration-700 ${c.status === "DELIVERED" ? "bg-emerald-500" : "bg-sky-500"}`}
-                        style={{ width: `${(c.count / openCasesMax) * 100}%`, opacity: c.status === "DELIVERED" ? 1 : Math.max(0.4, 1 - i * 0.1) }} />
+                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                        {apptParts.map((p) => (
+                          <div key={p.key} className="rounded-lg border px-2.5 py-1.5">
+                            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                              <span className={`h-2 w-2 rounded-full ${p.bar}`} />{p.label}
+                            </p>
+                            <p className="text-lg font-bold tabular-nums leading-tight">
+                              {p.value}
+                              <span className="ms-1 text-[11px] font-normal text-muted-foreground">
+                                {apptPartsTotal ? Math.round((p.value / apptPartsTotal) * 100) : 0}%
+                              </span>
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : noShowRate !== null && (
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-emerald-500/25">
+                      <div className="h-full rounded-full bg-red-500 transition-all duration-700" style={{ width: `${noShowRate}%` }} />
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
-        </div>
-      )}
+                  )}
+                </div>
+              </Panel>
 
-      {/* ── Podiatry insoles — shown once the dashboard block carries the figures ── */}
-      {clinic && podTotal != null && (
-        <Panel title={t("ceo.podiatryTitle")} icon={Footprints} action={<PodiatryMonthlyChart />}>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Kpi label={t("ceo.podiatryTotal")} value={podTotal}
-              hint={podThisMonth(clinic.podiatryReceptionsThisMonth)}
-              icon={Users} tone="bg-sky-500" />
-            <Kpi label={t("ceo.podiatryFitted")} value={podFitted}
-              hint={joinHints(
-                podFittedPct === null ? undefined : t("ceo.podiatryShare", { pct: podFittedPct }),
-                podThisMonth(clinic.podiatryInsolesFittedThisMonth),
-              )}
-              icon={CheckCircle2} tone="bg-emerald-500" />
-            <Kpi label={t("ceo.podiatryNotFitted")} value={podNotFitted}
-              hint={joinHints(
-                podFittedPct === null ? undefined : t("ceo.podiatryShare", { pct: 100 - podFittedPct }),
-                podThisMonth(clinic.podiatryNotFittedThisMonth),
-              )}
-              icon={XCircle} tone="bg-rose-500" />
-          </div>
-          {podFittedPct !== null && (
-            <div className="mt-4">
-              <div className="flex h-2 overflow-hidden rounded-full bg-rose-500/25">
-                <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${podFittedPct}%` }} />
-              </div>
-              <div className="mt-2 flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />{t("ceo.podiatryFitted")} {podFittedPct}%</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-500" />{t("ceo.podiatryNotFitted")} {100 - podFittedPct}%</span>
-              </div>
+              <Panel
+                title={t("ceo.openCases")} icon={Activity}
+                action={<span className="text-xs text-muted-foreground">{t("ceo.openCasesTotal", { count: openCasesTotal })}</span>}
+              >
+                {openCases.length === 0 ? (
+                  <p className="py-10 text-center text-sm text-muted-foreground">{t("ceo.noOpenCases")}</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {openCases.map((c, i) => (
+                      <li key={c.status}>
+                        <div className="flex items-center justify-between gap-2 text-sm">
+                          <span className="truncate">
+                            {stageLabel(c.status)}
+                          </span>
+                          <b className="shrink-0 tabular-nums">{c.count}</b>
+                        </div>
+                        {c.status === "COMMITTEE_REVIEW" && committee && (
+                          <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
+                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-400">
+                              {t("ceo.committeeSuitable", { count: committee.suitable ?? 0 })}
+                            </span>
+                            <span className="rounded-full bg-rose-500/10 px-2 py-0.5 font-medium text-rose-700 dark:text-rose-400">
+                              {t("ceo.committeeNotSuitable", { count: committee.notSuitable ?? 0 })}
+                            </span>
+                            {(committee.pending ?? 0) > 0 && (
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                                {t("ceo.committeePending", { count: committee.pending ?? 0 })}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div className={`h-full rounded-full transition-all duration-700 ${c.status === "DELIVERED" ? "bg-emerald-500" : "bg-sky-500"}`}
+                            style={{ width: `${(c.count / openCasesMax) * 100}%`, opacity: c.status === "DELIVERED" ? 1 : Math.max(0.4, 1 - i * 0.1) }} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Panel>
             </div>
           )}
-        </Panel>
-      )}
 
-      {/* ── Physiotherapy sessions — shown once the dashboard block carries them ── */}
-      {clinic && clinic.physioSessionsTotal != null && (
-        <Panel title={t("ceo.physioTitle")} icon={HeartPulse}>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Kpi label={t("ceo.physioSessionsTotal")} value={clinic.physioSessionsTotal ?? null}
-              icon={Activity} tone="bg-emerald-500" />
-            <Kpi label={t("ceo.physioSessionsThisMonth")} value={clinic.physioSessionsThisMonth ?? null}
-              hint={t("ceo.thisMonth")} icon={CalendarCheck} tone="bg-sky-500" />
-            <Kpi label={t("ceo.physioPatients")} value={clinic.physioSessionsPatientsTotal ?? null}
-              hint={podThisMonth(clinic.physioSessionsPatientsThisMonth)}
-              icon={Users} tone="bg-violet-500" />
+          {/* ── Podiatry insoles — shown once the dashboard block carries the figures ── */}
+          {clinic && podTotal != null && (
+            <Panel title={t("ceo.podiatryTitle")} icon={Footprints} action={<PodiatryMonthlyChart />}>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <Kpi label={t("ceo.podiatryTotal")} {...monthly(clinic.podiatryReceptionsThisMonth, podTotal)}
+                  icon={Users} tone="bg-sky-500" />
+                <Kpi label={t("ceo.podiatryFitted")} {...monthly(clinic.podiatryInsolesFittedThisMonth, podFitted, podFittedPct)}
+                  icon={CheckCircle2} tone="bg-emerald-500" />
+                <Kpi label={t("ceo.podiatryNotFitted")}
+                  {...monthly(clinic.podiatryNotFittedThisMonth, podNotFitted, podFittedPct === null ? null : 100 - podFittedPct)}
+                  icon={XCircle} tone="bg-rose-500" />
+              </div>
+              {podFittedPct !== null && (
+                <div className="mt-4">
+                  <div className="flex h-2 overflow-hidden rounded-full bg-rose-500/25">
+                    <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${podFittedPct}%` }} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />{t("ceo.podiatryFitted")} {podFittedPct}%</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-500" />{t("ceo.podiatryNotFitted")} {100 - podFittedPct}%</span>
+                  </div>
+                </div>
+              )}
+            </Panel>
+          )}
+
+          {/* ── Physiotherapy sessions — shown once the dashboard block carries them ── */}
+          {clinic && clinic.physioSessionsTotal != null && (
+            <Panel title={t("ceo.physioTitle")} icon={HeartPulse}>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Kpi label={t("ceo.physioSessionsThisMonth")}
+                  {...monthly(clinic.physioSessionsThisMonth, clinic.physioSessionsTotal)}
+                  icon={CalendarCheck} tone="bg-sky-500" />
+                <Kpi label={t("ceo.physioPatients")}
+                  {...monthly(clinic.physioSessionsPatientsThisMonth, clinic.physioSessionsPatientsTotal)}
+                  icon={Users} tone="bg-violet-500" />
+              </div>
+            </Panel>
+          )}
           </div>
         </Panel>
       )}

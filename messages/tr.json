@@ -187,6 +187,7 @@
       "noAbsences": "Bu ay devamsızlık kaydı yok",
       "absenceDays": "{days} gün devamsız",
       "clinicTitle": "Bu ay klinik performansı",
+      "operationsTitle": "Operasyon",
       "newPatients": "Yeni hastalar",
       "patientDepts": {
         "prosthetics": "Protez",
@@ -262,6 +263,8 @@
       "physioSessionsThisMonth": "Bu ayki seanslar",
       "physioPatients": "Hasta sayısı",
       "podiatryThisMonth": "Bu ay: {count}",
+      "totalLabel": "Toplam",
+      "totalShare": "Toplam · %{pct}",
       "probationEnds": "Deneme bitişi {date}",
       "movementNote": "Ayrılma verileri Haziran 2026'dan itibaren mevcuttur",
       "showAllDepartments": "Tüm departmanları göster ({count})",
