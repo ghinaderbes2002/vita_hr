@@ -38,6 +38,7 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   LEAVE_REQUEST_REJECTED:         { icon: XCircle,       color: "text-red-600",    bg: "bg-red-100",    label: "إجازة مرفوضة" },
   LEAVE_REQUEST_PENDING_APPROVAL: { icon: AlertTriangle, color: "text-amber-600",  bg: "bg-amber-100",  label: "تأخر الموافقة" },
   ATTENDANCE_ALERT:               { icon: AlertTriangle, color: "text-red-600",    bg: "bg-red-100",    label: "تنبيه حضور" },
+  INCOMPLETE_FORM_ALERT:          { icon: FileWarning,   color: "text-amber-600", bg: "bg-amber-100",  label: "استمارة غير مكتملة" },
   ATTENDANCE_JUSTIFICATION:       { icon: FileCheck,     color: "text-orange-600", bg: "bg-orange-100", label: "تبرير حضور" },
   EVALUATION_ASSIGNED:            { icon: ClipboardList, color: "text-purple-600", bg: "bg-purple-100", label: "تقييم التجربة" },
   PROBATION_REMINDER:             { icon: CalendarClock, color: "text-teal-600",   bg: "bg-teal-100",   label: "تذكير تقييم التجربة" },

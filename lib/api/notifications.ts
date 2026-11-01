@@ -45,6 +45,7 @@ export type NotificationType =
   // إشعارات الأطراف الصناعية
   | "CASE_ALERT"
   | "CASE_ALERT_RESPONSE"
+  | "INCOMPLETE_FORM_ALERT"
   // استبيان رضا مطلوب — لمندوبي المبيعات: { patientId, department, caseId }
   | "PATIENT_SURVEY_REQUIRED";
 

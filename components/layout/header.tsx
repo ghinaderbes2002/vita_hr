@@ -76,6 +76,7 @@ export function Header() {
     BIRTHDAY:                        { icon: Cake,          iconClass: "text-pink-500",   bgClass: "bg-pink-50/60 dark:bg-pink-950/20",     dotClass: "bg-pink-500" },
     WELCOME:                         { icon: UserPlus,      iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
     ATTENDANCE_ALERT:                { icon: AlertTriangle, iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
+    INCOMPLETE_FORM_ALERT:           { icon: FileWarning,   iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
     ATTENDANCE_JUSTIFICATION:        { icon: FileCheck,     iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
     ATTENDANCE_NEEDS_REVIEW:         { icon: AlertOctagon,  iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
     BREAK_EXCEEDED:                  { icon: Coffee,        iconClass: "text-orange-500", bgClass: "bg-orange-50/60 dark:bg-orange-950/20", dotClass: "bg-orange-500" },
