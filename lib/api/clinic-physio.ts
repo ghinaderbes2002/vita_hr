@@ -125,6 +125,8 @@ export interface PhysioCase {
   anticipatedVisits?: number | null;
   // Nested data (populated by backend)
   painMap?: { regions: PainRegion[] } | null;
+  /** The PT case a doctor exam became; null until it is converted. */
+  convertedToCaseId?: string | null;
   medicalHistory?: any;
   goals?: any;
   /** What the case payload actually calls the goals section. */
@@ -441,14 +443,14 @@ export interface PhysioCaseListParams {
   caseType?: PhysioCaseType;
 }
 
-/** The four statuses a doctor exam can be filtered by on its own list. */
+/** The statuses the doctor-exam list accepts; anything else is a 400. */
 export type DoctorExamStatus = Extract<
   PhysioStatus,
-  "INTAKE" | "COMPLAINT" | "COMPLETED" | "CANCELLED"
+  "INTAKE" | "COMPLAINT" | "PAIN_MAP" | "MEDICAL_HISTORY" | "COMPLETED" | "CANCELLED"
 >;
 
 export const DOCTOR_EXAM_STATUS_VALUES: DoctorExamStatus[] = [
-  "INTAKE", "COMPLAINT", "COMPLETED", "CANCELLED",
+  "INTAKE", "COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY", "COMPLETED", "CANCELLED",
 ];
 
 export interface DoctorExamListParams {
@@ -456,6 +458,8 @@ export interface DoctorExamListParams {
   /** The endpoint caps this at 100. */
   limit?: number;
   status?: DoctorExamStatus;
+  /** Exams already converted to a PT case are left out unless this is set. */
+  includeConverted?: boolean;
 }
 
 /**
@@ -472,6 +476,9 @@ export interface DoctorExamListItem {
   patientId: string;
   physiotherapistId?: string | null;
   supervisingDoctorId?: string | null;
+  /** Set once the exam has been converted; null on a plain exam. */
+  convertedToCaseId?: string | null;
+  convertedToCaseNumber?: string | null;
   createdAt: string;
   patient?: {
     firstName: string;

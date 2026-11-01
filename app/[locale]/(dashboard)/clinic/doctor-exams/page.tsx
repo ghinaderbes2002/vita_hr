@@ -59,6 +59,8 @@ export default function DoctorExamsListPage() {
       page: clientPaged ? 1 : page,
       limit: clientPaged ? 100 : LIMIT,
       status: statusFilter !== "all" ? statusFilter : undefined,
+      // Most finished exams ended by being converted, so this filter needs them.
+      includeConverted: statusFilter === "COMPLETED" ? true : undefined,
     },
     !meLoading && allowed,
   );
@@ -183,7 +185,21 @@ export default function DoctorExamsListPage() {
                   <TableCell className="max-w-56 truncate" title={c.majorComplaint ?? undefined}>
                     {c.majorComplaint || "—"}
                   </TableCell>
-                  <TableCell><CaseStatusBadge status={c.status} /></TableCell>
+                  <TableCell>
+                    <CaseStatusBadge status={c.status} />
+                    {c.convertedToCaseId && (
+                      <button
+                        type="button"
+                        className="mt-1 block whitespace-nowrap text-xs text-primary hover:underline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/${locale}/clinic/physio/${c.convertedToCaseId}`);
+                        }}
+                      >
+                        {t("convertedTo", { number: c.convertedToCaseNumber ?? "" })}
+                      </button>
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {fmt(c.createdAt)}
                   </TableCell>

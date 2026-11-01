@@ -3309,8 +3309,9 @@
         "surgicalHistory": "التاريخ الجراحي",
         "surgicalHint": "أي عمليات جراحية سابقة في العظام أو الأعصاب",
         "familyHistory": "التاريخ العائلي للأمراض المشابهة",
-        "clinicalExam": "الفحص السريري — الحالة العصبية والعضلية",
+        "clinicalExam": "الفحص السريري — الفحص العصبي والعضلي",
         "muscleTone": "المقوية العضلية",
+        "previousValue": "القيمة السابقة",
         "spasticity": "مستوى التشنج",
         "spasticityHint": "مقياس أشورث المعدل إن وجد",
         "spasticityPlaceholder": "مثال: 1+",
@@ -3318,6 +3319,8 @@
         "muscleStrength": "القوة العضلية",
         "thigh": "عضلات الفخذ",
         "legFoot": "عضلات الساق والقدم",
+        "forearm": "عضلات الساعد",
+        "upperArm": "عضلات العضد",
         "skin": "حالة الجلد والأنسجة",
         "pressureLocation": "قرح فراش / نقاط ضغط في منطقة",
         "finalOpinion": "الرأي النهائي",
@@ -3333,8 +3336,18 @@
         "hip": "مفصل الورك",
         "knee": "مفصل الركبة",
         "ankle": "مفصل الكاحل",
+        "wrist": "مفصل المعصم",
+        "elbow": "مفصل المرفق",
         "mmt": "فحص القوة العضلية",
         "movements": "الحركات",
+        "movementGroups": {
+          "HIP": "الورك",
+          "KNEE": "الركبة",
+          "ANKLE": "الكاحل والقدم",
+          "ELBOW": "المرفق",
+          "FOREARM": "الساعد",
+          "WRIST": "المعصم"
+        },
         "deformityFlexibility": "مرونة التشوهات",
         "deformityStatus": "الحالة",
         "trunk": "تقييم الجذع",
@@ -3407,6 +3420,14 @@
           "HYPOTONIC": "ارتخائي",
           "ATAXIC": "حركي التَّرَنُّح"
         },
+        "BODY_REGIONS": {
+          "THIGH": "فخذ",
+          "LEG": "الساق",
+          "FOOT": "القدم",
+          "WRIST": "معصم",
+          "UPPER_ARM": "عضد",
+          "FOREARM": "ساعد"
+        },
         "MUSCLE_TONES": {
           "NORMAL": "طبيعية",
           "SPASTIC": "تشنجية",
@@ -3463,6 +3484,10 @@
           "VALGUS_VARUS": "ركبة روحاء/فحجاء",
           "GENU_RECURVATUM": "ارتداد للخلف"
         },
+        "UPPER_LIMB_ROM": {
+          "FREE": "حر",
+          "LIMITED": "محدد الحركة"
+        },
         "ANKLE_ROM": {
           "FREE": "حر",
           "EQUINUS": "تشوه قدم قفداء",
@@ -3479,7 +3504,13 @@
           "ANKLE_PLANTARFLEXION": "عطف اخمصي للكاحل",
           "ANKLE_EVERSION": "انقلاب وحشي للكاحل",
           "ANKLE_INVERSION": "انقلاب انسي للكاحل",
-          "GREAT_TOE_FLEXION": "عطف الاصبع الكبير"
+          "GREAT_TOE_FLEXION": "عطف الاصبع الكبير",
+          "ELBOW_FLEXION": "عطف المرفق",
+          "ELBOW_EXTENSION": "بسط المرفق",
+          "FOREARM_PRONATION": "الكب (ساعد)",
+          "FOREARM_SUPINATION": "الاستلقاء (ساعد)",
+          "WRIST_FLEXION": "عطف المعصم",
+          "WRIST_EXTENSION": "بسط المعصم"
         },
         "DEFORMITY_FLEXIBILITY": {
           "FLEXIBLE": "مرنة وقابلة للتعديل",
@@ -5243,10 +5274,13 @@
       "filter": {
         "all": "جميع الحالات"
       },
+      "convertedTo": "محوَّلة إلى الحالة رقم {number}",
       "statuses": {
         "INTAKE": "الاستقبال",
         "COMPLAINT": "الشكوى",
-        "COMPLETED": "منتهية",
+        "PAIN_MAP": "خريطة الألم",
+        "MEDICAL_HISTORY": "التاريخ الطبي",
+        "COMPLETED": "مكتملة",
         "CANCELLED": "ملغاة"
       },
       "table": {
@@ -5624,6 +5658,9 @@
         "pageTitleDoctorExam": "معاينة طبيب",
         "cancelCase": "إلغاء الحالة",
         "convertToPhysio": "تحويل لعلاج فيزيائي",
+        "finishExam": "إنهاء المعاينة",
+        "finishExamTitle": "إنهاء المعاينة؟",
+        "finishExamDescription": "استخدم هذا الخيار إذا لن تتحول المعاينة إلى علاج فيزيائي. بعد الإنهاء لن يمكن تعديل نموذج المعاينة.",
         "exportPdf": "PDF كامل",
         "exporting": "جاري التصدير...",
         "notFound": "الحالة غير موجودة",

@@ -6,7 +6,7 @@
 // is the same form in both modes, so what was entered reads back in its shape.
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, ChevronUp, Loader2, Minus, Pencil, Plus, Save } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Loader2, Minus, Pencil, Plus, Save } from "lucide-react";
 import { MeasurementDiagram } from "@/components/clinic/measurement-diagram";
 import {
   ORTHOTICS_MEASUREMENT_FIELDS, ORTHOTICS_MEASUREMENT_IMAGE, ORTHOTICS_MEASUREMENT_SHEETS,
@@ -22,13 +22,15 @@ import {
 import type {
   OrthoticsDoctorAssessment, OrthoticsPhysioAssessment, OrthoticsProsthetistAssessment, OrthoticsReception,
   OrthoticsSide, OrthoticsRecommendedDevice, OrthoticsMeasurementSheet,
+  OrthoticsBodyRegion, OrthoticsBodyRegionEntry, OrthoticsMuscleTone, OrthoticsMuscleToneEntry,
+  OrthoticsSensation, OrthoticsSensationEntry,
 } from "@/lib/api/clinic-orthotics";
 import {
   ACTIVITY_LEVELS, ANKLE_ROM, ASSISTIVE_DEVICES, CEREBRAL_PALSY_TYPES, DEFORMITY_FLEXIBILITY,
   DEFORMITY_STATUS, DIAGNOSIS_TYPES, GAIT_PROBLEMS, HIP_ROM, KNEE_ROM, MOBILITY_LEVELS,
-  MUSCLE_MOVEMENTS, MUSCLE_STRENGTHS, MUSCLE_TONES, SENSATIONS, SKIN_CONDITIONS,
+  BODY_REGIONS, MUSCLE_MOVEMENT_GROUPS, MUSCLE_STRENGTHS, MUSCLE_TONES, SENSATIONS, SKIN_CONDITIONS,
   TRUNK_MOVEMENTS, TRUNK_SCALE, TRUNK_SCALE_FIELDS, type Options,
-  DAILY_USE_SETTINGS, RECOMMENDED_DEVICES, LIMB_TYPES, SIDES,
+  DAILY_USE_SETTINGS, RECOMMENDED_DEVICES, LIMB_TYPES, SIDES, UPPER_LIMB_ROM,
   doctorAssessmentOf, physioAssessmentOf, prosthetistAssessmentOf,
 } from "./orthotics-labels";
 
@@ -144,6 +146,154 @@ function TextValue({
     : <Input type={type} dir={dir} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />;
 }
 
+/**
+ * A finding per body region: pick regions, then a side or both within each, then
+ * the value of that side. `children` adds anything that depends on that value.
+ */
+function BodyRegionChoices<E extends OrthoticsBodyRegionEntry, V extends string>({
+  value, onChange, readOnly, options, choiceOf, withChoice, children,
+}: {
+  value?: E[];
+  onChange: (v: E[]) => void;
+  readOnly: boolean;
+  options: Options<V>;
+  choiceOf: (entry: E) => V | undefined;
+  withChoice: (entry: E, choice: V) => E;
+  children?: (entry: E, update: (next: E) => void) => ReactNode;
+}) {
+  const t = useTranslations("clinic.orthotics");
+  const entries = value ?? [];
+  // A region stays open between being picked and getting its first side, when
+  // nothing about it is in the value yet.
+  const [opened, setOpened] = useState<OrthoticsBodyRegion[]>([]);
+  const regions = BODY_REGIONS.map((o) => o.value).filter(
+    (r) => entries.some((e) => e.region === r) || (!readOnly && opened.includes(r)),
+  );
+
+  const setRegions = (next: OrthoticsBodyRegion[]) => {
+    setOpened(next);
+    onChange(entries.filter((e) => next.includes(e.region)));
+  };
+  const setSides = (region: OrthoticsBodyRegion, sides: OrthoticsSide[]) => {
+    const others = entries.filter((e) => e.region !== region);
+    const kept = sides.map((side) =>
+      entries.find((e) => e.region === region && e.side === side) ?? ({ region, side } as E));
+    onChange([...others, ...kept]);
+  };
+  const update = (entry: E, next: E) => onChange(entries.map((e) => (e === entry ? next : e)));
+
+  return (
+    <div className="space-y-2">
+      <MultiChips options={BODY_REGIONS} value={regions} onChange={setRegions} readOnly={readOnly} />
+      {regions.map((region) => {
+        const regionEntries = SIDES
+          .map((o) => entries.find((e) => e.region === region && e.side === o.value))
+          .filter((e): e is E => !!e);
+        return (
+          <div key={region} className="space-y-2 rounded-md border p-3">
+            <p className="text-xs font-semibold">{t(`options.BODY_REGIONS.${region}`)}</p>
+            <MultiChips
+              options={SIDES}
+              value={regionEntries.map((e) => e.side)}
+              onChange={(sides) => setSides(region, sides)}
+              readOnly={readOnly}
+            />
+            {regionEntries.map((e) => (
+              <div key={e.side} className="space-y-2 border-s-2 border-orange-200 ps-3">
+                <Field label={t(`options.SIDES.${e.side}`)}>
+                  <SingleChips
+                    options={options}
+                    value={choiceOf(e)}
+                    onChange={(choice) => update(e, withChoice(e, choice))}
+                    readOnly={readOnly}
+                  />
+                </Field>
+                {children?.(e, (next) => update(e, next))}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Movements grouped by joint: ticking one opens a number beside it, and unticking
+ * it drops that number. Groups without a label read as one plain list.
+ */
+function GradedMovements<T extends string>({
+  groups, value, grades, onChange, readOnly,
+}: {
+  groups: { label?: string; options: Options<T> }[];
+  value?: T[];
+  grades?: Partial<Record<T, number>>;
+  onChange: (value: T[], grades: Partial<Record<T, number>>) => void;
+  readOnly: boolean;
+}) {
+  const t = useTranslations("clinic.orthotics");
+  const selected = value ?? [];
+  const numbers: Partial<Record<T, number>> = grades ?? {};
+  const without = (v: T) => {
+    const rest = { ...numbers };
+    delete rest[v];
+    return rest;
+  };
+
+  const toggle = (v: T) => {
+    if (!selected.includes(v)) return onChange([...selected, v], numbers);
+    onChange(selected.filter((x) => x !== v), without(v));
+  };
+  const setGrade = (v: T, raw: string) =>
+    onChange(selected, raw === "" ? without(v) : { ...numbers, [v]: Number(raw) });
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {groups.map((g, i) => (
+        <div key={g.label ?? i} className="rounded-lg border p-3">
+          {g.label && <p className="mb-2 text-xs font-semibold text-muted-foreground">{t(g.label)}</p>}
+          <div className="space-y-1">
+            {g.options.map((o) => {
+              const on = selected.includes(o.value);
+              const grade = numbers[o.value];
+              return (
+                <div key={o.value} className="flex min-h-9 items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    aria-pressed={on}
+                    onClick={() => toggle(o.value)}
+                    className={`flex min-w-0 items-center gap-2 text-start text-xs ${on ? "font-medium" : "text-muted-foreground"}`}
+                  >
+                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? "border-orange-500 bg-orange-500 text-white" : "border-border"}`}>
+                      {on && <Check className="h-3 w-3" />}
+                    </span>
+                    {t(o.label)}
+                  </button>
+                  {on && (readOnly ? (
+                    <span className="text-sm font-semibold tabular-nums">{grade ?? "—"}</span>
+                  ) : (
+                    <Input
+                      type="number"
+                      min={0}
+                      step="any"
+                      dir="ltr"
+                      aria-label={t(o.label)}
+                      className="h-8 w-16 shrink-0 px-2 text-center"
+                      value={grade ?? ""}
+                      onChange={(e) => setGrade(o.value, e.target.value)}
+                    />
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SubHeading({ children }: { children: ReactNode }) {
   return <h4 className="border-b pb-1 pt-2 text-sm font-semibold text-orange-600">{children}</h4>;
 }
@@ -236,8 +386,9 @@ function useSectionDraft<T extends object>(saved: T) {
 
 const DOCTOR_KEYS: (keyof OrthoticsDoctorAssessment)[] = [
   "diagnosisTypes", "cerebralPalsyType", "footDropCause", "diagnosisOther", "injuryStartDate",
-  "surgicalHistory", "familyHistory", "chiefComplaint", "muscleTone", "spasticityLevel",
-  "sensation", "thighMuscleStrength", "legFootMuscleStrength", "skinConditions",
+  "surgicalHistory", "familyHistory", "chiefComplaint", "muscleToneDetails", "muscleTone", "spasticityLevel",
+  "sensationDetails", "sensation", "thighMuscleStrength", "legFootMuscleStrength", "forearmMuscleStrength",
+  "upperArmMuscleStrength", "skinConditions",
   "pressurePointsLocation", "doctorOpinion",
 ];
 
@@ -307,13 +458,46 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
       </div>
       <SubHeading>{t("doctor.clinicalExam")}</SubHeading>
       <Field label={t("doctor.muscleTone")}>
-        <SingleChips options={MUSCLE_TONES} value={v.muscleTone} onChange={(x) => s.set({ muscleTone: x })} readOnly={ro} />
-      </Field>
-      <Field label={t("doctor.spasticity")} hint={t("doctor.spasticityHint")}>
-        <TextValue value={v.spasticityLevel} onChange={(x) => s.set({ spasticityLevel: x })} readOnly={ro} placeholder={t("doctor.spasticityPlaceholder")} />
+        <BodyRegionChoices<OrthoticsMuscleToneEntry, OrthoticsMuscleTone>
+          value={v.muscleToneDetails}
+          onChange={(x) => s.set({ muscleToneDetails: x })}
+          readOnly={ro}
+          options={MUSCLE_TONES}
+          choiceOf={(e) => e.tone}
+          withChoice={(e, tone) => ({ ...e, tone, spasticityLevel: tone === "SPASTIC" ? e.spasticityLevel : undefined })}
+        >
+          {(e, update) => e.tone === "SPASTIC" && (
+            <Field label={t("doctor.spasticity")} hint={t("doctor.spasticityHint")}>
+              <TextValue
+                value={e.spasticityLevel}
+                onChange={(x) => update({ ...e, spasticityLevel: x })}
+                readOnly={ro}
+                placeholder={t("doctor.spasticityPlaceholder")}
+              />
+            </Field>
+          )}
+        </BodyRegionChoices>
+        {v.muscleTone && (
+          <p className="text-xs text-muted-foreground">
+            {t("doctor.previousValue")}: {t(`options.MUSCLE_TONES.${v.muscleTone}`)}
+            {v.spasticityLevel && ` — ${t("doctor.spasticity")}: ${v.spasticityLevel}`}
+          </p>
+        )}
       </Field>
       <Field label={t("doctor.sensation")}>
-        <SingleChips options={SENSATIONS} value={v.sensation} onChange={(x) => s.set({ sensation: x })} readOnly={ro} />
+        <BodyRegionChoices<OrthoticsSensationEntry, OrthoticsSensation>
+          value={v.sensationDetails}
+          onChange={(x) => s.set({ sensationDetails: x })}
+          readOnly={ro}
+          options={SENSATIONS}
+          choiceOf={(e) => e.sensation}
+          withChoice={(e, sensation) => ({ ...e, sensation })}
+        />
+        {v.sensation && (
+          <p className="text-xs text-muted-foreground">
+            {t("doctor.previousValue")}: {t(`options.SENSATIONS.${v.sensation}`)}
+          </p>
+        )}
       </Field>
       <p className="text-xs font-semibold">{t("doctor.muscleStrength")}</p>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -322,6 +506,12 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
         </Field>
         <Field label={t("doctor.legFoot")}>
           <SingleChips options={MUSCLE_STRENGTHS} value={v.legFootMuscleStrength} onChange={(x) => s.set({ legFootMuscleStrength: x })} readOnly={ro} />
+        </Field>
+        <Field label={t("doctor.forearm")}>
+          <SingleChips options={MUSCLE_STRENGTHS} value={v.forearmMuscleStrength} onChange={(x) => s.set({ forearmMuscleStrength: x })} readOnly={ro} />
+        </Field>
+        <Field label={t("doctor.upperArm")}>
+          <SingleChips options={MUSCLE_STRENGTHS} value={v.upperArmMuscleStrength} onChange={(x) => s.set({ upperArmMuscleStrength: x })} readOnly={ro} />
         </Field>
       </div>
       <SubHeading>{t("doctor.skin")}</SubHeading>
@@ -345,8 +535,9 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
 // ── أخصائي العلاج الفيزيائي ───────────────────────────────────────────────────
 
 const PHYSIO_KEYS: (keyof OrthoticsPhysioAssessment)[] = [
-  "mobilityLevel", "assistiveDevices", "gaitProblems", "hipROM", "kneeROM", "ankleROM",
-  "muscleStrengthMovements", "deformityFlexibility", "deformityStatus", "trunkStrengthMovements",
+  "mobilityLevel", "assistiveDevices", "gaitProblems", "hipROM", "kneeROM", "ankleROM", "wristROM", "elbowROM",
+  "muscleStrengthMovements", "muscleStrengthGrades", "deformityFlexibility", "deformityStatus",
+  "trunkStrengthMovements", "trunkStrengthGrades",
   ...TRUNK_SCALE_FIELDS.map((f) => f.key), "activityLevel", "dailyWearHours", "physioOpinion",
 ];
 
@@ -390,10 +581,22 @@ export function OrthoticsPhysioSection({ reception, canEdit }: { reception: Orth
       <Field label={t("physio.ankle")}>
         <SingleChips options={ANKLE_ROM} value={v.ankleROM} onChange={(x) => s.set({ ankleROM: x })} readOnly={ro} />
       </Field>
+      <Field label={t("physio.wrist")}>
+        <SingleChips options={UPPER_LIMB_ROM} value={v.wristROM} onChange={(x) => s.set({ wristROM: x })} readOnly={ro} />
+      </Field>
+      <Field label={t("physio.elbow")}>
+        <SingleChips options={UPPER_LIMB_ROM} value={v.elbowROM} onChange={(x) => s.set({ elbowROM: x })} readOnly={ro} />
+      </Field>
 
       <SubHeading>{t("physio.mmt")}</SubHeading>
       <Field label={t("physio.movements")}>
-        <MultiChips options={MUSCLE_MOVEMENTS} value={v.muscleStrengthMovements} onChange={(x) => s.set({ muscleStrengthMovements: x })} readOnly={ro} />
+        <GradedMovements
+          groups={MUSCLE_MOVEMENT_GROUPS}
+          value={v.muscleStrengthMovements}
+          grades={v.muscleStrengthGrades}
+          onChange={(movements, grades) => s.set({ muscleStrengthMovements: movements, muscleStrengthGrades: grades })}
+          readOnly={ro}
+        />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t("physio.deformityFlexibility")}>
@@ -406,7 +609,17 @@ export function OrthoticsPhysioSection({ reception, canEdit }: { reception: Orth
 
       <SubHeading>{t("physio.trunk")}</SubHeading>
       <Field label={t("physio.trunkStrength")}>
-        <MultiChips options={TRUNK_MOVEMENTS} value={v.trunkStrengthMovements} onChange={(x) => s.set({ trunkStrengthMovements: x })} readOnly={ro} />
+        <GradedMovements
+          groups={[
+            { options: TRUNK_MOVEMENTS.slice(0, 2) },
+            { options: TRUNK_MOVEMENTS.slice(2, 4) },
+            { options: TRUNK_MOVEMENTS.slice(4) },
+          ]}
+          value={v.trunkStrengthMovements}
+          grades={v.trunkStrengthGrades}
+          onChange={(movements, grades) => s.set({ trunkStrengthMovements: movements, trunkStrengthGrades: grades })}
+          readOnly={ro}
+        />
       </Field>
       <p className="text-xs font-semibold">{t("physio.trunkBalance")}</p>
       <div className="grid gap-4 sm:grid-cols-2">

@@ -5,10 +5,10 @@ import type {
   OrthoticsCerebralPalsyType, OrthoticsDeformityFlexibility, OrthoticsDeformityStatus,
   OrthoticsDiagnosisType, OrthoticsDoctorAssessment, OrthoticsGaitProblem, OrthoticsHipRom,
   OrthoticsKneeRom, OrthoticsMobilityLevel, OrthoticsMuscleMovement, OrthoticsMuscleStrength,
-  OrthoticsMuscleTone, OrthoticsPhysioAssessment, OrthoticsReception, OrthoticsSensation,
+  OrthoticsMuscleTone, OrthoticsBodyRegion, OrthoticsPhysioAssessment, OrthoticsReception, OrthoticsSensation,
   OrthoticsSkinCondition, OrthoticsTrunkMovement, OrthoticsTrunkScale,
   OrthoticsDailyUseSetting, OrthoticsRecommendedDevice, OrthoticsProsthetistAssessment,
-  OrthoticsLimbType, OrthoticsSide,
+  OrthoticsLimbType, OrthoticsSide, OrthoticsUpperLimbRom,
 } from "@/lib/api/clinic-orthotics";
 
 /**
@@ -35,6 +35,15 @@ export const MUSCLE_TONES: Options<OrthoticsMuscleTone> = [
   { value: "NORMAL", label: "options.MUSCLE_TONES.NORMAL" },
   { value: "SPASTIC", label: "options.MUSCLE_TONES.SPASTIC" },
   { value: "HYPOTONIC", label: "options.MUSCLE_TONES.HYPOTONIC" },
+];
+
+export const BODY_REGIONS: Options<OrthoticsBodyRegion> = [
+  { value: "THIGH", label: "options.BODY_REGIONS.THIGH" },
+  { value: "LEG", label: "options.BODY_REGIONS.LEG" },
+  { value: "FOOT", label: "options.BODY_REGIONS.FOOT" },
+  { value: "WRIST", label: "options.BODY_REGIONS.WRIST" },
+  { value: "UPPER_ARM", label: "options.BODY_REGIONS.UPPER_ARM" },
+  { value: "FOREARM", label: "options.BODY_REGIONS.FOREARM" },
 ];
 
 export const LIMB_TYPES: Options<OrthoticsLimbType> = [
@@ -98,6 +107,11 @@ export const KNEE_ROM: Options<OrthoticsKneeRom> = [
   { value: "GENU_RECURVATUM", label: "options.KNEE_ROM.GENU_RECURVATUM" },
 ];
 
+export const UPPER_LIMB_ROM: Options<OrthoticsUpperLimbRom> = [
+  { value: "FREE", label: "options.UPPER_LIMB_ROM.FREE" },
+  { value: "LIMITED", label: "options.UPPER_LIMB_ROM.LIMITED" },
+];
+
 export const ANKLE_ROM: Options<OrthoticsAnkleRom> = [
   { value: "FREE", label: "options.ANKLE_ROM.FREE" },
   { value: "EQUINUS", label: "options.ANKLE_ROM.EQUINUS" },
@@ -116,7 +130,26 @@ export const MUSCLE_MOVEMENTS: Options<OrthoticsMuscleMovement> = [
   { value: "ANKLE_EVERSION", label: "options.MUSCLE_MOVEMENTS.ANKLE_EVERSION" },
   { value: "ANKLE_INVERSION", label: "options.MUSCLE_MOVEMENTS.ANKLE_INVERSION" },
   { value: "GREAT_TOE_FLEXION", label: "options.MUSCLE_MOVEMENTS.GREAT_TOE_FLEXION" },
+  { value: "ELBOW_FLEXION", label: "options.MUSCLE_MOVEMENTS.ELBOW_FLEXION" },
+  { value: "ELBOW_EXTENSION", label: "options.MUSCLE_MOVEMENTS.ELBOW_EXTENSION" },
+  { value: "FOREARM_PRONATION", label: "options.MUSCLE_MOVEMENTS.FOREARM_PRONATION" },
+  { value: "FOREARM_SUPINATION", label: "options.MUSCLE_MOVEMENTS.FOREARM_SUPINATION" },
+  { value: "WRIST_FLEXION", label: "options.MUSCLE_MOVEMENTS.WRIST_FLEXION" },
+  { value: "WRIST_EXTENSION", label: "options.MUSCLE_MOVEMENTS.WRIST_EXTENSION" },
 ];
+
+/** The same movements by joint, the way the form lays them out. */
+export const MUSCLE_MOVEMENT_GROUPS = ([
+  ["physio.movementGroups.HIP", ["HIP_"]],
+  ["physio.movementGroups.KNEE", ["KNEE_"]],
+  ["physio.movementGroups.ANKLE", ["ANKLE_", "GREAT_TOE_"]],
+  ["physio.movementGroups.ELBOW", ["ELBOW_"]],
+  ["physio.movementGroups.FOREARM", ["FOREARM_"]],
+  ["physio.movementGroups.WRIST", ["WRIST_"]],
+] as const).map(([label, prefixes]) => ({
+  label: label as string,
+  options: MUSCLE_MOVEMENTS.filter((o) => prefixes.some((p) => o.value.startsWith(p))),
+}));
 
 export const DEFORMITY_FLEXIBILITY: Options<OrthoticsDeformityFlexibility> = [
   { value: "FLEXIBLE", label: "options.DEFORMITY_FLEXIBILITY.FLEXIBLE" },
@@ -217,7 +250,7 @@ export function sectionsFilled(r: OrthoticsReception) {
   const d = doctorAssessmentOf(r);
   const p = physioAssessmentOf(r);
   return {
-    doctor: !!(d.diagnosisTypes?.length || d.chiefComplaint || d.muscleTone || d.doctorOpinion),
+    doctor: !!(d.diagnosisTypes?.length || d.chiefComplaint || d.muscleToneDetails?.length || d.muscleTone || d.doctorOpinion),
     physio: !!(p.mobilityLevel || p.gaitProblems?.length || p.activityLevel || p.physioOpinion),
     prosthetist: !!prosthetistOpinionOf(r).trim(),
     clinicalHistory: !!(d.birthHistory || d.medicalHistory || d.functionalGoals?.length

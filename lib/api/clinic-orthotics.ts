@@ -8,6 +8,7 @@ import { toUploadableImage } from "@/lib/utils/heic";
 export type OrthoticsDiagnosisType = "POLIO" | "CEREBRAL_PALSY" | "SPINA_BIFIDA" | "FOOT_DROP" | "OTHER";
 export type OrthoticsCerebralPalsyType = "SPASTIC" | "HYPOTONIC" | "ATAXIC";
 export type OrthoticsMuscleTone = "NORMAL" | "SPASTIC" | "HYPOTONIC";
+export type OrthoticsBodyRegion = "THIGH" | "LEG" | "FOOT" | "WRIST" | "UPPER_ARM" | "FOREARM";
 export type OrthoticsSensation = "INTACT" | "REDUCED" | "ABSENT";
 export type OrthoticsMuscleStrength = "EXCELLENT" | "MODERATE" | "WEAK";
 export type OrthoticsSkinCondition = "INTACT" | "PRESSURE_POINTS" | "EDEMA";
@@ -18,12 +19,17 @@ export type OrthoticsGaitProblem = "TOE_DRAG" | "KNEE_INSTABILITY" | "PELVIS_TRU
 export type OrthoticsHipRom = "FREE" | "LIMITED" | "DISLOCATED_SUBLUXED";
 export type OrthoticsKneeRom = "NORMAL" | "FLEXION_CONTRACTURE" | "VALGUS_VARUS" | "GENU_RECURVATUM";
 export type OrthoticsAnkleRom = "FREE" | "EQUINUS" | "VARUS_VALGUS";
+/** Shared by the wrist and the elbow. */
+export type OrthoticsUpperLimbRom = "FREE" | "LIMITED";
 export type OrthoticsMuscleMovement =
   | "HIP_FLEXION" | "HIP_EXTENSION" | "HIP_ABDUCTION" | "HIP_ADDUCTION"
   | "KNEE_FLEXION" | "KNEE_EXTENSION"
   | "ANKLE_DORSIFLEXION" | "ANKLE_PLANTARFLEXION"
   | "ANKLE_EVERSION" | "ANKLE_INVERSION"
-  | "GREAT_TOE_FLEXION";
+  | "GREAT_TOE_FLEXION"
+  | "ELBOW_FLEXION" | "ELBOW_EXTENSION"
+  | "FOREARM_PRONATION" | "FOREARM_SUPINATION"
+  | "WRIST_FLEXION" | "WRIST_EXTENSION";
 export type OrthoticsDeformityFlexibility = "FLEXIBLE" | "RIGID";
 export type OrthoticsDeformityStatus = "ACTIVE" | "DORMANT";
 export type OrthoticsTrunkMovement =
@@ -38,6 +44,22 @@ export type OrthoticsDailyUseSetting = "HOME" | "SCHOOL" | "SPORTS" | "OTHER";
 export type OrthoticsLimbType = "UPPER" | "LOWER";
 export type OrthoticsSide = "RIGHT" | "LEFT";
 export type OrthoticsRecommendedDevice ="AFO" | "KAFO" | "ORTHOSIS_WITH_FES" | "OTHER";
+
+/** A finding is recorded per body region and side. */
+export interface OrthoticsBodyRegionEntry {
+  region: OrthoticsBodyRegion;
+  side: OrthoticsSide;
+}
+
+export interface OrthoticsSensationEntry extends OrthoticsBodyRegionEntry {
+  sensation?: OrthoticsSensation;
+}
+
+export interface OrthoticsMuscleToneEntry extends OrthoticsBodyRegionEntry {
+  tone?: OrthoticsMuscleTone;
+  /** Free text — the Ashworth scale reading. Only with a SPASTIC tone. */
+  spasticityLevel?: string;
+}
 
 /** طبيب العظمية. Every field is optional — the API upserts what it is sent. */
 export interface OrthoticsDoctorAssessment {
@@ -58,12 +80,20 @@ export interface OrthoticsDoctorAssessment {
   dailyUseSettings?: OrthoticsDailyUseSetting[];
   dailyUseOther?: string;
   chiefComplaint?: string;
+  /** One entry per region and side. Replaces the two fields below. */
+  muscleToneDetails?: OrthoticsMuscleToneEntry[];
+  /** Older receptions only; shown read-only. */
   muscleTone?: OrthoticsMuscleTone;
-  /** Free text — the Ashworth scale reading. */
+  /** Older receptions only — the Ashworth scale reading. */
   spasticityLevel?: string;
+  /** One entry per region and side. Replaces `sensation`. */
+  sensationDetails?: OrthoticsSensationEntry[];
+  /** Older receptions only; shown read-only. */
   sensation?: OrthoticsSensation;
   thighMuscleStrength?: OrthoticsMuscleStrength;
   legFootMuscleStrength?: OrthoticsMuscleStrength;
+  forearmMuscleStrength?: OrthoticsMuscleStrength;
+  upperArmMuscleStrength?: OrthoticsMuscleStrength;
   skinConditions?: OrthoticsSkinCondition[];
   pressurePointsLocation?: string;
   doctorOpinion?: string;
@@ -82,11 +112,15 @@ export interface OrthoticsPhysioAssessment {
   hipROM?: OrthoticsHipRom;
   kneeROM?: OrthoticsKneeRom;
   ankleROM?: OrthoticsAnkleRom;
-  /** Ticked movements only — no numeric grade. */
+  wristROM?: OrthoticsUpperLimbRom;
+  elbowROM?: OrthoticsUpperLimbRom;
   muscleStrengthMovements?: OrthoticsMuscleMovement[];
+  /** The number written against a ticked movement. */
+  muscleStrengthGrades?: Partial<Record<OrthoticsMuscleMovement, number>>;
   deformityFlexibility?: OrthoticsDeformityFlexibility;
   deformityStatus?: OrthoticsDeformityStatus;
   trunkStrengthMovements?: OrthoticsTrunkMovement[];
+  trunkStrengthGrades?: Partial<Record<OrthoticsTrunkMovement, number>>;
   trunkControlSitting?: OrthoticsTrunkScale;
   trunkBalanceDynamicSitting?: OrthoticsTrunkScale;
   trunkControlStanding?: OrthoticsTrunkScale;

@@ -2260,6 +2260,7 @@
         "familyHistory": "Benzer Hastalıkların Aile Öyküsü",
         "clinicalExam": "Klinik Muayene — Nöromüsküler Durum",
         "muscleTone": "Kas Tonusu",
+        "previousValue": "Önceki değer",
         "spasticity": "Spastisite Düzeyi",
         "spasticityHint": "Varsa Modifiye Ashworth Ölçeği",
         "spasticityPlaceholder": "örn. 1+",
@@ -2267,6 +2268,8 @@
         "muscleStrength": "Kas Gücü",
         "thigh": "Uyluk Kasları",
         "legFoot": "Bacak ve Ayak Kasları",
+        "forearm": "Ön kol kasları",
+        "upperArm": "Üst kol kasları",
         "skin": "Cilt ve Doku Bütünlüğü",
         "pressureLocation": "Bası Yarası / Bası Noktası Bölgesi",
         "finalOpinion": "Nihai Görüş",
@@ -2282,8 +2285,18 @@
         "hip": "Kalça Eklemi",
         "knee": "Diz Eklemi",
         "ankle": "Ayak Bileği Eklemi",
+        "wrist": "El Bileği Eklemi",
+        "elbow": "Dirsek Eklemi",
         "mmt": "Manuel Kas Testi",
         "movements": "Hareketler",
+        "movementGroups": {
+          "HIP": "Kalça",
+          "KNEE": "Diz",
+          "ANKLE": "Ayak bileği ve ayak",
+          "ELBOW": "Dirsek",
+          "FOREARM": "Ön kol",
+          "WRIST": "El bileği"
+        },
         "deformityFlexibility": "Deformite Esnekliği",
         "deformityStatus": "Durum",
         "trunk": "Gövde Değerlendirmesi",
@@ -2356,6 +2369,14 @@
           "HYPOTONIC": "Hipotonik",
           "ATAXIC": "Ataksik"
         },
+        "BODY_REGIONS": {
+          "THIGH": "Uyluk",
+          "LEG": "Bacak",
+          "FOOT": "Ayak",
+          "WRIST": "El bileği",
+          "UPPER_ARM": "Üst kol",
+          "FOREARM": "Ön kol"
+        },
         "MUSCLE_TONES": {
           "NORMAL": "Normal",
           "SPASTIC": "Spastisite",
@@ -2412,6 +2433,10 @@
           "VALGUS_VARUS": "Valgus / varus diz",
           "GENU_RECURVATUM": "Genu rekurvatum"
         },
+        "UPPER_LIMB_ROM": {
+          "FREE": "Serbest",
+          "LIMITED": "Kısıtlı"
+        },
         "ANKLE_ROM": {
           "FREE": "Serbest",
           "EQUINUS": "Ekin deformitesi",
@@ -2428,7 +2453,13 @@
           "ANKLE_PLANTARFLEXION": "Ayak bileği plantar fleksiyonu",
           "ANKLE_EVERSION": "Ayak bileği eversiyonu",
           "ANKLE_INVERSION": "Ayak bileği inversiyonu",
-          "GREAT_TOE_FLEXION": "Ayak başparmağı fleksiyonu"
+          "GREAT_TOE_FLEXION": "Ayak başparmağı fleksiyonu",
+          "ELBOW_FLEXION": "Dirsek fleksiyonu",
+          "ELBOW_EXTENSION": "Dirsek ekstansiyonu",
+          "FOREARM_PRONATION": "Ön kol pronasyonu",
+          "FOREARM_SUPINATION": "Ön kol supinasyonu",
+          "WRIST_FLEXION": "El bileği fleksiyonu",
+          "WRIST_EXTENSION": "El bileği ekstansiyonu"
         },
         "DEFORMITY_FLEXIBILITY": {
           "FLEXIBLE": "Esnek ve düzeltilebilir",
@@ -4193,9 +4224,12 @@
       "filter": {
         "all": "Tüm Durumlar"
       },
+      "convertedTo": "{number} numaralı vakaya dönüştürüldü",
       "statuses": {
         "INTAKE": "Kabul",
         "COMPLAINT": "Şikayet",
+        "PAIN_MAP": "Ağrı haritası",
+        "MEDICAL_HISTORY": "Tıbbi geçmiş",
         "COMPLETED": "Tamamlandı",
         "CANCELLED": "İptal Edildi"
       },
@@ -4547,6 +4581,9 @@
         "pageTitleDoctorExam": "Doktor Muayenesi",
         "cancelCase": "Vakayı İptal Et",
         "convertToPhysio": "Fizyoterapiye Dönüştür",
+        "finishExam": "Muayeneyi bitir",
+        "finishExamTitle": "Muayene bitirilsin mi?",
+        "finishExamDescription": "Muayene fizyoterapiye dönüşmeyecekse bunu kullanın. Bitirildikten sonra muayene formu düzenlenemez.",
         "exportPdf": "Tam PDF",
         "exporting": "Dışa aktarılıyor...",
         "notFound": "Vaka bulunamadı",

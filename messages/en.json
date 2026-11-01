@@ -3177,6 +3177,7 @@
         "familyHistory": "Family History of Similar Conditions",
         "clinicalExam": "Clinical Examination — Neuromuscular Status",
         "muscleTone": "Muscle Tone",
+        "previousValue": "Previous value",
         "spasticity": "Spasticity Level",
         "spasticityHint": "Modified Ashworth Scale, if available",
         "spasticityPlaceholder": "e.g. 1+",
@@ -3184,6 +3185,8 @@
         "muscleStrength": "Muscle Strength",
         "thigh": "Thigh Muscles",
         "legFoot": "Leg and Foot Muscles",
+        "forearm": "Forearm muscles",
+        "upperArm": "Upper arm muscles",
         "skin": "Skin & Tissue Integrity",
         "pressureLocation": "Bedsores / Pressure Points Location",
         "finalOpinion": "Final Opinion",
@@ -3199,8 +3202,18 @@
         "hip": "Hip Joint",
         "knee": "Knee Joint",
         "ankle": "Ankle Joint",
+        "wrist": "Wrist Joint",
+        "elbow": "Elbow Joint",
         "mmt": "Manual Muscle Testing",
         "movements": "Movements",
+        "movementGroups": {
+          "HIP": "Hip",
+          "KNEE": "Knee",
+          "ANKLE": "Ankle and foot",
+          "ELBOW": "Elbow",
+          "FOREARM": "Forearm",
+          "WRIST": "Wrist"
+        },
         "deformityFlexibility": "Deformity Flexibility",
         "deformityStatus": "Status",
         "trunk": "Trunk Assessment",
@@ -3273,6 +3286,14 @@
           "HYPOTONIC": "Hypotonic",
           "ATAXIC": "Ataxic"
         },
+        "BODY_REGIONS": {
+          "THIGH": "Thigh",
+          "LEG": "Leg",
+          "FOOT": "Foot",
+          "WRIST": "Wrist",
+          "UPPER_ARM": "Upper arm",
+          "FOREARM": "Forearm"
+        },
         "MUSCLE_TONES": {
           "NORMAL": "Normal",
           "SPASTIC": "Spasticity",
@@ -3329,6 +3350,10 @@
           "VALGUS_VARUS": "Valgus / varus knee",
           "GENU_RECURVATUM": "Genu recurvatum"
         },
+        "UPPER_LIMB_ROM": {
+          "FREE": "Free",
+          "LIMITED": "Limited"
+        },
         "ANKLE_ROM": {
           "FREE": "Free",
           "EQUINUS": "Equinus deformity",
@@ -3345,7 +3370,13 @@
           "ANKLE_PLANTARFLEXION": "Ankle plantarflexion",
           "ANKLE_EVERSION": "Ankle eversion",
           "ANKLE_INVERSION": "Ankle inversion",
-          "GREAT_TOE_FLEXION": "Great toe flexion"
+          "GREAT_TOE_FLEXION": "Great toe flexion",
+          "ELBOW_FLEXION": "Elbow flexion",
+          "ELBOW_EXTENSION": "Elbow extension",
+          "FOREARM_PRONATION": "Forearm pronation",
+          "FOREARM_SUPINATION": "Forearm supination",
+          "WRIST_FLEXION": "Wrist flexion",
+          "WRIST_EXTENSION": "Wrist extension"
         },
         "DEFORMITY_FLEXIBILITY": {
           "FLEXIBLE": "Flexible and correctable",
@@ -5107,9 +5138,12 @@
       "filter": {
         "all": "All statuses"
       },
+      "convertedTo": "Converted to case {number}",
       "statuses": {
         "INTAKE": "Intake",
         "COMPLAINT": "Complaint",
+        "PAIN_MAP": "Pain map",
+        "MEDICAL_HISTORY": "Medical history",
         "COMPLETED": "Completed",
         "CANCELLED": "Cancelled"
       },
@@ -5462,6 +5496,9 @@
         "pageTitleDoctorExam": "Doctor Exam",
         "cancelCase": "Cancel Case",
         "convertToPhysio": "Convert to Physiotherapy",
+        "finishExam": "Finish exam",
+        "finishExamTitle": "Finish this exam?",
+        "finishExamDescription": "Use this if the exam won't become a physiotherapy case. The exam form can't be edited afterwards.",
         "exportPdf": "Full PDF",
         "exporting": "Exporting...",
         "notFound": "Case not found",

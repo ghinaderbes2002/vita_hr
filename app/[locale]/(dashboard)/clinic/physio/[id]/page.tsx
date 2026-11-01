@@ -21,6 +21,7 @@ import {
   ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -98,6 +99,7 @@ import {
   PhysioGoal,
   PHYSIO_GOAL_VALUES,
   TestType,
+  PainMapDto,
   isDoctorExamCase,
 } from "@/lib/api/clinic-physio";
 import { clinicPatientsApi } from "@/lib/api/clinic-patients";
@@ -305,7 +307,7 @@ export default function PhysioCasePage() {
     const perms = physioTabPerm[key] ?? null;
     return !perms || isAdmin() || isQualitySupervisor || hasAnyPermission(perms);
   };
-  const { data: caseData, isLoading } = usePhysioCase(id);
+  const { data: caseData, isLoading, isFetching } = usePhysioCase(id);
   const { data: sessions = [] } = usePhysioSessions(id);
   const { data: timeline = [] } = usePhysioTimeline(id);
   const { data: myAlerts = [] } = useCaseEmergencyAlerts(id, canSendAlert);
@@ -321,6 +323,7 @@ export default function PhysioCasePage() {
   const submitPainMap = useSubmitPainMap();
   const convertToPhysio = useConvertToPhysio();
   const [convertOpen, setConvertOpen] = useState(false);
+  const [finishExamOpen, setFinishExamOpen] = useState(false);
   const submitHistory = useSubmitMedicalHistory();
   const addSurgery = useAddPhysioSurgery();
   const submitGoals = useSubmitPhysioGoals();
@@ -633,6 +636,18 @@ export default function PhysioCasePage() {
   const [emergencyDialogOpen, setEmergencyDialogOpen] = useState(false);
   const [selectedAlertNote, setSelectedAlertNote] = useState<string | null | undefined>(undefined);
 
+  // The whole tab, always: the auto-save and the save button send the same body,
+  // so neither can drop what the other one stored.
+  const buildPainMapDto = (): PainMapDto => ({
+    regions: painRegions,
+    painTypes: painTypes.length ? painTypes : undefined,
+    customPainTypes: painTypes.includes("OTHER") && customPainTypes.length ? customPainTypes : undefined,
+    aggravatingFactors: aggravatingFactors.length ? aggravatingFactors : undefined,
+    aggravatingOther: aggravatingFactors.includes("OTHER") ? aggravatingOther || undefined : undefined,
+    alleviatingFactors: alleviatingFactors.length ? alleviatingFactors : undefined,
+    alleviatingOther: alleviatingFactors.includes("OTHER") ? alleviatingOther || undefined : undefined,
+  });
+
   // ── Auto-save pain regions ───────────────────────────────────────────────────
   const autoSaveReady = useRef(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -643,17 +658,19 @@ export default function PhysioCasePage() {
     if (!autoSaveReady.current) return;
     clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      submitPainMap.mutate({ id, dto: { regions: painRegions } });
+      submitPainMap.mutate({ id, dto: buildPainMapDto() });
     }, 1200);
     return () => clearTimeout(autoSaveTimer.current);
-  }, [painRegions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [painRegions, painTypes, customPainTypes, aggravatingFactors, aggravatingOther, alleviatingFactors, alleviatingOther]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Initialize form states from backend data ─────────────────────────────────
   // The intake is showing values borrowed from the doctor form, not saved ones.
   const [intakeSuggested, setIntakeSuggested] = useState(false);
   const initialized = useRef(false);
   useEffect(() => {
-    if (!caseData || initialized.current) return;
+    // The forms load once, so they must not load from a cached copy that is being
+    // refreshed: the newer save would stay hidden, then be overwritten by the next one.
+    if (!caseData || isFetching || initialized.current) return;
     initialized.current = true;
 
     // Enable auto-save slightly after initialization so the initial setState
@@ -919,11 +936,11 @@ export default function PhysioCasePage() {
     // Supervisor / doctor review
     if (caseData.treatmentPlan?.supervisorGaze) setSupervisorGaze(caseData.treatmentPlan.supervisorGaze);
     if ((caseData.treatmentPlan as any)?.doctorGaze) setDoctorGaze((caseData.treatmentPlan as any).doctorGaze);
-  }, [caseData]);
+  }, [caseData, isFetching]);
 
   // ─────────────────────────────────────────────────────────────────────────────
 
-  if (isLoading) {
+  if (isLoading || (isFetching && !initialized.current)) {
     return (
       <div className="space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -1032,27 +1049,9 @@ export default function PhysioCasePage() {
   };
 
   const handleSavePainMap = async () => {
+    clearTimeout(autoSaveTimer.current);
     try {
-      await submitPainMap.mutateAsync({
-        id,
-        dto: {
-          regions: painRegions,
-          painTypes: painTypes.length ? painTypes : undefined,
-          customPainTypes: painTypes.includes("OTHER") && customPainTypes.length ? customPainTypes : undefined,
-          aggravatingFactors: aggravatingFactors.length
-            ? aggravatingFactors
-            : undefined,
-          aggravatingOther: aggravatingFactors.includes("OTHER")
-            ? aggravatingOther || undefined
-            : undefined,
-          alleviatingFactors: alleviatingFactors.length
-            ? alleviatingFactors
-            : undefined,
-          alleviatingOther: alleviatingFactors.includes("OTHER")
-            ? alleviatingOther || undefined
-            : undefined,
-        },
-      });
+      await submitPainMap.mutateAsync({ id, dto: buildPainMapDto() });
     } catch {
       return; // the mutation hook already toasted the reason — stay on the tab
     }
@@ -1163,8 +1162,10 @@ export default function PhysioCasePage() {
       await addSurgery.mutateAsync({ id, dto: s });
     }
 
-    // Last step of the intake form — hands over to the physiotherapist form.
-    goToPhysioFormTab(PHYSIO_SUB_TABS.find(showPhysioTab) ?? "goals");
+    // Last step of the intake form — hands over to the physiotherapist form. A
+    // doctor exam has none, so it stays here rather than opening a hidden tab.
+    const nextPhysioTab = PHYSIO_SUB_TABS.find(showPhysioTab);
+    if (nextPhysioTab) goToPhysioFormTab(nextPhysioTab);
     void tryAdvanceStatus("PAIN_MAP", "MEDICAL_HISTORY");
   };
 
@@ -1524,7 +1525,7 @@ export default function PhysioCasePage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {/* A PT case can only be opened by converting a doctor exam. */}
-          {isDoctorExam && (
+          {isDoctorExam && !c.convertedToCaseId && (
             <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.CASE_CREATE}>
               <Button size="sm" className="gap-2" disabled={convertToPhysio.isPending}
                 onClick={() => setConvertOpen(true)}>
@@ -1532,6 +1533,15 @@ export default function PhysioCasePage() {
                 {t("convertToPhysio")}
               </Button>
             </ActionGuard>
+          )}
+          {/* For an exam that will not become a PT case. Nothing else moves an exam
+              to COMPLETED; the API allows it from these three stages. */}
+          {isDoctorExam && ["COMPLAINT", "PAIN_MAP", "MEDICAL_HISTORY"].includes(c.status) && (
+            <Button variant="outline" size="sm" className="gap-2" disabled={updateStatus.isPending}
+              onClick={() => setFinishExamOpen(true)}>
+              <CheckCircle2 className="h-4 w-4" />
+              {t("finishExam")}
+            </Button>
           )}
           <Button
             variant="outline"
@@ -4137,6 +4147,18 @@ export default function PhysioCasePage() {
         onConfirm={handleConvertToPhysio}
         isPending={convertToPhysio.isPending}
         patientGender={(patientFull as any)?.gender ?? (c.patient as any)?.gender}
+      />
+
+      <ConfirmDialog
+        open={finishExamOpen}
+        onOpenChange={setFinishExamOpen}
+        title={t("finishExamTitle")}
+        description={t("finishExamDescription")}
+        confirmText={t("finishExam")}
+        onConfirm={() => {
+          setFinishExamOpen(false);
+          updateStatus.mutate({ id, status: "COMPLETED" });
+        }}
       />
     </div>
   );
