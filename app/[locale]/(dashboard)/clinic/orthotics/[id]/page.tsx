@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowRight, Check, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import { ArrowRight, Check, Download, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,8 @@ import {
 } from "@/lib/hooks/use-clinic-orthotics";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useMyEmployee } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees";
+import { clinicOrthoticsApi } from "@/lib/api/clinic-orthotics";
 import { ROLES } from "@/lib/permissions/roles";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 
@@ -74,6 +76,8 @@ export default function OrthoticsReceptionPage() {
   );
 
   const [editOpen, setEditOpen] = useState(false);
+  const { data: staffData } = useEmployeesBasicList();
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   if (isLoading) {
     return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>;
@@ -88,6 +92,50 @@ export default function OrthoticsReceptionPage() {
   const age = ageFromDob(patient?.dateOfBirth);
   const filled = sectionsFilled(reception);
   const done = (on: boolean) => on && <Check className="ms-1 h-3.5 w-3.5" />;
+
+  const exportPdf = async () => {
+    if (pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      // Read fresh: the page's copy can lag a section saved a moment ago.
+      const [latest, measurements, { downloadOrthoticsReceptionPdf }] = await Promise.all([
+        clinicOrthoticsApi.getReception(id),
+        clinicOrthoticsApi.listMeasurements(id),
+        import("@/components/clinic/orthotics-reception-pdf"),
+      ]);
+      type Staff = { id: string; firstNameAr?: string; lastNameAr?: string };
+      const staff = (staffData as unknown as { data?: Staff[] } | Staff[] | undefined);
+      const staffList = Array.isArray(staff) ? staff : staff?.data ?? [];
+      await downloadOrthoticsReceptionPdf({
+        reception: latest,
+        patient: {
+          number: patientNumber,
+          name: patientName,
+          dob: patient?.dateOfBirth?.slice(0, 10),
+          age: age != null ? t("patient.ageValue", { n: age }) : null,
+          gender: patient?.gender === "MALE" ? t("patient.male") : patient?.gender === "FEMALE" ? t("patient.female") : null,
+          nationalId: patient?.idNumber,
+          phone: patient?.phone,
+          address: patient?.currentAddress ?? patient?.addressDetails,
+          height: patient?.heightCm ? `${patient.heightCm} cm` : null,
+          weight: patient?.weightKg ? `${patient.weightKg} kg` : null,
+        },
+        practitioners: (latest.practitionerIds ?? []).flatMap((pid) => {
+          const e = staffList.find((x) => x.id === pid);
+          return e ? [`${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim()] : [];
+        }),
+        measurements,
+        t: t as unknown as (key: string, values?: Record<string, string | number>) => string,
+        rtl: isRtl,
+      });
+    } catch (e) {
+      console.error(e);
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`${t("page.exportFailed")}: ${msg.slice(0, 120)}`);
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -106,6 +154,13 @@ export default function OrthoticsReceptionPage() {
             <span className="text-xs text-muted-foreground">{fmt(reception.createdAt)}</span>
           </div>
         </div>
+        {/* The sheet carries every clinical tab, so it follows the same rule as they do. */}
+        {!receptionOnly && (
+          <Button variant="outline" size="sm" className="gap-1.5" disabled={pdfBusy} onClick={exportPdf}>
+            {pdfBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+            {t("page.exportPdf")}
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="reception" dir={isRtl ? "rtl" : "ltr"}>

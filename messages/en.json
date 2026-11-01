@@ -3111,6 +3111,7 @@
   "clinic": {
     "orthotics": {
       "common": {
+        "missingFields": "Missing fields",
         "cancel": "Cancel",
         "save": "Save",
         "edit": "Edit",
@@ -3124,6 +3125,12 @@
         "clinicalHistory": "Clinical History & Recommendations"
       },
       "page": {
+        "exportPdf": "Export PDF",
+        "exportFailed": "Could not export the form",
+        "pdfTitle": "Orthotics Form",
+        "practitioners": "Practitioners",
+        "attachments": "Attachments",
+        "measuredOn": "Measured on",
         "back": "Orthotics Department",
         "notFound": "Reception not found"
       },

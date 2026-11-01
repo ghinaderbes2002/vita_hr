@@ -175,8 +175,9 @@ export const PageHeader = () => (
   </View>
 );
 
-export const PageFooter = () => (
-  <View style={S.pageFooter} fixed>
+// Its Arabic is pre-shaped for Amiri, so a document in another font names it here.
+export const PageFooter = ({ fontFamily }: { fontFamily?: string }) => (
+  <View style={fontFamily ? [S.pageFooter, { fontFamily }] : S.pageFooter} fixed>
     <View style={{ alignItems: "flex-end", gap: 2 }}>
       <Text style={S.pageFooterText}>{ar("سوريا - حلب - حي حلب الجديدة شمالي")}</Text>
       <Text style={S.pageFooterText}>{ar("خلف فيلا العقاد - شارع إيكاردا")}</Text>

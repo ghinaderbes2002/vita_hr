@@ -327,7 +327,7 @@ function changesOf<T extends object>(draft: T, saved: T): Partial<T> {
 }
 
 function SectionCard({
-  title, canEdit, editing, onEdit, onCancel, onSave, saving, dirty, children,
+  title, canEdit, editing, onEdit, onCancel, onSave, saving, dirty, missing = [], children,
 }: {
   title: string;
   canEdit: boolean;
@@ -337,6 +337,8 @@ function SectionCard({
   onSave: () => void;
   saving: boolean;
   dirty: boolean;
+  /** Labels of required fields still empty; the save stays off until there are none. */
+  missing?: string[];
   children: ReactNode;
 }) {
   const t = useTranslations("clinic.orthotics");
@@ -352,7 +354,7 @@ function SectionCard({
                 size="sm"
                 className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600"
                 onClick={onSave}
-                disabled={saving || !dirty}
+                disabled={saving || !dirty || missing.length > 0}
               >
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                 {t("common.save")}
@@ -365,6 +367,9 @@ function SectionCard({
             </Button>
           ))}
         </div>
+        {editing && missing.length > 0 && (
+          <p className="text-xs text-destructive">{t("common.missingFields")}: {missing.join("، ")}</p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">{children}</CardContent>
     </Card>
@@ -409,9 +414,38 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
   const ro = !s.editing;
   const dx = v.diagnosisTypes ?? [];
 
+  const filled = (x?: string) => !!x?.trim();
+  const toneDone = !!v.muscleToneDetails?.length && v.muscleToneDetails.every(
+    (e) => e.tone && (e.tone !== "SPASTIC" || filled(e.spasticityLevel)),
+  );
+  const sensationDone = !!v.sensationDetails?.length && v.sensationDetails.every((e) => e.sensation);
+  const skin = v.skinConditions ?? [];
+  // Every field on the form is required, plus the follow-up each choice opens.
+  const required: [string, boolean][] = [
+    [t("doctor.diagnosis"), dx.length > 0],
+    ...(dx.includes("CEREBRAL_PALSY") ? [[t("doctor.cpType"), !!v.cerebralPalsyType] as [string, boolean]] : []),
+    ...(dx.includes("FOOT_DROP") ? [[t("doctor.footDropCause"), filled(v.footDropCause)] as [string, boolean]] : []),
+    ...(dx.includes("OTHER") ? [[t("common.other"), filled(v.diagnosisOther)] as [string, boolean]] : []),
+    [t("doctor.injuryDate"), filled(v.injuryStartDate)],
+    [t("doctor.chiefComplaint"), filled(v.chiefComplaint)],
+    [t("doctor.surgicalHistory"), filled(v.surgicalHistory)],
+    [t("doctor.familyHistory"), filled(v.familyHistory)],
+    [t("doctor.muscleTone"), toneDone],
+    [t("doctor.sensation"), sensationDone],
+    [t("doctor.thigh"), !!v.thighMuscleStrength],
+    [t("doctor.legFoot"), !!v.legFootMuscleStrength],
+    [t("doctor.forearm"), !!v.forearmMuscleStrength],
+    [t("doctor.upperArm"), !!v.upperArmMuscleStrength],
+    [t("doctor.skin"), skin.length > 0],
+    ...(skin.includes("PRESSURE_POINTS") ? [[t("doctor.pressureLocation"), filled(v.pressurePointsLocation)] as [string, boolean]] : []),
+    [t("doctor.opinion"), filled(v.doctorOpinion)],
+  ];
+  const missing = required.filter(([, done]) => !done).map(([label]) => label);
+
   return (
     <SectionCard
       title={t("doctor.title")}
+      missing={missing}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}

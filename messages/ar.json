@@ -3245,6 +3245,7 @@
   "clinic": {
     "orthotics": {
       "common": {
+        "missingFields": "الحقول الناقصة",
         "cancel": "إلغاء",
         "save": "حفظ",
         "edit": "تعديل",
@@ -3258,6 +3259,12 @@
         "clinicalHistory": "التاريخ السريري والتوصيات"
       },
       "page": {
+        "exportPdf": "تصدير PDF",
+        "exportFailed": "تعذّر تصدير الاستمارة",
+        "pdfTitle": "استمارة المقومات",
+        "practitioners": "المعالجون",
+        "attachments": "المرفقات",
+        "measuredOn": "تاريخ القياس",
         "back": "قسم المقومات",
         "notFound": "لم يُعثر على الاستقبال"
       },

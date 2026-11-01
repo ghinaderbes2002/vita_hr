@@ -2194,6 +2194,7 @@
   "clinic": {
     "orthotics": {
       "common": {
+        "missingFields": "Eksik alanlar",
         "cancel": "İptal",
         "save": "Kaydet",
         "edit": "Düzenle",
@@ -2207,6 +2208,12 @@
         "clinicalHistory": "Klinik Öykü ve Öneriler"
       },
       "page": {
+        "exportPdf": "PDF Dışa Aktar",
+        "exportFailed": "Form dışa aktarılamadı",
+        "pdfTitle": "Ortez Formu",
+        "practitioners": "Uzmanlar",
+        "attachments": "Ekler",
+        "measuredOn": "Ölçüm tarihi",
         "back": "Ortez Bölümü",
         "notFound": "Kabul bulunamadı"
       },
