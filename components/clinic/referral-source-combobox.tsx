@@ -11,7 +11,7 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useReferralSources } from "@/lib/hooks/use-clinic-referrals";
+import { useAllReferralSources } from "@/lib/hooks/use-clinic-referrals";
 import { ReferralSourceType } from "@/lib/api/clinic-referrals";
 
 export interface ReferralSourcePick {
@@ -42,11 +42,10 @@ export function ReferralSourceCombobox({
 
   // Only fetch while the list is open — the patient form has this collapsed
   // most of the time.
-  const { data, isLoading } = useReferralSources(
-    { type, search: debouncedSearch || undefined, limit: 20 },
+  const { data: sources = [], isLoading } = useAllReferralSources(
+    { type, search: debouncedSearch || undefined },
     { enabled: open },
   );
-  const sources = data?.items ?? [];
 
   const pickFreeText = () => {
     const name = search.trim();

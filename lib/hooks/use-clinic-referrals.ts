@@ -23,6 +23,25 @@ export function useReferralSources(
   });
 }
 
+/** The whole directory across its pages, for a picker that has no paging of its own. */
+export function useAllReferralSources(
+  params: Omit<ReferralSourceListParams, "page" | "limit">,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ["referral-sources", "all", params],
+    queryFn: async () => {
+      const first = await clinicReferralsApi.list({ ...params, page: 1, limit: 100 });
+      const rest = await Promise.all(
+        Array.from({ length: first.totalPages - 1 }, (_, i) =>
+          clinicReferralsApi.list({ ...params, page: i + 2, limit: 100 })),
+      );
+      return [first, ...rest].flatMap((p) => p.items);
+    },
+    enabled: options?.enabled ?? true,
+  });
+}
+
 /** Stats are separately permissioned — skip the request when it would 403. */
 export function useReferralStats(options?: { enabled?: boolean }) {
   return useQuery({
