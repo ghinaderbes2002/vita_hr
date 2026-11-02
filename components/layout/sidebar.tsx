@@ -189,7 +189,7 @@ const navigation: NavItem[] = [
         children: [
           { title: "nav.leaveTypes", href: "/leave-types", icon: CalendarDays, permission: "leave_types:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
           { title: "nav.holidays", href: "/holidays", icon: Calendar, permission: "holidays:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
-          { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية", "Follow-up official", "مسؤول متابعة"] },
+          { title: "nav.leaveBalances", href: "/leave-balances", icon: Wallet, permission: "leave_balances:read_all", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية", "Follow-up official", "مسؤول متابعة"] },
           { title: "nav.pendingApproval", href: "/leaves/pending-approval", icon: Clock, permissions: ["leave_requests:approve_manager", "leave_requests:approve_hr"] },
         ],
       },
