@@ -274,6 +274,14 @@ export type PodiatrySaleCostDto =
   | { insoleCost: number; insoleCostCurrency: PodiatryCurrency }
   | { insoleCost: null };
 
+export interface PodiatrySalesParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export interface PaginatedPodiatrySales {
   items: PodiatrySale[];
   page: number;
@@ -284,7 +292,8 @@ export interface PaginatedPodiatrySales {
 }
 
 export const clinicPodiatryApi = {
-  getSales: async (params?: { page?: number; limit?: number; search?: string }): Promise<PaginatedPodiatrySales> => {
+  /** dateFrom / dateTo: fitting date, YYYY-MM-DD, both days included. */
+  getSales: async (params?: PodiatrySalesParams): Promise<PaginatedPodiatrySales> => {
     const { data } = await apiClient.get("/podiatry/sales", { params });
     const d = data?.data ?? data;
     const items: PodiatrySale[] = d?.items ?? [];

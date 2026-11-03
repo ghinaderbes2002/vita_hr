@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   clinicPodiatryApi,
-  PaginatedPodiatrySales, PodiatrySaleCostDto,
+  PaginatedPodiatrySales, PodiatrySaleCostDto, PodiatrySalesParams,
   PodiatryReceptionDto,
   PodiatrySessionDto,
 } from "@/lib/api/clinic-podiatry";
@@ -21,7 +21,7 @@ export function usePodiatryReceptions(patientId?: string, enabled = true) {
   });
 }
 
-export function usePodiatrySales(params: { page?: number; limit?: number; search?: string }) {
+export function usePodiatrySales(params: PodiatrySalesParams) {
   return useQuery({
     queryKey: ["podiatry-sales", params],
     queryFn: () => clinicPodiatryApi.getSales(params),
