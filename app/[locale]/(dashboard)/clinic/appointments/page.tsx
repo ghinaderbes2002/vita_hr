@@ -31,6 +31,7 @@ import {
   Appointment, AppointmentType, AppointmentStatus, InternalMeeting,
   ALL_APPOINTMENT_TYPES, PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
   MEDICAL_ADMIN_APPOINTMENT_TYPES, PHYSIO_APPOINTMENT_TYPES,
+  canModifyAppointment,
 } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
@@ -809,7 +810,7 @@ export default function AppointmentsPage() {
             );
           })()}
           <DialogFooter className="flex-wrap items-center gap-2 sm:justify-start">
-            {detailAppt && detailAppt.status !== "CANCELLED" && canChangeApptStatus && (
+            {detailAppt && detailAppt.status !== "CANCELLED" && canChangeApptStatus && canModifyAppointment(detailAppt) && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground shrink-0">{t("actions.changeStatus")}</span>
                 <Select
@@ -865,7 +866,7 @@ export default function AppointmentsPage() {
                 }
               />
             )}
-            {detailAppt && detailAppt.status !== "CANCELLED" && canCreateAppt && (
+            {detailAppt && detailAppt.status !== "CANCELLED" && canCreateAppt && canModifyAppointment(detailAppt) && (
               <Button
                 variant="outline"
                 className="gap-1.5"

@@ -67,6 +67,11 @@ export interface Appointment {
   isOpenEnded?: boolean;
   durationMinutes?: number;
   notes?: string | null;
+  /**
+   * Whether the signed-in user may edit, change the status of or cancel this
+   * appointment: its creator, its practitioner, a center supervisor or super admin.
+   */
+  canModify?: boolean;
   cancelReason?: string | null;
   cancelledReason?: string | null;
   physiotherapistId?: string | null;
@@ -84,6 +89,13 @@ export interface Appointment {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * The server decides who owns an appointment. A response from before the field
+ * existed has no `canModify`, so only an explicit false hides the actions; the
+ * API rejects a non-owner either way.
+ */
+export const canModifyAppointment = (a?: Pick<Appointment, "canModify"> | null) => a?.canModify !== false;
 
 export interface CreateAppointmentDto {
   /**
