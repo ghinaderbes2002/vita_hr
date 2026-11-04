@@ -31,7 +31,7 @@ import {
   Appointment, AppointmentType, AppointmentStatus, InternalMeeting,
   ALL_APPOINTMENT_TYPES, PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
   MEDICAL_ADMIN_APPOINTMENT_TYPES, PHYSIO_APPOINTMENT_TYPES,
-  canModifyAppointment,
+  canModifyAppointment, canChangeAppointmentStatus,
 } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
@@ -810,7 +810,7 @@ export default function AppointmentsPage() {
             );
           })()}
           <DialogFooter className="flex-wrap items-center gap-2 sm:justify-start">
-            {detailAppt && detailAppt.status !== "CANCELLED" && canChangeApptStatus && canModifyAppointment(detailAppt) && (
+            {detailAppt && detailAppt.status !== "CANCELLED" && canChangeApptStatus && canChangeAppointmentStatus(detailAppt) && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground shrink-0">{t("actions.changeStatus")}</span>
                 <Select
@@ -845,7 +845,10 @@ export default function AppointmentsPage() {
                   <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "APOLOGIZED", "RESCHEDULED", "CANCELLED"] as AppointmentStatus[])
-                      .filter((s) => s !== "CANCELLED" || canCancelAppt)
+                      // Cancelling and rescheduling stay with the appointment's owners;
+                      // an additional therapist only marks attendance.
+                      .filter((s) => s !== "CANCELLED" || (canCancelAppt && canModifyAppointment(detailAppt)))
+                      .filter((s) => s !== "RESCHEDULED" || canModifyAppointment(detailAppt))
                       .map((s) => (
                       <SelectItem key={s} value={s}>{t(`statuses.${s}`)}</SelectItem>
                     ))}

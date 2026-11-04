@@ -13,7 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { PageHeader } from "@/components/shared/page-header";
 import { cn, formatClinicTime } from "@/lib/utils";
 import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment, useMyStaffMeetings } from "@/lib/hooks/use-clinic-appointments";
-import { Appointment, AppointmentStatus, InternalMeeting, canModifyAppointment } from "@/lib/api/clinic-appointments";
+import {
+  Appointment, AppointmentStatus, InternalMeeting, canChangeAppointmentStatus, canModifyAppointment,
+} from "@/lib/api/clinic-appointments";
 import { StaffMeetingDetailsDialog } from "@/components/clinic/staff-meeting-dialogs";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicPhysioApi, PhysioCase } from "@/lib/api/clinic-physio";
@@ -508,7 +510,7 @@ export default function MyAppointmentsPage() {
           )}
           {/* Actions, top to bottom: the next step, the status outcomes, then cancel. */}
           <div className="space-y-2">
-            {canChangeApptStatus && canModifyAppointment(detailAppt) && detailAppt?.status === "SCHEDULED" && (
+            {canChangeApptStatus && canChangeAppointmentStatus(detailAppt) && detailAppt?.status === "SCHEDULED" && (
               <Button className="w-full gap-2" disabled={updateStatus.isPending}
                 onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "CONFIRMED" }); setDetailAppt(null); }}>
                 <Check className="h-4 w-4" />{t("actions.confirm")}
@@ -521,7 +523,7 @@ export default function MyAppointmentsPage() {
                 {t("actions.startSession")}
               </Button>
             )}
-            {canChangeApptStatus && canModifyAppointment(detailAppt) && detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
+            {canChangeApptStatus && canChangeAppointmentStatus(detailAppt) && detailAppt && !["CANCELLED", "COMPLETED"].includes(detailAppt.status) && (
               <div className="grid grid-cols-3 gap-2">
                 {/* Completing / marking a no-show sends the practitioner straight to the
                     patient's case file so the visit can be documented right away. */}

@@ -72,6 +72,11 @@ export interface Appointment {
    * appointment: its creator, its practitioner, a center supervisor or super admin.
    */
   canModify?: boolean;
+  /**
+   * Whether the signed-in user may mark attendance (attended, no-show, late…):
+   * every owner, plus the additional therapists. Cancelling still needs canModify.
+   */
+  canChangeStatus?: boolean;
   cancelReason?: string | null;
   cancelledReason?: string | null;
   physiotherapistId?: string | null;
@@ -96,6 +101,8 @@ export interface Appointment {
  * API rejects a non-owner either way.
  */
 export const canModifyAppointment = (a?: Pick<Appointment, "canModify"> | null) => a?.canModify !== false;
+export const canChangeAppointmentStatus = (a?: Pick<Appointment, "canChangeStatus"> | null) =>
+  a?.canChangeStatus !== false;
 
 export interface CreateAppointmentDto {
   /**
