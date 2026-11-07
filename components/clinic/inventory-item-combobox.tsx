@@ -61,7 +61,7 @@ export function InventoryItemCombobox({
             <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
           <Command filter={(v, s) => (v.toLowerCase().includes(s.toLowerCase()) ? 1 : 0)}>
             <CommandInput placeholder="ابحث بالاسم أو الكود..." value={search} onValueChange={setSearch} />
             <CommandList>

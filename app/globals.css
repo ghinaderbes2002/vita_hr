@@ -299,7 +299,8 @@
   }
 
   /* ── Focus rings: orange ── */
-  input:focus-visible,
+  /* The search box inside a dropdown sits flush in its panel, so it gets no ring. */
+  input:focus-visible:not([data-slot="command-input"]),
   textarea:focus-visible,
   select:focus-visible {
     @apply ring-2 ring-ring ring-offset-2 ring-offset-background;

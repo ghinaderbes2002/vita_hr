@@ -4,6 +4,7 @@ import React from "react";
 import { Document, Image, Page, Text, View, pdf } from "@react-pdf/renderer";
 import { freshCairoFamily, saveBlob } from "./pdf-kit";
 import type { PodiatryCurrency, PodiatrySale } from "@/lib/api/clinic-podiatry";
+import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 
 export interface VitaFootSalesPdfData {
   sales: PodiatrySale[];
@@ -44,8 +45,8 @@ export const VitaFootSalesDoc = ({ data, letterhead, fontFamily }: {
   data: VitaFootSalesPdfData; letterhead: string; fontFamily: string;
 }) => {
   const cols = data.withCosts
-    ? { n: "4%", number: "12%", name: "17%", insole: "9%", size: "7%", count: "8%", date: "11%", cost: "15%", total: "17%" }
-    : { n: "5%", number: "16%", name: "27%", insole: "14%", size: "10%", count: "12%", date: "16%", cost: "0%", total: "0%" };
+    ? { n: "4%", number: "10%", name: "14%", arrival: "13%", insole: "8%", size: "6%", count: "7%", date: "10%", cost: "13%", total: "15%" }
+    : { n: "5%", number: "13%", name: "20%", arrival: "20%", insole: "11%", size: "8%", count: "9%", date: "14%", cost: "0%", total: "0%" };
   const installs = data.sales.reduce((n, s) => n + (s.installCount ?? 0), 0);
   // Pounds and dollars are totalled apart, never summed together.
   const grand = CURRENCIES.map((c) => [c, data.sales.reduce((n, s) => n + (s.totalCosts?.[c] ?? 0), 0)] as const)
@@ -54,7 +55,13 @@ export const VitaFootSalesDoc = ({ data, letterhead, fontFamily }: {
     { label: "عدد المرضى", value: String(data.sales.length) },
     { label: "عدد التركيبات", value: String(installs) },
     ...(data.withCosts
-      ? [{ label: "إجمالي التكلفة", value: grand.map(([c, v]) => fmtMoney(v, c)).join(" + ") || "—" }]
+      ? [{ label: "مجموع المبيعات", value: grand.map(([c, v]) => fmtMoney(v, c)).join(" + ") || "—" }]
+      : []),
+    ...(data.withCosts && data.sales.some((s) => s.hasCostWithoutCurrency)
+      ? [{
+          label: "مرضى تكلفتهم بلا عملة (غير محسوبة)",
+          value: String(data.sales.filter((s) => s.hasCostWithoutCurrency).length),
+        }]
       : []),
   ];
   return (
@@ -76,6 +83,7 @@ export const VitaFootSalesDoc = ({ data, letterhead, fontFamily }: {
           <Cell width={cols.n} bold>#</Cell>
           <Cell width={cols.number} bold>رقم المريض</Cell>
           <Cell width={cols.name} bold>الاسم</Cell>
+          <Cell width={cols.arrival} bold>طريقة الوصول</Cell>
           <Cell width={cols.insole} bold>نوع الضبان</Cell>
           <Cell width={cols.size} bold>المقاس</Cell>
           <Cell width={cols.count} bold>التركيبات</Cell>
@@ -92,6 +100,7 @@ export const VitaFootSalesDoc = ({ data, letterhead, fontFamily }: {
             <Cell width={cols.n}>{String(i + 1)}</Cell>
             <Cell width={cols.number}>{s.patientNumber || "—"}</Cell>
             <Cell width={cols.name}>{s.patientName || "—"}</Cell>
+            <Cell width={cols.arrival}>{arrivalMethodText(s) ?? "—"}</Cell>
             <Cell width={cols.insole}>{s.insoleType?.join("، ") || "—"}</Cell>
             <Cell width={cols.size}>{s.shoeSize != null ? String(s.shoeSize) : "—"}</Cell>
             <Cell width={cols.count}>{String(s.installCount ?? 0)}</Cell>

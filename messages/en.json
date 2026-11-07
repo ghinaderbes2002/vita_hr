@@ -6991,6 +6991,8 @@
       "addNewItem": "Add new item",
       "addNewItemNamed": "Add “{name}” as a new item",
       "selectSupplier": "Select supplier",
+      "searchSupplier": "Search suppliers...",
+      "noSuppliers": "No matching supplier",
       "selectCurrency": "Select currency",
       "selectPatient": "Select patient...",
       "searchPatient": "Search for a patient...",

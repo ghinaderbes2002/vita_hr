@@ -194,7 +194,7 @@ export function WarehouseDialog({ open, onOpenChange, warehouse }: WarehouseDial
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
                         <Command>
                           <CommandInput placeholder={t("warehouse.warehouses.searchManager")} />
                           <CommandList>

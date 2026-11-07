@@ -6073,6 +6073,8 @@
       "addNewItem": "Yeni kalem ekle",
       "addNewItemNamed": "“{name}” yeni kalem olarak ekle",
       "selectSupplier": "Tedarikçi seçin",
+      "searchSupplier": "Tedarikçi ara...",
+      "noSuppliers": "Eşleşen tedarikçi yok",
       "selectCurrency": "Para birimi seçin",
       "selectPatient": "Hasta seçin...",
       "searchPatient": "Hasta ara...",

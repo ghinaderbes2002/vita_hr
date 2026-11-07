@@ -7217,6 +7217,8 @@
       "addNewItem": "إضافة صنف جديد",
       "addNewItemNamed": "إضافة «{name}» كصنف جديد",
       "selectSupplier": "اختر المورد",
+      "searchSupplier": "ابحث عن مورد...",
+      "noSuppliers": "لا يوجد مورد بهذا الاسم",
       "selectCurrency": "اختر العملة",
       "selectPatient": "اختر المريض...",
       "searchPatient": "ابحث عن مريض...",

@@ -261,6 +261,22 @@ export interface PodiatrySale {
    * currency; null means the viewer may not see costs.
    */
   totalCosts?: PodiatryTotalCosts | null;
+  /** Some fitting of this patient has a cost with no currency, so totalCosts leaves it out. */
+  hasCostWithoutCurrency?: boolean;
+  /** How the patient reached the clinic, as on the patient record. */
+  referralSource?: string | null;
+  referralDetails?: string | null;
+  referralStaff?: { id?: string; fullName?: string } | null;
+}
+
+/** Totals across every patient that matches the filters, not just the page shown. */
+export interface PodiatrySalesSummary {
+  patients: number;
+  installs: number;
+  /** null when the viewer may not see costs. */
+  totalCosts?: PodiatryTotalCosts | null;
+  /** Patients whose costs include an amount with no currency, left out of totalCosts. */
+  patientsWithCostWithoutCurrency?: number;
 }
 
 export interface PodiatrySaleCost {
@@ -289,6 +305,7 @@ export interface PaginatedPodiatrySales {
   /** Counts patients, not fittings. */
   total: number;
   totalPages: number;
+  summary?: PodiatrySalesSummary;
 }
 
 export const clinicPodiatryApi = {
@@ -303,6 +320,7 @@ export const clinicPodiatryApi = {
       limit: d?.limit ?? params?.limit ?? 20,
       total: d?.total ?? items.length,
       totalPages: d?.totalPages ?? 1,
+      summary: d?.summary,
     };
   },
 

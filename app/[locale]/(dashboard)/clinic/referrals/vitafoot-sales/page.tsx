@@ -23,6 +23,7 @@ import { usePodiatrySales, useUpdatePodiatrySaleCost } from "@/lib/hooks/use-cli
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { clinicPodiatryApi } from "@/lib/api/clinic-podiatry";
+import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import type { PodiatryCurrency, PodiatrySale } from "@/lib/api/clinic-podiatry";
 
 const PAGE_SIZE = 20;
@@ -83,6 +84,8 @@ export default function VitaFootSalesPage() {
 
   const { data, isLoading, isError } = usePodiatrySales({ page, limit: PAGE_SIZE, ...filters });
   const rows = data?.items ?? [];
+  const summary = data?.summary;
+  const filtered = !!(debouncedSearch || dateFrom || dateTo);
 
   // The sheet covers every page of the current filters, not just the one on screen.
   const [exporting, setExporting] = useState(false);
@@ -163,6 +166,37 @@ export default function VitaFootSalesPage() {
           </div>
         </div>
 
+        {/* Totals for every matching patient, from the server: the table only holds one page. */}
+        {summary && (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">{filtered ? "المرضى ضمن الفلتر" : "عدد المرضى"}</p>
+              <p className="text-2xl font-bold tabular-nums">{summary.patients}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">عدد التركيبات</p>
+              <p className="text-2xl font-bold tabular-nums">{summary.installs}</p>
+            </div>
+            {canSeeCost && summary.totalCosts != null && (
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">مجموع المبيعات</p>
+                {CURRENCIES.some((c) => summary.totalCosts?.[c]) ? (
+                  CURRENCIES.filter((c) => summary.totalCosts?.[c]).map((c) => (
+                    <p key={c} className="text-2xl font-bold tabular-nums leading-tight">{fmtMoney(summary.totalCosts![c]!, c)}</p>
+                  ))
+                ) : (
+                  <p className="text-2xl font-bold">—</p>
+                )}
+                {!!summary.patientsWithCostWithoutCurrency && (
+                  <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
+                    {summary.patientsWithCostWithoutCurrency} مريض تكلفته بلا عملة غير محسوبة بالمجموع
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="rounded-md border">
           {isLoading ? (
             <div className="space-y-2 p-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
@@ -179,6 +213,7 @@ export default function VitaFootSalesPage() {
                 <TableRow>
                   <TableHead>رقم المريض</TableHead>
                   <TableHead>الاسم</TableHead>
+                  <TableHead>طريقة الوصول</TableHead>
                   <TableHead>نوع الضبان</TableHead>
                   <TableHead>المقاس</TableHead>
                   <TableHead>عدد التركيبات</TableHead>
@@ -196,6 +231,7 @@ export default function VitaFootSalesPage() {
                   >
                     <TableCell className="font-mono text-xs">{s.patientNumber ?? "—"}</TableCell>
                     <TableCell className="font-medium">{s.patientName || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{arrivalMethodText(s) ?? "—"}</TableCell>
                     <TableCell className="text-sm">{s.insoleType?.join("، ") || "—"}</TableCell>
                     <TableCell className="tabular-nums">{s.shoeSize ?? "—"}</TableCell>
                     <TableCell className="font-medium tabular-nums">{s.installCount}</TableCell>
@@ -237,6 +273,9 @@ export default function VitaFootSalesPage() {
                               <div key={c}>{fmtMoney(s.totalCosts![c]!, c)}</div>
                             ))
                           : "—"}
+                        {s.hasCostWithoutCurrency && (
+                          <div className="text-[10px] font-normal text-amber-700 dark:text-amber-400">+ مبلغ بلا عملة</div>
+                        )}
                       </TableCell>
                     )}
                   </TableRow>

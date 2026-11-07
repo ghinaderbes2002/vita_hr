@@ -68,7 +68,7 @@ export function ReferralSourceCombobox({
           <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
         {/* The API does the filtering, so cmdk's own matching is turned off. */}
         <Command shouldFilter={false}>
           <CommandInput placeholder={placeholder} value={search} onValueChange={setSearch} />

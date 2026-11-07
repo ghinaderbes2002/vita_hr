@@ -21,7 +21,7 @@ import { DiscountType } from "@/lib/api/warehouse-operations";
 import { filledLines, LineDraft, LineItemsEditor, newLine } from "./line-items-editor";
 import { applyDiscount, discountDto, DiscountFields, PricedLinesTable } from "./pricing";
 import {
-  DetailItem, DialogLoading, Field, FrozenWarehouseNotice, OptionSelect, ReasonDialog, refNo,
+  DetailItem, DialogLoading, Field, FrozenWarehouseNotice, OptionSelect, ReasonDialog, refNo, SearchableOptionSelect,
   StatusBadge, toQty, useWarehouseFormat, useWarehouseLookups, warehouseOptions,
 } from "./shared";
 
@@ -93,10 +93,12 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label={t("warehouse.shared.supplier")} required>
-              <OptionSelect
+              <SearchableOptionSelect
                 value={supplierId}
                 onChange={setSupplierId}
                 placeholder={t("warehouse.shared.selectSupplier")}
+                searchPlaceholder={t("warehouse.shared.searchSupplier")}
+                emptyText={t("warehouse.shared.noSuppliers")}
                 options={suppliers.filter((s) => s.isActive !== false).map((s) => ({ value: s.id, label: s.name }))}
               />
             </Field>
