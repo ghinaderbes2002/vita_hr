@@ -126,6 +126,37 @@ export default function VitaFootSalesPage() {
           }
         />
 
+        {/* Totals for every matching patient, from the server: the table only holds one page. */}
+        {summary && (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">{filtered ? "المرضى ضمن الفلتر" : "عدد المرضى"}</p>
+              <p className="text-2xl font-bold tabular-nums">{summary.patients}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">عدد التركيبات</p>
+              <p className="text-2xl font-bold tabular-nums">{summary.installs}</p>
+            </div>
+            {canSeeCost && summary.totalCosts != null && (
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">مجموع المبيعات</p>
+                {CURRENCIES.some((c) => summary.totalCosts?.[c]) ? (
+                  CURRENCIES.filter((c) => summary.totalCosts?.[c]).map((c) => (
+                    <p key={c} className="text-2xl font-bold tabular-nums leading-tight">{fmtMoney(summary.totalCosts![c]!, c)}</p>
+                  ))
+                ) : (
+                  <p className="text-2xl font-bold">—</p>
+                )}
+                {!!summary.patientsWithCostWithoutCurrency && (
+                  <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
+                    {summary.patientsWithCostWithoutCurrency} مريض تكلفته بلا عملة غير محسوبة بالمجموع
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-full max-w-md">
             <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -165,37 +196,6 @@ export default function VitaFootSalesPage() {
             )}
           </div>
         </div>
-
-        {/* Totals for every matching patient, from the server: the table only holds one page. */}
-        {summary && (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border p-3">
-              <p className="text-xs text-muted-foreground">{filtered ? "المرضى ضمن الفلتر" : "عدد المرضى"}</p>
-              <p className="text-2xl font-bold tabular-nums">{summary.patients}</p>
-            </div>
-            <div className="rounded-lg border p-3">
-              <p className="text-xs text-muted-foreground">عدد التركيبات</p>
-              <p className="text-2xl font-bold tabular-nums">{summary.installs}</p>
-            </div>
-            {canSeeCost && summary.totalCosts != null && (
-              <div className="rounded-lg border p-3">
-                <p className="text-xs text-muted-foreground">مجموع المبيعات</p>
-                {CURRENCIES.some((c) => summary.totalCosts?.[c]) ? (
-                  CURRENCIES.filter((c) => summary.totalCosts?.[c]).map((c) => (
-                    <p key={c} className="text-2xl font-bold tabular-nums leading-tight">{fmtMoney(summary.totalCosts![c]!, c)}</p>
-                  ))
-                ) : (
-                  <p className="text-2xl font-bold">—</p>
-                )}
-                {!!summary.patientsWithCostWithoutCurrency && (
-                  <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
-                    {summary.patientsWithCostWithoutCurrency} مريض تكلفته بلا عملة غير محسوبة بالمجموع
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
         <div className="rounded-md border">
           {isLoading ? (
