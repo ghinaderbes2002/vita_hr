@@ -24,6 +24,7 @@ import {
   DoctorExamStatus,
   DOCTOR_EXAM_STATUS_VALUES,
 } from "@/lib/api/clinic-physio";
+import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 const LIMIT = 20;
 
@@ -46,9 +47,9 @@ export default function DoctorExamsListPage() {
   const [statusFilter, setStatusFilter] = useState<DoctorExamStatus | "all">("all");
 
   const { isAdmin } = usePermissions();
-  const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
-  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
-  const allowed = isAdmin() || ALLOWED_JOB_CODES.includes(myJobTitleCode);
+  const { isLoading: meLoading } = useMyEmployee();
+  const jobTitles = useJobTitleCodes();
+  const allowed = isAdmin() || jobTitles.hasAny(ALLOWED_JOB_CODES);
 
   // The endpoint takes no search term, so a search pulls one large page and
   // filters here — same trick as the physio list. 100 is the server's ceiling.

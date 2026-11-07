@@ -30,7 +30,8 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { useMyEmployee } from "@/lib/hooks/use-employees";
 import { AttendanceJustification, JustificationStatus, HrDecision } from "@/lib/api/attendance-justifications";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { formatDate } from "@/lib/utils/date";
+import { formatDate } from "@/lib/utils/date";
+import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 const STATUS_CLASSES: Record<string, string> = {
   PENDING_MANAGER: "bg-yellow-100 text-yellow-800",
@@ -64,10 +65,11 @@ export default function JustificationsPage() {
     ["DIRECT_MANAGER", "مدير مباشر"].includes(typeof r === "string" ? r : r?.name)
   );
 
-  const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
-  const ownApprovalsOnly = OWN_APPROVALS_ONLY_JOB_CODES.includes(
-    (myEmployee as any)?.jobTitle?.code ?? "",
-  );
+  const { isLoading: meLoading } = useMyEmployee();
+  // A restriction: it holds only while every title the user has (a delegated one
+  // included) is restricted, so covering for someone never narrows the view.
+  const jobTitles = useJobTitleCodes();
+  const ownApprovalsOnly = jobTitles.onlyAmong(OWN_APPROVALS_ONLY_JOB_CODES);
   // فريقه فقط: إما لأن دوره مدير مباشر، أو لأن مسمّاه محصور بموافقاته وحدها.
   const teamListOnly = isDirectManager || ownApprovalsOnly;
 

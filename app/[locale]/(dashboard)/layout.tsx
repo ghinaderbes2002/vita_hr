@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { AuthRefreshProvider } from "@/components/providers/auth-refresh-provider";
+import { EffectiveAccessSync } from "@/components/providers/effective-access-sync";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useLocale } from "next-intl";
 import { useMailNotification } from "@/lib/hooks/use-mail";
@@ -43,7 +44,10 @@ export default function DashboardLayout({
             sidebar is an overlay drawer, so the content spans the full width. */}
         <div className="dashboard-shift transition-all duration-300 min-w-0">
           <Header />
-          <main className="p-3 sm:p-4 lg:p-6 space-y-2 min-w-0 overflow-x-clip">{children}</main>
+          <main className="p-3 sm:p-4 lg:p-6 space-y-2 min-w-0 overflow-x-clip">
+            <EffectiveAccessSync />
+            {children}
+          </main>
         </div>
       </div>
     </AuthRefreshProvider>

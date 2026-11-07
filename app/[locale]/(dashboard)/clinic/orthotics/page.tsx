@@ -24,6 +24,7 @@ import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees"
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ROLES } from "@/lib/permissions/roles";
 import type { OrthoticsReception } from "@/lib/api/clinic-orthotics";
+import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
@@ -57,9 +58,10 @@ export default function OrthoticsListPage() {
 
   // المشرفون يرون كل مرضى القسم؛ من عداهم يرى الاستقبالات المعيَّن عليها فقط.
   const { hasRole, isAdmin } = usePermissions();
-  const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
+  const { isLoading: meLoading } = useMyEmployee();
   // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
-  const seesAll = isAdmin() || hasRole("QS") || hasRole(ROLES.FOLLOW_UP_OFFICER) || FULL_CASELOAD_JOB_CODES.includes(myEmployee?.jobTitle?.code ?? "");
+  const jobTitles = useJobTitleCodes();
+  const seesAll = isAdmin() || hasRole("QS") || hasRole(ROLES.FOLLOW_UP_OFFICER) || jobTitles.hasAny(FULL_CASELOAD_JOB_CODES);
 
   // Exactly one of the two runs: the mode is unknown until the profile lands, so
   // neither fires before then and a practitioner never pulls the whole list.

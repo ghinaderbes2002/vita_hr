@@ -76,6 +76,7 @@ import {
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/lib/stores/ui-store";
+import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 interface NavItem {
   title: string;
@@ -438,7 +439,9 @@ export function Sidebar() {
   const { hasPermission, isAdmin, hasRole } = usePermissions();
   const authUser = useAuthStore((s) => s.user);
   const { data: currentEmployee } = useMyEmployee();
-  const currentJobTitleCode: string = (currentEmployee as any)?.jobTitle?.code ?? "";
+  // Own title plus any held through a leave delegation. Showing an item needs one
+  // matching title; hiding one needs every title the user holds to be hidden.
+  const jobTitles = useJobTitleCodes();
   // الإدارة الطبية وأقسامها (الأطراف، طب الأقدام، الفيزيائي). null حتى يصل ملف
   // الموظف، فلا يقفز بند بين مكانين أثناء التحميل.
   const currentDept = (currentEmployee as any)?.department;
@@ -568,8 +571,7 @@ export function Sidebar() {
   const isHiddenByJobTitle = (item: NavItem): boolean =>
     !!item.hiddenForJobTitleCodes &&
     !isAdmin() &&
-    !!currentJobTitleCode &&
-    item.hiddenForJobTitleCodes.includes(currentJobTitleCode) &&
+    jobTitles.onlyAmong(item.hiddenForJobTitleCodes) &&
     // الصلاحية المعطاة عمداً تتقدّم على الإخفاء حسب المسمى الوظيفي.
     !(item.jobTitleHidingBypassPermission && hasPermission(item.jobTitleHidingBypassPermission));
 
@@ -606,7 +608,7 @@ export function Sidebar() {
     // المسمى الوظيفي وحده يقرر: مطابق ← يظهر، غير مطابق أو غير موجود ← يختفي
     // بغض النظر عن الصلاحيات. موظف بلا مسمى لا يرى عنصراً محصوراً بمسمى.
     if (item.showForJobTitleCodes) {
-      return !!currentJobTitleCode && item.showForJobTitleCodes.includes(currentJobTitleCode);
+      return jobTitles.hasAny(item.showForJobTitleCodes);
     }
     // صلاحية العنصر نفسه شرط لازم — حتى لو كان قسماً له أبناء. بدون هذا السطر
     // كان أي ابن بلا صلاحية (مثل "مواعيدي") يفتح القسم المحمي كله للجميع.
@@ -722,8 +724,7 @@ export function Sidebar() {
             // إذا الـ parent ظهر بسبب job title، نظهر كل الأطفال
             const parentAllowedByJobTitle = !!(
               item.showForJobTitleCodes &&
-              currentJobTitleCode &&
-              item.showForJobTitleCodes.includes(currentJobTitleCode)
+              jobTitles.hasAny(item.showForJobTitleCodes)
             );
             // فلترة العناصر الفرعية حسب الصلاحيات (recursive)
             const visibleChildren = item.children.filter((child) => {
@@ -731,7 +732,7 @@ export function Sidebar() {
               if (isHiddenByJobTitle(child)) return false;
               // إذا الـ child عنده showForJobTitleCodes والمستخدم عنده مسمى وظيفي، المسمى يأخذ الأولوية على الصلاحيات
               if (child.showForJobTitleCodes) {
-                return isAdmin() || (!!currentJobTitleCode && child.showForJobTitleCodes.includes(currentJobTitleCode));
+                return isAdmin() || jobTitles.hasAny(child.showForJobTitleCodes);
               }
               if (parentAllowedByJobTitle) return true;
               return hasSectionPermission(child);

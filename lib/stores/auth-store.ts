@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { authApi } from "@/lib/api/auth";
 import { User } from "@/types";
+import type { ActiveDelegation, EffectiveAccess } from "@/lib/api/effective-access";
 import { globalQueryClient } from "@/components/providers/query-provider";
 
 interface AuthState {
@@ -11,6 +12,16 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   permissions: string[];
+  /**
+   * Live access from /auth/me/effective: everything the login granted plus what
+   * an active leave delegation adds. Kept out of storage — it is re-read on load,
+   * so a delegation that has ended never lingers. Empty until the first read.
+   */
+  effectivePermissions: string[];
+  /** Own job title plus the delegators'; null until the first read. */
+  jobTitleCodes: string[] | null;
+  activeDelegations: ActiveDelegation[];
+  setEffectiveAccess: (access: EffectiveAccess) => void;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
@@ -34,6 +45,12 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       isAuthenticated: false,
       permissions: [],
+      effectivePermissions: [],
+      jobTitleCodes: null,
+      activeDelegations: [],
+
+      setEffectiveAccess: ({ permissions, jobTitleCodes, activeDelegations }) =>
+        set({ effectivePermissions: permissions, jobTitleCodes, activeDelegations }),
 
       login: async (username, password) => {
         set({ isLoading: true });
@@ -96,6 +113,9 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: null,
             isAuthenticated: false,
             permissions: [],
+            effectivePermissions: [],
+            jobTitleCodes: null,
+            activeDelegations: [],
           });
           // Clear the auth token cookie
           document.cookie = "wso-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -139,8 +159,8 @@ export const useAuthStore = create<AuthState>()(
         // Admin له كل الصلاحيات
         if (state.isAdmin()) return true;
 
-        // التحقق من وجود الصلاحية في القائمة
-        return state.permissions.includes(permission);
+        // التحقق من وجود الصلاحية في القائمة — صلاحيات الدخول أو صلاحيات التفويض
+        return state.permissions.includes(permission) || state.effectivePermissions.includes(permission);
       },
 
       // التحقق من أي صلاحية من القائمة (OR)
@@ -151,7 +171,7 @@ export const useAuthStore = create<AuthState>()(
         if (state.isAdmin()) return true;
 
         // التحقق من وجود أي صلاحية
-        return permissions.some((p) => state.permissions.includes(p));
+        return permissions.some((p) => state.permissions.includes(p) || state.effectivePermissions.includes(p));
       },
 
       // التحقق من كل الصلاحيات (AND)
@@ -162,7 +182,7 @@ export const useAuthStore = create<AuthState>()(
         if (state.isAdmin()) return true;
 
         // التحقق من وجود كل الصلاحيات
-        return permissions.every((p) => state.permissions.includes(p));
+        return permissions.every((p) => state.permissions.includes(p) || state.effectivePermissions.includes(p));
       },
 
       // التحقق من وجود دور معين (بالاسم أو الاسم العربي/الإنجليزي)
@@ -208,6 +228,9 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "wso-auth",
+      // Delegated access is read live on every load, never restored from storage.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- picked out to be left unsaved
+      partialize: ({ effectivePermissions: _p, jobTitleCodes: _j, activeDelegations: _a, ...rest }) => rest,
     }
   )
 );

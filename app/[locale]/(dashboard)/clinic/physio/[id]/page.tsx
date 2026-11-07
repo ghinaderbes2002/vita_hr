@@ -86,7 +86,7 @@ import {
   useRespondToAlert,
 } from "@/lib/hooks/use-clinic-physio";
 import { useUsers } from "@/lib/hooks/use-users";
-import { useEmployeesByDepartment, useMyEmployee } from "@/lib/hooks/use-employees";
+import { useEmployeesByDepartment } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import {
   PhysioStatus,
@@ -116,7 +116,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog";
+import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -263,8 +264,7 @@ export default function PhysioCasePage() {
 
   const { user } = useAuthStore();
   const canSendAlert = !!user?.permissions?.includes("physio:emergency-alert");
-  const { data: myEmployee } = useMyEmployee();
-  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
+  const jobTitles = useJobTitleCodes();
 
   // Tab access by permission, so a supervisor with only case.create+view reaches
   // the intake form but not the clinical tabs — matching the prosthetics page.
@@ -273,7 +273,7 @@ export default function PhysioCasePage() {
   // مشرف الجودة (role QS) reads the whole file — every tab, not just intake —
   // whatever their job title. What they may change still follows their permissions.
   const isQualitySupervisor = hasRole("QS");
-  const intakeOnly = myJobTitleCode === "VTX-JTL-000011" && !isQualitySupervisor;
+  const intakeOnly = jobTitles.onlyAmong(["VTX-JTL-000011"]) && !isQualitySupervisor;
   const PH = PERMISSIONS.CLINIC_PHYSIO;
   // Any clinical permission means more than a pure "reception only" supervisor,
   // so the read-only summary and timeline are shown to them.
@@ -1572,7 +1572,7 @@ export default function PhysioCasePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs key={`${id}-${myJobTitleCode}`} value={topTab ?? defaultTab} onValueChange={setTopTab}>
+      <Tabs key={`${id}-${jobTitles.codes.join(",")}`} value={topTab ?? defaultTab} onValueChange={setTopTab}>
         <TabsList
           className="flex-wrap h-auto gap-1 w-full justify-start"
           dir={isRtl ? "rtl" : "ltr"}

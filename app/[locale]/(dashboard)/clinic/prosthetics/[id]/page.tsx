@@ -113,7 +113,8 @@ import {
   amputationCauseOf,
   amputationCountOf,
   amputationDateOf,
-} from "@/lib/api/clinic-prosthetics";
+} from "@/lib/api/clinic-prosthetics";
+import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 // Every query in the app refetches on a 60s interval and on window focus
 // (query-provider.tsx). A sync effect keyed on the query object therefore
@@ -3749,7 +3750,7 @@ export default function ProstheticsCasePage() {
   const { hasPermission, hasAnyPermission, hasRole, isAdmin } = usePermissions();
   const { data: myEmployee } = useMyEmployee();
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
-  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
+  const jobTitles = useJobTitleCodes();
   const P = PERMISSIONS.CLINIC_PROSTHETICS;
   // Every clinical action permission — anyone holding at least one is more than a
   // pure "reception only" supervisor, so the read-only timeline is shown to them.
@@ -3799,7 +3800,7 @@ export default function ProstheticsCasePage() {
     "VTX-JTL-000035", // رئيس قسم الأطراف الصناعية وطب الأقدام
     "VTX-JTL-000034", // رئيس قسم العلاج الفيزيائي
   ];
-  const isCenterSupervisor = !isAdmin() && !isQualitySupervisor && myJobTitleCode === CENTER_SUPERVISOR_JOB_CODE;
+  const isCenterSupervisor = !isAdmin() && !isQualitySupervisor && jobTitles.onlyAmong([CENTER_SUPERVISOR_JOB_CODE]);
 
   // Permission decides first; a role can only narrow what is left, never widen it.
   const showTab = (key: string) => {

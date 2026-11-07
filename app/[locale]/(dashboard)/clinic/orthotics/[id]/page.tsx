@@ -25,10 +25,11 @@ import {
 } from "@/lib/hooks/use-clinic-orthotics";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicOrthoticsApi } from "@/lib/api/clinic-orthotics";
 import { ROLES } from "@/lib/permissions/roles";
-import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
@@ -70,9 +71,9 @@ export default function OrthoticsReceptionPage() {
   const { hasPermission, hasRole, isAdmin } = usePermissions();
   const can = (p: Parameters<typeof hasPermission>[0]) => isAdmin() || hasPermission(p);
   // مشرف المركز يتابع الاستقبال وحده — تبويبات التقييم السريري لا تظهر له.
-  const { data: myEmployee } = useMyEmployee();
+  const jobTitles = useJobTitleCodes();
   const receptionOnly = !isAdmin() && (
-    hasRole(ROLES.FOLLOW_UP_OFFICER) || myEmployee?.jobTitle?.code === CENTER_SUPERVISOR_JOB_CODE
+    hasRole(ROLES.FOLLOW_UP_OFFICER) || jobTitles.onlyAmong([CENTER_SUPERVISOR_JOB_CODE])
   );
 
   const [editOpen, setEditOpen] = useState(false);

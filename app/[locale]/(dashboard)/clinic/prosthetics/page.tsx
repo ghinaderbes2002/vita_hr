@@ -26,6 +26,7 @@ import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { ProstheticsCase, ProstheticsStatus, clinicProstheticsApi } from "@/lib/api/clinic-prosthetics";
 import { useQuery } from "@tanstack/react-query";
 import { UPPER_LEVELS, LOWER_LEVELS } from "@/components/clinic/amputation-level-selector";
+import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 const LIMIT = 15;
 
@@ -89,9 +90,9 @@ export default function ProstheticsListPage() {
   const { isAdmin, hasPermission, hasRole } = usePermissions();
   const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
   const myEmployeeId: string | undefined = (myEmployee as any)?.id;
-  const myJobTitleCode: string = (myEmployee as any)?.jobTitle?.code ?? "";
+  const jobTitles = useJobTitleCodes();
   // مشرف الجودة (role QS) oversees the whole caseload too, whatever their job title.
-  const seesAll = isAdmin() || hasRole("QS") || hasRole(ROLES.FOLLOW_UP_OFFICER) || FULL_CASELOAD_JOB_CODES.includes(myJobTitleCode);
+  const seesAll = isAdmin() || hasRole("QS") || hasRole(ROLES.FOLLOW_UP_OFFICER) || jobTitles.hasAny(FULL_CASELOAD_JOB_CODES);
   const mineOnly = USE_PRACTITIONER_CASELOAD && !seesAll;
 
   // Only one of the two runs — the mode isn't known until the profile lands, so
