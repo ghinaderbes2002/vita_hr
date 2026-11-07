@@ -33,6 +33,9 @@ export function resolveNotificationLink(
   // dialog), so we land on "my-appointments".
   if (d.appointmentId) return "/clinic/my-appointments";
 
+  // The daily 8 a.m. reminder to finance that today's exchange rate is missing.
+  if (d.type === "EXCHANGE_RATE_REMINDER") return "/warehouse/currencies";
+
   switch (notif.type) {
     case "GENERAL":
       if (d.alertType === "PHYSIO_EMERGENCY") {
