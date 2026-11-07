@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { FileDown, Footprints, Loader2, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -30,16 +30,17 @@ const PAGE_SIZE = 20;
 
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 const CURRENCIES: PodiatryCurrency[] = ["USD", "SYP"];
-const CURRENCY_LABEL: Record<PodiatryCurrency, string> = { USD: "دولار ($)", SYP: "ليرة سورية (ل.س)" };
 const fmtAmount = (v: number) => Number(v).toLocaleString("en-US");
-// Amounts stay apart per currency: pounds and dollars are never summed.
-const fmtMoney = (v: number, c: PodiatryCurrency) => (c === "USD" ? `$${fmtAmount(v)}` : `${fmtAmount(v)} ل.س`);
 const COST_PATTERN = /^\d+(\.\d{1,2})?$/;
 
 /** VitaFoot sales: every podiatry patient whose insole has been fitted, one row each. */
 export default function VitaFootSalesPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("clinic.podiatry.sales");
+  const isRtl = locale === "ar";
+  // Amounts stay apart per currency: pounds and dollars are never summed.
+  const fmtMoney = (v: number, c: PodiatryCurrency) => (c === "USD" ? `${fmtAmount(v)}` : `${fmtAmount(v)} ${t("sypSuffix")}`);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search.trim());
@@ -105,7 +106,7 @@ export default function VitaFootSalesPage() {
       const { downloadVitaFootSalesPdf } = await import("@/components/clinic/vitafoot-sales-pdf");
       await downloadVitaFootSalesPdf({ sales, dateFrom, dateTo, withCosts: canSeeCost });
     } catch {
-      toast.error("تعذّر تصدير المبيعات");
+      toast.error(t("exportFailed"));
     } finally {
       setExporting(false);
     }
@@ -115,13 +116,13 @@ export default function VitaFootSalesPage() {
     <PageGuard permission={PERMISSIONS.CLINIC_REFERRALS.VIEW}>
       <div className="space-y-6">
         <PageHeader
-          title="مبيعات فيتافوت"
-          description="المرضى الذين تم تركيب الضبان لهم"
+          title={t("title")}
+          description={t("description")}
           count={data?.total}
           actions={
             <Button variant="outline" className="gap-1.5" onClick={exportPdf} disabled={exporting || !data?.total}>
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-              تصدير PDF
+              {t("exportPdf")}
             </Button>
           }
         />
@@ -130,16 +131,16 @@ export default function VitaFootSalesPage() {
         {summary && (
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg border p-3">
-              <p className="text-xs text-muted-foreground">{filtered ? "المرضى ضمن الفلتر" : "عدد المرضى"}</p>
+              <p className="text-xs text-muted-foreground">{filtered ? t("patientsInFilter") : t("patientsCount")}</p>
               <p className="text-2xl font-bold tabular-nums">{summary.patients}</p>
             </div>
             <div className="rounded-lg border p-3">
-              <p className="text-xs text-muted-foreground">عدد التركيبات</p>
+              <p className="text-xs text-muted-foreground">{t("installsCount")}</p>
               <p className="text-2xl font-bold tabular-nums">{summary.installs}</p>
             </div>
             {canSeeCost && summary.totalCosts != null && (
               <div className="rounded-lg border p-3">
-                <p className="text-xs text-muted-foreground">مجموع المبيعات</p>
+                <p className="text-xs text-muted-foreground">{t("totalSales")}</p>
                 {CURRENCIES.some((c) => summary.totalCosts?.[c]) ? (
                   CURRENCIES.filter((c) => summary.totalCosts?.[c]).map((c) => (
                     <p key={c} className="text-2xl font-bold tabular-nums leading-tight">{fmtMoney(summary.totalCosts![c]!, c)}</p>
@@ -149,7 +150,7 @@ export default function VitaFootSalesPage() {
                 )}
                 {!!summary.patientsWithCostWithoutCurrency && (
                   <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
-                    {summary.patientsWithCostWithoutCurrency} مريض تكلفته بلا عملة غير محسوبة بالمجموع
+                    {t("costWithoutCurrencyNote", { count: summary.patientsWithCostWithoutCurrency })}
                   </p>
                 )}
               </div>
@@ -163,12 +164,12 @@ export default function VitaFootSalesPage() {
             <Input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="ابحث بالاسم أو رقم المريض..."
+              placeholder={t("searchPlaceholder")}
               className="ps-9"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">تاريخ التركيب من</span>
+            <span className="text-xs text-muted-foreground">{t("fittedFrom")}</span>
             <Input
               type="date"
               className="h-9 w-40 text-xs"
@@ -176,7 +177,7 @@ export default function VitaFootSalesPage() {
               max={dateTo || undefined}
               onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
             />
-            <span className="text-xs text-muted-foreground">إلى</span>
+            <span className="text-xs text-muted-foreground">{t("to")}</span>
             <Input
               type="date"
               className="h-9 w-40 text-xs"
@@ -191,7 +192,7 @@ export default function VitaFootSalesPage() {
                 className="h-9 text-xs"
                 onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
               >
-                مسح
+                {t("clear")}
               </Button>
             )}
           </div>
@@ -201,25 +202,25 @@ export default function VitaFootSalesPage() {
           {isLoading ? (
             <div className="space-y-2 p-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           ) : isError ? (
-            <p className="py-10 text-center text-sm text-destructive">تعذّر تحميل المبيعات</p>
+            <p className="py-10 text-center text-sm text-destructive">{t("loadFailed")}</p>
           ) : rows.length === 0 ? (
             <EmptyState
               icon={<Footprints className="h-8 w-8 text-muted-foreground" />}
-              title={debouncedSearch || dateFrom || dateTo ? "لا توجد نتائج مطابقة" : "لا توجد مبيعات بعد"}
+              title={debouncedSearch || dateFrom || dateTo ? t("noResults") : t("empty")}
             />
           ) : (
-            <Table dir="rtl">
+            <Table dir={isRtl ? "rtl" : "ltr"}>
               <TableHeader>
                 <TableRow>
-                  <TableHead>رقم المريض</TableHead>
-                  <TableHead>الاسم</TableHead>
-                  <TableHead>طريقة الوصول</TableHead>
-                  <TableHead>نوع الضبان</TableHead>
-                  <TableHead>المقاس</TableHead>
-                  <TableHead>عدد التركيبات</TableHead>
-                  <TableHead>آخر تركيب</TableHead>
-                  {canSeeCost && <TableHead>تكلفة آخر تركيب</TableHead>}
-                  {canSeeCost && <TableHead>إجمالي التكلفة</TableHead>}
+                  <TableHead>{t("colPatientNumber")}</TableHead>
+                  <TableHead>{t("colName")}</TableHead>
+                  <TableHead>{t("colArrival")}</TableHead>
+                  <TableHead>{t("colInsoleType")}</TableHead>
+                  <TableHead>{t("colSize")}</TableHead>
+                  <TableHead>{t("colInstalls")}</TableHead>
+                  <TableHead>{t("colLastInstall")}</TableHead>
+                  {canSeeCost && <TableHead>{t("colLastCost")}</TableHead>}
+                  {canSeeCost && <TableHead>{t("colTotalCost")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -232,7 +233,7 @@ export default function VitaFootSalesPage() {
                     <TableCell className="font-mono text-xs">{s.patientNumber ?? "—"}</TableCell>
                     <TableCell className="font-medium">{s.patientName || "—"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{arrivalMethodText(s) ?? "—"}</TableCell>
-                    <TableCell className="text-sm">{s.insoleType?.join("، ") || "—"}</TableCell>
+                    <TableCell className="text-sm">{s.insoleType?.join(isRtl ? "، " : ", ") || "—"}</TableCell>
                     <TableCell className="tabular-nums">{s.shoeSize ?? "—"}</TableCell>
                     <TableCell className="font-medium tabular-nums">{s.installCount}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fmt(s.installedAt)}</TableCell>
@@ -247,7 +248,7 @@ export default function VitaFootSalesPage() {
                             <>
                               <span>{fmtAmount(s.insoleCost)}</span>
                               <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                                عملة غير محددة
+                                {t("unknownCurrency")}
                               </span>
                             </>
                           )}
@@ -256,7 +257,7 @@ export default function VitaFootSalesPage() {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7"
-                              aria-label="تعديل التكلفة"
+                              aria-label={t("editCost")}
                               // The row itself opens the patient.
                               onClick={(e) => { e.stopPropagation(); openCost(s); }}
                             >
@@ -274,7 +275,7 @@ export default function VitaFootSalesPage() {
                             ))
                           : "—"}
                         {s.hasCostWithoutCurrency && (
-                          <div className="whitespace-nowrap text-[10px] font-normal text-amber-700 dark:text-amber-400">+ مبلغ بلا عملة</div>
+                          <div className="whitespace-nowrap text-[10px] font-normal text-amber-700 dark:text-amber-400">{t("amountWithoutCurrency")}</div>
                         )}
                       </TableCell>
                     )}
@@ -296,13 +297,13 @@ export default function VitaFootSalesPage() {
         )}
 
         <Dialog open={!!costTarget} onOpenChange={(o) => !o && setCostTarget(null)}>
-          <DialogContent className="max-w-sm" dir="rtl">
+          <DialogContent className="max-w-sm" dir={isRtl ? "rtl" : "ltr"}>
             <DialogHeader>
-              <DialogTitle>تكلفة آخر تركيب</DialogTitle>
+              <DialogTitle>{t("dialogTitle")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">{costTarget?.patientName || "—"}</p>
-              <Label htmlFor="insole-cost">التكلفة</Label>
+              <Label htmlFor="insole-cost">{t("cost")}</Label>
               <Input
                 id="insole-cost"
                 type="number"
@@ -313,21 +314,21 @@ export default function VitaFootSalesPage() {
                 onChange={(e) => setCostValue(e.target.value)}
               />
               <p className={`text-xs ${costValid ? "text-muted-foreground" : "text-destructive"}`}>
-                {costValid ? "اترك الحقل فارغاً لمسح التكلفة" : "أدخل رقماً موجباً بمنزلتين عشريتين كحد أقصى"}
+                {costValid ? t("clearHint") : t("invalidCost")}
               </p>
-              <Label>العملة</Label>
+              <Label>{t("currency")}</Label>
               <Select value={costCurrency} onValueChange={(v) => setCostCurrency(v as PodiatryCurrency)}>
-                <SelectTrigger><SelectValue placeholder="اختر العملة" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("chooseCurrency")} /></SelectTrigger>
                 <SelectContent>
-                  {CURRENCIES.map((c) => <SelectItem key={c} value={c}>{CURRENCY_LABEL[c]}</SelectItem>)}
+                  {CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c === "USD" ? t("usd") : t("syp")}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCostTarget(null)}>إلغاء</Button>
+              <Button variant="outline" onClick={() => setCostTarget(null)}>{t("cancel")}</Button>
               <Button onClick={saveCost} disabled={!costValid || needsCurrency || updateCost.isPending}>
                 {updateCost.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                حفظ
+                {t("save")}
               </Button>
             </DialogFooter>
           </DialogContent>

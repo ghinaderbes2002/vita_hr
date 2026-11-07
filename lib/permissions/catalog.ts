@@ -464,6 +464,11 @@ export const PERMISSIONS = {
   AUDIT: {
     READ: "audit:read",
   },
+
+  /** Leave delegations: list them and end one early. */
+  DELEGATIONS: {
+    MANAGE: "delegations.manage",
+  },
 } as const;
 
 type ExtractValues<T> = T extends Record<string, infer U>
