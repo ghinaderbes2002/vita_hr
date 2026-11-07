@@ -119,6 +119,8 @@ interface LineItemsEditorProps {
   items: WarehouseItem[];
   qtyLabel?: string;
   withPrice?: boolean;
+  /** Shows the price column locked and empty — the price is set at a later step. */
+  priceLocked?: boolean;
   withCondition?: boolean;
   withNote?: boolean;
   /**
@@ -131,7 +133,7 @@ interface LineItemsEditorProps {
 // The item/quantity rows shared by every document form: material requests,
 // purchase invoices, transfers and returns differ only in the extra columns.
 export function LineItemsEditor({
-  lines, onChange, items, qtyLabel, withPrice, withCondition, withNote, allowCreateItem,
+  lines, onChange, items, qtyLabel, withPrice, priceLocked, withCondition, withNote, allowCreateItem,
 }: LineItemsEditorProps) {
   const t = useTranslations("warehouse");
   const { hasPermission, isAdmin } = usePermissions();
@@ -169,8 +171,9 @@ export function LineItemsEditor({
                 type="number"
                 min={0}
                 step="any"
-                value={line.unitPrice}
+                value={priceLocked ? "" : line.unitPrice}
                 onChange={(e) => update(line.key, { unitPrice: e.target.value })}
+                disabled={priceLocked}
                 placeholder={t("shared.unitPrice")}
                 aria-label={t("shared.unitPrice")}
                 className="w-28"

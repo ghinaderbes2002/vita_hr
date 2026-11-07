@@ -200,7 +200,8 @@ export interface CreatePurchaseInvoiceDto {
   discountType?: DiscountType;
   discountValue?: number;
   notes?: string;
-  items: { itemId: string; qty: number; unitPrice: number }[];
+  /** unitPrice is optional: the finance manager prices the invoice on approval. */
+  items: { itemId: string; qty: number; unitPrice?: number }[];
 }
 
 // ── Transfers ──
@@ -528,8 +529,15 @@ export const warehouseOpsApi = {
   },
 
   // Financial approval only — stock is untouched until the invoice is posted.
-  approvePurchaseInvoice: async (id: string): Promise<PurchaseInvoice> => {
-    const { data } = await apiClient.post(`${base}/purchase-invoices/${id}/approve`);
+  /**
+   * The finance manager prices every line and approves in one step. `items` must
+   * cover each line of the invoice exactly; without it the invoice is approved
+   * as priced, which the API refuses while any line is still at zero.
+   */
+  approvePurchaseInvoice: async (
+    id: string, items?: { itemId: string; unitPrice: number }[],
+  ): Promise<PurchaseInvoice> => {
+    const { data } = await apiClient.post(`${base}/purchase-invoices/${id}/approve`, items ? { items } : undefined);
     return unwrap(data);
   },
 

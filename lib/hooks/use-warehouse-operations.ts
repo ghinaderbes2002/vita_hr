@@ -191,7 +191,12 @@ export function useCreatePurchaseInvoice() {
 }
 
 export function useApprovePurchaseInvoice() {
-  return useOpMutation((id: string) => warehouseOpsApi.approvePurchaseInvoice(id), [K.purchaseInvoices], "approved");
+  return useOpMutation(
+    ({ id, items }: { id: string; items?: { itemId: string; unitPrice: number }[] }) =>
+      warehouseOpsApi.approvePurchaseInvoice(id, items),
+    [K.purchaseInvoices],
+    "approved",
+  );
 }
 
 export function useRejectPurchaseInvoice() {

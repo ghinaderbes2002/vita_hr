@@ -44,7 +44,6 @@ export function PurchaseInvoiceCreateDialog({ open, onOpenChange }: CreateProps)
 
 function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
   const t = useTranslations();
-  const fmt = useWarehouseFormat();
   const { warehouses, items } = useWarehouseLookups();
   const { data: suppliers = [] } = useWarehouseSuppliers();
   const { data: currencies = [] } = useWarehouseCurrencies();
@@ -59,13 +58,10 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<LineDraft[]>(() => [newLine()]);
 
-  // A purchase line needs a price as well as an item and a quantity.
-  const valid = filledLines(lines).filter((l) => l.unitPrice.trim() !== "" && Number(l.unitPrice) >= 0);
-  const canSubmit = !!supplierId && !!warehouseId && !!currencyId && valid.length > 0 && valid.length === filledLines(lines).length;
-
-  const subtotal = valid.reduce((sum, l) => sum + toQty(l.qty)! * Number(l.unitPrice), 0);
-  const total = applyDiscount(subtotal, discountType, discountValue);
-  const currencyCode = currencies.find((c) => c.id === currencyId)?.code;
+  // The storekeeper records items and quantities only: the finance manager prices
+  // the invoice when approving it, so no price is ever sent from here.
+  const valid = filledLines(lines);
+  const canSubmit = !!supplierId && !!warehouseId && !!currencyId && valid.length > 0;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -77,7 +73,7 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
         ...(invoiceDate ? { invoiceDate } : {}),
         ...discountDto(discountType, discountValue),
         ...(notes.trim() ? { notes: notes.trim() } : {}),
-        items: valid.map((l) => ({ itemId: l.itemId, qty: toQty(l.qty)!, unitPrice: Number(l.unitPrice) })),
+        items: valid.map((l) => ({ itemId: l.itemId, qty: toQty(l.qty)! })),
       });
       onDone();
     } catch {
@@ -124,22 +120,18 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
           </div>
 
           <Field label={t("warehouse.shared.items")} required>
-            <LineItemsEditor lines={lines} onChange={setLines} items={items} withPrice allowCreateItem />
+            <p className="text-xs text-muted-foreground">{t("warehouse.purchaseInvoices.priceOptionalHint")}</p>
+            <LineItemsEditor lines={lines} onChange={setLines} items={items} withPrice priceLocked allowCreateItem />
           </Field>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label={t("warehouse.shared.discount")}>
-              <DiscountFields
-                type={discountType}
-                value={discountValue}
-                onChange={(type, value) => { setDiscountType(type); setDiscountValue(value); }}
-              />
-            </Field>
-            <div className="flex items-end justify-between rounded-lg border bg-muted/50 p-3">
-              <span className="text-sm text-muted-foreground">{t("warehouse.shared.total")}</span>
-              <span className="text-lg font-bold">{fmt.money(total, currencyCode)}</span>
-            </div>
-          </div>
+          {/* No total here: nothing is priced until the finance manager approves. */}
+          <Field label={t("warehouse.shared.discount")}>
+            <DiscountFields
+              type={discountType}
+              value={discountValue}
+              onChange={(type, value) => { setDiscountType(type); setDiscountValue(value); }}
+            />
+          </Field>
 
           <Field label={t("warehouse.shared.notes")}>
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -173,8 +165,35 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
   const reject = useRejectPurchaseInvoice();
   const post = usePostPurchaseInvoice();
 
-  const [confirm, setConfirm] = useState<"approve" | "post" | null>(null);
+  const [confirm, setConfirm] = useState<"post" | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
+  // Pricing happens on approval. One price per item, as the API takes it; a
+  // price already on the invoice is offered as the starting value.
+  const [pricing, setPricing] = useState<Record<string, string> | null>(null);
+  const openPricing = () => {
+    if (!invoice) return;
+    const start: Record<string, string> = {};
+    invoice.items.forEach((l) => {
+      if (start[l.itemId] === undefined) start[l.itemId] = Number(l.unitPrice) > 0 ? String(Number(l.unitPrice)) : "";
+    });
+    setPricing(start);
+  };
+  const pricedSubtotal = invoice && pricing
+    ? invoice.items.reduce((sum, l) => sum + Number(l.qty) * (Number(pricing[l.itemId]) || 0), 0)
+    : 0;
+  const pricingComplete = !!pricing && Object.values(pricing).every((v) => v.trim() !== "" && Number(v) > 0);
+  const submitPricing = async () => {
+    if (!invoice || !pricing || !pricingComplete) return;
+    try {
+      await approve.mutateAsync({
+        id: invoice.id,
+        items: Object.entries(pricing).map(([itemId, v]) => ({ itemId, unitPrice: Number(v) })),
+      });
+      setPricing(null);
+    } catch {
+      // Error handled by mutation
+    }
+  };
 
   const currencyCode = invoice
     ? invoice.currency?.code ?? currencies.find((c) => c.id === invoice.currencyId)?.code
@@ -244,7 +263,7 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
                 <Button variant="destructive" onClick={() => setRejectOpen(true)}>
                   {t("warehouse.shared.reject")}
                 </Button>
-                <Button onClick={() => setConfirm("approve")}>{t("warehouse.purchaseInvoices.approve")}</Button>
+                <Button onClick={openPricing}>{t("warehouse.purchaseInvoices.priceAndApprove")}</Button>
               </ActionGuard>
             )}
             {invoice?.status === "APPROVED" && (
@@ -259,13 +278,66 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
       <ConfirmDialog
         open={!!confirm}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title={t(`warehouse.purchaseInvoices.${confirm === "post" ? "postConfirmTitle" : "approveConfirmTitle"}`)}
-        description={t(`warehouse.purchaseInvoices.${confirm === "post" ? "postConfirmDescription" : "approveConfirmDescription"}`)}
+        title={t("warehouse.purchaseInvoices.postConfirmTitle")}
+        description={t("warehouse.purchaseInvoices.postConfirmDescription")}
         onConfirm={() => {
-          if (invoice) (confirm === "post" ? post : approve).mutate(invoice.id);
+          if (invoice) post.mutate(invoice.id);
           setConfirm(null);
         }}
       />
+
+      <Dialog open={!!pricing} onOpenChange={(o) => { if (!o && !approve.isPending) setPricing(null); }}>
+        <DialogContent className="sm:max-w-[640px] max-h-[90dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("warehouse.purchaseInvoices.priceAndApprove")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{t("warehouse.purchaseInvoices.pricingHint")}</p>
+          {invoice && pricing && (
+            <div className="space-y-3">
+              <div className="rounded-md border divide-y">
+                {invoice.items.map((l, i) => (
+                  <div key={l.id ?? `${l.itemId}-${i}`} className="flex flex-wrap items-center gap-3 p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{itemName(l.itemId, l.item)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("warehouse.shared.quantity")}: {fmt.qty(l.qty)}
+                      </p>
+                    </div>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      dir="ltr"
+                      className="h-9 w-32"
+                      placeholder={t("warehouse.shared.unitPrice")}
+                      value={pricing[l.itemId] ?? ""}
+                      onChange={(e) => setPricing((p) => p && ({ ...p, [l.itemId]: e.target.value }))}
+                    />
+                    <span className="w-28 text-end text-sm tabular-nums">
+                      {fmt.money(Number(l.qty) * (Number(pricing[l.itemId]) || 0), currencyCode)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("warehouse.shared.total")}</span>
+                <span className="font-semibold tabular-nums">
+                  {fmt.money(applyDiscount(pricedSubtotal, invoice.discountType, invoice.discountValue), currencyCode)}
+                </span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPricing(null)} disabled={approve.isPending}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={submitPricing} disabled={!pricingComplete || approve.isPending}>
+              {approve.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+              {t("warehouse.purchaseInvoices.approve")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ReasonDialog
         open={rejectOpen}
