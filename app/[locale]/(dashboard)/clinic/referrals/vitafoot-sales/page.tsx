@@ -238,7 +238,7 @@ export default function VitaFootSalesPage() {
                     <TableCell className="text-sm text-muted-foreground">{fmt(s.installedAt)}</TableCell>
                     {canSeeCost && (
                       <TableCell className="tabular-nums">
-                        <div className="flex flex-wrap items-center gap-1">
+                        <div className="flex items-center gap-1 whitespace-nowrap">
                           {s.insoleCost == null ? (
                             <span>—</span>
                           ) : s.insoleCostCurrency ? (
@@ -246,7 +246,7 @@ export default function VitaFootSalesPage() {
                           ) : (
                             <>
                               <span>{fmtAmount(s.insoleCost)}</span>
-                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                              <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
                                 عملة غير محددة
                               </span>
                             </>
@@ -274,7 +274,7 @@ export default function VitaFootSalesPage() {
                             ))
                           : "—"}
                         {s.hasCostWithoutCurrency && (
-                          <div className="text-[10px] font-normal text-amber-700 dark:text-amber-400">+ مبلغ بلا عملة</div>
+                          <div className="whitespace-nowrap text-[10px] font-normal text-amber-700 dark:text-amber-400">+ مبلغ بلا عملة</div>
                         )}
                       </TableCell>
                     )}

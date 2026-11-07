@@ -21,7 +21,7 @@ import {
   PurchaseInvoiceCreateDialog, PurchaseInvoiceDetailsDialog,
 } from "@/components/features/warehouse/purchase-invoice-dialogs";
 import {
-  ALL, OptionSelect, refNo, StatusBadge, useWarehouseFormat, useWarehouseLookups, warehouseOptions,
+  ALL, OptionSelect, purchaseInvoiceStatusKey, refNo, StatusBadge, useWarehouseFormat, useWarehouseLookups, warehouseOptions,
 } from "@/components/features/warehouse/shared";
 
 const LIMIT = 20;
@@ -80,7 +80,7 @@ function PurchaseInvoicesContent() {
           value={status}
           onChange={(v) => { setStatus(v); setPage(1); }}
           allLabel={t("warehouse.shared.allStatuses")}
-          options={PURCHASE_INVOICE_STATUSES.map((s) => ({ value: s, label: t(`warehouse.statuses.${s}`) }))}
+          options={PURCHASE_INVOICE_STATUSES.map((s) => ({ value: s, label: t(purchaseInvoiceStatusKey(s)) }))}
           className="w-44"
         />
         <OptionSelect
@@ -146,7 +146,7 @@ function PurchaseInvoicesContent() {
                       {fmt.money(inv.total, inv.currency?.code ?? currencies.find((c) => c.id === inv.currencyId)?.code)}
                     </TableCell>
                   )}
-                  <TableCell><StatusBadge status={inv.status} /></TableCell>
+                  <TableCell><StatusBadge status={inv.status} label={t(purchaseInvoiceStatusKey(inv.status))} /></TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t("common.view")}>
                       <Eye className="h-3.5 w-3.5" />

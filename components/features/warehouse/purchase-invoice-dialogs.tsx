@@ -21,7 +21,8 @@ import { DiscountType } from "@/lib/api/warehouse-operations";
 import { filledLines, LineDraft, LineItemsEditor, newLine } from "./line-items-editor";
 import { applyDiscount, discountDto, DiscountFields, PricedLinesTable } from "./pricing";
 import {
-  DetailItem, DialogLoading, Field, FrozenWarehouseNotice, OptionSelect, ReasonDialog, refNo, SearchableOptionSelect,
+  DetailItem, DialogLoading, Field, FrozenWarehouseNotice, OptionSelect, purchaseInvoiceStatusKey, ReasonDialog, refNo,
+  SearchableOptionSelect,
   StatusBadge, toQty, useWarehouseFormat, useWarehouseLookups, warehouseOptions,
 } from "./shared";
 
@@ -207,7 +208,7 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
             <DialogTitle className="flex flex-wrap items-center gap-2">
               {t("warehouse.purchaseInvoices.detailsTitle")}
               {invoice && <span className="font-mono text-sm text-muted-foreground">#{refNo(invoice)}</span>}
-              {invoice && <StatusBadge status={invoice.status} />}
+              {invoice && <StatusBadge status={invoice.status} label={t(purchaseInvoiceStatusKey(invoice.status))} />}
             </DialogTitle>
           </DialogHeader>
 

@@ -106,11 +106,18 @@ const STATUS_TONE: Record<string, string> = {
   SUPERSEDED: "border-slate-300 bg-slate-100 text-slate-500",
 };
 
-export function StatusBadge({ status }: { status: string }) {
+/**
+ * A purchase invoice in DRAFT is no draft to the people handling it: the
+ * storekeeper has finished it and it waits on the finance manager.
+ */
+export const purchaseInvoiceStatusKey = (status: string) =>
+  status === "DRAFT" ? "warehouse.purchaseInvoices.pendingApproval" : `warehouse.statuses.${status}`;
+
+export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const t = useTranslations("warehouse.statuses");
   return (
     <Badge variant="outline" className={cn("whitespace-nowrap", STATUS_TONE[status])}>
-      {t.has(status) ? t(status) : status}
+      {label ?? (t.has(status) ? t(status) : status)}
     </Badge>
   );
 }

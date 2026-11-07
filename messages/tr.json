@@ -6159,6 +6159,7 @@
       "approveConfirmTitle": "Fatura mali olarak onaylansın mı?",
       "approveConfirmDescription": "Mali onay stoku değiştirmez — stoka işleme bundan sonraki ayrı bir adımdır.",
       "priceAndApprove": "Fiyatlandır ve onayla",
+      "pendingApproval": "Onay bekliyor",
       "pricingHint": "Her ürünün birim fiyatını girin. Miktarlar burada değişmez; onaydan sonra fatura deftere işlenmeye hazırdır.",
       "priceOptionalHint": "Birim fiyatları finans yöneticisi faturayı onaylarken belirler.",
       "postConfirmTitle": "Fatura stoka işlensin mi?",
