@@ -29,7 +29,7 @@ import { cn, formatClinicTime } from "@/lib/utils";
 import { useClinicAppointments, useClinicCalendar, useCreateAppointment, useCancelAppointment, useUpdateAppointmentStatus, useRescheduleAppointment, useUpdateAppointment, useInternalMeetings } from "@/lib/hooks/use-clinic-appointments";
 import {
   Appointment, AppointmentType, AppointmentStatus, InternalMeeting,
-  ALL_APPOINTMENT_TYPES, PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
+  ALL_APPOINTMENT_TYPES, APPOINTMENT_STATUSES, PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
   MEDICAL_ADMIN_APPOINTMENT_TYPES, PHYSIO_APPOINTMENT_TYPES,
   canModifyAppointment, canChangeAppointmentStatus,
 } from "@/lib/api/clinic-appointments";
@@ -52,6 +52,7 @@ const MEDICAL_ADMIN_DEPT_ALIAS = "المعاينات العظمية";
 
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
   SCHEDULED: "bg-blue-100 text-blue-800",
+  SCHEDULED_CONTACTED: "bg-blue-200 text-blue-900",
   CONFIRMED: "bg-green-100 text-green-800",
   COMPLETED: "bg-gray-100 text-gray-600",
   CANCELLED: "bg-red-100 text-red-700",
@@ -557,7 +558,7 @@ export default function AppointmentsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t("filter.allStatuses")}</SelectItem>
-            {(["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "APOLOGIZED", "NO_SHOW", "RESCHEDULED", "LATE"] as AppointmentStatus[]).map((s) => (
+            {APPOINTMENT_STATUSES.map((s) => (
               <SelectItem key={s} value={s}>{t(`statuses.${s}`)}</SelectItem>
             ))}
           </SelectContent>
@@ -844,7 +845,7 @@ export default function AppointmentsPage() {
                 >
                   <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "APOLOGIZED", "RESCHEDULED", "CANCELLED"] as AppointmentStatus[])
+                    {APPOINTMENT_STATUSES
                       // Cancelling and rescheduling stay with the appointment's owners;
                       // an additional therapist only marks attendance.
                       .filter((s) => s !== "CANCELLED" || (canCancelAppt && canModifyAppointment(detailAppt)))

@@ -195,7 +195,7 @@ export default function PatientProfilePage() {
       attended,
       noShow,
       cancelled,
-      upcoming: by("SCHEDULED") + by("CONFIRMED") + by("RESCHEDULED"),
+      upcoming: by("SCHEDULED") + by("SCHEDULED_CONTACTED") + by("CONFIRMED") + by("RESCHEDULED"),
       attendanceRate: settled ? Math.round((attended / settled) * 100) : null,
     };
   }, [appointments]);

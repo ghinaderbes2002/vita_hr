@@ -4,6 +4,7 @@
 // positioned blocks per column. Free gaps read at a glance, a live "now" line
 // marks the current time, overlapping bookings split side-by-side.
 import { useLocale, useTranslations } from "next-intl";
+import { UserCog } from "lucide-react";
 import { cn, formatClinicTime } from "@/lib/utils";
 import { Appointment, AppointmentStatus, InternalMeeting, InternalMeetingType } from "@/lib/api/clinic-appointments";
 
@@ -32,6 +33,7 @@ const slotLabel = (min: number) => {
 
 const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
   SCHEDULED:   { bar: "#3b82f6", cls: "bg-blue-50/90 dark:bg-blue-950/50 text-blue-950 dark:text-blue-100" },
+  SCHEDULED_CONTACTED: { bar: "#1d4ed8", cls: "bg-blue-100/90 dark:bg-blue-900/50 text-blue-950 dark:text-blue-100" },
   CONFIRMED:   { bar: "#22c55e", cls: "bg-emerald-50/90 dark:bg-emerald-950/50 text-emerald-950 dark:text-emerald-100" },
   COMPLETED:   { bar: "#6b7280", cls: "bg-gray-50/90 dark:bg-gray-900/50 text-gray-700 dark:text-gray-200" },
   CANCELLED:   { bar: "#ef4444", cls: "bg-red-50/80 dark:bg-red-950/40 text-red-800/70 dark:text-red-200/70" },
@@ -42,7 +44,7 @@ const STATUS_STYLE: Record<AppointmentStatus, { bar: string; cls: string }> = {
 };
 
 // Order shown in the colour legend.
-const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "APOLOGIZED", "NO_SHOW", "RESCHEDULED", "LATE"];
+const LEGEND_STATUSES: AppointmentStatus[] = ["SCHEDULED", "SCHEDULED_CONTACTED", "CONFIRMED", "COMPLETED", "CANCELLED", "APOLOGIZED", "NO_SHOW", "RESCHEDULED", "LATE"];
 
 // Staff meetings sit on the same axis as patient bookings, in colours no
 // appointment status uses, so the two never read as one another.
@@ -222,6 +224,13 @@ function Column({
               {a.isOpenEnded
                 ? <span className="opacity-70">→</span>
                 : height > 56 && a.endTime && <span className="opacity-70">— {fmtTime(a.endTime)}</span>}
+              {/* Booked by a therapist rather than a supervisor. Null (older
+                  bookings) is unknown, so it gets no mark either way. */}
+              {a.createdBySupervisor === false && (
+                <span className="ms-auto shrink-0" title={t("createdByTherapist")} aria-label={t("createdByTherapist")}>
+                  <UserCog className="h-3 w-3 opacity-80" />
+                </span>
+              )}
             </div>
             <div className={cn("truncate text-xs font-semibold leading-tight", cancelled && "line-through")}>
               {patientOf(a)}

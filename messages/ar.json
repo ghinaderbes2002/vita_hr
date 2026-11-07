@@ -6136,6 +6136,9 @@
         "allStatuses": "كل الحالات",
         "allDepartments": "كل الأقسام"
       },
+      "createdBy": "أُنشئ بواسطة",
+      "createdByTherapist": "أنشأه معالج",
+      "createdBySupervisor": "أنشأه مشرف المركز",
       "statuses": {
         "SCHEDULED": "مجدول",
         "CONFIRMED": "مؤكد",
@@ -6143,6 +6146,7 @@
         "CANCELLED": "ملغى",
         "NO_SHOW": "تغيّب",
         "APOLOGIZED": "اعتذر",
+        "SCHEDULED_CONTACTED": "مجدول + تم التواصل",
         "RESCHEDULED": "معاد جدولته",
       "LATE": "متأخر"
       },
@@ -6167,6 +6171,10 @@
         "endTime": "وقت النهاية",
         "openEnded": "نهاية مفتوحة",
         "openEndedHint": "الموعد يستمر حتى ينتهي المعالج. يُحجز 15 دقيقة فقط قبل الموعد التالي.",
+        "contactNumber": "رقم التواصل",
+        "contactNumberHint": "لمريض بلا ملف — يُحفظ مع الموعد",
+        "fromWaitingList": "حجز لسجل قائمة الانتظار: {name}. يتحول السجل إلى «تم الجدولة» عند إنشاء الموعد.",
+        "unlinkWaitingList": "إلغاء الربط",
         "notes": "ملاحظات",
         "cancel": "إلغاء",
         "saving": "جاري الحفظ...",

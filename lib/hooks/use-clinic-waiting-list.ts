@@ -63,6 +63,27 @@ export function useDeleteWaitingListEntry() {
   });
 }
 
+export function useWaitingListAppointmentMatches(id?: string | null) {
+  return useQuery({
+    queryKey: [KEY, "matches", id],
+    queryFn: () => clinicWaitingListApi.appointmentMatches(id!),
+    enabled: !!id,
+  });
+}
+
+export function useLinkWaitingListAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, appointmentId }: { id: string; appointmentId: string }) =>
+      clinicWaitingListApi.linkAppointment(id, appointmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KEY] });
+      toast.success("تم ربط السجل بالموعد");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الربط"),
+  });
+}
+
 /** Downloads the waiting list as Excel — under one status, or all when none is given. */
 export function useExportWaitingList() {
   return useMutation({

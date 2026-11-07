@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { AppointmentType } from "./clinic-appointments";
 
 /** How the person found the clinic. */
 export type WaitingArrivalMethod =
@@ -15,8 +16,10 @@ export interface WaitingListEntry {
   gender: WaitingGender;
   age?: number | null;
   arrivalMethod?: WaitingArrivalMethod | null;
-  /** Free text — the API deliberately keeps no fixed list of services. */
-  serviceType: string;
+  /** The service wanted, as one of the appointment types. Missing on older entries. */
+  appointmentType?: AppointmentType | null;
+  /** Free text from before appointmentType existed — kept only for older entries. */
+  serviceType?: string | null;
   contactNumber: string;
   /** 5 is the most urgent, 1 the least. */
   priority: number;
@@ -39,7 +42,10 @@ export interface CreateWaitingListDto {
   gender: WaitingGender;
   age?: number;
   arrivalMethod?: WaitingArrivalMethod;
-  serviceType: string;
+  /** What new entries send. */
+  appointmentType?: AppointmentType;
+  /** Legacy; new entries leave it out. */
+  serviceType?: string;
   contactNumber: string;
   priority: number;
   notes?: string;
@@ -54,12 +60,29 @@ export interface WaitingListParams {
   page?: number;
   limit?: number;
   status?: WaitingStatus;
+  appointmentType?: AppointmentType;
   /** Partial, case-insensitive match on name, contact number or service — over the whole list. */
   search?: string;
 }
 
 /** What narrows the export: the same filters the list screen shows. */
-export type WaitingListExportFilters = Pick<WaitingListParams, "status" | "search">;
+export type WaitingListExportFilters = Pick<WaitingListParams, "status" | "search" | "appointmentType">;
+
+/**
+ * An existing appointment that may be this entry's booking. Matching is by
+ * patient number or normalised name, so a candidate is a suggestion to confirm,
+ * never something to link without asking.
+ */
+export interface WaitingListAppointmentMatch {
+  id: string;
+  patientName: string;
+  date: string;
+  startTime: string;
+  appointmentType: AppointmentType;
+  practitioner?: string | null;
+  /** Same type as the entry. The server lists these first, then by nearest date. */
+  sameType: boolean;
+}
 
 const BASE = "/appointments/waiting-list";
 
@@ -83,6 +106,7 @@ export const clinicWaitingListApi = {
       params: {
         ...(filters?.status ? { status: filters.status } : {}),
         ...(filters?.search ? { search: filters.search } : {}),
+        ...(filters?.appointmentType ? { appointmentType: filters.appointmentType } : {}),
       },
       responseType: "blob",
     });
@@ -106,5 +130,21 @@ export const clinicWaitingListApi = {
 
   remove: async (id: string): Promise<void> => {
     await apiClient.delete(`${BASE}/${id}`);
+  },
+
+  /** Already ordered by the server: same type first, then nearest date. */
+  appointmentMatches: async (id: string): Promise<WaitingListAppointmentMatch[]> => {
+    const { data } = await apiClient.get(`${BASE}/${id}/appointment-matches`);
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  /**
+   * Links the entry to an existing appointment and turns it SCHEDULED. The
+   * server refuses (400) a cancelled appointment or one linked to another entry.
+   */
+  linkAppointment: async (id: string, appointmentId: string): Promise<WaitingListEntry> => {
+    const { data } = await apiClient.post(`${BASE}/${id}/link-appointment`, { appointmentId });
+    return data?.data ?? data;
   },
 };

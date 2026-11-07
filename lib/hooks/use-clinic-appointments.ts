@@ -50,6 +50,8 @@ export function useCreateAppointment() {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
       qc.invalidateQueries({ queryKey: ["my-appointments"] });
+      // Booking, cancelling or re-statusing can link or release a waiting-list entry.
+      qc.invalidateQueries({ queryKey: ["clinic-waiting-list"] });
       toast.success("تم حجز الموعد");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حجز الموعد"),
@@ -65,6 +67,8 @@ export function useUpdateAppointment() {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
       qc.invalidateQueries({ queryKey: ["my-appointments"] });
+      // Booking, cancelling or re-statusing can link or release a waiting-list entry.
+      qc.invalidateQueries({ queryKey: ["clinic-waiting-list"] });
       toast.success("تم تحديث الموعد");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل التحديث"),
@@ -80,6 +84,8 @@ export function useCancelAppointment() {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
       qc.invalidateQueries({ queryKey: ["my-appointments"] });
+      // Booking, cancelling or re-statusing can link or release a waiting-list entry.
+      qc.invalidateQueries({ queryKey: ["clinic-waiting-list"] });
       toast.success("تم إلغاء الموعد");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الإلغاء"),
@@ -95,6 +101,8 @@ export function useRescheduleAppointment() {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
       qc.invalidateQueries({ queryKey: ["my-appointments"] });
+      // Booking, cancelling or re-statusing can link or release a waiting-list entry.
+      qc.invalidateQueries({ queryKey: ["clinic-waiting-list"] });
       toast.success("تم إعادة جدولة الموعد");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إعادة الجدولة"),
@@ -110,6 +118,8 @@ export function useUpdateAppointmentStatus() {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });
       qc.invalidateQueries({ queryKey: ["my-appointments"] });
+      // Booking, cancelling or re-statusing can link or release a waiting-list entry.
+      qc.invalidateQueries({ queryKey: ["clinic-waiting-list"] });
       // Completing a prosthetics appointment stamps the exit time on its
       // follow-up session — server-side, a moment after this request answers.
       // The sessions are refetched now and once more shortly after, so the time

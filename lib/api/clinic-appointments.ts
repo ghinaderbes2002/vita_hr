@@ -1,7 +1,18 @@
 import { apiClient } from "./client";
 
-/** APOLOGIZED: the patient told the clinic ahead that they won't come — frees the slot like CANCELLED. */
-export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "APOLOGIZED" | "RESCHEDULED" | "LATE";
+/**
+ * APOLOGIZED: the patient told the clinic ahead that they won't come — frees the slot like CANCELLED.
+ * SCHEDULED_CONTACTED: booked, and the patient has been called about it.
+ */
+export type AppointmentStatus =
+  | "SCHEDULED" | "SCHEDULED_CONTACTED" | "CONFIRMED" | "COMPLETED" | "CANCELLED"
+  | "NO_SHOW" | "APOLOGIZED" | "RESCHEDULED" | "LATE";
+
+/** Every status, in the order the pickers and filters list them. */
+export const APPOINTMENT_STATUSES: AppointmentStatus[] = [
+  "SCHEDULED", "SCHEDULED_CONTACTED", "CONFIRMED", "COMPLETED", "LATE",
+  "NO_SHOW", "APOLOGIZED", "RESCHEDULED", "CANCELLED",
+];
 export type AppointmentType =
   // Prosthetics & Podiatry
   | "COMPANY_EXAMINATION" | "REFERRAL_EXAMINATION" | "TRIAL_DELIVERY" | "FINAL_DELIVERY"
@@ -91,6 +102,11 @@ export interface Appointment {
    * name, which has no patient record behind it.
    */
   phone?: string | null;
+  /**
+   * Whether a center supervisor booked it. False means a therapist did (and the
+   * supervisors were notified); null on appointments from before the field existed.
+   */
+  createdBySupervisor?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -127,6 +143,13 @@ export interface CreateAppointmentDto {
   notes?: string;
   /** Additional therapist user IDs; each is notified. Send [] to clear all. */
   therapistIds?: string[];
+  /**
+   * Books this appointment for a waiting-list entry: the entry turns SCHEDULED
+   * and is linked to it. Never inferred server-side — it has to be sent.
+   */
+  waitingListEntryId?: string;
+  /** Contact number for an unregistered patient (sent with patientName only). */
+  contactNumber?: string;
 }
 
 export interface RescheduleAppointmentDto {

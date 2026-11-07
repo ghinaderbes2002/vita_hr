@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { cn, formatClinicTime } from "@/lib/utils";
 import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment, useMyStaffMeetings } from "@/lib/hooks/use-clinic-appointments";
 import {
-  Appointment, AppointmentStatus, InternalMeeting, canChangeAppointmentStatus, canModifyAppointment,
+  APPOINTMENT_STATUSES, Appointment, AppointmentStatus, InternalMeeting, canChangeAppointmentStatus, canModifyAppointment,
 } from "@/lib/api/clinic-appointments";
 import { StaffMeetingDetailsDialog } from "@/components/clinic/staff-meeting-dialogs";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
@@ -36,6 +36,7 @@ const CLOSED_PHYSIO_STATUSES = ["COMPLETED", "DISCHARGED", "CANCELLED"];
 
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
   SCHEDULED: "bg-blue-100 text-blue-800",
+  SCHEDULED_CONTACTED: "bg-blue-200 text-blue-900",
   CONFIRMED: "bg-green-100 text-green-800",
   COMPLETED: "bg-gray-100 text-gray-600",
   CANCELLED: "bg-red-100 text-red-700",
@@ -45,10 +46,10 @@ const STATUS_COLOR: Record<AppointmentStatus, string> = {
   RESCHEDULED: "bg-purple-100 text-purple-800",
 };
 const STATUS_BAR: Record<AppointmentStatus, string> = {
-  SCHEDULED: "#3b82f6", CONFIRMED: "#22c55e", COMPLETED: "#6b7280",
+  SCHEDULED: "#3b82f6", SCHEDULED_CONTACTED: "#1d4ed8", CONFIRMED: "#22c55e", COMPLETED: "#6b7280",
   CANCELLED: "#ef4444", NO_SHOW: "#f97316", APOLOGIZED: "#0ea5e9", RESCHEDULED: "#a855f7", LATE: "#eab308",
 };
-const STATUS_ORDER: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED", "COMPLETED", "LATE", "NO_SHOW", "APOLOGIZED", "RESCHEDULED", "CANCELLED"];
+const STATUS_ORDER: AppointmentStatus[] = APPOINTMENT_STATUSES;
 
 const deptDot = (name: string) =>
   name.includes("العلاج الفيزيائي") ? "#10b981"
@@ -510,7 +511,7 @@ export default function MyAppointmentsPage() {
           )}
           {/* Actions, top to bottom: the next step, the status outcomes, then cancel. */}
           <div className="space-y-2">
-            {canChangeApptStatus && canChangeAppointmentStatus(detailAppt) && detailAppt?.status === "SCHEDULED" && (
+            {canChangeApptStatus && canChangeAppointmentStatus(detailAppt) && (detailAppt?.status === "SCHEDULED" || detailAppt?.status === "SCHEDULED_CONTACTED") && (
               <Button className="w-full gap-2" disabled={updateStatus.isPending}
                 onClick={() => { updateStatus.mutate({ id: detailAppt.id, status: "CONFIRMED" }); setDetailAppt(null); }}>
                 <Check className="h-4 w-4" />{t("actions.confirm")}

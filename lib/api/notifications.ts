@@ -47,7 +47,9 @@ export type NotificationType =
   | "CASE_ALERT_RESPONSE"
   | "INCOMPLETE_FORM_ALERT"
   // استبيان رضا مطلوب — لمندوبي المبيعات: { patientId, department, caseId }
-  | "PATIENT_SURVEY_REQUIRED";
+  | "PATIENT_SURVEY_REQUIRED"
+  // موعد أنشأه معالج (غير مشرف) — لمشرفي المركز: { appointmentId, link }
+  | "APPOINTMENT_CREATED_BY_THERAPIST";
 
 export interface Notification {
   id: string;

@@ -5974,6 +5974,9 @@
         "allStatuses": "All Statuses",
         "allDepartments": "All Departments"
       },
+      "createdBy": "Created by",
+      "createdByTherapist": "Created by a therapist",
+      "createdBySupervisor": "Created by a center supervisor",
       "statuses": {
         "SCHEDULED": "Scheduled",
         "CONFIRMED": "Confirmed",
@@ -5981,6 +5984,7 @@
         "CANCELLED": "Cancelled",
         "NO_SHOW": "No Show",
         "APOLOGIZED": "Apologized",
+        "SCHEDULED_CONTACTED": "Scheduled + Contacted",
         "RESCHEDULED": "Rescheduled",
       "LATE": "Late"
       },
@@ -6005,6 +6009,10 @@
         "endTime": "End Time",
         "openEnded": "Open-ended",
         "openEndedHint": "The visit runs until the practitioner is done. Only 15 minutes are held before the next slot.",
+        "contactNumber": "Contact number",
+        "contactNumberHint": "For a patient without a record — saved on the appointment",
+        "fromWaitingList": "Booking for waiting-list entry: {name}. The entry is marked scheduled once the appointment is created.",
+        "unlinkWaitingList": "Unlink",
         "notes": "Notes",
         "cancel": "Cancel",
         "saving": "Saving...",

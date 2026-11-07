@@ -5057,6 +5057,9 @@
         "allStatuses": "Tüm Durumlar",
         "allDepartments": "Tüm Bölümler"
       },
+      "createdBy": "Oluşturan",
+      "createdByTherapist": "Bir terapist oluşturdu",
+      "createdBySupervisor": "Merkez sorumlusu oluşturdu",
       "statuses": {
         "SCHEDULED": "Planlandı",
         "CONFIRMED": "Onaylandı",
@@ -5064,6 +5067,7 @@
         "CANCELLED": "İptal Edildi",
         "NO_SHOW": "Gelmedi",
         "APOLOGIZED": "Özür diledi",
+        "SCHEDULED_CONTACTED": "Planlandı + İletişime geçildi",
         "RESCHEDULED": "Yeniden Planlandı",
       "LATE": "Geç kaldı"
       },
@@ -5086,6 +5090,10 @@
         "endTime": "Bitiş Saati",
         "openEnded": "Açık uçlu",
         "openEndedHint": "Randevu, uygulayıcı bitirene kadar sürer. Sonraki randevudan önce yalnızca 15 dakika ayrılır.",
+        "contactNumber": "İletişim numarası",
+        "contactNumberHint": "Kaydı olmayan hasta için — randevuyla birlikte kaydedilir",
+        "fromWaitingList": "Bekleme listesi kaydı için randevu: {name}. Randevu oluşturulunca kayıt planlandı olarak işaretlenir.",
+        "unlinkWaitingList": "Bağlantıyı kaldır",
         "notes": "Notlar",
         "cancel": "İptal",
         "saving": "Kaydediliyor...",

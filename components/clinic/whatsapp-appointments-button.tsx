@@ -47,7 +47,7 @@ export function WhatsappAppointmentsButton({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return patientAppts
-      .filter((a) => a.id !== appointment.id && a.status === "SCHEDULED" && startOf(a) >= today.getTime())
+      .filter((a) => a.id !== appointment.id && (a.status === "SCHEDULED" || a.status === "SCHEDULED_CONTACTED") && startOf(a) >= today.getTime())
       .sort((a, b) => startOf(a) - startOf(b));
   }, [patientAppts, appointment.id]);
 
