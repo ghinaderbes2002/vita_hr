@@ -34,6 +34,7 @@ const isAssigned = (r: OrthoticsReception) => (r.practitionerIds ?? []).length >
 /** Job titles that oversee the whole caseload instead of just their own receptions — as on the prosthetics page. */
 const FULL_CASELOAD_JOB_CODES = [
   "VTX-JTL-000035", // رئيس قسم الأطراف الصناعية وطب الأقدام
+  "VTX-JTL-000034", // رئيس قسم العلاج الفيزيائي
   "VTX-JTL-000011", // مشرف المركز
   "VTX-JTL-000007", // المدير الطبي
   "VTX-JTL-000014", // مشرف المبيعات
