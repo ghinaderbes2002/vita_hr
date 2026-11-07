@@ -209,7 +209,7 @@ function InventoryCountBody({ count, onClose }: { count: InventoryCount; onClose
                 <DetailItem label={t("warehouse.shared.warehouse")}>
                   {warehouseName(count.warehouseId, count.warehouse)}
                 </DetailItem>
-                <DetailItem label={t("warehouse.shared.date")}>{fmt.dateTime(count.createdAt)}</DetailItem>
+                <DetailItem label={t("warehouse.shared.date")}>{fmt.dateTime(count.startedAt ?? count.createdAt)}</DetailItem>
                 {count.completedAt && (
                   <DetailItem label={t("warehouse.counts.completedAt")}>{fmt.dateTime(count.completedAt)}</DetailItem>
                 )}

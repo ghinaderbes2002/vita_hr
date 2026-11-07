@@ -52,6 +52,13 @@ export function useWarehouseLookups() {
 }
 
 /** Quantities, amounts and dates, formatted for the active locale. */
+/**
+ * Keeps a date in its own left-to-right order inside right-to-left text. The
+ * Arabic formatter puts right-to-left marks between "07", "11" and "2026", and
+ * those marks reorder the parts even inside an isolate, so they are dropped first.
+ */
+const ltr = (s: string) => `\u2066${s.replace(/[\u200e\u200f\u061c]/g, "")}\u2069`;
+
 export function useWarehouseFormat() {
   const format = useFormatter();
   const num = (v: unknown, max: number) =>
@@ -62,9 +69,11 @@ export function useWarehouseFormat() {
       const s = num(v, 2);
       return s === "—" || !currencyCode ? s : `${s} ${currencyCode}`;
     },
-    date: (v?: string | null) => (v ? format.dateTime(new Date(v), { dateStyle: "medium" }) : "—"),
+    // Wrapped in a left-to-right isolate: inside Arabic text the browser would
+    // otherwise reorder "07/11/2026" into "072026/11/".
+    date: (v?: string | null) => (v ? ltr(format.dateTime(new Date(v), { dateStyle: "medium" })) : "—"),
     dateTime: (v?: string | null) =>
-      v ? format.dateTime(new Date(v), { dateStyle: "medium", timeStyle: "short" }) : "—",
+      v ? ltr(format.dateTime(new Date(v), { dateStyle: "medium", timeStyle: "short" })) : "—",
   };
 }
 

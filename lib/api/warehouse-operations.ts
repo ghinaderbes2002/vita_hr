@@ -295,7 +295,9 @@ export interface InventoryCount {
   status: InventoryCountStatus;
   notes?: string | null;
   items?: InventoryCountLine[];
-  createdAt: string;
+  /** When the count was opened. Older responses only carried createdAt. */
+  startedAt?: string | null;
+  createdAt?: string;
   completedAt?: string | null;
 }
 

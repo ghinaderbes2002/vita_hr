@@ -111,7 +111,7 @@ function InventoryCountsContent() {
               counts.map((c) => (
                 <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailsId(c.id)}>
                   <TableCell className="font-mono text-sm">{refNo(c)}</TableCell>
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{fmt.dateTime(c.createdAt)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{fmt.dateTime(c.startedAt ?? c.createdAt)}</TableCell>
                   <TableCell className="font-medium">{warehouseName(c.warehouseId, c.warehouse)}</TableCell>
                   <TableCell className="max-w-56 truncate text-sm text-muted-foreground">{c.notes || "—"}</TableCell>
                   <TableCell><StatusBadge status={c.status} /></TableCell>
