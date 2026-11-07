@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -15,6 +16,12 @@ import {
 import {
   WaitingArrivalMethod, WaitingListEntry, WaitingStatus,
 } from "@/lib/api/clinic-waiting-list";
+import { ALL_APPOINTMENT_TYPES, type AppointmentType } from "@/lib/api/clinic-appointments";
+
+/** The retired types stay readable on old records but are not offered for new ones. */
+export const WAITING_APPOINTMENT_TYPES = ALL_APPOINTMENT_TYPES.filter(
+  (t) => !["FITTING", "COMMITTEE", "EXAMINATION"].includes(t),
+);
 
 const ARRIVAL_METHODS: { value: WaitingArrivalMethod; label: string }[] = [
   { value: "SOCIAL_MEDIA", label: "مواقع التواصل" },
@@ -48,7 +55,7 @@ const emptyForm = {
   gender: "" as "" | "MALE" | "FEMALE",
   age: "",
   arrivalMethod: NONE,
-  serviceType: "",
+  appointmentType: "" as AppointmentType | "",
   contactNumber: "",
   priority: "3",
   notes: "",
@@ -69,8 +76,12 @@ export function WaitingListDialog({
   onSubmit: (dto: Record<string, any>) => void;
   isPending?: boolean;
 }) {
+  const tAppt = useTranslations("clinic.appointments");
   const [form, setForm] = useState(emptyForm);
   const isEdit = !!entry;
+  // An entry from before appointmentType existed carries only free text. It
+  // stays valid as it is; picking a type replaces it from then on.
+  const legacyService = !entry?.appointmentType ? entry?.serviceType?.trim() || "" : "";
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
 
   // Load the record on open, and clear it again for the next "add".
@@ -82,7 +93,7 @@ export function WaitingListDialog({
           gender: entry.gender,
           age: entry.age != null ? String(entry.age) : "",
           arrivalMethod: entry.arrivalMethod ?? NONE,
-          serviceType: entry.serviceType ?? "",
+          appointmentType: entry.appointmentType ?? "",
           contactNumber: entry.contactNumber ?? "",
           priority: String(entry.priority ?? 3),
           notes: entry.notes ?? "",
@@ -92,7 +103,7 @@ export function WaitingListDialog({
   }, [open, entry]);
 
   const missing =
-    !form.patientName.trim() || !form.gender || !form.serviceType.trim() ||
+    !form.patientName.trim() || !form.gender || (!form.appointmentType && !legacyService) ||
     !form.contactNumber.trim() || !form.priority;
 
   const handleSubmit = () => {
@@ -104,7 +115,8 @@ export function WaitingListDialog({
       // An unparseable age is dropped rather than sent as NaN.
       ...(age != null && !Number.isNaN(age) ? { age } : {}),
       ...(form.arrivalMethod !== NONE ? { arrivalMethod: form.arrivalMethod } : {}),
-      serviceType: form.serviceType.trim(),
+      // New entries send the type only; an untouched legacy entry keeps its serviceType.
+      ...(form.appointmentType ? { appointmentType: form.appointmentType } : {}),
       contactNumber: form.contactNumber.trim(),
       priority: Number(form.priority),
       ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
@@ -163,8 +175,26 @@ export function WaitingListDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>الخدمة المطلوبة <span className="text-destructive">*</span></Label>
-              <Input value={form.serviceType} onChange={(e) => set({ serviceType: e.target.value })}
-                placeholder="مثال: علاج فيزيائي" />
+              <Select value={form.appointmentType || undefined}
+                onValueChange={(v) => set({ appointmentType: v as AppointmentType })}>
+                <SelectTrigger className="w-full min-w-0 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate">
+                  <SelectValue placeholder="اختر نوع الموعد..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* A retired type already on the record stays selectable. */}
+                  {(form.appointmentType && !WAITING_APPOINTMENT_TYPES.includes(form.appointmentType)
+                    ? [form.appointmentType, ...WAITING_APPOINTMENT_TYPES]
+                    : WAITING_APPOINTMENT_TYPES
+                  ).map((k) => (
+                    <SelectItem key={k} value={k}>{tAppt(`types.${k}`)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {legacyService && !form.appointmentType && (
+                <p className="text-xs text-muted-foreground">
+                  الخدمة المسجّلة سابقاً: <span className="font-medium text-foreground">{legacyService}</span>
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>رقم التواصل <span className="text-destructive">*</span></Label>

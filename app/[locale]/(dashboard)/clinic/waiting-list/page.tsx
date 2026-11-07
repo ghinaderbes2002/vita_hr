@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Pencil, Trash2, ListOrdered, Users, Download, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { Plus, Search, Pencil, Trash2, ListOrdered, Users, Download, Loader2, Link2, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +20,10 @@ import { Pagination } from "@/components/shared/pagination";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
-import { WaitingListDialog, WAITING_STATUSES } from "@/components/clinic/waiting-list-dialog";
+import { WaitingListDialog, WAITING_STATUSES, WAITING_APPOINTMENT_TYPES } from "@/components/clinic/waiting-list-dialog";
+import { WaitingListLinkDialog } from "@/components/clinic/waiting-list-link-dialog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import type { AppointmentType } from "@/lib/api/clinic-appointments";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import {
   useWaitingList, useCreateWaitingListEntry, useUpdateWaitingListEntry,
@@ -53,6 +58,19 @@ const priorityStyle = (p: number) =>
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
 export default function WaitingListPage() {
+  const router = useRouter();
+  const locale = useLocale();
+  const tAppt = useTranslations("clinic.appointments");
+  const { hasPermission, isAdmin } = usePermissions();
+  const canLink = isAdmin() || hasPermission(PERMISSIONS.CLINIC_WAITING_LIST.EDIT);
+  const canBook = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.CREATE);
+  const [linkFor, setLinkFor] = useState<WaitingListEntry | null>(null);
+  // The appointments page opens its booking form prefilled from the entry and
+  // sends waitingListEntryId, which is what links the two.
+  const bookFor = (entry: WaitingListEntry) =>
+    router.push(`/${locale}/clinic/appointments?waitingListEntryId=${encodeURIComponent(entry.id)}`);
+  const serviceOf = (e: WaitingListEntry) =>
+    e.appointmentType ? tAppt(`types.${e.appointmentType}`) : e.serviceType || "—";
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   // The search runs on the server, so it waits for the typing to pause.
@@ -66,6 +84,7 @@ export default function WaitingListPage() {
   }, [search]);
   // تفتح الصفحة على من ينتظرون فعلاً؛ "جميع الحالات" تبقى خياراً في القائمة.
   const [statusFilter, setStatusFilter] = useState<WaitingStatus | "all">("WAITING");
+  const [typeFilter, setTypeFilter] = useState<AppointmentType | "all">("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<WaitingListEntry | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -74,6 +93,7 @@ export default function WaitingListPage() {
     page,
     limit: LIMIT,
     status: statusFilter !== "all" ? statusFilter : undefined,
+    appointmentType: typeFilter !== "all" ? typeFilter : undefined,
     search: term || undefined,
   });
 
@@ -118,6 +138,7 @@ export default function WaitingListPage() {
               variant="outline" className="gap-2" disabled={exportXlsx.isPending}
               onClick={() => exportXlsx.mutate({
                 status: statusFilter !== "all" ? statusFilter : undefined,
+                appointmentType: typeFilter !== "all" ? typeFilter : undefined,
                 search: term || undefined,
               })}
             >
@@ -155,6 +176,17 @@ export default function WaitingListPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as AppointmentType | "all"); setPage(1); }}>
+          <SelectTrigger className="w-56 *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">جميع الخدمات</SelectItem>
+            {WAITING_APPOINTMENT_TYPES.map((k) => (
+              <SelectItem key={k} value={k}>{tAppt(`types.${k}`)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-md border">
@@ -170,7 +202,7 @@ export default function WaitingListPage() {
               <TableHead>طريقة الوصول</TableHead>
               <TableHead>تاريخ التسجيل</TableHead>
               <TableHead>الحالة</TableHead>
-              <TableHead className="w-20" />
+              <TableHead className="w-28" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -203,7 +235,7 @@ export default function WaitingListPage() {
                   <TableCell className="font-medium">{e.patientName}</TableCell>
                   <TableCell className="text-sm">{e.gender === "FEMALE" ? "أنثى" : "ذكر"}</TableCell>
                   <TableCell className="text-sm">{e.age ?? "—"}</TableCell>
-                  <TableCell className="text-sm">{e.serviceType}</TableCell>
+                  <TableCell className="text-sm">{serviceOf(e)}</TableCell>
                   <TableCell className="text-sm font-mono" dir="ltr">{e.contactNumber}</TableCell>
                   <TableCell className="text-sm">
                     {e.arrivalMethod ? ARRIVAL_LABEL[e.arrivalMethod] ?? e.arrivalMethod : "—"}
@@ -218,6 +250,19 @@ export default function WaitingListPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      {/* Only a waiting entry needs a booking; a scheduled one is already linked. */}
+                      {e.status === "WAITING" && canLink && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="ربط بموعد موجود"
+                          aria-label="ربط بموعد موجود" onClick={() => setLinkFor(e)}>
+                          <Link2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {e.status === "WAITING" && canBook && !canLink && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="حجز موعد"
+                          aria-label="حجز موعد" onClick={() => bookFor(e)}>
+                          <CalendarPlus className="h-4 w-4" />
+                        </Button>
+                      )}
                       <ActionGuard permission={PERMISSIONS.CLINIC_WAITING_LIST.EDIT}>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(e)}>
                           <Pencil className="h-4 w-4" />
@@ -248,6 +293,12 @@ export default function WaitingListPage() {
         entry={editing}
         onSubmit={handleSubmit}
         isPending={createEntry.isPending || updateEntry.isPending}
+      />
+
+      <WaitingListLinkDialog
+        entry={linkFor}
+        onClose={() => setLinkFor(null)}
+        onBookNew={canBook ? (entry) => { setLinkFor(null); bookFor(entry); } : undefined}
       />
 
       <ConfirmDialog

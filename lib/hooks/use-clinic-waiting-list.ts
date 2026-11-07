@@ -80,7 +80,8 @@ export function useLinkWaitingListAppointment() {
       qc.invalidateQueries({ queryKey: [KEY] });
       toast.success("تم ربط السجل بالموعد");
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الربط"),
+    onError: (e: { response?: { data?: { message?: string } } }) =>
+      toast.error(e?.response?.data?.message || "فشل الربط"),
   });
 }
 

@@ -4,7 +4,7 @@ import { useState, useMemo, type ReactNode } from "react";
 import { formatClockTime } from "@/lib/utils/date";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight, Plus, X, Loader2, UserRound, Search, Pencil, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Loader2, UserRound, Search, Pencil, Users, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +34,7 @@ import {
   canModifyAppointment, canChangeAppointmentStatus,
 } from "@/lib/api/clinic-appointments";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
+import { useWaitingListEntry } from "@/lib/hooks/use-clinic-waiting-list";
 import { useProstheticsCasesByPatient } from "@/lib/hooks/use-clinic-prosthetics";
 import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
@@ -230,6 +231,15 @@ export default function AppointmentsPage() {
   // A walk-in who has no patient record yet: the name rides along on the
   // appointment itself, so nothing is written to the patients list.
   const [unregisteredName, setUnregisteredName] = useState("");
+  // Only sent for an unregistered patient — a registered one has their number on file.
+  const [walkInContact, setWalkInContact] = useState("");
+  // Booking for a waiting-list entry, opened from the waiting list as
+  // ?waitingListEntryId=… . The server links the entry only when this is sent.
+  // Read once on arrival; window.location avoids a Suspense boundary for useSearchParams.
+  const [waitingEntryId, setWaitingEntryId] = useState(() =>
+    typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("waitingListEntryId") ?? "",
+  );
+  const { data: waitingEntry } = useWaitingListEntry(waitingEntryId);
   const [newForm, setNewForm] = useState({
     patientId: "",
     appointmentType: "ASSESSMENT" as AppointmentType,
@@ -239,6 +249,30 @@ export default function AppointmentsPage() {
     isOpenEnded: false,
   });
   const allowedTypes = typesForDepartment(newForm.departmentId);
+
+  // Once the entry loads, book it under its own name, number and service — once
+  // per entry, adjusted during render rather than in an effect.
+  const [prefilledFor, setPrefilledFor] = useState("");
+  if (waitingEntry && waitingEntry.id === waitingEntryId && prefilledFor !== waitingEntryId) {
+    setPrefilledFor(waitingEntryId);
+    setNewForm((f) => ({ ...f, patientId: "", ...(waitingEntry.appointmentType ? { appointmentType: waitingEntry.appointmentType } : {}) }));
+    setSelectedPatientLabel("");
+    setSelectedPatientPhone("");
+    setPatientSearch("");
+    setUnregisteredName(waitingEntry.patientName ?? "");
+    setWalkInContact(waitingEntry.contactNumber ?? "");
+    setConflict(null);
+    setNewApptOpen(true);
+  }
+  // Dropping the link also drops it from the address, so a reload doesn't bring it back.
+  const clearWaitingEntry = () => {
+    setWaitingEntryId("");
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("waitingListEntryId")) {
+      url.searchParams.delete("waitingListEntryId");
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
 
   // Calendar range: first and last day of viewed month
   const from = toISO(startOfMonth(viewYear, viewMonth));
@@ -412,7 +446,10 @@ export default function AppointmentsPage() {
     setConflict(null);
     try {
     await createAppt.mutateAsync({
-      ...(newForm.patientId ? { patientId: newForm.patientId } : { patientName: walkIn }),
+      ...(newForm.patientId
+        ? { patientId: newForm.patientId }
+        : { patientName: walkIn, ...(walkInContact.trim() ? { contactNumber: walkInContact.trim() } : {}) }),
+      ...(waitingEntryId ? { waitingListEntryId: waitingEntryId } : {}),
       practitionerId: (myEmployee as any)?.userId ?? "",
       appointmentType: newForm.appointmentType,
       departmentId: newForm.departmentId || undefined,
@@ -439,7 +476,7 @@ export default function AppointmentsPage() {
     // Offer to send the patient their confirmation while the details are still to hand.
     setWhatsappPrompt({
       name: selectedPatientLabel || walkIn,
-      phone: selectedPatientPhone,
+      phone: selectedPatientPhone || (newForm.patientId ? "" : walkInContact.trim()),
       date: new Date(startISO).toLocaleDateString(locale, {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
       }),
@@ -449,6 +486,8 @@ export default function AppointmentsPage() {
     setSelectedPatientLabel("");
     setSelectedPatientPhone("");
     setUnregisteredName("");
+    setWalkInContact("");
+    clearWaitingEntry();
     setNewForm({ patientId: "", appointmentType: "ASSESSMENT", departmentId: "", therapistIds: [], date: toISO(today), startTime: "10:00", endTime: "10:30", notes: "", isOpenEnded: false });
   };
 
@@ -798,6 +837,10 @@ export default function AppointmentsPage() {
             if (detailAppt.status === "CANCELLED" && (detailAppt.cancelReason || detailAppt.cancelledReason)) {
               rows.push(["سبب الإلغاء", detailAppt.cancelReason ?? detailAppt.cancelledReason ?? "—"]);
             }
+            // Unknown (null) on bookings from before the server recorded it.
+            if (detailAppt.createdBySupervisor != null) {
+              rows.push([t("createdBy"), detailAppt.createdBySupervisor ? t("createdBySupervisor") : t("createdByTherapist")]);
+            }
             rows.push(["تاريخ الإنشاء", detailAppt.createdAt ? new Date(detailAppt.createdAt).toLocaleString("en-GB", { hour12: true }) : "—"]);
             return (
               <dl className="divide-y text-sm">
@@ -1100,12 +1143,30 @@ export default function AppointmentsPage() {
       </Dialog>
 
       {/* New appointment dialog */}
-      <Dialog open={newApptOpen} onOpenChange={setNewApptOpen}>
+      <Dialog
+        open={newApptOpen}
+        onOpenChange={(o) => {
+          setNewApptOpen(o);
+          // The link belongs to this one booking; closing the form abandons it.
+          if (!o && waitingEntryId) clearWaitingEntry();
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{t("form.title")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {waitingEntryId && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950/40">
+                <ListOrdered className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+                <p className="flex-1 text-amber-900 dark:text-amber-200">
+                  {t("form.fromWaitingList", { name: waitingEntry?.patientName ?? "…" })}
+                </p>
+                <Button type="button" variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-xs" onClick={clearWaitingEntry}>
+                  {t("form.unlinkWaitingList")}
+                </Button>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>{t("form.patient")} <span className="text-destructive">*</span></Label>
               <div className="relative">
@@ -1119,6 +1180,7 @@ export default function AppointmentsPage() {
                     setSelectedPatientLabel("");
                     setSelectedPatientPhone("");
                     setUnregisteredName("");
+                    setWalkInContact("");
                     setPatientPopoverOpen(true);
                   }}
                   onFocus={() => setPatientPopoverOpen(true)}
@@ -1145,6 +1207,7 @@ export default function AppointmentsPage() {
                         setSelectedPatientLabel("");
                         setSelectedPatientPhone("");
                         setUnregisteredName("");
+                        setWalkInContact("");
                         setPatientSearch("");
                         setNewForm((f) => ({ ...f, patientId: "" }));
                       }}
@@ -1206,6 +1269,13 @@ export default function AppointmentsPage() {
                 )}
               </div>
             </div>
+            {!newForm.patientId && unregisteredName && (
+              <div className="space-y-1.5">
+                <Label>{t("form.contactNumber")}</Label>
+                <Input dir="ltr" value={walkInContact} onChange={(e) => setWalkInContact(e.target.value)} placeholder="09xxxxxxxx" />
+                <p className="text-xs text-muted-foreground">{t("form.contactNumberHint")}</p>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 min-w-0">
                 <Label>{t("form.appointmentType")}</Label>
