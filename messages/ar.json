@@ -1400,6 +1400,13 @@
     "permissionsCount": "صلاحية",
     "selectAll": "اختيار الكل",
     "deselectAll": "إلغاء تحديد الكل",
+    "copyFrom": "نسخ الصلاحيات من دور",
+    "copyFromPlaceholder": "اختر دوراً...",
+    "copy": "نسخ",
+    "excludePayroll": "بدون صلاحيات الرواتب (الرواتب، السلف، العمولات)",
+    "copiedToast": "تم نسخ {count} صلاحية — راجعها ثم اضغط حفظ",
+    "copiedExcluded": "تم نسخ {count} صلاحية واستُثنيت {excluded} من صلاحيات الرواتب — راجعها ثم اضغط حفظ",
+    "copyFailed": "تعذّر جلب صلاحيات الدور",
     "fields": {
       "name": "الاسم",
       "displayNameAr": "الاسم بالعربية",

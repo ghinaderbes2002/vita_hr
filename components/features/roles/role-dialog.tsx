@@ -23,10 +23,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCreateRole, useUpdateRolePermissions, usePermissions, useRole, useUpdateRole } from "@/lib/hooks/use-roles";
+import { useCreateRole, useUpdateRolePermissions, usePermissions, useRole, useRoles, useUpdateRole } from "@/lib/hooks/use-roles";
+import { rolesApi } from "@/lib/api/roles";
 import { Role } from "@/types";
-import { ChevronDown, Loader2, Search } from "lucide-react";
+import { ChevronDown, Copy, Loader2, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+
+/**
+ * Anything about pay: payroll, salary advances, commissions, wages. Matched by
+ * name so permissions the backend adds later under the same words are caught too.
+ */
+const isPayrollPermission = (name?: string) => !!name && /payroll|salar|commission|wage/i.test(name);
 
 const formSchema = z.object({
   name: z.string().min(2, "الاسم مطلوب"),
@@ -77,6 +86,13 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
   const permissions = useMemo(() => permissionsData ?? [], [permissionsData]);
 
+  // Copy another role's permissions into this form — it only fills the
+  // checkboxes; nothing is saved until the user presses save.
+  const { data: allRoles = [] } = useRoles();
+  const [copySourceId, setCopySourceId] = useState("");
+  const [excludePayroll, setExcludePayroll] = useState(true);
+  const [copying, setCopying] = useState(false);
+
   // الباك يرجّع صلاحيات الدور أحياناً كـ objects وأحياناً كأسماء نصية (نفس الحالة
   // المعالَجة في auth-store). بدون التطبيع كان `p.id` يساوي undefined فتتحول إلى
   // null داخل الـ payload ويرفضها التحقق كـ UUID.
@@ -99,6 +115,30 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
         return p?.name ? idByName.get(p.name) : undefined;
       })
       .filter(isUuid);
+  };
+
+  const nameById = useMemo(() => new Map(permissions.map((p) => [p.id, p.name])), [permissions]);
+
+  // Replaces the current selection with the source role's, minus pay if asked.
+  const copyFromRole = async () => {
+    if (!copySourceId) return;
+    setCopying(true);
+    try {
+      const source = await rolesApi.getById(copySourceId);
+      const ids = toPermissionIds(source?.permissions);
+      const kept = excludePayroll ? ids.filter((id) => !isPayrollPermission(nameById.get(id))) : ids;
+      form.setValue("permissionIds", kept, { shouldDirty: true });
+      const excluded = ids.length - kept.length;
+      toast.success(
+        excluded > 0
+          ? t("roles.copiedExcluded", { count: kept.length, excluded })
+          : t("roles.copiedToast", { count: kept.length }),
+      );
+    } catch {
+      toast.error(t("roles.copyFailed"));
+    } finally {
+      setCopying(false);
+    }
   };
 
   const form = useForm<FormData>({
@@ -294,6 +334,40 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
                 return (
                   <FormItem>
+                    <div className="space-y-2 rounded-md border border-dashed p-3">
+                      <p className="text-sm font-medium">{t("roles.copyFrom")}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select value={copySourceId} onValueChange={setCopySourceId}>
+                          <SelectTrigger className="h-9 min-w-48 flex-1">
+                            <SelectValue placeholder={t("roles.copyFromPlaceholder")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allRoles
+                              .filter((r) => r.id !== role?.id)
+                              .map((r) => (
+                                <SelectItem key={r.id} value={r.id}>
+                                  {(locale === "ar" ? r.displayNameAr : r.displayNameEn) || r.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 gap-1.5"
+                          disabled={!copySourceId || copying || permissions.length === 0}
+                          onClick={copyFromRole}
+                        >
+                          {copying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+                          {t("roles.copy")}
+                        </Button>
+                      </div>
+                      <label className="flex cursor-pointer items-center gap-2 text-sm">
+                        <Checkbox checked={excludePayroll} onCheckedChange={(v) => setExcludePayroll(v === true)} />
+                        {t("roles.excludePayroll")}
+                      </label>
+                    </div>
                     <div className="flex flex-wrap gap-2 items-center justify-between">
                       <FormLabel>{t("roles.fields.permissions")}</FormLabel>
                       <div className="flex gap-2">

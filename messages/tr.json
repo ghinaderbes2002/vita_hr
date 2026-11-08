@@ -536,6 +536,13 @@
     "permissionsCount": "izin",
     "selectAll": "Tümünü Seç",
     "deselectAll": "Tüm Seçimi Kaldır",
+    "copyFrom": "Bir rolden yetkileri kopyala",
+    "copyFromPlaceholder": "Rol seçin...",
+    "copy": "Kopyala",
+    "excludePayroll": "Bordro yetkileri hariç (bordro, avanslar, komisyonlar)",
+    "copiedToast": "{count} yetki kopyalandı — gözden geçirip kaydedin",
+    "copiedExcluded": "{count} yetki kopyalandı, {excluded} bordro yetkisi hariç tutuldu — gözden geçirip kaydedin",
+    "copyFailed": "Rolün yetkileri yüklenemedi",
     "fields": {
       "name": "İsim",
       "displayNameAr": "Arapça Görünen İsim",

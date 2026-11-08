@@ -536,6 +536,13 @@
     "permissionsCount": "permissions",
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
+    "copyFrom": "Copy permissions from a role",
+    "copyFromPlaceholder": "Choose a role...",
+    "copy": "Copy",
+    "excludePayroll": "Without payroll permissions (payroll, advances, commissions)",
+    "copiedToast": "Copied {count} permissions — review them, then save",
+    "copiedExcluded": "Copied {count} permissions, leaving out {excluded} payroll ones — review them, then save",
+    "copyFailed": "Couldn't load the role's permissions",
     "fields": {
       "name": "Name",
       "displayNameAr": "Arabic Display Name",
