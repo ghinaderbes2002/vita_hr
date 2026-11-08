@@ -177,7 +177,12 @@ export interface PurchaseInvoice {
   supplier?: Pick<WarehouseSupplier, "id" | "name"> | null;
   warehouseId: string;
   warehouse?: WarehouseRef | null;
-  currencyId: string;
+  /**
+   * Currency, discount and exchange rate are all set by the finance manager on
+   * approval, so they are null until then. subtotal/total stay 0 (not null)
+   * until the invoice is priced; the base-currency totals stay null.
+   */
+  currencyId?: string | null;
   currency?: Pick<WarehouseCurrency, "id" | "code" | "name"> | null;
   invoiceDate?: string | null;
   status: PurchaseInvoiceStatus;
@@ -185,23 +190,37 @@ export interface PurchaseInvoice {
   discountValue?: Dec | null;
   subtotal?: Dec;
   total?: Dec;
-  exchangeRate?: Dec;
+  /** The currency's latest rate at the moment of approval. */
+  exchangeRate?: Dec | null;
+  subtotalBase?: Dec | null;
+  totalBase?: Dec | null;
   notes?: string | null;
   rejectionReason?: string | null;
   items: PurchaseInvoiceLine[];
   createdAt: string;
 }
 
+/**
+ * What the storekeeper records: items and quantities. Currency, discount and
+ * prices are the finance manager's, set on approval.
+ */
 export interface CreatePurchaseInvoiceDto {
   supplierId: string;
   warehouseId: string;
-  currencyId: string;
   invoiceDate?: string;
+  notes?: string;
+  items: { itemId: string; qty: number }[];
+}
+
+/** Financial approval: prices every item, and sets the currency and discount. */
+export interface ApprovePurchaseInvoiceDto {
+  /** Required while the invoice has no currency — which, today, is always. */
+  currencyId?: string;
+  /** Left out, the invoice ends up with no discount at all (nothing is kept). */
   discountType?: DiscountType;
   discountValue?: number;
-  notes?: string;
-  /** unitPrice is optional: the finance manager prices the invoice on approval. */
-  items: { itemId: string; qty: number; unitPrice?: number }[];
+  /** One price per item, covering every line of the invoice. */
+  items: { itemId: string; unitPrice: number }[];
 }
 
 // ── Transfers ──
@@ -530,14 +549,11 @@ export const warehouseOpsApi = {
 
   // Financial approval only — stock is untouched until the invoice is posted.
   /**
-   * The finance manager prices every line and approves in one step. `items` must
-   * cover each line of the invoice exactly; without it the invoice is approved
-   * as priced, which the API refuses while any line is still at zero.
+   * The finance manager prices every line, picks the currency and the discount,
+   * and approves in one step. The exchange rate is taken at this moment.
    */
-  approvePurchaseInvoice: async (
-    id: string, items?: { itemId: string; unitPrice: number }[],
-  ): Promise<PurchaseInvoice> => {
-    const { data } = await apiClient.post(`${base}/purchase-invoices/${id}/approve`, items ? { items } : undefined);
+  approvePurchaseInvoice: async (id: string, dto: ApprovePurchaseInvoiceDto): Promise<PurchaseInvoice> => {
+    const { data } = await apiClient.post(`${base}/purchase-invoices/${id}/approve`, dto);
     return unwrap(data);
   },
 

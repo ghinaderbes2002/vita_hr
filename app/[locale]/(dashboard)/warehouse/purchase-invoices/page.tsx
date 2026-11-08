@@ -143,7 +143,10 @@ function PurchaseInvoicesContent() {
                   <TableCell className="text-sm">{warehouseName(inv.warehouseId, inv.warehouse)}</TableCell>
                   {showTotals && (
                     <TableCell className="font-medium">
-                      {fmt.money(inv.total, inv.currency?.code ?? currencies.find((c) => c.id === inv.currencyId)?.code)}
+                      {/* No currency means not priced yet: the 0 total is not a real amount. */}
+                      {inv.currencyId
+                        ? fmt.money(inv.total, inv.currency?.code ?? currencies.find((c) => c.id === inv.currencyId)?.code)
+                        : "—"}
                     </TableCell>
                   )}
                   <TableCell><StatusBadge status={inv.status} label={t(purchaseInvoiceStatusKey(inv.status))} /></TableCell>

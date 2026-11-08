@@ -47,22 +47,18 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
   const t = useTranslations();
   const { warehouses, items } = useWarehouseLookups();
   const { data: suppliers = [] } = useWarehouseSuppliers();
-  const { data: currencies = [] } = useWarehouseCurrencies();
   const create = useCreatePurchaseInvoice();
 
   const [supplierId, setSupplierId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
-  const [currencyId, setCurrencyId] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [discountType, setDiscountType] = useState<DiscountType | "">("");
-  const [discountValue, setDiscountValue] = useState("");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<LineDraft[]>(() => [newLine()]);
 
-  // The storekeeper records items and quantities only: the finance manager prices
-  // the invoice when approving it, so no price is ever sent from here.
+  // The storekeeper records items and quantities only: the finance manager sets
+  // the currency, prices and discount when approving, so none is sent from here.
   const valid = filledLines(lines);
-  const canSubmit = !!supplierId && !!warehouseId && !!currencyId && valid.length > 0;
+  const canSubmit = !!supplierId && !!warehouseId && valid.length > 0;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -70,9 +66,7 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
       await create.mutateAsync({
         supplierId,
         warehouseId,
-        currencyId,
         ...(invoiceDate ? { invoiceDate } : {}),
-        ...discountDto(discountType, discountValue),
         ...(notes.trim() ? { notes: notes.trim() } : {}),
         items: valid.map((l) => ({ itemId: l.itemId, qty: toQty(l.qty)! })),
       });
@@ -107,14 +101,6 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
                 options={warehouseOptions(warehouses, true)}
               />
             </Field>
-            <Field label={t("warehouse.shared.currency")} required>
-              <OptionSelect
-                value={currencyId}
-                onChange={setCurrencyId}
-                placeholder={t("warehouse.shared.selectCurrency")}
-                options={currencies.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
-              />
-            </Field>
             <Field label={t("warehouse.purchaseInvoices.invoiceDate")}>
               <Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
             </Field>
@@ -125,15 +111,7 @@ function PurchaseInvoiceCreateForm({ onDone }: { onDone: () => void }) {
             <LineItemsEditor lines={lines} onChange={setLines} items={items} withPrice priceLocked allowCreateItem />
           </Field>
 
-          {/* No total here: nothing is priced until the finance manager approves. */}
-          <Field label={t("warehouse.shared.discount")}>
-            <DiscountFields
-              type={discountType}
-              value={discountValue}
-              onChange={(type, value) => { setDiscountType(type); setDiscountValue(value); }}
-            />
-          </Field>
-
+          {/* No currency, discount or total here: all of it is set on approval. */}
           <Field label={t("warehouse.shared.notes")}>
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </Field>
@@ -171,6 +149,11 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
   // Pricing happens on approval. One price per item, as the API takes it; a
   // price already on the invoice is offered as the starting value.
   const [pricing, setPricing] = useState<Record<string, string> | null>(null);
+  // Currency and discount are chosen here too. Whatever is on the invoice is the
+  // starting value; a discount left empty means none, as the server keeps nothing.
+  const [approveCurrencyId, setApproveCurrencyId] = useState("");
+  const [discountType, setDiscountType] = useState<DiscountType | "">("");
+  const [discountValue, setDiscountValue] = useState("");
   const openPricing = () => {
     if (!invoice) return;
     const start: Record<string, string> = {};
@@ -178,17 +161,26 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
       if (start[l.itemId] === undefined) start[l.itemId] = Number(l.unitPrice) > 0 ? String(Number(l.unitPrice)) : "";
     });
     setPricing(start);
+    setApproveCurrencyId(invoice.currencyId ?? "");
+    setDiscountType(invoice.discountType ?? "");
+    setDiscountValue(invoice.discountValue != null && Number(invoice.discountValue) > 0 ? String(Number(invoice.discountValue)) : "");
   };
   const pricedSubtotal = invoice && pricing
     ? invoice.items.reduce((sum, l) => sum + Number(l.qty) * (Number(pricing[l.itemId]) || 0), 0)
     : 0;
-  const pricingComplete = !!pricing && Object.values(pricing).every((v) => v.trim() !== "" && Number(v) > 0);
+  const pricingComplete = !!pricing && !!approveCurrencyId &&
+    Object.values(pricing).every((v) => v.trim() !== "" && Number(v) > 0);
+  const approveCurrencyCode = currencies.find((c) => c.id === approveCurrencyId)?.code;
   const submitPricing = async () => {
     if (!invoice || !pricing || !pricingComplete) return;
     try {
       await approve.mutateAsync({
         id: invoice.id,
-        items: Object.entries(pricing).map(([itemId, v]) => ({ itemId, unitPrice: Number(v) })),
+        dto: {
+          currencyId: approveCurrencyId,
+          ...discountDto(discountType, discountValue),
+          items: Object.entries(pricing).map(([itemId, v]) => ({ itemId, unitPrice: Number(v) })),
+        },
       });
       setPricing(null);
     } catch {
@@ -199,6 +191,9 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
   const currencyCode = invoice
     ? invoice.currency?.code ?? currencies.find((c) => c.id === invoice.currencyId)?.code
     : undefined;
+  // Until approval there is no currency, and subtotal/total come back as 0:
+  // shown as "not priced yet" rather than as a real zero.
+  const priced = !!invoice?.currencyId;
 
   return (
     <>
@@ -230,7 +225,7 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
                   {fmt.date(invoice.invoiceDate ?? invoice.createdAt)}
                 </DetailItem>
                 <DetailItem label={t("warehouse.shared.currency")}>{currencyCode ?? "—"}</DetailItem>
-                {invoice.exchangeRate !== undefined && (
+                {invoice.exchangeRate != null && (
                   <DetailItem label={t("warehouse.shared.exchangeRate")}>{fmt.qty(invoice.exchangeRate)}</DetailItem>
                 )}
                 {invoice.notes && <DetailItem label={t("warehouse.shared.notes")}>{invoice.notes}</DetailItem>}
@@ -239,20 +234,25 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
                 )}
               </div>
 
+              {!priced && (
+                <p className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  {t("warehouse.purchaseInvoices.notPriced")}
+                </p>
+              )}
               <PricedLinesTable
                 lines={invoice.items.map((l, i) => ({
                   key: l.id ?? `${l.itemId}-${i}`,
                   name: itemName(l.itemId, l.item),
                   sub: itemSku(l.itemId, l.item),
                   qty: Number(l.qty),
-                  unitPrice: l.unitPrice,
-                  lineTotal: l.lineTotal,
+                  unitPrice: priced ? l.unitPrice : undefined,
+                  lineTotal: priced ? l.lineTotal : undefined,
                 }))}
                 currencyCode={currencyCode}
-                subtotal={invoice.subtotal}
+                subtotal={priced ? invoice.subtotal : undefined}
                 discountType={invoice.discountType}
                 discountValue={invoice.discountValue}
-                total={invoice.total}
+                total={priced ? invoice.total : undefined}
               />
             </div>
           )}
@@ -295,6 +295,15 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
           <p className="text-sm text-muted-foreground">{t("warehouse.purchaseInvoices.pricingHint")}</p>
           {invoice && pricing && (
             <div className="space-y-3">
+              <Field label={t("warehouse.shared.currency")} required>
+                <OptionSelect
+                  value={approveCurrencyId}
+                  onChange={setApproveCurrencyId}
+                  placeholder={t("warehouse.shared.selectCurrency")}
+                  options={currencies.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
+                />
+                <p className="text-xs text-muted-foreground">{t("warehouse.purchaseInvoices.exchangeRateHint")}</p>
+              </Field>
               <div className="rounded-md border divide-y">
                 {invoice.items.map((l, i) => (
                   <div key={l.id ?? `${l.itemId}-${i}`} className="flex flex-wrap items-center gap-3 p-3">
@@ -315,15 +324,23 @@ export function PurchaseInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
                       onChange={(e) => setPricing((p) => p && ({ ...p, [l.itemId]: e.target.value }))}
                     />
                     <span className="w-28 text-end text-sm tabular-nums">
-                      {fmt.money(Number(l.qty) * (Number(pricing[l.itemId]) || 0), currencyCode)}
+                      {fmt.money(Number(l.qty) * (Number(pricing[l.itemId]) || 0), approveCurrencyCode)}
                     </span>
                   </div>
                 ))}
               </div>
+              <Field label={t("warehouse.shared.discount")}>
+                <DiscountFields
+                  type={discountType}
+                  value={discountValue}
+                  onChange={(type, value) => { setDiscountType(type); setDiscountValue(value); }}
+                />
+                <p className="text-xs text-muted-foreground">{t("warehouse.purchaseInvoices.noDiscountHint")}</p>
+              </Field>
               <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm">
                 <span className="text-muted-foreground">{t("warehouse.shared.total")}</span>
                 <span className="font-semibold tabular-nums">
-                  {fmt.money(applyDiscount(pricedSubtotal, invoice.discountType, invoice.discountValue), currencyCode)}
+                  {fmt.money(applyDiscount(pricedSubtotal, discountType, discountValue), approveCurrencyCode)}
                 </span>
               </div>
             </div>

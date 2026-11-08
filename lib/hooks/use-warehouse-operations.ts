@@ -8,6 +8,7 @@ import {
   CreateMaterialRequestDto,
   MaterialRequestStatus,
   CreatePurchaseInvoiceDto,
+  ApprovePurchaseInvoiceDto,
   PurchaseInvoiceStatus,
   CreateTransferDto,
   StockTransferStatus,
@@ -192,8 +193,8 @@ export function useCreatePurchaseInvoice() {
 
 export function useApprovePurchaseInvoice() {
   return useOpMutation(
-    ({ id, items }: { id: string; items?: { itemId: string; unitPrice: number }[] }) =>
-      warehouseOpsApi.approvePurchaseInvoice(id, items),
+    ({ id, dto }: { id: string; dto: ApprovePurchaseInvoiceDto }) =>
+      warehouseOpsApi.approvePurchaseInvoice(id, dto),
     [K.purchaseInvoices],
     "approved",
   );
