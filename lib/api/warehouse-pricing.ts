@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import type { Paginated, PageParams } from "./warehouse-operations";
 
 /** Which purchase price a part's selling price is built on. */
 export type PriceBasis = "LAST_PURCHASE" | "HIGHEST_PURCHASE";
@@ -8,39 +7,34 @@ export type PriceBasis = "LAST_PURCHASE" | "HIGHEST_PURCHASE";
 export type ProfitType = "FIXED" | "PERCENT";
 
 /**
- * A prosthetics part (any item with a partCode, bought or not) and how it is
- * priced: basis + fixed amount + profit, the last two added together.
+ * The one pricing rule for every prosthetics part (any item with a partCode).
+ * A quotation line for a part is priced as: that part's own last or highest
+ * purchase price + markupAmount + profit. A part never bought has no basis and
+ * is priced by hand.
  */
-export interface ProstheticPartPricing {
-  itemId: string;
-  sku?: string | null;
-  partCode?: string | null;
-  name?: string | null;
-  nameAr?: string | null;
-  /** From posted purchase invoices; null for a part never bought. */
-  lastPurchasePrice: number | null;
-  highestPurchasePrice: number | null;
+export interface ProstheticsPricingSettings {
+  /** null while the settings were never saved. */
+  id: string | null;
   priceBasis: PriceBasis;
-  /** The fixed amount; 0 until one is set. */
+  /** The fixed amount; added together with the profit, not instead of it. */
   markupAmount: number;
   /** null = no profit on top. */
   profitType: ProfitType | null;
   /** A percentage for PERCENT, an amount for FIXED. */
   profitValue: number | null;
-  /** basis + markupAmount + profit; null while there is no basis (never bought). */
-  finalPrice: number | null;
+  updatedByUserId?: string | null;
+  updatedAt?: string | null;
 }
 
-export interface SetProstheticPricingDto {
+export interface SaveProstheticsPricingSettingsDto {
   /** Required, ≥ 0. */
   markupAmount: number;
-  /** Left out, the saved basis stays (LAST_PURCHASE the first time). */
   priceBasis?: PriceBasis;
   profitType?: ProfitType;
   profitValue?: number;
 }
 
-/** The same sum the server does, for a live preview: basis + fixed amount + profit. */
+/** The same sum the server does, for a worked example: basis + fixed amount + profit. */
 export function computeFinalPrice(
   basis: number | null, markupAmount: number, profitType: ProfitType | null, profitValue: number | null,
 ): number | null {
@@ -50,40 +44,29 @@ export function computeFinalPrice(
   return basis + markupAmount + profit;
 }
 
-const BASE = "/warehouse/pricing/prosthetics";
+const URL = "/warehouse/pricing/prosthetics/settings";
 
 const num = (v: unknown): number | null => (v == null || v === "" || Number.isNaN(Number(v)) ? null : Number(v));
 
 /** Decimals may come back as strings; everything numeric is read as a number. */
-const normalize = (p: ProstheticPartPricing): ProstheticPartPricing => ({
-  ...p,
-  lastPurchasePrice: num(p.lastPurchasePrice),
-  highestPurchasePrice: num(p.highestPurchasePrice),
-  markupAmount: num(p.markupAmount) ?? 0,
-  profitType: p.profitType ?? null,
-  profitValue: num(p.profitValue),
-  finalPrice: num(p.finalPrice),
-  priceBasis: p.priceBasis ?? "LAST_PURCHASE",
+const normalize = (s: Partial<ProstheticsPricingSettings> | null | undefined): ProstheticsPricingSettings => ({
+  id: s?.id ?? null,
+  priceBasis: s?.priceBasis ?? "LAST_PURCHASE",
+  markupAmount: num(s?.markupAmount) ?? 0,
+  profitType: s?.profitType ?? null,
+  profitValue: num(s?.profitValue),
+  updatedByUserId: s?.updatedByUserId ?? null,
+  updatedAt: s?.updatedAt ?? null,
 });
 
 export const warehousePricingApi = {
-  listProsthetics: async (
-    params?: PageParams & { search?: string },
-  ): Promise<Paginated<ProstheticPartPricing>> => {
-    const { data } = await apiClient.get(BASE, { params });
-    const d = data?.data ?? data;
-    const items: ProstheticPartPricing[] = (d?.items ?? (Array.isArray(d) ? d : [])).map(normalize);
-    return {
-      items,
-      page: d?.page ?? 1,
-      limit: d?.limit ?? items.length,
-      total: d?.total ?? items.length,
-      totalPages: d?.totalPages ?? 1,
-    };
+  getProstheticsSettings: async (): Promise<ProstheticsPricingSettings> => {
+    const { data } = await apiClient.get(URL);
+    return normalize(data?.data ?? data);
   },
 
-  setProsthetic: async (itemId: string, dto: SetProstheticPricingDto): Promise<ProstheticPartPricing> => {
-    const { data } = await apiClient.put(`${BASE}/${itemId}`, dto);
+  saveProstheticsSettings: async (dto: SaveProstheticsPricingSettingsDto): Promise<ProstheticsPricingSettings> => {
+    const { data } = await apiClient.put(URL, dto);
     return normalize(data?.data ?? data);
   },
 };

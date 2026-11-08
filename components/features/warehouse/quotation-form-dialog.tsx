@@ -11,9 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useWarehouseCurrencies } from "@/lib/hooks/use-warehouse";
-import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useProstheticsPricingMap } from "@/lib/hooks/use-warehouse-pricing";
-import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useCreateQuotation, useUpdateQuotation } from "@/lib/hooks/use-warehouse-operations";
 import {
   DiscountType, Quotation, QUOTATION_LINE_TYPES, QuotationItemInput, QuotationLineType,
@@ -59,41 +56,25 @@ export const quotationLinesFrom = (quotation: Quotation): QuotationLineDraft[] =
     unitPrice: l.unitPrice != null ? String(Number(l.unitPrice)) : "",
   }));
 
-/**
- * A line's total, or undefined while it can't be worked out. `autoPrice` is the
- * part's price from prosthetics pricing, which wins over anything typed.
- */
-export function lineAmount(l: QuotationLineDraft, autoPrice?: number | null): number | undefined {
+/** A line's total, or undefined while it can't be worked out (no price yet). */
+export function lineAmount(l: QuotationLineDraft): number | undefined {
   const qty = toQty(l.qty);
   if (qty === undefined) return undefined;
-  if (autoPrice != null) return qty * autoPrice;
   if (l.unitPrice.trim() === "" || Number(l.unitPrice) < 0) return undefined;
   return qty * Number(l.unitPrice);
 }
 
 /**
- * Prosthetics pricing as the quotation forms need it: which ITEM lines the
- * server prices itself, and at what. Without the pricing view permission
- * there is no list to look in, so an ITEM line's price simply becomes optional
- * and the server decides.
+ * Which ITEM lines are prosthetics parts (items with a partCode). The server
+ * prices a part itself from part pricing settings — basis + fixed amount +
+ * profit — so its price may be left blank. Only a part never bought has no
+ * basis; that one needs a typed price, and the server says so if it is missing.
  */
-export function useAutoPricing() {
-  const { hasPermission, isAdmin } = usePermissions();
-  const canSee = isAdmin() || hasPermission(PERMISSIONS.WAREHOUSE_PRICING_PROSTHETICS.VIEW);
-  const { data: map } = useProstheticsPricingMap(canSee);
-  /** The auto price for a line, or null when it is not auto-priced (or unknown). */
-  const autoPriceOf = (l: Pick<QuotationLineDraft, "lineType" | "itemId">): number | null => {
-    if (l.lineType !== "ITEM" || !l.itemId) return null;
-    const p = map?.get(l.itemId);
-    return p ? p.finalPrice ?? null : null;
-  };
-  // A part never bought has no basis, so no final price: it is priced by hand.
-  const isAutoPriced = (l: Pick<QuotationLineDraft, "lineType" | "itemId">) =>
-    l.lineType === "ITEM" && !!l.itemId && map?.get(l.itemId)?.finalPrice != null;
-  /** May the price be left blank? Auto-priced parts, and ITEM lines when we can't tell. */
-  const priceOptional = (l: Pick<QuotationLineDraft, "lineType" | "itemId">) =>
-    isAutoPriced(l) || (!canSee && l.lineType === "ITEM");
-  return { canSee, autoPriceOf, isAutoPriced, priceOptional };
+export function usePartLines() {
+  const { items } = useWarehouseLookups();
+  const isPart = (l: Pick<QuotationLineDraft, "lineType" | "itemId">) =>
+    l.lineType === "ITEM" && !!l.itemId && !!items.find((i) => i.id === l.itemId)?.partCode;
+  return { isPart };
 }
 
 interface QuotationFormDialogProps {
@@ -144,14 +125,14 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
   const updateLine = (key: string, patch: Partial<QuotationLineDraft>) =>
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
-  const { autoPriceOf, isAutoPriced, priceOptional } = useAutoPricing();
+  const { isPart } = usePartLines();
   const priceGiven = (l: QuotationLineDraft) => l.unitPrice.trim() !== "" && Number(l.unitPrice) >= 0;
   const isComplete = (l: QuotationLineDraft) =>
     toQty(l.qty) !== undefined && l.description.trim() !== "" && (l.lineType !== "ITEM" || !!l.itemId) &&
-    (priceGiven(l) || priceOptional(l));
+    (priceGiven(l) || isPart(l));
 
   const canSubmit = !!clientId && !!currencyId && lines.length > 0 && lines.every(isComplete);
-  const amounts = lines.map((l) => lineAmount(l, autoPriceOf(l)));
+  const amounts = lines.map((l) => lineAmount(l));
   // A blank price the server will fill in leaves the total unknown until saved.
   const totalKnown = amounts.every((a) => a !== undefined);
   const subtotal = amounts.reduce<number>((sum, a) => sum + (a ?? 0), 0);
@@ -170,9 +151,9 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
         ...(l.lineType === "ITEM" ? { itemId: l.itemId } : {}),
         description: l.description.trim(),
         qty: toQty(l.qty)!,
-        // An auto-priced part sends no price (the server would ignore it); a
-        // blank one is left for the server to price or refuse.
-        ...(!isAutoPriced(l) && priceGiven(l) ? { unitPrice: Number(l.unitPrice) } : {}),
+        // A typed price is always sent: the server ignores it for a part it can
+        // price and uses it for one never bought. A blank part price is left to it.
+        ...(priceGiven(l) ? { unitPrice: Number(l.unitPrice) } : {}),
       })),
     };
     try {
@@ -294,30 +275,22 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
                       placeholder={t("warehouse.shared.quantity")}
                       aria-label={t("warehouse.shared.quantity")}
                     />
-                    {isAutoPriced(line) ? (
-                      // Priced by the server from part pricing settings; shown, not typed.
-                      <div
-                        className="flex h-9 w-28 items-center gap-1 rounded-md border border-dashed bg-muted/40 px-2 text-sm"
-                        title={t("warehouse.quotations.autoPriceHint")}
-                      >
-                        <span className="tabular-nums">{fmt.money(autoPriceOf(line))}</span>
-                      </div>
-                    ) : (
-                      <Input
-                        type="number" min={0} step="any" className="w-28"
-                        value={line.unitPrice}
-                        onChange={(e) => updateLine(line.key, { unitPrice: e.target.value })}
-                        placeholder={t("warehouse.shared.unitPrice")}
-                        aria-label={t("warehouse.shared.unitPrice")}
-                      />
-                    )}
-                    {isAutoPriced(line) && (
+                    <Input
+                      type="number" min={0} step="any" className="w-28"
+                      value={line.unitPrice}
+                      onChange={(e) => updateLine(line.key, { unitPrice: e.target.value })}
+                      // A part left blank is priced by the server from part pricing settings.
+                      placeholder={isPart(line) ? t("warehouse.quotations.autoPrice") : t("warehouse.shared.unitPrice")}
+                      aria-label={t("warehouse.shared.unitPrice")}
+                      title={isPart(line) ? t("warehouse.quotations.autoPriceHint") : undefined}
+                    />
+                    {isPart(line) && (
                       <Badge variant="outline" className="text-[10px]" title={t("warehouse.quotations.autoPriceHint")}>
                         {t("warehouse.quotations.autoPrice")}
                       </Badge>
                     )}
                     <span className="ms-auto text-sm font-medium">
-                      {fmt.money(lineAmount(line, autoPriceOf(line)), currencyCode)}
+                      {lineAmount(line) !== undefined ? fmt.money(lineAmount(line), currencyCode) : isPart(line) ? t("warehouse.quotations.autoPrice") : "—"}
                     </span>
                   </div>
                 </div>

@@ -20,7 +20,7 @@ import { DiscountType, Quotation } from "@/lib/api/warehouse-operations";
 import { ClientName } from "./patient-combobox";
 import { applyDiscount, discountDto, DiscountFields, PricedLinesTable } from "./pricing";
 import {
-  lineAmount, QuotationFormDialog, QuotationLineDraft, quotationLinesFrom, useAutoPricing,
+  lineAmount, QuotationFormDialog, QuotationLineDraft, quotationLinesFrom, usePartLines,
 } from "./quotation-form-dialog";
 import {
   DetailItem, DialogLoading, Field, ReasonDialog, refNo, StatusBadge,
@@ -335,14 +335,11 @@ function AdjustPricesForm({ quotation, currencyCode, onDone }: SubFormProps & { 
   const updateLine = (key: string, patch: Partial<QuotationLineDraft>) =>
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
-  // A part priced from part pricing settings isn't priced by hand here either:
-  // its line is left out of the request, which keeps its price as it is.
-  const { autoPriceOf, isAutoPriced } = useAutoPricing();
-  const canSubmit = lines.every((l) => isAutoPriced(l) || lineAmount(l) !== undefined);
-  const total = applyDiscount(
-    lines.reduce((sum, l) => sum + (lineAmount(l, autoPriceOf(l)) ?? 0), 0),
-    discountType, discountValue,
-  );
+  // A part (item with a partCode) may be left blank: the server prices it from
+  // part pricing settings. A blank line is left out of the request.
+  const { isPart } = usePartLines();
+  const canSubmit = lines.every((l) => isPart(l) || lineAmount(l) !== undefined);
+  const total = applyDiscount(lines.reduce((sum, l) => sum + (lineAmount(l) ?? 0), 0), discountType, discountValue);
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -352,7 +349,7 @@ function AdjustPricesForm({ quotation, currencyCode, onDone }: SubFormProps & { 
         dto: {
           ...discountDto(discountType, discountValue),
           // Keyed by the quotation line's own id.
-          items: lines.filter((l) => l.id && !isAutoPriced(l)).map((l) => ({
+          items: lines.filter((l) => l.id && lineAmount(l) !== undefined).map((l) => ({
             quotationItemId: l.id!,
             unitPrice: Number(l.unitPrice),
           })),
@@ -379,22 +376,15 @@ function AdjustPricesForm({ quotation, currencyCode, onDone }: SubFormProps & { 
                     {t("warehouse.shared.quantity")}: {fmt.qty(line.qty)}
                   </p>
                 </div>
-                {isAutoPriced(line) ? (
-                  <div
-                    className="flex h-9 w-28 items-center rounded-md border border-dashed bg-muted/40 px-2 text-sm tabular-nums"
-                    title={t("warehouse.quotations.autoPriceHint")}
-                  >
-                    {fmt.money(autoPriceOf(line))}
-                  </div>
-                ) : (
-                  <Input
-                    type="number" min={0} step="any" className="w-28"
-                    value={line.unitPrice}
-                    onChange={(e) => updateLine(line.key, { unitPrice: e.target.value })}
-                    aria-label={t("warehouse.shared.unitPrice")}
-                  />
-                )}
-                {isAutoPriced(line) && (
+                <Input
+                  type="number" min={0} step="any" className="w-28"
+                  value={line.unitPrice}
+                  onChange={(e) => updateLine(line.key, { unitPrice: e.target.value })}
+                  placeholder={isPart(line) ? t("warehouse.quotations.autoPrice") : undefined}
+                  aria-label={t("warehouse.shared.unitPrice")}
+                  title={isPart(line) ? t("warehouse.quotations.autoPriceHint") : undefined}
+                />
+                {isPart(line) && (
                   <span className="text-xs text-muted-foreground">{t("warehouse.quotations.autoPrice")}</span>
                 )}
               </div>
