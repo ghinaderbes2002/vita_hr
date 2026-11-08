@@ -13,7 +13,7 @@ import { useWarehouseCurrencies } from "@/lib/hooks/use-warehouse";
 import {
   useApproveSalesInvoice, useCancelSalesInvoice, useSalesInvoice,
 } from "@/lib/hooks/use-warehouse-operations";
-import { PatientName } from "./patient-combobox";
+import { ClientName } from "./patient-combobox";
 import { PricedLinesTable } from "./pricing";
 import {
   DetailItem, DialogLoading, refNo, StatusBadge, useWarehouseFormat, useWarehouseLookups,
@@ -56,8 +56,8 @@ export function SalesInvoiceDetailsDialog({ id, onClose }: DetailsProps) {
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <DetailItem label={t("warehouse.shared.patient")}>
-                  <PatientName patientId={invoice.patientId} />
+                <DetailItem label={t(invoice.customerId || invoice.customer ? "warehouse.shared.clientCustomer" : "warehouse.shared.patient")}>
+                  <ClientName patientId={invoice.patientId} customerId={invoice.customerId} customer={invoice.customer} />
                 </DetailItem>
                 <DetailItem label={t("warehouse.shared.date")}>{fmt.date(invoice.createdAt)}</DetailItem>
                 <DetailItem label={t("warehouse.shared.currency")}>{currencyCode ?? "—"}</DetailItem>

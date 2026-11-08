@@ -17,7 +17,7 @@ import {
   useNewQuotationVersion, useQuotation, useRejectQuotation, useSendQuotation,
 } from "@/lib/hooks/use-warehouse-operations";
 import { DiscountType, Quotation } from "@/lib/api/warehouse-operations";
-import { PatientName } from "./patient-combobox";
+import { ClientName } from "./patient-combobox";
 import { applyDiscount, discountDto, DiscountFields, PricedLinesTable } from "./pricing";
 import {
   lineAmount, QuotationFormDialog, QuotationLineDraft, quotationLinesFrom,
@@ -100,8 +100,8 @@ export function QuotationDetailsDialog({ id, onClose, onNavigate }: DetailsProps
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <DetailItem label={t("warehouse.shared.patient")}>
-                  <PatientName patientId={quotation.patientId} />
+                <DetailItem label={t(quotation.customerId || quotation.customer ? "warehouse.shared.clientCustomer" : "warehouse.shared.patient")}>
+                  <ClientName patientId={quotation.patientId} customerId={quotation.customerId} customer={quotation.customer} />
                 </DetailItem>
                 <DetailItem label={t("warehouse.shared.date")}>{fmt.date(quotation.createdAt)}</DetailItem>
                 <DetailItem label={t("warehouse.quotations.validUntil")}>{fmt.date(quotation.validUntil)}</DetailItem>

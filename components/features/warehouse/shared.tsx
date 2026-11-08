@@ -102,6 +102,7 @@ const STATUS_TONE: Record<string, string> = {
   COMPLETED: "border-green-300 bg-green-50 text-green-700",
   ACCEPTED: "border-green-300 bg-green-50 text-green-700",
   REJECTED: "border-red-300 bg-red-50 text-red-700",
+  CANCEL_REQUESTED: "border-orange-300 bg-orange-50 text-orange-700",
   CANCELLED: "border-slate-300 bg-slate-100 text-slate-500",
   SUPERSEDED: "border-slate-300 bg-slate-100 text-slate-500",
 };
@@ -267,11 +268,17 @@ interface ReasonDialogProps {
   confirmText?: string;
   isPending?: boolean;
   onConfirm: (reason: string) => void;
+  /** What happens next, under the title. */
+  hint?: ReactNode;
+  /** A consequence worth stopping for, shown in amber. */
+  warning?: ReactNode;
+  /** The last refusal, kept on screen rather than only in a passing toast. */
+  error?: string | null;
 }
 
 /** Confirmation that collects an optional free-text reason (reject flows). */
 export function ReasonDialog({
-  open, onOpenChange, title, label, confirmText, isPending, onConfirm,
+  open, onOpenChange, title, label, confirmText, isPending, onConfirm, hint, warning, error,
 }: ReasonDialogProps) {
   const t = useTranslations();
   const [reason, setReason] = useState("");
@@ -282,6 +289,18 @@ export function ReasonDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
+        {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
+        {warning && (
+          <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{warning}</p>
+          </div>
+        )}
+        {error && (
+          <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         <Field label={label ?? t("warehouse.shared.reasonOptional")}>
           <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>

@@ -147,6 +147,11 @@ function PurchaseInvoicesContent() {
                       {inv.currencyId
                         ? fmt.money(inv.total, inv.currency?.code ?? currencies.find((c) => c.id === inv.currencyId)?.code)
                         : "—"}
+                      {/* The dollar figure frozen at approval, for invoices in another currency. */}
+                      {inv.totalUSD != null &&
+                        (inv.currency?.code ?? currencies.find((c) => c.id === inv.currencyId)?.code)?.toUpperCase() !== "USD" && (
+                          <p className="text-xs font-normal text-muted-foreground">≈ {fmt.money(inv.totalUSD, "USD")}</p>
+                        )}
                     </TableCell>
                   )}
                   <TableCell><StatusBadge status={inv.status} label={t(purchaseInvoiceStatusKey(inv.status))} /></TableCell>

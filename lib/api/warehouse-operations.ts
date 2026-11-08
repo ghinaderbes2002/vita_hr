@@ -11,7 +11,8 @@ export type MovementType =
 export type MaterialRequestStatus =
   | "SUBMITTED" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED"
   | "PARTIALLY_ISSUED" | "ISSUED" | "CANCELLED";
-export type PurchaseInvoiceStatus = "DRAFT" | "APPROVED" | "POSTED" | "REJECTED" | "CANCELLED";
+/** CANCEL_REQUESTED: the warehouse manager asked to cancel; the finance manager decides. */
+export type PurchaseInvoiceStatus = "DRAFT" | "APPROVED" | "POSTED" | "CANCEL_REQUESTED" | "REJECTED" | "CANCELLED";
 export type DiscountType = "PERCENT" | "FIXED";
 export type StockTransferStatus = "IN_TRANSIT" | "COMPLETED" | "CANCELLED";
 export type ReturnType = "PURCHASE_RETURN" | "SALES_RETURN" | "ISSUE_RETURN" | "PRODUCTION_RETURN";
@@ -25,7 +26,7 @@ export type SalesInvoiceStatus = "DRAFT" | "APPROVED" | "CANCELLED";
 export const MATERIAL_REQUEST_STATUSES: MaterialRequestStatus[] = [
   "SUBMITTED", "APPROVED", "PARTIALLY_APPROVED", "REJECTED", "PARTIALLY_ISSUED", "ISSUED", "CANCELLED",
 ];
-export const PURCHASE_INVOICE_STATUSES: PurchaseInvoiceStatus[] = ["DRAFT", "APPROVED", "POSTED", "REJECTED", "CANCELLED"];
+export const PURCHASE_INVOICE_STATUSES: PurchaseInvoiceStatus[] = ["DRAFT", "APPROVED", "POSTED", "CANCEL_REQUESTED", "REJECTED", "CANCELLED"];
 export const TRANSFER_STATUSES: StockTransferStatus[] = ["IN_TRANSIT", "COMPLETED", "CANCELLED"];
 export const RETURN_TYPES: ReturnType[] = ["PURCHASE_RETURN", "SALES_RETURN", "ISSUE_RETURN", "PRODUCTION_RETURN"];
 export const RETURN_CONDITIONS: ReturnCondition[] = ["GOOD", "DAMAGED", "INSPECT"];
@@ -190,12 +191,33 @@ export interface PurchaseInvoice {
   discountValue?: Dec | null;
   subtotal?: Dec;
   total?: Dec;
-  /** The currency's latest rate at the moment of approval. */
+  /** The currency's rate against the base currency, from the general table, at approval. */
   exchangeRate?: Dec | null;
+  /**
+   * Units of the invoice currency per 1 USD actually used for this invoice: the
+   * rate typed in on approval, else the latest general one. Null before approval.
+   */
+  usdExchangeRate?: Dec | null;
   subtotalBase?: Dec | null;
   totalBase?: Dec | null;
+  /**
+   * The totals in US dollars, converted at the rate frozen on approval — so a
+   * later change of the dollar rate never rewrites them. Null before approval,
+   * and also when the system has no USD currency or no rate for it.
+   */
+  subtotalUSD?: Dec | null;
+  totalUSD?: Dec | null;
   notes?: string | null;
   rejectionReason?: string | null;
+  /** Set once the invoice is posted to stock — still set while a cancel request is open. */
+  postedAt?: string | null;
+  // Cancellation trail: all null until a cancel is requested or done.
+  cancelRequestedByUserId?: string | null;
+  cancelRequestedAt?: string | null;
+  cancelRequestReason?: string | null;
+  cancelledByUserId?: string | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
   items: PurchaseInvoiceLine[];
   createdAt: string;
 }
@@ -219,6 +241,11 @@ export interface ApprovePurchaseInvoiceDto {
   /** Left out, the invoice ends up with no discount at all (nothing is kept). */
   discountType?: DiscountType;
   discountValue?: number;
+  /**
+   * This invoice's own rate — how many units of its currency make 1 USD.
+   * Left out, the latest general rate recorded for the currency is used.
+   */
+  exchangeRate?: number;
   /** One price per item, covering every line of the invoice. */
   items: { itemId: string; unitPrice: number }[];
 }
@@ -348,12 +375,26 @@ export interface QuotationLine {
   item?: ItemRef | null;
 }
 
+/** The customer as embedded in a quotation or sales invoice. */
+export interface QuotationCustomer {
+  id: string;
+  name: string;
+  contactNumber?: string | null;
+}
+
 export interface Quotation {
   id: string;
   documentNo?: string | null;
   version?: number;
   childVersions?: { id: string; version: number; status: QuotationStatus }[];
-  patientId: string;
+  /**
+   * Who the document is for: a clinic patient or a sales customer
+   * (/referrals/customers) — exactly one of the two.
+   */
+  patientId?: string | null;
+  customerId?: string | null;
+  /** Sent with the record, since not everyone may read the customers list. */
+  customer?: QuotationCustomer | null;
   currencyId: string;
   currency?: Pick<WarehouseCurrency, "id" | "code" | "name"> | null;
   status: QuotationStatus;
@@ -372,7 +413,9 @@ export interface Quotation {
 }
 
 export interface CreateQuotationDto {
-  patientId: string;
+  /** Exactly one of patientId / customerId. */
+  patientId?: string;
+  customerId?: string;
   currencyId: string;
   validUntil?: string;
   paymentTerms?: string;
@@ -397,7 +440,14 @@ export interface SalesInvoice {
   documentNo?: string | null;
   quotationId: string;
   quotation?: Pick<Quotation, "id" | "documentNo"> | null;
-  patientId: string;
+  /**
+   * Who the document is for: a clinic patient or a sales customer
+   * (/referrals/customers) — exactly one of the two.
+   */
+  patientId?: string | null;
+  customerId?: string | null;
+  /** Sent with the record, since not everyone may read the customers list. */
+  customer?: QuotationCustomer | null;
   currencyId?: string;
   currency?: Pick<WarehouseCurrency, "id" | "code" | "name"> | null;
   status: SalesInvoiceStatus;
@@ -562,6 +612,28 @@ export const warehouseOpsApi = {
     return unwrap(data);
   },
 
+  /** Warehouse manager, on an APPROVED or POSTED invoice: asks finance to cancel it. */
+  requestCancelPurchaseInvoice: async (id: string, reason?: string): Promise<PurchaseInvoice> => {
+    const { data } = await apiClient.post(`${base}/purchase-invoices/${id}/request-cancel`, reason ? { reason } : {});
+    return unwrap(data);
+  },
+
+  /**
+   * Finance manager: cancels an APPROVED/POSTED invoice outright, or grants an
+   * open request. A posted invoice's quantities come back out of stock; the API
+   * refuses the whole cancel (INSUFFICIENT_STOCK_FOR_CANCEL) if any is gone.
+   */
+  cancelPurchaseInvoice: async (id: string, reason?: string): Promise<PurchaseInvoice> => {
+    const { data } = await apiClient.post(`${base}/purchase-invoices/${id}/cancel`, reason ? { reason } : {});
+    return unwrap(data);
+  },
+
+  /** Finance manager: turns a request down; the invoice goes back to APPROVED or POSTED. */
+  rejectCancelPurchaseInvoice: async (id: string, reason?: string): Promise<PurchaseInvoice> => {
+    const { data } = await apiClient.post(`${base}/purchase-invoices/${id}/reject-cancel-request`, reason ? { reason } : {});
+    return unwrap(data);
+  },
+
   // Adds the quantities to stock and updates the unit cost.
   postPurchaseInvoice: async (id: string): Promise<PurchaseInvoice> => {
     const { data } = await apiClient.post(`${base}/purchase-invoices/${id}/post`);
@@ -655,7 +727,7 @@ export const warehouseOpsApi = {
 
   // ── Quotations ──
   getQuotations: async (
-    params?: PageParams & { status?: QuotationStatus; patientId?: string },
+    params?: PageParams & { status?: QuotationStatus; patientId?: string; customerId?: string },
   ): Promise<Paginated<Quotation>> => {
     const { data } = await apiClient.get(`${base}/quotations`, { params });
     return unwrapPage(data);
@@ -676,7 +748,7 @@ export const warehouseOpsApi = {
   // silently drops them here.
   updateQuotation: async (
     id: string,
-    dto: Partial<Omit<CreateQuotationDto, "patientId" | "currencyId">>,
+    dto: Partial<Omit<CreateQuotationDto, "patientId" | "customerId" | "currencyId">>,
   ): Promise<Quotation> => {
     const { data } = await apiClient.patch(`${base}/quotations/${id}`, dto);
     return unwrap(data);
@@ -717,7 +789,7 @@ export const warehouseOpsApi = {
 
   // ── Sales invoices ──
   getSalesInvoices: async (
-    params?: PageParams & { status?: SalesInvoiceStatus; patientId?: string },
+    params?: PageParams & { status?: SalesInvoiceStatus; patientId?: string; customerId?: string },
   ): Promise<Paginated<SalesInvoice>> => {
     const { data } = await apiClient.get(`${base}/sales-invoices`, { params });
     return unwrapPage(data);

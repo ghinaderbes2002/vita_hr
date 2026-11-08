@@ -16,7 +16,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useWarehouseCurrencies } from "@/lib/hooks/use-warehouse";
 import { useSalesInvoices } from "@/lib/hooks/use-warehouse-operations";
 import { SALES_INVOICE_STATUSES, SalesInvoiceStatus } from "@/lib/api/warehouse-operations";
-import { PatientCombobox, PatientName } from "@/components/features/warehouse/patient-combobox";
+import { ClientKind, ClientName, ClientPicker } from "@/components/features/warehouse/patient-combobox";
 import { SalesInvoiceDetailsDialog } from "@/components/features/warehouse/sales-invoice-details-dialog";
 import {
   ALL, OptionSelect, refNo, StatusBadge, useWarehouseFormat,
@@ -40,13 +40,15 @@ function SalesInvoicesContent() {
   const { data: currencies = [] } = useWarehouseCurrencies();
 
   const [status, setStatus] = useState(ALL);
+  // Filter by one patient or one sales customer.
+  const [filterKind, setFilterKind] = useState<ClientKind>("patient");
   const [patientFilter, setPatientFilter] = useState("");
   const [page, setPage] = useState(1);
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
   const { data, isLoading } = useSalesInvoices({
     status: status !== ALL ? (status as SalesInvoiceStatus) : undefined,
-    patientId: patientFilter || undefined,
+    ...(patientFilter ? (filterKind === "customer" ? { customerId: patientFilter } : { patientId: patientFilter }) : {}),
     page,
     limit: LIMIT,
   });
@@ -69,12 +71,17 @@ function SalesInvoicesContent() {
           options={SALES_INVOICE_STATUSES.map((s) => ({ value: s, label: t(`warehouse.statuses.${s}`) }))}
           className="w-44"
         />
-        <div className="w-64 max-w-full">
-          <PatientCombobox value={patientFilter} onChange={(v) => { setPatientFilter(v); setPage(1); }} />
+        <div className="w-96 max-w-full">
+          <ClientPicker
+            kind={filterKind}
+            onKindChange={setFilterKind}
+            value={patientFilter}
+            onChange={(v) => { setPatientFilter(v); setPage(1); }}
+          />
         </div>
         {patientFilter && (
           <Button variant="ghost" size="sm" onClick={() => { setPatientFilter(""); setPage(1); }}>
-            {t("warehouse.shared.allPatients")}
+            {t("warehouse.shared.allClients")}
           </Button>
         )}
       </div>
@@ -85,7 +92,7 @@ function SalesInvoicesContent() {
             <TableRow>
               <TableHead>{t("warehouse.shared.number")}</TableHead>
               <TableHead>{t("warehouse.shared.date")}</TableHead>
-              <TableHead>{t("warehouse.shared.patient")}</TableHead>
+              <TableHead>{t("warehouse.shared.client")}</TableHead>
               <TableHead>{t("warehouse.salesInvoices.paymentMethod")}</TableHead>
               {showTotals && <TableHead>{t("warehouse.shared.total")}</TableHead>}
               <TableHead>{t("common.status")}</TableHead>
@@ -116,7 +123,7 @@ function SalesInvoicesContent() {
                 <TableRow key={inv.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailsId(inv.id)}>
                   <TableCell className="font-mono text-sm">{refNo(inv)}</TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{fmt.date(inv.createdAt)}</TableCell>
-                  <TableCell className="font-medium"><PatientName patientId={inv.patientId} /></TableCell>
+                  <TableCell className="font-medium"><ClientName patientId={inv.patientId} customerId={inv.customerId} customer={inv.customer} /></TableCell>
                   <TableCell className="text-sm">{inv.paymentMethod || "—"}</TableCell>
                   {showTotals && (
                     <TableCell className="font-medium">

@@ -336,6 +336,12 @@ export const PERMISSIONS = {
     EDIT:   "clinic.waiting_list.edit",
     DELETE: "clinic.waiting_list.delete",
   },
+  /** عملاء المبيعات (/referrals/customers) — سجل مستقل لقسم المبيعات. */
+  SALES_CUSTOMERS: {
+    VIEW:   "sales.customers.view",
+    /** إضافة وتعديل وحذف. */
+    MANAGE: "sales.customers.manage",
+  },
   /** العملاء المحتملون — من استفسر عن خدمة ولم يُسجَّل مريضاً بعد. منفصل عن قائمة الانتظار. */
   CLINIC_POTENTIAL_CLIENTS: {
     VIEW:   "clinic.potential_clients.view",

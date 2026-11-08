@@ -15,7 +15,7 @@ import {
   DiscountType, Quotation, QUOTATION_LINE_TYPES, QuotationItemInput, QuotationLineType,
 } from "@/lib/api/warehouse-operations";
 import { ItemCombobox } from "./line-items-editor";
-import { PatientCombobox } from "./patient-combobox";
+import { ClientKind, ClientPicker } from "./patient-combobox";
 import { applyDiscount, discountDto, DiscountFields } from "./pricing";
 import { Field, OptionSelect, toQty, useWarehouseFormat, useWarehouseLookups } from "./shared";
 import { localizedName } from "./utils";
@@ -99,7 +99,9 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
   const update = useUpdateQuotation();
   const isEdit = !!quotation;
 
-  const [patientId, setPatientId] = useState(quotation?.patientId ?? "");
+  // A quotation is for a patient or a sales customer — exactly one.
+  const [clientKind, setClientKind] = useState<ClientKind>(quotation?.customerId ? "customer" : "patient");
+  const [clientId, setClientId] = useState(quotation?.customerId ?? quotation?.patientId ?? "");
   const [currencyId, setCurrencyId] = useState(quotation?.currencyId ?? "");
   const [validUntil, setValidUntil] = useState(quotation?.validUntil?.slice(0, 10) ?? "");
   const [paymentTerms, setPaymentTerms] = useState(quotation?.paymentTerms ?? "");
@@ -115,7 +117,7 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
   const updateLine = (key: string, patch: Partial<QuotationLineDraft>) =>
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
-  const canSubmit = !!patientId && !!currencyId && lines.length > 0 && lines.every(isComplete);
+  const canSubmit = !!clientId && !!currencyId && lines.length > 0 && lines.every(isComplete);
   const subtotal = lines.reduce((sum, l) => sum + (lineAmount(l) ?? 0), 0);
   const total = applyDiscount(subtotal, discountType, discountValue);
   const currencyCode = currencies.find((c) => c.id === currencyId)?.code;
@@ -141,7 +143,11 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
         // The patient and the currency are fixed once the quotation exists.
         await update.mutateAsync({ id: quotation.id, dto: details });
       } else {
-        await create.mutateAsync({ patientId, currencyId, ...details });
+        await create.mutateAsync({
+          ...(clientKind === "customer" ? { customerId: clientId } : { patientId: clientId }),
+          currencyId,
+          ...details,
+        });
       }
       onDone();
     } catch {
@@ -158,8 +164,15 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label={t("warehouse.shared.patient")} required>
-              <PatientCombobox value={patientId} onChange={setPatientId} disabled={isEdit} />
+            <Field label={t("warehouse.shared.client")} required>
+              <ClientPicker
+                kind={clientKind}
+                onKindChange={setClientKind}
+                value={clientId}
+                onChange={setClientId}
+                disabled={isEdit}
+                selectedCustomerName={quotation?.customer?.name}
+              />
             </Field>
             <Field
               label={t("warehouse.shared.currency")}

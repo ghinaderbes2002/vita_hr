@@ -208,6 +208,31 @@ export function useRejectPurchaseInvoice() {
   );
 }
 
+export function useRequestCancelPurchaseInvoice() {
+  return useOpMutation(
+    ({ id, reason }: { id: string; reason?: string }) => warehouseOpsApi.requestCancelPurchaseInvoice(id, reason),
+    [K.purchaseInvoices],
+    "sent",
+  );
+}
+
+/** Cancelling a posted invoice takes its quantities back out of stock. */
+export function useCancelPurchaseInvoice() {
+  return useOpMutation(
+    ({ id, reason }: { id: string; reason?: string }) => warehouseOpsApi.cancelPurchaseInvoice(id, reason),
+    [K.purchaseInvoices, K.stock, K.reports],
+    "cancelled",
+  );
+}
+
+export function useRejectCancelPurchaseInvoice() {
+  return useOpMutation(
+    ({ id, reason }: { id: string; reason?: string }) => warehouseOpsApi.rejectCancelPurchaseInvoice(id, reason),
+    [K.purchaseInvoices],
+    "rejected",
+  );
+}
+
 export function usePostPurchaseInvoice() {
   return useOpMutation(
     (id: string) => warehouseOpsApi.postPurchaseInvoice(id),
@@ -319,7 +344,7 @@ export function useCancelInventoryCount() {
 }
 
 // ── Quotations ──
-export function useQuotations(params?: PageParams & { status?: QuotationStatus; patientId?: string }) {
+export function useQuotations(params?: PageParams & { status?: QuotationStatus; patientId?: string; customerId?: string }) {
   return useQuery({
     queryKey: [K.quotations, "list", params],
     queryFn: () => warehouseOpsApi.getQuotations(params),
@@ -385,7 +410,7 @@ export function useNewQuotationVersion() {
 }
 
 // ── Sales invoices ──
-export function useSalesInvoices(params?: PageParams & { status?: SalesInvoiceStatus; patientId?: string }) {
+export function useSalesInvoices(params?: PageParams & { status?: SalesInvoiceStatus; patientId?: string; customerId?: string }) {
   return useQuery({
     queryKey: [K.salesInvoices, "list", params],
     queryFn: () => warehouseOpsApi.getSalesInvoices(params),

@@ -57,6 +57,7 @@ import {
   X,
   ListOrdered,
   UserSearch,
+  Contact,
   Smartphone,
   Dumbbell,
   Tags,
@@ -355,7 +356,7 @@ const navigation: NavItem[] = [
     icon: Share2,
     separator: true,
     // القسم يفتح بأيٍّ من صلاحيات أبنائه — من له العملاء المحتملون وحدهم يراه أيضاً.
-    permissions: ["clinic.referrals.view", "clinic.potential_clients.view"],
+    permissions: ["clinic.referrals.view", "clinic.potential_clients.view", "sales.customers.view"],
     children: [
       // مشرف المركز لا يرى جهات الاتصال ولا ملخص المبيعات حتى لو كان يملك
       // clinic.referrals.view — لكنه يبقى يرى العملاء المحتملين كما كان في العيادة.
@@ -363,6 +364,7 @@ const navigation: NavItem[] = [
       { title: "nav.clinicSalesOverview", href: "/clinic/referrals/sales", icon: Trophy, permission: "clinic.referrals.view", hiddenForJobTitleCodes: ["VTX-JTL-000011"] },
       { title: "nav.clinicVitaFootSales", href: "/clinic/referrals/vitafoot-sales", icon: Footprints, permission: "clinic.referrals.view", hiddenForJobTitleCodes: ["VTX-JTL-000011"] },
       { title: "nav.clinicPotentialClients", href: "/clinic/potential-clients", icon: UserSearch, permission: "clinic.potential_clients.view" },
+      { title: "nav.salesCustomers", href: "/clinic/sales-customers", icon: Contact, permission: "sales.customers.view" },
     ],
   },
   {
