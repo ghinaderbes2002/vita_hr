@@ -381,6 +381,7 @@ const navigation: NavItem[] = [
       { title: "nav.warehouseQuotations", href: "/warehouse/quotations", icon: FileText, permission: "warehouse.quotations.read" },
       { title: "nav.warehouseSalesInvoices", href: "/warehouse/sales-invoices", icon: ReceiptText, permission: "warehouse.sales_invoices.read" },
       { title: "nav.warehouseReports", href: "/warehouse/reports", icon: FileBarChart, permission: "warehouse.reports.read" },
+      { title: "nav.warehouseProstheticsPricing", href: "/warehouse/prosthetics-pricing", icon: Tags, permission: "warehouse.pricing.prosthetics.view" },
       {
         // البيانات الأساسية التي تُعرَّف مرة وتعتمد عليها كل العمليات أعلاه.
         title: "nav.warehouseSetup",

@@ -365,11 +365,15 @@ export function useCreateQuotation() {
 
 export function useUpdateQuotation() {
   return useOpMutation(
-    ({ id, dto }: { id: string; dto: Partial<Omit<CreateQuotationDto, "patientId" | "currencyId">> }) =>
+    ({ id, dto }: { id: string; dto: Partial<Omit<CreateQuotationDto, "currencyId">> }) =>
       warehouseOpsApi.updateQuotation(id, dto),
     [K.quotations],
     "saved",
   );
+}
+
+export function useApproveQuotationDiscount() {
+  return useOpMutation((id: string) => warehouseOpsApi.approveQuotationDiscount(id), [K.quotations], "approved");
 }
 
 export function useApproveQuotation() {

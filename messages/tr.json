@@ -396,6 +396,7 @@
     "warehouseQuotations": "Fiyat Teklifleri",
     "warehouseSalesInvoices": "Satış Faturaları",
     "warehouseReports": "Depo Raporları",
+    "warehouseProstheticsPricing": "Parça Fiyatlandırma Ayarları",
     "warehouseSetup": "Temel Veriler",
     "clinicReferrals": "Sevk Kaynakları",
     "clinicSales": "Satış Departmanı",
@@ -5901,6 +5902,37 @@
     }
   },
   "warehouse": {
+    "prostheticsPricing": {
+      "notBoughtYet": "Henüz alınmadı",
+      "profitPercentHint": "Esas fiyatın yüzdesi, sabit tutarın üzerine eklenir.",
+      "profitHint": "Sabit tutarın yerine değil, üzerine eklenir.",
+      "profitFixed": "Sabit tutar",
+      "profitPercent": "Yüzde %",
+      "profitNone": "Kâr yok",
+      "profit": "Kâr",
+      "title": "Parça Fiyatlandırma Ayarları",
+      "description": "Satış fiyatı = son veya en yüksek alış fiyatı + sabit tutar + kâr",
+      "searchPlaceholder": "Parça adı veya koduyla ara...",
+      "part": "Parça",
+      "lastPurchasePrice": "Son alış fiyatı",
+      "highestPurchasePrice": "En yüksek alış fiyatı",
+      "priceBasis": "Fiyat esası",
+      "markupAmount": "Sabit tutar",
+      "finalPrice": "Nihai fiyat",
+      "basisLast": "Son alış fiyatı",
+      "basisHighest": "En yüksek alış fiyatı",
+      "edit": "Fiyatlandırmayı düzenle",
+      "editTitle": "Parça fiyatlandırma",
+      "markupHint": "Esas fiyata eklenir. Sıfır veya pozitif bir sayı.",
+      "empty": "Henüz parça yok",
+      "emptyHint": "Parça kodu olan tüm ürünler burada görünür.",
+      "noResults": "Eşleşen sonuç yok",
+      "loadFailed": "Parçalar yüklenemedi",
+      "saved": "Fiyatlandırma kaydedildi",
+      "saveFailed": "Fiyatlandırma kaydedilemedi",
+      "cancel": "İptal",
+      "save": "Kaydet"
+    },
     "manufacturers": {
       "title": "Üreticiler",
       "description": "Ürün üreticileri",
@@ -6061,6 +6093,7 @@
     },
     "opToast": {
       "codes": {
+        "DISCOUNT_APPROVAL_PENDING": "Teklif onaylanamaz: indirimi CEO onayını bekliyor.",
         "WAREHOUSE_FROZEN_FOR_COUNT": "Bu depoda şu anda sayım yapılıyor — sayım bitene kadar işlem gerçekleştirilemez.",
         "COUNT_WOULD_BREAK_RESERVATION": "Sayım tamamlanamıyor: fark, bir ürünün bakiyesini ayrılmış miktarın altına düşürecek."
       },
@@ -6323,7 +6356,15 @@
       "detailsTitle": "Sayım oturumu"
     },
     "quotations": {
-      "lockedHint": "Hasta ve para birimi, teklif oluşturulduktan sonra değiştirilemez.",
+      "lockedHint": "Para birimi, teklif oluşturulduktan sonra değiştirilemez.",
+      "autoPrice": "Otomatik fiyat",
+      "autoPriceHint": "Bu parçanın fiyatı parça fiyatlandırma ayarlarında belirlenir; sistem kaydederken hesaplar.",
+      "priceOptionalHint": "Parça fiyatlandırma ayarlarında tanımlı bir parça için fiyatı boş bırakın — sistem fiyatlandırır. Aksi halde fiyat zorunludur.",
+      "totalPending": "Kaydederken hesaplanır",
+      "discountNeedsApproval": "Toplam üzerindeki her indirim, teklif onaylanmadan önce CEO onayı gerektirir; indirimi değiştirmek önceki onayı iptal eder.",
+      "discountPending": "İndirim CEO onayını bekliyor — teklif o zamana kadar onaylanamaz.",
+      "discountApproved": "CEO indirimi onayladı",
+      "approveDiscount": "İndirimi onayla",
       "title": "Fiyat Teklifleri",
       "description": "Hastalar için fiyat teklifleri, taslaktan kabule kadar",
       "add": "Yeni teklif",

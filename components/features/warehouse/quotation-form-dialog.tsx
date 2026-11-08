@@ -9,7 +9,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useWarehouseCurrencies } from "@/lib/hooks/use-warehouse";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { useProstheticsPricingMap } from "@/lib/hooks/use-warehouse-pricing";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useCreateQuotation, useUpdateQuotation } from "@/lib/hooks/use-warehouse-operations";
 import {
   DiscountType, Quotation, QUOTATION_LINE_TYPES, QuotationItemInput, QuotationLineType,
@@ -29,8 +33,6 @@ export interface QuotationLineDraft {
   description: string;
   qty: string;
   unitPrice: string;
-  discountType: DiscountType | "";
-  discountValue: string;
 }
 
 let seq = 0;
@@ -41,11 +43,11 @@ export const newQuotationLine = (init?: Partial<QuotationLineDraft>): QuotationL
   description: "",
   qty: "1",
   unitPrice: "",
-  discountType: "",
-  discountValue: "",
   ...init,
 });
 
+// Lines carry no discount any more — only the quotation total does — so an
+// older line's own discount is not brought into the form.
 export const quotationLinesFrom = (quotation: Quotation): QuotationLineDraft[] =>
   quotation.items.map((l) => newQuotationLine({
     id: l.id,
@@ -55,19 +57,44 @@ export const quotationLinesFrom = (quotation: Quotation): QuotationLineDraft[] =
     // Decimal strings ("2.000") are normalised before they reach an input.
     qty: String(Number(l.qty)),
     unitPrice: l.unitPrice != null ? String(Number(l.unitPrice)) : "",
-    discountType: l.discountType ?? "",
-    discountValue: l.discountValue != null ? String(Number(l.discountValue)) : "",
   }));
 
-/** A line's total after its own discount, or undefined while it is incomplete. */
-export function lineAmount(l: QuotationLineDraft): number | undefined {
+/**
+ * A line's total, or undefined while it can't be worked out. `autoPrice` is the
+ * part's price from prosthetics pricing, which wins over anything typed.
+ */
+export function lineAmount(l: QuotationLineDraft, autoPrice?: number | null): number | undefined {
   const qty = toQty(l.qty);
-  if (qty === undefined || l.unitPrice.trim() === "" || Number(l.unitPrice) < 0) return undefined;
-  return applyDiscount(qty * Number(l.unitPrice), l.discountType, l.discountValue);
+  if (qty === undefined) return undefined;
+  if (autoPrice != null) return qty * autoPrice;
+  if (l.unitPrice.trim() === "" || Number(l.unitPrice) < 0) return undefined;
+  return qty * Number(l.unitPrice);
 }
 
-const isComplete = (l: QuotationLineDraft) =>
-  lineAmount(l) !== undefined && l.description.trim() !== "" && (l.lineType !== "ITEM" || !!l.itemId);
+/**
+ * Prosthetics pricing as the quotation forms need it: which ITEM lines the
+ * server prices itself, and at what. Without the pricing view permission
+ * there is no list to look in, so an ITEM line's price simply becomes optional
+ * and the server decides.
+ */
+export function useAutoPricing() {
+  const { hasPermission, isAdmin } = usePermissions();
+  const canSee = isAdmin() || hasPermission(PERMISSIONS.WAREHOUSE_PRICING_PROSTHETICS.VIEW);
+  const { data: map } = useProstheticsPricingMap(canSee);
+  /** The auto price for a line, or null when it is not auto-priced (or unknown). */
+  const autoPriceOf = (l: Pick<QuotationLineDraft, "lineType" | "itemId">): number | null => {
+    if (l.lineType !== "ITEM" || !l.itemId) return null;
+    const p = map?.get(l.itemId);
+    return p ? p.finalPrice ?? null : null;
+  };
+  // A part never bought has no basis, so no final price: it is priced by hand.
+  const isAutoPriced = (l: Pick<QuotationLineDraft, "lineType" | "itemId">) =>
+    l.lineType === "ITEM" && !!l.itemId && map?.get(l.itemId)?.finalPrice != null;
+  /** May the price be left blank? Auto-priced parts, and ITEM lines when we can't tell. */
+  const priceOptional = (l: Pick<QuotationLineDraft, "lineType" | "itemId">) =>
+    isAutoPriced(l) || (!canSee && l.lineType === "ITEM");
+  return { canSee, autoPriceOf, isAutoPriced, priceOptional };
+}
 
 interface QuotationFormDialogProps {
   open: boolean;
@@ -117,8 +144,17 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
   const updateLine = (key: string, patch: Partial<QuotationLineDraft>) =>
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
+  const { autoPriceOf, isAutoPriced, priceOptional } = useAutoPricing();
+  const priceGiven = (l: QuotationLineDraft) => l.unitPrice.trim() !== "" && Number(l.unitPrice) >= 0;
+  const isComplete = (l: QuotationLineDraft) =>
+    toQty(l.qty) !== undefined && l.description.trim() !== "" && (l.lineType !== "ITEM" || !!l.itemId) &&
+    (priceGiven(l) || priceOptional(l));
+
   const canSubmit = !!clientId && !!currencyId && lines.length > 0 && lines.every(isComplete);
-  const subtotal = lines.reduce((sum, l) => sum + (lineAmount(l) ?? 0), 0);
+  const amounts = lines.map((l) => lineAmount(l, autoPriceOf(l)));
+  // A blank price the server will fill in leaves the total unknown until saved.
+  const totalKnown = amounts.every((a) => a !== undefined);
+  const subtotal = amounts.reduce<number>((sum, a) => sum + (a ?? 0), 0);
   const total = applyDiscount(subtotal, discountType, discountValue);
   const currencyCode = currencies.find((c) => c.id === currencyId)?.code;
 
@@ -134,14 +170,25 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
         ...(l.lineType === "ITEM" ? { itemId: l.itemId } : {}),
         description: l.description.trim(),
         qty: toQty(l.qty)!,
-        unitPrice: Number(l.unitPrice),
-        ...discountDto(l.discountType, l.discountValue),
+        // An auto-priced part sends no price (the server would ignore it); a
+        // blank one is left for the server to price or refuse.
+        ...(!isAutoPriced(l) && priceGiven(l) ? { unitPrice: Number(l.unitPrice) } : {}),
       })),
     };
     try {
       if (isEdit) {
-        // The patient and the currency are fixed once the quotation exists.
-        await update.mutateAsync({ id: quotation.id, dto: details });
+        // The currency is fixed once the quotation exists. The owner may change:
+        // sending one id switches to it (the server clears the other); an
+        // unchanged owner is left out, which keeps it as it was.
+        const ownerWas = quotation.customerId ? `customer:${quotation.customerId}` : `patient:${quotation.patientId ?? ""}`;
+        const ownerChanged = `${clientKind}:${clientId}` !== ownerWas;
+        await update.mutateAsync({
+          id: quotation.id,
+          dto: {
+            ...(ownerChanged ? (clientKind === "customer" ? { customerId: clientId } : { patientId: clientId }) : {}),
+            ...details,
+          },
+        });
       } else {
         await create.mutateAsync({
           ...(clientKind === "customer" ? { customerId: clientId } : { patientId: clientId }),
@@ -170,7 +217,6 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
                 onKindChange={setClientKind}
                 value={clientId}
                 onChange={setClientId}
-                disabled={isEdit}
                 selectedCustomerName={quotation?.customer?.name}
               />
             </Field>
@@ -196,6 +242,7 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
           </div>
 
           <Field label={t("warehouse.shared.items")} required>
+            <p className="text-xs text-muted-foreground">{t("warehouse.quotations.priceOptionalHint")}</p>
             <div className="space-y-2">
               {lines.map((line) => (
                 <div key={line.key} className="space-y-2 rounded-lg border p-2">
@@ -247,21 +294,31 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
                       placeholder={t("warehouse.shared.quantity")}
                       aria-label={t("warehouse.shared.quantity")}
                     />
-                    <Input
-                      type="number" min={0} step="any" className="w-28"
-                      value={line.unitPrice}
-                      onChange={(e) => updateLine(line.key, { unitPrice: e.target.value })}
-                      placeholder={t("warehouse.shared.unitPrice")}
-                      aria-label={t("warehouse.shared.unitPrice")}
-                    />
-                    <div className="w-64 max-w-full">
-                      <DiscountFields
-                        type={line.discountType}
-                        value={line.discountValue}
-                        onChange={(type, value) => updateLine(line.key, { discountType: type, discountValue: value })}
+                    {isAutoPriced(line) ? (
+                      // Priced by the server from part pricing settings; shown, not typed.
+                      <div
+                        className="flex h-9 w-28 items-center gap-1 rounded-md border border-dashed bg-muted/40 px-2 text-sm"
+                        title={t("warehouse.quotations.autoPriceHint")}
+                      >
+                        <span className="tabular-nums">{fmt.money(autoPriceOf(line))}</span>
+                      </div>
+                    ) : (
+                      <Input
+                        type="number" min={0} step="any" className="w-28"
+                        value={line.unitPrice}
+                        onChange={(e) => updateLine(line.key, { unitPrice: e.target.value })}
+                        placeholder={t("warehouse.shared.unitPrice")}
+                        aria-label={t("warehouse.shared.unitPrice")}
                       />
-                    </div>
-                    <span className="ms-auto text-sm font-medium">{fmt.money(lineAmount(line), currencyCode)}</span>
+                    )}
+                    {isAutoPriced(line) && (
+                      <Badge variant="outline" className="text-[10px]" title={t("warehouse.quotations.autoPriceHint")}>
+                        {t("warehouse.quotations.autoPrice")}
+                      </Badge>
+                    )}
+                    <span className="ms-auto text-sm font-medium">
+                      {fmt.money(lineAmount(line, autoPriceOf(line)), currencyCode)}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -282,10 +339,13 @@ function QuotationForm({ quotation, onDone }: { quotation?: Quotation; onDone: (
                 value={discountValue}
                 onChange={(type, value) => { setDiscountType(type); setDiscountValue(value); }}
               />
+              <p className="text-xs text-muted-foreground">{t("warehouse.quotations.discountNeedsApproval")}</p>
             </Field>
             <div className="flex items-end justify-between rounded-lg border bg-muted/50 p-3">
               <span className="text-sm text-muted-foreground">{t("warehouse.shared.total")}</span>
-              <span className="text-lg font-bold">{fmt.money(total, currencyCode)}</span>
+              <span className="text-lg font-bold">
+                {totalKnown ? fmt.money(total, currencyCode) : t("warehouse.quotations.totalPending")}
+              </span>
             </div>
           </div>
 

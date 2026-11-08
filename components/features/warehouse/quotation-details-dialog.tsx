@@ -13,14 +13,14 @@ import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useWarehouseCurrencies } from "@/lib/hooks/use-warehouse";
 import {
-  useAcceptQuotation, useAdjustQuotationPrices, useApproveQuotation, useCreateSalesInvoice,
+  useAcceptQuotation, useAdjustQuotationPrices, useApproveQuotation, useApproveQuotationDiscount, useCreateSalesInvoice,
   useNewQuotationVersion, useQuotation, useRejectQuotation, useSendQuotation,
 } from "@/lib/hooks/use-warehouse-operations";
 import { DiscountType, Quotation } from "@/lib/api/warehouse-operations";
 import { ClientName } from "./patient-combobox";
 import { applyDiscount, discountDto, DiscountFields, PricedLinesTable } from "./pricing";
 import {
-  lineAmount, QuotationFormDialog, QuotationLineDraft, quotationLinesFrom,
+  lineAmount, QuotationFormDialog, QuotationLineDraft, quotationLinesFrom, useAutoPricing,
 } from "./quotation-form-dialog";
 import {
   DetailItem, DialogLoading, Field, ReasonDialog, refNo, StatusBadge,
@@ -58,6 +58,12 @@ export function QuotationDetailsDialog({ id, onClose, onNavigate }: DetailsProps
   const [acceptedByName, setAcceptedByName] = useState("");
 
   const status = quotation?.status;
+  // Any discount on the total waits on the CEO before the quotation is approved;
+  // the server clears the approval again whenever the discount changes.
+  const approveDiscount = useApproveQuotationDiscount();
+  const hasDiscount = !!quotation?.discountType && Number(quotation.discountValue) > 0;
+  const discountPending = hasDiscount && !quotation?.discountApprovedAt;
+  const discountOpen = status === "DRAFT" || status === "APPROVED";
   const currencyCode = quotation
     ? quotation.currency?.code ?? currencies.find((c) => c.id === quotation.currencyId)?.code
     : undefined;
@@ -118,6 +124,26 @@ export function QuotationDetailsDialog({ id, onClose, onNavigate }: DetailsProps
                 )}
               </div>
 
+              {hasDiscount && discountOpen && (
+                discountPending ? (
+                  <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                    <p className="flex-1">{t("warehouse.quotations.discountPending")}</p>
+                    <ActionGuard permission={PERMISSIONS.WAREHOUSE_QUOTATIONS.APPROVE_DISCOUNT}>
+                      <Button size="sm" disabled={approveDiscount.isPending}
+                        onClick={() => approveDiscount.mutate(quotation.id)}>
+                        {approveDiscount.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {t("warehouse.quotations.approveDiscount")}
+                      </Button>
+                    </ActionGuard>
+                  </div>
+                ) : (
+                  <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-200">
+                    {t("warehouse.quotations.discountApproved")}
+                    {quotation.discountApprovedAt && <> · {fmt.dateTime(quotation.discountApprovedAt)}</>}
+                  </p>
+                )
+              )}
+
               <PricedLinesTable
                 lines={quotation.items.map((l, i) => ({
                   key: l.id ?? `line-${i}`,
@@ -176,7 +202,12 @@ export function QuotationDetailsDialog({ id, onClose, onNavigate }: DetailsProps
                 </Button>
               )}
               {status === "DRAFT" && (
-                <Button onClick={() => setConfirm("approve")} disabled={approve.isPending}>
+                // The server refuses it (DISCOUNT_APPROVAL_PENDING) until the CEO agrees.
+                <Button
+                  onClick={() => setConfirm("approve")}
+                  disabled={approve.isPending || discountPending}
+                  title={discountPending ? t("warehouse.quotations.discountPending") : undefined}
+                >
                   {t("warehouse.shared.approve")}
                 </Button>
               )}
@@ -304,8 +335,14 @@ function AdjustPricesForm({ quotation, currencyCode, onDone }: SubFormProps & { 
   const updateLine = (key: string, patch: Partial<QuotationLineDraft>) =>
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
-  const canSubmit = lines.every((l) => lineAmount(l) !== undefined);
-  const total = applyDiscount(lines.reduce((sum, l) => sum + (lineAmount(l) ?? 0), 0), discountType, discountValue);
+  // A part priced from part pricing settings isn't priced by hand here either:
+  // its line is left out of the request, which keeps its price as it is.
+  const { autoPriceOf, isAutoPriced } = useAutoPricing();
+  const canSubmit = lines.every((l) => isAutoPriced(l) || lineAmount(l) !== undefined);
+  const total = applyDiscount(
+    lines.reduce((sum, l) => sum + (lineAmount(l, autoPriceOf(l)) ?? 0), 0),
+    discountType, discountValue,
+  );
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -315,10 +352,9 @@ function AdjustPricesForm({ quotation, currencyCode, onDone }: SubFormProps & { 
         dto: {
           ...discountDto(discountType, discountValue),
           // Keyed by the quotation line's own id.
-          items: lines.filter((l) => l.id).map((l) => ({
+          items: lines.filter((l) => l.id && !isAutoPriced(l)).map((l) => ({
             quotationItemId: l.id!,
             unitPrice: Number(l.unitPrice),
-            ...discountDto(l.discountType, l.discountValue),
           })),
         },
       });
@@ -343,19 +379,24 @@ function AdjustPricesForm({ quotation, currencyCode, onDone }: SubFormProps & { 
                     {t("warehouse.shared.quantity")}: {fmt.qty(line.qty)}
                   </p>
                 </div>
-                <Input
-                  type="number" min={0} step="any" className="w-28"
-                  value={line.unitPrice}
-                  onChange={(e) => updateLine(line.key, { unitPrice: e.target.value })}
-                  aria-label={t("warehouse.shared.unitPrice")}
-                />
-                <div className="w-64 max-w-full">
-                  <DiscountFields
-                    type={line.discountType}
-                    value={line.discountValue}
-                    onChange={(type, value) => updateLine(line.key, { discountType: type, discountValue: value })}
+                {isAutoPriced(line) ? (
+                  <div
+                    className="flex h-9 w-28 items-center rounded-md border border-dashed bg-muted/40 px-2 text-sm tabular-nums"
+                    title={t("warehouse.quotations.autoPriceHint")}
+                  >
+                    {fmt.money(autoPriceOf(line))}
+                  </div>
+                ) : (
+                  <Input
+                    type="number" min={0} step="any" className="w-28"
+                    value={line.unitPrice}
+                    onChange={(e) => updateLine(line.key, { unitPrice: e.target.value })}
+                    aria-label={t("warehouse.shared.unitPrice")}
                   />
-                </div>
+                )}
+                {isAutoPriced(line) && (
+                  <span className="text-xs text-muted-foreground">{t("warehouse.quotations.autoPrice")}</span>
+                )}
               </div>
             ))}
           </div>
@@ -366,6 +407,7 @@ function AdjustPricesForm({ quotation, currencyCode, onDone }: SubFormProps & { 
                 value={discountValue}
                 onChange={(type, value) => { setDiscountType(type); setDiscountValue(value); }}
               />
+              <p className="text-xs text-muted-foreground">{t("warehouse.quotations.discountNeedsApproval")}</p>
             </Field>
             <div className="flex items-end justify-between rounded-lg border bg-muted/50 p-3">
               <span className="text-sm text-muted-foreground">{t("warehouse.shared.total")}</span>

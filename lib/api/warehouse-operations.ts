@@ -355,9 +355,12 @@ export interface QuotationItemInput {
   itemId?: string;
   description: string;
   qty: number;
-  unitPrice: number;
-  discountType?: DiscountType;
-  discountValue?: number;
+  /**
+   * Optional on an ITEM line whose part is set up in prosthetics pricing: the
+   * server prices it from there and ignores anything sent. Required otherwise.
+   * Lines carry no discount of their own — only the quotation total does.
+   */
+  unitPrice?: number;
 }
 
 // Price fields are stripped for users without warehouse.quotations.view_prices
@@ -369,6 +372,7 @@ export interface QuotationLine {
   description: string;
   qty: Dec;
   unitPrice?: Dec;
+  /** Only on quotations made before line discounts were dropped. */
   discountType?: DiscountType | null;
   discountValue?: Dec | null;
   lineTotal?: Dec;
@@ -408,6 +412,12 @@ export interface Quotation {
   exchangeRate?: Dec;
   rejectionReason?: string | null;
   acceptedByName?: string | null;
+  /**
+   * A discount on the total needs the CEO's approval before the quotation can be
+   * approved. Null until given — and cleared again whenever the discount changes.
+   */
+  discountApprovedByUserId?: string | null;
+  discountApprovedAt?: string | null;
   items: QuotationLine[];
   createdAt: string;
 }
@@ -431,7 +441,7 @@ export interface CreateQuotationDto {
 export interface AdjustQuotationPricesDto {
   discountType?: DiscountType;
   discountValue?: number;
-  items: { quotationItemId: string; unitPrice: number; discountType?: DiscountType; discountValue?: number }[];
+  items: { quotationItemId: string; unitPrice: number }[];
 }
 
 // ── Sales invoices ──
@@ -748,12 +758,21 @@ export const warehouseOpsApi = {
   // silently drops them here.
   updateQuotation: async (
     id: string,
-    dto: Partial<Omit<CreateQuotationDto, "patientId" | "customerId" | "currencyId">>,
+    // Sending one of patientId / customerId switches the owner (the other is
+    // cleared); sending neither keeps it. Never both.
+    dto: Partial<Omit<CreateQuotationDto, "currencyId">>,
   ): Promise<Quotation> => {
     const { data } = await apiClient.patch(`${base}/quotations/${id}`, dto);
     return unwrap(data);
   },
 
+  /** CEO only (warehouse.quotations.approve_discount). */
+  approveQuotationDiscount: async (id: string): Promise<Quotation> => {
+    const { data } = await apiClient.post(`${base}/quotations/${id}/approve-discount`);
+    return unwrap(data);
+  },
+
+  // Refused with DISCOUNT_APPROVAL_PENDING while a discount awaits the CEO.
   approveQuotation: async (id: string): Promise<Quotation> => {
     const { data } = await apiClient.post(`${base}/quotations/${id}/approve`);
     return unwrap(data);

@@ -396,6 +396,7 @@
     "warehouseQuotations": "Quotations",
     "warehouseSalesInvoices": "Sales Invoices",
     "warehouseReports": "Warehouse Reports",
+    "warehouseProstheticsPricing": "Part Pricing Settings",
     "warehouseSetup": "Master Data",
     "clinicReferrals": "Referral Sources",
     "clinicSales": "Sales Department",
@@ -6819,6 +6820,37 @@
     }
   },
   "warehouse": {
+    "prostheticsPricing": {
+      "notBoughtYet": "Not bought yet",
+      "profitPercentHint": "A percentage of the base price, added on top of the fixed amount.",
+      "profitHint": "Added on top of the fixed amount, not instead of it.",
+      "profitFixed": "Fixed amount",
+      "profitPercent": "Percent %",
+      "profitNone": "No profit",
+      "profit": "Profit",
+      "title": "Part Pricing Settings",
+      "description": "Selling price = last or highest purchase price + fixed amount + profit",
+      "searchPlaceholder": "Search by part name or code...",
+      "part": "Part",
+      "lastPurchasePrice": "Last purchase price",
+      "highestPurchasePrice": "Highest purchase price",
+      "priceBasis": "Price basis",
+      "markupAmount": "Fixed amount",
+      "finalPrice": "Final price",
+      "basisLast": "Last purchase price",
+      "basisHighest": "Highest purchase price",
+      "edit": "Edit pricing",
+      "editTitle": "Part pricing",
+      "markupHint": "Added to the base price. Zero or a positive number.",
+      "empty": "No parts yet",
+      "emptyHint": "Every item with a part code appears here.",
+      "noResults": "No matching results",
+      "loadFailed": "Couldn't load the parts",
+      "saved": "Pricing saved",
+      "saveFailed": "Couldn't save the pricing",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
     "manufacturers": {
       "title": "Manufacturers",
       "description": "Item manufacturers",
@@ -6979,6 +7011,7 @@
     },
     "opToast": {
       "codes": {
+        "DISCOUNT_APPROVAL_PENDING": "The quotation can't be approved: its discount awaits the CEO's approval.",
         "WAREHOUSE_FROZEN_FOR_COUNT": "This warehouse is being counted — the operation cannot go through until the count ends.",
         "COUNT_WOULD_BREAK_RESERVATION": "The count cannot be completed: a variance would take an item's balance below its reserved quantity."
       },
@@ -7241,7 +7274,15 @@
       "detailsTitle": "Count session"
     },
     "quotations": {
-      "lockedHint": "The patient and the currency are fixed once the quotation is created.",
+      "lockedHint": "The currency is fixed once the quotation is created.",
+      "autoPrice": "Auto price",
+      "autoPriceHint": "This part's price is set in part pricing settings; the system works it out on save.",
+      "priceOptionalHint": "Leave the price blank for a part set up in part pricing settings — the system prices it. Otherwise the price is required.",
+      "totalPending": "Worked out on save",
+      "discountNeedsApproval": "Any discount on the total needs the CEO's approval before the quotation can be approved, and changing it cancels an earlier approval.",
+      "discountPending": "The discount awaits the CEO's approval — the quotation can't be approved before then.",
+      "discountApproved": "The CEO approved the discount",
+      "approveDiscount": "Approve discount",
       "title": "Quotations",
       "description": "Price quotations for patients, from draft to acceptance",
       "add": "New quotation",

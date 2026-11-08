@@ -457,6 +457,8 @@ export const PERMISSIONS = {
     EDIT_PRICES: "warehouse.quotations.edit_prices",
     /** تشمل فواتير المبيعات أيضاً — بدونها نسخة الفني بلا أسعار. */
     VIEW_PRICES: "warehouse.quotations.view_prices",
+    /** المدير التنفيذي: الموافقة على خصم إجمالي العرض قبل اعتماده. */
+    APPROVE_DISCOUNT: "warehouse.quotations.approve_discount",
   },
   WAREHOUSE_SALES_INVOICES: {
     READ:    "warehouse.sales_invoices.read",
@@ -465,6 +467,11 @@ export const PERMISSIONS = {
   },
   WAREHOUSE_REPORTS: {
     READ: "warehouse.reports.read",
+  },
+  /** تسعير قطع الأطراف الصناعية: أساس السعر + رقم ثابت لكل قطعة. */
+  WAREHOUSE_PRICING_PROSTHETICS: {
+    VIEW:   "warehouse.pricing.prosthetics.view",
+    MANAGE: "warehouse.pricing.prosthetics.manage",
   },
 
   AUDIT: {
