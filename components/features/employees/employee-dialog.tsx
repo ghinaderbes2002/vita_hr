@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useJobGrades } from "@/lib/hooks/use-job-grades";
 import { useJobTitles } from "@/lib/hooks/use-job-titles";
+import { useCanSeeSalary } from "@/lib/hooks/use-can-see-salary";
 import { Employee } from "@/types";
 import { Camera, Loader2, Paperclip, Plus, Trash2, Upload, X } from "lucide-react";
 
@@ -191,6 +192,9 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
   const t = useTranslations();
   const isEdit = !!employee;
   const queryClient = useQueryClient();
+  // Without it the pay fields are neither shown nor sent, so an edit leaves the
+  // employee's salary and allowances exactly as they were.
+  const canSeeSalary = useCanSeeSalary();
 
   const makeUploadFn = (docType: string, titleAr: string) =>
     employee?.id
@@ -484,7 +488,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           jobTitleId: data.jobTitleId || undefined,
           jobGradeId: data.jobGradeId || undefined,
           managerId: data.managerId || undefined,
-          basicSalary: data.basicSalary || undefined,
+          basicSalary: canSeeSalary ? data.basicSalary || undefined : undefined,
           profilePhoto: data.profilePhoto || undefined,
           bloodType: data.bloodType || undefined,
           familyMembersCount: data.familyMembersCount ?? undefined,
@@ -501,7 +505,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           ...qualificationFields,
           ...(attachments.length > 0 && { attachments }),
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
-          ...(allowances.length > 0 && { allowances }),
+          ...(canSeeSalary && allowances.length > 0 && { allowances }),
         };
         await updateEmployee.mutateAsync({ id: employee.id, data: updateData });
       } else {
@@ -517,7 +521,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           jobTitleId: rest.jobTitleId || undefined,
           jobGradeId: rest.jobGradeId || undefined,
           managerId: rest.managerId || undefined,
-          basicSalary: rest.basicSalary || undefined,
+          basicSalary: canSeeSalary ? rest.basicSalary || undefined : undefined,
           profilePhoto: rest.profilePhoto || undefined,
           bloodType: rest.bloodType || undefined,
           familyMembersCount: rest.familyMembersCount ?? undefined,
@@ -539,7 +543,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           company: rest.company || undefined,
           ...(attachments.length > 0 && { attachments }),
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
-          ...(allowances.length > 0 && { allowances }),
+          ...(canSeeSalary && allowances.length > 0 && { allowances }),
         };
         const created = await createEmployee.mutateAsync(createData);
         const newId = (created as any)?.data?.id || (created as any)?.id;
@@ -774,9 +778,11 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                         <span className="text-muted-foreground"> — {selectedGrade.description}</span>
                       )}
                     </div>
-                    <div className="text-muted-foreground shrink-0">
-                      ${gradeMin.toLocaleString("en-US")} – ${gradeMax.toLocaleString("en-US")}
-                    </div>
+                    {canSeeSalary && (
+                      <div className="text-muted-foreground shrink-0">
+                        ${gradeMin.toLocaleString("en-US")} – ${gradeMax.toLocaleString("en-US")}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -839,7 +845,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     )}
                   />
 
-                  <FormField
+                  {canSeeSalary && <FormField
                     control={form.control}
                     name="basicSalary"
                     render={({ field }) => (
@@ -862,9 +868,9 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                         <FormMessage />
                       </FormItem>
                     )}
-                  />
+                  />}
 
-                  {isEdit && (employee as any)?.dailyWage != null && (
+                  {canSeeSalary && isEdit && (employee as any)?.dailyWage != null && (
                     <div className="space-y-1.5">
                       <p className="text-sm font-medium leading-none">الأجر اليومي</p>
                       <div className="flex h-9 items-center rounded-md border bg-muted/50 px-3 text-sm text-muted-foreground">
@@ -1119,7 +1125,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                 />
 
                 {/* Allowances */}
-                <div className="space-y-2">
+                {canSeeSalary && <div className="space-y-2">
                   <div className="flex flex-wrap gap-2 items-center justify-between">
                     <p className="text-sm font-medium">{t("employees.form.allowancesTitle")} ({t("common.optional")})</p>
                     <Button
@@ -1173,7 +1179,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       ))}
                     </div>
                   )}
-                </div>
+                </div>}
               </TabsContent>
 
               {/* ─── Qualifications Tab ─── */}

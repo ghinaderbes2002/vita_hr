@@ -22,11 +22,13 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   employeeId: string;
+  /** False hides the salary and allowance fields, so a transfer leaves pay untouched. */
+  canSetPay?: boolean;
 }
 
 const EMPTY = "__NONE__";
 
-export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
+export function TransferDialog({ open, onOpenChange, employeeId, canSetPay = true }: Props) {
   const transfer = useTransferEmployee();
   const { data: deptData }  = useDepartments({ limit: 200 });
   const { data: titleData } = useJobTitles({ limit: 200 });
@@ -166,7 +168,7 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
           </div>
 
           {/* Salary */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {canSetPay && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div className="col-span-1 sm:col-span-2 space-y-1.5">
               <Label>الراتب الأساسي الجديد</Label>
               <Input
@@ -184,15 +186,15 @@ export function TransferDialog({ open, onOpenChange, employeeId }: Props) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </div>}
 
           {/* Allowances */}
-          <AllowancesEditor
+          {canSetPay && <AllowancesEditor
             enabled={editAllowances}
             onEnabledChange={setEditAllowances}
             rows={allowanceRows}
             onRowsChange={setAllowanceRows}
-          />
+          />}
 
           {/* Effective Date */}
           <div className="space-y-1.5">

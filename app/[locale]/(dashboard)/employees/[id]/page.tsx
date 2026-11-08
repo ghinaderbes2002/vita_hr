@@ -38,6 +38,7 @@ import { assetUrl, formatUSD } from "@/lib/utils";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { FieldGuard } from "@/components/permissions/field-guard";
+import { useCanSeeSalary } from "@/lib/hooks/use-can-see-salary";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useEmployeeFingerprints, useRegisterFingerprint, useDeleteFingerprint } from "@/lib/hooks/use-employee-fingerprints";
 import { useBiometricDevices } from "@/lib/hooks/use-biometric-devices";
@@ -499,6 +500,9 @@ export default function EmployeeDetailsPage() {
   const { hasPermission, isAdmin } = usePermissions();
   const canExport = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.EXPORT);
   const canEditNotes = isAdmin() || hasPermission(PERMISSIONS.EMPLOYEES.UPDATE);
+  // Managing an employee doesn't mean seeing their pay: commissions and salary
+  // changes follow the same permission as the salary shown on this page.
+  const canSeeSalary = useCanSeeSalary();
   const canEditFields = canEditNotes;
 
   // ── Inline field editing ───────────────────────────────────────────────────
@@ -830,18 +834,18 @@ export default function EmployeeDetailsPage() {
               نقل / تحويل
             </Button>
           </ActionGuard>
-          <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+          {canSeeSalary && <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setCommissionsOpen(true)}>
               <Percent className="h-4 w-4" />
               العمولات
             </Button>
-          </ActionGuard>
-          <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
+          </ActionGuard>}
+          {canSeeSalary && <ActionGuard permission={PERMISSIONS.EMPLOYEES.UPDATE}>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setSalaryChangeOpen(true)}>
               <DollarSign className="h-4 w-4" />
               تغيير راتب
             </Button>
-          </ActionGuard>
+          </ActionGuard>}
           <Button variant="outline" size="sm" className="gap-2" onClick={() => setLeaveDuesOpen(true)}>
             <CalendarX className="h-4 w-4" />
             مستحقات الإجازات
@@ -1771,7 +1775,7 @@ export default function EmployeeDetailsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <EmployeeDossier employeeId={employeeId} />
+          <EmployeeDossier employeeId={employeeId} showPay={canSeeSalary} />
         </CardContent>
       </Card>
 
@@ -1780,20 +1784,21 @@ export default function EmployeeDetailsPage() {
         open={transferOpen}
         onOpenChange={setTransferOpen}
         employeeId={employeeId}
+        canSetPay={canSeeSalary}
       />
-      <SalaryChangeDialog
+      {canSeeSalary && <SalaryChangeDialog
         open={salaryChangeOpen}
         onOpenChange={setSalaryChangeOpen}
         employeeId={employeeId}
         currentSalary={emp?.basicSalary}
         currentCurrency={emp?.salaryCurrency ?? "USD"}
-      />
-      <EmployeeCommissionsDialog
+      />}
+      {canSeeSalary && <EmployeeCommissionsDialog
         open={commissionsOpen}
         onOpenChange={setCommissionsOpen}
         employeeId={employeeId}
         currentCommissions={commissions}
-      />
+      />}
 
       {/* ─── Unused Annual Leave ───────────────────────────── */}
       <Dialog open={leaveDuesOpen} onOpenChange={setLeaveDuesOpen}>

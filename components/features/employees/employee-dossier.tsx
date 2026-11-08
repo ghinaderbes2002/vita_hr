@@ -100,7 +100,7 @@ function ChangeRow({ label, from, to }: { label: string; from?: string; to?: str
 }
 
 // ─── single event card ────────────────────────────────────────────────────────
-function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: string) => string }) {
+function EventCard({ ev, resolveUser, showPay }: { ev: DossierEvent; resolveUser: (id: string) => string; showPay: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const meta = eventMeta(ev);
   const from = ev.fromValue ?? {};
@@ -113,6 +113,7 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
 
   // salary: new structure is v.salary.basicSalary; fall back to flat v.basicSalary for old events
   function getSalary(v: Record<string, any>): number | undefined {
+    if (!showPay) return undefined;
     const raw = v.salary?.basicSalary ?? v.basicSalary;
     if (raw === undefined || raw === null) return undefined;
     if (typeof raw === "number") return raw;
@@ -130,7 +131,7 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
     from.jobTitle   || to.jobTitle   ||
     from.jobGrade   || to.jobGrade   ||
     from.manager    || to.manager    ||
-    Array.isArray(from.allowances) || Array.isArray(to.allowances) ||
+    (showPay && (Array.isArray(from.allowances) || Array.isArray(to.allowances))) ||
     getSalary(from) !== undefined || getSalary(to) !== undefined
   );
 
@@ -185,7 +186,7 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
               : undefined}
           />
           {/* Allowances */}
-          {(Array.isArray(from.allowances) || Array.isArray(to.allowances)) && (
+          {showPay && (Array.isArray(from.allowances) || Array.isArray(to.allowances)) && (
             <div className="flex items-start gap-2 text-sm">
               <span className="text-muted-foreground min-w-20">البدلات</span>
               <div className="space-y-0.5">
@@ -310,13 +311,21 @@ function EventCard({ ev, resolveUser }: { ev: DossierEvent; resolveUser: (id: st
 }
 
 // ─── main export ──────────────────────────────────────────────────────────────
-export function EmployeeDossier({ employeeId }: { employeeId: string }) {
+/**
+ * `showPay` false drops every event that is only about pay (salary changes,
+ * advances, commissions) and strips salary and allowances from the rest.
+ */
+export function EmployeeDossier({ employeeId, showPay = true }: { employeeId: string; showPay?: boolean }) {
   const { data, isLoading, isError }   = useEmployeeDossier(employeeId);
   const { data: empData }              = useEmployees({ limit: 500 });
   // Drafts stay hidden, except commissions — draft commissions are visible
   // on the /sales-commissions screen, so hiding them here would be inconsistent.
   const timeline: DossierEvent[] = (data?.timeline ?? []).filter(
-    ev => ev.status !== "DRAFT" || ev.category === "COMMISSION"
+    ev => (ev.status !== "DRAFT" || ev.category === "COMMISSION") &&
+      (showPay || !(
+        ev.category === "SALARY_ADVANCE" || ev.category === "COMMISSION" ||
+        (ev.category === "HISTORY" && ev.type === "SALARY_CHANGE")
+      ))
   );
 
   const userMap = useMemo(() => {
@@ -365,7 +374,7 @@ export function EmployeeDossier({ employeeId }: { employeeId: string }) {
 
   return (
     <div className="space-y-3">
-      {timeline.map((ev, i) => <EventCard key={ev.id ?? i} ev={ev} resolveUser={resolveUser} />)}
+      {timeline.map((ev, i) => <EventCard key={ev.id ?? i} ev={ev} resolveUser={resolveUser} showPay={showPay} />)}
     </div>
   );
 }

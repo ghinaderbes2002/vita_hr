@@ -147,6 +147,9 @@ const navigation: NavItem[] = [
     
     title: "nav.management",
     icon: Settings,
+    // An HR specialist usually also holds "موظف"; showForRoles wins over
+    // hiddenForRoles, and each link below still needs its own permission.
+    showForRoles: ["HR_Specialist"],
     hiddenForRoles: ["employee", "موظف", "hr_manager", "مدير الموارد البشرية", "dep_manager", "مدير قسم", "DIRECT_MANAGER", "QS", "CFO"],
     children: [
       { title: "nav.users", href: "/users", icon: UserCog, permission: "users:read" },
@@ -164,7 +167,7 @@ const navigation: NavItem[] = [
     // "شؤون المرؤوسين" is for direct managers only. showForRoles is evaluated
     // before hiddenForRoles, so a direct manager who also holds "موظف" still
     // sees it; a center supervisor (QS) without direct-manager does not.
-    showForRoles: ["DIRECT_MANAGER", "المدير المباشر"],
+    showForRoles: ["DIRECT_MANAGER", "المدير المباشر", "HR_Specialist"],
     hiddenForRoles: ["employee", "موظف", "QS", "مشرف مركز"],
     children: [
       // Login-only: the API returns the signed-in manager's own reports.
