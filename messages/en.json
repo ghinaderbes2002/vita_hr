@@ -397,6 +397,11 @@
     "warehouseSalesInvoices": "Sales Invoices",
     "warehouseReports": "Warehouse Reports",
     "warehouseProstheticsPricing": "Part Pricing Settings",
+    "cashbox": "Cash Box",
+    "cashboxBoxes": "Boxes",
+    "cashboxTransactions": "Transactions",
+    "cashboxCounts": "Counts",
+    "cashboxCurrencies": "Cash Currencies",
     "warehouseSetup": "Master Data",
     "clinicReferrals": "Referral Sources",
     "clinicSales": "Sales Department",
@@ -6817,6 +6822,112 @@
       "emptyTitle": "No ratings",
       "emptyDescription": "Patients rate a session from the app once it has ended",
       "scoreOutOf": "{score} out of 5"
+    }
+  },
+  "cashbox": {
+    "boxesTitle": "Cash Boxes",
+    "boxesDescription": "The main box and the sub boxes, with each one's balance per currency",
+    "transactionsTitle": "Cash Transactions",
+    "transactionsDescription": "Disbursements, receipts, handovers and refills",
+    "countsTitle": "Cash Counts",
+    "countsDescription": "The counted balance against the balance worked out from transactions",
+    "currenciesTitle": "Cash Currencies",
+    "currenciesDescription": "Each currency has its own balance in every box, with no conversion between them",
+    "newTransaction": "New transaction",
+    "noBoxes": "No cash boxes yet",
+    "noBoxesHint": "Add the main box first, then the sub boxes.",
+    "boxNotFound": "Cash box not found",
+    "noBalance": "No balance",
+    "noTransactions": "No transactions",
+    "noCounts": "No counts recorded",
+    "noCurrencies": "No currencies yet",
+    "mainBox": "Main box",
+    "allTypes": "All transactions",
+    "allBoxes": "All boxes",
+    "selectBox": "Select a box...",
+    "selectCurrency": "Select a currency...",
+    "mainBoxIs": "Other end: the main box ({name})",
+    "noMainBox": "There is no main box — set one first.",
+    "availableBalance": "Available: {balance}",
+    "exceedsBalance": "The amount is more than the available balance ({balance})",
+    "cancel": "Cancel",
+    "save": "Save",
+    "confirm": "Submit",
+    "edit": "Edit",
+    "boxType": {
+      "MAIN": "Main",
+      "SUB": "Sub"
+    },
+    "txType": {
+      "DISBURSEMENT": "Disbursement",
+      "RECEIPT": "Receipt",
+      "HANDOVER": "Handover to main",
+      "REFILL": "Refill from main"
+    },
+    "txTitle": {
+      "DISBURSEMENT": "Disbursement order",
+      "RECEIPT": "Receipt order",
+      "HANDOVER": "Hand a sub box over to the main box",
+      "REFILL": "Refill a sub box from the main box"
+    },
+    "txHint": {
+      "DISBURSEMENT": "Pay an amount out of the box to an employee. It can't exceed the box's balance.",
+      "RECEIPT": "Take an amount into the box from a patient or a customer.",
+      "HANDOVER": "Move an amount from a sub box to the main box. It can't exceed the sub box's balance.",
+      "REFILL": "Move an amount from the main box to a sub box. It can't exceed the main box's balance."
+    },
+    "fields": {
+      "date": "Date",
+      "type": "Type",
+      "box": "Box",
+      "subBox": "Sub box",
+      "amount": "Amount",
+      "currency": "Currency",
+      "counterpart": "Party",
+      "reason": "Reason",
+      "reference": "Reference",
+      "expected": "Calculated balance",
+      "actual": "Counted balance",
+      "variance": "Difference",
+      "notes": "Notes",
+      "name": "Name",
+      "custodian": "Custodian",
+      "boxType": "Box type",
+      "code": "Code",
+      "targetEmployee": "Receiving employee",
+      "payer": "Payer"
+    },
+    "variance": {
+      "match": "Matches",
+      "surplus": "Surplus",
+      "shortage": "Shortage"
+    },
+    "box": {
+      "addTitle": "New box",
+      "editTitle": "Edit box",
+      "searchEmployee": "Search employees...",
+      "selectEmployee": "Select employee",
+      "noEmployees": "No employees",
+      "mainReplaces": "The current main box ({name}) will become a sub box.",
+      "active": "Box is active",
+      "inactive": "Inactive",
+      "setMain": "Make main",
+      "setMainTitle": "Set the main box",
+      "setMainDescription": "“{name}” becomes the main box, and the current main box becomes a sub box."
+    },
+    "currency": {
+      "addTitle": "New currency",
+      "codeHint": "A short English code, like USD or SYP"
+    },
+    "count": {
+      "addTitle": "Record a count",
+      "actualHint": "The amount actually in the box in this currency"
+    },
+    "toast": {
+      "saved": "Saved",
+      "created": "Added",
+      "done": "Transaction recorded",
+      "error": "Couldn't complete the operation"
     }
   },
   "warehouse": {

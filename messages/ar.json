@@ -186,6 +186,11 @@
     "warehouseSalesInvoices": "فواتير المبيعات",
     "warehouseReports": "تقارير المستودعات",
     "warehouseProstheticsPricing": "إعدادات تسعير القطعة",
+    "cashbox": "الصندوق النقدي",
+    "cashboxBoxes": "الصناديق",
+    "cashboxTransactions": "الحركات",
+    "cashboxCounts": "الجرد",
+    "cashboxCurrencies": "عملات الصندوق",
     "warehouseSetup": "البيانات الأساسية",
     "clinicReferrals": "مصادر الإحالة",
     "clinicSales": "قسم المبيعات",
@@ -7043,6 +7048,112 @@
       "emptyTitle": "لا توجد تقييمات",
       "emptyDescription": "يقيّم المريض الجلسة من التطبيق بعد انتهائها",
       "scoreOutOf": "{score} من 5"
+    }
+  },
+  "cashbox": {
+    "boxesTitle": "الصناديق",
+    "boxesDescription": "الصندوق الرئيسي والصناديق الفرعية، ورصيد كل منها بكل عملة",
+    "transactionsTitle": "حركات الصندوق",
+    "transactionsDescription": "الصرف والقبض والتسليم والتعبئة",
+    "countsTitle": "جرد الصندوق",
+    "countsDescription": "مقارنة الرصيد الفعلي بالرصيد المحسوب من الحركات",
+    "currenciesTitle": "عملات الصندوق",
+    "currenciesDescription": "لكل عملة رصيد منفصل في كل صندوق، بدون تحويل بين العملات",
+    "newTransaction": "حركة جديدة",
+    "noBoxes": "لا توجد صناديق بعد",
+    "noBoxesHint": "أضف الصندوق الرئيسي أولاً، ثم الصناديق الفرعية.",
+    "boxNotFound": "الصندوق غير موجود",
+    "noBalance": "لا رصيد",
+    "noTransactions": "لا توجد حركات",
+    "noCounts": "لا يوجد جرد مسجّل",
+    "noCurrencies": "لا توجد عملات بعد",
+    "mainBox": "الصندوق الرئيسي",
+    "allTypes": "كل الحركات",
+    "allBoxes": "كل الصناديق",
+    "selectBox": "اختر الصندوق...",
+    "selectCurrency": "اختر العملة...",
+    "mainBoxIs": "الطرف الآخر: الصندوق الرئيسي ({name})",
+    "noMainBox": "لا يوجد صندوق رئيسي — عيّن واحداً أولاً.",
+    "availableBalance": "الرصيد المتاح: {balance}",
+    "exceedsBalance": "المبلغ أكبر من الرصيد المتاح ({balance})",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "confirm": "تنفيذ",
+    "edit": "تعديل",
+    "boxType": {
+      "MAIN": "رئيسي",
+      "SUB": "فرعي"
+    },
+    "txType": {
+      "DISBURSEMENT": "صرف",
+      "RECEIPT": "قبض",
+      "HANDOVER": "تسليم للرئيسي",
+      "REFILL": "تعبئة من الرئيسي"
+    },
+    "txTitle": {
+      "DISBURSEMENT": "أمر صرف",
+      "RECEIPT": "أمر قبض",
+      "HANDOVER": "تسليم صندوق فرعي للرئيسي",
+      "REFILL": "تعبئة صندوق فرعي من الرئيسي"
+    },
+    "txHint": {
+      "DISBURSEMENT": "صرف مبلغ من الصندوق لموظف. لا يمكن أن يتجاوز رصيد الصندوق.",
+      "RECEIPT": "قبض مبلغ من مريض أو زبون إلى الصندوق.",
+      "HANDOVER": "نقل مبلغ من صندوق فرعي إلى الصندوق الرئيسي. لا يمكن أن يتجاوز رصيد الفرعي.",
+      "REFILL": "نقل مبلغ من الصندوق الرئيسي إلى صندوق فرعي. لا يمكن أن يتجاوز رصيد الرئيسي."
+    },
+    "fields": {
+      "date": "التاريخ",
+      "type": "النوع",
+      "box": "الصندوق",
+      "subBox": "الصندوق الفرعي",
+      "amount": "المبلغ",
+      "currency": "العملة",
+      "counterpart": "الطرف",
+      "reason": "السبب",
+      "reference": "المرجع",
+      "expected": "الرصيد المحسوب",
+      "actual": "الرصيد الفعلي",
+      "variance": "الفرق",
+      "notes": "ملاحظات",
+      "name": "الاسم",
+      "custodian": "المسؤول",
+      "boxType": "نوع الصندوق",
+      "code": "الرمز",
+      "targetEmployee": "الموظف المستلم",
+      "payer": "الدافع"
+    },
+    "variance": {
+      "match": "مطابق",
+      "surplus": "زيادة",
+      "shortage": "نقص"
+    },
+    "box": {
+      "addTitle": "صندوق جديد",
+      "editTitle": "تعديل الصندوق",
+      "searchEmployee": "ابحث عن موظف...",
+      "selectEmployee": "اختر الموظف",
+      "noEmployees": "لا يوجد موظفون",
+      "mainReplaces": "الصندوق الرئيسي الحالي ({name}) سيتحول إلى فرعي.",
+      "active": "الصندوق فعّال",
+      "inactive": "متوقف",
+      "setMain": "تعيين كرئيسي",
+      "setMainTitle": "تعيين الصندوق الرئيسي",
+      "setMainDescription": "سيصبح «{name}» الصندوق الرئيسي، والرئيسي الحالي يتحول إلى فرعي."
+    },
+    "currency": {
+      "addTitle": "عملة جديدة",
+      "codeHint": "رمز قصير بالإنجليزية، مثل USD أو SYP"
+    },
+    "count": {
+      "addTitle": "تسجيل جرد",
+      "actualHint": "المبلغ الموجود فعلاً في الصندوق بهذه العملة"
+    },
+    "toast": {
+      "saved": "تم الحفظ",
+      "created": "تمت الإضافة",
+      "done": "تم تنفيذ الحركة",
+      "error": "تعذّر تنفيذ العملية"
     }
   },
   "warehouse": {

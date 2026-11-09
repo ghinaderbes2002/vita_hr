@@ -399,6 +399,17 @@ const navigation: NavItem[] = [
     ],
   },
   {
+    title: "nav.cashbox",
+    icon: Banknote,
+    separator: true,
+    children: [
+      { title: "nav.cashboxBoxes", href: "/cashbox", icon: Wallet, permission: "cashbox.boxes.read" },
+      { title: "nav.cashboxTransactions", href: "/cashbox/transactions", icon: ArrowLeftRight, permission: "cashbox.transactions.read" },
+      { title: "nav.cashboxCounts", href: "/cashbox/counts", icon: ClipboardCheck, permission: "cashbox.counts.read" },
+      { title: "nav.cashboxCurrencies", href: "/cashbox/currencies", icon: Coins, permission: "cashbox.boxes.read" },
+    ],
+  },
+  {
     title: "nav.patientApp",
     icon: Smartphone,
     separator: true,
@@ -562,6 +573,11 @@ export function Sidebar() {
         // both items light up at once.
         "/clinic/referrals/sales",
         "/clinic/referrals/vitafoot-sales",
+        // Their own nav items under /cashbox; a box's details (/cashbox/<id>)
+        // still lights up "boxes".
+        "/cashbox/transactions",
+        "/cashbox/counts",
+        "/cashbox/currencies",
       ];
 
       // If current path is a known sub-route, don't match parent

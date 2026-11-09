@@ -468,6 +468,16 @@ export const PERMISSIONS = {
   WAREHOUSE_REPORTS: {
     READ: "warehouse.reports.read",
   },
+  /** الصندوق النقدي: صناديق وعملات وحركات (صرف، قبض، تسليم، تعبئة) وجرد. */
+  CASHBOX: {
+    BOXES_READ:          "cashbox.boxes.read",
+    /** إنشاء وتعديل الصناديق والعملات وتعيين الرئيسي. */
+    BOXES_MANAGE:        "cashbox.boxes.manage",
+    TRANSACTIONS_READ:   "cashbox.transactions.read",
+    TRANSACTIONS_CREATE: "cashbox.transactions.create",
+    COUNTS_READ:         "cashbox.counts.read",
+    COUNTS_CREATE:       "cashbox.counts.create",
+  },
   /** تسعير قطع الأطراف الصناعية: أساس السعر + رقم ثابت لكل قطعة. */
   WAREHOUSE_PRICING_PROSTHETICS: {
     VIEW:   "warehouse.pricing.prosthetics.view",

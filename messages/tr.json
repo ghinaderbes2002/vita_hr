@@ -397,6 +397,11 @@
     "warehouseSalesInvoices": "Satış Faturaları",
     "warehouseReports": "Depo Raporları",
     "warehouseProstheticsPricing": "Parça Fiyatlandırma Ayarları",
+    "cashbox": "Kasa",
+    "cashboxBoxes": "Kasalar",
+    "cashboxTransactions": "Hareketler",
+    "cashboxCounts": "Sayımlar",
+    "cashboxCurrencies": "Kasa Para Birimleri",
     "warehouseSetup": "Temel Veriler",
     "clinicReferrals": "Sevk Kaynakları",
     "clinicSales": "Satış Departmanı",
@@ -5899,6 +5904,112 @@
       "emptyTitle": "Değerlendirme yok",
       "emptyDescription": "Hasta, seans bittikten sonra uygulamadan değerlendirir",
       "scoreOutOf": "5 üzerinden {score}"
+    }
+  },
+  "cashbox": {
+    "boxesTitle": "Kasalar",
+    "boxesDescription": "Ana kasa ve alt kasalar, her birinin para birimi başına bakiyesi",
+    "transactionsTitle": "Kasa Hareketleri",
+    "transactionsDescription": "Ödemeler, tahsilatlar, devirler ve doldurmalar",
+    "countsTitle": "Kasa Sayımları",
+    "countsDescription": "Sayılan bakiye ile hareketlerden hesaplanan bakiyenin karşılaştırması",
+    "currenciesTitle": "Kasa Para Birimleri",
+    "currenciesDescription": "Her para biriminin her kasada ayrı bakiyesi vardır, aralarında dönüşüm yoktur",
+    "newTransaction": "Yeni hareket",
+    "noBoxes": "Henüz kasa yok",
+    "noBoxesHint": "Önce ana kasayı, sonra alt kasaları ekleyin.",
+    "boxNotFound": "Kasa bulunamadı",
+    "noBalance": "Bakiye yok",
+    "noTransactions": "Hareket yok",
+    "noCounts": "Kayıtlı sayım yok",
+    "noCurrencies": "Henüz para birimi yok",
+    "mainBox": "Ana kasa",
+    "allTypes": "Tüm hareketler",
+    "allBoxes": "Tüm kasalar",
+    "selectBox": "Kasa seçin...",
+    "selectCurrency": "Para birimi seçin...",
+    "mainBoxIs": "Diğer taraf: ana kasa ({name})",
+    "noMainBox": "Ana kasa yok — önce birini belirleyin.",
+    "availableBalance": "Kullanılabilir: {balance}",
+    "exceedsBalance": "Tutar kullanılabilir bakiyeden fazla ({balance})",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "confirm": "Uygula",
+    "edit": "Düzenle",
+    "boxType": {
+      "MAIN": "Ana",
+      "SUB": "Alt"
+    },
+    "txType": {
+      "DISBURSEMENT": "Ödeme",
+      "RECEIPT": "Tahsilat",
+      "HANDOVER": "Ana kasaya devir",
+      "REFILL": "Ana kasadan doldurma"
+    },
+    "txTitle": {
+      "DISBURSEMENT": "Ödeme emri",
+      "RECEIPT": "Tahsilat emri",
+      "HANDOVER": "Alt kasayı ana kasaya devret",
+      "REFILL": "Alt kasayı ana kasadan doldur"
+    },
+    "txHint": {
+      "DISBURSEMENT": "Kasadan bir çalışana ödeme. Kasa bakiyesini aşamaz.",
+      "RECEIPT": "Bir hastadan veya müşteriden kasaya tahsilat.",
+      "HANDOVER": "Alt kasadan ana kasaya aktarım. Alt kasa bakiyesini aşamaz.",
+      "REFILL": "Ana kasadan alt kasaya aktarım. Ana kasa bakiyesini aşamaz."
+    },
+    "fields": {
+      "date": "Tarih",
+      "type": "Tür",
+      "box": "Kasa",
+      "subBox": "Alt kasa",
+      "amount": "Tutar",
+      "currency": "Para birimi",
+      "counterpart": "Taraf",
+      "reason": "Neden",
+      "reference": "Referans",
+      "expected": "Hesaplanan bakiye",
+      "actual": "Sayılan bakiye",
+      "variance": "Fark",
+      "notes": "Notlar",
+      "name": "Ad",
+      "custodian": "Sorumlu",
+      "boxType": "Kasa türü",
+      "code": "Kod",
+      "targetEmployee": "Alan çalışan",
+      "payer": "Ödeyen"
+    },
+    "variance": {
+      "match": "Eşleşiyor",
+      "surplus": "Fazla",
+      "shortage": "Eksik"
+    },
+    "box": {
+      "addTitle": "Yeni kasa",
+      "editTitle": "Kasayı düzenle",
+      "searchEmployee": "Çalışan ara...",
+      "selectEmployee": "Çalışan seçin",
+      "noEmployees": "Çalışan yok",
+      "mainReplaces": "Mevcut ana kasa ({name}) alt kasaya dönüşecek.",
+      "active": "Kasa aktif",
+      "inactive": "Pasif",
+      "setMain": "Ana yap",
+      "setMainTitle": "Ana kasayı belirle",
+      "setMainDescription": "“{name}” ana kasa olur, mevcut ana kasa alt kasaya dönüşür."
+    },
+    "currency": {
+      "addTitle": "Yeni para birimi",
+      "codeHint": "USD veya SYP gibi kısa İngilizce kod"
+    },
+    "count": {
+      "addTitle": "Sayım kaydet",
+      "actualHint": "Kasada bu para biriminde gerçekte bulunan tutar"
+    },
+    "toast": {
+      "saved": "Kaydedildi",
+      "created": "Eklendi",
+      "done": "Hareket kaydedildi",
+      "error": "İşlem tamamlanamadı"
     }
   },
   "warehouse": {
