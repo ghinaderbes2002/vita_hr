@@ -158,15 +158,17 @@ function SettingsForm({ settings }: { settings: ProstheticsPricingSettings }) {
                 </SelectContent>
               </Select>
               {profitType !== NO_PROFIT && (
-                <div className="relative flex-1">
+                <div className="flex flex-1 items-center gap-1.5">
+                  {/* The % sits beside the field, not inside it: the number is typed
+                      left-to-right, so an overlaid sign landed on top of it in Arabic. */}
                   <Input
                     type="number" min={0} step="any" dir="ltr"
                     value={profitValue} disabled={!canManage}
                     onChange={(e) => setProfitValue(e.target.value)}
-                    className={profitType === "PERCENT" ? "pe-7" : undefined}
+                    className="min-w-0 flex-1"
                   />
                   {profitType === "PERCENT" && (
-                    <span className="pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                    <span className="flex h-9 shrink-0 items-center rounded-md border bg-muted/50 px-2.5 text-sm text-muted-foreground">%</span>
                   )}
                 </div>
               )}
