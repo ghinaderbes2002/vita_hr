@@ -22,6 +22,8 @@ import {
 } from "@/lib/hooks/use-cashbox";
 import type { CashBox, CashBoxType, CashTransactionType } from "@/lib/api/cashbox";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 /** A positive amount from text input, else undefined. */
 const positive = (v: string) => {
@@ -220,7 +222,8 @@ function CashTransactionForm({
   const [clientId, setClientId] = useState("");
 
   // The money leaves this box: the picked box, or for a refill the main box.
-  const sourceBoxId = type === "REFILL" ? mainBox?.id ?? "" : type === "RECEIPT" ? "" : boxId;
+  // Money coming in (receipt, deposit) has no balance to check against.
+  const sourceBoxId = type === "REFILL" ? mainBox?.id ?? "" : type === "RECEIPT" || type === "DEPOSIT" ? "" : boxId;
   const { data: sourceBalances } = useCashBalances(sourceBoxId);
   const currencyCode = currencies.find((c) => c.id === currencyId)?.code;
   const available = sourceBoxId && currencyId
@@ -246,6 +249,7 @@ function CashTransactionForm({
           dto: clientKind === "customer" ? { ...base, customerId: clientId } : { ...base, patientId: clientId },
         });
       } else if (type === "HANDOVER") await create.mutateAsync({ type, dto: base });
+      else if (type === "DEPOSIT") await create.mutateAsync({ type, dto: base });
       else await create.mutateAsync({ type, dto: base });
       onDone();
     } catch {
@@ -425,10 +429,18 @@ export function NewTransactionMenu({ defaultBoxId, boxType }: {
   boxType?: CashBoxType;
 }) {
   const t = useTranslations("cashbox");
+  const { hasPermission, isAdmin } = usePermissions();
+  const canCreate = isAdmin() || hasPermission(PERMISSIONS.CASHBOX.TRANSACTIONS_CREATE);
+  // A deposit has its own permission (the finance manager), apart from the rest.
+  const canDeposit = isAdmin() || hasPermission(PERMISSIONS.CASHBOX.TRANSACTIONS_DEPOSIT);
   const [type, setType] = useState<CashTransactionType | null>(null);
-  const kinds: CashTransactionType[] = boxType === "MAIN"
-    ? ["DISBURSEMENT", "RECEIPT"]
-    : ["DISBURSEMENT", "RECEIPT", "HANDOVER", "REFILL"];
+  const kinds: CashTransactionType[] = [
+    ...(canDeposit ? ["DEPOSIT" as const] : []),
+    ...(canCreate
+      ? (boxType === "MAIN" ? ["DISBURSEMENT", "RECEIPT"] as const : ["DISBURSEMENT", "RECEIPT", "HANDOVER", "REFILL"] as const)
+      : []),
+  ];
+  if (kinds.length === 0) return null;
   return (
     <>
       <DropdownMenu>

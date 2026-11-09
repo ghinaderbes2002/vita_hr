@@ -30,10 +30,11 @@ export interface CashBalance {
 /**
  * DISBURSEMENT: paid out to an employee. RECEIPT: taken in from a patient or a
  * sales customer. HANDOVER: a sub box hands cash to the main box. REFILL: the
- * main box tops a sub box up.
+ * main box tops a sub box up. DEPOSIT: cash put in from outside (an opening
+ * balance, funding) — no patient or customer; counts like a receipt.
  */
-export type CashTransactionType = "DISBURSEMENT" | "RECEIPT" | "HANDOVER" | "REFILL";
-export const CASH_TRANSACTION_TYPES: CashTransactionType[] = ["DISBURSEMENT", "RECEIPT", "HANDOVER", "REFILL"];
+export type CashTransactionType = "DISBURSEMENT" | "RECEIPT" | "HANDOVER" | "REFILL" | "DEPOSIT";
+export const CASH_TRANSACTION_TYPES: CashTransactionType[] = ["DEPOSIT", "DISBURSEMENT", "RECEIPT", "HANDOVER", "REFILL"];
 
 export interface CashTransaction {
   id: string;
@@ -104,6 +105,8 @@ export type ReceiptDto = MoveBase & ({ patientId: string; customerId?: never } |
 export type HandoverDto = MoveBase;
 /** cashBoxId is the SUB box being topped up from the main box. */
 export type RefillDto = MoveBase;
+/** Any box; no patient or customer. */
+export type DepositDto = MoveBase;
 
 export interface CreateCashCountDto {
   cashBoxId: string;
@@ -171,6 +174,9 @@ export const cashboxApi = {
     unwrap((await apiClient.post(`${BASE}/transactions/handover`, dto)).data),
   refill: async (dto: RefillDto): Promise<CashTransaction> =>
     unwrap((await apiClient.post(`${BASE}/transactions/refill`, dto)).data),
+  /** Needs cashbox.transactions.deposit. */
+  deposit: async (dto: DepositDto): Promise<CashTransaction> =>
+    unwrap((await apiClient.post(`${BASE}/transactions/deposit`, dto)).data),
 
   // ── Counts ──
   getCounts: async (params?: { cashBoxId?: string; page?: number; limit?: number }): Promise<Paged<CashCount>> =>

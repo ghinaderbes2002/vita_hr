@@ -6842,6 +6842,7 @@
     "noCounts": "No counts recorded",
     "noCurrencies": "No currencies yet",
     "mainBox": "Main box",
+    "depositSource": "External deposit",
     "allTypes": "All transactions",
     "allBoxes": "All boxes",
     "selectBox": "Select a box...",
@@ -6859,18 +6860,21 @@
       "SUB": "Sub"
     },
     "txType": {
+      "DEPOSIT": "Deposit",
       "DISBURSEMENT": "Disbursement",
       "RECEIPT": "Receipt",
       "HANDOVER": "Handover to main",
       "REFILL": "Refill from main"
     },
     "txTitle": {
+      "DEPOSIT": "Deposit into a box",
       "DISBURSEMENT": "Disbursement order",
       "RECEIPT": "Receipt order",
       "HANDOVER": "Hand a sub box over to the main box",
       "REFILL": "Refill a sub box from the main box"
     },
     "txHint": {
+      "DEPOSIT": "Cash put in from outside the system, such as an opening balance or funding — no patient or customer.",
       "DISBURSEMENT": "Pay an amount out of the box to an employee. It can't exceed the box's balance.",
       "RECEIPT": "Take an amount into the box from a patient or a customer.",
       "HANDOVER": "Move an amount from a sub box to the main box. It can't exceed the sub box's balance.",

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/shared/page-header";
 import { Pagination } from "@/components/shared/pagination";
-import { ActionGuard } from "@/components/permissions/action-guard";
 import { PageGuard } from "@/components/permissions/page-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useCashBoxes, useCashTransactions } from "@/lib/hooks/use-cashbox";
@@ -43,9 +42,7 @@ function CashTransactionsContent() {
         description={t("transactionsDescription")}
         count={data?.total}
         actions={
-          <ActionGuard permission={PERMISSIONS.CASHBOX.TRANSACTIONS_CREATE}>
-            <NewTransactionMenu />
-          </ActionGuard>
+          <NewTransactionMenu />
         }
       />
       <div className="flex flex-wrap gap-3">

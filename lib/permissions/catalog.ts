@@ -475,6 +475,8 @@ export const PERMISSIONS = {
     BOXES_MANAGE:        "cashbox.boxes.manage",
     TRANSACTIONS_READ:   "cashbox.transactions.read",
     TRANSACTIONS_CREATE: "cashbox.transactions.create",
+    /** إيداع / رصيد افتتاحي بلا مريض ولا زبون — للمدير المالي. */
+    TRANSACTIONS_DEPOSIT: "cashbox.transactions.deposit",
     COUNTS_READ:         "cashbox.counts.read",
     COUNTS_CREATE:       "cashbox.counts.create",
   },

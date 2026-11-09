@@ -5924,6 +5924,7 @@
     "noCounts": "Kayıtlı sayım yok",
     "noCurrencies": "Henüz para birimi yok",
     "mainBox": "Ana kasa",
+    "depositSource": "Dış yatırma",
     "allTypes": "Tüm hareketler",
     "allBoxes": "Tüm kasalar",
     "selectBox": "Kasa seçin...",
@@ -5941,18 +5942,21 @@
       "SUB": "Alt"
     },
     "txType": {
+      "DEPOSIT": "Yatırma",
       "DISBURSEMENT": "Ödeme",
       "RECEIPT": "Tahsilat",
       "HANDOVER": "Ana kasaya devir",
       "REFILL": "Ana kasadan doldurma"
     },
     "txTitle": {
+      "DEPOSIT": "Kasaya yatırma",
       "DISBURSEMENT": "Ödeme emri",
       "RECEIPT": "Tahsilat emri",
       "HANDOVER": "Alt kasayı ana kasaya devret",
       "REFILL": "Alt kasayı ana kasadan doldur"
     },
     "txHint": {
+      "DEPOSIT": "Sistem dışından gelen nakit, örneğin açılış bakiyesi veya fon — hasta ya da müşteri yok.",
       "DISBURSEMENT": "Kasadan bir çalışana ödeme. Kasa bakiyesini aşamaz.",
       "RECEIPT": "Bir hastadan veya müşteriden kasaya tahsilat.",
       "HANDOVER": "Alt kasadan ana kasaya aktarım. Alt kasa bakiyesini aşamaz.",

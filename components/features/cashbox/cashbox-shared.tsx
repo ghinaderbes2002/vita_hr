@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, PiggyBank, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -50,6 +50,7 @@ const TX_STYLE: Record<CashTransactionType, { cls: string; icon: typeof Wallet }
   RECEIPT: { cls: "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300", icon: ArrowDownLeft },
   HANDOVER: { cls: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300", icon: ArrowLeftRight },
   REFILL: { cls: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300", icon: ArrowLeftRight },
+  DEPOSIT: { cls: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300", icon: PiggyBank },
 };
 
 export function TxTypeBadge({ type }: { type: CashTransactionType }) {
@@ -88,6 +89,8 @@ function Counterpart({ tx }: { tx: CashTransaction }) {
   const t = useTranslations("cashbox");
   const nameOf = useEmployeeName();
   if (tx.transactionType === "DISBURSEMENT") return <>{nameOf(tx.targetEmployeeId)}</>;
+  // Cash from outside the system: no one to name.
+  if (tx.transactionType === "DEPOSIT") return <span className="text-muted-foreground">{t("depositSource")}</span>;
   if (tx.transactionType === "RECEIPT") {
     return <ClientName patientId={tx.patientId} customerId={tx.customerId} customer={tx.customer} />;
   }

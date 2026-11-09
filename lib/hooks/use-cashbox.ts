@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
-  cashboxApi, CashTransactionType, CreateCashBoxDto, CreateCashCountDto, DisbursementDto,
+  cashboxApi, CashTransactionType, CreateCashBoxDto, CreateCashCountDto, DepositDto, DisbursementDto,
   HandoverDto, ReceiptDto, RefillDto, UpdateCashBoxDto,
 } from "@/lib/api/cashbox";
 import { apiErrorMessage } from "@/lib/api/api-errors";
@@ -78,7 +78,8 @@ export type CashMove =
   | { type: "DISBURSEMENT"; dto: DisbursementDto }
   | { type: "RECEIPT"; dto: ReceiptDto }
   | { type: "HANDOVER"; dto: HandoverDto }
-  | { type: "REFILL"; dto: RefillDto };
+  | { type: "REFILL"; dto: RefillDto }
+  | { type: "DEPOSIT"; dto: DepositDto };
 
 export function useCreateCashTransaction() {
   return useCashMutation(
@@ -88,6 +89,7 @@ export function useCreateCashTransaction() {
         case "RECEIPT": return cashboxApi.receive(move.dto);
         case "HANDOVER": return cashboxApi.handover(move.dto);
         case "REFILL": return cashboxApi.refill(move.dto);
+        case "DEPOSIT": return cashboxApi.deposit(move.dto);
       }
     },
     [K.transactions, K.balances, K.counts],

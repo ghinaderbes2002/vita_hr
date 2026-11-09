@@ -62,9 +62,7 @@ function CashBoxesContent() {
                 {t("box.addTitle")}
               </Button>
             </ActionGuard>
-            <ActionGuard permission={PERMISSIONS.CASHBOX.TRANSACTIONS_CREATE}>
-              <NewTransactionMenu />
-            </ActionGuard>
+            <NewTransactionMenu />
           </div>
         }
       />

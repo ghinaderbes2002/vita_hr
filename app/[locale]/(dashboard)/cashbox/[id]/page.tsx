@@ -85,9 +85,7 @@ function CashBoxDetails() {
                 {t("count.addTitle")}
               </Button>
             </ActionGuard>
-            <ActionGuard permission={PERMISSIONS.CASHBOX.TRANSACTIONS_CREATE}>
-              <NewTransactionMenu defaultBoxId={box.id} boxType={box.type} />
-            </ActionGuard>
+            <NewTransactionMenu defaultBoxId={box.id} boxType={box.type} />
           </div>
         </CardContent>
       </Card>
