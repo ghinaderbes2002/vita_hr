@@ -272,6 +272,8 @@ export const PERMISSIONS = {
     SESSIONS_CREATE:   "clinic.physio.sessions.create",
     /** Hand a converted case to a therapist — the department head's job. */
     CASE_ASSIGN:       "clinic.physio.case.assign",
+    /** Write the doctor's opinion on the treatment plan. */
+    DOCTOR_REVIEW:     "clinic.physio.doctor_review",
     EMERGENCY_ALERT:   "physio:emergency-alert",
   },
   CLINIC_PODIATRY: {

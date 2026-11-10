@@ -6827,6 +6827,28 @@
     }
   },
   "starOfMonth": {
+    "quarter": {
+      "title": "Star of the quarter",
+      "description": "The best of each company's three monthly winners, by the score each won with. The award is a certificate of appreciation.",
+      "label": "Q{quarter} {year}",
+      "previous": "Previous quarter",
+      "next": "Next quarter",
+      "compute": "Compute",
+      "computed": "Star of the quarter computed",
+      "tieBroken": "Tie settled",
+      "notComputed": "Not computed yet — runs automatically once the three months are closed",
+      "score": "Score: {score}",
+      "awardedAt": "Won on {date}",
+      "certificate": "Certificate",
+      "certificateFailed": "Couldn't download the certificate",
+      "tieHr": "Tied on score — pick the winner:",
+      "tieWaiting": "Tied on score — waiting for HR",
+      "tieBreakTitle": "Settle the quarter tie",
+      "tieBreakDescription": "Make {name} star of the quarter at {company}? The certificate is issued right away.",
+      "monthlyWinners": "Monthly winners",
+      "loadFailed": "Couldn't load the star of the quarter",
+      "error": "Something went wrong"
+    },
     "viewDetails": "Details",
     "congratulate": "Congratulate",
     "comments": "Comments ({count})",

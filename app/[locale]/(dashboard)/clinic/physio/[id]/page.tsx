@@ -88,7 +88,7 @@ import {
   useRespondToAlert,
 } from "@/lib/hooks/use-clinic-physio";
 import { useUsers } from "@/lib/hooks/use-users";
-import { useEmployeesByDepartment } from "@/lib/hooks/use-employees";
+import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import {
   PhysioStatus,
@@ -300,8 +300,7 @@ export default function PhysioCasePage() {
     follow_ups: [PH.SESSIONS_CREATE],
     // Read-only view of what the patient did in the app.
     app_progress: [PERMISSIONS.PATIENT_APP.VIEW_PATIENT_EXECUTIONS],
-    supervisor_review: [PH.SUPERVISOR_REVIEW],
-    doctor_review: [PH.SUPERVISOR_REVIEW],
+    // Both reviews are read by everyone on the case; writing them is gated below.
   };
   // A doctor exam stops at the intake + doctor form; everything downstream of it
   // belongs to the PT case it can be converted into.
@@ -390,10 +389,12 @@ export default function PhysioCasePage() {
       name: `${d.manager.firstNameAr} ${d.manager.lastNameAr}`,
     }));
 
+  // The light list every screen already caches, narrowed to the physio department:
+  // the per-department endpoint carries whole profiles and took seconds to open.
   const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
-  const { data: physioDeptData } = useEmployeesByDepartment(PHYSIO_DEPT_ID);
+  const { data: basicStaff } = useEmployeesBasicList();
   const physioEmployees: { id: string; firstNameAr: string; lastNameAr: string }[] =
-    Array.isArray(physioDeptData) ? physioDeptData : [];
+    (Array.isArray(basicStaff) ? basicStaff : []).filter((e) => e.department?.id === PHYSIO_DEPT_ID);
 
   const { data: patientFull } = useClinicPatient(caseData?.patientId ?? "");
 
@@ -1465,6 +1466,20 @@ export default function PhysioCasePage() {
   const formSubTab2 = PHYSIO_FORM_TABS.includes(resolvedTab) ? resolvedTab : (PHYSIO_FORM_TABS.find(showPhysioTab) ?? "goals");
 
   const canEdit = !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status);
+  // Everyone reads the two reviews; only the holder of each one's permission writes it.
+  const canWriteSupervisorReview = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW]);
+  const canWriteDoctorReview = isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PHYSIO.DOCTOR_REVIEW]);
+  const plan = c.treatmentPlan as {
+    supervisorGazeByName?: string | null; supervisorGazeAt?: string | null;
+    doctorGazeByName?: string | null; doctorGazeAt?: string | null;
+  } | null | undefined;
+  const writtenBy = (name?: string | null, at?: string | null) =>
+    name ? (
+      <p className="text-xs text-muted-foreground">
+        كتبه: <span className="font-medium text-foreground">{name}</span>
+        {at && <> — <span dir="ltr">{new Date(at).toLocaleDateString("en-GB")}</span></>}
+      </p>
+    ) : null;
   // POST/PUT /physio/cases/:id/complaint — the intake tab and the complaint form
   // both save through it — requires this permission; without it the API answers
   // 403, so the save buttons are not offered at all.
@@ -3818,9 +3833,11 @@ export default function PhysioCasePage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>{t("supervisorReview.label")}</Label>
-                <Textarea rows={4} value={supervisorGaze} onChange={(e) => setSupervisorGaze(e.target.value)} placeholder={t("supervisorReview.placeholder")} />
+                <Textarea rows={4} value={supervisorGaze} onChange={(e) => setSupervisorGaze(e.target.value)} placeholder={t("supervisorReview.placeholder")}
+                  disabled={!canEdit || !canWriteSupervisorReview} />
+                {writtenBy(plan?.supervisorGazeByName, plan?.supervisorGazeAt)}
               </div>
-              {c.status === "ACTIVE_TREATMENT" ? (
+              {!canWriteSupervisorReview ? null : c.status === "ACTIVE_TREATMENT" ? (
                 <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
                   <Button onClick={handleSupervisorReview} disabled={supervisorRev.isPending} className="w-full gap-2">
                     {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -3830,8 +3847,8 @@ export default function PhysioCasePage() {
               ) : (
                 !["COMPLETED", "DISCHARGED", "CANCELLED"].includes(c.status) && (
                   <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.SUPERVISOR_REVIEW}>
-                    <Button variant="outline" onClick={handleSupervisorReview} disabled={supervisorRev.isPending} className="w-full gap-2">
-                      {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    <Button onClick={handleSupervisorReview} disabled={supervisorRev.isPending} className="w-full gap-2">
+                      {supervisorRev.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                       {t("supervisorReview.saveNotes")}
                     </Button>
                   </ActionGuard>
@@ -3847,11 +3864,11 @@ export default function PhysioCasePage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>{t("doctorReview.label")}</Label>
-                <Textarea rows={4} value={doctorGaze} onChange={(e) => setDoctorGaze(e.target.value)} placeholder={t("doctorReview.placeholder")} disabled={!canEdit} />
+                <Textarea rows={4} value={doctorGaze} onChange={(e) => setDoctorGaze(e.target.value)} placeholder={t("doctorReview.placeholder")} disabled={!canEdit || !canWriteDoctorReview} />
+                {writtenBy(plan?.doctorGazeByName, plan?.doctorGazeAt)}
               </div>
-              {canEdit && (
+              {canEdit && canWriteDoctorReview && (
                 <Button
-                  variant="outline"
                   onClick={() => doctorRev.mutate({ id, dto: { doctorGaze: doctorGaze || undefined } })}
                   disabled={doctorRev.isPending}
                   className="w-full gap-2"

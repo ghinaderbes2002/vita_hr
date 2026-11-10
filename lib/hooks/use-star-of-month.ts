@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { starOfMonthApi, StarCompany, StarRewardDto, StarVoteKind } from "@/lib/api/star-of-month";
+import { starOfMonthApi, StarCompany, StarQuarter, StarRewardDto, StarVoteKind } from "@/lib/api/star-of-month";
 import { documentsApi } from "@/lib/api/documents";
 import { apiErrorCode, apiErrorMessage } from "@/lib/api/api-errors";
 
@@ -163,5 +163,47 @@ export function useAddStarHrNominee() {
       toast.success(t("nomineeAdded"));
     },
     onError: (e: unknown) => toast.error(apiErrorMessage(e, t("error"))),
+  });
+}
+
+// ── Star of the quarter ──
+
+export function useStarQuarter(year: number, quarter: StarQuarter) {
+  return useQuery({
+    queryKey: [KEY, "quarter", year, quarter],
+    queryFn: () => starOfMonthApi.quarter(year, quarter),
+  });
+}
+
+/** HR: compute a company's quarter by hand, or settle its tie. */
+export function useStarQuarterAction() {
+  const qc = useQueryClient();
+  const t = useTranslations("starOfMonth.quarter");
+  return useMutation({
+    mutationFn: (a: { year: number; quarter: StarQuarter; company: StarCompany } & (
+      | { action: "compute" } | { action: "tieBreak"; employeeId: string }
+    )) => a.action === "compute"
+      ? starOfMonthApi.computeQuarter(a.year, a.quarter, a.company)
+      : starOfMonthApi.quarterTieBreak(a.year, a.quarter, { company: a.company, employeeId: a.employeeId }),
+    onSuccess: (_, a) => {
+      qc.invalidateQueries({ queryKey: [KEY, "quarter", a.year, a.quarter] });
+      toast.success(t(a.action === "compute" ? "computed" : "tieBroken"));
+    },
+    onError: (e: unknown) => toast.error(apiErrorMessage(e, t("error"))),
+  });
+}
+
+/** Opens the certificate PDF in a new tab. */
+export function useStarQuarterCertificate() {
+  const t = useTranslations("starOfMonth.quarter");
+  return useMutation({
+    mutationFn: ({ year, quarter, company }: { year: number; quarter: StarQuarter; company: StarCompany }) =>
+      starOfMonthApi.quarterCertificate(year, quarter, company),
+    onSuccess: (blob) => {
+      const url = URL.createObjectURL(blob);
+      window.open(url);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    },
+    onError: () => toast.error(t("certificateFailed")),
   });
 }

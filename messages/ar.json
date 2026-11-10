@@ -7053,6 +7053,28 @@
     }
   },
   "starOfMonth": {
+    "quarter": {
+      "title": "نجم الربع",
+      "description": "أفضل الفائزين الشهريين الثلاثة لكل شركة، بنفس نتيجة فوزهم الشهري. الجائزة شهادة شكر وتقدير.",
+      "label": "الربع {quarter} — {year}",
+      "previous": "الربع السابق",
+      "next": "الربع التالي",
+      "compute": "حساب",
+      "computed": "تم حساب نجم الربع",
+      "tieBroken": "تم حسم التعادل",
+      "notComputed": "لم يُحسب بعد — يُحسب تلقائياً بعد إغلاق الأشهر الثلاثة",
+      "score": "النتيجة: {score}",
+      "awardedAt": "فاز في {date}",
+      "certificate": "الشهادة",
+      "certificateFailed": "تعذّر تحميل الشهادة",
+      "tieHr": "تعادل بالنتيجة — اختر الفائز:",
+      "tieWaiting": "تعادل بالنتيجة — بانتظار حسم HR",
+      "tieBreakTitle": "حسم تعادل نجم الربع",
+      "tieBreakDescription": "اختيار {name} نجماً للربع في {company}؟ تُصدر شهادته مباشرة.",
+      "monthlyWinners": "فائزو الأشهر",
+      "loadFailed": "تعذّر تحميل نجم الربع",
+      "error": "حدث خطأ"
+    },
     "viewDetails": "التفاصيل",
     "congratulate": "هنّئ",
     "comments": "التعليقات ({count})",

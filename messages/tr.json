@@ -5909,6 +5909,28 @@
     }
   },
   "starOfMonth": {
+    "quarter": {
+      "title": "Çeyreğin yıldızı",
+      "description": "Her şirketin üç aylık kazananı arasından en iyisi, kazandıkları puana göre. Ödül bir teşekkür belgesidir.",
+      "label": "{year} Ç{quarter}",
+      "previous": "Önceki çeyrek",
+      "next": "Sonraki çeyrek",
+      "compute": "Hesapla",
+      "computed": "Çeyreğin yıldızı hesaplandı",
+      "tieBroken": "Eşitlik çözüldü",
+      "notComputed": "Henüz hesaplanmadı — üç ay kapandığında otomatik hesaplanır",
+      "score": "Puan: {score}",
+      "awardedAt": "{date} tarihinde kazandı",
+      "certificate": "Belge",
+      "certificateFailed": "Belge indirilemedi",
+      "tieHr": "Puanlar eşit — kazananı seçin:",
+      "tieWaiting": "Puanlar eşit — İK bekleniyor",
+      "tieBreakTitle": "Çeyrek eşitliğini çöz",
+      "tieBreakDescription": "{name}, {company} için çeyreğin yıldızı olsun mu? Belge hemen düzenlenir.",
+      "monthlyWinners": "Aylık kazananlar",
+      "loadFailed": "Çeyreğin yıldızı yüklenemedi",
+      "error": "Bir hata oluştu"
+    },
     "viewDetails": "Ayrıntılar",
     "congratulate": "Tebrik et",
     "comments": "Yorumlar ({count})",

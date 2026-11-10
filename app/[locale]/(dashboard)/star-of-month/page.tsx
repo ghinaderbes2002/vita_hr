@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StarComments } from "@/components/features/star-of-month/star-comments";
+import { QuarterStars } from "@/components/features/star-of-month/quarter-stars";
 import { assetUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +61,8 @@ interface Viewer {
   employeeId?: string;
   company?: string;
   canNominate: boolean;
+  /** A colleague's vote (star_of_month.vote) — HR and HR_Specialist don't have it. */
+  canPeerVote: boolean;
   canManagerVote: boolean;
   canCeoVote: boolean;
   /** Management: the winner's reward and photo. */
@@ -106,6 +109,7 @@ function StarOfMonthContent() {
     employeeId: me?.id,
     company: (me as { company?: string } | undefined)?.company,
     canNominate: hasPermission(PERMISSIONS.STAR_OF_MONTH.NOMINATE),
+    canPeerVote: hasPermission(PERMISSIONS.STAR_OF_MONTH.VOTE),
     // The roles back the permissions up until they are assigned on every role.
     canManagerVote: hasPermission(PERMISSIONS.STAR_OF_MONTH.MANAGER_VOTE) || hasRole(ROLES.DIRECT_MANAGER),
     canCeoVote: hasPermission(PERMISSIONS.STAR_OF_MONTH.CEO_VOTE) || hasRole(ROLES.CEO),
@@ -226,6 +230,8 @@ function StarOfMonthContent() {
         </div>
       )}
 
+      <QuarterStars canManage={viewer.canNominate} />
+
       <ConfirmDialog
         open={!!confirm}
         onOpenChange={(o) => { if (!o) setConfirm(null); }}
@@ -344,7 +350,7 @@ function CompanyList({
           const isSelf = !!viewer.employeeId && c.employeeId === viewer.employeeId;
           const actions: { kind: StarVoteKind; label: string }[] = [];
           if (cycle.status === "VOTING") {
-            if (inMyCompany && !peerVote && !isSelf) actions.push({ kind: "PEER", label: t("voteAction.PEER") });
+            if (viewer.canPeerVote && inMyCompany && !peerVote && !isSelf) actions.push({ kind: "PEER", label: t("voteAction.PEER") });
             if (viewer.canManagerVote && !managerVote) actions.push({ kind: "MANAGER", label: t("voteAction.MANAGER") });
             if (viewer.canCeoVote && !ceoVote) actions.push({ kind: "CEO", label: t("voteAction.CEO") });
           }

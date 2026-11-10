@@ -157,6 +157,24 @@ const normCycle = (data: unknown): StarCycle => {
   return { ...c, candidates: (c.candidates ?? []).map(normCandidate), candidatesByCompany: byCompany };
 };
 
+/** 1–4: Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec. */
+export type StarQuarter = 1 | 2 | 3 | 4;
+
+/**
+ * Star of the quarter: the best of a company's three monthly winners, by the
+ * same finalScore each won with. A tie is left to HR.
+ */
+export interface StarQuarterWinner {
+  company: StarCompany;
+  /** null while a tie hasn't been settled. */
+  employeeId: string | null;
+  employee?: StarCandidate["employee"];
+  finalScore: number | null;
+  isTie: boolean;
+  awardedAt?: string | null;
+  certificateGeneratedAt?: string | null;
+}
+
 const BASE = "/star-of-month";
 
 export const starOfMonthApi = {
@@ -235,6 +253,25 @@ export const starOfMonthApi = {
   deleteComment: async (commentId: string): Promise<void> => {
     await apiClient.delete(`${BASE}/comments/${commentId}`);
   },
+
+  // ── Star of the quarter ──
+  /** One entry per company already computed; a company not yet computed is simply absent. */
+  quarter: async (year: number, quarter: StarQuarter): Promise<StarQuarterWinner[]> => {
+    const { data } = await apiClient.get(`${BASE}/quarters/${year}/${quarter}`);
+    const d = data?.data ?? data;
+    const list: StarQuarterWinner[] = Array.isArray(d) ? d : d?.winners ?? d?.items ?? [];
+    return list.map((w) => ({ ...w, employeeId: w.employeeId ?? null, finalScore: num(w.finalScore), isTie: !!w.isTie }));
+  },
+  /** Normally done by a daily job once the three months are closed. */
+  computeQuarter: async (year: number, quarter: StarQuarter, company: StarCompany): Promise<void> => {
+    await apiClient.post(`${BASE}/quarters/${year}/${quarter}/${company}/compute`);
+  },
+  quarterTieBreak: async (year: number, quarter: StarQuarter, dto: { company: StarCompany; employeeId: string }): Promise<void> => {
+    await apiClient.post(`${BASE}/quarters/${year}/${quarter}/tie-break`, dto);
+  },
+  /** The thank-you certificate (PDF), in the winner's company template. */
+  quarterCertificate: async (year: number, quarter: StarQuarter, company: StarCompany): Promise<Blob> =>
+    (await apiClient.get(`${BASE}/quarters/${year}/${quarter}/${company}/certificate`, { responseType: "blob" })).data,
 
   /** One per company per cycle; the employee must be active, in that company, with no penalty that month. */
   addHrNominee: async (year: number, month: number, dto: { company: StarCompany; employeeId: string }): Promise<StarCycle> =>
