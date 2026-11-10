@@ -189,7 +189,11 @@ export function useStarQuarterAction() {
       qc.invalidateQueries({ queryKey: [KEY, "quarter", a.year, a.quarter] });
       toast.success(t(a.action === "compute" ? "computed" : "tieBroken"));
     },
-    onError: (e: unknown) => toast.error(apiErrorMessage(e, t("error"))),
+    onError: (e: unknown, a) => {
+      // A 400 on compute means the quarter isn't over yet; the server's own wording is colloquial.
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      toast.error(a.action === "compute" && status === 400 ? t("notReady") : apiErrorMessage(e, t("error")));
+    },
   });
 }
 
