@@ -15,7 +15,7 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { DOCTOR_EXAM_TARGET_LABEL, DOCTOR_EXAM_TARGETS, type DoctorExamTarget } from "@/lib/api/clinic-physio";
 
-const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
+export const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
 /** Radix rejects an empty option value, so "leave unassigned" needs a sentinel. */
 const UNASSIGNED = "__unassigned__";
 
@@ -68,7 +68,9 @@ export function ConvertExamDialog({
   const [selected, setSelected] = useState<string>(UNASSIGNED);
 
   const isPhysio = target === "physio";
-  const { data: physioData, isLoading: physioLoading } = useEmployeesByDepartment(isPhysio ? PHYSIO_DEPT_ID : "");
+  // A physio case goes to the department head, who picks the therapist — so the
+  // physio list is never asked for here.
+  const { data: physioData, isLoading: physioLoading } = useEmployeesByDepartment("");
   const { data: basicData, isLoading: basicLoading } = useEmployeesBasicList();
   const isLoading = isPhysio ? physioLoading : basicLoading;
 
@@ -127,6 +129,11 @@ export function ConvertExamDialog({
             </Select>
           </div>
 
+          {isPhysio ? (
+            <p className="rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+              ستُحال الحالة إلى رئيس قسم العلاج الفيزيائي ليعيّن المعالج.
+            </p>
+          ) : (
           <div className="space-y-1.5">
             <Label>المعالج المسؤول</Label>
             <Select value={selected} onValueChange={setSelected} disabled={isLoading}>
@@ -156,6 +163,7 @@ export function ConvertExamDialog({
               </p>
             )}
           </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -163,7 +171,8 @@ export function ConvertExamDialog({
             إلغاء
           </Button>
           <Button
-            onClick={() => onConfirm(target, selected === UNASSIGNED ? undefined : selected)}
+            // The API refuses a therapist on a physio conversion: the head assigns one.
+            onClick={() => onConfirm(target, isPhysio || selected === UNASSIGNED ? undefined : selected)}
             disabled={isPending || targets.length === 0}
           >
             {isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}

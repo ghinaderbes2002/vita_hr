@@ -80,6 +80,8 @@ export interface PhysioCase {
   patientId: string;
   patient?: { id: string; firstName: string; lastName: string; patientNumber: string };
   status: PhysioStatus;
+  /** Converted from a doctor exam and not yet handed to a therapist by the department head. */
+  awaitingAssignment?: boolean;
   supervisingDoctorId?: string | null;
   physiotherapistId?: string | null;
   caseManagerId?: string | null;
@@ -441,6 +443,8 @@ export interface PhysioCaseListParams {
   status?: PhysioStatus;
   patientId?: string;
   caseType?: PhysioCaseType;
+  /** Cases converted from a doctor exam that still wait for the head to assign a therapist. */
+  awaitingAssignment?: boolean;
 }
 
 /** Where a doctor exam can be converted; each value is also the department's route. */
@@ -565,6 +569,11 @@ export const clinicPhysioApi = {
    * An exam converts to one department only; repeating the same one returns the
    * existing case, and another one answers 400.
    */
+  /** The physio head assigns, or reassigns, the therapist of a case. */
+  assignCase: async (id: string, physiotherapistId: string): Promise<void> => {
+    await apiClient.patch(`/physio/cases/${id}/assign`, { physiotherapistId });
+  },
+
   convertDoctorExam: async (
     id: string,
     target: DoctorExamTarget,

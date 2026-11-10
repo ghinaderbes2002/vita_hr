@@ -19,7 +19,9 @@ import {
   AlertTriangle,
   Bell,
   ArrowLeftRight,
+  UserPlus,
 } from "lucide-react";
+import { AssignTherapistDialog } from "@/components/clinic/assign-therapist-dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { NotifyIncompleteFormButton } from "@/components/clinic/notify-incomplete-form-button";
@@ -116,7 +118,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -325,6 +327,7 @@ export default function PhysioCasePage() {
   const submitPainMap = useSubmitPainMap();
   const convertExam = useConvertDoctorExam();
   const [convertOpen, setConvertOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [finishExamOpen, setFinishExamOpen] = useState(false);
   const submitHistory = useSubmitMedicalHistory();
   const addSurgery = useAddPhysioSurgery();
@@ -1518,6 +1521,11 @@ export default function PhysioCasePage() {
               </span>
             )}
             <CaseStatusBadge status={c.status} />
+            {c.awaitingAssignment && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                بانتظار تعيين المعالج
+              </span>
+            )}
             {c.status === "CANCELLED" && (c as any).cancellationReason && (
               <span className="text-xs text-muted-foreground">
                 سبب الإلغاء: {(c as any).cancellationReason}
@@ -1533,6 +1541,22 @@ export default function PhysioCasePage() {
               {convertExam.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeftRight className="h-4 w-4" />}
               {t("convertToPhysio")}
             </Button>
+          )}
+          {!isDoctorExam && (isAdmin() || hasAnyPermission([PERMISSIONS.CLINIC_PHYSIO.CASE_ASSIGN])) && (
+            <>
+              <Button size="sm" variant={c.awaitingAssignment ? "default" : "outline"} className="gap-2"
+                onClick={() => setAssignOpen(true)}>
+                <UserPlus className="h-4 w-4" />
+                {c.awaitingAssignment ? "تعيين معالج" : "إعادة تعيين المعالج"}
+              </Button>
+              <AssignTherapistDialog
+                caseId={id}
+                open={assignOpen}
+                onOpenChange={setAssignOpen}
+                currentTherapistId={c.physiotherapistId}
+                patientGender={(patientFull as { gender?: "MALE" | "FEMALE" } | undefined)?.gender ?? null}
+              />
+            </>
           )}
           <NotifyIncompleteFormButton type="physio" id={id} />
           {/* For an exam that will not become a PT case. Nothing else moves an exam

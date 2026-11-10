@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Heart, Users } from "lucide-react";
+import { Search, Eye, Heart, Users, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -57,6 +57,8 @@ export default function PhysioListPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PhysioStatus | "all">("all");
+  // The head's queue: cases converted from a doctor exam that wait for a therapist.
+  const [awaitingOnly, setAwaitingOnly] = useState(false);
 
   const { hasPermission, hasRole, isAdmin } = usePermissions();
   const { data: myEmployee, isLoading: meLoading } = useMyEmployee();
@@ -102,9 +104,11 @@ export default function PhysioListPage() {
       page: clientPaged ? 1 : page,
       limit: clientPaged ? 100 : LIMIT,
       status: statusFilter !== "all" ? statusFilter : undefined,
+      ...(awaitingOnly ? { awaitingAssignment: true } : {}),
     },
     !meLoading,
   );
+  const canAssign = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PHYSIO.CASE_ASSIGN);
   const isLoading = meLoading || casesLoading;
 
   const filtered = (data?.items ?? []).filter((c: PhysioCase) => {
@@ -184,6 +188,17 @@ export default function PhysioListPage() {
             ))}
           </SelectContent>
         </Select>
+        {canAssign && (
+          <Button
+            variant={awaitingOnly ? "default" : "outline"}
+            className="gap-1.5"
+            onClick={() => { setAwaitingOnly((v) => !v); setPage(1); }}
+            aria-pressed={awaitingOnly}
+          >
+            <UserPlus className="h-4 w-4" />
+            بانتظار التعيين
+          </Button>
+        )}
       </div>
 
       <div className="rounded-md border">
@@ -226,7 +241,16 @@ export default function PhysioListPage() {
                   <TableCell className="font-medium">
                     {c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—"}
                   </TableCell>
-                  <TableCell><CaseStatusBadge status={c.status} /></TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <CaseStatusBadge status={c.status} />
+                      {c.awaitingAssignment && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                          بانتظار التعيين
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {c.treatmentPlan?.status === "ACTIVE" ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">

@@ -73,6 +73,20 @@ export function useCreatePhysioCase() {
   });
 }
 
+export function useAssignPhysioCase() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, physiotherapistId }: { id: string; physiotherapistId: string }) =>
+      clinicPhysioApi.assignCase(id, physiotherapistId),
+    onSuccess: (_d, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-physio-cases"] });
+      qc.invalidateQueries({ queryKey: ["clinic-physio-case", id] });
+      toast.success("تم تعيين المعالج");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل تعيين المعالج"),
+  });
+}
+
 export function useConvertDoctorExam() {
   const qc = useQueryClient();
   return useMutation({
