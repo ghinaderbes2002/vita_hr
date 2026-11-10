@@ -29,6 +29,8 @@ import { useJobTitle } from "@/lib/hooks/use-job-titles";
 import { EmployeeDialog } from "@/components/features/employees/employee-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CEODashboard } from "@/components/dashboard/ceo-dashboard";
+import { CurrentStarsCard } from "@/components/features/star-of-month/current-stars-card";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 
 const CONDUCT_DOC_KEY = "conduct_document";
 /** موظفون تم تجاهلهم في تنبيه انتهاء فترة التجربة — لكل متصفح على حدة. */
@@ -519,7 +521,7 @@ function CFODashboard({ d, locale, router }: { d: any; locale: string; router: a
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const { hasRole } = usePermissions();
+  const { hasRole, hasPermission } = usePermissions();
   const locale = useLocale();
   const router = useRouter();
   const t = useTranslations("dashboard");
@@ -609,6 +611,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>}
+
+      {/* The latest stars of the month, for everyone; renders nothing until a cycle closes. */}
+      {hasPermission(PERMISSIONS.STAR_OF_MONTH.VIEW) && <CurrentStarsCard />}
 
       {/* Role-based content */}
       {role === "MANAGER" && !isFollowUpOfficial && <ManagerDashboard d={d} locale={locale} router={router} employeeId={d?.employee?.id} />}

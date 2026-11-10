@@ -140,6 +140,12 @@ export function ConvertExamDialog({
                 ))}
               </SelectContent>
             </Select>
+            {isLoading && (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                جاري تحميل قائمة المعالجين...
+              </p>
+            )}
             {!isLoading && matching.length === 0 && (
               <p className="text-xs text-muted-foreground">لا يوجد معالج متاح — يمكنك التحويل بدون تعيين.</p>
             )}

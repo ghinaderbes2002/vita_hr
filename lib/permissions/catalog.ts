@@ -468,6 +468,23 @@ export const PERMISSIONS = {
   WAREHOUSE_REPORTS: {
     READ: "warehouse.reports.read",
   },
+  /** نجم الشهر: القوائم والنقاط التلقائية (المرحلة 1). */
+  STAR_OF_MONTH: {
+    /** لكل الموظفين. */
+    VIEW:     "star_of_month.view",
+    /** HR: توليد القوائم، إضافة مرشح لكل شركة، فتح التصويت وإغلاقه. */
+    NOMINATE: "star_of_month.nominate",
+    /** تصويت الزملاء — في قائمة شركة الموظف فقط. */
+    VOTE: "star_of_month.vote",
+    /** المدير الإداري: صوت في كل شركة (10%). */
+    MANAGER_VOTE: "star_of_month.manager_vote",
+    /** المدير التنفيذي: صوت في كل شركة (20%) وحسم التعادل. */
+    CEO_VOTE: "star_of_month.ceo_vote",
+    /** الإدارة: مكافأة الفائز وصورته. */
+    REWARD: "star_of_month.reward",
+    /** HR: حذف التعليقات على صورة النجم. */
+    MODERATE_COMMENTS: "star_of_month.moderate_comments",
+  },
   /** الصندوق النقدي: صناديق وعملات وحركات (صرف، قبض، تسليم، تعبئة) وجرد. */
   CASHBOX: {
     BOXES_READ:          "cashbox.boxes.read",

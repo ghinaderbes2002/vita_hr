@@ -127,6 +127,7 @@ const MY_APPOINTMENTS_PERMISSIONS = [
 const navigation: NavItem[] = [
   { title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "nav.internalMail", href: "/mail", icon: Mail, separator: true },
+  { title: "nav.starOfMonth", href: "/star-of-month", icon: Star, permission: "star_of_month.view", separator: true },
   {
     title: "nav.employeePortal",
     icon: UserCircle,

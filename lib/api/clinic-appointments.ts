@@ -23,6 +23,8 @@ export type AppointmentType =
   | "ORTHOPEDIC_EXAMINATION" | "FOOT_ANALYSIS_EXAMINATION" | "LIMB_PATIENT_EXAMINATION"
   // Physiotherapy
   | "SESSION" | "ASSESSMENT" | "FOLLOW_UP"
+  // Orthotics (مقومات)
+  | "ORTHOTICS"
   // Older values, still returned on existing records
   | "FITTING" | "COMMITTEE" | "EXAMINATION";
 
@@ -50,6 +52,7 @@ export const ALL_APPOINTMENT_TYPES: AppointmentType[] = [
   ...PROSTHETICS_PODIATRY_APPOINTMENT_TYPES,
   ...MEDICAL_ADMIN_APPOINTMENT_TYPES,
   ...PHYSIO_APPOINTMENT_TYPES,
+  "ORTHOTICS",
   "FITTING", "COMMITTEE", "EXAMINATION",
 ];
 export type PractitionerRole = "PROSTHETIST" | "PHYSIOTHERAPIST" | "DOCTOR" | "TECHNICIAN";
