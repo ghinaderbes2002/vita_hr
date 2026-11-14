@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { clinicAppointmentsApi, CreateAppointmentDto, UpdateAppointmentDto, RescheduleAppointmentDto, AppointmentListParams, AppointmentStatus, AppointmentStatisticsParams, CreateInternalMeetingDto, InternalMeetingListParams } from "@/lib/api/clinic-appointments";
+import { apiErrorMessage } from "@/lib/api/api-errors";
+import { clinicAppointmentsApi, CreateAppointmentDto, UpdateAppointmentDto, RescheduleAppointmentDto, AppointmentListParams, AppointmentStatus, AppointmentStatisticsParams, CreateInternalMeetingDto, InternalMeetingListParams, UpdateInternalMeetingDto } from "@/lib/api/clinic-appointments";
 import { toast } from "sonner";
 
 export function useClinicAppointments(params?: AppointmentListParams) {
@@ -196,5 +197,30 @@ export function useCreateInternalMeeting() {
       toast.success("تم حجز الاجتماع");
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل حجز الاجتماع"),
+  });
+}
+
+/** Like booking: the server's message as-is; the caller reads conflictedUserIds off the error. */
+export function useUpdateInternalMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateInternalMeetingDto }) => clinicAppointmentsApi.updateInternalMeeting(id, dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["internal-meetings"] });
+      toast.success("تم تعديل الاجتماع");
+    },
+    onError: (e: unknown) => toast.error(apiErrorMessage(e, "فشل تعديل الاجتماع")),
+  });
+}
+
+export function useCancelInternalMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => clinicAppointmentsApi.cancelInternalMeeting(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["internal-meetings"] });
+      toast.success("تم إلغاء الاجتماع");
+    },
+    onError: (e: unknown) => toast.error(apiErrorMessage(e, "فشل إلغاء الاجتماع")),
   });
 }

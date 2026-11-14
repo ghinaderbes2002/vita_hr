@@ -332,6 +332,9 @@ export const PERMISSIONS = {
     INTERNAL_MEETINGS_VIEW:   "clinic.appointments.internal_meetings.view",
     /** الاجتماعات المدعو إليها المستخدم نفسه فقط — لصفحة "مواعيدي". VIEW تكفي عنها. */
     INTERNAL_MEETINGS_VIEW_OWN: "clinic.appointments.internal_meetings.view_own",
+    /** تعديل وإلغاء اجتماع أنشأه غيرك — صاحب الاجتماع لا يحتاجهما. */
+    INTERNAL_MEETINGS_UPDATE: "clinic.appointments.internal_meetings.update",
+    INTERNAL_MEETINGS_CANCEL: "clinic.appointments.internal_meetings.cancel",
   },
   /** قائمة انتظار العيادة — مرضى بانتظار جدولة موعد. */
   CLINIC_WAITING_LIST: {

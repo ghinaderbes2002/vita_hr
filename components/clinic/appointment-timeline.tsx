@@ -261,6 +261,7 @@ function Column({
               "hover:z-10 hover:shadow-md focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               "dark:border-white/15",
               st.cls,
+              m.status === "CANCELLED" && "opacity-50",
             )}
             style={{
               top, height,
@@ -273,7 +274,7 @@ function Column({
               {fmtTime(m.startTime)}
               {height > 56 && <span className="opacity-70">— {fmtTime(m.endTime)}</span>}
             </div>
-            <div className="truncate text-xs font-semibold leading-tight">{m.title}</div>
+            <div className={cn("truncate text-xs font-semibold leading-tight", m.status === "CANCELLED" && "line-through")}>{m.title}</div>
             {height > 40 && (
               <div className="truncate text-[10px] leading-tight opacity-80">
                 {meetingTypeLabel(m)} · {m.attendeeIds?.length ?? 0} حضور

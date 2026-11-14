@@ -256,11 +256,21 @@ export interface InternalMeeting {
   startTime: string;
   endTime: string;
   notes?: string | null;
-  /** Always SCHEDULED for now; CANCELLED is reserved for a future cancel action. */
+  /** CANCELLED meetings stay in the list (unless filtered by status) and are shown struck through. */
   status: "SCHEDULED" | "CANCELLED";
+  /** User ids. The creator may always edit and cancel; anyone else needs the permission. */
   createdBy?: string | null;
   createdAt: string;
+  // null until it happens.
+  updatedBy?: string | null;
+  updatedAt?: string | null;
+  cancelledBy?: string | null;
+  cancelledAt?: string | null;
+  cancelledReason?: string | null;
 }
+
+/** Only what changed. attendeeIds replaces the whole list. */
+export type UpdateInternalMeetingDto = Partial<CreateInternalMeetingDto>;
 
 export interface CreateInternalMeetingDto {
   title: string;
@@ -277,6 +287,8 @@ export interface InternalMeetingListParams {
   dateFrom?: string;
   dateTo?: string;
   attendeeId?: string;
+  /** Without it, cancelled meetings come back too. */
+  status?: "SCHEDULED" | "CANCELLED";
 }
 
 export const clinicAppointmentsApi = {
@@ -397,6 +409,26 @@ export const clinicAppointmentsApi = {
     const { data } = await apiClient.get("/appointments/staff-meetings", { params });
     const d = data?.data ?? data;
     return Array.isArray(d) ? d : d?.items ?? [];
+  },
+
+  getInternalMeeting: async (id: string): Promise<InternalMeeting> => {
+    const { data } = await apiClient.get(`/appointments/staff-meetings/${id}`);
+    return data?.data ?? data;
+  },
+
+  /**
+   * MEETING_CANCELLED / MEETING_ENDED (400) on a meeting that can't change any
+   * more; ATTENDEE_NOT_AVAILABLE only when the time or attendees changed.
+   */
+  updateInternalMeeting: async (id: string, dto: UpdateInternalMeetingDto): Promise<InternalMeeting> => {
+    const { data } = await apiClient.patch(`/appointments/staff-meetings/${id}`, dto);
+    return data?.data ?? data;
+  },
+
+  /** No real delete: the status turns CANCELLED. A second cancel is MEETING_CANCELLED. */
+  cancelInternalMeeting: async (id: string, reason?: string): Promise<InternalMeeting> => {
+    const { data } = await apiClient.post(`/appointments/staff-meetings/${id}/cancel`, reason ? { reason } : {});
+    return data?.data ?? data;
   },
 
   /** Meetings the logged-in user is invited to — the server reads who from the token. */

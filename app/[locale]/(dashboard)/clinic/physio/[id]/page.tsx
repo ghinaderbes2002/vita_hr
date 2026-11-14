@@ -3877,8 +3877,9 @@ export default function PhysioCasePage() {
                   {t("doctorReview.save")}
                 </Button>
               )}
+              {/* Saves through PUT …/doctor-review, which now checks doctor_review, not the plan signature. */}
               {c.status === "SUPERVISOR_REVIEW" && (
-                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.PLAN_SIGN}>
+                <ActionGuard permission={PERMISSIONS.CLINIC_PHYSIO.DOCTOR_REVIEW}>
                   <Button onClick={handleDoctorReview} disabled={doctorRev.isPending || updateStatus.isPending} className="w-full gap-2">
                     {doctorRev.isPending || updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                     {t("doctorReview.approveDoctorReview")}

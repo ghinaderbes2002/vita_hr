@@ -113,7 +113,7 @@ import {
   amputationCauseOf,
   amputationCountOf,
   amputationDateOf,
-} from "@/lib/api/clinic-prosthetics";
+} from "@/lib/api/clinic-prosthetics";
 import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 // Every query in the app refetches on a 60s interval and on window focus
@@ -8273,9 +8273,9 @@ export default function ProstheticsCasePage() {
         {/* ── BALANCE ASSESSMENT ──────────────────────────────────────────── */}
         {ampTypes.includes("LOWER") && (
           <TabsContent value="balance_assessment" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-            <fieldset disabled={caseLocked} className="min-w-0">
-              <BalanceAssessmentSection caseId={id} staffList={staffList} />
-            </fieldset>
+            {/* Not frozen at delivery: balance is still assessed after the limb is
+                handed over, and the API takes a new assessment in any status. */}
+            <BalanceAssessmentSection caseId={id} staffList={staffList} />
           </TabsContent>
         )}
 

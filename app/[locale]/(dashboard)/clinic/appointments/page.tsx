@@ -21,6 +21,7 @@ import {
 import type { InternalMeetingType } from "@/lib/api/clinic-appointments";
 import { TherapistPicker } from "@/components/clinic/therapist-picker";
 import { StaffMeetingDialog, StaffMeetingDetailsDialog } from "@/components/clinic/staff-meeting-dialogs";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { PageHeader } from "@/components/shared/page-header";
 import { WhatsappConfirmButton } from "@/components/clinic/whatsapp-confirm-button";
 import { WhatsappAppointmentsButton } from "@/components/clinic/whatsapp-appointments-button";
@@ -131,6 +132,14 @@ export default function AppointmentsPage() {
   const canCreateMeeting = isAdmin() || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_CREATE);
   const [newMeetingOpen, setNewMeetingOpen] = useState(false);
   const [detailMeeting, setDetailMeeting] = useState<InternalMeeting | null>(null);
+  const [editMeeting, setEditMeeting] = useState<InternalMeeting | null>(null);
+  // The creator may always edit and cancel their meeting; anyone else needs the permission.
+  const myUserId = useAuthStore((s) => s.user?.id);
+  const ownsMeeting = (m: InternalMeeting) => !!myUserId && m.createdBy === myUserId;
+  const canEditMeeting = (m: InternalMeeting) =>
+    isAdmin() || ownsMeeting(m) || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_UPDATE);
+  const canCancelMeeting = (m: InternalMeeting) =>
+    isAdmin() || ownsMeeting(m) || hasPermission(PERMISSIONS.CLINIC_APPOINTMENTS.INTERNAL_MEETINGS_CANCEL);
   const { data: depsData } = useDepartments({ limit: 200 }, 30 * 60 * 1000);
   const departments: { id: string; code?: string; nameAr: string; nameEn?: string }[] =
     (depsData as any)?.data?.items ?? (depsData as any)?.items ?? [];
@@ -747,11 +756,22 @@ export default function AppointmentsPage() {
         staff={activeStaff}
         staffName={(id) => staffName(id) ?? id}
       />
+      <StaffMeetingDialog
+        open={!!editMeeting}
+        onOpenChange={(o) => { if (!o) setEditMeeting(null); }}
+        defaultDate={selectedDate}
+        staff={activeStaff}
+        staffName={(id) => staffName(id) ?? id}
+        meeting={editMeeting}
+      />
       <StaffMeetingDetailsDialog
         meeting={detailMeeting}
         onClose={() => setDetailMeeting(null)}
         staffName={(id) => staffName(id) ?? id}
         locale={locale}
+        canEdit={!!detailMeeting && canEditMeeting(detailMeeting)}
+        canCancel={!!detailMeeting && canCancelMeeting(detailMeeting)}
+        onEdit={(m) => { setDetailMeeting(null); setEditMeeting(m); }}
       />
 
       {/* Send the patient their confirmation right after booking */}
