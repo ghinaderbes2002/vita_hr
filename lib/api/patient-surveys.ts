@@ -58,6 +58,11 @@ export interface PatientSurvey extends CreatePatientSurveyDto {
   patient?: { id: string; firstName?: string; lastName?: string; patientNumber?: string } | null;
   createdBy?: string | null;
   createdAt: string;
+  /**
+   * Vitafoot only: 50% "insole comfort" + 50% the mean of the other podiatry
+   * questions. null for other departments and for analysis-only (no fitting).
+   */
+  podiatryWeightedScore?: { score: number; percent: number } | null;
 }
 
 export interface PatientSurveyListParams {
@@ -82,6 +87,8 @@ export interface PatientSurveyStats {
   averageRating: number;
   /** Mean overallCompanyRating across every survey ÷ 5 × 100. */
   satisfactionPercent: number;
+  /** Mean of podiatryWeightedScore.percent across Vitafoot surveys; null when there are none. */
+  podiatryWeightedSatisfactionPercent: number | null;
 }
 
 /** A patient who should be asked for a survey: a week or more since delivery / the podiatry exam, no survey yet. */
@@ -115,6 +122,7 @@ export const patientSurveysApi = {
       },
       averageRating: d?.averageRating ?? 0,
       satisfactionPercent: d?.satisfactionPercent ?? 0,
+      podiatryWeightedSatisfactionPercent: d?.podiatryWeightedSatisfactionPercent ?? null,
     };
   },
 

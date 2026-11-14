@@ -823,6 +823,15 @@ export function PatientSurveyDetailsDialog({ surveyId, onClose }: { surveyId: st
                 <StarRating value={s.overallCompanyRating} size="sm" />
               </DetailRow>
             </div>
+            {s.podiatryWeightedScore && (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">نسبة الرضى المرجّحة</p>
+                  <p className="text-[11px] text-muted-foreground">50% ملاءمة الضبان + 50% متوسط باقي الأسئلة</p>
+                </div>
+                <span className="text-lg font-bold tabular-nums">{Number(s.podiatryWeightedScore.percent).toFixed(1)}%</span>
+              </div>
+            )}
             {s.additionalNotes && (
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">
@@ -946,7 +955,17 @@ export function PatientSurveysTable({ params }: { params: Omit<PatientSurveyList
                     {SURVEY_DEPARTMENT_LABEL[s.department] ?? s.department}
                   </Badge>
                 </TableCell>
-                <TableCell><StarRating value={s.overallCompanyRating} size="sm" /></TableCell>
+                <TableCell>
+                  {/* Vitafoot with a fitting: the weighted score (50% insole comfort), not just the overall question. */}
+                  {s.podiatryWeightedScore ? (
+                    <div className="flex items-center gap-1.5" title="50% ملاءمة الضبان + 50% متوسط باقي الأسئلة">
+                      <StarRating value={Math.round(Number(s.podiatryWeightedScore.score))} size="sm" />
+                      <span className="text-xs tabular-nums text-muted-foreground">{Number(s.podiatryWeightedScore.percent).toFixed(0)}%</span>
+                    </div>
+                  ) : (
+                    <StarRating value={s.overallCompanyRating} size="sm" />
+                  )}
+                </TableCell>
                 <TableCell className="max-w-xs">
                   {s.practitionerIds?.length ? s.practitionerIds.map(staffName).join("، ") : "—"}
                 </TableCell>

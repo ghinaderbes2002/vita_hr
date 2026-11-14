@@ -71,6 +71,21 @@ function SurveyStatsStrip() {
             متوسط التقييم العام للشركة عبر كل الاستبيانات:{" "}
             <span className="font-medium tabular-nums text-foreground">{Number(s.averageRating || 0).toFixed(2)} / 5</span>
           </p>
+          {s.podiatryWeightedSatisfactionPercent != null && (
+            <>
+              <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-xs text-muted-foreground">نسبة رضى فيتافوت المرجّحة</span>
+                <span className="text-lg font-bold tabular-nums">{Number(s.podiatryWeightedSatisfactionPercent).toFixed(1)}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-e-full bg-amber-500"
+                  style={{ width: `${Math.max(0, Math.min(100, Number(s.podiatryWeightedSatisfactionPercent) || 0))}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">50% ملاءمة الضبان لراحة القدم + 50% متوسط باقي أسئلة فيتافوت</p>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
