@@ -19,6 +19,15 @@ export function usePatientSurveyStats(enabled = true) {
   });
 }
 
+// Under the "patient-surveys" prefix: saving the survey drops the patient off the list.
+export function useSurveyPendingFollowups(enabled = true) {
+  return useQuery({
+    queryKey: ["patient-surveys", "pending-followups"],
+    queryFn: () => patientSurveysApi.pendingFollowups(),
+    enabled,
+  });
+}
+
 export function usePatientSurvey(id?: string | null) {
   return useQuery({
     queryKey: ["patient-surveys", "one", id],

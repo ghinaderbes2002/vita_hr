@@ -17,6 +17,8 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { usePatientSurveyStats } from "@/lib/hooks/use-patient-surveys";
 import type { SurveyDepartment } from "@/lib/api/patient-surveys";
+import type { Patient } from "@/lib/api/clinic-patients";
+import { SurveyFollowupsButton, SurveyFollowupsDialog } from "@/components/clinic/survey-followups-dialog";
 
 export default function PatientSurveysPage() {
   return (
@@ -83,6 +85,9 @@ function PatientSurveys() {
   const canCreate = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_CREATE);
   const [department, setDepartment] = useState<SurveyDepartment | "ALL">("ALL");
   const [open, setOpen] = useState(false);
+  const [followupsOpen, setFollowupsOpen] = useState(false);
+  // A survey started from the follow-up list: tied to that patient and department.
+  const [followup, setFollowup] = useState<{ patient: Patient; department: SurveyDepartment } | null>(null);
 
   // Deep-link from a PATIENT_SURVEY_REQUIRED notification:
   // ?patientId=…&department=… opens a new survey already tied to that patient
@@ -113,12 +118,15 @@ function PatientSurveys() {
         title="استبيانات رضا العملاء"
         description="تقييم المرضى للخدمة، مربوط تلقائياً بالمعالجين المسؤولين عن حالتهم"
         actions={
-          canCreate && (
-            <Button onClick={() => setOpen(true)} className="gap-1.5">
-              <Plus className="h-4 w-4" />
-              استبيان جديد
-            </Button>
-          )
+          <div className="flex flex-wrap gap-2">
+            {canView && <SurveyFollowupsButton onClick={() => setFollowupsOpen(true)} />}
+            {canCreate && (
+              <Button onClick={() => setOpen(true)} className="gap-1.5">
+                <Plus className="h-4 w-4" />
+                استبيان جديد
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -152,6 +160,18 @@ function PatientSurveys() {
       )}
 
       <PatientSurveyDialog open={open} onOpenChange={setOpen} />
+      <SurveyFollowupsDialog
+        open={followupsOpen}
+        onOpenChange={setFollowupsOpen}
+        canCreate={canCreate}
+        onRate={(patient, department) => { setFollowupsOpen(false); setFollowup({ patient, department }); }}
+      />
+      <PatientSurveyDialog
+        open={!!followup}
+        onOpenChange={(o) => { if (!o) setFollowup(null); }}
+        patient={followup?.patient ?? null}
+        department={followup?.department}
+      />
       {(linkedPatient || linkedFailed) && (
         <PatientSurveyDialog
           open={linkedOpen}

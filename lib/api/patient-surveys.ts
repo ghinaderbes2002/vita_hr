@@ -84,7 +84,25 @@ export interface PatientSurveyStats {
   satisfactionPercent: number;
 }
 
+/** A patient who should be asked for a survey: a week or more since delivery / the podiatry exam, no survey yet. */
+export interface SurveyFollowupPatient {
+  id: string;
+  patientNumber?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+}
+export interface SurveyPendingFollowups {
+  prosthetics: { caseId: string; patientId: string; patient: SurveyFollowupPatient; deliveredAt: string; daysSinceDelivered: number }[];
+  podiatry: { receptionId: string; patientId: string; patient: SurveyFollowupPatient; sessionDate: string; daysSinceSession: number }[];
+}
+
 export const patientSurveysApi = {
+  pendingFollowups: async (): Promise<SurveyPendingFollowups> => {
+    const { data } = await apiClient.get("/patients/surveys/pending-followups");
+    const d = data?.data ?? data;
+    return { prosthetics: d?.prosthetics ?? [], podiatry: d?.podiatry ?? [] };
+  },
   stats: async (): Promise<PatientSurveyStats> => {
     const { data } = await apiClient.get("/patients/surveys/stats");
     const d = data?.data ?? data;
