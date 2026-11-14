@@ -63,6 +63,11 @@ export interface PatientSurvey extends CreatePatientSurveyDto {
    * questions. null for other departments and for analysis-only (no fitting).
    */
   podiatryWeightedScore?: { score: number; percent: number } | null;
+  /**
+   * Beside every rating, <field>Percent: stars ÷ 5 × 100 (4★ = 80%), the same scale as
+   * podiatryWeightedScore.percent and satisfactionPercent; null where the rating is. The 1–5 field itself is unchanged.
+   */
+  [percentKey: `${string}RatingPercent`]: number | null | undefined;
 }
 
 export interface PatientSurveyListParams {

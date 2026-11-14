@@ -248,6 +248,12 @@ function useStaffName() {
 
 // ─── Rating input / display ───────────────────────────────────────────────────
 
+/** The server's percentage beside a rating, when it sent one. */
+function RatingPercent({ survey, k }: { survey: PatientSurvey; k: RatingKey }) {
+  const v = survey[`${k}Percent` as `${string}RatingPercent`];
+  return v == null ? null : <span className="text-xs tabular-nums text-muted-foreground">{Number(v).toFixed(0)}%</span>;
+}
+
 function StarRating({ value, onChange, size = "md" }: { value?: number; onChange?: (v: number) => void; size?: "sm" | "md" }) {
   const cls = size === "sm" ? "h-3.5 w-3.5" : "h-6 w-6";
   return (
@@ -255,6 +261,18 @@ function StarRating({ value, onChange, size = "md" }: { value?: number; onChange
       {[1, 2, 3, 4, 5].map((n) => {
         const on = !!value && n <= value;
         const star = <Star className={cn(cls, on ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />;
+        // Read-only scores can be fractional (a weighted 4.5): the star fills that far.
+        const part = !onChange && value ? Math.max(0, Math.min(1, value - (n - 1))) : 0;
+        if (!onChange && part > 0 && part < 1) {
+          return (
+            <span key={n} className="relative inline-block">
+              <Star className={cn(cls, "text-muted-foreground/40")} />
+              <span className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${part * 100}%` }}>
+                <Star className={cn(cls, "fill-amber-400 text-amber-400")} />
+              </span>
+            </span>
+          );
+        }
         return onChange ? (
           <button
             key={n}
@@ -814,13 +832,18 @@ export function PatientSurveyDetailsDialog({ surveyId, onClose }: { surveyId: st
               {answered(
                 DEPARTMENT_RATINGS[s.department] ? ratingKeysFor(s.department, s.podiatryServiceType) : SHARED_RATINGS,
               ).map((k) => (
-                <DetailRow key={k} label={ratingLabel(s.department, k)}><StarRating value={s[k]} size="sm" /></DetailRow>
+                <DetailRow key={k} label={ratingLabel(s.department, k)}>
+                  <span className="flex items-center gap-1.5"><StarRating value={s[k]} size="sm" /><RatingPercent survey={s} k={k} /></span>
+                </DetailRow>
               ))}
               {s.complaintStage && (
                 <DetailRow label="مرحلة الشكوى">{COMPLAINT_STAGE_LABEL[s.complaintStage] ?? s.complaintStage}</DetailRow>
               )}
               <DetailRow label={ratingLabel(s.department, "overallCompanyRating")}>
-                <StarRating value={s.overallCompanyRating} size="sm" />
+                <span className="flex items-center gap-1.5">
+                  <StarRating value={s.overallCompanyRating} size="sm" />
+                  <RatingPercent survey={s} k="overallCompanyRating" />
+                </span>
               </DetailRow>
             </div>
             {s.podiatryWeightedScore && (
@@ -856,6 +879,7 @@ function surveyPdfData(s: PatientSurvey, staffName: (id: string) => string): Sur
   const rating = (k: RatingKey) => ({
     label: ratingLabel(dep, k),
     value: s[k] ?? null,
+    percent: s[`${k}Percent` as `${string}RatingPercent`] ?? null,
     hint: ratingHint(dep, k),
     note: paperForm(dep)?.notes?.[k],
   });
@@ -886,6 +910,7 @@ function surveyPdfData(s: PatientSurvey, staffName: (id: string) => string): Sur
         : []),
     ],
     overall: rating("overallCompanyRating"),
+    weightedPercent: s.podiatryWeightedScore?.percent ?? null,
     notesLabel: notesLabel(dep),
     notes: s.additionalNotes,
     fileTag: `${s.customerName}-${s.createdAt?.slice(0, 10) ?? ""}`,
@@ -959,11 +984,14 @@ export function PatientSurveysTable({ params }: { params: Omit<PatientSurveyList
                   {/* Vitafoot with a fitting: the weighted score (50% insole comfort), not just the overall question. */}
                   {s.podiatryWeightedScore ? (
                     <div className="flex items-center gap-1.5" title="50% ملاءمة الضبان + 50% متوسط باقي الأسئلة">
-                      <StarRating value={Math.round(Number(s.podiatryWeightedScore.score))} size="sm" />
+                      <StarRating value={Number(s.podiatryWeightedScore.score)} size="sm" />
                       <span className="text-xs tabular-nums text-muted-foreground">{Number(s.podiatryWeightedScore.percent).toFixed(0)}%</span>
                     </div>
                   ) : (
-                    <StarRating value={s.overallCompanyRating} size="sm" />
+                    <div className="flex items-center gap-1.5">
+                      <StarRating value={s.overallCompanyRating} size="sm" />
+                      <RatingPercent survey={s} k="overallCompanyRating" />
+                    </div>
                   )}
                 </TableCell>
                 <TableCell className="max-w-xs">

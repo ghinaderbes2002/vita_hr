@@ -14,6 +14,8 @@ export interface SurveyPdfRating {
   label: string;
   /** 1–5; missing when the question was left unanswered. */
   value?: number | null;
+  /** The server's percentage for this rating, printed beside "x / 5". */
+  percent?: number | null;
   /** What 5 and 1 mean, as printed on the paper form: [5, 1]. */
   hint?: [string, string];
   /** One explanatory line under the question. */
@@ -27,6 +29,8 @@ export interface SurveyPdfData {
   /** Single-choice answers (complaint stage, reason for not fitting). */
   choices: { label: string; value?: string | null }[];
   overall: SurveyPdfRating;
+  /** Vitafoot with a fitting: 50% insole comfort + 50% the rest. */
+  weightedPercent?: number | null;
   notesLabel: string;
   notes?: string | null;
   /** For the file name. */
@@ -40,8 +44,8 @@ export interface SurveyPdfData {
  */
 const RTL = { direction: "rtl" as const, textAlign: "right" as const };
 
-/** Five boxes, the first `value` filled, then "value / 5" — reads like the paper scale. */
-const Scale = ({ value }: { value?: number | null }) => (
+/** Five boxes, the first `value` filled, then the percentage — reads like the paper scale. */
+const Scale = ({ value, percent }: { value?: number | null; percent?: number | null }) => (
   <View style={{ flexDirection: "row-reverse", alignItems: "center", gap: 3 }}>
     {[1, 2, 3, 4, 5].map((n) => {
       const on = !!value && n <= value;
@@ -58,7 +62,8 @@ const Scale = ({ value }: { value?: number | null }) => (
       );
     })}
     <Text style={{ fontSize: 8.5, color: value ? TEXT : MUTED, marginRight: 6 }}>
-      {value ? `${value} / 5` : "—"}
+      {/* The percentage only — the boxes already show the stars. */}
+      {!value ? "—" : percent != null ? `${Number(percent).toFixed(0)}%` : ""}
     </Text>
   </View>
 );
@@ -77,7 +82,7 @@ const RatingRow = ({ r, n, highlight }: { r: SurveyPdfRating; n: number; highlig
         <Text style={{ fontSize: 8.5, color: BRAND, fontWeight: "bold" }}>{`.${n}`}</Text>
         <Text style={{ ...RTL, fontSize: 9, color: TEXT, flex: 1 }}>{ar(r.label)}</Text>
       </View>
-      <Scale value={r.value} />
+      <Scale value={r.value} percent={r.percent} />
     </View>
     {r.note && <Text style={{ ...RTL, fontSize: 7.5, color: MUTED, marginTop: 2 }}>{ar(r.note)}</Text>}
     {r.hint && (
@@ -111,6 +116,22 @@ const SurveyPdfDoc = ({ data }: { data: SurveyPdfData }) => (
       <View style={{ marginTop: 6 }}>
         <RatingRow r={data.overall} n={data.ratings.length + 1} highlight />
       </View>
+
+      {data.weightedPercent != null && (
+        <View
+          wrap={false}
+          style={{
+            marginTop: 6, paddingVertical: 6, paddingHorizontal: 8, borderWidth: 0.8, borderColor: BRAND,
+            borderRadius: 3, flexDirection: "row-reverse", justifyContent: "space-between", alignItems: "center",
+          }}
+        >
+          <View>
+            <Text style={{ ...RTL, fontSize: 9.5, color: TEXT, fontWeight: "bold" }}>{ar("نسبة الرضى المرجّحة")}</Text>
+            <Text style={{ ...RTL, fontSize: 7.5, color: MUTED }}>{ar("50% ملاءمة الضبان + 50% متوسط باقي الأسئلة")}</Text>
+          </View>
+          <Text style={{ fontSize: 13, color: BRAND, fontWeight: "bold" }}>{`${Number(data.weightedPercent).toFixed(1)}%`}</Text>
+        </View>
+      )}
 
       <SecHead label="ملاحظات" />
       <Text style={{ ...RTL, fontSize: 8.5, color: TEXT, marginBottom: 2 }}>{ar(data.notesLabel)}</Text>
