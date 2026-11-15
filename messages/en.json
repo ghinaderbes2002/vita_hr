@@ -281,7 +281,32 @@
       "allowances": "Allowances"
     }
   },
+  "whatsapp": {
+    "title": "WhatsApp",
+    "description": "Link the company number to WhatsApp to send system notifications to employees",
+    "statusTitle": "Connection status",
+    "refresh": "Refresh",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "connectedHint": "Every new notification is also sent on WhatsApp to employees with a phone number on file.",
+    "notConnectedHint": "Scan the QR code from the company phone to start sending notifications.",
+    "onlyNew": "Only notifications after linking are sent — older ones aren't. A message may take about 20 seconds.",
+    "logout": "Log out / relink",
+    "logoutTitle": "Unlink the WhatsApp number?",
+    "logoutDescription": "WhatsApp notifications stop until a new QR code is scanned.",
+    "loggedOut": "Number unlinked — scan the new QR code",
+    "error": "Something went wrong",
+    "loadFailed": "Couldn't load WhatsApp status",
+    "qrTitle": "Link code",
+    "linked": "The number is linked and working",
+    "waitingQr": "Waiting for a QR code from the server...",
+    "step1": "Open WhatsApp on the company phone",
+    "step2": "Settings → Linked devices",
+    "step3": "Link a device",
+    "step4": "Scan the code — the status here updates within seconds"
+  },
   "nav": {
+    "whatsapp": "WhatsApp",
     "warehouseManufacturers": "Manufacturers",
     "dashboard": "Dashboard",
     "employeePortal": "My Portal",
@@ -596,7 +621,8 @@
       "referrals": "Referral Sources",
       "sales": "Sales",
       "audit": "Audit Log",
-      "star_of_month": "Star of the month"
+      "star_of_month": "Star of the month",
+      "whatsapp": "WhatsApp"
     }
   },
   "employees": {

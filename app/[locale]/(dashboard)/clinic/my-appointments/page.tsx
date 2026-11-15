@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn, formatClinicTime } from "@/lib/utils";
-import { useMyAppointments, useUpdateAppointmentStatus, useCancelAppointment, useMyStaffMeetings } from "@/lib/hooks/use-clinic-appointments";
+import { useAllMyAppointments, useUpdateAppointmentStatus, useCancelAppointment, useMyStaffMeetings } from "@/lib/hooks/use-clinic-appointments";
 import {
   APPOINTMENT_STATUSES, Appointment, AppointmentStatus, InternalMeeting, canChangeAppointmentStatus, canModifyAppointment,
 } from "@/lib/api/clinic-appointments";
@@ -105,7 +105,7 @@ export default function MyAppointmentsPage() {
 
   // Every status is fetched and the filter is applied locally, so the counts in
   // the toolbar keep describing the whole week while the calendar narrows.
-  const { data, isLoading: apptsLoading } = useMyAppointments({ limit: 200 }, canSeeMyAppts);
+  const { data, isLoading: apptsLoading } = useAllMyAppointments(canSeeMyAppts);
   const items = canSeeMyAppts ? data?.items ?? [] : [];
 
   // Meeting ids come back without names.

@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Settings,
   UserCog,
+  MessageCircle as WhatsappIcon,
   Building2,
   Users,
   UserCheck,
@@ -160,6 +161,7 @@ const navigation: NavItem[] = [
       { title: "nav.jobTitles", href: "/job-titles", icon: FileText, permission: "job-titles:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
       { title: "nav.jobGrades", href: "/job-grades", icon: GraduationCap, permission: "job-grades:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
       { title: "nav.employees", href: "/employees", icon: Users, permission: "employees:read", hiddenForRoles: ["IT", "تقنية المعلومات"] },
+      { title: "nav.whatsapp", href: "/whatsapp", icon: WhatsappIcon, permission: "whatsapp.manage" },
     ],
   },
   {

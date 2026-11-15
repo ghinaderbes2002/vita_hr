@@ -514,6 +514,11 @@ export const PERMISSIONS = {
     READ: "audit:read",
   },
 
+  /** ربط رقم الشركة بواتساب لإرسال الإشعارات (super_admin حالياً). */
+  WHATSAPP: {
+    MANAGE: "whatsapp.manage",
+  },
+
   /** Leave delegations: list them and end one early. */
   DELEGATIONS: {
     MANAGE: "delegations.manage",

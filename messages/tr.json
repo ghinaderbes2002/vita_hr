@@ -282,7 +282,32 @@
       "allowances": "Ödenekler"
     }
   },
+  "whatsapp": {
+    "title": "WhatsApp",
+    "description": "Sistem bildirimlerini çalışanlara göndermek için şirket numarasını WhatsApp'a bağlayın",
+    "statusTitle": "Bağlantı durumu",
+    "refresh": "Yenile",
+    "connected": "Bağlı",
+    "notConnected": "Bağlı değil",
+    "connectedHint": "Her yeni bildirim, dosyasında telefon numarası olan çalışana WhatsApp ile de gönderilir.",
+    "notConnectedHint": "Bildirim göndermeye başlamak için QR kodunu şirket telefonundan okutun.",
+    "onlyNew": "Yalnızca bağlantıdan sonraki bildirimler gönderilir. Mesaj yaklaşık 20 saniye gecikebilir.",
+    "logout": "Çıkış yap / yeniden bağla",
+    "logoutTitle": "WhatsApp numarasının bağlantısı kesilsin mi?",
+    "logoutDescription": "Yeni QR kodu okutulana kadar WhatsApp bildirimleri durur.",
+    "loggedOut": "Bağlantı kesildi — yeni QR kodunu okutun",
+    "error": "Bir hata oluştu",
+    "loadFailed": "WhatsApp durumu yüklenemedi",
+    "qrTitle": "Bağlantı kodu",
+    "linked": "Numara bağlı ve çalışıyor",
+    "waitingQr": "Sunucudan QR kodu bekleniyor...",
+    "step1": "Şirket telefonunda WhatsApp'ı açın",
+    "step2": "Ayarlar → Bağlı cihazlar",
+    "step3": "Cihaz bağla",
+    "step4": "Kodu okutun — durum birkaç saniye içinde güncellenir"
+  },
   "nav": {
+    "whatsapp": "WhatsApp",
     "warehouseManufacturers": "Üreticiler",
     "dashboard": "Kontrol Paneli",
     "employeePortal": "Çalışan Portalı",
@@ -594,7 +619,8 @@
       "referrals": "Sevk Kaynakları",
       "sales": "Satış",
       "audit": "Denetim Kaydı",
-      "star_of_month": "Ayın yıldızı"
+      "star_of_month": "Ayın yıldızı",
+      "whatsapp": "WhatsApp"
     }
   },
   "employees": {
