@@ -183,6 +183,9 @@ export interface AppointmentListParams {
   page?: number;
   limit?: number;
   date?: string;
+  /** A range of days (YYYY-MM-DD); takes over from `date` where accepted (my-appointments). */
+  dateFrom?: string;
+  dateTo?: string;
   practitionerId?: string;
   departmentId?: string;
   patientId?: string;

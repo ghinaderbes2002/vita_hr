@@ -19,22 +19,21 @@ export function useMyAppointments(params?: AppointmentListParams, enabled = true
 }
 
 /**
- * Every one of my appointments, page after page. A single page of 200 cut off
- * the newest days for a busy practitioner, so today could come back empty.
+ * My appointments between two days (YYYY-MM-DD), every page of them — the page
+ * asks for the week it shows, so a busy practitioner no longer runs past one page.
  */
-export function useAllMyAppointments(enabled = true) {
+export function useMyAppointmentsInRange(range: { dateFrom: string; dateTo: string }, enabled = true) {
   return useQuery({
-    queryKey: ["my-appointments", "all"],
+    queryKey: ["my-appointments", "range", range],
     queryFn: async () => {
-      const first = await clinicAppointmentsApi.myAppointments({ page: 1, limit: 200 });
+      const params = { ...range, limit: 200 };
+      const first = await clinicAppointmentsApi.myAppointments({ ...params, page: 1 });
       const items = [...first.items];
-      // The server sends total (not always totalPages), so the page count comes from it.
-      const pages = Math.min(first.totalPages || Math.ceil((first.total || 0) / 200) || 1, 25);
+      const pages = Math.min(first.totalPages || Math.ceil((first.total || 0) / 200) || 1, 10);
       for (let page = 2; page <= pages; page++) {
-        items.push(...(await clinicAppointmentsApi.myAppointments({ page, limit: 200 })).items);
+        items.push(...(await clinicAppointmentsApi.myAppointments({ ...params, page })).items);
       }
-      // The same appointment never twice, should pages shift while reading.
-      return { items: [...new Map(items.map((a) => [a.id, a])).values()] };
+      return { items };
     },
     enabled,
   });

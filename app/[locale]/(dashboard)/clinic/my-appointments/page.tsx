@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn, formatClinicTime } from "@/lib/utils";
-import { useAllMyAppointments, useUpdateAppointmentStatus, useCancelAppointment, useMyStaffMeetings } from "@/lib/hooks/use-clinic-appointments";
+import { useMyAppointmentsInRange, useUpdateAppointmentStatus, useCancelAppointment, useMyStaffMeetings } from "@/lib/hooks/use-clinic-appointments";
 import {
   APPOINTMENT_STATUSES, Appointment, AppointmentStatus, InternalMeeting, canChangeAppointmentStatus, canModifyAppointment,
 } from "@/lib/api/clinic-appointments";
@@ -105,8 +105,21 @@ export default function MyAppointmentsPage() {
 
   // Every status is fetched and the filter is applied locally, so the counts in
   // the toolbar keep describing the whole week while the calendar narrows.
-  const { data, isLoading: apptsLoading } = useAllMyAppointments(canSeeMyAppts);
-  const items = canSeeMyAppts ? data?.items ?? [] : [];
+  // Only the shown week is asked for, plus today for the "today" panel when the
+  // week is another one. A day either side covers the timezone edge; the week
+  // filter below keeps only the shown days.
+  const shownWeekStart = startOfWeek(addDays(new Date(), weekOffset * 7));
+  const { data, isLoading: apptsLoading } = useMyAppointmentsInRange(
+    { dateFrom: localIso(addDays(shownWeekStart, -1)), dateTo: localIso(addDays(shownWeekStart, 8)) },
+    canSeeMyAppts,
+  );
+  const { data: todayData } = useMyAppointmentsInRange(
+    { dateFrom: localIso(addDays(new Date(), -1)), dateTo: localIso(addDays(new Date(), 1)) },
+    canSeeMyAppts && weekOffset !== 0,
+  );
+  const items = !canSeeMyAppts ? [] : [
+    ...new Map([...(data?.items ?? []), ...(weekOffset !== 0 ? todayData?.items ?? [] : [])].map((a) => [a.id, a])).values(),
+  ];
 
   // Meeting ids come back without names.
   const { data: staffData } = useEmployeesBasicList();
