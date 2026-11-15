@@ -10,7 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 
 /** The clinic day — same window the appointment timeline draws. */
-const HOURS = Array.from({ length: 9 }, (_, i) => String(10 + i).padStart(2, "0"));
+const HOURS = Array.from({ length: 10 }, (_, i) => String(9 + i).padStart(2, "0"));
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 /** "13" → "1 م" — the chip keeps its 24-hour value, only the label is 12-hour. */
 const hourLabel = (h: string) => {
@@ -73,7 +73,7 @@ export function TimePicker({
                 "py-1 rounded text-xs font-medium transition-colors",
                 minute === m ? "bg-primary text-primary-foreground shadow" : "bg-muted hover:bg-muted/70",
               )}
-              onClick={() => set(hour || "10", m)}
+              onClick={() => set(hour || "09", m)}
             >
               {m}
             </button>

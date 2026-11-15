@@ -75,7 +75,7 @@ function daysInMonth(year: number, month: number) {
 }
 
 // Clinic working hours, local time. A booking must start and end inside them.
-const WORK_START = "10:00";
+const WORK_START = "09:00";
 const WORK_END = "18:00";
 /**
  * Why a slot can't be booked, or null when it can. "HH:mm" strings compare
@@ -85,7 +85,7 @@ const WORK_END = "18:00";
 function workHoursError(start: string, end: string, openEnded: boolean): string | null {
   if (!start) return null;
   if (start < WORK_START || start >= WORK_END)
-    return "وقت البداية خارج ساعات الدوام (10:00 صباحاً – 6:00 مساءً) — تأكد من AM/PM";
+    return "وقت البداية خارج ساعات الدوام (9:00 صباحاً – 6:00 مساءً) — تأكد من AM/PM";
   if (openEnded) return start > "17:45" ? "الموعد المفتوح يجب أن يبدأ قبل 5:45 مساءً" : null;
   if (!end) return null;
   if (end <= start) return "وقت النهاية يجب أن يكون بعد وقت البداية";
@@ -381,9 +381,9 @@ export default function AppointmentsPage() {
     const start = minutesOfDay(a.startTime);
     if (start === null) return false;
     const end = minutesOfDay(a.endTime) ?? start;
-    // Starts before 10:00 or at/after 18:00, or runs past midnight.
+    // Starts before 09:00 or at/after 18:00, or runs past midnight.
     const crossesMidnight = !!a.endTime && new Date(a.endTime).toDateString() !== new Date(a.startTime).toDateString();
-    return start < 10 * 60 || start >= 18 * 60 || crossesMidnight || end < start;
+    return start < 9 * 60 || start >= 18 * 60 || crossesMidnight || end < start;
   });
   const isPhysio = (n: string) => n.includes("العلاج الفيزيائي");
   const isProsth = (n: string) =>
@@ -694,7 +694,7 @@ export default function AppointmentsPage() {
               )}
             </span>
           </div>
-          {/* The board draws 10:00–18:00 only. A booking outside it — usually an
+          {/* The board draws 09:00–18:00 only. A booking outside it — usually an
               a.m./p.m. slip, like 3:00 a.m. for 3:00 p.m. — would otherwise
               be on no screen at all, so it is listed here to be opened and fixed. */}
           {!dayLoading && outOfHours.length > 0 && (

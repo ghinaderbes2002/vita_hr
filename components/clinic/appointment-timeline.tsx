@@ -9,7 +9,7 @@ import { cn, formatClinicTime } from "@/lib/utils";
 import { Appointment, AppointmentStatus, InternalMeeting, InternalMeetingType } from "@/lib/api/clinic-appointments";
 
 // The axis is always the clinic day, whatever the bookings say.
-const DEFAULT_START = 10 * 60; // 10:00
+const DEFAULT_START = 9 * 60;  // 09:00
 const DEFAULT_END = 18 * 60;   // 18:00
 const HOUR_H = 88;             // px per hour — a 30-min booking still fits two lines
 /** A lane narrower than this truncates the patient's name to nothing useful. */
@@ -23,7 +23,7 @@ const PAD = 16;                // top/bottom breathing room so the edges aren't 
 type Win = { start: number; end: number };
 const bodyHeight = (w: Win) => ((w.end - w.start) / 60) * HOUR_H + PAD * 2;
 
-// "10", "10:30", "11" … afternoon in 12-hour form ("1", "6").
+// "9", "9:30", "10" … afternoon in 12-hour form ("1", "6").
 const slotLabel = (min: number) => {
   const h = Math.floor(min / 60);
   const m = min % 60;

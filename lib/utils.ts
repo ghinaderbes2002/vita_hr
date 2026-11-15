@@ -77,7 +77,7 @@ export function assetUrl(url: string | null | undefined): string {
 
 /**
  * A clinic time as it is spoken: "1:30", not "13:30". The clinic day runs
- * 10:00–18:00, so the hour alone is unambiguous and needs no AM/PM marker —
+ * 09:00–18:00, so the hour alone is unambiguous and needs no AM/PM marker —
  * which also keeps it short enough to fit inside a timeline block.
  *
  * Accepts either a full ISO timestamp or a bare "HH:mm".
