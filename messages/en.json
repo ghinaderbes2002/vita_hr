@@ -5147,6 +5147,7 @@
       "statOfTotal": "{pct}% of total",
       "statUnassigned": "No practitioner: {count}",
       "assignFilter": { "all": "All patients", "assigned": "Assigned", "unassigned": "Unassigned" },
+      "installFilter": { "all": "All fitting statuses", "fitted": "Fitted", "notFitted": "Not fitted" },
       "detail": {
         "back": "Podiatry",
         "notFound": "Reception not found",

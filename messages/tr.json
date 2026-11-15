@@ -4233,6 +4233,7 @@
       "statOfTotal": "Toplamın %{pct}'i",
       "statUnassigned": "Uygulayıcısız: {count}",
       "assignFilter": { "all": "Tüm hastalar", "assigned": "Atanmış", "unassigned": "Atanmamış" },
+      "installFilter": { "all": "Tüm takma durumları", "fitted": "Takıldı", "notFitted": "Takılmadı" },
       "detail": {
         "back": "Ayak Sağlığı",
         "notFound": "Kabul bulunamadı",

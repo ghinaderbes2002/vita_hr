@@ -60,6 +60,7 @@ export default function PodiatryListPage() {
   const [page, setPage] = useState(1);
   // من له معالج ومن ليس له — يهمّ المشرف وحده: المعالج يرى حالاته المعيَّن عليها فقط.
   const [assignFilter, setAssignFilter] = useState<"all" | "assigned" | "unassigned">("all");
+  const [installFilter, setInstallFilter] = useState<"all" | "fitted" | "notFitted">("all");
 
   // The reception carries practitioner ids only; names come from the staff list.
   const { data: staffData } = useEmployeesBasicList();
@@ -94,6 +95,8 @@ export default function PodiatryListPage() {
   const filtered = (receptions as PodiatryReception[]).filter((r) => {
     if (assignFilter === "assigned" && !isAssigned(r)) return false;
     if (assignFilter === "unassigned" && isAssigned(r)) return false;
+    if (installFilter === "fitted" && !isFitted(r)) return false;
+    if (installFilter === "notFitted" && isFitted(r)) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     const name = `${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.toLowerCase();
@@ -151,6 +154,17 @@ export default function PodiatryListPage() {
             </SelectContent>
           </Select>
         )}
+        <Select
+          value={installFilter}
+          onValueChange={(v) => { setInstallFilter(v as "all" | "fitted" | "notFitted"); setPage(1); }}
+        >
+          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("installFilter.all")}</SelectItem>
+            <SelectItem value="fitted">{t("installFilter.fitted")}</SelectItem>
+            <SelectItem value="notFitted">{t("installFilter.notFitted")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-md border">

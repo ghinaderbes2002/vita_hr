@@ -5283,6 +5283,7 @@
       "statOfTotal": "{pct}% من الإجمالي",
       "statUnassigned": "بدون معالج: {count}",
       "assignFilter": { "all": "كل المرضى", "assigned": "لهم معالج", "unassigned": "بدون معالج" },
+      "installFilter": { "all": "كل حالات التركيب", "fitted": "ركّب", "notFitted": "لم يركّب" },
       "detail": {
         "back": "طب الأقدام",
         "notFound": "لم يُعثر على الاستقبال",
