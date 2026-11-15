@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, ClipboardCheck, Download, ExternalLink, Link2, Loader2, Pencil } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardCheck, Download, ExternalLink, Link2, Loader2, Pencil, Undo2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -14,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useInstallPodiatrySession, usePodiatryDoctorDecision, usePodiatryReception,
+  useInstallPodiatrySession, useUninstallPodiatrySession, usePodiatryDoctorDecision, usePodiatryReception,
   usePodiatryReviews, usePodiatrySessions,
 } from "@/lib/hooks/use-clinic-podiatry";
 import { useClinicPatient, usePatientLinks } from "@/lib/hooks/use-clinic-patients";
@@ -162,6 +163,8 @@ export default function PodiatryReceptionPage() {
     ]);
 
   const install = useInstallPodiatrySession();
+  const uninstall = useUninstallPodiatrySession();
+  const [confirmUninstall, setConfirmUninstall] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   // Fitting is when the with-orthotic readings can be taken, so it prompts for them.
@@ -246,15 +249,23 @@ export default function PodiatryReceptionPage() {
 
         <div className="flex flex-wrap items-center gap-2">
         <NotifyIncompleteFormButton type="podiatry" id={id} />
-        {/* Recorded once, any time after the assessment exists. */}
-        {session && (
-          session.installedAt ? (
+        {/* Recorded any time after the assessment exists, and can be undone. */}
+        {session?.installedAt && (
             <Badge variant="outline" className="gap-1.5 border-emerald-300 bg-emerald-50 px-3 py-1.5 text-emerald-700">
               <CheckCircle2 className="h-4 w-4" />
               {t("installed")} — {fmt(session.installedAt)}
               {session.installedByName ? ` — ${session.installedByName}` : ""}
             </Badge>
-          ) : (
+        )}
+        {session?.installedAt && (
+          <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT}>
+            <Button variant="outline" size="sm" className="gap-1.5" disabled={uninstall.isPending} onClick={() => setConfirmUninstall(true)}>
+              {uninstall.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+              {t("undoInstall")}
+            </Button>
+          </ActionGuard>
+        )}
+        {session && !session.installedAt && (
             <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT}>
               <Button
                 className="gap-1.5"
@@ -270,7 +281,15 @@ export default function PodiatryReceptionPage() {
                 {t("markInstalled")}
               </Button>
             </ActionGuard>
-          )
+        )}
+        {session && (
+          <ConfirmDialog
+            open={confirmUninstall}
+            onOpenChange={setConfirmUninstall}
+            title={t("undoInstallTitle")}
+            description={t("undoInstallDescription")}
+            onConfirm={() => { setConfirmUninstall(false); uninstall.mutate({ receptionId: id, sessionId: session.id }); }}
+          />
         )}
         </div>
       </div>

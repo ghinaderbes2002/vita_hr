@@ -161,6 +161,23 @@ export function useInstallPodiatrySession() {
   });
 }
 
+export function useUninstallPodiatrySession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ receptionId, sessionId }: { receptionId: string; sessionId: string }) =>
+      clinicPodiatryApi.uninstallSession(receptionId, sessionId),
+    onSuccess: (_, { receptionId }) => {
+      qc.invalidateQueries({ queryKey: ["podiatry-sessions", receptionId] });
+      // The list's fitted / not-fitted split and the sales report both follow the stamp.
+      qc.invalidateQueries({ queryKey: ["podiatry-receptions"] });
+      qc.invalidateQueries({ queryKey: ["podiatry-my-patients"] });
+      qc.invalidateQueries({ queryKey: ["podiatry-sales"] });
+      toast.success("تم التراجع عن التركيب");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل التراجع عن التركيب")),
+  });
+}
+
 export function useDeletePodiatrySession() {
   const qc = useQueryClient();
   return useMutation({
