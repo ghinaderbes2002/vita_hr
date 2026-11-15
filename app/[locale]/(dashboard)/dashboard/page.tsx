@@ -490,7 +490,7 @@ function CFODashboard({ d, locale, router }: { d: any; locale: string; router: a
           iconBg="bg-green-500" />
         <StatCard title={t("cfo.approvedOvertimeCount")} value={d.approvedOvertimeCount ?? 0} icon={Clock}
           iconBg="bg-amber-500" />
-        <StatCard title={t("cfo.unpaidApprovedLeaves")} value={d.unpaidApprovedLeaves ?? 0} icon={Calendar}
+        <StatCard title={t("cfo.unpaidApprovedLeaves")} value={Array.isArray(d.unpaidApprovedLeaves) ? d.unpaidApprovedLeaves.length : (d.unpaidApprovedLeaves ?? 0)} icon={Calendar}
           iconBg="bg-red-500" />
       </div>
 
