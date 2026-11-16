@@ -133,7 +133,10 @@ export const employeesApi = {
   },
 
   update: async (id: string, data: Record<string, any>): Promise<Employee> => {
-    const response = await apiClient.patch(`/employees/${id}`, data);
+    // The edit form sends the whole record (attachments, certificates,
+    // allowances), and the server can take well over the default 15s to
+    // save it — the save landed but the client gave up and showed a timeout.
+    const response = await apiClient.patch(`/employees/${id}`, data, { timeout: 2 * 60 * 1000 });
     return response.data.data;
   },
 
