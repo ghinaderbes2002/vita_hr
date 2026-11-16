@@ -2558,8 +2558,8 @@ function balanceFormToDto(form: BalanceForm) {
 }
 
 function BalanceAssessmentCard({
-  caseId, staffList, session, idx, onCancel,
-}: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void }) {
+  caseId, staffList, session, idx, onCancel, locked = false,
+}: { caseId: string; staffList: any[]; session?: any; idx?: number; onCancel?: () => void; locked?: boolean }) {
   const t = useTranslations("clinic.prosthetics.case");
   const isNew = !session;
   const [editing, setEditing] = useState(isNew);
@@ -2577,6 +2577,8 @@ function BalanceAssessmentCard({
   // Frozen after POST /save — the backend rejects any further PATCH (400).
   const isSaved = !!session?.isSaved;
   const isArchived = !!session?.archivedAt;
+  // A delivered case is closed: every form is read-only, saved or not.
+  const readOnly = isSaved || locked;
 
   const handleSave = async () => {
     const dto = balanceFormToDto(form);
@@ -2619,7 +2621,7 @@ function BalanceAssessmentCard({
             )}
           </div>
           <div className="flex gap-1 items-center flex-wrap justify-end" onClick={(e) => e.stopPropagation()}>
-            {!isArchived && (
+            {!isArchived && !locked && (
               <Button size="sm" variant="outline" className="gap-1"
                 onClick={() => { setArchiveReason(""); setArchiveOpen(true); }}>
                 <Archive className="h-3.5 w-3.5" />
@@ -2675,7 +2677,7 @@ function BalanceAssessmentCard({
         <div className="flex flex-wrap gap-2 justify-between items-center">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold">
-              {isSaved ? t("bal.details") : t("bal.edit")} {t("bal.session")} #{(idx ?? 0) + 1}
+              {readOnly ? t("bal.details") : t("bal.edit")} {t("bal.session")} #{(idx ?? 0) + 1}
             </p>
             {isSaved && (
               <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-xs gap-1">
@@ -2691,7 +2693,7 @@ function BalanceAssessmentCard({
       )}
 
       {/* Saved forms are frozen server-side (PATCH → 400) — render read-only. */}
-      <fieldset disabled={isSaved} className="contents">
+      <fieldset disabled={readOnly} className="contents">
 
       {/* Basic Info */}
       <div className="space-y-3">
@@ -3266,7 +3268,7 @@ function BalanceAssessmentCard({
 
       </fieldset>
 
-      {!isSaved && (
+      {!readOnly && (
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleSave}
@@ -3292,21 +3294,21 @@ function BalanceAssessmentCard({
   );
 }
 
-function BalanceAssessmentSection({ caseId, staffList }: { caseId: string; staffList: any[] }) {
+function BalanceAssessmentSection({ caseId, staffList, locked = false }: { caseId: string; staffList: any[]; locked?: boolean }) {
   const t = useTranslations("clinic.prosthetics.case");
   const { data: sessions = [], isLoading } = useBalanceAssessments(caseId);
   const [showAdd, setShowAdd] = useState(false);
   return (
     <Section
       title={sessions.length > 0 ? t("bal.sectionTitleBalCount", { count: sessions.length }) : t("bal.sectionTitleBal")}
-      action={
+      action={!locked && (
         <Button size="sm" variant={showAdd ? "secondary" : "outline"} className="gap-1 text-xs" onClick={() => setShowAdd((v) => !v)}>
           <Plus className="h-3.5 w-3.5" />
           {showAdd ? t("bal.close") : t("bal.addAssessmentAction")}
         </Button>
-      }
+      )}
     >
-      {showAdd && (
+      {showAdd && !locked && (
         <div className="mb-4 border rounded-lg p-1">
           <BalanceAssessmentCard caseId={caseId} staffList={staffList} onCancel={() => setShowAdd(false)} />
         </div>
@@ -3318,7 +3320,7 @@ function BalanceAssessmentSection({ caseId, staffList }: { caseId: string; staff
       ) : (
         <div className="space-y-3">
           {sessions.map((s: any, i: number) => (
-            <BalanceAssessmentCard key={s.id} caseId={caseId} staffList={staffList} session={s} idx={i} />
+            <BalanceAssessmentCard key={s.id} caseId={caseId} staffList={staffList} session={s} idx={i} locked={locked} />
           ))}
         </div>
       )}
@@ -8273,9 +8275,9 @@ export default function ProstheticsCasePage() {
         {/* ── BALANCE ASSESSMENT ──────────────────────────────────────────── */}
         {ampTypes.includes("LOWER") && (
           <TabsContent value="balance_assessment" className="mt-4" dir={isRtl ? "rtl" : "ltr"}>
-            {/* Not frozen at delivery: balance is still assessed after the limb is
-                handed over, and the API takes a new assessment in any status. */}
-            <BalanceAssessmentSection caseId={id} staffList={staffList} />
+            {/* Frozen at delivery like the rest of the case: no new assessment,
+                no edit or archive — existing ones stay viewable. */}
+            <BalanceAssessmentSection caseId={id} staffList={staffList} locked={caseLocked} />
           </TabsContent>
         )}
 
