@@ -370,6 +370,9 @@
     "interviewPositions": "Job Vacancy Definitions",
     "probationEvaluations": "Probation Evaluations",
     "allProbationEvaluations": "Probation Evaluations",
+    "appraisal360": "360 Appraisal",
+    "appraisal360Cycles": "360 Appraisal Cycles",
+    "appraisal360Setup": "360 Appraisal Setup",
     "biometricDevices": "Biometric Devices",
     "allBiometricDevices": "Manage Devices",
     "biometricReports": "Work Stamps",
@@ -7767,5 +7770,258 @@
     "emptyHint": "Employees assigned to you as their direct manager will appear here",
     "noMatches": "No matching results",
     "error": "Couldn't load employees"
+  },
+  "appraisal": {
+    "notApplicable": "N/A",
+    "anonymousNote": "Your evaluation is confidential — your name is not shown to the person evaluated",
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "cycleStatus": {
+      "DRAFT": "Draft",
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "FINALIZED": "Finalized"
+    },
+    "taskStatus": {
+      "NOT_STARTED": "Not started",
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted"
+    },
+    "bonusTier": {
+      "EXCEPTIONAL": "Exceptional bonus",
+      "HIGH": "High bonus",
+      "BASIC": "Basic bonus",
+      "PIP": "Performance improvement plan — no bonus"
+    },
+    "axis": {
+      "MANAGER": "Direct manager",
+      "CUSTOMER": "Patient satisfaction",
+      "PEER": "Peers",
+      "UPWARD": "Subordinates",
+      "COMMITMENT": "Commitment & attendance",
+      "SELF": "Self evaluation"
+    },
+    "axisShort": {
+      "MANAGER": "Manager",
+      "CUSTOMER": "Satisfaction",
+      "PEER": "Peers",
+      "UPWARD": "Subordinates",
+      "COMMITMENT": "Commitment",
+      "SELF": "Self"
+    },
+    "satisfactionSource": {
+      "PROSTHETICS": "Medical — Prosthetics",
+      "PHYSIO": "Medical — Physiotherapy",
+      "PODIATRY": "Medical — Podiatry",
+      "ADMIN": "Administrative (outside the center)"
+    },
+    "messages": {
+      "saveError": "Could not save",
+      "draftSaved": "Draft saved",
+      "submitted": "Evaluation submitted",
+      "submitError": "Could not submit the evaluation",
+      "fileUploaded": "File uploaded",
+      "uploadError": "Could not upload the file",
+      "downloadError": "Could not download the file",
+      "saved": "Saved",
+      "actionError": "The action failed",
+      "cycleOpened": "Cycle opened",
+      "cycleClosed": "Input closed",
+      "cycleFinalized": "Results finalized"
+    },
+    "my": {
+      "title": "360° Performance Appraisal",
+      "description": "Your appraisal tasks in the current cycle",
+      "noCycle": "There is no appraisal cycle right now",
+      "noTasks": "You have no appraisal tasks in this cycle",
+      "readOnly": "Input is closed — evaluations are read-only",
+      "sections": {
+        "SELF": "My self evaluation",
+        "MANAGER": "My team",
+        "UPWARD": "My manager",
+        "PEER": "My peers"
+      },
+      "start": "Start",
+      "continue": "Continue",
+      "view": "View"
+    },
+    "result": {
+      "title": "My result",
+      "notAvailable": "Results are not finalized yet",
+      "finalScore": "Final score",
+      "bonusTier": "Bonus tier",
+      "missing": "Missing axes",
+      "axis": "Axis",
+      "percent": "Percent",
+      "weight": "Weight",
+      "contribution": "Contribution",
+      "raters": "{count} raters",
+      "commitmentTitle": "Commitment score",
+      "deductions": {
+        "penalties": "Penalties",
+        "justifications": "Lateness justifications",
+        "excessLeaveDays": "Excess leave days",
+        "excessLeaveHours": "Excess leave hours",
+        "bonus": "Employee-of-the-month bonus"
+      }
+    },
+    "form": {
+      "back": "Back to tasks",
+      "invalid": "Invalid link",
+      "notFound": "This evaluation is not among your tasks",
+      "titles": {
+        "SELF": "Self evaluation",
+        "MANAGER": "Evaluate a team member",
+        "UPWARD": "Evaluate my manager",
+        "PEER": "Evaluate a peer"
+      },
+      "submittedNote": "This evaluation was submitted and can no longer be edited",
+      "questions": "Questions",
+      "outOf": "out of {max}",
+      "missingAnswers": "Answer all questions before submitting — missing: {questions}",
+      "achievements": "Achievements",
+      "achievementNote": "Achievements summary",
+      "achievementNotePlaceholder": "Describe your key achievements during the period",
+      "uploadFile": "Upload achievements file",
+      "replaceFile": "Replace file",
+      "uploading": "Uploading...",
+      "downloadFile": "Download current file",
+      "downloadEmployeeAchievements": "Download employee achievements",
+      "fileHint": "PDF, JPG, PNG, WEBP, DOC, DOCX — up to 10 MB. Upload before submitting; a new file replaces the old one.",
+      "fileTooLarge": "File is larger than 10 MB",
+      "comments": "Comments",
+      "commentsPlaceholder": "Optional comments",
+      "saveDraft": "Save draft",
+      "submit": "Submit",
+      "confirmSubmitTitle": "Submit the evaluation?",
+      "confirmSubmitDescription": "You will not be able to edit it after submitting."
+    },
+    "cycles": {
+      "title": "360 Appraisal Cycles",
+      "description": "Create, open, close and finalize appraisal cycles",
+      "create": "New cycle",
+      "createTitle": "Create appraisal cycle",
+      "editTitle": "Edit cycle",
+      "code": "Code",
+      "name": "Name",
+      "period": "Period",
+      "status": "Status",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "empty": "No cycles yet",
+      "actions": {
+        "details": "Progress & results",
+        "edit": "Edit",
+        "open": "Open for input",
+        "reopen": "Reopen",
+        "close": "Close input",
+        "finalize": "Finalize"
+      },
+      "confirm": {
+        "open": {
+          "title": "Open cycle “{name}”?",
+          "description": "Employees will be able to fill their evaluations. Only one cycle can be open at a time."
+        },
+        "close": {
+          "title": "Close input for “{name}”?",
+          "description": "Evaluations become read-only. You can reopen it later."
+        },
+        "finalize": {
+          "title": "Finalize results for “{name}”?",
+          "description": "Results will be recomputed, frozen and shown to employees."
+        },
+        "finalize2": {
+          "title": "Final confirmation: finalize “{name}”",
+          "description": "This cannot be undone — no evaluation can be changed and the cycle cannot be reopened."
+        }
+      }
+    },
+    "detail": {
+      "compute": "Compute results",
+      "computing": "Computing...",
+      "computed": "Computed results for {count} employees",
+      "warnings": {
+        "unconfigured": "Unclassified departments — their employees have no satisfaction axis: {departments}",
+        "noReadiness": "No “center readiness” job titles are set yet"
+      },
+      "tabs": {
+        "results": "Results",
+        "progress": "Input progress"
+      },
+      "progressTitle": "Input progress by axis",
+      "noProgress": "No data",
+      "progressLine": "{submitted} of {expected} submitted · {drafts} drafts",
+      "searchPlaceholder": "Search by employee name",
+      "allDepartments": "All departments",
+      "allTiers": "All tiers",
+      "missingOnly": "Incomplete only",
+      "employee": "Employee",
+      "finalScore": "Final",
+      "tier": "Tier",
+      "noResults": "No results yet — click “Compute results”",
+      "noMatches": "No matching results",
+      "waitingFor": "Waiting for: {axes}",
+      "backToResults": "Back to results",
+      "axesBreakdown": "Axes breakdown",
+      "customerDetails": "Satisfaction details",
+      "commitmentDetails": "Commitment details",
+      "submissions": "Submitted evaluations",
+      "noSubmissions": "No evaluations entered",
+      "anonymousRater": "Anonymous rater"
+    },
+    "detailKeys": {
+      "source": "Source",
+      "surveyCount": "Surveys",
+      "surveys": "Surveys",
+      "average": "Average",
+      "percent": "Percent",
+      "score": "Score",
+      "penalties": "Penalties",
+      "justifications": "Lateness justifications",
+      "excessLeaveDays": "Excess leave days",
+      "excessLeaveHours": "Excess leave hours",
+      "starOfMonth": "Employee of the month",
+      "bonus": "Bonus"
+    },
+    "setup": {
+      "title": "360 Appraisal Setup",
+      "description": "One-time settings before the first cycle",
+      "tabs": {
+        "departments": "Departments",
+        "readiness": "Center readiness",
+        "settings": "Commitment numbers"
+      },
+      "departments": {
+        "title": "Department classification",
+        "description": "Set the patient-satisfaction source for each medical department, or mark it administrative",
+        "unconfiguredCount": "{count} departments not classified yet",
+        "code": "Code",
+        "name": "Department",
+        "classification": "Classification",
+        "notConfigured": "Not classified",
+        "choose": "Choose classification"
+      },
+      "readiness": {
+        "title": "“Center readiness” job titles",
+        "description": "E.g. center supervisor, services staff, security staff",
+        "selected": "Selected: {count}"
+      },
+      "settings": {
+        "title": "Commitment numbers",
+        "description": "Deduction and bonus points on the commitment axis (out of 10)",
+        "fields": {
+          "penaltyPoints": "Per penalty",
+          "justificationPoints": "Per lateness justification",
+          "excessLeaveDayPoints": "Per excess leave day",
+          "excessLeaveHourPoints": "Per excess leave hour",
+          "starOfMonthPoints": "Per employee-of-the-month title",
+          "monthlyLeaveDaysAllowance": "Monthly daily-leave allowance (days)",
+          "monthlyLeaveHoursAllowance": "Monthly hourly-leave allowance (hours)",
+          "countedLeaveTypeCodes": "Counted leave types"
+        }
+      }
+    }
   }
 }

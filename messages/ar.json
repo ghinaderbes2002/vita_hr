@@ -159,6 +159,9 @@
     "interviewPositions": "تعريف الشواغر الوظيفية",
     "probationEvaluations": "تقييمات التجربة",
     "allProbationEvaluations": "تقييمات التجربة",
+    "appraisal360": "تقييم 360",
+    "appraisal360Cycles": "دورات تقييم 360",
+    "appraisal360Setup": "إعداد تقييم 360",
     "biometricDevices": "أجهزة البصمة",
     "allBiometricDevices": "إدارة الأجهزة",
     "biometricReports": "الوقوعات الوظيفية",
@@ -7993,5 +7996,258 @@
     "emptyHint": "عند تعيينك مديراً مباشراً لموظفين سيظهرون هنا",
     "noMatches": "لا توجد نتائج مطابقة",
     "error": "تعذّر تحميل الموظفين"
+  },
+  "appraisal": {
+    "notApplicable": "لا ينطبق",
+    "anonymousNote": "تقييمك سرّي — لا يظهر اسمك للشخص المُقيَّم",
+    "common": {
+      "cancel": "إلغاء",
+      "save": "حفظ"
+    },
+    "cycleStatus": {
+      "DRAFT": "قيد الإعداد",
+      "OPEN": "مفتوحة للإدخال",
+      "CLOSED": "أُغلق الإدخال",
+      "FINALIZED": "النتائج معتمدة"
+    },
+    "taskStatus": {
+      "NOT_STARTED": "لم يبدأ",
+      "DRAFT": "مسودة",
+      "SUBMITTED": "مُرسل"
+    },
+    "bonusTier": {
+      "EXCEPTIONAL": "بونص استثنائي ممتاز",
+      "HIGH": "بونص مرتفع",
+      "BASIC": "بونص أساسي",
+      "PIP": "خطة تحسين أداء — بلا بونص"
+    },
+    "axis": {
+      "MANAGER": "تقييم المدير المباشر",
+      "CUSTOMER": "رضا المرضى",
+      "PEER": "تقييم الزملاء",
+      "UPWARD": "تقييم المرؤوسين",
+      "COMMITMENT": "الالتزام والدوام",
+      "SELF": "التقييم الذاتي"
+    },
+    "axisShort": {
+      "MANAGER": "المدير",
+      "CUSTOMER": "الرضا",
+      "PEER": "الزملاء",
+      "UPWARD": "المرؤوسون",
+      "COMMITMENT": "الالتزام",
+      "SELF": "الذاتي"
+    },
+    "satisfactionSource": {
+      "PROSTHETICS": "قسم طبي — الأطراف الصناعية",
+      "PHYSIO": "قسم طبي — العلاج الفيزيائي",
+      "PODIATRY": "قسم طبي — صحة القدم",
+      "ADMIN": "قسم إداري (خارج المركز)"
+    },
+    "messages": {
+      "saveError": "تعذّر الحفظ",
+      "draftSaved": "تم حفظ المسودة",
+      "submitted": "تم إرسال التقييم",
+      "submitError": "تعذّر إرسال التقييم",
+      "fileUploaded": "تم رفع المرفق",
+      "uploadError": "تعذّر رفع المرفق",
+      "downloadError": "تعذّر تنزيل المرفق",
+      "saved": "تم الحفظ",
+      "actionError": "تعذّر تنفيذ العملية",
+      "cycleOpened": "تم فتح الدورة",
+      "cycleClosed": "تم إغلاق الإدخال",
+      "cycleFinalized": "تم اعتماد النتائج نهائياً"
+    },
+    "my": {
+      "title": "تقييم الأداء 360",
+      "description": "مهام التقييم المطلوبة منك في الدورة الحالية",
+      "noCycle": "لا توجد دورة تقييم حالياً",
+      "noTasks": "لا توجد مهام تقييم لك في هذه الدورة",
+      "readOnly": "الإدخال مغلق — التقييمات للقراءة فقط",
+      "sections": {
+        "SELF": "تقييمي الذاتي",
+        "MANAGER": "تقييم فريقي",
+        "UPWARD": "تقييم مديري",
+        "PEER": "تقييم زملائي"
+      },
+      "start": "ابدأ",
+      "continue": "متابعة",
+      "view": "عرض"
+    },
+    "result": {
+      "title": "نتيجتي",
+      "notAvailable": "النتائج لم تُعتمد بعد",
+      "finalScore": "الدرجة النهائية",
+      "bonusTier": "شريحة البونص",
+      "missing": "محاور ناقصة",
+      "axis": "المحور",
+      "percent": "النسبة",
+      "weight": "الوزن",
+      "contribution": "المساهمة بالنتيجة",
+      "raters": "{count} مقيّم",
+      "commitmentTitle": "درجة الالتزام",
+      "deductions": {
+        "penalties": "العقوبات",
+        "justifications": "تبريرات التأخير",
+        "excessLeaveDays": "إجازات يومية زائدة",
+        "excessLeaveHours": "إجازات ساعية زائدة",
+        "bonus": "إضافة موظف الشهر"
+      }
+    },
+    "form": {
+      "back": "رجوع للمهام",
+      "invalid": "رابط غير صالح",
+      "notFound": "هذا التقييم غير موجود ضمن مهامك",
+      "titles": {
+        "SELF": "التقييم الذاتي",
+        "MANAGER": "تقييم موظف في فريقي",
+        "UPWARD": "تقييم مديري",
+        "PEER": "تقييم زميل"
+      },
+      "submittedNote": "تم إرسال هذا التقييم — لا يمكن تعديله",
+      "questions": "الأسئلة",
+      "outOf": "من {max}",
+      "missingAnswers": "أجب على كل الأسئلة قبل الإرسال — الناقصة: {questions}",
+      "achievements": "الإنجازات",
+      "achievementNote": "ملخص الإنجازات",
+      "achievementNotePlaceholder": "اكتب أبرز إنجازاتك خلال الفترة",
+      "uploadFile": "رفع مرفق الإنجازات",
+      "replaceFile": "استبدال المرفق",
+      "uploading": "جارٍ الرفع...",
+      "downloadFile": "تنزيل المرفق الحالي",
+      "downloadEmployeeAchievements": "تنزيل مرفق إنجازات الموظف",
+      "fileHint": "PDF، JPG، PNG، WEBP، DOC، DOCX — بحد أقصى 10 ميغابايت. ارفعه قبل إرسال التقييم؛ الملف الجديد يستبدل القديم.",
+      "fileTooLarge": "حجم الملف أكبر من 10 ميغابايت",
+      "comments": "ملاحظات",
+      "commentsPlaceholder": "ملاحظات اختيارية",
+      "saveDraft": "حفظ كمسودة",
+      "submit": "إرسال نهائي",
+      "confirmSubmitTitle": "إرسال التقييم نهائياً؟",
+      "confirmSubmitDescription": "لن تتمكن من التعديل بعد الإرسال."
+    },
+    "cycles": {
+      "title": "دورات تقييم 360",
+      "description": "إنشاء الدورات وفتحها وإغلاقها واعتماد نتائجها",
+      "create": "دورة جديدة",
+      "createTitle": "إنشاء دورة تقييم",
+      "editTitle": "تعديل الدورة",
+      "code": "الكود",
+      "name": "الاسم",
+      "period": "الفترة",
+      "status": "الحالة",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "empty": "لا توجد دورات بعد",
+      "actions": {
+        "details": "المتابعة والنتائج",
+        "edit": "تعديل",
+        "open": "فتح للإدخال",
+        "reopen": "إعادة فتح",
+        "close": "إغلاق الإدخال",
+        "finalize": "اعتماد نهائي"
+      },
+      "confirm": {
+        "open": {
+          "title": "فتح الدورة «{name}»؟",
+          "description": "سيتمكن الموظفون من تعبئة تقييماتهم. لا يمكن فتح أكثر من دورة بنفس الوقت."
+        },
+        "close": {
+          "title": "إغلاق الإدخال في «{name}»؟",
+          "description": "ستصبح التقييمات للقراءة فقط. يمكن إعادة فتحها لاحقاً."
+        },
+        "finalize": {
+          "title": "اعتماد نتائج «{name}»؟",
+          "description": "سيُعاد حساب النتائج ثم تُجمَّد ويراها الموظفون."
+        },
+        "finalize2": {
+          "title": "تأكيد أخير: اعتماد «{name}»",
+          "description": "هذه العملية لا رجعة فيها — لن يمكن تعديل أي تقييم أو إعادة فتح الدورة بعدها."
+        }
+      }
+    },
+    "detail": {
+      "compute": "حساب النتائج",
+      "computing": "جارٍ الحساب...",
+      "computed": "تم حساب نتائج {count} موظف",
+      "warnings": {
+        "unconfigured": "أقسام غير مصنَّفة — موظفوها بلا محور رضا العملاء: {departments}",
+        "noReadiness": "لم تُحدَّد مسمّيات «جاهزية المركز» بعد"
+      },
+      "tabs": {
+        "results": "النتائج",
+        "progress": "تقدّم الإدخال"
+      },
+      "progressTitle": "تقدّم الإدخال حسب المحور",
+      "noProgress": "لا توجد بيانات",
+      "progressLine": "{submitted} من {expected} مُرسل · {drafts} مسودة",
+      "searchPlaceholder": "البحث باسم الموظف",
+      "allDepartments": "كل الأقسام",
+      "allTiers": "كل الشرائح",
+      "missingOnly": "الناقص فقط",
+      "employee": "الموظف",
+      "finalScore": "النهائية",
+      "tier": "الشريحة",
+      "noResults": "لا توجد نتائج بعد — اضغط «حساب النتائج»",
+      "noMatches": "لا توجد نتائج مطابقة",
+      "waitingFor": "بانتظار: {axes}",
+      "backToResults": "رجوع للنتائج",
+      "axesBreakdown": "تفصيل المحاور",
+      "customerDetails": "تفاصيل رضا العملاء",
+      "commitmentDetails": "تفاصيل الالتزام",
+      "submissions": "التقييمات المُدخلة",
+      "noSubmissions": "لا توجد تقييمات مُدخلة",
+      "anonymousRater": "مقيّم مجهول"
+    },
+    "detailKeys": {
+      "source": "المصدر",
+      "surveyCount": "عدد الاستبيانات",
+      "surveys": "عدد الاستبيانات",
+      "average": "المتوسط",
+      "percent": "النسبة",
+      "score": "الدرجة",
+      "penalties": "العقوبات",
+      "justifications": "تبريرات التأخير",
+      "excessLeaveDays": "إجازات يومية زائدة",
+      "excessLeaveHours": "إجازات ساعية زائدة",
+      "starOfMonth": "لقب موظف الشهر",
+      "bonus": "الإضافة"
+    },
+    "setup": {
+      "title": "إعداد تقييم 360",
+      "description": "إعدادات تُضبط مرة واحدة قبل أول دورة",
+      "tabs": {
+        "departments": "تصنيف الأقسام",
+        "readiness": "جاهزية المركز",
+        "settings": "أرقام الالتزام"
+      },
+      "departments": {
+        "title": "تصنيف الأقسام",
+        "description": "حدّد مصدر رضا المرضى لكل قسم طبي، أو صنّفه كقسم إداري",
+        "unconfiguredCount": "{count} قسم لم يُصنَّف بعد",
+        "code": "الكود",
+        "name": "القسم",
+        "classification": "التصنيف",
+        "notConfigured": "لم يُصنَّف بعد",
+        "choose": "اختر التصنيف"
+      },
+      "readiness": {
+        "title": "مسمّيات «جاهزية المركز»",
+        "description": "مثل مشرفة المركز وموظف الخدمات وموظف الأمن",
+        "selected": "المحدد: {count}"
+      },
+      "settings": {
+        "title": "أرقام الالتزام",
+        "description": "نقاط الخصم والإضافة على محور الالتزام (من 10) — معتمدة من الموارد البشرية",
+        "fields": {
+          "penaltyPoints": "خصم كل عقوبة",
+          "justificationPoints": "خصم كل تبرير تأخير",
+          "excessLeaveDayPoints": "خصم كل يوم إجازة فوق السماحية",
+          "excessLeaveHourPoints": "خصم كل ساعة إجازة ساعية فوق السماحية",
+          "starOfMonthPoints": "إضافة كل لقب «موظف الشهر»",
+          "monthlyLeaveDaysAllowance": "سماحية الإجازة اليومية شهرياً (أيام)",
+          "monthlyLeaveHoursAllowance": "سماحية الإجازة الساعية شهرياً (ساعات)",
+          "countedLeaveTypeCodes": "أنواع الإجازات المحتسبة"
+        }
+      }
+    }
   }
 }

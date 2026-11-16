@@ -175,6 +175,13 @@ export const PERMISSIONS = {
     HR_REVIEW: "evaluation:forms:hr-review",
     GM_APPROVAL: "evaluation:forms:gm-approval",
   },
+  /** تقييم الأداء 360 — شاشات /appraisal/me/* مفتوحة لكل المستخدمين بلا صلاحية. */
+  APPRAISAL: {
+    /** الإعداد والدورات والنتائج (الموارد البشرية). */
+    MANAGE: "evaluation:appraisal:manage",
+    /** أسماء مقيّمي الزملاء والمرؤوسين — للتدقيق فقط. */
+    VIEW_RATERS: "evaluation:appraisal:view-raters",
+  },
 
   PROBATION: {
     VIEW_ALL: "probation:view-all",
@@ -252,6 +259,8 @@ export const PERMISSIONS = {
   CLINIC_PROSTHETICS: {
     CASE_VIEW:         "clinic.prosthetics.case.view",
     NOTIFY_INCOMPLETE_FORM: "clinic.prosthetics.notify_incomplete_form",
+    /** إعادة فتح حالة مسلَّمة لاستكمال النواقص، وإعادة قفلها (مع التجاوز). */
+    REOPEN:            "clinic.prosthetics.reopen",
     CASE_CREATE:       "clinic.prosthetics.case.create",
     ASSESSMENT_CREATE: "clinic.prosthetics.assessment.create",
     COMMITTEE_OPINION: "clinic.prosthetics.committee.opinion",
@@ -259,8 +268,6 @@ export const PERMISSIONS = {
     COMMITTEE_SIGN:    "clinic.prosthetics.committee.sign",
     COMPONENTS_ADD:    "clinic.prosthetics.components.add",
     GAIT_CREATE:       "clinic.prosthetics.gait.create",
-    /** إعادة فتح حالة مسلَّمة لاستكمال النواقص، وإعادة قفلها (مع التجاوز). */
-    REOPEN:            "clinic.prosthetics.reopen",
     DELIVERY_CREATE:   "clinic.prosthetics.delivery.create",
     DELIVERY_APPROVE:  "clinic.prosthetics.delivery.approve",
   },

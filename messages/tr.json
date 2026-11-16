@@ -367,6 +367,9 @@
     "interviewPositions": "Mülakat Pozisyonları",
     "probationEvaluations": "Deneme Değerlendirmeleri",
     "allProbationEvaluations": "Tüm Değerlendirmeler",
+    "appraisal360": "360 Değerlendirme",
+    "appraisal360Cycles": "360 Değerlendirme Dönemleri",
+    "appraisal360Setup": "360 Değerlendirme Ayarları",
     "biometricDevices": "Biyometrik Cihazlar",
     "allBiometricDevices": "Cihaz Yönetimi",
     "biometricReports": "Biyometrik Raporlar",
@@ -6849,5 +6852,258 @@
     "emptyHint": "Doğrudan yöneticisi olduğunuz çalışanlar burada görünür",
     "noMatches": "Eşleşen sonuç yok",
     "error": "Çalışanlar yüklenemedi"
+  },
+  "appraisal": {
+    "notApplicable": "Uygulanamaz",
+    "anonymousNote": "Değerlendirmeniz gizlidir — adınız değerlendirilen kişiye gösterilmez",
+    "common": {
+      "cancel": "İptal",
+      "save": "Kaydet"
+    },
+    "cycleStatus": {
+      "DRAFT": "Taslak",
+      "OPEN": "Açık",
+      "CLOSED": "Kapalı",
+      "FINALIZED": "Kesinleşti"
+    },
+    "taskStatus": {
+      "NOT_STARTED": "Başlanmadı",
+      "DRAFT": "Taslak",
+      "SUBMITTED": "Gönderildi"
+    },
+    "bonusTier": {
+      "EXCEPTIONAL": "Olağanüstü prim",
+      "HIGH": "Yüksek prim",
+      "BASIC": "Temel prim",
+      "PIP": "Performans iyileştirme planı — prim yok"
+    },
+    "axis": {
+      "MANAGER": "Doğrudan yönetici",
+      "CUSTOMER": "Hasta memnuniyeti",
+      "PEER": "Meslektaşlar",
+      "UPWARD": "Ast çalışanlar",
+      "COMMITMENT": "Bağlılık ve devam",
+      "SELF": "Öz değerlendirme"
+    },
+    "axisShort": {
+      "MANAGER": "Yönetici",
+      "CUSTOMER": "Memnuniyet",
+      "PEER": "Meslektaş",
+      "UPWARD": "Astlar",
+      "COMMITMENT": "Bağlılık",
+      "SELF": "Öz"
+    },
+    "satisfactionSource": {
+      "PROSTHETICS": "Tıbbi — Protez",
+      "PHYSIO": "Tıbbi — Fizyoterapi",
+      "PODIATRY": "Tıbbi — Ayak sağlığı",
+      "ADMIN": "İdari (merkez dışı)"
+    },
+    "messages": {
+      "saveError": "Kaydedilemedi",
+      "draftSaved": "Taslak kaydedildi",
+      "submitted": "Değerlendirme gönderildi",
+      "submitError": "Değerlendirme gönderilemedi",
+      "fileUploaded": "Dosya yüklendi",
+      "uploadError": "Dosya yüklenemedi",
+      "downloadError": "Dosya indirilemedi",
+      "saved": "Kaydedildi",
+      "actionError": "İşlem başarısız",
+      "cycleOpened": "Dönem açıldı",
+      "cycleClosed": "Giriş kapatıldı",
+      "cycleFinalized": "Sonuçlar kesinleştirildi"
+    },
+    "my": {
+      "title": "360° Performans Değerlendirmesi",
+      "description": "Mevcut dönemdeki değerlendirme görevleriniz",
+      "noCycle": "Şu anda değerlendirme dönemi yok",
+      "noTasks": "Bu dönemde değerlendirme göreviniz yok",
+      "readOnly": "Giriş kapalı — değerlendirmeler salt okunur",
+      "sections": {
+        "SELF": "Öz değerlendirmem",
+        "MANAGER": "Ekibim",
+        "UPWARD": "Yöneticim",
+        "PEER": "Meslektaşlarım"
+      },
+      "start": "Başla",
+      "continue": "Devam",
+      "view": "Görüntüle"
+    },
+    "result": {
+      "title": "Sonucum",
+      "notAvailable": "Sonuçlar henüz kesinleşmedi",
+      "finalScore": "Nihai puan",
+      "bonusTier": "Prim dilimi",
+      "missing": "Eksik eksenler",
+      "axis": "Eksen",
+      "percent": "Yüzde",
+      "weight": "Ağırlık",
+      "contribution": "Katkı",
+      "raters": "{count} değerlendirici",
+      "commitmentTitle": "Bağlılık puanı",
+      "deductions": {
+        "penalties": "Cezalar",
+        "justifications": "Gecikme gerekçeleri",
+        "excessLeaveDays": "Fazla izin günleri",
+        "excessLeaveHours": "Fazla saatlik izin",
+        "bonus": "Ayın çalışanı eklemesi"
+      }
+    },
+    "form": {
+      "back": "Görevlere dön",
+      "invalid": "Geçersiz bağlantı",
+      "notFound": "Bu değerlendirme görevleriniz arasında değil",
+      "titles": {
+        "SELF": "Öz değerlendirme",
+        "MANAGER": "Ekip üyesini değerlendir",
+        "UPWARD": "Yöneticimi değerlendir",
+        "PEER": "Meslektaşı değerlendir"
+      },
+      "submittedNote": "Bu değerlendirme gönderildi, artık düzenlenemez",
+      "questions": "Sorular",
+      "outOf": "{max} üzerinden",
+      "missingAnswers": "Göndermeden önce tüm soruları yanıtlayın — eksik: {questions}",
+      "achievements": "Başarılar",
+      "achievementNote": "Başarı özeti",
+      "achievementNotePlaceholder": "Dönem içindeki önemli başarılarınızı yazın",
+      "uploadFile": "Başarı dosyası yükle",
+      "replaceFile": "Dosyayı değiştir",
+      "uploading": "Yükleniyor...",
+      "downloadFile": "Mevcut dosyayı indir",
+      "downloadEmployeeAchievements": "Çalışan başarı dosyasını indir",
+      "fileHint": "PDF, JPG, PNG, WEBP, DOC, DOCX — en fazla 10 MB. Göndermeden önce yükleyin; yeni dosya eskisinin yerine geçer.",
+      "fileTooLarge": "Dosya 10 MB'tan büyük",
+      "comments": "Yorumlar",
+      "commentsPlaceholder": "İsteğe bağlı yorumlar",
+      "saveDraft": "Taslak kaydet",
+      "submit": "Gönder",
+      "confirmSubmitTitle": "Değerlendirme gönderilsin mi?",
+      "confirmSubmitDescription": "Gönderdikten sonra düzenleyemezsiniz."
+    },
+    "cycles": {
+      "title": "360 Değerlendirme Dönemleri",
+      "description": "Dönemleri oluşturun, açın, kapatın ve kesinleştirin",
+      "create": "Yeni dönem",
+      "createTitle": "Değerlendirme dönemi oluştur",
+      "editTitle": "Dönemi düzenle",
+      "code": "Kod",
+      "name": "Ad",
+      "period": "Dönem",
+      "status": "Durum",
+      "startDate": "Başlangıç",
+      "endDate": "Bitiş",
+      "empty": "Henüz dönem yok",
+      "actions": {
+        "details": "İlerleme ve sonuçlar",
+        "edit": "Düzenle",
+        "open": "Girişe aç",
+        "reopen": "Yeniden aç",
+        "close": "Girişi kapat",
+        "finalize": "Kesinleştir"
+      },
+      "confirm": {
+        "open": {
+          "title": "“{name}” dönemi açılsın mı?",
+          "description": "Çalışanlar değerlendirmelerini doldurabilecek. Aynı anda yalnızca bir dönem açık olabilir."
+        },
+        "close": {
+          "title": "“{name}” için giriş kapatılsın mı?",
+          "description": "Değerlendirmeler salt okunur olur. Daha sonra yeniden açabilirsiniz."
+        },
+        "finalize": {
+          "title": "“{name}” sonuçları kesinleştirilsin mi?",
+          "description": "Sonuçlar yeniden hesaplanıp dondurulacak ve çalışanlara gösterilecek."
+        },
+        "finalize2": {
+          "title": "Son onay: “{name}” kesinleştir",
+          "description": "Bu işlem geri alınamaz — hiçbir değerlendirme değiştirilemez ve dönem yeniden açılamaz."
+        }
+      }
+    },
+    "detail": {
+      "compute": "Sonuçları hesapla",
+      "computing": "Hesaplanıyor...",
+      "computed": "{count} çalışanın sonucu hesaplandı",
+      "warnings": {
+        "unconfigured": "Sınıflandırılmamış bölümler — çalışanlarının memnuniyet ekseni yok: {departments}",
+        "noReadiness": "Henüz “merkez hazırlığı” unvanı tanımlanmadı"
+      },
+      "tabs": {
+        "results": "Sonuçlar",
+        "progress": "Giriş ilerlemesi"
+      },
+      "progressTitle": "Eksene göre giriş ilerlemesi",
+      "noProgress": "Veri yok",
+      "progressLine": "{expected} içinden {submitted} gönderildi · {drafts} taslak",
+      "searchPlaceholder": "Çalışan adına göre ara",
+      "allDepartments": "Tüm bölümler",
+      "allTiers": "Tüm dilimler",
+      "missingOnly": "Yalnızca eksik",
+      "employee": "Çalışan",
+      "finalScore": "Nihai",
+      "tier": "Dilim",
+      "noResults": "Henüz sonuç yok — “Sonuçları hesapla”ya tıklayın",
+      "noMatches": "Eşleşen sonuç yok",
+      "waitingFor": "Bekleniyor: {axes}",
+      "backToResults": "Sonuçlara dön",
+      "axesBreakdown": "Eksen dağılımı",
+      "customerDetails": "Memnuniyet ayrıntıları",
+      "commitmentDetails": "Bağlılık ayrıntıları",
+      "submissions": "Girilen değerlendirmeler",
+      "noSubmissions": "Girilmiş değerlendirme yok",
+      "anonymousRater": "Anonim değerlendirici"
+    },
+    "detailKeys": {
+      "source": "Kaynak",
+      "surveyCount": "Anket sayısı",
+      "surveys": "Anket sayısı",
+      "average": "Ortalama",
+      "percent": "Yüzde",
+      "score": "Puan",
+      "penalties": "Cezalar",
+      "justifications": "Gecikme gerekçeleri",
+      "excessLeaveDays": "Fazla izin günleri",
+      "excessLeaveHours": "Fazla saatlik izin",
+      "starOfMonth": "Ayın çalışanı",
+      "bonus": "Ekleme"
+    },
+    "setup": {
+      "title": "360 Değerlendirme Ayarları",
+      "description": "İlk dönemden önce bir kez yapılan ayarlar",
+      "tabs": {
+        "departments": "Bölümler",
+        "readiness": "Merkez hazırlığı",
+        "settings": "Bağlılık değerleri"
+      },
+      "departments": {
+        "title": "Bölüm sınıflandırması",
+        "description": "Her tıbbi bölüm için hasta memnuniyeti kaynağını seçin veya idari olarak işaretleyin",
+        "unconfiguredCount": "{count} bölüm henüz sınıflandırılmadı",
+        "code": "Kod",
+        "name": "Bölüm",
+        "classification": "Sınıflandırma",
+        "notConfigured": "Sınıflandırılmadı",
+        "choose": "Sınıflandırma seçin"
+      },
+      "readiness": {
+        "title": "“Merkez hazırlığı” unvanları",
+        "description": "Ör. merkez sorumlusu, hizmet personeli, güvenlik personeli",
+        "selected": "Seçilen: {count}"
+      },
+      "settings": {
+        "title": "Bağlılık değerleri",
+        "description": "Bağlılık ekseninde (10 üzerinden) kesinti ve ek puanlar",
+        "fields": {
+          "penaltyPoints": "Ceza başına",
+          "justificationPoints": "Gecikme gerekçesi başına",
+          "excessLeaveDayPoints": "Fazla izin günü başına",
+          "excessLeaveHourPoints": "Fazla izin saati başına",
+          "starOfMonthPoints": "Ayın çalışanı unvanı başına",
+          "monthlyLeaveDaysAllowance": "Aylık günlük izin hakkı (gün)",
+          "monthlyLeaveHoursAllowance": "Aylık saatlik izin hakkı (saat)",
+          "countedLeaveTypeCodes": "Sayılan izin türleri"
+        }
+      }
+    }
   }
 }
