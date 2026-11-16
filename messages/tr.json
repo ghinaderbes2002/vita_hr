@@ -221,7 +221,7 @@
         "INTAKE": "Kabul",
         "ASSESSMENT": "Muayene bekliyor",
         "COMMITTEE_REVIEW": "Muayene edildi",
-        "COMMITTEE_APPROVED": "Komite onayladı",
+        "APPROVED": "Komite onayladı",
         "FITTING": "Ölçü alma",
         "SOCKET_TRIAL": "Deneme teslimi",
         "FINAL_REVIEW": "Nihai teslime hazır",
@@ -3851,7 +3851,7 @@
         "INTAKE": "Kabul",
         "ASSESSMENT": "Muayene",
         "COMMITTEE_REVIEW": "Muayene edildi",
-        "COMMITTEE_APPROVED": "Komite Onayladı",
+        "APPROVED": "Komite Onayladı",
         "FITTING": "Ölçü alma",
         "GAIT_ANALYSIS": "Yürüyüş Analizi",
         "FINAL_EVALUATION": "Final Değerlendirme",
@@ -3880,7 +3880,12 @@
         "deliveredDate": "Teslim tarihi",
         "from": "Başlangıç",
         "to": "Bitiş",
-        "clear": "Temizle"
+        "clear": "Temizle",
+        "allCompleteness": "Tamamlanmış ve eksik",
+        "missingOnly": "Eksik vakalar",
+        "completeOnly": "Tamamlanmış vakalar",
+        "missingBadge": "Eksik",
+        "missingCount": "{count} eksik alan"
       },
       "table": {
         "patientNumber": "Hasta No.",

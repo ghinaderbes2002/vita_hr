@@ -8,11 +8,9 @@ export type ProstheticsStatus =
   | "INTAKE"
   | "ASSESSMENT"
   | "COMMITTEE_REVIEW"
-  | "COMMITTEE_APPROVED"
   | "FITTING"
   | "SOCKET_TRIAL"
   | "GAIT_ANALYSIS"
-  | "GAIT_TRAINING"
   | "FINAL_EVALUATION"
   | "FINAL_REVIEW"
   | "DELIVERED"
@@ -75,6 +73,18 @@ export interface ProstheticsAttachment {
   uploadedBy?: string | null;
 }
 
+export type MissingFieldSection =
+  | "team" | "general_assessment" | "upper_assessment" | "lower_assessment"
+  | "treatment_program" | "review_program" | "gait_analysis" | "balance_assessment"
+  | "final_evaluation";
+
+export interface MissingField {
+  section: MissingFieldSection | string;
+  field: string;
+  /** Present for multi-record sections (sessions, gait, balance, per-side assessments). */
+  recordId?: string;
+}
+
 export interface ProstheticsCase {
   id: string;
   patientId: string;
@@ -134,6 +144,17 @@ export interface ProstheticsCase {
   proposedProstheticType?: ProstheticType | null;
   deliveryDate?: string | null;
   notes?: string | null;
+  // Missing required fields — computed and stored by the backend after every write.
+  hasMissingFields?: boolean;
+  missingFields?: MissingField[] | null;
+  missingFieldsAt?: string | null;
+  // A delivered case reopened to fill gaps. `status` stays DELIVERED; this only grants write access.
+  isReopened?: boolean;
+  reopenedBy?: string | null;
+  reopenedAt?: string | null;
+  reopenReason?: string | null;
+  relockForced?: boolean | null;
+  relockForceReason?: string | null;
   upperAssessment?: AssessmentResult[];
   lowerAssessment?: AssessmentResult[];
   // Measurement sheets — each POST appends a new record, returned newest-first
@@ -507,6 +528,8 @@ export interface ProstheticsCaseListParams {
    *  works; setting any leaves out cases with no final delivery. */
   deliveredFrom?: string;
   deliveredTo?: string;
+  /** true → incomplete only, false → complete only, omitted → all. */
+  hasMissingFields?: boolean;
 }
 
 export const clinicProstheticsApi = {
@@ -560,6 +583,21 @@ export const clinicProstheticsApi = {
       status,
       ...(reason ? { reason } : {}),
     });
+    return data?.data ?? data;
+  },
+
+  /** Grants write access to a delivered case. Leaves status and delivery dates untouched. */
+  reopen: async (id: string, reason: string): Promise<ProstheticsCase> => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${id}/reopen`, { reason });
+    return data?.data ?? data;
+  },
+
+  /**
+   * Locks a reopened case again. Rejected with CASE_STILL_INCOMPLETE while
+   * fields are missing, unless `force` is set — which requires a reason.
+   */
+  relock: async (id: string, opts?: { force: true; reason: string }): Promise<ProstheticsCase> => {
+    const { data } = await apiClient.post(`/prosthetics/cases/${id}/relock`, opts ?? {});
     return data?.data ?? data;
   },
 

@@ -27,8 +27,8 @@ const STATUS_VALUES: ProstheticsStatus[] = [
 // تسميات تسلسل الباك الجديد؛ الحالات القديمة تبقى هنا لملفات سُجّلت بها.
 const STATUS_LABEL: Record<ProstheticsStatus, string> = {
   INTAKE: "استقبال", ASSESSMENT: "معاينة", COMMITTEE_REVIEW: "تمت المعاينة",
-  COMMITTEE_APPROVED: "اعتمدت اللجنة", FITTING: "أخذ قياس", SOCKET_TRIAL: "تسليم تجريبي",
-  GAIT_ANALYSIS: "تحليل مشي", GAIT_TRAINING: "تسليم تجريبي",
+  FITTING: "أخذ قياس", SOCKET_TRIAL: "تسليم تجريبي",
+  GAIT_ANALYSIS: "تحليل مشي",
   FINAL_EVALUATION: "تقييم نهائي", FINAL_REVIEW: "جاهز للتسليم", DELIVERED: "تم التسليم",
   FOLLOW_UP: "متابعة", CLOSED: "مغلقة", CANCELLED: "ملغى",
 };

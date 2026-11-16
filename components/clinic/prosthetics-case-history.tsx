@@ -28,7 +28,7 @@ const STAGES = [
 
 /** Every status the messages translate — older events may carry one outside STAGES. */
 const TRANSLATED_STATUSES = [
-  ...STAGES, "COMMITTEE_APPROVED", "GAIT_ANALYSIS", "FINAL_EVALUATION", "CLOSED",
+  ...STAGES, "GAIT_ANALYSIS", "FINAL_EVALUATION", "CLOSED",
 ];
 
 /** The types the server logs per operation, grouped as the case flows — the filter's options. */

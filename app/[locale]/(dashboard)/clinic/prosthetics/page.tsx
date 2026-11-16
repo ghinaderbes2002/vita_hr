@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Search, Eye, Activity, Users } from "lucide-react";
+import { Search, Eye, Activity, Users, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +45,7 @@ const FULL_CASELOAD_JOB_CODES = [
 // في عمود الحالة (CaseStatusBadge).
 const STATUS_VALUES: ProstheticsStatus[] = [
   "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "FITTING",
-  "SOCKET_TRIAL", "FINAL_REVIEW", "DELIVERED",
+  "SOCKET_TRIAL", "FOLLOW_UP", "FINAL_REVIEW", "DELIVERED",
   "CLOSED", "CANCELLED",
 ];
 
@@ -75,9 +75,14 @@ export default function ProstheticsListPage() {
   // one 100-row page), so both the paged list and the load-all path send it.
   const [deliveredFrom, setDeliveredFrom] = useState("");
   const [deliveredTo, setDeliveredTo] = useState("");
+  // Completeness is stored on the case by the backend (hasMissingFields), so it
+  // filters server-side like the delivery range.
+  const [completeness, setCompleteness] = useState<"all" | "missing" | "complete">("all");
+  const hasMissingFields = completeness === "all" ? undefined : completeness === "missing";
   const deliveredRange = {
     deliveredFrom: deliveredFrom || undefined,
     deliveredTo: deliveredTo || undefined,
+    hasMissingFields,
   };
   // The level list follows the chosen type; with no type chosen it offers both.
   const levelOptions = typeFilter === "UPPER" ? UPPER_LEVELS
@@ -116,7 +121,7 @@ export default function ProstheticsListPage() {
   const searching = !mineOnly && narrowed;
   const allStatus = statusFilter !== "all" ? statusFilter : undefined;
   const { data: allCases, isLoading: allLoading } = useQuery({
-    queryKey: ["clinic-prosthetics-cases", "all", allStatus, deliveredFrom, deliveredTo],
+    queryKey: ["clinic-prosthetics-cases", "all", allStatus, deliveredFrom, deliveredTo, hasMissingFields],
     queryFn: async () => {
       const out: ProstheticsCase[] = [];
       for (let p = 1; p <= 50; p++) {
@@ -138,6 +143,8 @@ export default function ProstheticsListPage() {
   const source: ProstheticsCase[] = mineOnly ? (myCases ?? []) : searching ? (allCases ?? []) : (data?.items ?? []);
   const filtered = source.filter((c: ProstheticsCase) => {
     if (mineOnly && statusFilter !== "all" && c.status !== statusFilter) return false;
+    // by-practitioner takes no filters, so completeness is applied here for it.
+    if (mineOnly && hasMissingFields !== undefined && !!c.hasMissingFields !== hasMissingFields) return false;
     const types: string[] = Array.isArray(c.amputationType) ? c.amputationType : c.amputationType ? [c.amputationType as any] : [];
     const has = (k: string) => types.some((x) => String(x).toUpperCase() === k);
     // "الطرفان معاً" = الحالة تحمل النوعين؛ وكل نوع منفرداً يشمل هذه الحالات أيضاً.
@@ -239,6 +246,16 @@ export default function ProstheticsListPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={completeness} onValueChange={(v) => { setCompleteness(v as any); setPage(1); }}>
+          <SelectTrigger className="w-52">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filter.allCompleteness")}</SelectItem>
+            <SelectItem value="missing">{t("filter.missingOnly")}</SelectItem>
+            <SelectItem value="complete">{t("filter.completeOnly")}</SelectItem>
+          </SelectContent>
+        </Select>
         {/* تاريخ الخروج من التسليم النهائي — يحصر القائمة بالحالات المسلّمة ضمن المدة. */}
         <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-1">
           <span className="text-xs text-muted-foreground">{t("filter.deliveredDate")}</span>
@@ -305,7 +322,22 @@ export default function ProstheticsListPage() {
                   <TableCell className="font-medium">
                     {c.patient ? `${c.patient.firstName} ${c.patient.lastName}` : "—"}
                   </TableCell>
-                  <TableCell><CaseStatusBadge status={c.status} /></TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <CaseStatusBadge status={c.status} />
+                      {c.hasMissingFields && (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 border-amber-300 bg-amber-50 text-amber-700 text-xs dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                          title={t("filter.missingCount", { count: c.missingFields?.length ?? 0 })}
+                        >
+                          <AlertTriangle className="h-3 w-3" />
+                          {t("filter.missingBadge")}
+                          {!!c.missingFields?.length && <span className="font-mono">({c.missingFields.length})</span>}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {c.amputationType
                       ? <Badge variant="secondary" className="text-xs">

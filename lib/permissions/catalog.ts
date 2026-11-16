@@ -259,6 +259,8 @@ export const PERMISSIONS = {
     COMMITTEE_SIGN:    "clinic.prosthetics.committee.sign",
     COMPONENTS_ADD:    "clinic.prosthetics.components.add",
     GAIT_CREATE:       "clinic.prosthetics.gait.create",
+    /** إعادة فتح حالة مسلَّمة لاستكمال النواقص، وإعادة قفلها (مع التجاوز). */
+    REOPEN:            "clinic.prosthetics.reopen",
     DELIVERY_CREATE:   "clinic.prosthetics.delivery.create",
     DELIVERY_APPROVE:  "clinic.prosthetics.delivery.approve",
   },

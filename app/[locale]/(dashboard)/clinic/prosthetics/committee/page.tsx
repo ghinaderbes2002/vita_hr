@@ -18,30 +18,21 @@ import { ProstheticsCase } from "@/lib/api/clinic-prosthetics";
 
 const fmt = (d: string) => new Date(d).toLocaleDateString("ar");
 
-const COMMITTEE_STATUSES = ["COMMITTEE_REVIEW", "COMMITTEE_APPROVED"] as const;
-
 export default function CommitteeCasesPage() {
   const router = useRouter();
   const locale = useLocale();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  // Fetch both committee statuses in parallel
-  const { data: reviewData, isLoading: reviewLoading } = useProstheticsCases({
+  // COMMITTEE_REVIEW is the only committee stage; the old "approved" status is
+  // retired (no case reaches it — the case moves straight on to FITTING).
+  const { data: reviewData, isLoading } = useProstheticsCases({
     status: "COMMITTEE_REVIEW",
     limit: 100,
   });
-  const { data: approvedData, isLoading: approvedLoading } = useProstheticsCases({
-    status: "COMMITTEE_APPROVED",
-    limit: 100,
-  });
 
-  const isLoading = reviewLoading || approvedLoading;
-
-  const allCases: ProstheticsCase[] = [
-    ...(reviewData?.items ?? []),
-    ...(approvedData?.items ?? []),
-  ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const allCases: ProstheticsCase[] = [...(reviewData?.items ?? [])]
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   const filtered = allCases.filter((c) => {
     if (!search) return true;
@@ -51,13 +42,12 @@ export default function CommitteeCasesPage() {
   });
 
   const reviewCount = reviewData?.items?.length ?? 0;
-  const approvedCount = approvedData?.items?.length ?? 0;
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="حالات اللجنة الطبية"
-        description={isLoading ? "جاري التحميل..." : `${reviewCount} بانتظار المراجعة — ${approvedCount} موافق عليها`}
+        description={isLoading ? "جاري التحميل..." : `${reviewCount} بانتظار المراجعة`}
       />
 
       <div className="flex flex-wrap gap-3 items-center">

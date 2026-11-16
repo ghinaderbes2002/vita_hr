@@ -42,6 +42,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { NotifyIncompleteFormButton } from "@/components/clinic/notify-incomplete-form-button";
+import { ProstheticsReopenControls, ProstheticsCaseCompleteness } from "@/components/clinic/prosthetics-reopen-controls";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
@@ -144,9 +145,9 @@ const isProstheticsDeptStaff = (e: any, keepId?: string): boolean => {
 
 /**
  * ما يُطلب لحفظ جلسة متابعة (إضافة أو تعديل، في قسمَي تبويب المتابعة).
- * وقت الدخول ووقت الخروج والملاحظات اختيارية.
+ * الفني والوصف ووقت الدخول ووقت الخروج والملاحظات اختيارية.
  */
-const FOLLOW_UP_SESSION_REQUIRED = ["sessionDate", "sessionTime", "technicianId", "description"] as const;
+const FOLLOW_UP_SESSION_REQUIRED = ["sessionDate", "sessionTime"] as const;
 
 const isFilled = (v: unknown): boolean => {
   if (v == null) return false;
@@ -196,7 +197,6 @@ const PROSTHETIC_TYPE_LABEL: Record<ProstheticType, string> = {
 
 // التسلسل المعتمد من الباك (2026-10-01): استقبال → معاينة → تمت المعاينة →
 // اخذ قياس → تسليم تجريبي → متابعة → جاهز للتسليم → تم التسليم.
-// GAIT_TRAINING لم تعد مرحلة مستقلة (دُمجت في تسليم تجريبي).
 const STATUS_ORDER: ProstheticsStatus[] = [
   "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "FITTING",
   "SOCKET_TRIAL", "FOLLOW_UP", "FINAL_REVIEW", "DELIVERED",
@@ -3557,8 +3557,6 @@ const TAB_BY_STATUS: Record<string, string> = {
   FINAL_REVIEW: "final_evaluation",
   DELIVERED: "final_delivery",
   // حالات قديمة ما زالت مخزّنة على ملفات سابقة.
-  COMMITTEE_APPROVED: "committee_review",
-  GAIT_TRAINING: "gait_analysis",
   GAIT_ANALYSIS: "gait_analysis",
   FINAL_EVALUATION: "final_evaluation",
 };
@@ -4367,8 +4365,9 @@ export default function ProstheticsCasePage() {
   const physioOpinionSaved = !!cr?.physiotherapistReviewedAt;
   const doctorOpinionSaved = !!cr?.doctorReviewedAt;
   const allOpinionsSaved = prosthetistOpinionSaved && physioOpinionSaved && doctorOpinionSaved;
-  // A delivered case is closed for editing — sessions and visits become history.
-  const caseLocked = c.status === "DELIVERED";
+  // A delivered case is closed for editing — sessions and visits become history —
+  // unless it was reopened to fill missing fields (status stays DELIVERED).
+  const caseLocked = c.status === "DELIVERED" && !c.isReopened;
   const canOpenPatientFile = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.CREATE);
   const canEditSavedAssessment = ALLOW_EDIT_SAVED_ASSESSMENT
     && (isAdmin() || hasPermission(PERMISSIONS.CLINIC_PROSTHETICS.ASSESSMENT_CREATE));
@@ -5536,6 +5535,7 @@ export default function ProstheticsCasePage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <NotifyIncompleteFormButton type="prosthetics" id={id} />
+          <ProstheticsReopenControls caseData={c} onJumpToTab={setStageTab} />
           <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCasePdf} disabled={casePdfExporting}>
             {casePdfExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {casePdfExporting ? "جاري التصدير..." : "تصدير PDF"}
@@ -5587,6 +5587,8 @@ export default function ProstheticsCasePage() {
           </Dialog>
         </div>
       </div>
+
+      <ProstheticsCaseCompleteness caseData={c} onJumpToTab={setStageTab} />
 
       {/* Tabs by workflow stage */}
       <Tabs

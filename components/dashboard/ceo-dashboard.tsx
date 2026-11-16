@@ -459,13 +459,12 @@ export function CEODashboard({ d, locale, router }: { d: any; locale: string; ro
   // dashboard block rather than the case list, which the CEO role has no
   // permission for (granting it would also put the clinic tab in the sidebar).
   const deliveredTotal = clinic?.prostheticsDeliveredTotal ?? null;
-  // The case's own path, in the order the clinic walks it. Gait training is
-  // part of the trial fitting here, so the two are one row.
+  // The case's own path, in the order the clinic walks it (the backend's STATUS_ORDER).
   const STAGE_ORDER = [
-    "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "COMMITTEE_APPROVED", "FITTING",
-    "SOCKET_TRIAL", "FINAL_REVIEW", "DELIVERED",
+    "INTAKE", "ASSESSMENT", "COMMITTEE_REVIEW", "FITTING",
+    "SOCKET_TRIAL", "FOLLOW_UP", "FINAL_REVIEW", "DELIVERED",
   ];
-  const stageOf = (s: string) => (s === "GAIT_TRAINING" ? "SOCKET_TRIAL" : s);
+  const stageOf = (s: string) => s;
   const merged = new Map<string, number>();
   for (const c of [
     ...(clinic?.openProstheticsCasesByStatus ?? []),

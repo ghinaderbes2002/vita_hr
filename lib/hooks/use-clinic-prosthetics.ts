@@ -105,6 +105,42 @@ export function useUpdateProstheticsStatus() {
   });
 }
 
+export function useReopenProstheticsCase() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => clinicProstheticsApi.reopen(id, reason),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-timeline", data.id] });
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", data.id] });
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-cases"] });
+      toast.success("أُعيد فتح الحالة لاستكمال النواقص");
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إعادة فتح الحالة"),
+  });
+}
+
+/**
+ * CASE_STILL_INCOMPLETE is not toasted here — the caller shows the missing
+ * fields and offers a forced relock instead.
+ */
+export function useRelockProstheticsCase() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, force }: { id: string; force?: { reason: string } }) =>
+      clinicProstheticsApi.relock(id, force ? { force: true, reason: force.reason } : undefined),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-timeline", data.id] });
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", data.id] });
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-cases"] });
+      toast.success("أُعيد قفل الحالة");
+    },
+    onError: (e: any) => {
+      if (e?.response?.data?.code === "CASE_STILL_INCOMPLETE") return;
+      toast.error(e?.response?.data?.message || "فشل إعادة قفل الحالة");
+    },
+  });
+}
+
 /**
  * One section of a limb sheet. The PATCH is an upsert, so unlike the POST it can
  * be repeated and it leaves keys it wasn't given alone.
