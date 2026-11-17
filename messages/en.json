@@ -4857,6 +4857,8 @@
         "usd": "US Dollar ($)",
         "syp": "Syrian Pound (SYP)",
         "sypSuffix": "SYP",
+        "costNote": "Note (optional)",
+        "costNotePlaceholder": "e.g. Gift",
         "cancel": "Cancel",
         "save": "Save"
       },

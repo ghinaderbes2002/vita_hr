@@ -3943,6 +3943,8 @@
         "usd": "ABD Doları ($)",
         "syp": "Suriye Lirası (SYP)",
         "sypSuffix": "SYP",
+        "costNote": "Not (isteğe bağlı)",
+        "costNotePlaceholder": "örn. Hediye",
         "cancel": "İptal",
         "save": "Kaydet"
       },

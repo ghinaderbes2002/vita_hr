@@ -256,6 +256,8 @@ export interface PodiatrySale {
   insoleCost?: number | null;
   /** null with a cost is an amount entered before currencies existed. */
   insoleCostCurrency?: PodiatryCurrency | null;
+  /** Free text beside (or instead of) the amount, e.g. "هدية". Never counted in totals. */
+  insoleCostNote?: string | null;
   /**
    * All the patient's live fittings per currency. {} has none with a known
    * currency; null means the viewer may not see costs.
@@ -283,12 +285,21 @@ export interface PodiatrySaleCost {
   sessionId: string;
   insoleCost: number | null;
   insoleCostCurrency: PodiatryCurrency | null;
+  insoleCostNote: string | null;
   totalCosts: PodiatryTotalCosts | null;
+  hasCostWithoutCurrency?: boolean;
 }
 
+/**
+ * Independent fields: one left out is unchanged, null clears it. The amount
+ * travels with its currency; `insoleCost: null` clears both. The note (max 200
+ * chars) needs no currency. An empty body is rejected.
+ */
 export type PodiatrySaleCostDto =
-  | { insoleCost: number; insoleCostCurrency: PodiatryCurrency }
-  | { insoleCost: null };
+  & ({ insoleCost: number; insoleCostCurrency: PodiatryCurrency } | { insoleCost: null } | Record<never, never>)
+  & { insoleCostNote?: string | null };
+
+export const INSOLE_COST_NOTE_MAX = 200;
 
 export interface PodiatrySalesParams {
   page?: number;

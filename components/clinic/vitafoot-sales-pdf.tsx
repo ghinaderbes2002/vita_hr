@@ -34,10 +34,13 @@ const Cell = ({ width, children, bold, last }: {
   </View>
 );
 
-const lastCost = (s: PodiatrySale) =>
-  s.insoleCost == null ? "—"
+const lastCost = (s: PodiatrySale) => {
+  const amount = s.insoleCost == null ? null
     : s.insoleCostCurrency ? fmtMoney(s.insoleCost, s.insoleCostCurrency)
       : `${fmtAmount(s.insoleCost)} (عملة غير محددة)`;
+  const note = s.insoleCostNote?.trim();
+  return [amount, note].filter(Boolean).join(" — ") || "—";
+};
 const totalCosts = (s: PodiatrySale) =>
   CURRENCIES.filter((c) => s.totalCosts?.[c] != null).map((c) => fmtMoney(s.totalCosts![c]!, c)).join(" + ") || "—";
 

@@ -35,15 +35,19 @@ export function useUpdatePodiatrySaleCost() {
     mutationFn: ({ sessionId, dto }: { sessionId: string; dto: PodiatrySaleCostDto }) =>
       clinicPodiatryApi.updateSaleCost(sessionId, dto),
     // The response carries the new totals, so the row is patched in place.
-    onSuccess: ({ sessionId, insoleCost, insoleCostCurrency, totalCosts }) => {
+    onSuccess: ({ sessionId, insoleCost, insoleCostCurrency, insoleCostNote, totalCosts, hasCostWithoutCurrency }) => {
       qc.setQueriesData<PaginatedPodiatrySales>({ queryKey: ["podiatry-sales"] }, (old) =>
         old && {
           ...old,
           items: old.items.map((s) =>
-            s.sessionId === sessionId ? { ...s, insoleCost, insoleCostCurrency, totalCosts } : s),
+            s.sessionId === sessionId
+              ? {
+                  ...s, insoleCost, insoleCostCurrency, insoleCostNote, totalCosts,
+                  ...(hasCostWithoutCurrency !== undefined && { hasCostWithoutCurrency }),
+                }
+              : s),
         },
-      );
-      toast.success("تم حفظ التكلفة");
+      );      toast.success("تم حفظ التكلفة");
     },
     onError: (e: unknown) => toast.error(errMsg(e, "فشل حفظ التكلفة")),
   });

@@ -22,7 +22,7 @@ import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePodiatrySales, useUpdatePodiatrySaleCost } from "@/lib/hooks/use-clinic-podiatry";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { clinicPodiatryApi } from "@/lib/api/clinic-podiatry";
+import { clinicPodiatryApi, INSOLE_COST_NOTE_MAX } from "@/lib/api/clinic-podiatry";
 import { arrivalMethodText } from "@/lib/clinic/referral-sources";
 import type { PodiatryCurrency, PodiatrySale } from "@/lib/api/clinic-podiatry";
 
@@ -60,24 +60,33 @@ export default function VitaFootSalesPage() {
   const [costTarget, setCostTarget] = useState<PodiatrySale | null>(null);
   const [costValue, setCostValue] = useState("");
   const [costCurrency, setCostCurrency] = useState<PodiatryCurrency | "">("");
+  const [costNote, setCostNote] = useState("");
   const trimmedCost = costValue.trim();
+  const trimmedNote = costNote.trim();
   const costValid = trimmedCost === "" || COST_PATTERN.test(trimmedCost);
   // Never preselected: an amount in the wrong currency is off by a factor of thousands.
   const needsCurrency = trimmedCost !== "" && !costCurrency;
+  const noteTooLong = trimmedNote.length > INSOLE_COST_NOTE_MAX;
 
   const openCost = (s: PodiatrySale) => {
     setCostTarget(s);
     setCostValue(s.insoleCost == null ? "" : String(s.insoleCost));
     setCostCurrency(s.insoleCostCurrency ?? "");
+    setCostNote(s.insoleCostNote ?? "");
   };
   const saveCost = () => {
-    if (!costTarget || !costValid || needsCurrency) return;
+    if (!costTarget || !costValid || needsCurrency || noteTooLong) return;
+    // Amount and note are independent and both optional; sending both every
+    // time keeps the body non-empty and makes an emptied field clear it.
     updateCost.mutate(
       {
         sessionId: costTarget.sessionId,
-        dto: trimmedCost === "" || !costCurrency
-          ? { insoleCost: null }
-          : { insoleCost: Number(trimmedCost), insoleCostCurrency: costCurrency },
+        dto: {
+          ...(trimmedCost === "" || !costCurrency
+            ? { insoleCost: null }
+            : { insoleCost: Number(trimmedCost), insoleCostCurrency: costCurrency }),
+          insoleCostNote: trimmedNote || null,
+        },
       },
       { onSuccess: () => setCostTarget(null) },
     );
@@ -241,7 +250,8 @@ export default function VitaFootSalesPage() {
                       <TableCell className="tabular-nums">
                         <div className="flex items-center gap-1 whitespace-nowrap">
                           {s.insoleCost == null ? (
-                            <span>—</span>
+                            // A note alone (e.g. "هدية") stands in for the dash.
+                            s.insoleCostNote ? null : <span>—</span>
                           ) : s.insoleCostCurrency ? (
                             <span>{fmtMoney(s.insoleCost, s.insoleCostCurrency)}</span>
                           ) : (
@@ -251,6 +261,14 @@ export default function VitaFootSalesPage() {
                                 {t("unknownCurrency")}
                               </span>
                             </>
+                          )}
+                          {s.insoleCostNote && (
+                            <span
+                              className={`max-w-48 truncate ${s.insoleCost == null ? "" : "text-xs text-muted-foreground"}`}
+                              title={s.insoleCostNote}
+                            >
+                              {s.insoleCost == null ? s.insoleCostNote : `— ${s.insoleCostNote}`}
+                            </span>
                           )}
                           {canEditCost && (
                             <Button
@@ -323,10 +341,23 @@ export default function VitaFootSalesPage() {
                   {CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c === "USD" ? t("usd") : t("syp")}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <div className="flex items-baseline justify-between gap-2 pt-1">
+                <Label htmlFor="insole-cost-note">{t("costNote")}</Label>
+                <span className={`text-[11px] tabular-nums ${noteTooLong ? "text-destructive" : "text-muted-foreground"}`}>
+                  {trimmedNote.length}/{INSOLE_COST_NOTE_MAX}
+                </span>
+              </div>
+              <Input
+                id="insole-cost-note"
+                value={costNote}
+                maxLength={INSOLE_COST_NOTE_MAX + 20}
+                placeholder={t("costNotePlaceholder")}
+                onChange={(e) => setCostNote(e.target.value)}
+              />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCostTarget(null)}>{t("cancel")}</Button>
-              <Button onClick={saveCost} disabled={!costValid || needsCurrency || updateCost.isPending}>
+              <Button onClick={saveCost} disabled={!costValid || needsCurrency || noteTooLong || updateCost.isPending}>
                 {updateCost.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                 {t("save")}
               </Button>
