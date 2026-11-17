@@ -369,29 +369,35 @@ export default function PhysioCasePage() {
   const allUsers: { id: string; fullName: string }[] =
     (usersData as any)?.data?.items ?? (usersData as any)?.items ?? [];
 
-  const { data: depsData } = useDepartments({ limit: 100 }, 30 * 60 * 1000);
-  const caseManagerOptions: { id: string; name: string }[] = (
-    (depsData as any)?.data?.items ?? (depsData as any)?.items ?? []
-  )
-    .filter((d: any) => {
-      if (!d.manager) return false;
-      const name: string = d.nameAr ?? "";
-      return (
-        name === "الإدارة العامة" ||
-        name === "الإدارة الطبية" ||
-        name.includes("فيزيائي") ||
-        name.includes("طبيعي") ||
-        name.includes("فيزيوثيرابي")
-      );
-    })
-    .map((d: any) => ({
-      id: d.manager.id,
-      name: `${d.manager.firstNameAr} ${d.manager.lastNameAr}`,
-    }));
-
   // The light list every screen already caches, narrowed to the physio department:
   // the per-department endpoint carries whole profiles and took seconds to open.
   const PHYSIO_DEPT_ID = "8893e27d-3581-42b6-8111-0fb743ca2403";
+
+  const { data: depsData } = useDepartments({ limit: 100 }, 30 * 60 * 1000);
+  // Managers of the general/medical administrations and of the physio department.
+  // One person can manage several of these, so the list is de-duplicated by id.
+  const caseManagerOptions: { id: string; name: string }[] = [
+    ...new Map<string, { id: string; name: string }>(
+      ((depsData as any)?.data?.items ?? (depsData as any)?.items ?? [])
+        .filter((d: any) => {
+          if (!d.manager) return false;
+          const name: string = d.nameAr ?? "";
+          return (
+            d.id === PHYSIO_DEPT_ID ||
+            name === "الإدارة العامة" ||
+            name === "الإدارة الطبية" ||
+            name.includes("فيزيائي") ||
+            name.includes("طبيعي") ||
+            name.includes("فيزيوثيرابي")
+          );
+        })
+        .map((d: any) => [
+          d.manager.id,
+          { id: d.manager.id, name: `${d.manager.firstNameAr} ${d.manager.lastNameAr}` },
+        ]),
+    ).values(),
+  ];
+
   const { data: basicStaff } = useEmployeesBasicList();
   const physioEmployees: { id: string; firstNameAr: string; lastNameAr: string }[] =
     (Array.isArray(basicStaff) ? basicStaff : []).filter((e) => e.department?.id === PHYSIO_DEPT_ID);
