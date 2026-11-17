@@ -9,6 +9,8 @@ export type AttendanceStatus =
   | "HALF_DAY"
   | "ON_LEAVE"
   | "ON_MISSION"
+  /** عمل عن بُعد معتمد — يوم عمل عادي بلا بصمة، لا غياب ولا خصم. */
+  | "REMOTE_WORK"
   | "PARTIAL_LEAVE"
   | "HOLIDAY"
   | "WEEKEND";

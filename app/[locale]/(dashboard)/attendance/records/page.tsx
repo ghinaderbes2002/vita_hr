@@ -54,7 +54,7 @@ const PUNCH_STATUS_CLASSES: Record<string, string> = {
 
 const ALL_STATUS_VALUES: AttendanceStatus[] = [
   "PRESENT", "ABSENT", "LATE", "EARLY_LEAVE", "HALF_DAY",
-  "ON_LEAVE", "ON_MISSION", "PARTIAL_LEAVE", "HOLIDAY", "WEEKEND",
+  "ON_LEAVE", "ON_MISSION", "REMOTE_WORK", "PARTIAL_LEAVE", "HOLIDAY", "WEEKEND",
 ];
 
 export default function AttendanceRecordsPage() {

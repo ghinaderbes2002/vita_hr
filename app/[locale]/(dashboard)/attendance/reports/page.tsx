@@ -34,6 +34,7 @@ const statusColors: Record<string, string> = {
   HALF_DAY: "bg-blue-100 text-blue-800",
   ON_LEAVE: "bg-purple-100 text-purple-800",
   ON_MISSION: "bg-cyan-100 text-cyan-800",
+  REMOTE_WORK: "bg-emerald-100 text-emerald-800",
 };
 
 function minutesToHours(minutes: number) {

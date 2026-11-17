@@ -346,7 +346,7 @@ export interface Attendance {
   date: string;
   checkIn?: string;
   checkOut?: string;
-  status: "PRESENT" | "ABSENT" | "LATE" | "EARLY_LEAVE" | "HALF_DAY" | "ON_LEAVE" | "ON_MISSION" | "HOLIDAY" | "WEEKEND";
+  status: "PRESENT" | "ABSENT" | "LATE" | "EARLY_LEAVE" | "HALF_DAY" | "ON_LEAVE" | "ON_MISSION" | "REMOTE_WORK" | "HOLIDAY" | "WEEKEND";
   workHours?: number;
   notes?: string;
 }
