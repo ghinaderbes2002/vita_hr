@@ -32,7 +32,7 @@ import { ProstheticsCaseHistory } from "@/components/clinic/prosthetics-case-his
 import { PatientSignatureField } from "@/components/clinic/patient-signature-field";
 import { MySignatureField } from "@/components/clinic/my-signature-field";
 import { KLevelSelector } from "@/components/clinic/k-level-selector";
-import { AmputationLevelSelector } from "@/components/clinic/amputation-level-selector";
+import { AmputationLevelSelector, LOWER_LEVELS, UPPER_LEVELS } from "@/components/clinic/amputation-level-selector";
 import { MeasurementSheet } from "@/components/clinic/measurement-diagram";
 import { MEASUREMENT_SHEET_FIELDS } from "@/lib/clinic/measurement-sheet-fields";
 import type { MeasureSheetKey } from "@/lib/clinic/measurement-sheet-images";
@@ -3477,6 +3477,22 @@ function toAmputationLevels(raw: unknown): string[] {
   return [];
 }
 
+const UPPER_LEVEL_CODES = new Set(UPPER_LEVELS.map((l) => l.value));
+const LOWER_LEVEL_CODES = new Set(LOWER_LEVELS.map((l) => l.value));
+
+/**
+ * The limbs implied by the amputation levels — every level belongs to one limb.
+ * Used when amputationType itself is empty: cases were saved with `[]` while
+ * their level (e.g. TT) already said which limb it is, which hid the limb's
+ * assessment Section and kept the case from counting it as missing.
+ */
+function limbsFromLevels(levels: string[]): string[] {
+  const limbs: string[] = [];
+  if (levels.some((l) => UPPER_LEVEL_CODES.has(l))) limbs.push("UPPER");
+  if (levels.some((l) => LOWER_LEVEL_CODES.has(l))) limbs.push("LOWER");
+  return limbs;
+}
+
 /**
  * The API stamps each half of a limb sheet as it is written: `limbSavedAt` for
  * the limb Section, `romSavedAt` for the muscle Section. One row, two Sections,
@@ -4293,10 +4309,10 @@ export default function ProstheticsCasePage() {
     // the side comes from.
     const caseLimbs = (() => {
       const raw = caseData.amputationType as unknown;
-      if (!raw) return [] as string[];
-      if (Array.isArray(raw)) return raw.map((x) => String(x).toUpperCase());
-      const s = String(raw).toUpperCase();
-      return s === "BOTH" ? ["UPPER", "LOWER"] : [s];
+      const explicit: string[] = !raw ? []
+        : Array.isArray(raw) ? raw.map((x) => String(x).toUpperCase())
+        : String(raw).toUpperCase() === "BOTH" ? ["UPPER", "LOWER"] : [String(raw).toUpperCase()];
+      return explicit.length ? explicit : limbsFromLevels(toAmputationLevels(caseData.amputationLevel));
     })();
     const upperRecs = caseData.upperAssessment ?? [];
     if (upperRecs.length) {
@@ -4416,13 +4432,17 @@ export default function ProstheticsCasePage() {
   const transradialRecords: MeasurementAssessment[] = c.transradialAssessment ?? [];
 
   // Normalise amputationType (backend may return array OR legacy string)
+  // An empty type falls back to the limbs its levels imply (see limbsFromLevels).
   const getAmpTypes = (): string[] => {
     const raw = intakeForm.amputationType || c.amputationType;
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw.map((s: any) => String(s).toUpperCase());
-    const s = String(raw).toUpperCase();
-    if (s === "BOTH") return ["UPPER", "LOWER"];
-    return s ? [s] : [];
+    const explicit: string[] = !raw ? []
+      : Array.isArray(raw) ? raw.map((s: any) => String(s).toUpperCase())
+      : String(raw).toUpperCase() === "BOTH" ? ["UPPER", "LOWER"]
+      : [String(raw).toUpperCase()];
+    if (explicit.length) return explicit;
+    return limbsFromLevels(
+      intakeForm.amputationLevels.length ? intakeForm.amputationLevels : toAmputationLevels(c.amputationLevel),
+    );
   };
   const ampTypes = getAmpTypes();
 
@@ -4631,7 +4651,7 @@ export default function ProstheticsCasePage() {
     isFilled(intakeForm.amputationMonth) &&
     isFilled(intakeForm.amputationCount) &&
     isFilled(intakeForm.amputationSide || c.amputationSide) &&
-    isFilled(intakeForm.amputationType || c.amputationType) &&
+    ampTypes.length > 0 &&
     (intakeForm.amputationLevels.length > 0 || toAmputationLevels(c.amputationLevel).length > 0) &&
     filledWhen(intakeFlags.hcd, intakeForm.chronicDiseases || c.chronicDiseases) &&
     filledWhen(intakeFlags.hpt, intakeForm.physicalTherapyDetails || c.physicalTherapyDetails) &&
@@ -4654,14 +4674,10 @@ export default function ProstheticsCasePage() {
     const hpp = intakeForm.hasPreviousProsthesis ?? c.hasPreviousProsthesis ?? false;
     const hrs = intakeForm.hasRevisionSurgery ?? c.hasRevisionSurgery ?? false;
     return {
+      // Never sent empty: an empty type is derived from the levels, else omitted.
       amputationType: (() => {
-        const raw = intakeForm.amputationType || c.amputationType;
-        if (!raw) return undefined;
-        if (Array.isArray(raw)) return raw.map((x) => String(x).toUpperCase()) as any;
-        const s = String(raw).toUpperCase();
-        if (s === "BOTH") return ["UPPER", "LOWER"] as any;
-        if (s === "UPPER" || s === "LOWER") return [s] as any;
-        return undefined;
+        const types = ampTypes.filter((x) => x === "UPPER" || x === "LOWER");
+        return types.length ? (types as any) : undefined;
       })(),
       amputationSide: (intakeForm.amputationSide || c.amputationSide || undefined) as AmputationSide | undefined,
       // Backend expects an array of level codes (TT, KD, …), not a "/"-joined string.
