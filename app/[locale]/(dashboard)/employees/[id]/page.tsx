@@ -1008,6 +1008,12 @@ export default function EmployeeDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-border/50">
+            {!employee.phone?.trim() && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 mb-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{t("employees.noWhatsappPhoneHint")}</span>
+              </div>
+            )}
             <EditableRow label={t("employees.fields.email")} value={employee.email}
               canEdit={canEditFields} onSave={saveField("email")} />
             <EditableRow label={t("employees.fields.phone")} value={employee.phone}

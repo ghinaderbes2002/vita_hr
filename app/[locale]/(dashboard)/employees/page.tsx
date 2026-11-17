@@ -293,7 +293,17 @@ export default function EmployeesPage() {
                   </TableCell>
                   <TableCell>{employee.lastNameAr}</TableCell>
                   <TableCell>{employee.email}</TableCell>
-                  <TableCell>{employee.phone || "-"}</TableCell>
+                  <TableCell>
+                    {employee.phone?.trim() || (
+                      <Badge
+                        variant="outline"
+                        className="border-red-300 text-red-600 dark:border-red-800 dark:text-red-400"
+                        title={t("employees.noWhatsappPhoneHint")}
+                      >
+                        {t("employees.noWhatsappPhone")}
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">
                       {employee.department?.nameAr || "-"}

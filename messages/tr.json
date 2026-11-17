@@ -770,6 +770,8 @@
     "attachmentFileUrl": "Dosya URL'si",
     "addAttachment": "Ek ekle",
     "noAttachments": "Ek yok",
+    "noWhatsappPhone": "Numara yok",
+    "noWhatsappPhoneHint": "Şirket numarası yok — bu çalışan WhatsApp bildirimleri almayacak",
     "additionalInfo": "Ek Bilgiler",
     "linkedUser": "Bağlı Kullanıcı",
     "createdAt": "Oluşturulma Tarihi",

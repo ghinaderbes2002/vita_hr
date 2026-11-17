@@ -645,6 +645,8 @@
     "attachmentFileUrl": "رابط الملف",
     "addAttachment": "إضافة مرفق",
     "noAttachments": "لا توجد مرفقات",
+    "noWhatsappPhone": "بلا رقم",
+    "noWhatsappPhoneHint": "لا يوجد رقم شركة — لن تصل لهذا الموظف إشعارات واتساب",
     "additionalInfo": "معلومات إضافية",
     "linkedUser": "مستخدم مرتبط",
     "managerNotes": "ملاحظات المدير",

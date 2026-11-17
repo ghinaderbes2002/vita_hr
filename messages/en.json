@@ -772,6 +772,8 @@
     "attachmentFileUrl": "File URL",
     "addAttachment": "Add attachment",
     "noAttachments": "No attachments",
+    "noWhatsappPhone": "No number",
+    "noWhatsappPhoneHint": "No company number — this employee will not receive WhatsApp notifications",
     "additionalInfo": "Additional Information",
     "linkedUser": "Linked User",
     "createdAt": "Created At",
