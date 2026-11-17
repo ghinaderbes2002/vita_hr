@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, ArrowRight, Calculator, Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageGuard } from "@/components/permissions/page-guard";
@@ -39,6 +39,7 @@ export default function AppraisalCycleDetailPage() {
 
 function CycleDetailContent() {
   const t = useTranslations("appraisal");
+  const locale = useLocale();
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
 
@@ -131,7 +132,7 @@ function CycleDetailContent() {
         </div>
       )}
 
-      <Tabs defaultValue="results">
+      <Tabs defaultValue="results" dir={locale === "ar" ? "rtl" : "ltr"}>
         <TabsList>
           <TabsTrigger value="results">{t("detail.tabs.results")}</TabsTrigger>
           <TabsTrigger value="progress">{t("detail.tabs.progress")}</TabsTrigger>

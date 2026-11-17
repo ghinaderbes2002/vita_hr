@@ -27,6 +27,7 @@ import {
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useMailMessage, useMailThread, useArchiveFolders, useDeleteMail, useMoveMail, useEditMail } from "@/lib/hooks/use-mail";
+import type { MailMessage, MailRecipient } from "@/lib/api/mail";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAllUsers } from "@/lib/hooks/use-users";
 import { useEmployeesBasicList, useMyEmployee } from "@/lib/hooks/use-employees";
@@ -145,13 +146,45 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
   if (!data) return null;
 
   const message = "message" in data ? data.message : data;
+
   // استثني نسخة المرسل في SENT — نريد المستقبلين الفعليين فقط
-  const toRecipients = message.recipients?.filter(
-    (r) => r.type === "TO" && r.folder !== "SENT"
-  ) ?? [];
-  const ccRecipients = message.recipients?.filter(
-    (r) => r.type === "CC" && r.folder !== "SENT"
-  ) ?? [];
+  const recipientsOf = (m: MailMessage, type: "TO" | "CC") =>
+    (m.recipients ?? []).filter((r) => r.type === type && r.folder !== "SENT");
+  const recipientName = (r: MailRecipient): string | null => {
+    const info = r.employeeInfo ?? r.recipient;
+    if (info) return `${info.firstNameAr} ${info.lastNameAr}`;
+    return empNameById[r.recipientId] ?? empBasicByUserId[r.recipientId]?.nameAr ?? null;
+  };
+  const toRecipients = recipientsOf(message, "TO");
+  const ccRecipients = recipientsOf(message, "CC");
+
+  /** صفّا «إلى» و«نسخة» — للرسالة المفتوحة ولكل رد في المحادثة. */
+  const renderRecipientRows = (to: MailRecipient[], cc: MailRecipient[]) => (
+    <>
+      <div className="flex items-start gap-2">
+        <span className="text-muted-foreground w-10 shrink-0 pt-0.5">{t("to")}</span>
+        <div className="flex flex-wrap gap-1">
+          {to.length > 0
+            ? to.map((r) => {
+                const name = recipientName(r);
+                return name ? <Badge key={r.id} variant="secondary" className="text-xs">{name}</Badge> : null;
+              })
+            : <span className="text-muted-foreground">—</span>}
+        </div>
+      </div>
+      {cc.length > 0 && (
+        <div className="flex items-start gap-2">
+          <span className="text-muted-foreground w-10 shrink-0 pt-0.5">{t("cc")}</span>
+          <div className="flex flex-wrap gap-1">
+            {cc.map((r) => {
+              const name = recipientName(r);
+              return name ? <Badge key={r.id} variant="outline" className="text-xs">{name}</Badge> : null;
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   const senderInfo = message.senderInfo ?? message.sender;
   // Matched through myIds: `senderInfo.employeeId === user.employeeId` was true
@@ -388,40 +421,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
               {senderName ?? empNameById[message.senderId] ?? null}
             </span>
           </div>
-          <div className="flex items-start gap-2">
-            <span className="text-muted-foreground w-10 shrink-0 pt-0.5">{t("to")}</span>
-            <div className="flex flex-wrap gap-1">
-              {toRecipients.length > 0
-                ? toRecipients.map((r) => {
-                    const info = r.employeeInfo ?? r.recipient;
-                    const name = info
-                      ? `${info.firstNameAr} ${info.lastNameAr}`
-                      : empNameById[r.recipientId];
-                    if (!name) return null;
-                    return (
-                      <Badge key={r.id} variant="secondary" className="text-xs">{name}</Badge>
-                    );
-                  })
-                : <span className="text-muted-foreground">—</span>}
-            </div>
-          </div>
-          {ccRecipients.length > 0 && (
-            <div className="flex items-start gap-2">
-              <span className="text-muted-foreground w-10 shrink-0 pt-0.5">{t("cc")}</span>
-              <div className="flex flex-wrap gap-1">
-                {ccRecipients.map((r) => {
-                  const info = r.employeeInfo ?? r.recipient;
-                  const name = info
-                    ? `${info.firstNameAr} ${info.lastNameAr}`
-                    : empNameById[r.recipientId];
-                  if (!name) return null;
-                  return (
-                    <Badge key={r.id} variant="outline" className="text-xs">{name}</Badge>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {renderRecipientRows(toRecipients, ccRecipients)}
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground w-10 shrink-0">{t("time")}</span>
             <span className="text-muted-foreground">
@@ -515,6 +515,11 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                       </button>
                       {expanded && (
                         <div className="px-5 py-4 border-t bg-muted/5 text-sm leading-relaxed">
+                          {(m.recipients?.length ?? 0) > 0 && (
+                            <div className="space-y-1 mb-3 pb-3 border-b text-xs">
+                              {renderRecipientRows(recipientsOf(m, "TO"), recipientsOf(m, "CC"))}
+                            </div>
+                          )}
                           <div className="wrap-break-word" dangerouslySetInnerHTML={renderBody(m.body)} />
                           {m.attachments && m.attachments.length > 0 && (
                             <div className="mt-3">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, Save, Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageGuard } from "@/components/permissions/page-guard";
@@ -30,11 +30,12 @@ import { cn } from "@/lib/utils";
 
 export default function AppraisalSetupPage() {
   const t = useTranslations("appraisal");
+  const locale = useLocale();
   return (
     <PageGuard permission={PERMISSIONS.APPRAISAL.MANAGE}>
       <div className="space-y-4">
         <PageHeader title={t("setup.title")} description={t("setup.description")} />
-        <Tabs defaultValue="departments">
+        <Tabs defaultValue="departments" dir={locale === "ar" ? "rtl" : "ltr"}>
           <TabsList>
             <TabsTrigger value="departments">{t("setup.tabs.departments")}</TabsTrigger>
             <TabsTrigger value="readiness">{t("setup.tabs.readiness")}</TabsTrigger>
