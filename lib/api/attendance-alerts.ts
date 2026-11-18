@@ -29,6 +29,8 @@ export interface AttendanceAlert {
   resolvedBy?: string;
   resolvedAt?: string;
   resolvedNotes?: string;
+  /** سبب الإقفال بالعربي — مثلاً «تبرير معتمد من HR» أو «يوم عمل عن بُعد معتمد». */
+  resolutionNotes?: string | null;
   createdAt: string;
   updatedAt: string;
 }

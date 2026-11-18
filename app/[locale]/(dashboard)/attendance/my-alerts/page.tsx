@@ -160,7 +160,7 @@ export default function MyAlertsPage() {
                 <TableCell className="max-w-md">{alert.messageAr}</TableCell>
                 <TableCell><AlertSeverityBadge severity={alert.severity} /></TableCell>
                 <TableCell><AlertStatusBadge status={alert.status} /></TableCell>
-                <TableCell className="text-sm text-muted-foreground">{alert.resolvedNotes || "-"}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{alert.resolutionNotes || alert.resolvedNotes || "-"}</TableCell>
                 <TableCell>
                   {/* Every alert type accepts a justification, not just LATE/ABSENT/EARLY_LEAVE. */}
                   {alert.status === "OPEN" && (

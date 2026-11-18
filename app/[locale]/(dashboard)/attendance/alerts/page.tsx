@@ -261,6 +261,11 @@ export default function AttendanceAlertsPage() {
                 </TableCell>
                 <TableCell>
                   <AlertStatusBadge status={alert.status} />
+                  {alert.status === "RESOLVED" && (alert.resolutionNotes || alert.resolvedNotes) && (
+                    <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                      {alert.resolutionNotes || alert.resolvedNotes}
+                    </p>
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

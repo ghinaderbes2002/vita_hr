@@ -721,12 +721,16 @@ export default function PhysioCasePage() {
       hasChronicDiseases: caseData.hasChronicDiseases ?? false,
       chronicDiseasesDetail: caseData.chronicDiseasesDetail ?? "",
       visitedSpecialist: caseData.visitedSpecialist ?? false,
-      // The API stores these two details under the doctor-form columns and
-      // returns them only by those names (specialistReason → previousDoctorSeen,
-      // previousPTDetail → previousTreatment).
-      specialistReason: caseData.specialistReason ?? caseData.previousDoctorSeen ?? "",
+      // Each detail has its own column now (DE-2026-0079). Cases saved before
+      // that kept them in the doctor-form columns (specialistReason →
+      // previousDoctorSeen, previousPTDetail → previousTreatment) and were not
+      // migrated, so fall back to the old column — but only under a "yes",
+      // since after a "no" the old column holds its own independent value.
+      specialistReason: caseData.specialistReason
+        ?? (caseData.visitedSpecialist ? caseData.previousDoctorSeen : null) ?? "",
       hadPreviousPT: caseData.hadPreviousPT ?? false,
-      previousPTDetail: caseData.previousPTDetail ?? caseData.previousTreatment ?? "",
+      previousPTDetail: caseData.previousPTDetail
+        ?? (caseData.hadPreviousPT ? caseData.previousTreatment : null) ?? "",
       hadSurgery: caseData.hadSurgery ?? false,
       surgeryDetail: caseData.surgeryDetail ?? "",
     });
