@@ -177,11 +177,19 @@ export function useApproveRequest() {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body?: import("@/types").ApproveRequestBody }) =>
       requestsApi.approve(id, body),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["request"] });
       queryClient.invalidateQueries({ queryKey: ["employees"] });
-      toast.success("تمت الموافقة على الطلب");
+      // A finally-approved remote-work day only reaches attendance (status +
+      // closing the missing-stamp alert) with the nightly close, not right away.
+      if (data?.type === "REMOTE_WORK" && data?.status === "APPROVED") {
+        toast.success("تمت الموافقة على الطلب", {
+          description: "سيُحدَّث سجل الحضور تلقائياً الليلة",
+        });
+      } else {
+        toast.success("تمت الموافقة على الطلب");
+      }
     },
     onError: (error: any) => {
       if (error.response?.status === 403) return toast.error("غير مخوّل للموافقة على هذا الطلب");

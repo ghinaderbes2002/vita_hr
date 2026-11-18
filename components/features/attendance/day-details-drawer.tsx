@@ -10,6 +10,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { useAttendanceDayDetails } from "@/lib/hooks/use-attendance-records";
+import { AttendanceStatusBadge } from "@/components/features/attendance/attendance-status-badge";
+import type { AttendanceStatus } from "@/lib/api/attendance-records";
 import type { DeductionOutcome } from "@/lib/api/attendance-records";
 import { formatHoursAr } from "@/lib/utils/date";
 
@@ -109,7 +111,7 @@ export function DayDetailsDrawer({ recordId, open, onClose }: Props) {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">الحالة</p>
-                <p className="font-medium">{data.status}</p>
+                <div className="mt-0.5">{data.status ? <AttendanceStatusBadge status={data.status as AttendanceStatus} /> : "—"}</div>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">الدخول</p>
