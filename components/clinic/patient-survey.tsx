@@ -820,6 +820,7 @@ export function PatientSurveyDetailsDialog({ surveyId, onClose }: { surveyId: st
               <DetailRow label="المعالجون المسؤولون">
                 {s.practitionerIds?.length ? s.practitionerIds.map(staffName).join("، ") : "—"}
               </DetailRow>
+              <DetailRow label="عبّأه">{s.createdByName || "غير معروف"}</DetailRow>
               <DetailRow label="تاريخ التعبئة">{new Date(s.createdAt).toLocaleString("en-GB", { hour12: true })}</DetailRow>
             </div>
             <div className="rounded-md border px-3 py-1">
@@ -894,6 +895,7 @@ function surveyPdfData(s: PatientSurvey, staffName: (id: string) => string): Sur
         ? [{ label: "نوع الخدمة", value: PODIATRY_SERVICE_LABEL[s.podiatryServiceType] ?? s.podiatryServiceType }]
         : []),
       { label: "المعالجون المسؤولون", value: s.practitionerIds?.length ? s.practitionerIds.map(staffName).join("، ") : "—" },
+      { label: "عبّأه", value: s.createdByName || "غير معروف" },
       { label: "تاريخ التعبئة", value: new Date(s.createdAt).toLocaleDateString("en-GB") },
     ],
     ratings: keys.map(rating),
@@ -967,6 +969,7 @@ export function PatientSurveysTable({ params }: { params: Omit<PatientSurveyList
               <TableHead>القسم</TableHead>
               <TableHead>التقييم العام</TableHead>
               <TableHead>المعالجون</TableHead>
+              <TableHead>عبّأه</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -997,6 +1000,7 @@ export function PatientSurveysTable({ params }: { params: Omit<PatientSurveyList
                 <TableCell className="max-w-xs">
                   {s.practitionerIds?.length ? s.practitionerIds.map(staffName).join("، ") : "—"}
                 </TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{s.createdByName || "—"}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="sm" className="gap-1" onClick={() => setOpenId(s.id)}>

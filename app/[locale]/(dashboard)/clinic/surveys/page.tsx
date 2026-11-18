@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -99,6 +101,8 @@ function PatientSurveys() {
   const canView = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_VIEW);
   const canCreate = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PATIENTS.SURVEYS_CREATE);
   const [department, setDepartment] = useState<SurveyDepartment | "ALL">("ALL");
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim(), 400);
   const [open, setOpen] = useState(false);
   const [followupsOpen, setFollowupsOpen] = useState(false);
   // A survey started from the follow-up list: tied to that patient and department.
@@ -152,6 +156,18 @@ function PatientSurveys() {
           <Card>
             <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
+                <Label>اسم العميل</Label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="ابحث باسم المريض..."
+                    className="ps-9"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
                 <Label>القسم</Label>
                 <Select value={department} onValueChange={(v) => setDepartment(v as SurveyDepartment | "ALL")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -168,7 +184,12 @@ function PatientSurveys() {
 
           <Card>
             <CardContent className="pt-5">
-              <PatientSurveysTable params={department !== "ALL" ? { department } : {}} />
+              <PatientSurveysTable
+                params={{
+                  ...(department !== "ALL" ? { department } : {}),
+                  ...(debouncedSearch ? { search: debouncedSearch } : {}),
+                }}
+              />
             </CardContent>
           </Card>
         </>

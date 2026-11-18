@@ -57,6 +57,9 @@ export interface PatientSurvey extends CreatePatientSurveyDto {
   practitionerIds?: string[];
   patient?: { id: string; firstName?: string; lastName?: string; patientNumber?: string } | null;
   createdBy?: string | null;
+  createdByUserId?: string | null;
+  /** اسم الموظف الذي عبّأ الاستبيان — null للاستبيانات القديمة أو عند تعذّر القراءة. */
+  createdByName?: string | null;
   createdAt: string;
   /**
    * Vitafoot only: 50% "insole comfort" + 50% the mean of the other podiatry
@@ -73,6 +76,8 @@ export interface PatientSurvey extends CreatePatientSurveyDto {
 export interface PatientSurveyListParams {
   patientId?: string;
   department?: SurveyDepartment;
+  /** بحث باسم المريض (العميل). */
+  search?: string;
   page?: number;
   limit?: number;
 }
