@@ -76,7 +76,7 @@ export interface PatientSurvey extends CreatePatientSurveyDto {
 export interface PatientSurveyListParams {
   patientId?: string;
   department?: SurveyDepartment;
-  /** بحث باسم المريض (العميل). */
+  /** بحث بالاسم (الحالي + المخزَّن على الاستبيان) أو رقم المريض أو الهاتف/الواتساب؛ كل كلمة تُطابق لحالها. */
   search?: string;
   page?: number;
   limit?: number;
