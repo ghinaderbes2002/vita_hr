@@ -181,15 +181,15 @@ export function useApproveRequest() {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
       queryClient.invalidateQueries({ queryKey: ["request"] });
       queryClient.invalidateQueries({ queryKey: ["employees"] });
-      // A finally-approved remote-work day only reaches attendance (status +
-      // closing the missing-stamp alert) with the nightly close, not right away.
+      // A finally-approved remote-work day updates attendance at once on the
+      // server (REMOTE_WORK status + the missing-stamp alert closed), so every
+      // attendance view — records, reports, alerts — is refetched.
       if (data?.type === "REMOTE_WORK" && data?.status === "APPROVED") {
-        toast.success("تمت الموافقة على الطلب", {
-          description: "سيُحدَّث سجل الحضور تلقائياً الليلة",
+        queryClient.invalidateQueries({
+          predicate: (q) => typeof q.queryKey[0] === "string" && q.queryKey[0].includes("attendance"),
         });
-      } else {
-        toast.success("تمت الموافقة على الطلب");
       }
+      toast.success("تمت الموافقة على الطلب");
     },
     onError: (error: any) => {
       if (error.response?.status === 403) return toast.error("غير مخوّل للموافقة على هذا الطلب");
