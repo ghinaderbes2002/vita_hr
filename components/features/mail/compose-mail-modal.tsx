@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Send, FileText, X, Paperclip, Loader2, Building2, Bold, Underline, Italic, AlertCircle } from "lucide-react";
+import { useState, useRef } from "react";
+import { Send, FileText, X, Paperclip, Loader2, Building2, AlertCircle } from "lucide-react";
+import dynamic from "next/dynamic";
+import { sanitizeHtml } from "@/lib/utils/sanitize-html";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +33,12 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+
+// The rich editor (TipTap) is only loaded when a message is being written.
+const RichMailEditor = dynamic(() => import("./editor/rich-mail-editor").then((m) => m.RichMailEditor), {
+  ssr: false,
+  loading: () => <div className="h-60 animate-pulse rounded-md border bg-muted/20" />,
+});
 
 function DeptChip({ id, name, onRemove }: { id: string; name: string; onRemove: () => void }) {
   const [open, setOpen] = useState(false);
@@ -120,37 +128,23 @@ export function ComposeMailModal({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isHighImportance, setIsHighImportance] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const [activeFormats, setActiveFormats] = useState({ bold: false, underline: false, italic: false });
+  // Body HTML from the rich editor ("" while empty). The editor remounts on
+  // every open (editorKey), so it always starts from the right content.
+  const initialBody = forwardMessageId ? "" : defaultBody;
+  const [bodyHtml, setBodyHtml] = useState(initialBody);
+  const [editorKey, setEditorKey] = useState(0);
   // Closing by hand (X / cancel) asks first, so a half-written message isn't lost
   // to a stray click. Sending or saving a draft closes without asking.
   const [confirmClose, setConfirmClose] = useState(false);
 
-  useEffect(() => {
-    if (open && bodyRef.current) {
-      bodyRef.current.innerHTML = forwardMessageId ? "" : defaultBody;
-    } else if (!open && bodyRef.current) {
-      bodyRef.current.innerHTML = "";
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setBodyHtml(initialBody);
+      setEditorKey((k) => k + 1);
     }
-  }, [open]);
-
-  useEffect(() => {
-    const updateFormats = () => {
-      if (!bodyRef.current?.contains(document.activeElement)) return;
-      setActiveFormats({
-        bold: document.queryCommandState("bold"),
-        underline: document.queryCommandState("underline"),
-        italic: document.queryCommandState("italic"),
-      });
-    };
-    document.addEventListener("selectionchange", updateFormats);
-    return () => document.removeEventListener("selectionchange", updateFormats);
-  }, []);
-
-  const applyFormat = (command: "bold" | "underline" | "italic") => {
-    document.execCommand(command, false);
-    setActiveFormats((prev) => ({ ...prev, [command]: !prev[command] }));
-  };
+  }
 
   // مع وجود مرفقات، النجاح يُعلن مرة واحدة بعد اكتمال الرفع لا قبله
   const hasPendingFiles = pendingFiles.length > 0;
@@ -220,7 +214,7 @@ export function ComposeMailModal({
           messageId: replyAllMessageId,
           dto: {
             subject,
-            body: bodyRef.current?.innerHTML || undefined,
+            body: bodyHtml || undefined,
             recipients: buildRecipients(),
             ...(isHighImportance ? { importance: "HIGH" } : {}),
             ...(uploadedIds.length > 0 ? { attachmentIds: uploadedIds } : {}),
@@ -232,7 +226,7 @@ export function ComposeMailModal({
           dto: {
             recipients: buildRecipients(),
             subject: subject || undefined,
-            body: bodyRef.current?.innerHTML || undefined,
+            body: bodyHtml || undefined,
             ...((() => {
               const ids = [...forwardAttachments.map((a) => a.id), ...uploadedIds];
               return ids.length > 0 ? { attachmentIds: ids } : {};
@@ -242,7 +236,7 @@ export function ComposeMailModal({
       } else {
         await sendMail.mutateAsync({
           subject,
-          body: bodyRef.current?.innerHTML || undefined,
+          body: bodyHtml || undefined,
           recipients: buildRecipients(),
           ...(departmentIds.length > 0 ? { departmentIds } : {}),
           parentMessageId: replyToMessageId,
@@ -271,7 +265,7 @@ export function ComposeMailModal({
   const handleDraft = async () => {
     await saveDraft.mutateAsync({
       subject,
-      body: bodyRef.current?.innerHTML || "",
+      body: bodyHtml,
       recipients: buildRecipients(),
     });
     onClose();
@@ -284,7 +278,7 @@ export function ComposeMailModal({
     <>
     <Dialog open={open} onOpenChange={(v) => { if (!v && !isPending) setConfirmClose(true); }}>
       <DialogContent
-        className="max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden"
+        className="sm:max-w-3xl max-h-[90dvh] flex flex-col overflow-hidden"
         // Only the X (or cancel) closes it — not a click outside or Esc.
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
@@ -433,46 +427,27 @@ export function ComposeMailModal({
             {forwardMessageId ? (
               <>
                 {/* Editable area for user's added message */}
-                <div
-                  ref={bodyRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  className="min-h-[80px] max-h-60 rounded-md border px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto empty:before:content-['اكتب_رسالتك_هنا...'] empty:before:text-muted-foreground"
-                  dir="auto"
+                <RichMailEditor
+                  key={editorKey}
+                  initialContent=""
+                  onChange={setBodyHtml}
+                  onSubmit={() => { if (!isPending) handleSend(); }}
+                  minHeight={80}
                 />
                 {/* Forwarded message (read-only) */}
                 <div
                   className="max-h-48 overflow-y-auto rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
                   dir="auto"
-                  dangerouslySetInnerHTML={{ __html: defaultBody.replace(/\n/g, "<br>") }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(/<[a-z][\s\S]*>/i.test(defaultBody) ? defaultBody : defaultBody.replace(/\n/g, "<br>")) }}
                 />
               </>
             ) : (
               <>
-                {/* Formatting toolbar */}
-                <div className="flex items-center gap-0.5 border rounded-t-md px-2 py-1 bg-muted/30 border-b-0">
-                  {([
-                    { command: "bold" as const, icon: Bold, title: t("bold") },
-                    { command: "underline" as const, icon: Underline, title: t("underline") },
-                    { command: "italic" as const, icon: Italic, title: t("italic") },
-                  ]).map(({ command, icon: Icon, title }) => (
-                    <button
-                      key={command}
-                      type="button"
-                      title={title}
-                      onMouseDown={(e) => { e.preventDefault(); applyFormat(command); }}
-                      className={`p-1.5 rounded transition-colors ${activeFormats[command] ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                    </button>
-                  ))}
-                </div>
-                <div
-                  ref={bodyRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  className="min-h-[168px] max-h-60 rounded-t-none border border-t-0 px-3 py-2 text-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-ring overflow-y-auto"
-                  dir="auto"
+                <RichMailEditor
+                  key={editorKey}
+                  initialContent={initialBody}
+                  onChange={setBodyHtml}
+                  onSubmit={() => { if (!isPending) handleSend(); }}
                 />
               </>
             )}
@@ -485,7 +460,7 @@ export function ComposeMailModal({
               <div
                 className="max-h-48 overflow-y-auto rounded-md border-r-2 border-muted bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
                 dir="auto"
-                dangerouslySetInnerHTML={{ __html: quotedBody }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(quotedBody) }}
               />
             </div>
           )}

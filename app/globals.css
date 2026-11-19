@@ -435,3 +435,45 @@ body {
     border-radius: 0 !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Mail body — shared by the rich editor and the message view, so a
+   message reads the way it was written. Tailwind's reset strips list
+   bullets, heading sizes, etc., so they're restored here.
+   ───────────────────────────────────────────────────────────── */
+.mail-content { line-height: 1.6; overflow-wrap: anywhere; }
+.mail-content p { margin: 0 0 0.25em; min-height: 1em; }
+.mail-content h1 { font-size: 1.6em; font-weight: 700; margin: 0.5em 0 0.3em; }
+.mail-content h2 { font-size: 1.35em; font-weight: 700; margin: 0.5em 0 0.3em; }
+.mail-content h3 { font-size: 1.15em; font-weight: 700; margin: 0.4em 0 0.25em; }
+.mail-content ul { list-style: disc; padding-inline-start: 1.6em; margin: 0.25em 0; }
+.mail-content ol { list-style: decimal; padding-inline-start: 1.6em; margin: 0.25em 0; }
+.mail-content ul ul { list-style: circle; }
+.mail-content ul ul ul { list-style: square; }
+.mail-content ol ol { list-style: lower-alpha; }
+.mail-content ol ol ol { list-style: lower-roman; }
+.mail-content li > p { margin: 0; }
+.mail-content blockquote {
+  border-inline-start: 3px solid var(--border);
+  padding-inline-start: 0.8em; margin: 0.5em 0; color: var(--muted-foreground);
+}
+.mail-content a { color: #0070c0; text-decoration: underline; }
+.mail-content hr { border: 0; border-top: 1px solid var(--border); margin: 0.75em 0; }
+.mail-content img { max-width: 100%; height: auto; display: inline-block; }
+.mail-content img.ProseMirror-selectednode { outline: 2px solid var(--ring); }
+.mail-content table { border-collapse: collapse; margin: 0.5em 0; width: 100%; table-layout: fixed; }
+.mail-content td, .mail-content th {
+  border: 1px solid #bfbfbf; padding: 4px 8px; vertical-align: top; min-width: 2em;
+}
+.mail-content th { font-weight: 700; background: color-mix(in oklab, var(--muted) 70%, transparent); }
+.mail-content table[data-borderless="true"] td,
+.mail-content table[data-borderless="true"] th { border-color: transparent; }
+.ProseMirror.mail-content table[data-borderless="true"] td,
+.ProseMirror.mail-content table[data-borderless="true"] th { border: 1px dashed var(--border); }
+.mail-content .selectedCell { background: color-mix(in oklab, var(--primary) 15%, transparent); }
+.mail-content sub, .mail-content sup { font-size: 0.75em; }
+.mail-content mark { border-radius: 2px; padding: 0 1px; }
+.ProseMirror.mail-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); color: var(--muted-foreground);
+  float: right; height: 0; pointer-events: none;
+}

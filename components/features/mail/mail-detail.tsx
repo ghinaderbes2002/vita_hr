@@ -1,5 +1,6 @@
 "use client";
 
+import { sanitizeHtml } from "@/lib/utils/sanitize-html";
 import { useState, useRef, useMemo } from "react";
 import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History, AlertCircle, Bold, Underline, Italic } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -228,7 +229,9 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     // For plain-text bodies (no tags), convert newlines to <br>.
     const isHtml = /<[a-z][\s\S]*>/i.test(body);
     const html = isHtml ? body : body.replace(/\n/g, "<br>");
-    return { __html: html.replace(FORWARD_HEADER, forwardHeaderCard) };
+    // Cleaned first (scripts, handlers, javascript: links), then our own
+    // forward-header card is swapped in.
+    return { __html: sanitizeHtml(html).replace(FORWARD_HEADER, forwardHeaderCard) };
   };
 
   const defaultSubject = `${t("rePrefix")}${message.subject}`;
@@ -433,7 +436,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
         <Separator />
 
         {/* Body */}
-        <div className="text-sm leading-relaxed wrap-break-word" dangerouslySetInnerHTML={renderBody(message.body)} />
+        <div className="mail-content text-sm leading-relaxed wrap-break-word" dangerouslySetInnerHTML={renderBody(message.body)} />
 
         {/* Attachments */}
         {message.attachments && message.attachments.length > 0 && (
@@ -520,7 +523,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
                               {renderRecipientRows(recipientsOf(m, "TO"), recipientsOf(m, "CC"))}
                             </div>
                           )}
-                          <div className="wrap-break-word" dangerouslySetInnerHTML={renderBody(m.body)} />
+                          <div className="mail-content wrap-break-word" dangerouslySetInnerHTML={renderBody(m.body)} />
                           {m.attachments && m.attachments.length > 0 && (
                             <div className="mt-3">
                               <AttachmentList attachments={m.attachments} />
