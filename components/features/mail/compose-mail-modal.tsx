@@ -26,6 +26,10 @@ import { useSendMail, useSaveDraft, useUploadAttachment, useForwardMail, useRepl
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useEmployeesByDepartment } from "@/lib/hooks/use-employees";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 function DeptChip({ id, name, onRemove }: { id: string; name: string; onRemove: () => void }) {
@@ -118,6 +122,9 @@ export function ComposeMailModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [activeFormats, setActiveFormats] = useState({ bold: false, underline: false, italic: false });
+  // Closing by hand (X / cancel) asks first, so a half-written message isn't lost
+  // to a stray click. Sending or saving a draft closes without asking.
+  const [confirmClose, setConfirmClose] = useState(false);
 
   useEffect(() => {
     if (open && bodyRef.current) {
@@ -274,8 +281,14 @@ export function ComposeMailModal({
   const isPending = sendMail.isPending || saveDraft.isPending || uploadAttachment.isPending || forwardMail.isPending || replyAllMail.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
+    <>
+    <Dialog open={open} onOpenChange={(v) => { if (!v && !isPending) setConfirmClose(true); }}>
+      <DialogContent
+        className="max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden"
+        // Only the X (or cancel) closes it — not a click outside or Esc.
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-4 w-4" />
@@ -532,7 +545,7 @@ export function ComposeMailModal({
           {/* Actions */}
           <div className="flex flex-wrap gap-2 items-center justify-between pt-1">
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={onClose} disabled={isPending}>{t("cancel")}</Button>
+              <Button variant="outline" onClick={() => setConfirmClose(true)} disabled={isPending}>{t("cancel")}</Button>
               <Button type="button" variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
                 <Paperclip className="h-4 w-4" />
                 {t("attach")}
@@ -554,5 +567,25 @@ export function ComposeMailModal({
         </div>
       </DialogContent>
     </Dialog>
+    <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
+      <AlertDialogContent dir="rtl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>إغلاق الرسالة؟</AlertDialogTitle>
+          <AlertDialogDescription>
+            سيتم فقدان ما كتبته في هذه الرسالة. يمكنك حفظها كمسودة بدلاً من ذلك.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>متابعة الكتابة</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-white hover:bg-destructive/90"
+            onClick={() => { setConfirmClose(false); onClose(); }}
+          >
+            إغلاق
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
