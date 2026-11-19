@@ -197,6 +197,7 @@ export function ReferralSourceFormDialog({
   onSaved,
   lockedType,
   excludeTypes,
+  initialName,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -207,6 +208,8 @@ export function ReferralSourceFormDialog({
   lockedType?: ReferralSourceType;
   /** Kinds this screen does not file — جمعية belongs to the projects screen. */
   excludeTypes?: ReferralSourceType[];
+  /** Prefills the name of a new source — e.g. a doctor typed freehand on a patient. */
+  initialName?: string;
 }) {
   const [form, setForm] = useState<FormState>(() =>
     lockedType ? { ...emptyForm(), type: lockedType } : emptyForm(),
@@ -263,7 +266,9 @@ export function ReferralSourceFormDialog({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      const next = source ? formOf(source) : { ...emptyForm(), ...(lockedType ? { type: lockedType } : {}) };
+      const next = source
+        ? formOf(source)
+        : { ...emptyForm(), ...(lockedType ? { type: lockedType } : {}), ...(initialName ? { name: initialName } : {}) };
       setForm(next);
       setTab("basic");
       setIsOtherSpecialty(

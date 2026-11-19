@@ -197,6 +197,8 @@ export interface PatientListParams {
   /** true = مرضى الشركات فقط، false = من عداهم. */
   isCompanyPatient?: boolean;
   educationLevel?: EducationLevel;
+  /** طريقة الوصول: DOCTOR = المرضى المحالون من طبيب. */
+  referralSource?: string;
 }
 
 export interface PaginatedPatients {

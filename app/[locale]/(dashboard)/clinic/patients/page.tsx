@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { REFERRAL_SOURCES, REFERRAL_SOURCE_LABEL, type ReferralSource } from "@/lib/clinic/referral-sources";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Plus, Search, Eye, Trash2, Users, FileSpreadsheet, Loader2, Building2, UserRound } from "lucide-react";
@@ -47,6 +48,7 @@ export default function ClinicPatientsPage() {
     useState<"all" | "FUNDER_ONLY" | "FUNDER_AND_SOCIAL" | "REFUSED" | "NONE">("all");
   const [companyFilter, setCompanyFilter] = useState<"all" | "yes" | "no">("all");
   const [educationFilter, setEducationFilter] = useState<"all" | EducationLevel>("all");
+  const [referralFilter, setReferralFilter] = useState<"all" | ReferralSource>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Restrict the list to the user's own department: a physio-only clinician sees
@@ -76,6 +78,7 @@ export default function ClinicPatientsPage() {
     consentDecision: consentFilter !== "all" ? consentFilter : undefined,
     isCompanyPatient: companyFilter === "all" ? undefined : companyFilter === "yes",
     educationLevel: educationFilter !== "all" ? educationFilter : undefined,
+    referralSource: referralFilter !== "all" ? referralFilter : undefined,
     department,
   });
 
@@ -97,8 +100,9 @@ export default function ClinicPatientsPage() {
 
   // A row of another level means the API ignored the filter, so its total would
   // be everyone — the count is withheld rather than shown wrong.
-  const educationCountReliable = !!data && educationFilter !== "all"
-    && !data.items.some((p) => p.educationLevel && p.educationLevel !== educationFilter);
+  const educationCountReliable = !!data && (educationFilter !== "all" || referralFilter !== "all")
+    && !data.items.some((p) => educationFilter !== "all" && p.educationLevel && p.educationLevel !== educationFilter)
+    && !data.items.some((p) => referralFilter !== "all" && p.referralSource !== referralFilter);
 
   const deletePatient = useDeleteClinicPatient();
 
@@ -247,6 +251,15 @@ export default function ClinicPatientsPage() {
           <SelectContent>
             <SelectItem value="all">كل المستويات التعليمية</SelectItem>
             {EDUCATION_LEVELS.map((v) => <SelectItem key={v} value={v}>{tNew(`education.${v}`)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={referralFilter} onValueChange={(v) => { setReferralFilter(v as "all" | ReferralSource); setPage(1); }}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="طريقة الوصول" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">طريقة الوصول: الكل</SelectItem>
+            {REFERRAL_SOURCES.map((v) => <SelectItem key={v} value={v}>{REFERRAL_SOURCE_LABEL[v]}</SelectItem>)}
           </SelectContent>
         </Select>
         {educationCountReliable && (

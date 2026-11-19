@@ -19,6 +19,8 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard, PageGuard } from "@/components/permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { ReferralSourceFormDialog } from "@/components/clinic/referral-source-form-dialog";
+import { UnlinkedDoctorsDialog } from "@/components/clinic/unlinked-doctors-dialog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useDeleteReferralSource, useReferralSources } from "@/lib/hooks/use-clinic-referrals";
 import {
   REFERRAL_SOURCE_TYPES, REFERRAL_SOURCE_TYPE_LABEL, ReferralSource, ReferralSourceType, visitsCountOf,
@@ -68,6 +70,11 @@ export default function ReferralSourcesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ReferralSource | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReferralSource | null>(null);
+  const [unlinkedOpen, setUnlinkedOpen] = useState(false);
+  // A freehand doctor being filed as a contact: prefills the add form's name.
+  const [prefillName, setPrefillName] = useState<string | undefined>(undefined);
+  const { hasPermission, isAdmin } = usePermissions();
+  const canManage = isAdmin() || hasPermission(PERMISSIONS.CLINIC_REFERRALS.MANAGE);
 
   // Typing shouldn't fire a request per keystroke (the landing search is server-side).
   useEffect(() => {
@@ -118,7 +125,7 @@ export default function ReferralSourcesPage() {
 
   const openSource = (s: ReferralSource) => router.push(`/${locale}/clinic/referrals/${s.id}`);
   const openEdit = (s: ReferralSource) => { setEditing(s); setFormOpen(true); };
-  const openCreate = () => { setEditing(null); setFormOpen(true); };
+  const openCreate = () => { setEditing(null); setPrefillName(undefined); setFormOpen(true); };
 
   const rowActions = (s: ReferralSource) => (
     // The card / row itself opens the source, so these must not bubble up to it.
@@ -143,12 +150,18 @@ export default function ReferralSourcesPage() {
           title="جهات الاتصال"
           description="الأطباء والمشافي التي تُحيل المرضى إلى المركز"
           actions={
-            <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.MANAGE}>
-              <Button onClick={openCreate} className="gap-2">
-                <Plus className="h-4 w-4" />
-                إضافة مصدر
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setUnlinkedOpen(true)} className="gap-2">
+                <Stethoscope className="h-4 w-4" />
+                أطباء لم تتم زيارتهم
               </Button>
-            </ActionGuard>
+              <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.MANAGE}>
+                <Button onClick={openCreate} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  إضافة مصدر
+                </Button>
+              </ActionGuard>
+            </div>
           }
         />
 
@@ -381,9 +394,23 @@ export default function ReferralSourcesPage() {
 
         <ReferralSourceFormDialog
           open={formOpen}
-          onOpenChange={(o) => { setFormOpen(o); if (!o) setEditing(null); }}
+          onOpenChange={(o) => { setFormOpen(o); if (!o) { setEditing(null); setPrefillName(undefined); } }}
           source={editing}
           excludeTypes={["ASSOCIATION"]}
+          initialName={prefillName}
+          lockedType={prefillName ? "DOCTOR" : undefined}
+        />
+
+        <UnlinkedDoctorsDialog
+          open={unlinkedOpen}
+          onOpenChange={setUnlinkedOpen}
+          canManage={canManage}
+          onAdd={(name) => {
+            setUnlinkedOpen(false);
+            setEditing(null);
+            setPrefillName(name);
+            setFormOpen(true);
+          }}
         />
 
         <ConfirmDialog

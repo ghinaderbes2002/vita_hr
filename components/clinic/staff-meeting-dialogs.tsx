@@ -41,7 +41,11 @@ const formFromMeeting = (m: InternalMeeting) => {
   };
 };
 
-/** A meeting that's cancelled or already over can't be changed any more. */
+/**
+ * A meeting that's cancelled or already over can't be cancelled any more.
+ * Editing stays open after it ends (to fix attendees, notes or times) —
+ * only a cancelled meeting is fully frozen.
+ */
 export const meetingIsLocked = (m: InternalMeeting) =>
   m.status === "CANCELLED" || new Date(m.endTime).getTime() <= Date.now();
 
@@ -240,6 +244,7 @@ export function StaffMeetingDetailsDialog({
   const [reason, setReason] = useState("");
   const locked = !meeting || meetingIsLocked(meeting);
   const cancelled = meeting?.status === "CANCELLED";
+  const editLocked = !meeting || cancelled;
   const stamp = (iso: string) =>
     new Date(iso).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
   const close = () => { setCancelling(false); setReason(""); onClose(); };
@@ -325,7 +330,7 @@ export function StaffMeetingDetailsDialog({
         )}
         <DialogFooter className="gap-2 sm:justify-between">
           <div className="flex gap-2">
-            {meeting && !locked && canEdit && onEdit && (
+            {meeting && !editLocked && canEdit && onEdit && (
               <Button variant="outline" className="gap-1.5" onClick={() => onEdit(meeting)}>
                 <Pencil className="h-4 w-4" /> تعديل
               </Button>

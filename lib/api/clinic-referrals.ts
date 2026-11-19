@@ -213,6 +213,18 @@ export interface ReferralStats {
   monthlyTrend?: { month: string; referrals: number; visits: number }[];
 }
 
+/**
+ * A referrer's name typed freehand on a patient (no directory entry yet) —
+ * a doctor the team hasn't visited or filed as a contact.
+ */
+export interface UnlinkedReferralName {
+  name: string;
+  /** Patients referred under this name. */
+  patientCount: number;
+  /** Most recent patient referred under it (ISO). */
+  lastReferredAt?: string | null;
+}
+
 const BASE = "/referrals/sources";
 
 export const clinicReferralsApi = {
@@ -327,5 +339,12 @@ export const clinicReferralsApi = {
   createSpecialty: async (name: string): Promise<ReferralSpecialty> => {
     const { data } = await apiClient.post(`${BASE}/specialties`, { name });
     return data?.data ?? data;
+  },
+
+  /** Freehand referrer names with no directory entry, most patients first. */
+  listUnlinkedNames: async (type: ReferralSourceType): Promise<UnlinkedReferralName[]> => {
+    const { data } = await apiClient.get(`${BASE}/unlinked-names`, { params: { type } });
+    const d = data?.data ?? data;
+    return Array.isArray(d) ? d : d?.items ?? [];
   },
 };

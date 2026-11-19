@@ -420,8 +420,9 @@ export const clinicAppointmentsApi = {
   },
 
   /**
-   * MEETING_CANCELLED / MEETING_ENDED (400) on a meeting that can't change any
-   * more; ATTENDEE_NOT_AVAILABLE only when the time or attendees changed.
+   * MEETING_CANCELLED (400) on a cancelled meeting — an ended one can still be
+   * edited (to fix attendees, notes, actual times). ATTENDEE_NOT_AVAILABLE only
+   * when the time or attendees changed, past meetings included.
    */
   updateInternalMeeting: async (id: string, dto: UpdateInternalMeetingDto): Promise<InternalMeeting> => {
     const { data } = await apiClient.patch(`/appointments/staff-meetings/${id}`, dto);

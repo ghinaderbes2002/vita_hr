@@ -9,6 +9,7 @@ import {
   UpdateReferralSourceDto,
   UpdateReferralVisitDto,
   ReferralVisit,
+  ReferralSourceType,
 } from "@/lib/api/clinic-referrals";
 
 export function useReferralSources(
@@ -207,5 +208,14 @@ export function useCreateReferralSpecialty() {
     mutationFn: (name: string) => clinicReferralsApi.createSpecialty(name),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["referral-specialties"] }),
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل إضافة التخصص"),
+  });
+}
+
+/** Referrer names typed freehand on patients that aren't in the directory yet. */
+export function useUnlinkedReferralNames(type: ReferralSourceType, enabled = true) {
+  return useQuery({
+    queryKey: ["referral-sources", "unlinked-names", type],
+    queryFn: () => clinicReferralsApi.listUnlinkedNames(type),
+    enabled,
   });
 }
