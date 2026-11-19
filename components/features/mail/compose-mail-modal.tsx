@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Send, FileText, X, Paperclip, Loader2, Building2, AlertCircle } from "lucide-react";
+import { Send, FileText, X, Paperclip, Loader2, Building2, AlertCircle, Upload } from "lucide-react";
 import dynamic from "next/dynamic";
 import { sanitizeHtml } from "@/lib/utils/sanitize-html";
+import { mentionsAttachment } from "@/lib/utils/mail-text";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,11 @@ const RichMailEditor = dynamic(() => import("./editor/rich-mail-editor").then((m
   ssr: false,
   loading: () => <div className="h-60 animate-pulse rounded-md border bg-muted/20" />,
 });
+
+/** Same list as the file picker's accept — dropped files are held to it too. */
+const ALLOWED_EXT = ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "odt", "xls", "xlsx", "csv", "ods", "txt"];
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const extOf = (name: string) => (name.split(".").pop() ?? "").toLowerCase();
 
 function DeptChip({ id, name, onRemove }: { id: string; name: string; onRemove: () => void }) {
   const [open, setOpen] = useState(false);
@@ -136,6 +142,9 @@ export function ComposeMailModal({
   // Closing by hand (X / cancel) asks first, so a half-written message isn't lost
   // to a stray click. Sending or saving a draft closes without asking.
   const [confirmClose, setConfirmClose] = useState(false);
+  // Asked when the text mentions an attachment but none is attached.
+  const [confirmNoAttachment, setConfirmNoAttachment] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
@@ -163,18 +172,44 @@ export function ComposeMailModal({
     ...bccIds.map((employeeId) => ({ employeeId, type: "BCC" as const })),
   ];
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    const oversized = files.filter((f) => f.size > 25 * 1024 * 1024);
-    if (oversized.length > 0) {
-      toast.error(`الملفات التالية تتجاوز 25MB: ${oversized.map((f) => f.name).join(", ")}`);
-      return;
-    }
+  // From the picker or dropped on the window: unsupported types and files
+  // over 25MB are refused by name, the rest join the list (no duplicates).
+  const addFiles = (files: File[]) => {
+    const badType = files.filter((f) => !ALLOWED_EXT.includes(extOf(f.name)));
+    const oversized = files.filter((f) => f.size > MAX_FILE_BYTES);
+    if (badType.length > 0) toast.error(`نوع ملف غير مدعوم: ${badType.map((f) => f.name).join(", ")}`);
+    if (oversized.length > 0) toast.error(`الملفات التالية تتجاوز 25MB: ${oversized.map((f) => f.name).join(", ")}`);
+    const ok = files.filter((f) => !badType.includes(f) && !oversized.includes(f));
+    if (ok.length === 0) return;
     setPendingFiles((prev) => {
       const names = new Set(prev.map((f) => f.name));
-      return [...prev, ...files.filter((f) => !names.has(f.name))];
+      return [...prev, ...ok.filter((f) => !names.has(f.name))];
     });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    addFiles(Array.from(e.target.files ?? []));
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
+  const dropHandlers = {
+    onDragOver: (e: React.DragEvent) => {
+      if (!hasFiles(e) || isPending) return;
+      e.preventDefault();
+      if (!dragging) setDragging(true);
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      // Only when leaving the window itself, not moving between its children.
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+    },
+    onDrop: (e: React.DragEvent) => {
+      setDragging(false);
+      // An image dropped on the text is placed inline by the editor itself.
+      if (e.defaultPrevented || !hasFiles(e) || isPending) return;
+      e.preventDefault();
+      addFiles(Array.from(e.dataTransfer.files));
+    },
   };
 
   const removeFile = (name: string) =>
@@ -186,10 +221,16 @@ export function ComposeMailModal({
     );
   };
 
-  const handleSend = async () => {
+  const handleSend = async (skipAttachmentCheck = false) => {
     if (!subject.trim()) { toast.error("الموضوع مطلوب"); return; }
     if (toIds.length === 0 && ccIds.length === 0 && bccIds.length === 0 && departmentIds.length === 0) {
       toast.error("يجب إضافة مستلم أو قسم واحد على الأقل");
+      return;
+    }
+    // Like Outlook: "مرفق" in the text with nothing attached asks first.
+    const attachedSomething = pendingFiles.length > 0 || forwardAttachments.length > 0;
+    if (!skipAttachmentCheck && !attachedSomething && mentionsAttachment(subject, bodyHtml)) {
+      setConfirmNoAttachment(true);
       return;
     }
 
@@ -282,7 +323,15 @@ export function ComposeMailModal({
         // Only the X (or cancel) closes it — not a click outside or Esc.
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
+        {...dropHandlers}
       >
+        {dragging && (
+          <div className="pointer-events-none absolute inset-2 z-50 flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary bg-background/90 text-primary">
+            <Upload className="h-8 w-8" />
+            <p className="text-sm font-medium">أفلتي الملفات هنا لإرفاقها</p>
+            <p className="text-xs text-muted-foreground">حتى 25MB للملف — صور، PDF، Word، Excel، نص</p>
+          </div>
+        )}
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-4 w-4" />
@@ -502,6 +551,9 @@ export function ComposeMailModal({
                     <div className="flex items-center gap-2 min-w-0">
                       <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="truncate">{file.name}</span>
+                      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
+                        {extOf(file.name) || "?"}
+                      </span>
                       <span className="text-xs text-muted-foreground shrink-0">
                         {file.size < 1024 * 1024
                           ? `${(file.size / 1024).toFixed(1)} KB`
@@ -531,7 +583,7 @@ export function ComposeMailModal({
                 <FileText className="h-4 w-4 ml-1.5" />
                 {t("saveDraft")}
               </Button>
-              <Button onClick={handleSend} disabled={isPending}>
+              <Button onClick={() => handleSend()} disabled={isPending}>
                 {uploadAttachment.isPending
                   ? <Loader2 className="h-4 w-4 ml-1.5 animate-spin" />
                   : <Send className="h-4 w-4 ml-1.5" />}
@@ -557,6 +609,22 @@ export function ComposeMailModal({
             onClick={() => { setConfirmClose(false); onClose(); }}
           >
             إغلاق
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    <AlertDialog open={confirmNoAttachment} onOpenChange={setConfirmNoAttachment}>
+      <AlertDialogContent dir="rtl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>نسيتِ المرفق؟</AlertDialogTitle>
+          <AlertDialogDescription>
+            ذكرتِ مرفقاً في الرسالة لكن لم يُرفق أي ملف.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => fileInputRef.current?.click()}>إرفاق ملف</AlertDialogCancel>
+          <AlertDialogAction onClick={() => { setConfirmNoAttachment(false); handleSend(true); }}>
+            إرسال بدون مرفق
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

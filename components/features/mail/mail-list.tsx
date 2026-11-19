@@ -1,5 +1,6 @@
 "use client";
 
+import { bodySnippet, displaySubject } from "@/lib/utils/mail-text";
 import { useEffect, useState, useMemo } from "react";
 import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X, AlertCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -98,7 +99,11 @@ export function MailList({
     isDraft ? item.id : (item.messageId ?? item.message?.id);
 
   const getSubject = (item: any): string =>
-    isDraft ? item.subject : item.message?.subject ?? t("noSubject");
+    displaySubject(isDraft ? item.subject : item.message?.subject ?? t("noSubject"));
+
+  // A line of the body under the subject, Outlook-style.
+  const getSnippet = (item: any): string =>
+    bodySnippet(isDraft ? item.body : item.message?.body);
 
   const getSender = (item: any): { name: string | null; id: string | null } => {
     if (isDraft) return { name: t("draft"), id: null };
@@ -304,14 +309,19 @@ export function MailList({
                 </span>
 
                 {/* Subject + preview */}
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                  <span className={cn("text-sm truncate", unread && "font-medium")}>
-                    {getSubject(item)}
-                  </span>
-                  {(item?.importance === "HIGH" || item?.message?.importance === "HIGH") && (
-                    <span className="shrink-0 text-red-500" title="مهم جداً">
-                      <AlertCircle className="h-3.5 w-3.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={cn("text-sm truncate", unread && "font-medium")}>
+                      {getSubject(item)}
                     </span>
+                    {(item?.importance === "HIGH" || item?.message?.importance === "HIGH") && (
+                      <span className="shrink-0 text-red-500" title="مهم جداً">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </div>
+                  {getSnippet(item) && (
+                    <p className="truncate text-xs text-muted-foreground">{getSnippet(item)}</p>
                   )}
                 </div>
 

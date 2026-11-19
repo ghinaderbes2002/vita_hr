@@ -1,5 +1,6 @@
 "use client";
 
+import { displaySubject, prefixedSubject } from "@/lib/utils/mail-text";
 import { sanitizeHtml } from "@/lib/utils/sanitize-html";
 import { useState, useRef, useMemo } from "react";
 import { ArrowRight, Archive, Trash2, Reply, ReplyAll, ChevronDown, ChevronRight, MessageSquare, FolderOpen, Forward, Pencil, History, AlertCircle, Bold, Underline, Italic } from "lucide-react";
@@ -234,7 +235,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
     return { __html: sanitizeHtml(html).replace(FORWARD_HEADER, forwardHeaderCard) };
   };
 
-  const defaultSubject = `${t("rePrefix")}${message.subject}`;
+  const defaultSubject = prefixedSubject(t("rePrefix"), message.subject);
   const getRecipientEmpId = (r: any) => {
     const direct = r.employeeInfo?.employeeId ?? r.recipient?.id;
     if (direct) return direct;
@@ -407,7 +408,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
       <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
         {/* Subject */}
         <div className="flex items-center gap-2 flex-wrap">
-          <h2 className="text-lg font-semibold">{message.subject}</h2>
+          <h2 className="text-lg font-semibold">{displaySubject(message.subject)}</h2>
           {message.importance === "HIGH" && (
             <Badge className="bg-red-100 text-red-700 border-red-300 text-xs gap-1">
               <AlertCircle className="h-3 w-3" />
@@ -698,7 +699,7 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
           open={forwardOpen}
           onClose={() => setForwardOpen(false)}
           forwardMessageId={messageId}
-          defaultSubject={t("fwdPrefix") + message.subject}
+          defaultSubject={prefixedSubject(t("fwdPrefix"), message.subject)}
           defaultBody={forwardDefaultBody}
           forwardAttachments={message.attachments ?? []}
           forwardPreviewAttachments={forwardThreadAttachments}
