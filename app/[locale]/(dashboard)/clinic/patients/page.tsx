@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { REFERRAL_SOURCES, REFERRAL_SOURCE_LABEL, type ReferralSource } from "@/lib/clinic/referral-sources";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Plus, Search, Eye, Trash2, Users, FileSpreadsheet, Loader2, Building2, UserRound } from "lucide-react";
@@ -48,7 +47,7 @@ export default function ClinicPatientsPage() {
     useState<"all" | "FUNDER_ONLY" | "FUNDER_AND_SOCIAL" | "REFUSED" | "NONE">("all");
   const [companyFilter, setCompanyFilter] = useState<"all" | "yes" | "no">("all");
   const [educationFilter, setEducationFilter] = useState<"all" | EducationLevel>("all");
-  const [referralFilter, setReferralFilter] = useState<"all" | ReferralSource>("all");
+  const [referralFilter, setReferralFilter] = useState<"all" | "DOCTOR">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Restrict the list to the user's own department: a physio-only clinician sees
@@ -253,13 +252,13 @@ export default function ClinicPatientsPage() {
             {EDUCATION_LEVELS.map((v) => <SelectItem key={v} value={v}>{tNew(`education.${v}`)}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={referralFilter} onValueChange={(v) => { setReferralFilter(v as "all" | ReferralSource); setPage(1); }}>
+        <Select value={referralFilter} onValueChange={(v) => { setReferralFilter(v as "all" | "DOCTOR"); setPage(1); }}>
           <SelectTrigger className="w-44">
             <SelectValue placeholder="طريقة الوصول" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">طريقة الوصول: الكل</SelectItem>
-            {REFERRAL_SOURCES.map((v) => <SelectItem key={v} value={v}>{REFERRAL_SOURCE_LABEL[v]}</SelectItem>)}
+            <SelectItem value="DOCTOR">محالون من طبيب</SelectItem>
           </SelectContent>
         </Select>
         {educationCountReliable && (
