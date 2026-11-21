@@ -38,5 +38,11 @@ EXPOSE 3012
 # Set environment variable for port
 ENV PORT=3012
 
+# Bind on all interfaces. Without it the standalone server binds to the
+# container's HOSTNAME, and a recreated container can keep a stale hostname
+# (an old container id) that no longer resolves — the server then fails to
+# start (getaddrinfo EAI_AGAIN) and nginx answers 502.
+ENV HOSTNAME=0.0.0.0
+
 # Start the application
 CMD ["node", "server.js"]

@@ -32,6 +32,8 @@ services:
       - "3012:3012"
     environment:
       - NODE_ENV=production
+      # Bind on all interfaces — see the HOSTNAME note in the Dockerfile.
+      - HOSTNAME=0.0.0.0
       # Also set for runtime (though NEXT_PUBLIC vars are mainly build-time)
       - NEXT_PUBLIC_API_URL=https://system.vitaxirpro.com/api/v1
     restart: unless-stopped
