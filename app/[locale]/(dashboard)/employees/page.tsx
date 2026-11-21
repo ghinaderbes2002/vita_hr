@@ -53,6 +53,7 @@ export default function EmployeesPage() {
   const [exemptFilter, setExemptFilter] = useState<"all" | "exempt" | "linked">("all");
   const [companyFilter, setCompanyFilter] = useState<"" | "VITAXIR" | "VITASYR">("");
   const [statusFilter, setStatusFilter] = useState<"all" | "ACTIVE" | "INACTIVE">("all");
+  const [externalFilter, setExternalFilter] = useState<"all" | "internal" | "external">("all");
   const [view, setView] = useState<"list" | "tree">("list");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -65,6 +66,7 @@ export default function EmployeesPage() {
     page: companyFilter ? 1 : page,
     limit: companyFilter ? 500 : LIMIT,
     employmentStatus: statusFilter !== "all" ? statusFilter : undefined,
+    isExternal: externalFilter === "all" ? undefined : externalFilter === "external",
   });
   const { data: departmentEmployees, isLoading: departmentEmployeesLoading } = useEmployeesByDepartment(selectedDepartment);
   const { data: departmentsData } = useDepartments({ limit: 500 });
@@ -90,6 +92,7 @@ export default function EmployeesPage() {
     // The department endpoint ignores the list query, so the status filter is
     // re-applied here for that branch; on the main list the server already did it.
     if (selectedDepartment && statusFilter !== "all" && e.employmentStatus !== statusFilter) return false;
+    if (selectedDepartment && externalFilter !== "all" && !!e.isExternal !== (externalFilter === "external")) return false;
     const linked = e.attendanceConfig?.salaryLinked ?? true;
     if (exemptFilter === "exempt") return linked === false;
     if (exemptFilter === "linked") return linked === true;
@@ -233,6 +236,16 @@ export default function EmployeesPage() {
             <SelectItem value="VITASYR">VitaSyr</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={externalFilter} onValueChange={(v) => { setExternalFilter(v as "all" | "internal" | "external"); setPage(1); }}>
+          <SelectTrigger className="w-44 bg-background">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">داخلي وخارجي</SelectItem>
+            <SelectItem value="internal">موظفو الشركة</SelectItem>
+            <SelectItem value="external">من خارج الشركة</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-md border">
@@ -283,6 +296,11 @@ export default function EmployeesPage() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {employee.firstNameAr}
+                      {employee.isExternal && (
+                        <span className="text-[10px] font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-1.5 py-0.5">
+                          خارجي{employee.externalType?.nameAr ? ` · ${employee.externalType.nameAr}` : ""}
+                        </span>
+                      )}
                       {(employee as any).attendanceConfig?.salaryLinked === false && (
                         <span className="flex items-center gap-0.5 text-[10px] font-medium text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-1.5 py-0.5">
                           <BellOff className="h-2.5 w-2.5" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Search, Stethoscope } from "lucide-react";
+import { Link2, Plus, Search, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,13 +15,15 @@ import { useUnlinkedReferralNames } from "@/lib/hooks/use-clinic-referrals";
  * Each can be filed as a contact straight from here.
  */
 export function UnlinkedDoctorsDialog({
-  open, onOpenChange, canManage, onAdd,
+  open, onOpenChange, canManage, onAdd, onLinkExisting,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canManage: boolean;
   /** Opens the add-source form prefilled with this doctor's name. */
   onAdd: (name: string) => void;
+  /** The name is a spelling of a doctor already in contacts — link the patients to them. */
+  onLinkExisting: (name: string) => void;
 }) {
   const { data = [], isLoading, isError } = useUnlinkedReferralNames("DOCTOR", open);
   const [search, setSearch] = useState("");
@@ -76,10 +78,16 @@ export function UnlinkedDoctorsDialog({
                   </TableCell>
                   {canManage && (
                     <TableCell className="text-end">
-                      <Button variant="outline" size="sm" className="gap-1" onClick={() => onAdd(r.name)}>
-                        <Plus className="h-3.5 w-3.5" />
-                        إضافة كجهة اتصال
-                      </Button>
+                      <div className="flex justify-end gap-1.5">
+                        <Button variant="outline" size="sm" className="gap-1" onClick={() => onAdd(r.name)}>
+                          <Plus className="h-3.5 w-3.5" />
+                          إضافة كجهة اتصال
+                        </Button>
+                        <Button variant="ghost" size="sm" className="gap-1" onClick={() => onLinkExisting(r.name)} title="الاسم لطبيب موجود في جهات الاتصال">
+                          <Link2 className="h-3.5 w-3.5" />
+                          ربط بجهة موجودة
+                        </Button>
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>

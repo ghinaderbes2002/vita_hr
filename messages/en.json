@@ -2227,14 +2227,20 @@
       "interview": "Ready for interview",
       "accepted": "Interviewed",
       "rejected": "Rejected",
-      "hired": "Hired"
+      "hired": "Hired",
+      "interviewed": "Interviewed",
+      "pendingCeoApproval": "Awaiting CEO",
+      "returnedToHr": "Returned to HR"
     },
     "statuses": {
       "PENDING": "Pending",
       "INTERVIEW_READY": "Ready for interview",
-      "ACCEPTED": "Interviewed",
+      "ACCEPTED": "Awaiting CEO approval",
       "REJECTED": "Rejected",
-      "HIRED": "Hired"
+      "HIRED": "Hired",
+      "INTERVIEWED": "Interviewed",
+      "PENDING_CEO_APPROVAL": "Awaiting CEO approval",
+      "RETURNED_TO_HR": "Returned to HR"
     },
     "fields": {
       "fullName": "Full Name",
@@ -2276,10 +2282,13 @@
     "pipeline": {
       "PENDING": "Application Received",
       "INTERVIEW_READY": "Ready for interview",
-      "ACCEPTED": "Interviewed",
+      "ACCEPTED": "Awaiting CEO approval",
       "HIRED": "Hired",
       "REJECTED": "Rejected",
-      "ceoRequired": "Requires CEO approval"
+      "ceoRequired": "Requires CEO approval",
+      "INTERVIEWED": "Interviewed",
+      "PENDING_CEO_APPROVAL": "Awaiting CEO approval",
+      "RETURNED_TO_HR": "Returned to HR"
     },
     "availability": {
       "IMMEDIATE": "Immediately",

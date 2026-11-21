@@ -219,3 +219,34 @@ export function useUnlinkedReferralNames(type: ReferralSourceType, enabled = tru
     enabled,
   });
 }
+
+/** Who a free name would link to a source. Not cached — the list changes under other users. */
+export function useLinkPreview(sourceId: string | null | undefined, name: string, enabled = true) {
+  return useQuery({
+    queryKey: ["referral-sources", "link-preview", sourceId, name],
+    queryFn: () => clinicReferralsApi.linkPreview(sourceId!, name),
+    enabled: enabled && !!sourceId && !!name.trim(),
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
+/**
+ * Links the chosen patients. Afterwards every referral list is refetched:
+ * the name leaves the unlinked list and the patients count for the source.
+ */
+export function useLinkUnlinked() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sourceId, name, patientIds }: { sourceId: string; name: string; patientIds: string[] }) =>
+      clinicReferralsApi.linkUnlinked(sourceId, name, patientIds),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === "string" && q.queryKey[0].startsWith("referral"),
+      });
+      qc.invalidateQueries({ queryKey: ["clinic-patients"] });
+    },
+    onError: (error: any) =>
+      toast.error(error?.response?.data?.error?.message || error?.response?.data?.message || "تعذّر ربط المرضى"),
+  });
+}

@@ -71,6 +71,17 @@ export interface DossierResponse {
 /** List params for /employees — pagination plus the server-side status filter. */
 export interface EmployeeListParams extends PaginationParams {
   employmentStatus?: Employee["employmentStatus"];
+  /** true = outside-the-company only, false = staff only, omitted = everyone. */
+  isExternal?: boolean;
+  externalTypeId?: string;
+}
+
+/** A kind of outside employee — a reference table, extendable from the UI. */
+export interface ExternalEmployeeType {
+  id: string;
+  nameAr: string;
+  nameEn?: string;
+  isActive?: boolean;
 }
 
 export interface MySubordinate {
@@ -84,6 +95,21 @@ export interface MySubordinate {
 }
 
 export const employeesApi = {
+  /** Sorted by Arabic name. includeInactive keeps a disabled type visible when editing. */
+  getExternalTypes: async (includeInactive = false): Promise<ExternalEmployeeType[]> => {
+    const response = await apiClient.get("/employees/external-types", {
+      params: includeInactive ? { includeInactive: true } : undefined,
+    });
+    const d = response.data?.data ?? response.data;
+    return Array.isArray(d) ? d : [];
+  },
+
+  /** A name that already exists returns that type — safe to press twice. */
+  createExternalType: async (dto: { nameAr: string; nameEn?: string }): Promise<ExternalEmployeeType> => {
+    const response = await apiClient.post("/employees/external-types", dto);
+    return response.data?.data ?? response.data;
+  },
+
   getAll: async (
     params?: EmployeeListParams
   ): Promise<ApiResponse<Employee[]>> => {

@@ -1,11 +1,17 @@
 import { apiClient } from "./client";
 import { JobApplicationStatus } from "@/types";
 
+/** HR moves only; HIRED and RETURNED_TO_HR are the CEO's (see lib/job-applications/flow). */
 export interface UpdateJobApplicationData {
-  status: Exclude<JobApplicationStatus, "HIRED">;
+  status: Exclude<JobApplicationStatus, "HIRED" | "RETURNED_TO_HR" | "ACCEPTED">;
   reviewNotes?: string;
+  /** Required with REJECTED — the applicant is emailed. */
   rejectionNote?: string;
   rating?: number;
+  /** With PENDING_CEO_APPROVAL: the terms the CEO sees in the notification. */
+  offeredJobTitle?: string;
+  offeredSalary?: string;
+  offeredStartDate?: string;
 }
 
 export const jobApplicationsApi = {
@@ -39,6 +45,12 @@ export const jobApplicationsApi = {
     const response = await apiClient.patch(
       `/job-applications/${id}/ceo-approve`,
     );
+    return response.data.data;
+  },
+
+  // المدير التنفيذي غير موافق: يرجع الطلب للموارد البشرية (RETURNED_TO_HR) — ليس رفضاً للمتقدّم ولا يُرسل له بريد
+  ceoReturn: async (id: string, ceoNote: string) => {
+    const response = await apiClient.patch(`/job-applications/${id}/ceo-reject`, { ceoNote });
     return response.data.data;
   },
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
-  ArrowRight, Building2, ChevronLeft, FolderKanban, LayoutGrid, List, MapPin, Pencil, Phone, Plus,
+  ArrowRight, Building2, ChevronLeft, FolderKanban, LayoutGrid, Link2, List, MapPin, Pencil, Phone, Plus,
   Search, Star, Stethoscope, Trash2, Users, type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { ActionGuard, PageGuard } from "@/components/permissions";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { ReferralSourceFormDialog } from "@/components/clinic/referral-source-form-dialog";
 import { UnlinkedDoctorsDialog } from "@/components/clinic/unlinked-doctors-dialog";
+import { LinkReferralPatientsDialog } from "@/components/clinic/link-referral-patients-dialog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useDeleteReferralSource, useReferralSources } from "@/lib/hooks/use-clinic-referrals";
 import {
@@ -73,6 +74,11 @@ export default function ReferralSourcesPage() {
   const [unlinkedOpen, setUnlinkedOpen] = useState(false);
   // A freehand doctor being filed as a contact: prefills the add form's name.
   const [prefillName, setPrefillName] = useState<string | undefined>(undefined);
+  // Linking free-name patients to a contact: right after adding it, from the
+  // unlinked list (to an existing contact), or from a contact's own row.
+  const [linkTarget, setLinkTarget] = useState<{
+    name: string; source?: { id: string; name: string }; type?: ReferralSourceType;
+  } | null>(null);
   const { hasPermission, isAdmin } = usePermissions();
   const canManage = isAdmin() || hasPermission(PERMISSIONS.CLINIC_REFERRALS.MANAGE);
 
@@ -131,6 +137,15 @@ export default function ReferralSourcesPage() {
     // The card / row itself opens the source, so these must not bubble up to it.
     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
       <ActionGuard permission={PERMISSIONS.CLINIC_REFERRALS.MANAGE}>
+        {(s.type === "DOCTOR" || s.type === "HOSPITAL") && (
+          <Button
+            variant="ghost" size="icon" className="h-7 w-7" aria-label="ربط مرضى بالاسم الحر"
+            title="ربط المرضى المسجّلين بهذا الاسم كتابةً حرة"
+            onClick={() => setLinkTarget({ name: s.name, source: { id: s.id, name: s.name }, type: s.type })}
+          >
+            <Link2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="تعديل" onClick={() => openEdit(s)}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
@@ -399,6 +414,12 @@ export default function ReferralSourcesPage() {
           excludeTypes={["ASSOCIATION"]}
           initialName={prefillName}
           lockedType={prefillName ? "DOCTOR" : undefined}
+          // A doctor filed from a free name: offer to link that name's patients right away.
+          onSaved={(saved) => {
+            if (prefillName && !editing) {
+              setLinkTarget({ name: prefillName, source: { id: saved.id, name: saved.name }, type: "DOCTOR" });
+            }
+          }}
         />
 
         <UnlinkedDoctorsDialog
@@ -411,6 +432,18 @@ export default function ReferralSourcesPage() {
             setPrefillName(name);
             setFormOpen(true);
           }}
+          onLinkExisting={(name) => {
+            setUnlinkedOpen(false);
+            setLinkTarget({ name, type: "DOCTOR" });
+          }}
+        />
+
+        <LinkReferralPatientsDialog
+          open={!!linkTarget}
+          onOpenChange={(o) => { if (!o) setLinkTarget(null); }}
+          name={linkTarget?.name ?? ""}
+          source={linkTarget?.source}
+          type={linkTarget?.type}
         />
 
         <ConfirmDialog

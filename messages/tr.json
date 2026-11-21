@@ -2080,14 +2080,20 @@
       "interview": "Mülakata hazır",
       "accepted": "Mülakat yapıldı",
       "rejected": "Reddedildi",
-      "hired": "İşe Alındı"
+      "hired": "İşe Alındı",
+      "interviewed": "Mülakat yapıldı",
+      "pendingCeoApproval": "CEO onayı bekleniyor",
+      "returnedToHr": "İK'ya iade edildi"
     },
     "statuses": {
       "PENDING": "Beklemede",
       "INTERVIEW_READY": "Mülakata hazır",
-      "ACCEPTED": "Mülakat yapıldı",
+      "ACCEPTED": "CEO onayı bekleniyor",
       "REJECTED": "Reddedildi",
-      "HIRED": "İşe Alındı"
+      "HIRED": "İşe Alındı",
+      "INTERVIEWED": "Mülakat yapıldı",
+      "PENDING_CEO_APPROVAL": "CEO onayı bekleniyor",
+      "RETURNED_TO_HR": "İK'ya iade edildi"
     },
     "fields": {
       "fullName": "Ad Soyad",
@@ -2129,10 +2135,13 @@
     "pipeline": {
       "PENDING": "Başvuru Alındı",
       "INTERVIEW_READY": "Mülakata hazır",
-      "ACCEPTED": "Mülakat yapıldı",
+      "ACCEPTED": "CEO onayı bekleniyor",
       "HIRED": "İşe Alındı",
       "REJECTED": "Reddedildi",
-      "ceoRequired": "CEO onayı gerektirir"
+      "ceoRequired": "CEO onayı gerektirir",
+      "INTERVIEWED": "Mülakat yapıldı",
+      "PENDING_CEO_APPROVAL": "CEO onayı bekleniyor",
+      "RETURNED_TO_HR": "İK'ya iade edildi"
     },
     "availability": {
       "IMMEDIATE": "Hemen",

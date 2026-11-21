@@ -936,6 +936,11 @@ export default function EmployeeDetailsPage() {
               <span className={`text-xs font-medium px-3 py-1 rounded-full border ${STATUS_COLORS[employee.employmentStatus] || ""}`}>
                 {statusLabel}
               </span>
+              {employee.isExternal && (
+                <span className="text-xs font-medium px-3 py-1 rounded-full border border-violet-200 bg-violet-50 text-violet-700">
+                  من خارج الشركة{employee.externalType?.nameAr ? ` — ${employee.externalType.nameAr}` : ""}
+                </span>
+              )}
             </div>
           </div>
         </CardContent>

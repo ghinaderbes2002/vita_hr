@@ -1,5 +1,6 @@
 "use client";
 
+import { AWAITING_CEO, HR_TRANSITIONS, STATUS_BADGE } from "@/lib/job-applications/flow";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
@@ -48,6 +49,7 @@ import {
   useJobApplication,
   useUpdateJobApplication,
   useApproveJobApplicationCEO,
+  useReturnJobApplicationToHR,
 } from "@/lib/hooks/use-job-applications";
 import { CV_BASE_URL } from "@/lib/api/job-applications";
 import { JobApplicationStatus } from "@/types";
@@ -72,16 +74,9 @@ import {
 } from "@/lib/api/interview-evaluations";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 
-const STATUS_CONFIG: Record<
-  JobApplicationStatus,
-  { bg: string; label: string }
-> = {
-  PENDING: { bg: "bg-amber-100 text-amber-800", label: "" },
-  INTERVIEW_READY: { bg: "bg-blue-100 text-blue-800", label: "" },
-  ACCEPTED: { bg: "bg-green-100 text-green-800", label: "" },
-  REJECTED: { bg: "bg-red-100 text-red-800", label: "" },
-  HIRED: { bg: "bg-purple-100 text-purple-800", label: "" },
-};
+const STATUS_CONFIG: Record<JobApplicationStatus, { bg: string }> = Object.fromEntries(
+  Object.entries(STATUS_BADGE).map(([k, bg]) => [k, { bg }]),
+) as Record<JobApplicationStatus, { bg: string }>;
 
 
 export default function JobApplicationDetailPage() {
@@ -94,6 +89,7 @@ export default function JobApplicationDetailPage() {
   const { data: application, isLoading } = useJobApplication(id);
   const updateApplication = useUpdateJobApplication();
   const approveCEO = useApproveJobApplicationCEO();
+  const returnToHR = useReturnJobApplicationToHR();
 
   // Interview evaluation
   const { data: existingEval } = useInterviewEvaluationByApplication(id);
@@ -219,12 +215,26 @@ export default function JobApplicationDetailPage() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [rejectionNote, setRejectionNote] = useState("");
   const [actionStatus, setActionStatus] = useState<JobApplicationStatus | null>(null);
+  // Terms sent with the CEO referral — shown in the CEO's notification.
+  const [offer, setOffer] = useState({ jobTitle: "", salary: "", startDate: "" });
+  // CEO "not approved": the reason goes back to HR (not a rejection of the applicant).
+  const [returning, setReturning] = useState(false);
+  const [ceoNote, setCeoNote] = useState("");
   const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
 
   const handleAction = (status: JobApplicationStatus) => {
     setActionStatus(status);
     setReviewNotes("");
     setRejectionNote("");
+    if (status === "PENDING_CEO_APPROVAL") {
+      // Re-sending after a return starts from the terms the CEO already saw.
+      const a = application as any;
+      setOffer({
+        jobTitle: a?.offeredJobTitle ?? "",
+        salary: a?.offeredSalary ?? "",
+        startDate: a?.offeredStartDate ? String(a.offeredStartDate).slice(0, 10) : "",
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -235,10 +245,17 @@ export default function JobApplicationDetailPage() {
     await updateApplication.mutateAsync({
       id,
       data: {
-        status: actionStatus as Exclude<JobApplicationStatus, "HIRED">,
+        status: actionStatus as "INTERVIEW_READY" | "INTERVIEWED" | "PENDING_CEO_APPROVAL" | "REJECTED",
         reviewNotes: reviewNotes || undefined,
         rejectionNote: actionStatus === "REJECTED" ? rejectionNote : undefined,
-        rating: actionStatus === "ACCEPTED" ? computedRating : undefined,
+        rating: actionStatus === "INTERVIEWED" ? computedRating : undefined,
+        ...(actionStatus === "PENDING_CEO_APPROVAL"
+          ? {
+              offeredJobTitle: offer.jobTitle.trim() || undefined,
+              offeredSalary: offer.salary.trim() || undefined,
+              offeredStartDate: offer.startDate || undefined,
+            }
+          : {}),
       },
     });
     setActionStatus(null);
@@ -246,6 +263,13 @@ export default function JobApplicationDetailPage() {
 
   const handleCEOApprove = async () => {
     await approveCEO.mutateAsync(id);
+  };
+
+  const handleReturnToHR = async () => {
+    if (!ceoNote.trim()) return;
+    await returnToHR.mutateAsync({ id, ceoNote: ceoNote.trim() });
+    setReturning(false);
+    setCeoNote("");
   };
 
   if (isLoading) {
@@ -287,7 +311,7 @@ export default function JobApplicationDetailPage() {
             <span>{evalData.totalScore.toFixed(1)}%</span>
           </div>
         )}
-        {app.status === "ACCEPTED" && (
+        {app.status === "HIRED" && (
           <Button size="sm" onClick={() => setAddEmployeeOpen(true)}>
             {t("jobApplications.addAsEmployee")}
           </Button>
@@ -462,6 +486,47 @@ export default function JobApplicationDetailPage() {
         </Card>
       )}
 
+      {/* CEO's reason for sending it back — what HR has to address */}
+      {app.status === "RETURNED_TO_HR" && app.ceoNote && (
+        <Card className="border-orange-300 bg-orange-50/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base text-orange-800">
+              <AlertTriangle className="h-4 w-4" />
+              أعاده المدير التنفيذي للموارد البشرية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-orange-900 whitespace-pre-line">{app.ceoNote}</p>
+            <p className="mt-2 text-xs text-orange-700">
+              المتقدّم لم يُرفض ولم يُبلَّغ بشيء. عدّلي الشروط وأعيدي الإرسال، أو ارفضي الطلب نهائياً.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Offered terms (sent with the CEO referral) */}
+      {(app.offeredJobTitle || app.offeredSalary || app.offeredStartDate) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">شروط العرض</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-muted-foreground">المسمّى الوظيفي</p>
+              <p className="font-medium">{app.offeredJobTitle || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">الراتب</p>
+              <p className="font-medium">{app.offeredSalary || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">تاريخ المباشرة</p>
+              <p className="font-medium">{app.offeredStartDate ? String(app.offeredStartDate).slice(0, 10) : "—"}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Actions */}
       <Card>
         <CardHeader>
@@ -470,116 +535,182 @@ export default function JobApplicationDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Action buttons */}
-          {!actionStatus && (
-            <div className="flex flex-wrap gap-2">
-              {app.status !== "INTERVIEW_READY" && (
-                <Button
-                  variant="outline"
-                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                  onClick={() => handleAction("INTERVIEW_READY")}
-                >
-                  {t("jobApplications.actions.interviewReady")}
-                </Button>
-              )}
-              {app.status !== "ACCEPTED" && (
-                <Button
-                  variant="outline"
-                  className="border-green-300 text-green-700 hover:bg-green-50"
-                  onClick={() => handleAction("ACCEPTED")}
-                >
-                  {t("jobApplications.actions.accept")}
-                </Button>
-              )}
-              {app.status !== "REJECTED" && (
-                <Button
-                  variant="outline"
-                  className="border-red-300 text-red-700 hover:bg-red-50"
-                  onClick={() => handleAction("REJECTED")}
-                >
-                  {t("jobApplications.actions.reject")}
-                </Button>
-              )}
-              {/* زر موافقة المدير التنفيذي */}
-              {app.status === "ACCEPTED" &&
-                hasPermission("job-applications:ceo-approve") && (
+          {(() => {
+            const status = app.status as JobApplicationStatus;
+            const next = HR_TRANSITIONS[status] ?? [];
+            const awaitingCeo = AWAITING_CEO.includes(status);
+            const isCeo = hasPermission("job-applications:ceo-approve");
+
+            if (status === "HIRED" || status === "REJECTED") {
+              return <p className="text-sm text-muted-foreground">الطلب في حالة نهائية — لا إجراءات متاحة.</p>;
+            }
+
+            // Waiting on the CEO: only the CEO acts; HR sees where it stands.
+            if (awaitingCeo) {
+              if (!isCeo) {
+                return (
+                  <p className="flex items-center gap-2 text-sm text-indigo-700">
+                    <Clock className="h-4 w-4" /> بانتظار قرار المدير التنفيذي.
+                  </p>
+                );
+              }
+              if (returning) {
+                return (
+                  <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                    <p className="font-medium">إعادة الطلب للموارد البشرية</p>
+                    <p className="text-xs text-muted-foreground">
+                      هذا ليس رفضاً للمتقدّم ولن يُرسل له أي بريد — يعود الطلب للموارد البشرية مع السبب لتعدّل الشروط أو تقرّر.
+                    </p>
+                    <div className="space-y-2">
+                      <Label>السبب *</Label>
+                      <Textarea
+                        rows={3}
+                        value={ceoNote}
+                        onChange={(e) => setCeoNote(e.target.value)}
+                        placeholder="مثلاً: الراتب المعروض أعلى من المعتمد للمسمّى"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleReturnToHR} disabled={!ceoNote.trim() || returnToHR.isPending}>
+                        {returnToHR.isPending ? t("jobApplications.processing") : "إعادة للموارد البشرية"}
+                      </Button>
+                      <Button variant="outline" onClick={() => { setReturning(false); setCeoNote(""); }}>
+                        {t("common.cancel")}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div className="flex flex-wrap gap-2">
                   <Button
-                    className="border-purple-300 text-purple-700 hover:bg-purple-50"
                     variant="outline"
+                    className="border-green-300 text-green-700 hover:bg-green-50"
                     onClick={handleCEOApprove}
                     disabled={approveCEO.isPending}
                   >
-                    {approveCEO.isPending
-                      ? t("jobApplications.processing")
-                      : t("jobApplications.actions.ceoApprove")}
+                    {approveCEO.isPending ? t("jobApplications.processing") : "موافقة على التوظيف"}
                   </Button>
-                )}
-            </div>
-          )}
+                  <Button
+                    variant="outline"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                    onClick={() => setReturning(true)}
+                  >
+                    إعادة للموارد البشرية
+                  </Button>
+                </div>
+              );
+            }
 
-          {/* Action form */}
-          {actionStatus && (
-            <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
-              <p className="font-medium">
-                {t(`jobApplications.statuses.${actionStatus}`)}
-              </p>
+            // HR steps: only the moves the API accepts from here.
+            if (!actionStatus) {
+              const label: Partial<Record<JobApplicationStatus, string>> = {
+                INTERVIEW_READY: t("jobApplications.actions.interviewReady"),
+                INTERVIEWED: "تمت المقابلة",
+                PENDING_CEO_APPROVAL: status === "RETURNED_TO_HR" ? "تعديل الشروط وإعادة الإرسال" : "إحالة للمدير التنفيذي",
+                REJECTED: t("jobApplications.actions.reject"),
+              };
+              const tone: Partial<Record<JobApplicationStatus, string>> = {
+                INTERVIEW_READY: "border-blue-300 text-blue-700 hover:bg-blue-50",
+                INTERVIEWED: "border-cyan-300 text-cyan-700 hover:bg-cyan-50",
+                PENDING_CEO_APPROVAL: "border-indigo-300 text-indigo-700 hover:bg-indigo-50",
+                REJECTED: "border-red-300 text-red-700 hover:bg-red-50",
+              };
+              return (
+                <div className="flex flex-wrap gap-2">
+                  {next.map((to) => (
+                    <Button key={to} variant="outline" className={tone[to]} onClick={() => handleAction(to)}>
+                      {label[to]}
+                    </Button>
+                  ))}
+                </div>
+              );
+            }
 
-              {actionStatus === "REJECTED" && (
-                <div className="space-y-3">
-                  {/* Email warning */}
-                  <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                    <div className="text-xs text-amber-800 space-y-0.5">
-                      <p className="font-semibold">{t("jobApplications.rejection.emailWarningTitle")}</p>
-                      <p>
-                        {t("jobApplications.rejection.emailWarningBody")
-                          .replace("{name}", app.fullName)
-                          .replace("{email}", app.email)}
-                      </p>
+            return (
+              <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
+                <p className="font-medium">
+                  {actionStatus === "PENDING_CEO_APPROVAL"
+                    ? (status === "RETURNED_TO_HR" ? "تعديل الشروط وإعادة الإرسال للمدير التنفيذي" : "إحالة للمدير التنفيذي")
+                    : t(`jobApplications.statuses.${actionStatus}`)}
+                </p>
+
+                {actionStatus === "PENDING_CEO_APPROVAL" && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground">
+                      تظهر هذه الشروط في إشعار المدير التنفيذي ليقرّر دون فتح الطلب.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="space-y-1.5">
+                        <Label>المسمّى الوظيفي المعروض</Label>
+                        <Input value={offer.jobTitle} onChange={(e) => setOffer((o) => ({ ...o, jobTitle: e.target.value }))} placeholder="أخصائي علاج فيزيائي" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>الراتب المعروض</Label>
+                        <Input value={offer.salary} onChange={(e) => setOffer((o) => ({ ...o, salary: e.target.value }))} placeholder="500 USD أو حسب الخبرة" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>تاريخ المباشرة</Label>
+                        <Input type="date" value={offer.startDate} onChange={(e) => setOffer((o) => ({ ...o, startDate: e.target.value }))} />
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t("jobApplications.fields.rejectionNote")} *</Label>
-                    <Textarea
-                      rows={3}
-                      value={rejectionNote}
-                      onChange={(e) => setRejectionNote(e.target.value)}
-                      placeholder={t(
-                        "jobApplications.fields.rejectionNotePlaceholder",
-                      )}
-                    />
+                )}
+
+                {actionStatus === "REJECTED" && (
+                  <div className="space-y-3">
+                    {/* Email warning */}
+                    <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="text-xs text-amber-800 space-y-0.5">
+                        <p className="font-semibold">{t("jobApplications.rejection.emailWarningTitle")}</p>
+                        <p>
+                          {t("jobApplications.rejection.emailWarningBody")
+                            .replace("{name}", app.fullName)
+                            .replace("{email}", app.email)}
+                        </p>
+                        <p className="font-semibold">لا يمكن التراجع عن الرفض بعد الحفظ.</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("jobApplications.fields.rejectionNote")} *</Label>
+                      <Textarea
+                        rows={3}
+                        value={rejectionNote}
+                        onChange={(e) => setRejectionNote(e.target.value)}
+                        placeholder={t("jobApplications.fields.rejectionNotePlaceholder")}
+                      />
+                    </div>
                   </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>
+                    {t("jobApplications.fields.reviewNotes")} ({t("common.optional")})
+                  </Label>
+                  <Textarea rows={2} value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)} />
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <Label>
-                  {t("jobApplications.fields.reviewNotes")} (
-                  {t("common.optional")})
-                </Label>
-                <Textarea
-                  rows={2}
-                  value={reviewNotes}
-                  onChange={(e) => setReviewNotes(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSubmit}
+                    variant={actionStatus === "REJECTED" ? "destructive" : "default"}
+                    disabled={
+                      updateApplication.isPending ||
+                      (actionStatus === "REJECTED" && !rejectionNote.trim())
+                    }
+                  >
+                    {actionStatus === "PENDING_CEO_APPROVAL" ? "إرسال للمدير التنفيذي"
+                      : actionStatus === "REJECTED" ? "رفض وإرسال البريد"
+                        : t("common.save")}
+                  </Button>
+                  <Button variant="outline" onClick={() => setActionStatus(null)}>
+                    {t("common.cancel")}
+                  </Button>
+                </div>
               </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={
-                    updateApplication.isPending ||
-                    (actionStatus === "REJECTED" && !rejectionNote.trim())
-                  }
-                >
-                  {t("common.save")}
-                </Button>
-                <Button variant="outline" onClick={() => setActionStatus(null)}>
-                  {t("common.cancel")}
-                </Button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
 

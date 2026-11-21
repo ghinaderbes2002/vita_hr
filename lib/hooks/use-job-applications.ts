@@ -5,6 +5,7 @@ import {
   UpdateJobApplicationData,
 } from "@/lib/api/job-applications";
 import { toast } from "sonner";
+import { applicationErrorMessage } from "@/lib/job-applications/flow";
 
 export function useJobApplications(params?: {
   status?: string;
@@ -49,9 +50,7 @@ export function useUpdateJobApplication() {
       queryClient.invalidateQueries({ queryKey: ["job-application", id] });
       toast.success("تم تحديث الطلب بنجاح");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error?.message || "حدث خطأ");
-    },
+    onError: (error: any) => toast.error(applicationErrorMessage(error)),
   });
 }
 
@@ -125,18 +124,24 @@ export function useApproveJobApplicationCEO() {
       queryClient.invalidateQueries({ queryKey: ["job-applications"] });
       queryClient.invalidateQueries({ queryKey: ["job-applications-stats"] });
       queryClient.invalidateQueries({ queryKey: ["job-application", id] });
-      toast.success("تم الموافقة على الطلب بنجاح");
+      toast.success("تمت الموافقة — أُبلغت الموارد البشرية بالتوظيف");
     },
-    onError: (error: any) => {
-      if (error.response?.status === 403) {
-        toast.error("ليس لديك صلاحية تنفيذ هذه العملية");
-      } else {
-        toast.error(
-          error.response?.data?.message ||
-            error.response?.data?.error?.message ||
-            "حدث خطأ",
-        );
-      }
+    onError: (error: any) => toast.error(applicationErrorMessage(error)),
+  });
+}
+
+// المدير التنفيذي غير موافق: يعيد الطلب للموارد البشرية مع السبب
+export function useReturnJobApplicationToHR() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ceoNote }: { id: string; ceoNote: string }) =>
+      jobApplicationsApi.ceoReturn(id, ceoNote),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["job-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["job-applications-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["job-application", id] });
+      toast.success("أُعيد الطلب للموارد البشرية مع السبب");
     },
+    onError: (error: any) => toast.error(applicationErrorMessage(error)),
   });
 }

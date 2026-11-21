@@ -201,6 +201,10 @@ export interface Employee {
   id: string;
   userId?: string;
   employeeNumber: string;
+  /** From outside the company (consultant, lawyer…). false for staff. */
+  isExternal?: boolean;
+  externalTypeId?: string | null;
+  externalType?: { id: string; nameAr: string; nameEn?: string } | null;
   firstNameAr: string;
   lastNameAr: string;
   firstNameEn: string;
@@ -407,7 +411,16 @@ export interface Custody {
   transfers?: CustodyTransfer[];
 }
 
-export type JobApplicationStatus = "PENDING" | "INTERVIEW_READY" | "ACCEPTED" | "REJECTED" | "HIRED";
+export type JobApplicationStatus =
+  | "PENDING"
+  | "INTERVIEW_READY"
+  | "INTERVIEWED"
+  | "PENDING_CEO_APPROVAL"
+  | "RETURNED_TO_HR"
+  | "HIRED"
+  | "REJECTED"
+  /** Legacy — old records only; treated as awaiting the CEO. */
+  | "ACCEPTED";
 
 export interface JobApplication {
   id: string;
@@ -433,6 +446,12 @@ export interface JobApplication {
   rejectionNote: string | null;
   rating: number | null;
   isTalent?: boolean;
+  /** Terms sent with PENDING_CEO_APPROVAL — shown to the CEO. */
+  offeredJobTitle?: string | null;
+  offeredSalary?: string | null;
+  offeredStartDate?: string | null;
+  /** Why the CEO sent it back (RETURNED_TO_HR). */
+  ceoNote?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -444,6 +463,9 @@ export interface JobApplicationStats {
   accepted: number;
   rejected: number;
   hired: number;
+  interviewed?: number;
+  pendingCeoApproval?: number;
+  returnedToHr?: number;
 }
 
 export interface PaginationParams {

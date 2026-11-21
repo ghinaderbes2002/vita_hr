@@ -225,6 +225,35 @@ export interface UnlinkedReferralName {
   lastReferredAt?: string | null;
 }
 
+/** A patient who would be linked to a source — what the user checks before confirming. */
+export interface LinkPreviewPatient {
+  id: string;
+  patientName: string;
+  patientNumber?: string;
+  registeredAt?: string;
+  /** The free name exactly as typed for this patient — shows spelling variants. */
+  referralDetails: string;
+}
+
+export interface LinkPreview {
+  sourceId: string;
+  sourceName: string;
+  sourceType: ReferralSourceType;
+  name: string;
+  count: number;
+  patients: LinkPreviewPatient[];
+}
+
+export interface LinkUnlinkedResult {
+  sourceId: string;
+  sourceName: string;
+  name: string;
+  requested: number;
+  linked: number;
+  /** Changed since the preview (linked by someone else, renamed…) — left untouched. */
+  skipped: number;
+}
+
 const BASE = "/referrals/sources";
 
 export const clinicReferralsApi = {
@@ -338,6 +367,18 @@ export const clinicReferralsApi = {
 
   createSpecialty: async (name: string): Promise<ReferralSpecialty> => {
     const { data } = await apiClient.post(`${BASE}/specialties`, { name });
+    return data?.data ?? data;
+  },
+
+  /** Read-only: the patients a free name would link to this source. */
+  linkPreview: async (sourceId: string, name: string): Promise<LinkPreview> => {
+    const { data } = await apiClient.get(`${BASE}/${sourceId}/link-preview`, { params: { name } });
+    return data?.data ?? data;
+  },
+
+  /** Links only the chosen patients; each is re-checked server-side (see `skipped`). */
+  linkUnlinked: async (sourceId: string, name: string, patientIds: string[]): Promise<LinkUnlinkedResult> => {
+    const { data } = await apiClient.post(`${BASE}/${sourceId}/link-unlinked`, { name, patientIds });
     return data?.data ?? data;
   },
 

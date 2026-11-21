@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalEmployeeFields } from "./external-employee-fields";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
@@ -53,6 +54,8 @@ type FormData = {
   probationPeriod?: "ONE_MONTH" | "TWO_MONTHS" | "THREE_MONTHS" | "PERMANENT" | "UNSPECIFIED";
   interviewEvaluation?: string;
   company?: "VITAXIR" | "VITASYR";
+  isExternal?: boolean;
+  externalTypeId?: string;
   employmentStatus?: "ACTIVE" | "INACTIVE" | "ON_LEAVE" | "SUSPENDED" | "TERMINATED";
   workType?: "FULL_TIME" | "PART_TIME" | "REMOTE" | "UNSPECIFIED";
   contractEndDate?: string;
@@ -266,6 +269,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     certificateAttachment2: z.string().optional(),
     notes: z.string().optional(),
     company: z.enum(["VITAXIR", "VITASYR"]).optional(),
+    isExternal: z.boolean().optional(),
+    externalTypeId: z.string().optional(),
   });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attUploading, setAttUploading] = useState(false);
@@ -337,6 +342,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       certificateAttachment2: "",
       notes: "",
       company: undefined,
+      isExternal: false,
+      externalTypeId: "",
     },
   });
 
@@ -393,6 +400,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         certificateAttachment2: (employee as any).certificateAttachment2 || "",
         notes: (employee as any).notes || "",
         company: (employee as any).company || undefined,
+        isExternal: employee.isExternal ?? false,
+        externalTypeId: employee.externalTypeId ?? "",
       });
       setAttachments((employee as any).attachments || []);
       setTrainingCertificates((employee as any).trainingCertificates || []);
@@ -426,6 +435,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         familyMembersCount: undefined,
         chronicDiseases: "",
         currentAddress: "",
+        isExternal: false,
+        externalTypeId: "",
         isSmoker: false,
         hasDrivingLicense: false,
         maritalStatus: undefined,
@@ -452,6 +463,15 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
   }, [open, employee?.id, defaultInterviewEvaluation, form]);
 
   const onSubmit = async (data: FormData) => {
+    // Outside employee: the type is required (the API would answer EXTERNAL_TYPE_REQUIRED).
+    if (data.isExternal && !data.externalTypeId) {
+      form.setError("externalTypeId", { message: "يجب اختيار نوع الموظف الخارجي" });
+      return;
+    }
+    // Unticked: only isExternal=false is sent — the API clears the type itself.
+    const externalFields = data.isExternal
+      ? { isExternal: true, externalTypeId: data.externalTypeId }
+      : { isExternal: false };
     try {
       const qualificationFields: Record<string, any> = {};
       if (data.yearsOfExperience !== undefined) qualificationFields.yearsOfExperience = data.yearsOfExperience;
@@ -502,6 +522,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           religion: data.religion || undefined,
           notes: data.notes || null,
           company: data.company || undefined,
+          ...externalFields,
           ...qualificationFields,
           ...(attachments.length > 0 && { attachments }),
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
@@ -509,7 +530,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
         };
         await updateEmployee.mutateAsync({ id: employee.id, data: updateData });
       } else {
-        const { employmentStatus, ...rest } = data;
+        const { employmentStatus, isExternal: _isExternal, externalTypeId: _externalTypeId, ...rest } = data;
         const toISO = (d?: string) => d ? new Date(d + "T00:00:00.000Z").toISOString() : undefined;
         const createData: Record<string, any> = {
           ...rest,
@@ -541,6 +562,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
           certificateAttachment2: rest.certificateAttachment2 || undefined,
           notes: rest.notes || undefined,
           company: rest.company || undefined,
+          ...externalFields,
           ...(attachments.length > 0 && { attachments }),
           ...(trainingCertificates.length > 0 && { trainingCertificates }),
           ...(canSeeSalary && allowances.length > 0 && { allowances }),
@@ -1122,6 +1144,21 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+
+                <ExternalEmployeeFields
+                  isExternal={!!form.watch("isExternal")}
+                  externalTypeId={form.watch("externalTypeId") ?? ""}
+                  onIsExternalChange={(v) => {
+                    form.setValue("isExternal", v, { shouldDirty: true });
+                    if (!v) form.clearErrors("externalTypeId");
+                  }}
+                  onTypeChange={(id) => {
+                    form.setValue("externalTypeId", id, { shouldDirty: true });
+                    form.clearErrors("externalTypeId");
+                  }}
+                  error={form.formState.errors.externalTypeId?.message}
+                  includeInactive={isEdit}
                 />
 
                 {/* Allowances */}

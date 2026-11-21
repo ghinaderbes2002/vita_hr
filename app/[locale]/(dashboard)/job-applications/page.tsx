@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
-  Eye, Users, Clock, CheckCircle, XCircle, Briefcase, UserCheck,
+  Eye, Users, Clock, CheckCircle, XCircle, Briefcase, UserCheck, Hourglass, Undo2,
   LayoutList, Kanban, Star, GripVertical, ExternalLink, Search, X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -25,12 +25,13 @@ import {
   useJobApplications,
   useJobApplicationStats,
   useUpdateJobApplication,
-  useApproveJobApplicationCEO,
   useSetJobApplicationTalent,
   useMigrateLocalTalents,
 } from "@/lib/hooks/use-job-applications";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { JobApplication, JobApplicationStatus } from "@/types";
+import { AWAITING_CEO, STATUS_BADGE, canHrMove } from "@/lib/job-applications/flow";
+import { toast } from "sonner";
 import { useLocale } from "next-intl";
 
 // ─── Pipeline columns definition ────────────────────────────────────────────
@@ -44,23 +45,23 @@ interface PipelineColumn {
   locked?: boolean; // HIRED requires ceoApprove, not a normal update
 }
 
+// Columns follow the hiring flow. "Locked" columns are CEO decisions: HR can't
+// drop a card there (HIRED is approved by the CEO, a return comes from the CEO).
 const PIPELINE_COLUMNS: PipelineColumn[] = [
-  { id: "PENDING",         color: "#F59E0B", headerBg: "bg-amber-50 border-amber-200",   cardBorder: "border-l-amber-400",   badge: "bg-amber-100 text-amber-800" },
-  { id: "INTERVIEW_READY", color: "#3B82F6", headerBg: "bg-blue-50 border-blue-200",     cardBorder: "border-l-blue-400",    badge: "bg-blue-100 text-blue-800" },
-  { id: "ACCEPTED",        color: "#10B981", headerBg: "bg-green-50 border-green-200",   cardBorder: "border-l-green-400",   badge: "bg-green-100 text-green-800" },
-  { id: "HIRED",           color: "#8B5CF6", headerBg: "bg-purple-50 border-purple-200", cardBorder: "border-l-purple-400",  badge: "bg-purple-100 text-purple-800", locked: true },
-  { id: "REJECTED",        color: "#EF4444", headerBg: "bg-red-50 border-red-200",       cardBorder: "border-l-red-400",     badge: "bg-red-100 text-red-800" },
+  { id: "PENDING",              color: "#F59E0B", headerBg: "bg-amber-50 border-amber-200",   cardBorder: "border-l-amber-400",   badge: "bg-amber-100 text-amber-800" },
+  { id: "INTERVIEW_READY",      color: "#3B82F6", headerBg: "bg-blue-50 border-blue-200",     cardBorder: "border-l-blue-400",    badge: "bg-blue-100 text-blue-800" },
+  { id: "INTERVIEWED",          color: "#06B6D4", headerBg: "bg-cyan-50 border-cyan-200",     cardBorder: "border-l-cyan-400",    badge: "bg-cyan-100 text-cyan-800" },
+  { id: "PENDING_CEO_APPROVAL", color: "#6366F1", headerBg: "bg-indigo-50 border-indigo-200", cardBorder: "border-l-indigo-400",  badge: "bg-indigo-100 text-indigo-800" },
+  { id: "RETURNED_TO_HR",       color: "#F97316", headerBg: "bg-orange-50 border-orange-200", cardBorder: "border-l-orange-400",  badge: "bg-orange-100 text-orange-800", locked: true },
+  { id: "HIRED",                color: "#8B5CF6", headerBg: "bg-purple-50 border-purple-200", cardBorder: "border-l-purple-400",  badge: "bg-purple-100 text-purple-800", locked: true },
+  { id: "REJECTED",             color: "#EF4444", headerBg: "bg-red-50 border-red-200",       cardBorder: "border-l-red-400",     badge: "bg-red-100 text-red-800" },
 ];
 
-const STATUS_BG: Record<JobApplicationStatus, string> = {
-  PENDING:         "bg-amber-100 text-amber-800",
-  INTERVIEW_READY: "bg-blue-100 text-blue-800",
-  ACCEPTED:        "bg-green-100 text-green-800",
-  REJECTED:        "bg-red-100 text-red-800",
-  HIRED:           "bg-purple-100 text-purple-800",
-};
+const STATUS_BG: Record<JobApplicationStatus, string> = STATUS_BADGE;
 
-const STATUSES: JobApplicationStatus[] = ["PENDING", "INTERVIEW_READY", "ACCEPTED", "REJECTED", "HIRED"];
+const STATUSES: JobApplicationStatus[] = [
+  "PENDING", "INTERVIEW_READY", "INTERVIEWED", "PENDING_CEO_APPROVAL", "RETURNED_TO_HR", "HIRED", "REJECTED",
+];
 
 // ─── Candidate card (kanban) ─────────────────────────────────────────────────
 
@@ -153,7 +154,8 @@ function PipelineBoard({
   const grouped = Object.fromEntries(
     PIPELINE_COLUMNS.map((col) => [
       col.id,
-      applications.filter((a) => a.status === col.id),
+      applications.filter((a) =>
+        a.status === col.id || (col.id === "PENDING_CEO_APPROVAL" && a.status === "ACCEPTED")),
     ])
   ) as Record<JobApplicationStatus, JobApplication[]>;
 
@@ -252,7 +254,8 @@ export default function JobApplicationsPage() {
     view === "pipeline"
       ? { limit: 500 }
       : {
-          status: statusFilter !== "ALL" ? statusFilter : undefined,
+          // "Awaiting CEO" also covers legacy ACCEPTED, so that one is filtered locally.
+          status: statusFilter !== "ALL" && statusFilter !== "PENDING_CEO_APPROVAL" ? statusFilter : undefined,
           isTalent: showFavorites ? true : undefined,
           page: 1,
           limit: 500,
@@ -261,7 +264,6 @@ export default function JobApplicationsPage() {
   const { data: talentsData } = useJobApplications({ isTalent: true, page: 1, limit: 1 });
   const { data: stats } = useJobApplicationStats();
   const updateApplication = useUpdateJobApplication();
-  const ceoApprove = useApproveJobApplicationCEO();
   const setTalent = useSetJobApplicationTalent();
 
   const allApplications: JobApplication[] = useMemo(
@@ -278,6 +280,7 @@ export default function JobApplicationsPage() {
 
   const norm = (v?: string | null) => (v ?? "").toLowerCase().trim();
   const filteredApplications = allApplications.filter((a) => {
+    if (view === "list" && statusFilter === "PENDING_CEO_APPROVAL" && !AWAITING_CEO.includes(a.status)) return false;
     const q = norm(search);
     if (q && !norm(a.fullName).includes(q) && !norm(a.email).includes(q) && !norm(a.phone).includes(q)) return false;
     if (specFilter !== "ALL" && a.specialization?.trim() !== specFilter) return false;
@@ -310,13 +313,16 @@ export default function JobApplicationsPage() {
     ? (talentsData as any)?.data?.pagination?.total ?? (talentsData as any)?.pagination?.total ?? 0
     : 0;
 
+  // Legacy ACCEPTED records are still waiting on the CEO, so they count there.
   const statCards = [
-    { label: t("jobApplications.stats.total"),    value: statsData?.total ?? 0,          icon: Users,      color: "text-foreground" },
-    { label: t("jobApplications.stats.pending"),   value: statsData?.pending ?? 0,        icon: Clock,      color: "text-amber-500" },
-    { label: t("jobApplications.stats.interview"), value: statsData?.interviewReady ?? 0, icon: Briefcase,  color: "text-blue-500" },
-    { label: t("jobApplications.stats.accepted"),  value: statsData?.accepted ?? 0,       icon: CheckCircle, color: "text-green-500" },
-    { label: t("jobApplications.stats.rejected"),  value: statsData?.rejected ?? 0,       icon: XCircle,    color: "text-red-500" },
-    { label: t("jobApplications.stats.hired"),     value: statsData?.hired ?? 0,          icon: UserCheck,  color: "text-purple-500" },
+    { label: t("jobApplications.stats.total"),              value: statsData?.total ?? 0,          icon: Users,       color: "text-foreground" },
+    { label: t("jobApplications.stats.pending"),            value: statsData?.pending ?? 0,        icon: Clock,       color: "text-amber-500" },
+    { label: t("jobApplications.stats.interview"),          value: statsData?.interviewReady ?? 0, icon: Briefcase,   color: "text-blue-500" },
+    { label: t("jobApplications.stats.interviewed"),        value: statsData?.interviewed ?? 0,    icon: CheckCircle, color: "text-cyan-500" },
+    { label: t("jobApplications.stats.pendingCeoApproval"), value: (statsData?.pendingCeoApproval ?? 0) + (statsData?.accepted ?? 0), icon: Hourglass, color: "text-indigo-500" },
+    { label: t("jobApplications.stats.returnedToHr"),       value: statsData?.returnedToHr ?? 0,   icon: Undo2,       color: "text-orange-500" },
+    { label: t("jobApplications.stats.hired"),              value: statsData?.hired ?? 0,          icon: UserCheck,   color: "text-purple-500" },
+    { label: t("jobApplications.stats.rejected"),           value: statsData?.rejected ?? 0,       icon: XCircle,     color: "text-red-500" },
   ];
 
   const handleView = (id: string) => router.push(`/${locale}/job-applications/${id}`);
@@ -325,17 +331,22 @@ export default function JobApplicationsPage() {
     const { source, destination, draggableId } = result;
     if (!destination || source.droppableId === destination.droppableId) return;
 
-    const destStatus = destination.droppableId as JobApplicationStatus;
+    const card = allApplications.find((a) => a.id === draggableId);
+    const from = (card?.status ?? source.droppableId) as JobApplicationStatus;
+    const to = destination.droppableId as JobApplicationStatus;
 
-    if (destStatus === "HIRED") {
-      ceoApprove.mutate(draggableId);
+    if (!canHrMove(from, to)) {
+      toast.error(`لا يمكن نقل الطلب من «${t(`jobApplications.statuses.${from}`)}» إلى «${t(`jobApplications.pipeline.${to}`)}»`);
       return;
     }
-
-    updateApplication.mutate({
-      id: draggableId,
-      data: { status: destStatus as Exclude<JobApplicationStatus, "HIRED"> },
-    });
+    // Rejection emails the applicant and needs a reason; the CEO referral
+    // carries the offered terms — both are completed on the application page.
+    if (to === "REJECTED" || to === "PENDING_CEO_APPROVAL") {
+      toast.info(to === "REJECTED" ? "أكملي الرفض وسببه من صفحة الطلب" : "أكملي شروط العرض من صفحة الطلب ثم أحيليه");
+      handleView(draggableId);
+      return;
+    }
+    updateApplication.mutate({ id: draggableId, data: { status: to as "INTERVIEW_READY" | "INTERVIEWED" } });
   };
 
   return (
@@ -376,7 +387,7 @@ export default function JobApplicationsPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
         {statCards.map((card) => (
           <Card key={card.label}>
             <CardHeader className="pb-2">

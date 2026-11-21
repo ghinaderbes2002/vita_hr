@@ -276,3 +276,25 @@ export function useEmployeeDossier(id: string) {
     retry: false,
   });
 }
+
+export function useExternalEmployeeTypes(includeInactive = false, enabled = true) {
+  return useQuery({
+    queryKey: ["employee-external-types", includeInactive],
+    queryFn: () => employeesApi.getExternalTypes(includeInactive),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateExternalEmployeeType() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: { nameAr: string; nameEn?: string }) => employeesApi.createExternalType(dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employee-external-types"] });
+      toast.success("تمت إضافة النوع");
+    },
+    onError: (error: any) =>
+      toast.error(error?.response?.data?.error?.message || error?.response?.data?.message || "تعذّر إضافة النوع"),
+  });
+}

@@ -2359,14 +2359,20 @@
       "interview": "مؤهل للمقابلة",
       "accepted": "تمت المقابلة",
       "rejected": "مرفوض",
-      "hired": "تم التوظيف"
+      "hired": "تم التوظيف",
+      "interviewed": "تمت المقابلة",
+      "pendingCeoApproval": "بانتظار المدير التنفيذي",
+      "returnedToHr": "مُعاد للموارد البشرية"
     },
     "statuses": {
       "PENDING": "معلق",
       "INTERVIEW_READY": "مؤهل للمقابلة",
-      "ACCEPTED": "تمت المقابلة",
+      "ACCEPTED": "بانتظار المدير التنفيذي",
       "REJECTED": "مرفوض",
-      "HIRED": "تم التوظيف"
+      "HIRED": "تم التوظيف",
+      "INTERVIEWED": "تمت المقابلة",
+      "PENDING_CEO_APPROVAL": "بانتظار المدير التنفيذي",
+      "RETURNED_TO_HR": "مُعاد للموارد البشرية"
     },
     "fields": {
       "fullName": "الاسم الكامل",
@@ -2408,10 +2414,13 @@
     "pipeline": {
       "PENDING": "استلام الطلب",
       "INTERVIEW_READY": "مؤهل للمقابلة",
-      "ACCEPTED": "تمت المقابلة",
+      "ACCEPTED": "بانتظار المدير التنفيذي",
       "HIRED": "تم التوظيف",
       "REJECTED": "مرفوض",
-      "ceoRequired": "يتطلب موافقة المدير التنفيذي"
+      "ceoRequired": "يتطلب موافقة المدير التنفيذي",
+      "INTERVIEWED": "تمت المقابلة",
+      "PENDING_CEO_APPROVAL": "بانتظار المدير التنفيذي",
+      "RETURNED_TO_HR": "مُعاد للموارد البشرية"
     },
     "availability": {
       "IMMEDIATE": "فوراً",
