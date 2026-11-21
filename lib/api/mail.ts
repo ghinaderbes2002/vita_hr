@@ -2,6 +2,9 @@ import { apiClient } from "./client";
 
 export type RecipientType = "TO" | "CC" | "BCC";
 export type MailFolder = "INBOX" | "SENT" | "DRAFTS" | "ARCHIVE" | "TRASH";
+/** Exact values the API accepts — anything else is a 400. */
+export type MailImportance = "LOW" | "NORMAL" | "HIGH";
+export type MailReplyType = "REPLY" | "REPLY_ALL" | "FORWARD";
 
 export const MAIL_PERMISSIONS = {
   SEND:     "mail:send",
@@ -88,7 +91,12 @@ export interface MailMessage {
   threadRootId: string | null;
   parentMessageId: string | null;
   isDraft: boolean;
-  importance?: "NORMAL" | "HIGH";
+  importance?: MailImportance;
+  /** Plain text, first ~150 chars, images stripped — for the list line. */
+  preview?: string;
+  /** Drafts only: what the draft answers, and how. */
+  replyType?: MailReplyType | null;
+  departmentIds?: string[];
   deletedAt: string | null;
   recipients: MailRecipient[];
   attachments: MailAttachment[];
@@ -99,6 +107,7 @@ export interface MailMessage {
 
 export interface MailRecipientWithMessage extends MailRecipient {
   message: MailMessage;
+  preview?: string;
 }
 
 export type SentMessage = MailMessage;
@@ -124,6 +133,11 @@ export interface MailQueryParams {
   dateFrom?: string;
   dateTo?: string;
   archiveFolderId?: string;
+  /** Inbox / sent / archive / trash only. Read and starred are per user. */
+  isRead?: boolean;
+  hasAttachments?: boolean;
+  isStarred?: boolean;
+  senderId?: string;
 }
 
 export interface SendMailDto {
@@ -132,15 +146,24 @@ export interface SendMailDto {
   recipients: { employeeId: string; type: RecipientType }[];
   departmentIds?: string[];
   parentMessageId?: string;
-  importance?: "NORMAL" | "HIGH";
+  importance?: MailImportance;
   /** معرّفات مرفقات رُفعت مسبقاً عبر uploadAttachment وتُربط بالرسالة عند الإرسال */
   attachmentIds?: string[];
 }
 
+/**
+ * Every field optional. On PATCH a field left out is kept as is — send
+ * `recipients: []` to clear them. Attachments are only ever added this way.
+ */
 export interface SaveDraftDto {
   subject?: string;
   body?: string;
   recipients?: { employeeId: string; type: RecipientType }[];
+  departmentIds?: string[];
+  importance?: MailImportance;
+  attachmentIds?: string[];
+  parentMessageId?: string;
+  replyType?: MailReplyType;
 }
 
 export interface ForwardMailDto {
@@ -178,6 +201,28 @@ export const mailApi = {
   saveDraft: async (dto: SaveDraftDto): Promise<MailMessage> => {
     const res = await apiClient.post("/mail/draft", dto);
     return res.data.data;
+  },
+
+  /** The whole draft, recipients with names and attachments — ready to edit. */
+  getDraft: async (id: string): Promise<MailMessage> => {
+    const res = await apiClient.get(`/mail/draft/${id}`);
+    return res.data?.data ?? res.data;
+  },
+
+  /** Always updates the same draft (autosave-safe); returns a fresh updatedAt. */
+  updateDraft: async (id: string, dto: SaveDraftDto): Promise<MailMessage> => {
+    const res = await apiClient.patch(`/mail/draft/${id}`, dto);
+    return res.data?.data ?? res.data;
+  },
+
+  /** The draft itself becomes the sent message. A second send is DRAFT_NOT_FOUND. */
+  sendDraft: async (id: string): Promise<MailMessage> => {
+    const res = await apiClient.post(`/mail/draft/${id}/send`);
+    return res.data?.data ?? res.data;
+  },
+
+  deleteDraft: async (id: string): Promise<void> => {
+    await apiClient.delete(`/mail/draft/${id}`);
   },
 
   reply: async (messageId: string, dto: SendMailDto): Promise<MailMessage> => {
@@ -298,3 +343,14 @@ export const mailApi = {
     return res.data.data;
   },
 };
+
+/** The API's own message for a failed mail call (e.g. MAIL_BODY_TOO_LARGE), else a fallback. */
+export function mailErrorMessage(error: unknown, fallback: string): string {
+  const data = (error as { response?: { data?: { error?: { message?: string }; message?: string } } })?.response?.data;
+  return data?.error?.message || data?.message || fallback;
+}
+
+export function mailErrorCode(error: unknown): string | undefined {
+  const data = (error as { response?: { data?: { error?: { code?: string }; code?: string } } })?.response?.data;
+  return data?.error?.code || data?.code;
+}

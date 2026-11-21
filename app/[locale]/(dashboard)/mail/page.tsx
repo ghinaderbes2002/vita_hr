@@ -54,6 +54,8 @@ export default function MailPage() {
   }, [openMessageId]);
 
   const [composeOpen, setComposeOpen] = useState(false);
+  // A draft reopened from the drafts folder to keep writing.
+  const [openDraftId, setOpenDraftId] = useState<string | null>(null);
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -178,8 +180,10 @@ export default function MailPage() {
           />
         ) : (
           <MailList
+            key={activeFolder}
             folder={activeFolder}
             onOpenMessage={setOpenMessageId}
+            onOpenDraft={setOpenDraftId}
             search={search}
             onSearchChange={setSearch}
             page={page}
@@ -194,6 +198,9 @@ export default function MailPage() {
       </main>
 
       <ComposeMailModal open={composeOpen} onClose={() => setComposeOpen(false)} />
+      {openDraftId && (
+        <ComposeMailModal open draftId={openDraftId} onClose={() => setOpenDraftId(null)} />
+      )}
       <EmployeeDirectorySheet open={directoryOpen} onOpenChange={setDirectoryOpen} />
 
       {/* Create archive folder dialog */}

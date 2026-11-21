@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Send, FileText, X, Paperclip, Loader2, Building2, AlertCircle, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Send, FileText, X, Paperclip, Loader2, Building2, Upload, ArrowDown, ArrowUp, Check } from "lucide-react";
 import dynamic from "next/dynamic";
 import { sanitizeHtml } from "@/lib/utils/sanitize-html";
 import { mentionsAttachment } from "@/lib/utils/mail-text";
@@ -25,7 +26,14 @@ import {
 } from "@/components/ui/select";
 import { UserSearchSelect } from "./user-search-select";
 import { decodeFileName } from "./attachment-list";
-import { useSendMail, useSaveDraft, useUploadAttachment, useForwardMail, useReplyAllMail } from "@/lib/hooks/use-mail";
+import {
+  useSendMail, useUploadAttachment, useForwardMail, useReplyAllMail,
+  useMailDraft, useSendDraft, useDeleteDraft,
+} from "@/lib/hooks/use-mail";
+import {
+  mailApi, mailErrorCode, mailErrorMessage,
+  type MailAttachment, type MailImportance, type MailReplyType, type SaveDraftDto,
+} from "@/lib/api/mail";
 import { useDepartments } from "@/lib/hooks/use-departments";
 import { useEmployeesByDepartment } from "@/lib/hooks/use-employees";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -106,7 +114,17 @@ interface Props {
   forwardAttachments?: ForwardAttachment[];
   /** Shown in the forward preview; defaults to forwardAttachments. Display only. */
   forwardPreviewAttachments?: ForwardAttachment[];
+  /** Reopens a saved draft to keep writing and send it. */
+  draftId?: string;
 }
+
+/** Autosave waits this long after the last change. */
+const AUTOSAVE_MS = 3000;
+const IMPORTANCE_OPTIONS: { value: MailImportance; label: string }[] = [
+  { value: "LOW", label: "منخفضة" },
+  { value: "NORMAL", label: "عادية" },
+  { value: "HIGH", label: "عالية" },
+];
 
 export function ComposeMailModal({
   open,
@@ -121,6 +139,7 @@ export function ComposeMailModal({
   defaultBody = "",
   forwardAttachments = [],
   forwardPreviewAttachments,
+  draftId,
 }: Props) {
   const previewAttachments = forwardPreviewAttachments ?? forwardAttachments;
   const [subject, setSubject] = useState(defaultSubject);
@@ -132,33 +151,98 @@ export function ComposeMailModal({
   const [showDept, setShowDept] = useState(false);
   const [departmentIds, setDepartmentIds] = useState<string[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [isHighImportance, setIsHighImportance] = useState(false);
+  const [importance, setImportance] = useState<MailImportance>("NORMAL");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Body HTML from the rich editor ("" while empty). The editor remounts on
-  // every open (editorKey), so it always starts from the right content.
+  // Body HTML from the rich editor ("" while empty). The editor remounts
+  // (editorKey) whenever its starting content changes: on open, or once a
+  // reopened draft has loaded.
   const initialBody = forwardMessageId ? "" : defaultBody;
   const [bodyHtml, setBodyHtml] = useState(initialBody);
+  const [editorInitial, setEditorInitial] = useState(initialBody);
   const [editorKey, setEditorKey] = useState(0);
-  // Closing by hand (X / cancel) asks first, so a half-written message isn't lost
-  // to a stray click. Sending or saving a draft closes without asking.
+  // Closing by hand (X / cancel) asks first. Sending or saving a draft closes without asking.
   const [confirmClose, setConfirmClose] = useState(false);
   // Asked when the text mentions an attachment but none is attached.
   const [confirmNoAttachment, setConfirmNoAttachment] = useState(false);
   const [dragging, setDragging] = useState(false);
 
+  // ── Draft ──
+  // The draft this message is saved to (autosave PATCHes it; never a second copy).
+  const draftIdRef = useRef<string | null>(null);
+  // Saves run one after another, so the first POST's id is known before any PATCH.
+  const saveChain = useRef<Promise<unknown>>(Promise.resolve());
+  // What was last saved (or loaded) — autosave only runs when this changes.
+  const savedSnapshot = useRef("");
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [autosaveFailed, setAutosaveFailed] = useState(false);
+  // Attachments already on a reopened draft (shown; new files are added on top).
+  const [draftAttachments, setDraftAttachments] = useState<MailAttachment[]>([]);
+  // What a reopened draft answers — kept so sending it stays in the thread.
+  const [draftParent, setDraftParent] = useState<{ parentMessageId?: string; replyType?: MailReplyType }>({});
+  const { data: loadedDraft, isLoading: draftLoading } = useMailDraft(open ? draftId : null);
+  const [hydratedDraft, setHydratedDraft] = useState<string | null>(null);
+
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
+      // A fresh start every time — nothing carries over from the last message.
+      setSubject(defaultSubject);
+      setToIds(defaultToIds);
+      setCcIds(defaultCcIds);
+      setBccIds([]);
+      setShowCc(defaultCcIds.length > 0);
+      setShowBcc(false);
+      setShowDept(false);
+      setDepartmentIds([]);
+      setPendingFiles([]);
+      setImportance("NORMAL");
       setBodyHtml(initialBody);
+      setEditorInitial(initialBody);
       setEditorKey((k) => k + 1);
+      setDraftAttachments([]);
+      setDraftParent({});
+      setSavedAt(null);
+      setAutosaveFailed(false);
+      setHydratedDraft(null);
+      draftIdRef.current = null;
+      savedSnapshot.current = "";
     }
   }
+
+  // A reopened draft fills the form once it has loaded.
+  if (open && draftId && loadedDraft && hydratedDraft !== loadedDraft.id) {
+    const d = loadedDraft;
+    const idOf = (r: any): string => r.employeeId ?? r.employeeInfo?.employeeId ?? r.recipient?.id ?? r.recipientId;
+    const of = (type: string) => (d.recipients ?? []).filter((r) => r.type === type).map(idOf).filter(Boolean);
+    const to = of("TO"), cc = of("CC"), bcc = of("BCC");
+    setHydratedDraft(d.id);
+    setSubject(d.subject ?? "");
+    setToIds(to);
+    setCcIds(cc);
+    setBccIds(bcc);
+    setShowCc(cc.length > 0);
+    setShowBcc(bcc.length > 0);
+    setDepartmentIds(d.departmentIds ?? []);
+    setShowDept((d.departmentIds ?? []).length > 0);
+    setImportance(d.importance ?? "NORMAL");
+    setBodyHtml(d.body ?? "");
+    setEditorInitial(d.body ?? "");
+    setEditorKey((k) => k + 1);
+    setDraftAttachments(d.attachments ?? []);
+    setDraftParent({ parentMessageId: d.parentMessageId ?? undefined, replyType: d.replyType ?? undefined });
+    setSavedAt(new Date(d.updatedAt));
+    draftIdRef.current = d.id;
+  }
+  const waitingForDraft = !!draftId && (draftLoading || hydratedDraft !== draftId);
 
   // مع وجود مرفقات، النجاح يُعلن مرة واحدة بعد اكتمال الرفع لا قبله
   const hasPendingFiles = pendingFiles.length > 0;
   const sendMail = useSendMail(hasPendingFiles);
-  const saveDraft = useSaveDraft();
+  const sendDraft = useSendDraft(hasPendingFiles);
+  const deleteDraft = useDeleteDraft();
+  const qc = useQueryClient();
+  const [savingDraft, setSavingDraft] = useState(false);
   const uploadAttachment = useUploadAttachment(true);
   const forwardMail = useForwardMail();
   const replyAllMail = useReplyAllMail();
@@ -171,6 +255,75 @@ export function ComposeMailModal({
     ...ccIds.map((employeeId) => ({ employeeId, type: "CC" as const })),
     ...bccIds.map((employeeId) => ({ employeeId, type: "BCC" as const })),
   ];
+
+  // What the draft answers: set when replying/forwarding, or kept from a reopened draft.
+  const parentInfo: { parentMessageId?: string; replyType?: MailReplyType } =
+    replyAllMessageId ? { parentMessageId: replyAllMessageId, replyType: "REPLY_ALL" }
+      : forwardMessageId ? { parentMessageId: forwardMessageId, replyType: "FORWARD" }
+        : replyToMessageId ? { parentMessageId: replyToMessageId, replyType: "REPLY" }
+          : draftParent;
+
+  // Fields are always sent in full (recipients: [] included), since a PATCH
+  // keeps any field that's left out.
+  const draftPayload = (): SaveDraftDto => ({
+    subject,
+    body: bodyHtml,
+    recipients: buildRecipients(),
+    departmentIds,
+    importance,
+    ...(parentInfo.parentMessageId ? parentInfo : {}),
+  });
+  const snapshotOf = (dto: SaveDraftDto) => JSON.stringify(dto);
+  const hasContent = !!(subject.trim() || bodyHtml || toIds.length || ccIds.length || bccIds.length || departmentIds.length);
+
+  /** Saves to the one draft of this message: creates it the first time, PATCHes after. */
+  const persistDraft = (extra: Partial<SaveDraftDto> = {}) => {
+    const dto = { ...draftPayload(), ...extra };
+    const run = async () => {
+      if (draftIdRef.current) {
+        await mailApi.updateDraft(draftIdRef.current, dto);
+      } else {
+        const created = await mailApi.saveDraft(dto);
+        draftIdRef.current = created.id;
+      }
+      savedSnapshot.current = snapshotOf(draftPayload());
+      setSavedAt(new Date());
+      setAutosaveFailed(false);
+      qc.invalidateQueries({ queryKey: ["mail", "drafts"] });
+    };
+    const next = saveChain.current.then(run, run);
+    saveChain.current = next.catch(() => {});
+    return next;
+  };
+
+  // Autosave: a few seconds after the last change, while the window is open.
+  const sendingRef = useRef(false);
+  const currentSnapshot = snapshotOf(draftPayload());
+  useEffect(() => {
+    if (!open || waitingForDraft || sendingRef.current) return;
+    if (currentSnapshot === savedSnapshot.current) return;
+    if (!hasContent && !draftIdRef.current) return;
+    const id = setTimeout(() => {
+      if (sendingRef.current) return;
+      persistDraft().catch(() => setAutosaveFailed(true));
+    }, AUTOSAVE_MS);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, waitingForDraft, currentSnapshot]);
+
+  // Loaded drafts count as already saved.
+  useEffect(() => {
+    if (hydratedDraft) savedSnapshot.current = currentSnapshot;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydratedDraft]);
+
+  /** After sending by another route, the autosaved draft is dropped. */
+  const dropDraft = async () => {
+    await saveChain.current;
+    const id = draftIdRef.current;
+    draftIdRef.current = null;
+    if (id) await deleteDraft.mutateAsync(id).catch(() => {});
+  };
 
   // From the picker or dropped on the window: unsupported types and files
   // over 25MB are refused by name, the rest join the list (no duplicates).
@@ -228,12 +381,13 @@ export function ComposeMailModal({
       return;
     }
     // Like Outlook: "مرفق" in the text with nothing attached asks first.
-    const attachedSomething = pendingFiles.length > 0 || forwardAttachments.length > 0;
+    const attachedSomething = pendingFiles.length > 0 || forwardAttachments.length > 0 || draftAttachments.length > 0;
     if (!skipAttachmentCheck && !attachedSomething && mentionsAttachment(subject, bodyHtml)) {
       setConfirmNoAttachment(true);
       return;
     }
 
+    sendingRef.current = true;
     try {
       // الرفع أولاً: المرفقات تُرفع مستقلة وتُربط بالرسالة عبر attachmentIds.
       // لو فشل الرفع لا تُرسل الرسالة أصلاً، فلا تصل ناقصة المرفقات.
@@ -246,9 +400,26 @@ export function ComposeMailModal({
           uploadedIds = uploaded.map((a) => a.id);
         } catch {
           toast.error("فشل رفع المرفقات — لم تُرسل الرسالة. حاولي مرة أخرى.");
+          sendingRef.current = false;
           return;
         }
       }
+
+      // A saved draft (autosaved, or reopened from drafts) is sent as itself, so
+      // it turns into the sent message — no leftover copy in drafts. Replies
+      // opened from a message keep their own endpoints. The draft route needs a
+      // "To" recipient, so department-only mail keeps the direct route too.
+      await saveChain.current;
+      const viaDraft = !!draftIdRef.current && !replyAllMessageId && !forwardMessageId && !replyToMessageId && toIds.length > 0;
+      if (viaDraft) {
+        await persistDraft(uploadedIds.length > 0 ? { attachmentIds: uploadedIds } : {});
+        await sendDraft.mutateAsync(draftIdRef.current!);
+        draftIdRef.current = null;
+        if (uploadedIds.length > 0) toast.success("تم إرسال الرسالة مع المرفقات بنجاح");
+        onClose();
+        return;
+      }
+      const carriedIds = [...draftAttachments.map((a) => a.id), ...uploadedIds];
 
       if (replyAllMessageId) {
         await replyAllMail.mutateAsync({
@@ -257,8 +428,8 @@ export function ComposeMailModal({
             subject,
             body: bodyHtml || undefined,
             recipients: buildRecipients(),
-            ...(isHighImportance ? { importance: "HIGH" } : {}),
-            ...(uploadedIds.length > 0 ? { attachmentIds: uploadedIds } : {}),
+            importance,
+            ...(carriedIds.length > 0 ? { attachmentIds: carriedIds } : {}),
           },
         });
       } else if (forwardMessageId) {
@@ -269,7 +440,7 @@ export function ComposeMailModal({
             subject: subject || undefined,
             body: bodyHtml || undefined,
             ...((() => {
-              const ids = [...forwardAttachments.map((a) => a.id), ...uploadedIds];
+              const ids = [...forwardAttachments.map((a) => a.id), ...carriedIds];
               return ids.length > 0 ? { attachmentIds: ids } : {};
             })()),
           },
@@ -280,9 +451,9 @@ export function ComposeMailModal({
           body: bodyHtml || undefined,
           recipients: buildRecipients(),
           ...(departmentIds.length > 0 ? { departmentIds } : {}),
-          parentMessageId: replyToMessageId,
-          ...(isHighImportance ? { importance: "HIGH" } : {}),
-          ...(uploadedIds.length > 0 ? { attachmentIds: uploadedIds } : {}),
+          parentMessageId: replyToMessageId ?? draftParent.parentMessageId,
+          importance,
+          ...(carriedIds.length > 0 ? { attachmentIds: carriedIds } : {}),
         });
       }
 
@@ -290,30 +461,62 @@ export function ComposeMailModal({
         toast.success("تم إرسال الرسالة مع المرفقات بنجاح");
       }
 
+      await dropDraft();
       onClose();
     } catch (err: any) {
-      const code = err?.response?.data?.error?.code;
+      sendingRef.current = false;
+      const code = mailErrorCode(err);
       const details: { employeeId: string }[] = err?.response?.data?.error?.details ?? [];
       if (code === "RECIPIENTS_NOT_RESOLVED") {
         const ids = details.map((d) => d.employeeId.slice(-8)).join(", ");
         toast.error(`بعض المستلمين لا يملكون حسابات مستخدمين في النظام${ids ? ` (${ids})` : ""}. يرجى التواصل مع المسؤول لربط الحسابات.`);
-      } else {
-        toast.error(err?.response?.data?.error?.message ?? err?.message ?? "حدث خطأ أثناء الإرسال");
+      } else if (!err?.response) {
+        toast.error(err?.message ?? "حدث خطأ أثناء الإرسال");
       }
     }
   };
 
   const handleDraft = async () => {
-    await saveDraft.mutateAsync({
-      subject,
-      body: bodyHtml,
-      recipients: buildRecipients(),
-    });
+    setSavingDraft(true);
+    try {
+      let uploadedIds: string[] = [];
+      if (pendingFiles.length > 0) {
+        const uploaded = await Promise.all(pendingFiles.map((file) => uploadAttachment.mutateAsync(file)));
+        uploadedIds = uploaded.map((a) => a.id);
+      }
+      await persistDraft(uploadedIds.length > 0 ? { attachmentIds: uploadedIds } : {});
+      toast.success("تم حفظ المسودة");
+      onClose();
+    } catch (err) {
+      toast.error(mailErrorMessage(err, "فشل حفظ المسودة"));
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  /** Close from the confirm dialog: keeps what was written as a draft. */
+  const closeKeepingDraft = async () => {
+    setConfirmClose(false);
+    if (hasContent && currentSnapshot !== savedSnapshot.current) {
+      try {
+        await persistDraft();
+      } catch (err) {
+        toast.error(mailErrorMessage(err, "تعذّر حفظ المسودة"));
+        return;
+      }
+    }
+    if (draftIdRef.current) toast.success("حُفظت الرسالة في المسودات");
+    onClose();
+  };
+
+  const discardDraft = async () => {
+    setConfirmClose(false);
+    await dropDraft();
     onClose();
   };
 
   const t = useTranslations("mail");
-  const isPending = sendMail.isPending || saveDraft.isPending || uploadAttachment.isPending || forwardMail.isPending || replyAllMail.isPending;
+  const isPending = sendMail.isPending || sendDraft.isPending || savingDraft || uploadAttachment.isPending || forwardMail.isPending || replyAllMail.isPending;
 
   return (
     <>
@@ -459,18 +662,31 @@ export function ComposeMailModal({
             <div className="flex flex-wrap gap-2 items-center justify-between">
               <Label className="text-sm">{t("bodyLabel")}</Label>
               {!forwardMessageId && (
-                <button
-                  type="button"
-                  onClick={() => setIsHighImportance((v) => !v)}
-                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-colors ${
-                    isHighImportance
-                      ? "bg-red-50 border-red-300 text-red-700 font-semibold"
-                      : "border-muted-foreground/20 text-muted-foreground hover:border-red-300 hover:text-red-600"
-                  }`}
-                >
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  {t("highImportance")}
-                </button>
+                <div className="flex items-center gap-1 text-xs" title="الأهمية">
+                  <span className="text-muted-foreground">الأهمية:</span>
+                  <div className="flex rounded-md border p-0.5">
+                    {IMPORTANCE_OPTIONS.map((o) => (
+                      <button
+                        key={o.value}
+                        type="button"
+                        onClick={() => setImportance(o.value)}
+                        className={`flex items-center gap-1 rounded px-2 py-0.5 transition-colors ${
+                          importance === o.value
+                            ? o.value === "HIGH"
+                              ? "bg-red-50 text-red-700 font-semibold"
+                              : o.value === "LOW"
+                                ? "bg-sky-50 text-sky-700 font-semibold"
+                                : "bg-accent text-foreground font-medium"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {o.value === "HIGH" && <ArrowUp className="h-3 w-3" />}
+                        {o.value === "LOW" && <ArrowDown className="h-3 w-3" />}
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
             {forwardMessageId ? (
@@ -492,12 +708,18 @@ export function ComposeMailModal({
               </>
             ) : (
               <>
+                {waitingForDraft ? (
+                  <div className="flex h-60 items-center justify-center rounded-md border text-sm text-muted-foreground">
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" /> جارٍ تحميل المسودة...
+                  </div>
+                ) : (
                 <RichMailEditor
                   key={editorKey}
-                  initialContent={initialBody}
+                  initialContent={editorInitial}
                   onChange={setBodyHtml}
                   onSubmit={() => { if (!isPending) handleSend(); }}
                 />
+                )}
               </>
             )}
           </div>
@@ -536,6 +758,24 @@ export function ComposeMailModal({
 
           {/* Attachments */}
           <div className="space-y-2">
+            {draftAttachments.length > 0 && (
+              <div className="border rounded-md divide-y">
+                {draftAttachments.map((att) => (
+                  <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 text-sm">
+                    <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="truncate">{decodeFileName(att.fileName)}</span>
+                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
+                      {extOf(att.fileName) || "?"}
+                    </span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {att.fileSize < 1024 * 1024
+                        ? `${(att.fileSize / 1024).toFixed(1)} KB`
+                        : `${(att.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -577,13 +817,21 @@ export function ComposeMailModal({
                 <Paperclip className="h-4 w-4" />
                 {t("attach")}
               </Button>
+              {autosaveFailed ? (
+                <span className="text-xs text-destructive">تعذّر الحفظ التلقائي</span>
+              ) : savedAt ? (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Check className="h-3 w-3" />
+                  حُفظت مسودة {savedAt.toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              ) : null}
             </div>
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={handleDraft} disabled={isPending}>
+              <Button variant="secondary" onClick={handleDraft} disabled={isPending || waitingForDraft}>
                 <FileText className="h-4 w-4 ml-1.5" />
                 {t("saveDraft")}
               </Button>
-              <Button onClick={() => handleSend()} disabled={isPending}>
+              <Button onClick={() => handleSend()} disabled={isPending || waitingForDraft}>
                 {uploadAttachment.isPending
                   ? <Loader2 className="h-4 w-4 ml-1.5 animate-spin" />
                   : <Send className="h-4 w-4 ml-1.5" />}
@@ -599,15 +847,19 @@ export function ComposeMailModal({
         <AlertDialogHeader>
           <AlertDialogTitle>إغلاق الرسالة؟</AlertDialogTitle>
           <AlertDialogDescription>
-            سيتم فقدان ما كتبته في هذه الرسالة. يمكنك حفظها كمسودة بدلاً من ذلك.
+            {hasContent || draftIdRef.current
+              ? "ستبقى الرسالة في المسودات ويمكنك إكمالها لاحقاً، أو احذفيها إن لم تعودي بحاجتها."
+              : "لم تكتبي شيئاً بعد."}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="gap-2">
           <AlertDialogCancel>متابعة الكتابة</AlertDialogCancel>
-          <AlertDialogAction
-            className="bg-destructive text-white hover:bg-destructive/90"
-            onClick={() => { setConfirmClose(false); onClose(); }}
-          >
+          {(hasContent || draftIdRef.current) && (
+            <Button variant="outline" className="text-destructive hover:text-destructive" onClick={discardDraft}>
+              حذف المسودة
+            </Button>
+          )}
+          <AlertDialogAction onClick={(e) => { e.preventDefault(); closeKeepingDraft(); }}>
             إغلاق
           </AlertDialogAction>
         </AlertDialogFooter>

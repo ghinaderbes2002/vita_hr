@@ -415,6 +415,11 @@ export function MailDetail({ messageId, onBack, folder }: Props) {
               {t("highImportance")}
             </Badge>
           )}
+          {message.importance === "LOW" && (
+            <Badge variant="outline" className="border-sky-300 bg-sky-50 text-sky-700 text-xs">
+              أهمية منخفضة
+            </Badge>
+          )}
         </div>
 
         {/* Meta */}

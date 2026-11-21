@@ -9,6 +9,7 @@ import {
   ForwardMailDto,
   EditMailDto,
   MailFolder,
+  mailErrorMessage,
 } from "@/lib/api/mail";
 
 // New mail arrives on its own, so the inbox keeps polling — it used to ride
@@ -81,7 +82,7 @@ export function useSendMail(silentSuccess = false) {
       qc.invalidateQueries({ queryKey: ["mail", "inbox"] });
       if (!silentSuccess) toast.success("تم إرسال الرسالة بنجاح");
     },
-    onError: () => toast.error("فشل إرسال الرسالة"),
+    onError: (error) => toast.error(mailErrorMessage(error, "فشل إرسال الرسالة")),
   });
 }
 
@@ -93,7 +94,41 @@ export function useSaveDraft() {
       qc.invalidateQueries({ queryKey: ["mail", "drafts"] });
       toast.success("تم حفظ المسودة");
     },
-    onError: () => toast.error("فشل حفظ المسودة"),
+    onError: (error) => toast.error(mailErrorMessage(error, "فشل حفظ المسودة")),
+  });
+}
+
+/** A draft opened to keep writing it. Always fresh — another tab may have autosaved it. */
+export function useMailDraft(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ["mail", "draft", id],
+    queryFn: () => mailApi.getDraft(id!),
+    enabled: !!id,
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
+/** Sends a saved draft: it moves from drafts to sent as the same message. */
+export function useSendDraft(silentSuccess = false) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => mailApi.sendDraft(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mail", "drafts"] });
+      qc.invalidateQueries({ queryKey: ["mail", "sent"] });
+      qc.invalidateQueries({ queryKey: ["mail", "inbox"] });
+      if (!silentSuccess) toast.success("تم إرسال الرسالة بنجاح");
+    },
+    onError: (error) => toast.error(mailErrorMessage(error, "فشل إرسال الرسالة")),
+  });
+}
+
+export function useDeleteDraft() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => mailApi.deleteDraft(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["mail", "drafts"] }),
   });
 }
 
@@ -107,7 +142,7 @@ export function useReplyMail() {
       qc.invalidateQueries({ queryKey: ["mail", "inbox"] });
       toast.success("تم إرسال الرد بنجاح");
     },
-    onError: () => toast.error("فشل إرسال الرد"),
+    onError: (error) => toast.error(mailErrorMessage(error, "فشل إرسال الرد")),
   });
 }
 
@@ -121,7 +156,7 @@ export function useReplyAllMail() {
       qc.invalidateQueries({ queryKey: ["mail", "inbox"] });
       toast.success("تم إرسال الرد على الكل بنجاح");
     },
-    onError: () => toast.error("فشل إرسال الرد"),
+    onError: (error) => toast.error(mailErrorMessage(error, "فشل إرسال الرد")),
   });
 }
 
@@ -134,7 +169,7 @@ export function useForwardMail() {
       qc.invalidateQueries({ queryKey: ["mail", "sent"] });
       toast.success("تم تحويل الرسالة بنجاح");
     },
-    onError: () => toast.error("فشل تحويل الرسالة"),
+    onError: (error) => toast.error(mailErrorMessage(error, "فشل تحويل الرسالة")),
   });
 }
 

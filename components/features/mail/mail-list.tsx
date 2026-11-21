@@ -2,7 +2,8 @@
 
 import { bodySnippet, displaySubject } from "@/lib/utils/mail-text";
 import { useEffect, useState, useMemo } from "react";
-import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X, AlertCircle } from "lucide-react";
+import { Star, Search, Archive, Trash2, Mail, MailOpen, CalendarDays, X, AlertCircle, ArrowDown, Paperclip, Filter } from "lucide-react";
+import { UserSearchSelect } from "./user-search-select";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import type { MailFolder } from "@/lib/api/mail";
 interface Props {
   folder: MailFolder;
   onOpenMessage: (messageId: string) => void;
+  /** Drafts open in the composer to keep writing, not in the reader. */
+  onOpenDraft?: (draftId: string) => void;
   search: string;
   onSearchChange: (v: string) => void;
   page: number;
@@ -36,12 +39,22 @@ interface Props {
 const LIMIT = 20;
 
 export function MailList({
-  folder, onOpenMessage, search, onSearchChange, page, onPageChange,
+  folder, onOpenMessage, onOpenDraft, search, onSearchChange, page, onPageChange,
   archiveFolderId, dateFrom, dateTo, onDateFromChange, onDateToChange,
 }: Props) {
   const t = useTranslations("mail");
   const [selected, setSelected] = useState<string[]>([]);
   const [showDateFilter, setShowDateFilter] = useState(false);
+  // Quick filters (server-side). Not on drafts; "unread" means nothing in sent.
+  const [showFilters, setShowFilters] = useState(false);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [withAttachments, setWithAttachments] = useState(false);
+  const [starredOnly, setStarredOnly] = useState(false);
+  const [senderId, setSenderId] = useState<string | undefined>(undefined);
+  const filtersAllowed = folder !== "DRAFTS";
+  const unreadAllowed = filtersAllowed && folder !== "SENT";
+  const activeFilterCount =
+    (unreadOnly ? 1 : 0) + (withAttachments ? 1 : 0) + (starredOnly ? 1 : 0) + (senderId ? 1 : 0);
 
   // The input stays on `search` so typing is instant; the query runs on the
   // settled value, so a request is sent once the user pauses instead of on
@@ -59,6 +72,12 @@ export function MailList({
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     archiveFolderId: archiveFolderId || undefined,
+    ...(filtersAllowed ? {
+      ...(unreadAllowed && unreadOnly ? { isRead: false } : {}),
+      ...(withAttachments ? { hasAttachments: true } : {}),
+      ...(starredOnly ? { isStarred: true } : {}),
+      ...(senderId ? { senderId } : {}),
+    } : {}),
   };
 
   const folderKey = folder.toLowerCase() as Lowercase<MailFolder>;
@@ -103,7 +122,7 @@ export function MailList({
 
   // A line of the body under the subject, Outlook-style.
   const getSnippet = (item: any): string =>
-    bodySnippet(isDraft ? item.body : item.message?.body);
+    item.preview ?? item.message?.preview ?? bodySnippet(isDraft ? item.body : item.message?.body);
 
   const getSender = (item: any): { name: string | null; id: string | null } => {
     if (isDraft) return { name: t("draft"), id: null };
@@ -141,6 +160,7 @@ export function MailList({
 
   const handleOpen = (item: any) => {
     const msgId = getMessageId(item);
+    if (isDraft && onOpenDraft) { onOpenDraft(msgId); return; }
     onOpenMessage(msgId);
     if (isUnread(item)) {
       updateRead.mutate({ messageIds: [msgId], isRead: true });
@@ -187,6 +207,20 @@ export function MailList({
               <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
             )}
           </Button>
+          {filtersAllowed && (
+            <Button
+              size="sm"
+              variant={showFilters || activeFilterCount ? "secondary" : "ghost"}
+              className="h-8 gap-1.5 text-xs shrink-0"
+              onClick={() => setShowFilters((v) => !v)}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              فلترة
+              {activeFilterCount > 0 && (
+                <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground tabular-nums">{activeFilterCount}</span>
+              )}
+            </Button>
+          )}
           {selected.length > 0 && (
             <div className="flex items-center gap-1 border-r pr-2">
               <Button
@@ -222,6 +256,53 @@ export function MailList({
             </div>
           )}
         </div>
+
+        {/* Quick filters row */}
+        {filtersAllowed && showFilters && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {([
+              ...(unreadAllowed ? [{ label: "غير مقروء", on: unreadOnly, set: setUnreadOnly, icon: Mail }] : []),
+              { label: "مع مرفقات", on: withAttachments, set: setWithAttachments, icon: Paperclip },
+              { label: "مُعلّم بنجمة", on: starredOnly, set: setStarredOnly, icon: Star },
+            ] as const).map(({ label, on, set, icon: Icon }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => { set(!on); onPageChange(1); }}
+                className={cn(
+                  "flex h-7 items-center gap-1 rounded-full border px-2.5 text-xs transition-colors",
+                  on ? "border-primary bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                <Icon className="h-3 w-3" />
+                {label}
+              </button>
+            ))}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">من:</span>
+              <div className="w-56">
+                <UserSearchSelect
+                  value={senderId ? [senderId] : []}
+                  onChange={(ids) => { setSenderId(ids[ids.length - 1]); onPageChange(1); }}
+                  placeholder="أي مرسل"
+                />
+              </div>
+            </div>
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setUnreadOnly(false); setWithAttachments(false); setStarredOnly(false); setSenderId(undefined);
+                  onPageChange(1);
+                }}
+                className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1"
+              >
+                <X className="h-3.5 w-3.5" />
+                مسح الفلاتر
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Date filter row */}
         {showDateFilter && (
@@ -315,8 +396,18 @@ export function MailList({
                       {getSubject(item)}
                     </span>
                     {(item?.importance === "HIGH" || item?.message?.importance === "HIGH") && (
-                      <span className="shrink-0 text-red-500" title="مهم جداً">
+                      <span className="shrink-0 text-red-500" title="أهمية عالية">
                         <AlertCircle className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                    {(item?.importance === "LOW" || item?.message?.importance === "LOW") && (
+                      <span className="shrink-0 text-sky-500" title="أهمية منخفضة">
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                    {((item?.attachments ?? item?.message?.attachments)?.length ?? 0) > 0 && (
+                      <span className="shrink-0 text-muted-foreground" title="فيها مرفقات">
+                        <Paperclip className="h-3.5 w-3.5" />
                       </span>
                     )}
                   </div>
