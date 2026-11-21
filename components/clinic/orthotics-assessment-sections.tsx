@@ -350,25 +350,12 @@ function SectionCard({
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">{title}</CardTitle>
-          {canEdit && (editing ? (
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={onCancel} disabled={saving}>{t("common.cancel")}</Button>
-              <Button
-                size="sm"
-                className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600"
-                onClick={onSave}
-                disabled={saving || !dirty || missing.length > 0}
-              >
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                {t("common.save")}
-              </Button>
-            </div>
-          ) : (
+          {canEdit && !editing && (
             <Button size="sm" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600" onClick={onEdit}>
               <Pencil className="h-3.5 w-3.5" />
               {t("common.edit")}
             </Button>
-          ))}
+          )}
         </div>
         {filledBy && (
           <p className="text-xs text-muted-foreground">
@@ -380,7 +367,28 @@ function SectionCard({
           <p className="text-xs text-destructive">{t("common.missingFields")}: {missing.join("، ")}</p>
         )}
       </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
+      <CardContent className="space-y-4">
+        {children}
+        {/* Save sits under the form, full width — the same as the prosthetics tabs. */}
+        {canEdit && editing && (
+          <div className="space-y-2 pt-2">
+            {missing.length > 0 && (
+              <p className="text-xs text-destructive">{t("common.missingFields")}: {missing.join("، ")}</p>
+            )}
+            <Button
+              className="w-full gap-2 bg-orange-500 text-white hover:bg-orange-600"
+              onClick={onSave}
+              disabled={saving || !dirty || missing.length > 0}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {t("common.save")}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={onCancel} disabled={saving}>
+              {t("common.cancel")}
+            </Button>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }
@@ -993,7 +1001,8 @@ function DeviceCountChips({
   );
 }
 
-function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
+/** تقييم الجهاز والتوصيات — يُعرض في تبويب اللجنة. */
+export function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
   const t = useTranslations("clinic.orthotics");
   // The opinion stays on the prosthetist's own card; this card holds the rest.
   const a = prosthetistAssessmentOf(reception);
@@ -1042,161 +1051,200 @@ function OrthoticsDeviceCard({ reception, canEdit }: { reception: OrthoticsRecep
 // Like the prosthetics measurement sheets: each save appends a new sheet, a
 // saved sheet reads back on the same drawing and is never edited.
 
-const MEASUREMENT_SHEET_OPTIONS: Options<OrthoticsMeasurementSheet> =
-  ORTHOTICS_MEASUREMENT_SHEETS.map((s) => ({ value: s, label: `measurement.sheets.${s}` }));
+/** Sheets saved before the picker existed were all below-knee. */
+const sheetOf = (m: { sheet: OrthoticsMeasurementSheet }): OrthoticsMeasurementSheet =>
+  m.sheet in ORTHOTICS_MEASUREMENT_FIELDS ? m.sheet : "BELOW_KNEE";
 
 export function OrthoticsMeasurementCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
   const t = useTranslations("clinic.orthotics");
   const { data: sheets = [], isLoading } = useOrthoticsMeasurements(reception.id);
   const add = useAddOrthoticsMeasurement(reception.id);
   const defaultSide = doctorAssessmentOf(reception).affectedSide ?? "RIGHT";
-  // A KAFO is measured on the full-leg drawing; anything else starts below the knee.
-  const defaultSheet: OrthoticsMeasurementSheet =
-    (reception.recommendedDeviceTypes ?? []).includes("KAFO") ? "FULL_LEG" : "BELOW_KNEE";
+  // The sheet type is picked from the cards above, like the prosthetics
+  // measurement tab; nothing is shown until one is chosen.
+  const [selected, setSelected] = useState<OrthoticsMeasurementSheet | null>(null);
   const [adding, setAdding] = useState(false);
-  const [sheet, setSheet] = useState<OrthoticsMeasurementSheet>(defaultSheet);
   const [side, setSide] = useState<OrthoticsSide>(defaultSide);
   const [notes, setNotes] = useState("");
   // Kept per drawing, so switching to look at another sheet loses nothing typed.
   const [values, setValues] = useState<Partial<Record<OrthoticsMeasurementSheet, Record<string, string>>>>({});
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const start = () => {
-    setSheet(defaultSheet); setSide(defaultSide); setNotes(""); setValues({}); setAdding(true);
-  };
-  const current = values[sheet] ?? {};
+  // Open on the latest saved sheet's type once the list arrives. A KAFO is
+  // measured on the full-leg drawing, so a case without sheets yet opens there.
+  const [preselected, setPreselected] = useState(false);
+  if (!preselected && !isLoading) {
+    setPreselected(true);
+    if (sheets.length) setSelected(sheetOf(sheets[0]));
+    else if ((reception.recommendedDeviceTypes ?? []).includes("KAFO")) setSelected("FULL_LEG");
+  }
+
+  const countOf = (s: OrthoticsMeasurementSheet) => sheets.filter((m) => sheetOf(m) === s).length;
+  const choose = (s: OrthoticsMeasurementSheet) => { setSelected(s); setAdding(false); setOpenId(null); };
+
+  const start = () => { setSide(defaultSide); setNotes(""); setAdding(true); };
+  const current = selected ? values[selected] ?? {} : {};
   // Blank boxes are left out, so a sheet only carries what was measured.
   const filled = Object.fromEntries(
     Object.entries(current).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v !== ""),
   );
-  const save = () => add.mutate(
-    { sheet, side, values: filled, ...(notes.trim() ? { notes: notes.trim() } : {}) },
-    { onSuccess: () => setAdding(false) },
-  );
+  const save = () => {
+    if (!selected) return;
+    add.mutate(
+      { sheet: selected, side, values: filled, ...(notes.trim() ? { notes: notes.trim() } : {}) },
+      {
+        onSuccess: () => {
+          setAdding(false);
+          setValues((v) => ({ ...v, [selected]: {} }));
+        },
+      },
+    );
+  };
+
+  const shown = selected ? sheets.filter((m) => sheetOf(m) === selected) : [];
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">{t("measurement.title")}</CardTitle>
-          {canEdit && (adding ? (
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setAdding(false)} disabled={add.isPending}>{t("common.cancel")}</Button>
-              <Button
-                size="sm"
-                className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600"
-                onClick={save}
-                disabled={add.isPending || Object.keys(filled).length === 0}
-                title={Object.keys(filled).length === 0 ? t("measurement.emptySheet") : undefined}
-              >
-                {add.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                {t("measurement.save")}
-              </Button>
-            </div>
-          ) : (
-            <Button size="sm" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600" onClick={start}>
-              <Plus className="h-3.5 w-3.5" />
-              {t("measurement.new")}
-            </Button>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {adding && (
-          <div className="space-y-4 rounded-lg border border-orange-200 p-3">
-            <p className="text-xs text-muted-foreground">{t("measurement.hint")}</p>
-            <Field label={t("measurement.sheet")}>
-              <SingleChips options={MEASUREMENT_SHEET_OPTIONS} value={sheet} onChange={setSheet} readOnly={false} />
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label={t("measurement.side")}>
-                <SingleChips options={SIDES} value={side} onChange={setSide} readOnly={false} />
-              </Field>
-              <div className="sm:col-span-2">
-                <Field label={t("measurement.notes")}>
-                  <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("measurement.notesPlaceholder")} />
-                </Field>
-              </div>
-            </div>
-            <div className="overflow-x-auto rounded-lg bg-white">
-              <div className="min-w-170 sm:min-w-0">
-                <MeasurementDiagram
-                  key={sheet}
-                  imageSrc={ORTHOTICS_MEASUREMENT_IMAGE[sheet]}
-                  fields={ORTHOTICS_MEASUREMENT_FIELDS[sheet]}
-                  sound={{}}
-                  affected={current}
-                  onChange={(_, k, v) => setValues((s) => ({ ...s, [sheet]: { ...(s[sheet] ?? {}), [k]: v } }))}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+    <div className="space-y-4">
+      {/* Sheet type picker */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {ORTHOTICS_MEASUREMENT_SHEETS.map((s) => {
+          const n = countOf(s);
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => choose(s)}
+              className={`rounded-lg border-2 py-4 text-sm font-semibold transition-colors ${
+                selected === s
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              }`}
+            >
+              {t(`measurement.sheets.${s}`)}
+              {n > 0 && <span className="ms-1.5 text-xs font-normal">({n})</span>}
+            </button>
+          );
+        })}
+      </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-        ) : sheets.length === 0 ? (
-          !adding && <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">{t("measurement.empty")}</p>
-        ) : (
-          <div className="space-y-2">
-            {sheets.map((m) => {
-              const open = openId === m.id;
-              // Sheets saved before the picker existed were all below-knee.
-              const mSheet: OrthoticsMeasurementSheet = m.sheet in ORTHOTICS_MEASUREMENT_FIELDS ? m.sheet : "BELOW_KNEE";
-              return (
-                <div key={m.id} className="overflow-hidden rounded-lg border">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-3 p-3 text-sm hover:bg-muted/40"
-                    onClick={() => setOpenId(open ? null : m.id)}
+      {!selected ? (
+        <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+          اختر نوع ورقة القياس لعرضها
+        </div>
+      ) : (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-base">
+                {t("measurement.title")} — {t(`measurement.sheets.${selected}`)}
+              </CardTitle>
+              {canEdit && (adding ? (
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setAdding(false)} disabled={add.isPending}>{t("common.cancel")}</Button>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600"
+                    onClick={save}
+                    disabled={add.isPending || Object.keys(filled).length === 0}
+                    title={Object.keys(filled).length === 0 ? t("measurement.emptySheet") : undefined}
                   >
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-xs text-orange-700">
-                        {t(`measurement.sheets.${mSheet}`)}
-                      </span>
-                      <span className="rounded-full border px-2 py-0.5 text-xs">{t(`options.SIDES.${m.side}`)}</span>
-                      <span className="text-muted-foreground" dir="ltr">
-                        {new Date(m.examinedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", hour12: true })}
-                      </span>
-                      {m.notes && <span className="text-xs text-muted-foreground">— {m.notes}</span>}
-                    </span>
-                    {open ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
-                  </button>
-                  {open && (
-                    <div className="overflow-x-auto border-t bg-white p-3">
-                      <div className="min-w-170 sm:min-w-0">
-                        <MeasurementDiagram
-                          imageSrc={ORTHOTICS_MEASUREMENT_IMAGE[mSheet]}
-                          fields={ORTHOTICS_MEASUREMENT_FIELDS[mSheet]}
-                          sound={{}}
-                          affected={m.values ?? {}}
-                          onChange={() => {}}
-                          disabled
-                        />
-                      </div>
-                    </div>
-                  )}
+                    {add.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    {t("measurement.save")}
+                  </Button>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ) : (
+                <Button size="sm" className="gap-1.5 bg-orange-500 text-white hover:bg-orange-600" onClick={start}>
+                  <Plus className="h-3.5 w-3.5" />
+                  {t("measurement.new")}
+                </Button>
+              ))}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {adding && (
+              <div className="space-y-4 rounded-lg border border-orange-200 p-3">
+                <p className="text-xs text-muted-foreground">{t("measurement.hint")}</p>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field label={t("measurement.side")}>
+                    <SingleChips options={SIDES} value={side} onChange={setSide} readOnly={false} />
+                  </Field>
+                  <div className="sm:col-span-2">
+                    <Field label={t("measurement.notes")}>
+                      <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("measurement.notesPlaceholder")} />
+                    </Field>
+                  </div>
+                </div>
+                <div className="overflow-x-auto rounded-lg bg-white">
+                  <div className="min-w-170 sm:min-w-0">
+                    <MeasurementDiagram
+                      key={selected}
+                      imageSrc={ORTHOTICS_MEASUREMENT_IMAGE[selected]}
+                      fields={ORTHOTICS_MEASUREMENT_FIELDS[selected]}
+                      sound={{}}
+                      affected={current}
+                      onChange={(_, k, v) => setValues((s) => ({ ...s, [selected]: { ...(s[selected] ?? {}), [k]: v } }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            ) : shown.length === 0 ? (
+              !adding && <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">{t("measurement.empty")}</p>
+            ) : (
+              <div className="space-y-2">
+                {shown.map((m) => {
+                  const open = openId === m.id;
+                  const mSheet = sheetOf(m);
+                  return (
+                    <div key={m.id} className="overflow-hidden rounded-lg border">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 p-3 text-sm hover:bg-muted/40"
+                        onClick={() => setOpenId(open ? null : m.id)}
+                      >
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border px-2 py-0.5 text-xs">{t(`options.SIDES.${m.side}`)}</span>
+                          <span className="text-muted-foreground" dir="ltr">
+                            {new Date(m.examinedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", hour12: true })}
+                          </span>
+                          {m.notes && <span className="text-xs text-muted-foreground">— {m.notes}</span>}
+                        </span>
+                        {open ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+                      </button>
+                      {open && (
+                        <div className="overflow-x-auto border-t bg-white p-3">
+                          <div className="min-w-170 sm:min-w-0">
+                            <MeasurementDiagram
+                              imageSrc={ORTHOTICS_MEASUREMENT_IMAGE[mSheet]}
+                              fields={ORTHOTICS_MEASUREMENT_FIELDS[mSheet]}
+                              sound={{}}
+                              affected={m.values ?? {}}
+                              onChange={() => {}}
+                              disabled
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
 export function OrthoticsClinicalHistoryTab({
-  reception, canEditHistory, canEditDevice,
+  reception, canEditHistory,
 }: {
   reception: OrthoticsReception;
   canEditHistory: boolean;
-  canEditDevice: boolean;
 }) {
-  return (
-    <div className="space-y-4">
-      <OrthoticsClinicalHistoryCard reception={reception} canEdit={canEditHistory} />
-      <OrthoticsDeviceCard reception={reception} canEdit={canEditDevice} />
-    </div>
-  );
+  return <OrthoticsClinicalHistoryCard reception={reception} canEdit={canEditHistory} />;
 }

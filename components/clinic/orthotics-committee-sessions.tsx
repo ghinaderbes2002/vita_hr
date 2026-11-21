@@ -7,14 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import { isClinicalDepartmentName } from "@/lib/clinic/departments";
 import {
   useDeleteOrthoticsFollowUp, useOrthoticsFollowUps, useSaveOrthoticsFollowUp, useSaveOrthoticsSuitability,
 } from "@/lib/hooks/use-clinic-orthotics";
 import type { OrthoticsFollowUp, OrthoticsReception } from "@/lib/api/clinic-orthotics";
+import { doctorAssessmentOf, physioAssessmentOf, prosthetistAssessmentOf } from "./orthotics-labels";
 
 const fmtDate = (iso?: string | null) => (iso ? iso.slice(0, 10) : "—");
 const fmtStamp = (iso?: string | null) =>
@@ -32,6 +35,65 @@ function useStaffNames() {
     }
     return { byEmp, byUser, list: data };
   }, [data]);
+}
+
+// ─── اللجنة: آراء المقيّمين (للقراءة) ─────────────────────────────────────────
+
+/**
+ * The three assessors' opinions, shown read-only where the committee decides.
+ * They are written and edited on their own tabs; this is the same saved text.
+ */
+export function OrthoticsOpinionsCard({ reception }: { reception: OrthoticsReception }) {
+  const opinions = [
+    {
+      label: "رأي طبيب العظمية",
+      text: doctorAssessmentOf(reception).doctorOpinion,
+      by: reception.doctorAssessmentUpdatedByName,
+    },
+    {
+      label: "رأي المعالج الفيزيائي",
+      text: physioAssessmentOf(reception).physioOpinion,
+      by: reception.physioAssessmentUpdatedByName,
+    },
+    {
+      label: "رأي أخصائي الأطراف الصناعية",
+      text: prosthetistAssessmentOf(reception).prosthetistOpinion,
+      by: reception.prosthetistOpinionUpdatedByName,
+    },
+  ];
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">آراء المقيّمين</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {opinions.map((o) => {
+          const has = !!o.text?.trim();
+          return (
+            <div key={o.label} className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Label>{o.label}</Label>
+                {has && (
+                  <span className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-700">
+                    {o.by || "غير مسجَّل"}
+                  </span>
+                )}
+                {has && (
+                  <span className="flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs text-green-700">
+                    <CheckCircle2 className="h-3 w-3" />
+                    محفوظ — للقراءة فقط
+                  </span>
+                )}
+              </div>
+              <div className="min-h-16 rounded-md border bg-muted/30 px-3 py-2.5 text-sm whitespace-pre-line">
+                {has ? o.text : <span className="text-muted-foreground">لم يُكتب بعد</span>}
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
 }
 
 // ─── اللجنة: قرار المناسبة ─────────────────────────────────────────────────────
@@ -53,19 +115,22 @@ export function OrthoticsCommitteeTab({ reception, canEdit }: { reception: Ortho
   const [target, setTarget] = useState(reception.targetAppliancesCount != null ? String(reception.targetAppliancesCount) : "");
 
   const startEdit = () => {
-    setDecision(current);
+    // The switch has two positions; an undecided case opens on "غير مناسب" and
+    // stays undecided until the decision is saved.
+    setDecision(current === "undecided" ? "no" : current);
     setNote(reception.suitabilityNote ?? "");
     setTarget(reception.targetAppliancesCount != null ? String(reception.targetAppliancesCount) : "");
     setEditing(true);
   };
 
   const submit = async () => {
-    if (decision === "undecided") return;
+    // Notes are required with every decision, as in the prosthetics committee.
+    if (decision === "undecided" || !note.trim()) return;
     await save.mutateAsync({
       id: reception.id,
       dto: {
         isSuitable: decision === "yes",
-        suitabilityNote: note.trim() || undefined,
+        suitabilityNote: note.trim(),
         ...(target !== "" ? { targetAppliancesCount: Number(target) } : {}),
       },
     });
@@ -127,30 +192,29 @@ export function OrthoticsCommitteeTab({ reception, canEdit }: { reception: Ortho
           </>
         ) : (
           <div className="space-y-4">
+            {/* Same layout as the prosthetics committee: a switch between the two answers. */}
             <div className="space-y-1.5">
-              <Label>القرار *</Label>
-              <div className="flex flex-wrap gap-2">
-                {([
-                  { v: "yes", text: "مناسب", icon: CheckCircle2, on: "border-green-400 bg-green-50 text-green-800" },
-                  { v: "no", text: "غير مناسب", icon: XCircle, on: "border-red-400 bg-red-50 text-red-800" },
-                ] as const).map((o) => (
-                  <button
-                    key={o.v}
-                    type="button"
-                    onClick={() => setDecision(o.v)}
-                    className={`flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                      decision === o.v ? o.on : "text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <o.icon className="h-4 w-4" />
-                    {o.text}
-                  </button>
-                ))}
+              <Label>هل المريض مناسب للمقوّم؟</Label>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">غير مناسب</span>
+                <Switch
+                  checked={decision === "yes"}
+                  onCheckedChange={(v) => setDecision(v ? "yes" : "no")}
+                />
+                <span className="text-sm text-muted-foreground">مناسب</span>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>{decision === "no" ? "سبب عدم المناسبة" : "ملاحظة"}</Label>
-              <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+              <Label>
+                الملاحظات
+                <span className="text-destructive"> *</span>
+              </Label>
+              <Textarea
+                rows={3}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="ملاحظات اللجنة..."
+              />
             </div>
             <div className="space-y-1.5 sm:max-w-xs">
               <Label>عدد المقومات المعتمد</Label>
@@ -163,12 +227,16 @@ export function OrthoticsCommitteeTab({ reception, canEdit }: { reception: Ortho
                 placeholder={reception.appliancesCount != null ? `الطبيب طلب ${reception.appliancesCount}` : ""}
               />
             </div>
-            <div className="flex gap-2">
-              <Button onClick={submit} disabled={decision === "undecided" || save.isPending} className="gap-1.5">
-                {save.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <div className="space-y-2">
+              <Button
+                onClick={submit}
+                disabled={!note.trim() || save.isPending}
+                className="w-full gap-2"
+              >
+                {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 حفظ القرار
               </Button>
-              <Button variant="outline" onClick={() => setEditing(false)}>إلغاء</Button>
+              <Button variant="outline" className="w-full" onClick={() => setEditing(false)}>إلغاء</Button>
             </div>
           </div>
         )}
@@ -256,7 +324,14 @@ export function OrthoticsSessionsTab({
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="me">أنا (المستخدم الحالي)</SelectItem>
-                    {list.filter((e) => !e.employmentStatus || e.employmentStatus === "ACTIVE").map((e) => (
+                    {list.filter((e) =>
+                      // Only active staff of the medical administration and its departments
+                      // (prosthetics, podiatry, physio) — plus whoever an edited session
+                      // already names, so the select never loses its current value.
+                      e.id === form.practitionerId || (
+                        (!e.employmentStatus || e.employmentStatus === "ACTIVE")
+                        && isClinicalDepartmentName(e.department?.nameAr)
+                      )).map((e) => (
                       <SelectItem key={e.id} value={e.id}>{e.firstNameAr} {e.lastNameAr}</SelectItem>
                     ))}
                   </SelectContent>

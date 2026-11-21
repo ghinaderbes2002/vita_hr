@@ -15,10 +15,10 @@ import { PatientPhoto } from "@/components/clinic/patient-photo";
 import { PractitionersCard } from "@/components/clinic/podiatry-practitioners-card";
 import { OrthoticsReceptionDialog } from "@/components/clinic/orthotics-reception-dialog";
 import { OrthoticsAttachments } from "@/components/clinic/orthotics-attachments";
-import { OrthoticsCommitteeTab, OrthoticsSessionsTab } from "@/components/clinic/orthotics-committee-sessions";
+import { OrthoticsCommitteeTab, OrthoticsOpinionsCard, OrthoticsSessionsTab } from "@/components/clinic/orthotics-committee-sessions";
 import {
   OrthoticsDoctorSection, OrthoticsPhysioSection, OrthoticsProsthetistSection, OrthoticsClinicalHistoryTab,
-  OrthoticsMeasurementCard,
+  OrthoticsMeasurementCard, OrthoticsDeviceCard,
 } from "@/components/clinic/orthotics-assessment-sections";
 import { sectionsFilled } from "@/components/clinic/orthotics-labels";
 import {
@@ -29,7 +29,7 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
 import { clinicOrthoticsApi } from "@/lib/api/clinic-orthotics";
 import { ROLES } from "@/lib/permissions/roles";
-import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { useJobTitleCodes } from "@/lib/hooks/use-job-title-codes";
 
 const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
@@ -178,7 +178,8 @@ export default function OrthoticsReceptionPage() {
               <TabsTrigger value="prosthetist" className={TAB_CLASS}>{t("tabs.prosthetist")}{done(filled.prosthetist && filled.clinicalHistory)}</TabsTrigger>
               {/* The committee decides after the three assessments; sessions follow its decision. */}
               <TabsTrigger value="committee" className={TAB_CLASS}>اللجنة{done(reception.isSuitable != null)}</TabsTrigger>
-              <TabsTrigger value="sessions" className={TAB_CLASS}>الجلسات</TabsTrigger>
+              <TabsTrigger value="measurement" className={TAB_CLASS}>ورق القياس</TabsTrigger>
+              <TabsTrigger value="sessions" className={TAB_CLASS}>المتابعة</TabsTrigger>
             </>
           )}
         </TabsList>
@@ -247,16 +248,21 @@ export default function OrthoticsReceptionPage() {
         {/* التاريخ السريري والتوصيات يُعرض ضمن تبويب الأطراف الصناعية، تحت رأي الفني. */}
         <TabsContent value="prosthetist" className="mt-4 space-y-4">
           <OrthoticsProsthetistSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />
-          <OrthoticsMeasurementCard reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.MEASUREMENT_CREATE)} />
           <OrthoticsClinicalHistoryTab
             reception={reception}
             canEditHistory={can(PERMISSIONS.CLINIC_ORTHOTICS.DOCTOR_ASSESSMENT_EDIT)}
-            canEditDevice={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)}
           />
         </TabsContent>
 
-        <TabsContent value="committee" className="mt-4">
+        {/* The committee reads the three opinions, decides, then settles the device. */}
+        <TabsContent value="committee" className="mt-4 space-y-4">
+          <OrthoticsOpinionsCard reception={reception} />
           <OrthoticsCommitteeTab reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.EDIT)} />
+          <OrthoticsDeviceCard reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />
+        </TabsContent>
+
+        <TabsContent value="measurement" className="mt-4">
+          <OrthoticsMeasurementCard reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.MEASUREMENT_CREATE)} />
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-4">

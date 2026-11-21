@@ -55,6 +55,8 @@ export default function OrthoticsListPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [assignFilter, setAssignFilter] = useState<"all" | "assigned" | "unassigned">("all");
+  // Suitability decision is three-state: true / false / null (not decided yet).
+  const [suitabilityFilter, setSuitabilityFilter] = useState<"all" | "suitable" | "unsuitable" | "undecided">("all");
 
   // المشرفون يرون كل مرضى القسم؛ من عداهم يرى الاستقبالات المعيَّن عليها فقط.
   const { hasRole, isAdmin } = usePermissions();
@@ -85,6 +87,9 @@ export default function OrthoticsListPage() {
   const filtered = receptions.filter((r) => {
     if (assignFilter === "assigned" && !isAssigned(r)) return false;
     if (assignFilter === "unassigned" && isAssigned(r)) return false;
+    if (suitabilityFilter === "suitable" && r.isSuitable !== true) return false;
+    if (suitabilityFilter === "unsuitable" && r.isSuitable !== false) return false;
+    if (suitabilityFilter === "undecided" && r.isSuitable != null) return false;
     const q = search.trim().toLowerCase();
     if (!q) return true;
     const name = `${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.toLowerCase();
@@ -141,6 +146,18 @@ export default function OrthoticsListPage() {
             </SelectContent>
           </Select>
         )}
+        <Select
+          value={suitabilityFilter}
+          onValueChange={(v) => { setSuitabilityFilter(v as typeof suitabilityFilter); setPage(1); }}
+        >
+          <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("suitabilityAll")}</SelectItem>
+            <SelectItem value="suitable">{t("suitabilitySuitable")}</SelectItem>
+            <SelectItem value="unsuitable">{t("suitabilityUnsuitable")}</SelectItem>
+            <SelectItem value="undecided">{t("suitabilityUndecided")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-md border">
