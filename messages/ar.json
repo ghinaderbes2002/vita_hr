@@ -2414,6 +2414,7 @@
       "ceoRequired": "يتطلب موافقة المدير التنفيذي"
     },
     "availability": {
+      "IMMEDIATE": "فوراً",
       "IMMEDIATELY": "فوراً",
       "WITHIN_ONE_WEEK": "خلال أسبوع",
       "WITHIN_TWO_WEEKS": "خلال أسبوعين",

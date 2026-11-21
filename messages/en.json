@@ -2282,6 +2282,7 @@
       "ceoRequired": "Requires CEO approval"
     },
     "availability": {
+      "IMMEDIATE": "Immediately",
       "IMMEDIATELY": "Immediately",
       "WITHIN_ONE_WEEK": "Within One Week",
       "WITHIN_TWO_WEEKS": "Within Two Weeks",

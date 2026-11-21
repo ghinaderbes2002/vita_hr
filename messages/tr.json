@@ -2135,6 +2135,7 @@
       "ceoRequired": "CEO onayı gerektirir"
     },
     "availability": {
+      "IMMEDIATE": "Hemen",
       "IMMEDIATELY": "Hemen",
       "WITHIN_ONE_WEEK": "Bir Hafta İçinde",
       "WITHIN_TWO_WEEKS": "İki Hafta İçinde",

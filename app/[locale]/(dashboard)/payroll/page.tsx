@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
@@ -241,7 +241,7 @@ export default function PayrollPage() {
                   : formatUSDRounded(item.netSalary);
 
                 return (
-                  <>
+                  <Fragment key={item.id}>
                     <TableRow
                       key={item.id}
                       className={`cursor-pointer hover:bg-muted/30 ${resigned ? "opacity-60" : ""}`}
@@ -360,7 +360,7 @@ export default function PayrollPage() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             )}

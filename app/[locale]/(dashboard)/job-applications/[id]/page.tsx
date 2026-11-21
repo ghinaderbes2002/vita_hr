@@ -337,7 +337,11 @@ export default function JobApplicationDetailPage() {
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span>
                   {t("jobApplications.fields.availabilityToJoin")}:{" "}
-                  <strong>{t(`jobApplications.availability.${app.availabilityToJoin}`)}</strong>
+                  <strong>
+                    {t.has(`jobApplications.availability.${app.availabilityToJoin}`)
+                      ? t(`jobApplications.availability.${app.availabilityToJoin}`)
+                      : app.availabilityToJoin}
+                  </strong>
                 </span>
               </div>
             )}
