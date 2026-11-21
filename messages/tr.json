@@ -2392,7 +2392,7 @@
       },
       "history": {
         "title": "Klinik Öykü ve Genel Bilgiler",
-        "birth": "Doğum Öyküsü / Risk Faktörleri",
+        "birth": "Klinik Öykü",
         "previousUse": "Ortez Cihazlarının Önceki Kullanımı",
         "previousDetails": "Cihaz Tipi ve Kullanım Süresi",
         "surgicalHint": "Kemik ameliyatları, tendon transferleri vb.",

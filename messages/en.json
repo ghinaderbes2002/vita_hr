@@ -3309,7 +3309,7 @@
       },
       "history": {
         "title": "Clinical History & General Information",
-        "birth": "Birth History / Risk Factors",
+        "birth": "Clinical History",
         "previousUse": "Previous Use of Orthotic Devices",
         "previousDetails": "Device Type and Duration of Use",
         "surgicalHint": "Bone surgery, tendon transfers, etc.",
