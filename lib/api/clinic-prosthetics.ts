@@ -1231,6 +1231,11 @@ export interface FinalDeliveryDto {
   medicalDirectorId?: string;
   medicalDirectorSignatureUrl?: string;
   medicalDirectorSignedAt?: string;
+  /**
+   * Limbs handed over — entered by hand. Not items.length: one limb is
+   * several parts (knee, foot, adapter…). null on forms saved before it existed.
+   */
+  deliveredLimbsCount?: number | null;
 }
 
 export interface DeliveryItemDto {

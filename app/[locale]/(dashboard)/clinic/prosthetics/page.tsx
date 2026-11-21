@@ -155,7 +155,8 @@ export default function ProstheticsListPage() {
     const q = trimmedSearch.toLowerCase();
     const name = c.patient ? `${c.patient.firstName} ${c.patient.lastName}`.toLowerCase() : "";
     const num = c.patient?.patientNumber?.toLowerCase() ?? "";
-    return name.includes(q) || num.includes(q);
+    const caseNo = ((c as any).caseNumber ?? "").toLowerCase();
+    return name.includes(q) || num.includes(q) || caseNo.includes(q);
   });
 
   const total = clientPaged ? filtered.length : (data?.total ?? 0);
@@ -284,6 +285,7 @@ export default function ProstheticsListPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>رقم الحالة</TableHead>
               <TableHead>{t("table.patientNumber")}</TableHead>
               <TableHead>{t("table.patient")}</TableHead>
               <TableHead>{t("table.status")}</TableHead>
@@ -298,14 +300,14 @@ export default function ProstheticsListPage() {
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 8 }).map((_, j) => (
+                  {Array.from({ length: 9 }).map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : cases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8}>
+                <TableCell colSpan={9}>
                   <EmptyState icon={<Activity className="h-8 w-8 text-muted-foreground" />} title={t("empty.title")} description={t("empty.description")} />
                 </TableCell>
               </TableRow>
@@ -316,6 +318,9 @@ export default function ProstheticsListPage() {
                   className="cursor-pointer hover:bg-muted/40 transition-colors"
                   onClick={() => router.push(`/${locale}/clinic/prosthetics/${c.id}`)}
                 >
+                  <TableCell className="font-mono text-sm whitespace-nowrap">
+                    {(c as any).caseNumber ?? "—"}
+                  </TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
                     {c.patient?.patientNumber ?? "—"}
                   </TableCell>

@@ -33,7 +33,8 @@ export function useCreateInterviewEvaluation() {
       qc.invalidateQueries({ queryKey: ["interview-evaluations"] });
       qc.invalidateQueries({ queryKey: ["interview-evaluation-by-app", vars.jobApplicationId] });
       qc.invalidateQueries({ queryKey: ["interview-position-comparison", vars.positionId] });
-      // The backend moves the linked application to ACCEPTED on save, so refresh its status.
+      // Saving the evaluation moves the linked application to INTERVIEWED on the
+      // backend, so refresh it — otherwise the page keeps showing the old status.
       qc.invalidateQueries({ queryKey: ["job-applications"] });
       qc.invalidateQueries({ queryKey: ["job-applications-stats"] });
       if (vars.jobApplicationId) qc.invalidateQueries({ queryKey: ["job-application", vars.jobApplicationId] });
@@ -48,10 +49,15 @@ export function useUpdateInterviewEvaluation() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateInterviewEvaluationData> }) =>
       interviewEvaluationsApi.update(id, data),
-    onSuccess: (result, { id }) => {
+    onSuccess: (result, { id, data }) => {
+      const applicationId = result?.jobApplicationId ?? data.jobApplicationId;
       qc.invalidateQueries({ queryKey: ["interview-evaluations"] });
       qc.invalidateQueries({ queryKey: ["interview-evaluation", id] });
-      qc.invalidateQueries({ queryKey: ["interview-evaluation-by-app", result.jobApplicationId] });
+      qc.invalidateQueries({ queryKey: ["interview-evaluation-by-app", applicationId] });
+      // Every save (not just the first) moves the application to INTERVIEWED.
+      qc.invalidateQueries({ queryKey: ["job-applications"] });
+      qc.invalidateQueries({ queryKey: ["job-applications-stats"] });
+      if (applicationId) qc.invalidateQueries({ queryKey: ["job-application", applicationId] });
       toast.success("تم تحديث التقييم");
     },
     onError: (e: any) => toast.error(e.response?.data?.error?.message || e.response?.data?.message || "حدث خطأ"),

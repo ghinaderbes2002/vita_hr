@@ -15,6 +15,7 @@ import { PatientPhoto } from "@/components/clinic/patient-photo";
 import { PractitionersCard } from "@/components/clinic/podiatry-practitioners-card";
 import { OrthoticsReceptionDialog } from "@/components/clinic/orthotics-reception-dialog";
 import { OrthoticsAttachments } from "@/components/clinic/orthotics-attachments";
+import { OrthoticsCommitteeTab, OrthoticsSessionsTab } from "@/components/clinic/orthotics-committee-sessions";
 import {
   OrthoticsDoctorSection, OrthoticsPhysioSection, OrthoticsProsthetistSection, OrthoticsClinicalHistoryTab,
   OrthoticsMeasurementCard,
@@ -152,7 +153,10 @@ export default function OrthoticsReceptionPage() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-xl font-bold">{patientName}</h1>
             {patientNumber && <Badge variant="outline" className="font-mono text-xs">{patientNumber}</Badge>}
-            <span className="text-xs text-muted-foreground">{fmt(reception.createdAt)}</span>
+            <span className="text-xs text-muted-foreground">
+              {fmt(reception.createdAt)}
+              {reception.createdByName && <> · استقبله: {reception.createdByName}</>}
+            </span>
           </div>
         </div>
         {/* The sheet carries every clinical tab, so it follows the same rule as they do. */}
@@ -172,6 +176,9 @@ export default function OrthoticsReceptionPage() {
               <TabsTrigger value="doctor" className={TAB_CLASS}>{t("tabs.doctor")}{done(filled.doctor)}</TabsTrigger>
               <TabsTrigger value="physio" className={TAB_CLASS}>{t("tabs.physio")}{done(filled.physio)}</TabsTrigger>
               <TabsTrigger value="prosthetist" className={TAB_CLASS}>{t("tabs.prosthetist")}{done(filled.prosthetist && filled.clinicalHistory)}</TabsTrigger>
+              {/* The committee decides after the three assessments; sessions follow its decision. */}
+              <TabsTrigger value="committee" className={TAB_CLASS}>اللجنة{done(reception.isSuitable != null)}</TabsTrigger>
+              <TabsTrigger value="sessions" className={TAB_CLASS}>الجلسات</TabsTrigger>
             </>
           )}
         </TabsList>
@@ -245,6 +252,18 @@ export default function OrthoticsReceptionPage() {
             reception={reception}
             canEditHistory={can(PERMISSIONS.CLINIC_ORTHOTICS.DOCTOR_ASSESSMENT_EDIT)}
             canEditDevice={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)}
+          />
+        </TabsContent>
+
+        <TabsContent value="committee" className="mt-4">
+          <OrthoticsCommitteeTab reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.EDIT)} />
+        </TabsContent>
+
+        <TabsContent value="sessions" className="mt-4">
+          <OrthoticsSessionsTab
+            reception={reception}
+            canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.EDIT)}
+            canView={can(PERMISSIONS.CLINIC_ORTHOTICS.VIEW)}
           />
         </TabsContent>
       </Tabs>

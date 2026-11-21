@@ -1,3 +1,4 @@
+import type { AmputationCause } from "./clinic-prosthetics";
 import { apiClient } from "./client";
 import { toUploadableImage } from "@/lib/utils/heic";
 
@@ -97,11 +98,24 @@ export interface OrthoticsDoctorAssessment {
   skinConditions?: OrthoticsSkinCondition[];
   pressurePointsLocation?: string;
   doctorOpinion?: string;
-  /** How many orthoses the patient needs. */
+  /** How many orthoses the patient needs — must equal appliancesDetails.length once both are set. */
   appliancesCount?: number | null;
+  /** One row per orthosis. Sent together with appliancesCount when the count changes. */
+  appliancesDetails?: OrthoticsApplianceDetail[] | null;
   affectedLimbType?: OrthoticsLimbType;
   affectedSide?: OrthoticsSide;
   soundLimbDescription?: string;
+  /** Same nine values as the prosthetics screen; null on older receptions. */
+  amputationCause?: AmputationCause | null;
+  /** Only with OTHER. */
+  amputationCauseOtherDetail?: string | null;
+}
+
+export interface OrthoticsApplianceDetail {
+  limbType?: OrthoticsLimbType;
+  side?: OrthoticsSide;
+  deviceType?: OrthoticsRecommendedDevice | null;
+  notes?: string | null;
 }
 
 /** أخصائي العلاج الفيزيائي. Every field is optional, upserted the same way. */
@@ -163,8 +177,53 @@ export interface OrthoticsReception
   /** Employee ids of the practitioners assigned to this reception. */
   practitionerIds?: string[] | null;
   prosthetistOpinion?: string | null;
+  /** Committee decision: true suitable, false not, null not decided yet (old receptions too). */
+  isSuitable?: boolean | null;
+  suitabilityNote?: string | null;
+  /** Orthoses the committee approved — distinct from the doctor's appliancesCount. */
+  targetAppliancesCount?: number | null;
+  suitabilityUpdatedAt?: string | null;
+  /** A user id (not an employee id). */
+  suitabilityUpdatedBy?: string | null;
+  // Who filled each part — names resolved by the API at read time; null when
+  // not filled yet, or not recorded (prosthetist opinions written before it was).
+  createdByName?: string | null;
+  suitabilityUpdatedByName?: string | null;
+  doctorAssessmentUpdatedByName?: string | null;
+  doctorAssessmentUpdatedAt?: string | null;
+  physioAssessmentUpdatedByName?: string | null;
+  physioAssessmentUpdatedAt?: string | null;
+  prosthetistOpinionUpdatedByName?: string | null;
+  prosthetistOpinionUpdatedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface OrthoticsSuitabilityDto {
+  isSuitable: boolean;
+  suitabilityNote?: string;
+  targetAppliancesCount?: number;
+}
+
+/** A follow-up visit on a reception. */
+export interface OrthoticsFollowUp {
+  id: string;
+  receptionId?: string;
+  visitDate: string;
+  findings: string;
+  actions?: string | null;
+  practitionerId?: string | null;
+  practitionerName?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface OrthoticsFollowUpDto {
+  visitDate: string;
+  findings: string;
+  actions?: string;
+  /** Left out: the API fills in the current user. */
+  practitionerId?: string;
 }
 
 export interface OrthoticsGuardianDto {
@@ -278,6 +337,32 @@ export const clinicOrthoticsApi = {
   saveProsthetistAssessment: async (id: string, dto: OrthoticsProsthetistAssessment): Promise<OrthoticsReception> => {
     const { data } = await apiClient.patch(`${BASE}/${id}/prosthetist-opinion`, dto);
     return unwrap(data) as OrthoticsReception;
+  },
+
+  /** Committee decision on the reception. */
+  saveSuitability: async (id: string, dto: OrthoticsSuitabilityDto): Promise<OrthoticsReception> => {
+    const { data } = await apiClient.patch(`${BASE}/${id}/suitability`, dto);
+    return unwrap(data) as OrthoticsReception;
+  },
+
+  /** Newest visit first. */
+  listFollowUps: async (id: string): Promise<OrthoticsFollowUp[]> => {
+    const { data } = await apiClient.get(`${BASE}/${id}/follow-ups`);
+    return asArray<OrthoticsFollowUp>(unwrap(data));
+  },
+
+  addFollowUp: async (id: string, dto: OrthoticsFollowUpDto): Promise<OrthoticsFollowUp> => {
+    const { data } = await apiClient.post(`${BASE}/${id}/follow-ups`, dto);
+    return unwrap(data) as OrthoticsFollowUp;
+  },
+
+  updateFollowUp: async (id: string, followUpId: string, dto: Partial<OrthoticsFollowUpDto>): Promise<OrthoticsFollowUp> => {
+    const { data } = await apiClient.patch(`${BASE}/${id}/follow-ups/${followUpId}`, dto);
+    return unwrap(data) as OrthoticsFollowUp;
+  },
+
+  removeFollowUp: async (id: string, followUpId: string): Promise<void> => {
+    await apiClient.delete(`${BASE}/${id}/follow-ups/${followUpId}`);
   },
 
   deleteReception: async (id: string): Promise<void> => {

@@ -257,3 +257,16 @@ export function sectionsFilled(r: OrthoticsReception) {
       || r.recommendedDeviceTypes?.length),
   };
 }
+
+/** Same list (and values) as the prosthetics screen — anything else is a 400. */
+export const AMPUTATION_CAUSES: { value: import("@/lib/api/clinic-prosthetics").AmputationCause; label: string }[] = [
+  { value: "WAR_INJURY", label: "إصابة حرب" },
+  { value: "TRAFFIC_ACCIDENT", label: "حادث سير" },
+  { value: "DIABETES", label: "سكري" },
+  { value: "VASCULAR_DISEASE", label: "مرض وعائي" },
+  { value: "CONGENITAL", label: "خلقي" },
+  { value: "INFECTION", label: "إنتان" },
+  { value: "TUMOR", label: "ورم" },
+  { value: "WORK_INJURY", label: "إصابة عمل" },
+  { value: "OTHER", label: "أخرى" },
+];

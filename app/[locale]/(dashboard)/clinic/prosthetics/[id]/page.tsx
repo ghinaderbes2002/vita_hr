@@ -4066,7 +4066,7 @@ export default function ProstheticsCasePage() {
   const [proDeliveryHeader, setProDeliveryHeader] = useState({ inspectionDate: "", prosthetistId: "", physiotherapistId: "", medicalDirectorId: "", medicalDirectorSignatureUrl: "", medicalDirectorSignedAt: "", signatureDate: "" });
   // Final delivery is an independent record; its header is edited via PATCH.
   // It is signed by the CEO (the trial delivery is signed by the medical director).
-  const [finalDeliveryHeader, setFinalDeliveryHeader] = useState({ inspectionDate: "", prosthetistId: "", physiotherapistId: "", ceoId: "", ceoSignatureUrl: "", signatureDate: "" });
+  const [finalDeliveryHeader, setFinalDeliveryHeader] = useState({ inspectionDate: "", prosthetistId: "", physiotherapistId: "", ceoId: "", ceoSignatureUrl: "", signatureDate: "", deliveredLimbsCount: "" });
   const finalCeoSigRef = useRef<HTMLInputElement>(null);
   // Patient signature on the delivery pledge. Pulled from the signature already on
   // file for the patient; the final-delivery record has no field to store it yet.
@@ -4208,6 +4208,8 @@ export default function ProstheticsCasePage() {
       ceoId: fd?.ceoId ?? "",
       ceoSignatureUrl: fd?.ceoSignatureUrl ?? "",
       signatureDate: fd?.signatureDate?.slice(0, 10) ?? "",
+      // Old forms: null — left empty, never shown as 0.
+      deliveredLimbsCount: fd?.deliveredLimbsCount != null ? String(fd.deliveredLimbsCount) : "",
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalDeliveryKey]);
@@ -5542,6 +5544,11 @@ export default function ProstheticsCasePage() {
           )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h1 className="text-xl font-bold">{t("page.pageTitle")}</h1>
+            {(c as any).caseNumber && (
+              <span className="rounded bg-muted px-2 py-0.5 font-mono text-sm text-muted-foreground" title="رقم الحالة">
+                {(c as any).caseNumber}
+              </span>
+            )}
             <CaseStatusBadge status={c.status} />
             {caseLocked && <SavedBadge />}
             {ampTypes.map((t) => <Badge key={t} variant="outline">{TYPE_LABEL[t] ?? t}</Badge>)}
@@ -8678,10 +8685,23 @@ export default function ProstheticsCasePage() {
             >
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5 col-span-1 sm:col-span-2">
+                  <div className="space-y-1.5">
                     <Label className="text-xs">{t("delivered.dischargeDate")}</Label>
                     <Input type="date" value={finalDeliveryHeader.inspectionDate}
                       onChange={(e) => setFinalDeliveryHeader((f) => ({ ...f, inspectionDate: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">عدد الأطراف المسلَّمة</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      placeholder="غير مسجَّل"
+                      value={finalDeliveryHeader.deliveredLimbsCount}
+                      onChange={(e) => setFinalDeliveryHeader((f) => ({ ...f, deliveredLimbsCount: e.target.value.replace(/[^\d]/g, "") }))}
+                    />
+                    <p className="text-[11px] text-muted-foreground">عدد الأطراف لا القطع — الطرف الواحد قد يتكوّن من عدة قطع.</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("delivered.prosthetist")}</Label>
@@ -8789,6 +8809,9 @@ export default function ProstheticsCasePage() {
                     ceoId: finalDeliveryHeader.ceoId || undefined,
                     ceoSignatureUrl: finalDeliveryHeader.ceoSignatureUrl || undefined,
                     signatureDate: finalDeliveryHeader.signatureDate || undefined,
+                    ...(finalDeliveryHeader.deliveredLimbsCount !== ""
+                      ? { deliveredLimbsCount: Number(finalDeliveryHeader.deliveredLimbsCount) }
+                      : {}),
                   } })}
                   disabled={updateFinalDelivery.isPending}
                   className="w-full gap-2"

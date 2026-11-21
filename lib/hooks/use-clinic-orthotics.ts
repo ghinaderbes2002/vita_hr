@@ -8,6 +8,8 @@ import {
   OrthoticsGuardianDto,
   OrthoticsPhysioAssessment,
   OrthoticsProsthetistAssessment,
+  OrthoticsSuitabilityDto,
+  OrthoticsFollowUpDto,
 } from "@/lib/api/clinic-orthotics";
 
 type ApiError = { response?: { data?: { message?: string; error?: { message?: string } } } };
@@ -194,5 +196,52 @@ export function useDeleteOrthoticsAttachment(id: string) {
       toast.success("تم حذف المرفق");
     },
     onError: (e: unknown) => toast.error(errMsg(e, "فشل حذف المرفق")),
+  });
+}
+
+export function useSaveOrthoticsSuitability() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: OrthoticsSuitabilityDto }) => clinicOrthoticsApi.saveSuitability(id, dto),
+    onSuccess: (_, { id }) => {
+      invalidate(id);
+      toast.success("حُفظ قرار اللجنة");
+    },
+    onError: (e) => toast.error(errMsg(e, "تعذّر حفظ قرار اللجنة")),
+  });
+}
+
+const followUpsKey = (id: string) => ["orthotics-follow-ups", id];
+
+export function useOrthoticsFollowUps(id: string, enabled = true) {
+  return useQuery({
+    queryKey: followUpsKey(id),
+    queryFn: () => clinicOrthoticsApi.listFollowUps(id),
+    enabled: !!id && enabled,
+  });
+}
+
+export function useSaveOrthoticsFollowUp(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ followUpId, dto }: { followUpId?: string; dto: OrthoticsFollowUpDto }) =>
+      followUpId ? clinicOrthoticsApi.updateFollowUp(id, followUpId, dto) : clinicOrthoticsApi.addFollowUp(id, dto),
+    onSuccess: (_, { followUpId }) => {
+      qc.invalidateQueries({ queryKey: followUpsKey(id) });
+      toast.success(followUpId ? "عُدّلت الجلسة" : "أُضيفت الجلسة");
+    },
+    onError: (e) => toast.error(errMsg(e, "تعذّر حفظ الجلسة")),
+  });
+}
+
+export function useDeleteOrthoticsFollowUp(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (followUpId: string) => clinicOrthoticsApi.removeFollowUp(id, followUpId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: followUpsKey(id) });
+      toast.success("حُذفت الجلسة");
+    },
+    onError: (e) => toast.error(errMsg(e, "تعذّر حذف الجلسة")),
   });
 }

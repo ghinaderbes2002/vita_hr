@@ -31,8 +31,9 @@ import {
   BODY_REGIONS, MUSCLE_MOVEMENT_GROUPS, MUSCLE_STRENGTHS, MUSCLE_TONES, SENSATIONS, SKIN_CONDITIONS,
   TRUNK_MOVEMENTS, TRUNK_SCALE, TRUNK_SCALE_FIELDS, type Options,
   DAILY_USE_SETTINGS, RECOMMENDED_DEVICES, LIMB_TYPES, SIDES, UPPER_LIMB_ROM,
-  doctorAssessmentOf, physioAssessmentOf, prosthetistAssessmentOf,
+  doctorAssessmentOf, physioAssessmentOf, prosthetistAssessmentOf, AMPUTATION_CAUSES,
 } from "./orthotics-labels";
+import type { OrthoticsApplianceDetail } from "@/lib/api/clinic-orthotics";
 
 // ── Controls ─────────────────────────────────────────────────────────────────
 
@@ -327,9 +328,11 @@ function changesOf<T extends object>(draft: T, saved: T): Partial<T> {
 }
 
 function SectionCard({
-  title, canEdit, editing, onEdit, onCancel, onSave, saving, dirty, missing = [], children,
+  title, canEdit, editing, onEdit, onCancel, onSave, saving, dirty, missing = [], children, filledBy,
 }: {
   title: string;
+  /** "عبّأه: … · date" under the title; omitted while the section is empty. */
+  filledBy?: { name?: string | null; at?: string | null } | null;
   canEdit: boolean;
   editing: boolean;
   onEdit: () => void;
@@ -367,6 +370,12 @@ function SectionCard({
             </Button>
           ))}
         </div>
+        {filledBy && (
+          <p className="text-xs text-muted-foreground">
+            عبّأه: {filledBy.name || "غير مسجَّل"}
+            {filledBy.at && <> · {new Date(filledBy.at).toLocaleString("ar", { dateStyle: "short", timeStyle: "short" })}</>}
+          </p>
+        )}
         {editing && missing.length > 0 && (
           <p className="text-xs text-destructive">{t("common.missingFields")}: {missing.join("، ")}</p>
         )}
@@ -375,6 +384,10 @@ function SectionCard({
     </Card>
   );
 }
+
+/** Who filled a section — only once something is in it (old sections may have no name: "غير مسجَّل"). */
+const filledByOf = (hasContent: boolean, name?: string | null, at?: string | null) =>
+  hasContent || name || at ? { name, at } : null;
 
 /** Draft state for a section: seeded from the saved values whenever editing starts. */
 function useSectionDraft<T extends object>(saved: T) {
@@ -394,7 +407,7 @@ const DOCTOR_KEYS: (keyof OrthoticsDoctorAssessment)[] = [
   "surgicalHistory", "familyHistory", "chiefComplaint", "muscleToneDetails", "muscleTone", "spasticityLevel",
   "sensationDetails", "sensation", "thighMuscleStrength", "legFootMuscleStrength", "forearmMuscleStrength",
   "upperArmMuscleStrength", "skinConditions",
-  "pressurePointsLocation", "doctorOpinion",
+  "pressurePointsLocation", "doctorOpinion", "amputationCause", "amputationCauseOtherDetail",
 ];
 
 const YES_NO: Options<"YES" | "NO"> = [
@@ -445,6 +458,7 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
   return (
     <SectionCard
       title={t("doctor.title")}
+      filledBy={filledByOf(dx.length > 0 || filled(saved.doctorOpinion), reception.doctorAssessmentUpdatedByName, reception.doctorAssessmentUpdatedAt)}
       missing={missing}
       canEdit={canEdit}
       editing={s.editing}
@@ -478,6 +492,31 @@ export function OrthoticsDoctorSection({ reception, canEdit }: { reception: Orth
         <Field label={t("doctor.injuryDate")}>
           <TextValue type="date" dir="ltr" value={v.injuryStartDate} onChange={(x) => s.set({ injuryStartDate: x })} readOnly={ro} />
         </Field>
+        <Field label="سبب البتر">
+          {ro ? (
+            <div className={`rounded-md border bg-muted/40 px-3 py-2 text-sm ${v.amputationCause ? "" : "text-muted-foreground"}`}>
+              {v.amputationCause ? AMPUTATION_CAUSES.find((c) => c.value === v.amputationCause)?.label ?? v.amputationCause : "غير مسجَّل"}
+              {v.amputationCause === "OTHER" && v.amputationCauseOtherDetail ? ` — ${v.amputationCauseOtherDetail}` : ""}
+            </div>
+          ) : (
+            <select
+              value={v.amputationCause ?? ""}
+              onChange={(e) => s.set({
+                amputationCause: (e.target.value || null) as OrthoticsDoctorAssessment["amputationCause"],
+                ...(e.target.value !== "OTHER" ? { amputationCauseOtherDetail: null } : {}),
+              })}
+              className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">— اختاري —</option>
+              {AMPUTATION_CAUSES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          )}
+        </Field>
+        {!ro && v.amputationCause === "OTHER" && (
+          <Field label="تفاصيل سبب البتر">
+            <TextValue value={v.amputationCauseOtherDetail ?? ""} onChange={(x) => s.set({ amputationCauseOtherDetail: x })} readOnly={ro} />
+          </Field>
+        )}
         <Field label={t("doctor.chiefComplaint")}>
           <TextValue value={v.chiefComplaint} onChange={(x) => s.set({ chiefComplaint: x })} readOnly={ro} />
         </Field>
@@ -586,6 +625,7 @@ export function OrthoticsPhysioSection({ reception, canEdit }: { reception: Orth
   return (
     <SectionCard
       title={t("physio.title")}
+      filledBy={filledByOf(!!saved.mobilityLevel || !!saved.physioOpinion, reception.physioAssessmentUpdatedByName, reception.physioAssessmentUpdatedAt)}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}
@@ -697,6 +737,7 @@ export function OrthoticsProsthetistSection({ reception, canEdit }: { reception:
   return (
     <SectionCard
       title={t("prosthetist.title")}
+      filledBy={filledByOf(!!prosthetistAssessmentOf(reception).prosthetistOpinion?.trim(), reception.prosthetistOpinionUpdatedByName, reception.prosthetistOpinionUpdatedAt)}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}
@@ -726,7 +767,7 @@ export function OrthoticsProsthetistSection({ reception, canEdit }: { reception:
 const HISTORY_KEYS: (keyof OrthoticsDoctorAssessment)[] = [
   "birthHistory", "previousOrthosisUse", "previousOrthosisDetails", "surgicalHistory", "medicalHistory",
   "functionalGoals", "dailyUseSettings", "dailyUseOther",
-  "appliancesCount", "affectedLimbType", "affectedSide", "soundLimbDescription",
+  "appliancesCount", "appliancesDetails", "affectedLimbType", "affectedSide", "soundLimbDescription",
 ];
 
 function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
@@ -737,9 +778,29 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
   const v = s.current;
   const ro = !s.editing;
 
+  // One row per orthosis. The rows follow the count as it's typed and are sent
+  // together with it, so the API never sees them disagree (APPLIANCES_COUNT_MISMATCH).
+  const count = v.appliancesCount ?? 0;
+  const rows: OrthoticsApplianceDetail[] = Array.from({ length: count }, (_, i) => v.appliancesDetails?.[i] ?? {});
+  const setCount = (n: number | null) => {
+    const next = n ?? 0;
+    const current = v.appliancesDetails ?? [];
+    const dropped = current.slice(next).filter((r) => r.limbType || r.side || r.deviceType || r.notes);
+    if (dropped.length > 0 && !window.confirm(`سيُحذف ${dropped.length === 1 ? "آخر سطر" : `آخر ${dropped.length} أسطر`} من تفاصيل المقومات. متابعة؟`)) return;
+    const details = n == null ? null : Array.from({ length: next }, (_, i) =>
+      current[i] ?? { limbType: v.affectedLimbType, side: v.affectedSide });
+    s.set({ appliancesCount: n, appliancesDetails: details });
+  };
+  const setRow = (i: number, patch: Partial<OrthoticsApplianceDetail>) =>
+    s.set({ appliancesDetails: rows.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
+  const detailsMissing = s.editing && v.appliancesDetails?.some((r) => !r.limbType || !r.side)
+    ? ["الجهة والطرف لكل مقوّم"] : [];
+
   return (
     <SectionCard
       title={t("history.title")}
+      filledBy={filledByOf(v.appliancesCount != null || !!saved.birthHistory, reception.doctorAssessmentUpdatedByName, reception.doctorAssessmentUpdatedAt)}
+      missing={detailsMissing}
       canEdit={canEdit}
       editing={s.editing}
       onEdit={s.start}
@@ -758,7 +819,7 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
             dir="ltr"
             value={v.appliancesCount == null ? "" : String(v.appliancesCount)}
             // A cleared field goes as null so the API blanks it.
-            onChange={(x) => s.set({ appliancesCount: x === "" ? null : Math.max(0, Math.trunc(Number(x))) })}
+            onChange={(x) => setCount(x === "" ? null : Math.min(10, Math.max(0, Math.trunc(Number(x)))))}
             readOnly={ro}
           />
         </Field>
@@ -769,6 +830,39 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
           <SingleChips options={SIDES} value={v.affectedSide} onChange={(x) => s.set({ affectedSide: x })} readOnly={ro} />
         </Field>
       </div>
+      {count > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium">تفاصيل المقومات</p>
+          {rows.map((r, i) => (
+            <div key={i} className="space-y-2 rounded-lg border p-3">
+              <p className="text-xs font-semibold text-muted-foreground">المقوّم {i + 1}</p>
+              {!s.editing && !v.appliancesDetails ? (
+                <p className="text-xs text-muted-foreground">غير مسجَّل</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="الطرف">
+                    <SingleChips options={LIMB_TYPES} value={r.limbType} onChange={(x) => setRow(i, { limbType: x })} readOnly={ro} />
+                  </Field>
+                  <Field label="الجهة">
+                    <SingleChips options={SIDES} value={r.side} onChange={(x) => setRow(i, { side: x })} readOnly={ro} />
+                  </Field>
+                  <Field label="نوع المقوّم" hint="اختياري">
+                    <SingleChips
+                      options={RECOMMENDED_DEVICES}
+                      value={r.deviceType ?? undefined}
+                      onChange={(x) => setRow(i, { deviceType: r.deviceType === x ? null : x })}
+                      readOnly={ro}
+                    />
+                  </Field>
+                  <Field label="ملاحظات" hint="اختياري">
+                    <TextValue value={r.notes ?? ""} onChange={(x) => setRow(i, { notes: x })} readOnly={ro} />
+                  </Field>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       <Field label={t("doctor.soundLimb")}>
         <TextValue multiline value={v.soundLimbDescription} onChange={(x) => s.set({ soundLimbDescription: x })} readOnly={ro} />
       </Field>
