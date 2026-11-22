@@ -588,6 +588,7 @@
     },
     "modules": {
       "warehouse": "Warehouses",
+      "cashbox": "Cashbox",
       "attendance": "Attendance",
       "employees": "Employees",
       "users": "Users",

@@ -588,6 +588,7 @@
     },
     "modules": {
       "warehouse": "Depolar",
+      "cashbox": "Kasa",
       "attendance": "Devam",
       "employees": "Çalışanlar",
       "users": "Kullanıcılar",

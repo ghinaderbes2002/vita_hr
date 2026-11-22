@@ -1455,6 +1455,7 @@
     },
     "modules": {
       "warehouse": "المستودعات",
+      "cashbox": "الصندوق النقدي",
       "attendance": "الحضور",
       "employees": "الموظفون",
       "users": "المستخدمون",

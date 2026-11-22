@@ -469,9 +469,16 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
       return;
     }
     // Unticked: only isExternal=false is sent — the API clears the type itself.
-    const externalFields = data.isExternal
-      ? { isExternal: true, externalTypeId: data.externalTypeId }
-      : { isExternal: false };
+    // On an edit they go only when they changed, so an ordinary edit never
+    // carries them (the update endpoint rejects unknown properties).
+    const externalChanged = !isEdit
+      || !!data.isExternal !== !!employee?.isExternal
+      || (!!data.isExternal && (data.externalTypeId ?? "") !== (employee?.externalTypeId ?? ""));
+    const externalFields = !externalChanged
+      ? {}
+      : data.isExternal
+        ? { isExternal: true, externalTypeId: data.externalTypeId }
+        : { isExternal: false };
     try {
       const qualificationFields: Record<string, any> = {};
       if (data.yearsOfExperience !== undefined) qualificationFields.yearsOfExperience = data.yearsOfExperience;

@@ -71,8 +71,10 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   };
 
   const getModuleLabel = (module: string) => {
+    // A module the API adds before it gets a label here shows its raw name
+    // instead of a MISSING_MESSAGE error.
     const key = `roles.modules.${module}`;
-    try { return t(key as any); } catch { return module; }
+    return t.has(key as any) ? t(key as any) : module;
   };
 
   const createRole = useCreateRole();
