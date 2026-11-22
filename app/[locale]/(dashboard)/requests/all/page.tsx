@@ -19,7 +19,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipboardList } from "lucide-react";
-import { useRequests, useApproveRequest, useRejectRequest } from "@/lib/hooks/use-requests";
+import { useRequests, useApproveRequest, useRejectRequest, usePendingMyApproval } from "@/lib/hooks/use-requests";
 import { RequestStatusBadge } from "@/components/features/requests/request-status-badge";
 import { RequestActionDialog } from "@/components/features/requests/request-action-dialog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -54,6 +54,14 @@ export default function AllRequestsPage() {
   const hrReject = useRejectRequest();
 
   const requests: Request[] = (data as any)?.data?.items || (data as any)?.data || [];
+
+  // Approve/reject only where the request's current step is the viewer's — the
+  // backend's own "pending my approval" list decides, not the status alone.
+  // Without it an HR user saw the actions on requests still with the manager.
+  const { data: pendingMineData } = usePendingMyApproval({ limit: 100 });
+  const pendingMineIds = new Set(
+    (((pendingMineData as any)?.data?.items || (pendingMineData as any)?.data || []) as Request[]).map((r) => r.id),
+  );
   const meta = (data as any)?.data ?? data ?? {};
   const total: number = meta.total ?? requests.length;
   const totalPages: number = meta.totalPages ?? Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -160,7 +168,7 @@ export default function AllRequestsPage() {
                     {new Date(req.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    {(req.status === "IN_APPROVAL" || req.status === "PENDING_HR" || req.status === "PENDING_MANAGER") && (canApprove || canReject) && (
+                    {pendingMineIds.has(req.id) && (canApprove || canReject) && (
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
