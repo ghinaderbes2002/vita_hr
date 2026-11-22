@@ -596,6 +596,18 @@ export const clinicProstheticsApi = {
    * Locks a reopened case again. Rejected with CASE_STILL_INCOMPLETE while
    * fields are missing, unless `force` is set — which requires a reason.
    */
+  /**
+   * Changes the case number by hand. Format PR-YYYY-NNNN (any year); rejected with
+   * CASE_NUMBER_INVALID_FORMAT / CASE_NUMBER_TAKEN, both with an Arabic message.
+   */
+  updateCaseNumber: async (
+    id: string,
+    caseNumber: string,
+  ): Promise<{ id: string; previousCaseNumber: string; caseNumber: string; changed: boolean }> => {
+    const { data } = await apiClient.patch(`/prosthetics/cases/${id}/case-number`, { caseNumber });
+    return data?.data ?? data;
+  },
+
   relock: async (id: string, opts?: { force: true; reason: string }): Promise<ProstheticsCase> => {
     const { data } = await apiClient.post(`/prosthetics/cases/${id}/relock`, opts ?? {});
     return data?.data ?? data;

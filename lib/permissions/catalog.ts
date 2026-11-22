@@ -261,6 +261,8 @@ export const PERMISSIONS = {
     NOTIFY_INCOMPLETE_FORM: "clinic.prosthetics.notify_incomplete_form",
     /** إعادة فتح حالة مسلَّمة لاستكمال النواقص، وإعادة قفلها (مع التجاوز). */
     REOPEN:            "clinic.prosthetics.reopen",
+    /** تعديل رقم الحالة يدوياً (PR-YYYY-NNNN) — مستقلة عن تعديل باقي الحالة. */
+    CASE_NUMBER_UPDATE: "clinic.prosthetics.case.number.update",
     CASE_CREATE:       "clinic.prosthetics.case.create",
     ASSESSMENT_CREATE: "clinic.prosthetics.assessment.create",
     COMMITTEE_OPINION: "clinic.prosthetics.committee.opinion",

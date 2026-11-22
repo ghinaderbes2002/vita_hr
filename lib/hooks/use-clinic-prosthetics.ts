@@ -1008,3 +1008,19 @@ export function useArchiveGaitAnalysisForm() {
     onError: (e: any) => toast.error(e?.response?.data?.message || "فشل الأرشفة"),
   });
 }
+
+/** Manual case-number change. Errors stay with the dialog, which shows the API's message. */
+export function useUpdateProstheticsCaseNumber() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, caseNumber }: { id: string; caseNumber: string }) =>
+      clinicProstheticsApi.updateCaseNumber(id, caseNumber),
+    onSuccess: (data, { id }) => {
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-case", id] });
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-cases"] });
+      qc.invalidateQueries({ queryKey: ["clinic-prosthetics-timeline", id] });
+      toast.success(data?.changed === false ? "رقم الحالة لم يتغيّر" : "تم تعديل رقم الحالة");
+    },
+  });
+}
+

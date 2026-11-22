@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { NotifyIncompleteFormButton } from "@/components/clinic/notify-incomplete-form-button";
 import { ProstheticsReopenControls, ProstheticsCaseCompleteness } from "@/components/clinic/prosthetics-reopen-controls";
+import { ProstheticsCaseNumberEdit } from "@/components/clinic/prosthetics-case-number-edit";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useUpdateAppointmentStatus } from "@/lib/hooks/use-clinic-appointments";
@@ -3821,7 +3822,9 @@ export default function ProstheticsCasePage() {
   // Permission decides first; a role can only narrow what is left, never widen it.
   const showTab = (key: string) => {
     if (!canTab(tabPerm[key] ?? null)) return false;
-    if (isCenterSupervisor) return key === "intake";
+    // The final delivery is also theirs to record — still behind its permission
+    // (DELIVERY_APPROVE), checked above.
+    if (isCenterSupervisor) return key === "intake" || key === "final_delivery";
     if (isPhysioOnly) return PHYSIO_ROLE_TABS.includes(key);
     return true;
   };
@@ -5545,8 +5548,11 @@ export default function ProstheticsCasePage() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h1 className="text-xl font-bold">{t("page.pageTitle")}</h1>
             {(c as any).caseNumber && (
-              <span className="rounded bg-muted px-2 py-0.5 font-mono text-sm text-muted-foreground" title="رقم الحالة">
-                {(c as any).caseNumber}
+              <span className="inline-flex items-center gap-0.5">
+                <span className="rounded bg-muted px-2 py-0.5 font-mono text-sm text-muted-foreground" title="رقم الحالة">
+                  {(c as any).caseNumber}
+                </span>
+                <ProstheticsCaseNumberEdit caseId={id} caseNumber={(c as any).caseNumber} />
               </span>
             )}
             <CaseStatusBadge status={c.status} />

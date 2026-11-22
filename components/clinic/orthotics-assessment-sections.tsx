@@ -841,17 +841,17 @@ function OrthoticsClinicalHistoryCard({
               are no longer asked here; values saved before stay in the row as they were. */}
           {rows.map((r, i) => (
             <div key={i} className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border p-3">
-              <p className="w-16 shrink-0 text-xs font-semibold text-muted-foreground">المقوّم {i + 1}</p>
+              <p className="w-16 shrink-0 text-xs font-semibold text-foreground">المقوّم {i + 1}</p>
               {!s.editing && !v.appliancesDetails ? (
                 <p className="text-xs text-muted-foreground">غير مسجَّل</p>
               ) : (
                 <>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">الطرف المصاب</span>
+                    <span className="text-xs font-medium text-foreground">الطرف المصاب</span>
                     <SingleChips options={LIMB_TYPES} value={r.limbType} onChange={(x) => setRow(i, { limbType: x })} readOnly={ro} />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">الجهة</span>
+                    <span className="text-xs font-medium text-foreground">الجهة</span>
                     <SingleChips options={SIDES} value={r.side} onChange={(x) => setRow(i, { side: x })} readOnly={ro} />
                   </div>
                 </>
