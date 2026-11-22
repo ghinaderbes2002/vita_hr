@@ -169,7 +169,7 @@ export function OrthoticsAttachments({ receptionId }: { receptionId: string }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-1.5 text-base">
             <Paperclip className="h-4 w-4" />
-            المرفقات{canView && attachments.length > 0 ? ` (${attachments.length})` : ""}
+            صور البتر{canView && attachments.length > 0 ? ` (${attachments.length})` : ""}
           </CardTitle>
           {canUpload && (
             <>
@@ -182,7 +182,7 @@ export function OrthoticsAttachments({ receptionId }: { receptionId: string }) {
                 onClick={() => fileRef.current?.click()}
               >
                 {upload.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                {upload.isPending ? "جارٍ الرفع..." : "رفع مرفق"}
+                {upload.isPending ? "جارٍ الرفع..." : "رفع صورة"}
               </Button>
             </>
           )}
@@ -190,14 +190,14 @@ export function OrthoticsAttachments({ receptionId }: { receptionId: string }) {
       </CardHeader>
       <CardContent>
         {!canView ? (
-          <p className="text-sm text-muted-foreground">ليس لديك صلاحية لعرض المرفقات.</p>
+          <p className="text-sm text-muted-foreground">ليس لديك صلاحية لعرض صور البتر.</p>
         ) : isLoading ? (
           <div className="flex justify-center py-4">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : attachments.length === 0 ? (
           <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-            لا توجد مرفقات. {canUpload && "يمكن رفع صور أو ملفات PDF حتى 15MB."}
+            لا توجد صور مرفقة. {canUpload && "يمكن رفع صور أو ملفات PDF حتى 15MB."}
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

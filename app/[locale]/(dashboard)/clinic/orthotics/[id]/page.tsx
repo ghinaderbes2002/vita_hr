@@ -16,8 +16,9 @@ import { PractitionersCard } from "@/components/clinic/podiatry-practitioners-ca
 import { OrthoticsReceptionDialog } from "@/components/clinic/orthotics-reception-dialog";
 import { OrthoticsAttachments } from "@/components/clinic/orthotics-attachments";
 import { OrthoticsCommitteeTab, OrthoticsOpinionsCard, OrthoticsSessionsTab } from "@/components/clinic/orthotics-committee-sessions";
+import { OrthoticsFittingTab } from "@/components/clinic/orthotics-fitting-tab";
 import {
-  OrthoticsDoctorSection, OrthoticsPhysioSection, OrthoticsProsthetistSection, OrthoticsClinicalHistoryTab,
+  OrthoticsDoctorSection, OrthoticsPhysioSection, OrthoticsClinicalHistoryTab,
   OrthoticsMeasurementCard, OrthoticsDeviceCard,
 } from "@/components/clinic/orthotics-assessment-sections";
 import { sectionsFilled } from "@/components/clinic/orthotics-labels";
@@ -178,6 +179,7 @@ export default function OrthoticsReceptionPage() {
               <TabsTrigger value="prosthetist" className={TAB_CLASS}>{t("tabs.prosthetist")}{done(filled.prosthetist && filled.clinicalHistory)}</TabsTrigger>
               {/* The committee decides after the three assessments; sessions follow its decision. */}
               <TabsTrigger value="committee" className={TAB_CLASS}>اللجنة{done(reception.isSuitable != null)}</TabsTrigger>
+              <TabsTrigger value="fitting" className={TAB_CLASS}>العرض الفني</TabsTrigger>
               <TabsTrigger value="measurement" className={TAB_CLASS}>ورق القياس</TabsTrigger>
               <TabsTrigger value="sessions" className={TAB_CLASS}>المتابعة</TabsTrigger>
             </>
@@ -234,7 +236,6 @@ export default function OrthoticsReceptionPage() {
             </CardContent>
           </Card>
 
-          <OrthoticsAttachments receptionId={id} />
         </TabsContent>
 
         <TabsContent value="doctor" className="mt-4">
@@ -247,11 +248,13 @@ export default function OrthoticsReceptionPage() {
 
         {/* التاريخ السريري والتوصيات يُعرض ضمن تبويب الأطراف الصناعية، تحت رأي الفني. */}
         <TabsContent value="prosthetist" className="mt-4 space-y-4">
-          <OrthoticsProsthetistSection reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />
+          {/* رأي أخصائي الأطراف صار آخر سؤال في التاريخ السريري؛ صور البتر بعده. */}
           <OrthoticsClinicalHistoryTab
             reception={reception}
             canEditHistory={can(PERMISSIONS.CLINIC_ORTHOTICS.DOCTOR_ASSESSMENT_EDIT)}
+            canEditOpinion={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)}
           />
+          <OrthoticsAttachments receptionId={id} />
         </TabsContent>
 
         {/* The committee reads the three opinions, decides, then settles the device. */}
@@ -259,6 +262,10 @@ export default function OrthoticsReceptionPage() {
           <OrthoticsOpinionsCard reception={reception} />
           <OrthoticsCommitteeTab reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.EDIT)} />
           <OrthoticsDeviceCard reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.PROSTHETIST_OPINION_EDIT)} />
+        </TabsContent>
+
+        <TabsContent value="fitting" className="mt-4">
+          <OrthoticsFittingTab reception={reception} canEdit={can(PERMISSIONS.CLINIC_ORTHOTICS.EDIT)} />
         </TabsContent>
 
         <TabsContent value="measurement" className="mt-4">

@@ -10,6 +10,7 @@ import {
   OrthoticsProsthetistAssessment,
   OrthoticsSuitabilityDto,
   OrthoticsFollowUpDto,
+  AddOrthoticsComponentDto,
 } from "@/lib/api/clinic-orthotics";
 
 type ApiError = { response?: { data?: { message?: string; error?: { message?: string } } } };
@@ -245,3 +246,37 @@ export function useDeleteOrthoticsFollowUp(id: string) {
     onError: (e) => toast.error(errMsg(e, "تعذّر حذف الجلسة")),
   });
 }
+
+// ── العرض الفني ─────────────────────────────────────────────────────────────
+
+/** Parts on the reception. Not retried: a 404 means the API has no components yet. */
+export function useOrthoticsComponents(receptionId: string) {
+  return useQuery({
+    queryKey: ["orthotics-components", receptionId],
+    queryFn: () => clinicOrthoticsApi.getComponents(receptionId),
+    enabled: !!receptionId,
+    retry: false,
+  });
+}
+
+export function useAddOrthoticsComponent(receptionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: AddOrthoticsComponentDto) => clinicOrthoticsApi.addComponent(receptionId, dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["orthotics-components", receptionId] }),
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل إضافة القطعة")),
+  });
+}
+
+export function useDeleteOrthoticsComponent(receptionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (componentId: string) => clinicOrthoticsApi.deleteComponent(receptionId, componentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orthotics-components", receptionId] });
+      toast.success("تم حذف القطعة");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل حذف القطعة")),
+  });
+}
+

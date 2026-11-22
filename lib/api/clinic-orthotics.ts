@@ -1,4 +1,5 @@
 import type { AmputationCause } from "./clinic-prosthetics";
+import type { MaterialRequestStatus } from "./warehouse-operations";
 import { apiClient } from "./client";
 import { toUploadableImage } from "@/lib/utils/heic";
 
@@ -282,6 +283,38 @@ export const isOrthoticsAttachmentType = (mime: string) =>
 
 const BASE = "/orthotics/receptions";
 
+// ── العرض الفني: قطع ومكوّنات المقوّم ─────────────────────────────────────────
+// Same contract as the prosthetics components, on the reception as a whole.
+
+export interface OrthoticsComponent {
+  id: string;
+  receptionId?: string;
+  partCode?: string | null;
+  partName?: string | null;
+  supplier?: string | null;
+  sourceLocation?: "WAREHOUSE" | "EXTERNAL" | string | null;
+  warehouseItemId?: string | null;
+  warehouseItem?: { name?: string | null; nameAr?: string | null; partCode?: string | null } | null;
+  /** The material request opened for it automatically; null when none was opened. */
+  materialRequest?: { materialRequestId: string; status: MaterialRequestStatus } | null;
+  addedAt?: string | null;
+  addedBy?: string | null;
+  addedByName?: string | null;
+  createdAt?: string;
+}
+
+export interface AddOrthoticsComponentDto {
+  /** Picked from the warehouse catalog — the API fills code and name and opens a material request. */
+  warehouseItemId?: string;
+  /** Warehouse the material request is raised against; the main one when left out. */
+  warehouseId?: string;
+  /** Required when warehouseItemId is not sent (a free-text part). */
+  partCode?: string;
+  partName?: string;
+  supplier?: string;
+  sourceLocation?: "WAREHOUSE" | "EXTERNAL";
+}
+
 const unwrap = (data: { data?: unknown } | unknown) =>
   (data as { data?: unknown })?.data ?? data;
 const asArray = <T>(d: unknown): T[] =>
@@ -367,6 +400,20 @@ export const clinicOrthoticsApi = {
 
   deleteReception: async (id: string): Promise<void> => {
     await apiClient.delete(`${BASE}/${id}`);
+  },
+
+  getComponents: async (id: string): Promise<OrthoticsComponent[]> => {
+    const { data } = await apiClient.get(`${BASE}/${id}/components`);
+    return asArray<OrthoticsComponent>(unwrap(data));
+  },
+
+  addComponent: async (id: string, dto: AddOrthoticsComponentDto): Promise<OrthoticsComponent> => {
+    const { data } = await apiClient.post(`${BASE}/${id}/components`, dto);
+    return unwrap(data) as OrthoticsComponent;
+  },
+
+  deleteComponent: async (id: string, componentId: string): Promise<void> => {
+    await apiClient.delete(`${BASE}/${id}/components/${componentId}`);
   },
 
   /** Newest first. */

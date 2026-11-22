@@ -733,39 +733,6 @@ export function OrthoticsPhysioSection({ reception, canEdit }: { reception: Orth
   );
 }
 
-// ── أخصائي الأطراف الصناعية ───────────────────────────────────────────────────
-
-export function OrthoticsProsthetistSection({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
-  const t = useTranslations("clinic.orthotics");
-  const s = useSectionDraft<OrthoticsProsthetistAssessment>({
-    prosthetistOpinion: prosthetistAssessmentOf(reception).prosthetistOpinion,
-  });
-  const save = useSaveOrthoticsProsthetistOpinion();
-
-  return (
-    <SectionCard
-      title={t("prosthetist.title")}
-      filledBy={filledByOf(!!prosthetistAssessmentOf(reception).prosthetistOpinion?.trim(), reception.prosthetistOpinionUpdatedByName, reception.prosthetistOpinionUpdatedAt)}
-      canEdit={canEdit}
-      editing={s.editing}
-      onEdit={s.start}
-      onCancel={() => s.setEditing(false)}
-      saving={save.isPending}
-      dirty={s.dirty}
-      onSave={() => save.mutate({ id: reception.id, dto: s.changes }, { onSuccess: () => s.setEditing(false) })}
-    >
-      <Field label={t("prosthetist.opinion")}>
-        <TextValue
-          multiline
-          value={s.current.prosthetistOpinion}
-          onChange={(x) => s.set({ prosthetistOpinion: x })}
-          readOnly={!s.editing}
-        />
-      </Field>
-    </SectionCard>
-  );
-}
-
 // ── التاريخ السريري والتوصيات ─────────────────────────────────────────────────
 // A page of the paper form of its own. Its fields are saved through the two
 // endpoints the API put them on: the history and goals with the doctor's
@@ -778,13 +745,36 @@ const HISTORY_KEYS: (keyof OrthoticsDoctorAssessment)[] = [
   "appliancesCount", "appliancesDetails", "affectedLimbType", "affectedSide", "soundLimbDescription",
 ];
 
-function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: OrthoticsReception; canEdit: boolean }) {
+function OrthoticsClinicalHistoryCard({
+  reception, canEditHistory, canEditOpinion,
+}: { reception: OrthoticsReception; canEditHistory: boolean; canEditOpinion: boolean }) {
   const t = useTranslations("clinic.orthotics");
   const saved = pick(doctorAssessmentOf(reception), HISTORY_KEYS);
   const s = useSectionDraft(saved);
   const save = useSaveOrthoticsDoctorAssessment();
   const v = s.current;
-  const ro = !s.editing;
+  const ro = !s.editing || !canEditHistory;
+
+  // The prosthetist's opinion closes this card. It is stored on its own endpoint
+  // under its own permission, so it keeps a draft of its own and is saved apart.
+  const savedOpinion = prosthetistAssessmentOf(reception).prosthetistOpinion ?? "";
+  const [opinion, setOpinion] = useState(savedOpinion);
+  const saveOpinion = useSaveOrthoticsProsthetistOpinion();
+  const opinionChanged = s.editing && opinion.trim() !== savedOpinion.trim();
+  const startEdit = () => { setOpinion(savedOpinion); s.start(); };
+  const saveAll = async () => {
+    try {
+      if (canEditHistory && Object.keys(s.changes).length > 0) {
+        await save.mutateAsync({ id: reception.id, dto: s.changes });
+      }
+      if (canEditOpinion && opinionChanged) {
+        await saveOpinion.mutateAsync({ id: reception.id, dto: { prosthetistOpinion: opinion.trim() } });
+      }
+      s.setEditing(false);
+    } catch {
+      // the mutation hook already toasted the reason — stay in edit mode
+    }
+  };
 
   // One row per orthosis. The rows follow the count as it's typed and are sent
   // together with it, so the API never sees them disagree (APPLIANCES_COUNT_MISMATCH).
@@ -809,13 +799,13 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
       title={t("history.title")}
       filledBy={filledByOf(v.appliancesCount != null || !!saved.birthHistory, reception.doctorAssessmentUpdatedByName, reception.doctorAssessmentUpdatedAt)}
       missing={detailsMissing}
-      canEdit={canEdit}
+      canEdit={canEditHistory || canEditOpinion}
       editing={s.editing}
-      onEdit={s.start}
+      onEdit={startEdit}
       onCancel={() => s.setEditing(false)}
-      saving={save.isPending}
-      dirty={s.dirty}
-      onSave={() => save.mutate({ id: reception.id, dto: s.changes }, { onSuccess: () => s.setEditing(false) })}
+      saving={save.isPending || saveOpinion.isPending}
+      dirty={(canEditHistory && s.dirty) || (canEditOpinion && opinionChanged)}
+      onSave={saveAll}
     >
       <Field label={t("history.birth")}>
         <TextValue multiline value={v.birthHistory} onChange={(x) => s.set({ birthHistory: x })} readOnly={ro} />
@@ -831,41 +821,40 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
             readOnly={ro}
           />
         </Field>
-        <Field label={t("doctor.affectedLimbType")}>
-          <SingleChips options={LIMB_TYPES} value={v.affectedLimbType} onChange={(x) => s.set({ affectedLimbType: x })} readOnly={ro} />
-        </Field>
-        <Field label={t("doctor.affectedSide")}>
-          <SingleChips options={SIDES} value={v.affectedSide} onChange={(x) => s.set({ affectedSide: x })} readOnly={ro} />
-        </Field>
+        {/* With a count, each orthosis carries its own limb and side below, so the
+            overall pair is hidden (still stored). Without one it stays the only answer. */}
+        {count === 0 && (
+          <>
+            <Field label={t("doctor.affectedLimbType")}>
+              <SingleChips options={LIMB_TYPES} value={v.affectedLimbType} onChange={(x) => s.set({ affectedLimbType: x })} readOnly={ro} />
+            </Field>
+            <Field label={t("doctor.affectedSide")}>
+              <SingleChips options={SIDES} value={v.affectedSide} onChange={(x) => s.set({ affectedSide: x })} readOnly={ro} />
+            </Field>
+          </>
+        )}
       </div>
       {count > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-medium">تفاصيل المقومات</p>
+          {/* Each orthosis repeats just the limb and the side. Device type and notes
+              are no longer asked here; values saved before stay in the row as they were. */}
           {rows.map((r, i) => (
-            <div key={i} className="space-y-2 rounded-lg border p-3">
-              <p className="text-xs font-semibold text-muted-foreground">المقوّم {i + 1}</p>
+            <div key={i} className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border p-3">
+              <p className="w-16 shrink-0 text-xs font-semibold text-muted-foreground">المقوّم {i + 1}</p>
               {!s.editing && !v.appliancesDetails ? (
                 <p className="text-xs text-muted-foreground">غير مسجَّل</p>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="الطرف">
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">الطرف المصاب</span>
                     <SingleChips options={LIMB_TYPES} value={r.limbType} onChange={(x) => setRow(i, { limbType: x })} readOnly={ro} />
-                  </Field>
-                  <Field label="الجهة">
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">الجهة</span>
                     <SingleChips options={SIDES} value={r.side} onChange={(x) => setRow(i, { side: x })} readOnly={ro} />
-                  </Field>
-                  <Field label="نوع المقوّم" hint="اختياري">
-                    <SingleChips
-                      options={RECOMMENDED_DEVICES}
-                      value={r.deviceType ?? undefined}
-                      onChange={(x) => setRow(i, { deviceType: r.deviceType === x ? null : x })}
-                      readOnly={ro}
-                    />
-                  </Field>
-                  <Field label="ملاحظات" hint="اختياري">
-                    <TextValue value={r.notes ?? ""} onChange={(x) => setRow(i, { notes: x })} readOnly={ro} />
-                  </Field>
-                </div>
+                  </div>
+                </>
               )}
             </div>
           ))}
@@ -929,6 +918,20 @@ function OrthoticsClinicalHistoryCard({ reception, canEdit }: { reception: Ortho
           <TextValue value={v.dailyUseOther} onChange={(x) => s.set({ dailyUseOther: x })} readOnly={ro} />
         </Field>
       )}
+      <Field label={t("prosthetist.opinion")}>
+        <TextValue
+          multiline
+          value={s.editing ? opinion : savedOpinion}
+          onChange={setOpinion}
+          readOnly={!s.editing || !canEditOpinion}
+        />
+        {savedOpinion.trim() && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            كتبه: {reception.prosthetistOpinionUpdatedByName || "غير مسجَّل"}
+            {reception.prosthetistOpinionUpdatedAt && <> · {new Date(reception.prosthetistOpinionUpdatedAt).toLocaleString("ar", { dateStyle: "short", timeStyle: "short" })}</>}
+          </p>
+        )}
+      </Field>
     </SectionCard>
   );
 }
@@ -1241,10 +1244,13 @@ export function OrthoticsMeasurementCard({ reception, canEdit }: { reception: Or
 }
 
 export function OrthoticsClinicalHistoryTab({
-  reception, canEditHistory,
+  reception, canEditHistory, canEditOpinion,
 }: {
   reception: OrthoticsReception;
   canEditHistory: boolean;
+  canEditOpinion: boolean;
 }) {
-  return <OrthoticsClinicalHistoryCard reception={reception} canEdit={canEditHistory} />;
+  return (
+    <OrthoticsClinicalHistoryCard reception={reception} canEditHistory={canEditHistory} canEditOpinion={canEditOpinion} />
+  );
 }
