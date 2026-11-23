@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { patientSurveysApi, CreatePatientSurveyDto, PatientSurveyListParams } from "@/lib/api/patient-surveys";
+import {
+  patientSurveysApi, CreatePatientSurveyDto, PatientSurveyListParams, PatientSurveyStatsParams,
+} from "@/lib/api/patient-surveys";
 import { toast } from "sonner";
 
 export function usePatientSurveys(params?: PatientSurveyListParams, enabled = true) {
@@ -11,10 +13,10 @@ export function usePatientSurveys(params?: PatientSurveyListParams, enabled = tr
 }
 
 // Under the "patient-surveys" prefix, so saving a survey refreshes it too.
-export function usePatientSurveyStats(enabled = true) {
+export function usePatientSurveyStats(params?: PatientSurveyStatsParams, enabled = true) {
   return useQuery({
-    queryKey: ["patient-surveys", "stats"],
-    queryFn: () => patientSurveysApi.stats(),
+    queryKey: ["patient-surveys", "stats", params],
+    queryFn: () => patientSurveysApi.stats(params),
     enabled,
   });
 }

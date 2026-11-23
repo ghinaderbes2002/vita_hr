@@ -278,7 +278,7 @@ function AppointmentStatisticsReport() {
                       <TableCell className="font-mono text-xs">{visitDateOf(r)}</TableCell>
                       <TableCell className="text-center"><Tick on={r.attended} /></TableCell>
                       <TableCell className="text-center"><Tick on={r.cancelled} reason={r.cancelledReason} /></TableCell>
-                      <TableCell className="text-center"><Tick on={r.apologized} /></TableCell>
+                      <TableCell className="text-center"><Tick on={r.apologized} reason={r.apologized ? r.cancelledReason : undefined} /></TableCell>
                       <TableCell className="text-center"><Tick on={r.postponed} /></TableCell>
                       <TableCell className="text-center"><Tick on={r.noShow} /></TableCell>
                     </TableRow>

@@ -78,6 +78,10 @@ export interface PatientSurveyListParams {
   department?: SurveyDepartment;
   /** بحث بالاسم (الحالي + المخزَّن على الاستبيان) أو رقم المريض أو الهاتف/الواتساب؛ كل كلمة تُطابق لحالها. */
   search?: string;
+  /** YYYY-MM-DD, inclusive, on createdAt. */
+  dateFrom?: string;
+  /** YYYY-MM-DD, inclusive (the whole day). */
+  dateTo?: string;
   page?: number;
   limit?: number;
 }
@@ -99,7 +103,24 @@ export interface PatientSurveyStats {
   satisfactionPercent: number;
   /** Mean of podiatryWeightedScore.percent across Vitafoot surveys; null when there are none. */
   podiatryWeightedSatisfactionPercent: number | null;
+  /**
+   * Per question: the mean of that rating over the surveys that answered it.
+   * Questions nobody answered are left out. Empty until the API sends it.
+   */
+  byQuestion: Record<string, SurveyQuestionStat>;
 }
+
+export interface SurveyQuestionStat {
+  /** How many surveys answered this question. */
+  count: number;
+  /** Out of 5. */
+  averageRating: number;
+  /** averageRating ÷ 5 × 100. */
+  satisfactionPercent: number;
+}
+
+/** Filters the stats share with the list. */
+export type PatientSurveyStatsParams = Pick<PatientSurveyListParams, "department" | "dateFrom" | "dateTo">;
 
 /** A patient who should be asked for a survey: a week or more since delivery / the podiatry exam, no survey yet. */
 export interface SurveyFollowupPatient {
@@ -120,8 +141,8 @@ export const patientSurveysApi = {
     const d = data?.data ?? data;
     return { prosthetics: d?.prosthetics ?? [], podiatry: d?.podiatry ?? [] };
   },
-  stats: async (): Promise<PatientSurveyStats> => {
-    const { data } = await apiClient.get("/patients/surveys/stats");
+  stats: async (params?: PatientSurveyStatsParams): Promise<PatientSurveyStats> => {
+    const { data } = await apiClient.get("/patients/surveys/stats", { params });
     const d = data?.data ?? data;
     return {
       total: d?.total ?? 0,
@@ -133,6 +154,7 @@ export const patientSurveysApi = {
       averageRating: d?.averageRating ?? 0,
       satisfactionPercent: d?.satisfactionPercent ?? 0,
       podiatryWeightedSatisfactionPercent: d?.podiatryWeightedSatisfactionPercent ?? null,
+      byQuestion: d?.byQuestion ?? {},
     };
   },
 

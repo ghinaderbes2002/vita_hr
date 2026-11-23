@@ -71,14 +71,14 @@ const NO_FITTING_REASON_LABEL: Record<NoFittingReason, string> = {
 
 const NO_FITTING_REASON_QUESTION = "ما سبب عدم تركيبك للضبان";
 
-type RatingKey =
+export type RatingKey =
   | "staffExplanationRating" | "specialistCareRating" | "waitingAreaRating" | "waitingDurationRating"
   | "measurementAccuracyRating" | "movementEaseRating"
   | "medicalRecommendationRating" | "insoleComfortRating"
   | "exerciseQualityRating" | "mobilityImprovementRating"
   | "overallCompanyRating";
 
-const RATING_LABEL: Record<RatingKey, string> = {
+export const RATING_LABEL: Record<RatingKey, string> = {
   staffExplanationRating: "وضوح شرح الكادر للخدمة والإجراءات",
   specialistCareRating: "اهتمام الأخصائي ورعايته",
   waitingAreaRating: "راحة ونظافة منطقة الانتظار",

@@ -369,8 +369,15 @@ export const clinicAppointmentsApi = {
     return data?.data ?? data;
   },
 
-  updateStatus: async (id: string, status: AppointmentStatus): Promise<Appointment> => {
-    const { data } = await apiClient.put(`/appointments/${id}/status`, { status });
+  /**
+   * `cancelledReason` is kept for CANCELLED and APOLOGIZED only; any other
+   * status clears it on the server (an apology note never sits on a confirmed visit).
+   */
+  updateStatus: async (id: string, status: AppointmentStatus, cancelledReason?: string): Promise<Appointment> => {
+    const { data } = await apiClient.put(`/appointments/${id}/status`, {
+      status,
+      ...(cancelledReason ? { cancelledReason } : {}),
+    });
     return data?.data ?? data;
   },
 

@@ -134,8 +134,8 @@ export function useRescheduleAppointment() {
 export function useUpdateAppointmentStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: AppointmentStatus }) =>
-      clinicAppointmentsApi.updateStatus(id, status),
+    mutationFn: ({ id, status, cancelledReason }: { id: string; status: AppointmentStatus; cancelledReason?: string }) =>
+      clinicAppointmentsApi.updateStatus(id, status, cancelledReason),
     onSuccess: (_, { status }) => {
       qc.invalidateQueries({ queryKey: ["clinic-appointments"] });
       qc.invalidateQueries({ queryKey: ["clinic-calendar"] });

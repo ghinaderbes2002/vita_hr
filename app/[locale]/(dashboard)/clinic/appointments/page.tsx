@@ -202,6 +202,9 @@ export default function AppointmentsPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<string>("");
   const [cancelReason, setCancelReason] = useState("");
+  // "اعتذر": the patient's reason is asked for, like a cancellation's.
+  const [apologyTargetId, setApologyTargetId] = useState<string | null>(null);
+  const [apologyReason, setApologyReason] = useState("");
   const [rescheduleFor, setRescheduleFor] = useState<Appointment | null>(null);
   const [rsForm, setRsForm] = useState({ date: "", startTime: "", endTime: "", isOpenEnded: false });
   // A refused booking — CONFLICTING_APPOINTMENT or OUTSIDE_WORKING_HOURS: the
@@ -857,6 +860,9 @@ export default function AppointmentsPage() {
             if (detailAppt.status === "CANCELLED" && (detailAppt.cancelReason || detailAppt.cancelledReason)) {
               rows.push(["سبب الإلغاء", detailAppt.cancelReason ?? detailAppt.cancelledReason ?? "—"]);
             }
+            if (detailAppt.status === "APOLOGIZED" && detailAppt.cancelledReason) {
+              rows.push(["سبب الاعتذار", detailAppt.cancelledReason]);
+            }
             // Unknown (null) on bookings from before the server recorded it.
             if (detailAppt.createdBySupervisor != null) {
               rows.push([t("createdBy"), detailAppt.createdBySupervisor ? t("createdBySupervisor") : t("createdByTherapist")]);
@@ -884,6 +890,9 @@ export default function AppointmentsPage() {
                     if (next === detailAppt.status) return;
                     if (next === "CANCELLED") {
                       setCancelTargetId(detailAppt.id); setCancelReason(""); setCancelDialogOpen(true);
+                      setDetailAppt(null);
+                    } else if (next === "APOLOGIZED") {
+                      setApologyTargetId(detailAppt.id); setApologyReason("");
                       setDetailAppt(null);
                     } else if (next === "RESCHEDULED") {
                       // Real reschedule → pick a new date/time (prefilled with current).
@@ -1065,6 +1074,45 @@ export default function AppointmentsPage() {
             >
               {cancelAppt.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
               {t("actions.cancelConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Apology note — saved in cancelledReason, like a cancellation's reason */}
+      <Dialog open={!!apologyTargetId} onOpenChange={(o) => { if (!o && !updateStatus.isPending) setApologyTargetId(null); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>اعتذار المريض عن الموعد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Textarea
+              rows={3}
+              value={apologyReason}
+              onChange={(e) => setApologyReason(e.target.value)}
+              placeholder="سبب الاعتذار (اختياري) — مثلاً: ظرف طارئ"
+              className="text-sm"
+            />
+            <p className="text-xs text-muted-foreground">يُفرَّغ الموعد مثل الإلغاء. إذا عادت الحالة لاحقاً إلى «مؤكَّد» يُمحى السبب.</p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setApologyTargetId(null)} disabled={updateStatus.isPending}>
+              {t("form.cancel")}
+            </Button>
+            <Button
+              disabled={updateStatus.isPending}
+              onClick={async () => {
+                if (!apologyTargetId) return;
+                await updateStatus.mutateAsync({
+                  id: apologyTargetId,
+                  status: "APOLOGIZED",
+                  cancelledReason: apologyReason.trim() || undefined,
+                });
+                setApologyTargetId(null);
+              }}
+            >
+              {updateStatus.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              تسجيل الاعتذار
             </Button>
           </DialogFooter>
         </DialogContent>

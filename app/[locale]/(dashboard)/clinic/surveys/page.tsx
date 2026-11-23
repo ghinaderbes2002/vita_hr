@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader } from "@/components/shared/page-header";
 import { PageGuard } from "@/components/permissions/page-guard";
 import {
-  PatientSurveyDialog, PatientSurveysTable, SURVEY_DEPARTMENT_LABEL,
+  PatientSurveyDialog, PatientSurveysTable, RATING_LABEL, SURVEY_DEPARTMENT_LABEL,
+  type RatingKey,
 } from "@/components/clinic/patient-survey";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useClinicPatient } from "@/lib/hooks/use-clinic-patients";
 import { usePatientSurveyStats } from "@/lib/hooks/use-patient-surveys";
-import type { SurveyDepartment } from "@/lib/api/patient-surveys";
+import type { PatientSurveyStats, PatientSurveyStatsParams, SurveyDepartment } from "@/lib/api/patient-surveys";
 import type { Patient } from "@/lib/api/clinic-patients";
 import { SurveyFollowupsButton, SurveyFollowupsDialog } from "@/components/clinic/survey-followups-dialog";
 
@@ -35,9 +36,11 @@ export default function PatientSurveysPage() {
   );
 }
 
-/** Survey counts per department and the centre-wide satisfaction rate. */
-function SurveyStatsStrip() {
-  const { data: s, isLoading } = usePatientSurveyStats();
+const clampPct = (v: unknown) => Math.max(0, Math.min(100, Number(v) || 0));
+
+/** Survey counts per department and the satisfaction rate, for the current filters. */
+function SurveyStatsStrip({ params }: { params: PatientSurveyStatsParams }) {
+  const { data: s, isLoading } = usePatientSurveyStats(params);
   if (isLoading) return <div className="h-24 animate-pulse rounded-lg bg-muted" />;
   if (!s) return null;
   const pct = Math.max(0, Math.min(100, Number(s.satisfactionPercent) || 0));
@@ -90,7 +93,38 @@ function SurveyStatsStrip() {
           )}
         </div>
       </CardContent>
+      <QuestionBreakdown byQuestion={s.byQuestion} />
     </Card>
+  );
+}
+
+/** The satisfaction rate of each question, overall first, then by RATING_LABEL order. */
+function QuestionBreakdown({ byQuestion }: { byQuestion: PatientSurveyStats["byQuestion"] }) {
+  const rows = (Object.keys(RATING_LABEL) as RatingKey[])
+    .sort((a, b) => Number(b === "overallCompanyRating") - Number(a === "overallCompanyRating"))
+    .filter((k) => byQuestion[k]?.count)
+    .map((k) => ({ key: k, label: RATING_LABEL[k], ...byQuestion[k] }));
+  if (!rows.length) return null;
+  return (
+    <CardContent className="border-t pt-4">
+      <p className="mb-3 text-sm font-semibold">نسبة الرضى لكل سؤال</p>
+      <div className="grid gap-x-8 gap-y-3 md:grid-cols-2">
+        {rows.map((r) => (
+          <div key={r.key} className="space-y-1">
+            <div className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="text-muted-foreground">{r.label}</span>
+              <span className="shrink-0 tabular-nums">
+                <span className="font-semibold text-foreground">{clampPct(r.satisfactionPercent).toFixed(1)}%</span>
+                <span className="text-muted-foreground"> · {Number(r.averageRating || 0).toFixed(2)}/5 · {r.count} استبيان</span>
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-e-full bg-primary" style={{ width: `${clampPct(r.satisfactionPercent)}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent>
   );
 }
 
@@ -103,6 +137,13 @@ function PatientSurveys() {
   const [department, setDepartment] = useState<SurveyDepartment | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search.trim(), 400);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const filters: PatientSurveyStatsParams = {
+    ...(department !== "ALL" ? { department } : {}),
+    ...(dateFrom ? { dateFrom } : {}),
+    ...(dateTo ? { dateTo } : {}),
+  };
   const [open, setOpen] = useState(false);
   const [followupsOpen, setFollowupsOpen] = useState(false);
   // A survey started from the follow-up list: tied to that patient and department.
@@ -151,10 +192,10 @@ function PatientSurveys() {
 
       {canView && (
         <>
-          <SurveyStatsStrip />
+          <SurveyStatsStrip params={filters} />
 
           <Card>
-            <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <CardContent className="pt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1.5">
                 <Label>بحث عن العميل</Label>
                 <div className="relative">
@@ -179,6 +220,29 @@ function PatientSurveys() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label>من تاريخ</Label>
+                <Input type="date" value={dateFrom} max={dateTo || undefined} onChange={(e) => setDateFrom(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>إلى تاريخ</Label>
+                <div className="flex gap-1.5">
+                  <Input type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => setDateTo(e.target.value)} />
+                  {(dateFrom || dateTo) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0"
+                      title="مسح التاريخ"
+                      aria-label="مسح التاريخ"
+                      onClick={() => { setDateFrom(""); setDateTo(""); }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -186,7 +250,7 @@ function PatientSurveys() {
             <CardContent className="pt-5">
               <PatientSurveysTable
                 params={{
-                  ...(department !== "ALL" ? { department } : {}),
+                  ...filters,
                   ...(debouncedSearch ? { search: debouncedSearch } : {}),
                 }}
               />
