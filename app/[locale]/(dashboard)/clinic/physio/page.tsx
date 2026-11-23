@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
 import { CaseStatusBadge } from "@/components/clinic/case-status-badge";
 import { ClinicCountChips } from "@/components/clinic/clinic-count-chips";
+import { PhysioSessionStatsButton } from "@/components/clinic/physio-session-stats";
 import { usePhysioCases } from "@/lib/hooks/use-clinic-physio";
 import { useClinicPatients } from "@/lib/hooks/use-clinic-patients";
 import { PhysioCase, PhysioStatus } from "@/lib/api/clinic-physio";
@@ -199,6 +200,8 @@ export default function PhysioListPage() {
             بانتظار التعيين
           </Button>
         )}
+        {/* Department-wide totals — not for a therapist who sees only their own cases. */}
+        {!shouldFilter && <PhysioSessionStatsButton />}
       </div>
 
       <div className="rounded-md border">

@@ -512,7 +512,29 @@ export interface DoctorExamListItem {
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────────
+export interface PhysioSessionStatsParams {
+  /** YYYY-MM-DD, inclusive, on sessionDate. */
+  dateFrom?: string;
+  /** YYYY-MM-DD, inclusive (the whole day). */
+  dateTo?: string;
+}
+
+/** Sessions applied across every physio case, within the date range. */
+export interface PhysioSessionStats {
+  totalSessions: number;
+  /** Distinct patients who had at least one session. */
+  patients: number;
+  /** Distinct cases that had at least one session. */
+  cases: number;
+}
+
 export const clinicPhysioApi = {
+  sessionStats: async (params?: PhysioSessionStatsParams): Promise<PhysioSessionStats> => {
+    const { data } = await apiClient.get("/physio/sessions/stats", { params });
+    const d = data?.data ?? data;
+    return { totalSessions: d?.totalSessions ?? 0, patients: d?.patients ?? 0, cases: d?.cases ?? 0 };
+  },
+
   create: async (dto: CreatePhysioCaseDto): Promise<PhysioCase> => {
     const { data } = await apiClient.post("/physio/cases", dto);
     return data?.data ?? data;

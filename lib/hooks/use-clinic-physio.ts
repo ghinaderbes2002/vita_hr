@@ -23,6 +23,7 @@ import {
   DoctorExamListParams,
   PhysioCaseType,
   EmergencyAlert,
+  PhysioSessionStatsParams,
 } from "@/lib/api/clinic-physio";
 import { toast } from "sonner";
 
@@ -499,5 +500,15 @@ export function useRespondToAlert() {
       toast.success("تم إرسال الرد");
     },
     onError: () => toast.error("فشل إرسال الرد"),
+  });
+}
+
+/** Total sessions applied across every physio case, optionally within a date range. */
+export function usePhysioSessionStats(params: PhysioSessionStatsParams, enabled = true) {
+  return useQuery({
+    queryKey: ["clinic-physio-session-stats", params],
+    queryFn: () => clinicPhysioApi.sessionStats(params),
+    enabled,
+    retry: false,
   });
 }
