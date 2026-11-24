@@ -33,6 +33,10 @@ const positive = (v: string) => {
 
 // ── Box ──────────────────────────────────────────────────────────────────────
 
+/** The logistics department, by its Arabic or English name. */
+const isLogistics = (d?: { nameAr?: string; nameEn?: string } | null) =>
+  !!d && (/لوجست/.test(d.nameAr ?? "") || /logist/i.test(d.nameEn ?? ""));
+
 export function CashBoxDialog({
   open, onOpenChange, box,
 }: { open: boolean; onOpenChange: (o: boolean) => void; box?: CashBox | null }) {
@@ -286,6 +290,9 @@ function CashTransactionForm({
               placeholder={t("box.searchEmployee")}
               allLabel={t("box.selectEmployee")}
               emptyLabel={t("box.noEmployees")}
+              // Cash is disbursed only to the logistics department, matched by
+              // its name since the department has no fixed code.
+              filter={(e) => isLogistics(e.department) && (!e.employmentStatus || e.employmentStatus === "ACTIVE")}
             />
           </Field>
         )}

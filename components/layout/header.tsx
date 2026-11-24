@@ -96,6 +96,7 @@ export function Header() {
     ADDITIONAL_ASSIGNMENT_DECISION:  { icon: CheckCircle2,  iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
     APPOINTMENT_CREATED_BY_THERAPIST: { icon: CalendarPlus, iconClass: "text-sky-500",    bgClass: "bg-sky-50/60 dark:bg-sky-950/20",       dotClass: "bg-sky-500" },
     PATIENT_SURVEY_REQUIRED:         { icon: Star,          iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
+    JOB_APPLICATION_SUBMITTED:       { icon: Briefcase,     iconClass: "text-teal-500",   bgClass: "bg-teal-50/60 dark:bg-teal-950/20",     dotClass: "bg-teal-500" },
     GENERAL:                         { icon: Mail,         iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
   };
 

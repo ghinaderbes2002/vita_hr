@@ -62,6 +62,7 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   INVENTORY_REQUEST_UPDATE:       { icon: CheckCircle2,  color: "text-green-600",  bg: "bg-green-100",  label: "تحديث طلب قطعة" },
   APPOINTMENT_CREATED_BY_THERAPIST: { icon: CalendarPlus, color: "text-sky-600", bg: "bg-sky-100", label: "موعد أنشأه معالج" },
   PATIENT_SURVEY_REQUIRED:        { icon: Star,          color: "text-amber-600",  bg: "bg-amber-100",  label: "استبيان رضا مطلوب" },
+  JOB_APPLICATION_SUBMITTED:      { icon: Briefcase,     color: "text-teal-600",   bg: "bg-teal-100",   label: "طلب توظيف جديد" },
   GENERAL:                        { icon: Info,         color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },
 };
 

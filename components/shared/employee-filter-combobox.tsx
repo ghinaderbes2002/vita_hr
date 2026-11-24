@@ -8,6 +8,9 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
 import { useEmployeesBasicList } from "@/lib/hooks/use-employees";
+import type { employeesApi } from "@/lib/api/employees";
+
+export type BasicEmployee = Awaited<ReturnType<typeof employeesApi.getBasicList>>[number];
 import { cn } from "@/lib/utils";
 
 /**
@@ -15,7 +18,7 @@ import { cn } from "@/lib/utils";
  * English) or employee number. Emits the employee id, or "" for everyone.
  */
 export function EmployeeFilterCombobox({
-  value, onChange, placeholder, allLabel, emptyLabel, className,
+  value, onChange, placeholder, allLabel, emptyLabel, className, filter,
 }: {
   value: string;
   onChange: (employeeId: string) => void;
@@ -24,10 +27,12 @@ export function EmployeeFilterCombobox({
   allLabel: string;
   emptyLabel: string;
   className?: string;
+  /** Narrows who can be picked (e.g. one department). */
+  filter?: (e: BasicEmployee) => boolean;
 }) {
   const [open, setOpen] = useState(false);
   const { data } = useEmployeesBasicList();
-  const employees = Array.isArray(data) ? data : [];
+  const employees = (Array.isArray(data) ? data : []).filter((e) => !filter || filter(e));
   const nameOf = (e: (typeof employees)[number]) => `${e.firstNameAr ?? ""} ${e.lastNameAr ?? ""}`.trim();
   const selected = employees.find((e) => e.id === value);
 

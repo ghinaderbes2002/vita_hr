@@ -791,8 +791,11 @@ function OrthoticsClinicalHistoryCard({
   };
   const setRow = (i: number, patch: Partial<OrthoticsApplianceDetail>) =>
     s.set({ appliancesDetails: rows.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
-  const detailsMissing = s.editing && v.appliancesDetails?.some((r) => !r.limbType || !r.side)
-    ? ["الجهة والطرف لكل مقوّم"] : [];
+  // Named per row ("المقوّم 1: الطرف المصاب") so it's clear which choice is still open.
+  const detailsMissing = !s.editing || !v.appliancesDetails ? [] : v.appliancesDetails.flatMap((r, i) => {
+    const gaps = [!r.limbType && "الطرف المصاب", !r.side && "الجهة"].filter(Boolean);
+    return gaps.length ? [`المقوّم ${i + 1}: ${gaps.join(" و")}`] : [];
+  });
 
   return (
     <SectionCard

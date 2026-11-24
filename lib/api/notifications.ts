@@ -49,7 +49,9 @@ export type NotificationType =
   // استبيان رضا مطلوب — لمندوبي المبيعات: { patientId, department, caseId }
   | "PATIENT_SURVEY_REQUIRED"
   // موعد أنشأه معالج (غير مشرف) — لمشرفي المركز: { appointmentId, link }
-  | "APPOINTMENT_CREATED_BY_THERAPIST";
+  | "APPOINTMENT_CREATED_BY_THERAPIST"
+  // طلب توظيف جديد من الموقع — للموارد البشرية: { applicationId, link }
+  | "JOB_APPLICATION_SUBMITTED";
 
 export interface Notification {
   id: string;

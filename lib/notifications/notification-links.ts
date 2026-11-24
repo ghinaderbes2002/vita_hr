@@ -123,6 +123,10 @@ export function resolveNotificationLink(
     case "CASE_ALERT_RESPONSE":
       return d.caseId ? `/clinic/prosthetics/${d.caseId}?tab=treatment_program` : null;
 
+    // A new job application from the public form → open it for HR.
+    case "JOB_APPLICATION_SUBMITTED":
+      return d.applicationId ? `/job-applications/${d.applicationId}` : "/job-applications";
+
     // Open a new survey already tied to the patient and department.
     case "PATIENT_SURVEY_REQUIRED": {
       const params = new URLSearchParams();

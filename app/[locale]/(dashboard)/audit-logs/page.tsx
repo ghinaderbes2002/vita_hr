@@ -17,6 +17,14 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Pagination } from "@/components/shared/pagination";
 import { useAuditLogs, useAuditLogResources } from "@/lib/hooks/use-audit-logs";
 import { AuditLog } from "@/lib/api/audit-logs";
+import { auditResourceLabel } from "@/lib/constants/audit-resources";
+
+/** The API writes the raw resource ("عدّل appointments"); shown with its Arabic name. */
+const describe = (log: AuditLog) => {
+  const text = log.description || log.action || "—";
+  const label = auditResourceLabel(log.resource);
+  return log.resource && label !== log.resource ? text.split(log.resource).join(label) : text;
+};
 
 const METHOD_COLORS: Record<string, string> = {
   GET: "bg-blue-100 text-blue-700",
@@ -170,11 +178,13 @@ export default function AuditLogsPage() {
             className="h-10 rounded-md border border-input bg-background px-3 text-sm w-48"
           >
             <option value="">{t("filters.all")}</option>
-            {resources.map((r) => (
-              <option key={r.resource} value={r.resource}>
-                {r.count != null ? `${r.resource} (${r.count})` : r.resource}
-              </option>
-            ))}
+            {[...resources]
+              .sort((a, b) => auditResourceLabel(a.resource).localeCompare(auditResourceLabel(b.resource), "ar"))
+              .map((r) => (
+                <option key={r.resource} value={r.resource}>
+                  {auditResourceLabel(r.resource)}{r.count != null ? ` (${r.count})` : ""}
+                </option>
+              ))}
           </select>
         </div>
         <div className="flex flex-col gap-1">
@@ -251,7 +261,7 @@ export default function AuditLogsPage() {
                   </TableCell>
                   <TableCell className="text-sm max-w-sm">
                     <p className="truncate">
-                      {log.description || log.action || "—"}
+                      {describe(log)}
                     </p>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
@@ -312,7 +322,7 @@ export default function AuditLogsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Resource</p>
-                  <p>{detailLog.resource || "—"}</p>
+                  <p>{auditResourceLabel(detailLog.resource)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">{t("table.date")}</p>
@@ -324,7 +334,7 @@ export default function AuditLogsPage() {
               {detailLog.description && (
                 <div className="rounded-md bg-muted/50 px-3 py-2">
                   <p className="text-xs text-muted-foreground mb-0.5">{t("table.description")}</p>
-                  <p className="font-medium">{detailLog.description}</p>
+                  <p className="font-medium">{describe(detailLog)}</p>
                 </div>
               )}
 
