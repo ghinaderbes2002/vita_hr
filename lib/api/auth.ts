@@ -21,13 +21,24 @@ export const authApi = {
     return response.data.data;
   },
 
-  logout: async (): Promise<void> => {
-    const token =
+  /**
+   * Must carry the access token: the API revokes it by the jti inside it, and
+   * without the header it cannot. Called before the token is cleared locally.
+   * `fallbackToken` is the store's copy, for when the cookie is gone.
+   */
+  logout: async (fallbackToken?: string | null): Promise<void> => {
+    const cookieToken =
       typeof document !== "undefined"
         ? document.cookie.split("; ").find((c) => c.startsWith("wso-token="))?.split("=")[1]
         : null;
+    const token = cookieToken || fallbackToken;
+    if (!token && process.env.NODE_ENV !== "production") {
+      console.warn("logout: no access token to send — the server cannot revoke it");
+    }
     await refreshClient.post("/auth/logout", {}, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
+      // Logging out shouldn't hang the UI if the server is slow.
+      timeout: 8000,
     });
   },
 

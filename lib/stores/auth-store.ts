@@ -103,7 +103,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          await authApi.logout();
+          // Before anything is cleared — the token is what gets revoked.
+          await authApi.logout(get().accessToken);
         } catch {
           // Ignore logout API errors
         } finally {

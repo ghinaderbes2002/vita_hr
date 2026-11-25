@@ -53,7 +53,8 @@ export function useAutoRefreshToken() {
         // than waiting for the next real API call.
         if (error?.response?.data?.code === AUTH_ERROR_CODES.ACCOUNT_INACTIVE) {
           toast.error(error.response.data.message || "الحساب غير نشط. يرجى التواصل مع المسؤول.");
-          useAuthStore.getState().logout();
+          // Awaited: leaving the page right away could cancel the logout request.
+          await useAuthStore.getState().logout();
           if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
             const currentLocale = window.location.pathname.split("/")[1] || "ar";
             window.location.href = `/${currentLocale}/login`;
