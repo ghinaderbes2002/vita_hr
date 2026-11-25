@@ -226,6 +226,7 @@ export default function VitaFootSalesPage() {
                   <TableHead>{t("colArrival")}</TableHead>
                   <TableHead>{t("colInsoleType")}</TableHead>
                   <TableHead>{t("colSize")}</TableHead>
+                  <TableHead>{t("colInsolesCount")}</TableHead>
                   <TableHead>{t("colInstalls")}</TableHead>
                   <TableHead>{t("colLastInstall")}</TableHead>
                   {canSeeCost && <TableHead>{t("colLastCost")}</TableHead>}
@@ -244,6 +245,8 @@ export default function VitaFootSalesPage() {
                     <TableCell className="text-sm text-muted-foreground">{arrivalMethodText(s) ?? "—"}</TableCell>
                     <TableCell className="text-sm">{s.insoleType?.join(isRtl ? "، " : ", ") || "—"}</TableCell>
                     <TableCell className="tabular-nums">{s.shoeSize ?? "—"}</TableCell>
+                    {/* Insoles in the latest fitting; old forms carry none and count as one. */}
+                    <TableCell className="tabular-nums">{s.insolesCount ?? "—"}</TableCell>
                     <TableCell className="font-medium tabular-nums">{s.installCount}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fmt(s.installedAt)}</TableCell>
                     {canSeeCost && (
@@ -253,7 +256,13 @@ export default function VitaFootSalesPage() {
                             // A note alone (e.g. "هدية") stands in for the dash.
                             s.insoleCostNote ? null : <span>—</span>
                           ) : s.insoleCostCurrency ? (
-                            <span>{fmtMoney(s.insoleCost, s.insoleCostCurrency)}</span>
+                            <span>
+                              {fmtMoney(s.insoleCost, s.insoleCostCurrency)}
+                              {/* The cost is per insole. */}
+                              {(s.insolesCount ?? 1) > 1 && (
+                                <span className="ms-1 text-xs text-muted-foreground">× {s.insolesCount}</span>
+                              )}
+                            </span>
                           ) : (
                             <>
                               <span>{fmtAmount(s.insoleCost)}</span>
@@ -321,7 +330,10 @@ export default function VitaFootSalesPage() {
             </DialogHeader>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">{costTarget?.patientName || "—"}</p>
-              <Label htmlFor="insole-cost">{t("cost")}</Label>
+              <Label htmlFor="insole-cost">{t("costPerInsole")}</Label>
+              {(costTarget?.insolesCount ?? 1) > 1 && (
+                <p className="text-xs text-muted-foreground">{t("costPerInsoleHint", { count: costTarget!.insolesCount! })}</p>
+              )}
               <Input
                 id="insole-cost"
                 type="number"

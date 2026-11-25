@@ -464,6 +464,7 @@ const PodiatryFormPdfDoc = ({
         <SecHead label={t("pdf.insoleDecision")} dir={dir} />
         <Field label={t("labels.insoleType")} value={(se?.insoleType ?? []).join(" / ")} dir={dir} />
         <Field label={t("labels.shoeSize")} value={se?.shoeSize != null ? String(se.shoeSize) : ""} dir={dir} />
+        <Field label={t("labels.insolesCount")} value={se?.insolesCount != null ? String(se.insolesCount) : ""} dir={dir} />
         <Field label={t("labels.notes")} value={se?.notes} dir={dir} />
         {(data.reviews ?? []).length > 0 ? (
           (data.reviews ?? []).map((r, i) => (

@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ArrowRight, CheckCircle2, ClipboardCheck, Download, ExternalLink, Link2, Loader2, Pencil, Undo2 } from "lucide-react";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ArrowRight, CheckCircle2, ClipboardCheck, Download, ExternalLink, Link2, Loader2, Pencil, Plus } from "lucide-react";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -15,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useInstallPodiatrySession, useUninstallPodiatrySession, usePodiatryDoctorDecision, usePodiatryReception,
+  usePodiatryDoctorDecision, usePodiatryReception,
   usePodiatryReviews, usePodiatrySessions,
 } from "@/lib/hooks/use-clinic-podiatry";
 import { useClinicPatient, usePatientLinks } from "@/lib/hooks/use-clinic-patients";
@@ -25,7 +24,7 @@ import {
   AFFECTED_SIDE_VALUES, FOOT_SYMPTOM_VALUES, MEDICAL_HISTORY_VALUES,
   VISIT_TYPE_VALUES, usePodiatryEnumLabels,
 } from "@/components/clinic/podiatry-labels";
-import { PodiatryAssessmentPanel } from "@/components/clinic/podiatry-assessment-panel";
+import { PodiatryAssessmentPanel, installStatusOf } from "@/components/clinic/podiatry-assessment-panel";
 import {
   PodiatryDoctorDecisionCard, PodiatryReviewCard,
 } from "@/components/clinic/podiatry-review-decision";
@@ -136,14 +135,14 @@ export default function PodiatryReceptionPage() {
     ]);
 
   const { data: reception, isLoading } = usePodiatryReception(id);
-  // The API returns at most one assessment per reception.
-  // "No session" and "could not load the sessions" must not look alike: a failed
-  // request used to render as an unfilled form, and filling it would POST — an
-  // upsert — over the session that is really there.
+  // A reception may hold several assessment forms, newest first.
+  // "No forms" and "could not load the forms" must not look alike: a failed
+  // request must not invite a new form over the ones really there.
   const {
     data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions,
   } = usePodiatrySessions(id);
-  const session: PodiatrySession | null = sessions[0] ?? null;
+  const sessionsState = sessionsLoading ? "loading" : sessionsError ? "error" : "ready";
+  const installedCount = sessions.filter((s) => installStatusOf(s) === "INSTALLED").length;
   const { data: patient } = useClinicPatient(reception?.patientId ?? "");
   // Links kept on the patient's own file (الروابط). Shown here read-only so the
   // podiatrist reaches them without leaving the case; they are added and removed
@@ -162,20 +161,20 @@ export default function PodiatryReceptionPage() {
       PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT,
     ]);
 
-  const install = useInstallPodiatrySession();
-  const uninstall = useUninstallPodiatrySession();
-  const [confirmUninstall, setConfirmUninstall] = useState(false);
+  // A new, not yet saved form shown above the saved ones.
+  const [addingForm, setAddingForm] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   // Fitting is when the with-orthotic readings can be taken, so it prompts for them.
   const [installReminder, setInstallReminder] = useState(false);
   const [tab, setTab] = useState("reception");
-  const [pdfBusy, setPdfBusy] = useState(false);
+  // The id of the form being exported, so only its button spins.
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
 
-  // The sheet pairs the reception data with the reception's assessment.
-  const handleExportPdf = async () => {
-    if (pdfBusy || !session) return;
-    setPdfBusy(true);
+  // The sheet pairs the reception data with one of its assessment forms.
+  const handleExportPdf = async (session: PodiatrySession) => {
+    if (pdfBusy) return;
+    setPdfBusy(session.id);
     try {
       const { downloadPodiatryFormPdf } = await import("@/components/clinic/podiatry-form-pdf");
       await downloadPodiatryFormPdf({
@@ -208,7 +207,7 @@ export default function PodiatryReceptionPage() {
     } catch {
       toast.error(t("exportFailed"));
     } finally {
-      setPdfBusy(false);
+      setPdfBusy(null);
     }
   };
 
@@ -249,47 +248,12 @@ export default function PodiatryReceptionPage() {
 
         <div className="flex flex-wrap items-center gap-2">
         <NotifyIncompleteFormButton type="podiatry" id={id} />
-        {/* Recorded any time after the assessment exists, and can be undone. */}
-        {session?.installedAt && (
-            <Badge variant="outline" className="gap-1.5 border-emerald-300 bg-emerald-50 px-3 py-1.5 text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" />
-              {t("installed")} — {fmt(session.installedAt)}
-              {session.installedByName ? ` — ${session.installedByName}` : ""}
-            </Badge>
-        )}
-        {session?.installedAt && (
-          <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT}>
-            <Button variant="outline" size="sm" className="gap-1.5" disabled={uninstall.isPending} onClick={() => setConfirmUninstall(true)}>
-              {uninstall.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
-              {t("undoInstall")}
-            </Button>
-          </ActionGuard>
-        )}
-        {session && !session.installedAt && (
-            <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT}>
-              <Button
-                className="gap-1.5"
-                disabled={install.isPending}
-                onClick={() => install.mutate(
-                  { receptionId: id, sessionId: session.id },
-                  { onSuccess: () => setInstallReminder(true) },
-                )}
-              >
-                {install.isPending
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <CheckCircle2 className="h-4 w-4" />}
-                {t("markInstalled")}
-              </Button>
-            </ActionGuard>
-        )}
-        {session && (
-          <ConfirmDialog
-            open={confirmUninstall}
-            onOpenChange={setConfirmUninstall}
-            title={t("undoInstallTitle")}
-            description={t("undoInstallDescription")}
-            onConfirm={() => { setConfirmUninstall(false); uninstall.mutate({ receptionId: id, sessionId: session.id }); }}
-          />
+        {/* Fitting is set per form, in the assessment tab; this only sums it up. */}
+        {installedCount > 0 && (
+          <Badge variant="outline" className="gap-1.5 border-emerald-300 bg-emerald-50 px-3 py-1.5 text-emerald-700">
+            <CheckCircle2 className="h-4 w-4" />
+            {t("installedForms", { count: installedCount, total: sessions.length })}
+          </Badge>
         )}
         </div>
       </div>
@@ -476,19 +440,63 @@ export default function PodiatryReceptionPage() {
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-4 space-y-4">
-          <PodiatryAssessmentPanel
-            receptionId={id}
-            session={session}
-            state={sessionsLoading ? "loading" : sessionsError ? "error" : "ready"}
-            onRetry={() => refetchSessions()}
-            title={t("tabSessions")}
-            actions={session && (
-              <Button size="sm" variant="outline" className="gap-1.5" disabled={pdfBusy} onClick={handleExportPdf}>
-                {pdfBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                {pdfBusy ? t("loading") : t("exportPdf")}
-              </Button>
-            )}
-          />
+          {/* A new form only once the saved ones are known. */}
+          {sessionsState === "ready" && !addingForm && (
+            <div className="flex justify-end">
+              <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_CREATE}>
+                <Button size="sm" className="gap-1.5" onClick={() => setAddingForm(true)}>
+                  <Plus className="h-3.5 w-3.5" />
+                  {t("newForm")}
+                </Button>
+              </ActionGuard>
+            </div>
+          )}
+
+          {addingForm && (
+            <PodiatryAssessmentPanel
+              receptionId={id}
+              session={null}
+              title={t("newForm")}
+              onClose={() => setAddingForm(false)}
+            />
+          )}
+
+          {sessionsState !== "ready" ? (
+            <PodiatryAssessmentPanel
+              receptionId={id}
+              session={null}
+              state={sessionsState}
+              onRetry={() => refetchSessions()}
+              title={t("tabSessions")}
+            />
+          ) : sessions.length === 0 && !addingForm ? (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-muted-foreground">{t("noForms")}</CardContent>
+            </Card>
+          ) : (
+            sessions.map((s, i) => (
+              <PodiatryAssessmentPanel
+                key={s.id}
+                receptionId={id}
+                session={s}
+                // Newest first, so the oldest is form 1.
+                title={t("formNumber", { n: sessions.length - i })}
+                onInstalled={() => setInstallReminder(true)}
+                actions={
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    disabled={!!pdfBusy}
+                    onClick={() => handleExportPdf(s)}
+                  >
+                    {pdfBusy === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    {pdfBusy === s.id ? t("loading") : t("exportPdf")}
+                  </Button>
+                }
+              />
+            ))
+          )}
         </TabsContent>
 
         <TabsContent value="review" className="mt-4">

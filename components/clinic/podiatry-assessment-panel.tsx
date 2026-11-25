@@ -1,77 +1,116 @@
 "use client";
 
-// The reception's assessment, read and written in place: the same fields switch
-// from marks to controls when "تعديل" is pressed, so nothing covers the sheet
-// while it is being filled in. POST upserts, so the first save creates the form
-// and later ones patch it.
+// One assessment form of a reception, read and written in place: the same fields
+// switch from marks to controls when "تعديل" is pressed, so nothing covers the
+// sheet while it is being filled in. A reception may hold several forms — POST
+// adds a new one, PATCH edits the one shown. Each form carries its own fitting
+// state (غير محدد / لم يُركَّب / رُكِّب).
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Loader2, Pencil, Plus, Save, X } from "lucide-react";
+import { CheckCircle2, Loader2, Pencil, Save, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
-  useCreatePodiatrySession, useUpdatePodiatrySession,
+  useCreatePodiatrySession, useDeletePodiatrySession, useSetPodiatryInstallStatus, useUpdatePodiatrySession,
 } from "@/lib/hooks/use-clinic-podiatry";
-import { PodiatrySession } from "@/lib/api/clinic-podiatry";
+import { PodiatryInstallStatus, PodiatrySession } from "@/lib/api/clinic-podiatry";
 import {
   AssessmentValue, PodiatryAssessmentFields, assessmentOf, assessmentToDto, emptyAssessment,
   missingAssessmentFields,
 } from "./podiatry-assessment-fields";
 import { FormT } from "./podiatry-session-schema";
 
-const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-GB") : "");
+const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-GB") : "");
+
+/** Old forms only carry the stamp; the API maps them, this covers a stale build of it. */
+export const installStatusOf = (s?: PodiatrySession | null): PodiatryInstallStatus | null =>
+  s?.installStatus ?? (s?.installedAt ? "INSTALLED" : null);
+
+const UNSET = "UNSET";
 
 export function PodiatryAssessmentPanel({
-  receptionId, session, title, actions, state = "ready", onRetry,
+  receptionId, session, title, actions, state = "ready", onRetry, onClose, onInstalled,
 }: {
   /**
    * Whether the sessions request has answered. Until it has — or if it failed —
-   * the panel offers neither "fill" nor "edit": an empty form saved then would
-   * upsert over a session the page simply has not received.
+   * the panel offers no editing: the page cannot tell what is really stored.
    */
   state?: "loading" | "error" | "ready";
   onRetry?: () => void;
   receptionId: string;
-  /** The reception's saved assessment, or null while it is still unfilled. */
+  /** The saved form, or null for a new one — which opens straight in editing. */
   session: PodiatrySession | null;
   title: string;
   /** Rendered next to the edit button — the PDF export, for example. */
   actions?: React.ReactNode;
+  /** A new form was saved or abandoned. */
+  onClose?: () => void;
+  /** The form was just marked as fitted. */
+  onInstalled?: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const isNew = !session;
+  // A new form opens straight in editing — but never in place of forms not loaded yet.
+  const [editing, setEditing] = useState(isNew && state === "ready");
   const [form, setForm] = useState<AssessmentValue>(emptyAssessment);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const t = useTranslations("clinic.podiatry.form.panel");
   // نفس مترجم الورقة، ليخرج اسم كل حقل ناقص بالصيغة المعروضة فيها.
   const tForm = useTranslations("clinic.podiatry.form") as unknown as FormT;
   const missing = missingAssessmentFields(form, tForm);
+  const { hasPermission, isAdmin } = usePermissions();
+  const canSetStatus = isAdmin() || hasPermission(PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT);
 
   const create = useCreatePodiatrySession();
   const update = useUpdatePodiatrySession();
+  const setStatus = useSetPodiatryInstallStatus();
+  const remove = useDeletePodiatrySession();
   const saving = create.isPending || update.isPending;
+
+  const status = installStatusOf(session);
 
   const startEditing = () => {
     setForm(assessmentOf(session));
     setEditing(true);
   };
 
+  const cancel = () => {
+    setEditing(false);
+    if (isNew) onClose?.();
+  };
+
   const handleSave = async () => {
     const dto = assessmentToDto(form);
     if (session) {
       await update.mutateAsync({ receptionId, sessionId: session.id, dto });
+      setEditing(false);
     } else {
       await create.mutateAsync({ receptionId, dto });
+      onClose?.();
     }
-    setEditing(false);
+  };
+
+  const changeStatus = (v: string) => {
+    if (!session) return;
+    const next = v === UNSET ? null : (v as PodiatryInstallStatus);
+    if (next === status) return;
+    setStatus.mutate(
+      { receptionId, sessionId: session.id, installStatus: next },
+      { onSuccess: () => { if (next === "INSTALLED") onInstalled?.(); } },
+    );
   };
 
   // Reading shows the stored form; editing shows the draft being typed.
   const shown = editing ? form : assessmentOf(session);
 
   return (
-    <Card>
+    <Card className={isNew ? "border-orange-300" : undefined}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-3 flex-wrap">
@@ -86,7 +125,7 @@ export function PodiatryAssessmentPanel({
             {!editing && actions}
             {editing ? (
               <>
-                <Button size="sm" variant="outline" className="gap-1.5" disabled={saving} onClick={() => setEditing(false)}>
+                <Button size="sm" variant="outline" className="gap-1.5" disabled={saving} onClick={cancel}>
                   <X className="h-3.5 w-3.5" />
                   {t("cancel")}
                 </Button>
@@ -95,20 +134,60 @@ export function PodiatryAssessmentPanel({
                   {t("save")}
                 </Button>
               </>
-            ) : state !== "ready" ? null : (
-              <ActionGuard
-                permission={session
-                  ? PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT
-                  : PERMISSIONS.CLINIC_PODIATRY.SESSION_CREATE}
-              >
-                <Button size="sm" className="gap-1.5" onClick={startEditing}>
-                  {session ? <Pencil className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-                  {session ? t("edit") : t("fill")}
-                </Button>
-              </ActionGuard>
+            ) : state !== "ready" || !session ? null : (
+              <>
+                <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT}>
+                  <Button size="sm" className="gap-1.5" onClick={startEditing}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    {t("edit")}
+                  </Button>
+                </ActionGuard>
+                {/* Only a form entered by mistake — never one already fitted. */}
+                {status !== "INSTALLED" && (
+                  <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_ARCHIVE}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 text-destructive hover:text-destructive"
+                      disabled={remove.isPending}
+                      onClick={() => setConfirmDelete(true)}
+                    >
+                      {remove.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                      {t("delete")}
+                    </Button>
+                  </ActionGuard>
+                )}
+              </>
             )}
           </div>
         </div>
+
+        {/* Fitting state of this form. */}
+        {session && !editing && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+            <span className="text-xs font-medium">{t("installStatus")}:</span>
+            {canSetStatus ? (
+              <Select value={status ?? UNSET} onValueChange={changeStatus} disabled={setStatus.isPending}>
+                <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UNSET}>{t("statusUnset")}</SelectItem>
+                  <SelectItem value="NOT_INSTALLED">{t("statusNotInstalled")}</SelectItem>
+                  <SelectItem value="INSTALLED">{t("statusInstalled")}</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <StatusBadge status={status} t={t} />
+            )}
+            {setStatus.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+            {status === "INSTALLED" && session.installedAt && (
+              <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {fmt(session.installedAt)}
+                {session.installedByName ? ` — ${session.installedByName}` : ""}
+              </span>
+            )}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {/* Why "save" is still disabled: the required fields left to fill, by the
@@ -132,12 +211,33 @@ export function PodiatryAssessmentPanel({
               <Button size="sm" variant="outline" onClick={onRetry}>{t("retry")}</Button>
             )}
           </div>
-        ) : !session && !editing ? (
-          <p className="text-sm text-muted-foreground text-center py-6">{t("notFilled")}</p>
         ) : (
           <PodiatryAssessmentFields value={shown} onChange={setForm} readOnly={!editing} />
         )}
       </CardContent>
+
+      {session && (
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title={t("deleteTitle")}
+          description={t("deleteDescription")}
+          onConfirm={() => {
+            setConfirmDelete(false);
+            remove.mutate({ receptionId, sessionId: session.id });
+          }}
+        />
+      )}
     </Card>
   );
+}
+
+function StatusBadge({ status, t }: { status: PodiatryInstallStatus | null; t: (k: string) => string }) {
+  if (status === "INSTALLED") {
+    return <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-700">{t("statusInstalled")}</Badge>;
+  }
+  if (status === "NOT_INSTALLED") {
+    return <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">{t("statusNotInstalled")}</Badge>;
+  }
+  return <Badge variant="outline" className="text-muted-foreground">{t("statusUnset")}</Badge>;
 }

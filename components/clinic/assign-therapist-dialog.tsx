@@ -27,16 +27,18 @@ const nameOf = (e: StaffRow) =>
   `${e.firstNameAr ?? e.firstName ?? ""} ${e.lastNameAr ?? e.lastName ?? ""}`.trim() || "—";
 
 /**
- * The physio head hands a case to one of the department's therapists. A case
- * converted from a doctor exam waits here unassigned; the same dialog reassigns.
+ * The physio head adds a therapist to a case. The API appends to the case's
+ * therapists — it never replaces one; removing a therapist is done from the
+ * treatment plan. A case converted from a doctor exam waits here unassigned.
  */
 export function AssignTherapistDialog({
-  caseId, open, onOpenChange, currentTherapistId, patientGender,
+  caseId, open, onOpenChange, currentTherapistIds = [], patientGender,
 }: {
   caseId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentTherapistId?: string | null;
+  /** Already on the case — shown but not pickable. */
+  currentTherapistIds?: string[];
   /** Patients are treated by a therapist of their own gender. Unknown = no filter. */
   patientGender?: "MALE" | "FEMALE" | null;
 }) {
@@ -75,8 +77,11 @@ export function AssignTherapistDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!o && !assign.isPending) close(); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>{currentTherapistId ? "إعادة تعيين المعالج" : "تعيين معالج"}</DialogTitle>
-          <DialogDescription>يصل إشعار للمعالج، وتظهر الحالة في قائمته.</DialogDescription>
+          <DialogTitle>{currentTherapistIds.length ? "إضافة معالج" : "تعيين معالج"}</DialogTitle>
+          <DialogDescription>
+            يُضاف المعالج إلى معالجي الحالة ويصله إشعار.
+            {currentTherapistIds.length > 0 && " المعالجون الحاليون يبقون — الإزالة تتم من خطة العلاج."}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5 py-2">
           <Label>المعالج</Label>
@@ -84,8 +89,8 @@ export function AssignTherapistDialog({
             <SelectTrigger><SelectValue placeholder={isLoading ? "جاري التحميل..." : "اختر المعالج..."} /></SelectTrigger>
             <SelectContent>
               {therapists.map((e) => (
-                <SelectItem key={e.id} value={e.id} disabled={e.id === currentTherapistId}>
-                  {nameOf(e)}{e.id === currentTherapistId ? " (الحالي)" : ""}
+                <SelectItem key={e.id} value={e.id} disabled={currentTherapistIds.includes(e.id)}>
+                  {nameOf(e)}{currentTherapistIds.includes(e.id) ? " (معيّن)" : ""}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -109,7 +114,7 @@ export function AssignTherapistDialog({
           <Button variant="outline" onClick={close} disabled={assign.isPending}>إلغاء</Button>
           <Button onClick={submit} disabled={!selected || assign.isPending}>
             {assign.isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-            تعيين
+            {currentTherapistIds.length ? "إضافة" : "تعيين"}
           </Button>
         </DialogFooter>
       </DialogContent>

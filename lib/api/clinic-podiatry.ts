@@ -110,6 +110,9 @@ export interface PodiatryFootMeasurements {
   navicularDropWithOrthoticLeft?: string;     navicularDropWithOrthoticRight?: string;
 }
 
+/** Fitting state of one assessment form; null = not decided yet (غير محدد). */
+export type PodiatryInstallStatus = "NOT_INSTALLED" | "INSTALLED";
+
 export interface PodiatrySession {
   id: string;
   receptionId: string;
@@ -123,6 +126,10 @@ export interface PodiatrySession {
   insoleType?: PodiatryInsoleType[] | null;
   /** نمرة الضبان — one of PODIATRY_SHOE_SIZES; null on sessions saved before it existed. */
   shoeSize?: number | null;
+  /** How many insoles this form covers (1+); null on forms saved before it existed. */
+  insolesCount?: number | null;
+  /** null = not decided. Old forms with installedAt read as INSTALLED. */
+  installStatus?: PodiatryInstallStatus | null;
   notes?: string | null;
   clinicianName?: string | null;
   clinicianSignature?: string | null;
@@ -150,6 +157,9 @@ export interface PodiatrySessionDto {
   footMeasurements?: PodiatryFootMeasurements;
   insoleType?: PodiatryInsoleType[];
   shoeSize?: number;
+  insolesCount?: number;
+  /** PATCH only. INSTALLED stamps installedAt and counts as a Vitafoot sale. */
+  installStatus?: PodiatryInstallStatus | null;
   notes?: string;
   clinicianName?: string;
   clinicianSignature?: string;
@@ -246,6 +256,8 @@ export interface PodiatrySale {
   patientName?: string | null;
   insoleType?: PodiatryInsoleType[] | null;
   shoeSize?: number | null;
+  /** Insoles in the latest fitting's form; the cost is per insole. null on old forms (= 1). */
+  insolesCount?: number | null;
   installedAt?: string | null;
   /** Every live fitting of this patient, across all their receptions. */
   installCount: number;

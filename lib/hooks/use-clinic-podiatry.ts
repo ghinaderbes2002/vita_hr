@@ -5,6 +5,7 @@ import {
   PaginatedPodiatrySales, PodiatrySaleCostDto, PodiatrySalesParams,
   PodiatryReceptionDto,
   PodiatrySessionDto,
+  PodiatryInstallStatus,
 } from "@/lib/api/clinic-podiatry";
 
 type ApiError = { response?: { data?: { message?: string; error?: { message?: string } } } };
@@ -127,7 +128,7 @@ export function usePodiatrySessions(receptionId: string) {
 export function useCreatePodiatrySession() {
   const qc = useQueryClient();
   return useMutation({
-    // POST upserts: one assessment per reception, created then updated.
+    // POST always adds a new form; a reception may hold several.
     mutationFn: ({ receptionId, dto }: { receptionId: string; dto: PodiatrySessionDto }) =>
       clinicPodiatryApi.createSession(receptionId, dto),
     onSuccess: (_, { receptionId }) => {
@@ -189,9 +190,29 @@ export function useDeletePodiatrySession() {
       clinicPodiatryApi.deleteSession(receptionId, sessionId),
     onSuccess: (_, { receptionId }) => {
       qc.invalidateQueries({ queryKey: ["podiatry-sessions", receptionId] });
-      toast.success("تم حذف الجلسة");
+      qc.invalidateQueries({ queryKey: ["podiatry-reception", receptionId] });
+      toast.success("تم حذف النموذج");
     },
-    onError: (e: unknown) => toast.error(errMsg(e, "فشل حذف الجلسة")),
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل حذف النموذج")),
+  });
+}
+
+/** Sets one form's fitting state (null / NOT_INSTALLED / INSTALLED) through PATCH. */
+export function useSetPodiatryInstallStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ receptionId, sessionId, installStatus }: {
+      receptionId: string; sessionId: string; installStatus: PodiatryInstallStatus | null;
+    }) => clinicPodiatryApi.updateSession(receptionId, sessionId, { installStatus }),
+    onSuccess: (_, { receptionId }) => {
+      qc.invalidateQueries({ queryKey: ["podiatry-sessions", receptionId] });
+      // The list's fitted / not-fitted split and the sales report both follow it.
+      qc.invalidateQueries({ queryKey: ["podiatry-receptions"] });
+      qc.invalidateQueries({ queryKey: ["podiatry-my-patients"] });
+      qc.invalidateQueries({ queryKey: ["podiatry-sales"] });
+      toast.success("تم تحديث حالة التركيب");
+    },
+    onError: (e: unknown) => toast.error(errMsg(e, "فشل تحديث حالة التركيب")),
   });
 }
 

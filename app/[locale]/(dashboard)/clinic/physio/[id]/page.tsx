@@ -1572,13 +1572,16 @@ export default function PhysioCasePage() {
               <Button size="sm" variant={c.awaitingAssignment ? "default" : "outline"} className="gap-2"
                 onClick={() => setAssignOpen(true)}>
                 <UserPlus className="h-4 w-4" />
-                {c.awaitingAssignment ? "تعيين معالج" : "إعادة تعيين المعالج"}
+                {c.awaitingAssignment ? "تعيين معالج" : "إضافة معالج"}
               </Button>
               <AssignTherapistDialog
                 caseId={id}
                 open={assignOpen}
                 onOpenChange={setAssignOpen}
-                currentTherapistId={c.physiotherapistId}
+                // Every therapist on the case; old records carry the single id only.
+                currentTherapistIds={
+                  (c.physiotherapists ?? []).map((p) => p.id).concat(c.physiotherapistId ? [c.physiotherapistId] : [])
+                }
                 patientGender={(patientFull as { gender?: "MALE" | "FEMALE" } | undefined)?.gender ?? null}
               />
             </>

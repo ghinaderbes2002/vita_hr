@@ -105,7 +105,9 @@ export const VitaFootSalesDoc = ({ data, letterhead, fontFamily }: {
             <Cell width={cols.name}>{s.patientName || "—"}</Cell>
             <Cell width={cols.arrival}>{arrivalMethodText(s) ?? "—"}</Cell>
             <Cell width={cols.insole}>{s.insoleType?.join("، ") || "—"}</Cell>
-            <Cell width={cols.size}>{s.shoeSize != null ? String(s.shoeSize) : "—"}</Cell>
+            <Cell width={cols.size}>
+              {(s.shoeSize != null ? String(s.shoeSize) : "—") + ((s.insolesCount ?? 1) > 1 ? ` (×${s.insolesCount})` : "")}
+            </Cell>
             <Cell width={cols.count}>{String(s.installCount ?? 0)}</Cell>
             <Cell width={cols.date} last={!data.withCosts}>{fmt(s.installedAt)}</Cell>
             {data.withCosts && <Cell width={cols.cost}>{lastCost(s)}</Cell>}

@@ -84,6 +84,9 @@ export interface PhysioCase {
   awaitingAssignment?: boolean;
   supervisingDoctorId?: string | null;
   physiotherapistId?: string | null;
+  /** Everyone assigned to the case; the first is physiotherapistId (the lead). */
+  physiotherapists?: { id: string; name: string }[];
+  physiotherapistNames?: string[];
   caseManagerId?: string | null;
   finalSummary?: string | null;
   // Complaint

@@ -110,6 +110,16 @@ function editFormOf(a: Appointment) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+// ?date=YYYY-MM-DD&appointmentId=… — a notification's link: open that day and
+// the appointment. Read once on arrival; window.location avoids a Suspense
+// boundary for useSearchParams.
+const readLinkedAppointment = (): { date: string; id: string } => {
+  if (typeof window === "undefined") return { date: "", id: "" };
+  const p = new URLSearchParams(window.location.search);
+  const date = p.get("date") ?? "";
+  return { date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "", id: p.get("appointmentId") ?? "" };
+};
+
 export default function AppointmentsPage() {
   const router = useRouter();
   const locale = useLocale();
@@ -193,9 +203,11 @@ export default function AppointmentsPage() {
     const e = staffList.find((x: any) => x.userId === id || x.id === id);
     return e ? `${e.firstNameAr} ${e.lastNameAr}`.trim() : null;
   };
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [selectedDate, setSelectedDate] = useState<string>(toISO(today));
+  const [linked] = useState(readLinkedAppointment);
+  const linkedDay = linked.date ? new Date(linked.date + "T00:00:00") : today;
+  const [viewYear, setViewYear] = useState(linkedDay.getFullYear());
+  const [viewMonth, setViewMonth] = useState(linkedDay.getMonth());
+  const [selectedDate, setSelectedDate] = useState<string>(linked.date || toISO(today));
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL");
   const [departmentFilter, setDepartmentFilter] = useState<string>("ALL");
   const [viewFilter, setViewFilter] = useState<"ALL" | "PATIENTS" | InternalMeetingType>("ALL");
@@ -322,6 +334,15 @@ export default function AppointmentsPage() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
   const dayAppointments = dayData?.items ?? [];
+
+  // Opens the linked appointment once its day has loaded (adjusting state
+  // during render rather than in an effect). Not found → the day stays shown.
+  const [linkedDone, setLinkedDone] = useState(!linked.id);
+  if (!linkedDone && dayData && selectedDate === (linked.date || selectedDate)) {
+    setLinkedDone(true);
+    const hit = dayAppointments.find((a: Appointment) => a.id === linked.id);
+    if (hit) setDetailAppt(hit);
+  }
 
   // Staff meetings for the viewed month: one request feeds both the calendar
   // dots and the selected day's column.

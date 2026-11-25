@@ -74,6 +74,8 @@ export interface AssessmentValue {
   insoleType: PodiatryInsoleType[];
   /** "" until a size is picked. */
   shoeSize: string;
+  /** "" until entered; a whole number from 1. */
+  insolesCount: string;
   notes: string;
 }
 
@@ -105,6 +107,7 @@ export const emptyAssessment = (): AssessmentValue => ({
   footMeasurements: emptyMeasurements(),
   insoleType: [],
   shoeSize: "",
+  insolesCount: "",
   notes: "",
 });
 
@@ -122,6 +125,7 @@ export const assessmentOf = (s?: PodiatrySession | null): AssessmentValue => {
     footMeasurements: { ...e.footMeasurements, ...(s.footMeasurements ?? {}) },
     insoleType: s.insoleType ?? [],
     shoeSize: s.shoeSize != null ? String(s.shoeSize) : "",
+    insolesCount: s.insolesCount != null ? String(s.insolesCount) : "",
     notes: s.notes ?? "",
   };
 };
@@ -148,6 +152,8 @@ export const assessmentToDto = (v: AssessmentValue): PodiatrySessionDto => {
     insoleType: v.insoleType,
     // Optional: left out until a size is picked.
     ...(v.shoeSize ? { shoeSize: Number(v.shoeSize) } : {}),
+    // Optional too, and only a whole number from 1.
+    ...(/^[1-9]\d*$/.test(v.insolesCount.trim()) ? { insolesCount: Number(v.insolesCount.trim()) } : {}),
     notes: text(v.notes),
   };
 };
@@ -674,6 +680,23 @@ export function PodiatryAssessmentFields({
                 ))}
               </SelectContent>
             </Select>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel text={t("labels.insolesCount")} />
+          {readOnly ? (
+            <Val value={value.insolesCount} />
+          ) : (
+            <Input
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              dir="ltr"
+              className="h-9 w-full sm:w-40"
+              value={value.insolesCount}
+              onChange={(e) => onChange({ ...value, insolesCount: e.target.value.replace(/[^\d]/g, "") })}
+            />
           )}
         </div>
         <div className="space-y-1.5">

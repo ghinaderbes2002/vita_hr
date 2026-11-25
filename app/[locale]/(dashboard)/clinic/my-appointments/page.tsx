@@ -69,6 +69,16 @@ const startOfWeek = (ref: Date) => {
   return d;
 };
 
+// ?date=YYYY-MM-DD&appointmentId=… — a notification's link: open that day and
+// the appointment. Read once on arrival; window.location avoids a Suspense
+// boundary for useSearchParams.
+const readLinkedAppointment = (): { date: string; id: string } => {
+  if (typeof window === "undefined") return { date: "", id: "" };
+  const p = new URLSearchParams(window.location.search);
+  const date = p.get("date") ?? "";
+  return { date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "", id: p.get("appointmentId") ?? "" };
+};
+
 export default function MyAppointmentsPage() {
   const router = useRouter();
   const locale = useLocale();
@@ -76,7 +86,16 @@ export default function MyAppointmentsPage() {
   const t = useTranslations("clinic.appointments");
 
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL");
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [linked] = useState(readLinkedAppointment);
+  // The week holding the linked day, counted from this week.
+  const [weekOffset, setWeekOffset] = useState(() =>
+    linked.date
+      ? Math.round(
+          (startOfWeek(new Date(linked.date + "T00:00:00")).getTime() - startOfWeek(new Date()).getTime())
+          / (7 * 24 * 3600 * 1000),
+        )
+      : 0,
+  );
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [cancelTargetId, setCancelTargetId] = useState("");
   const [cancelReason, setCancelReason] = useState("");
@@ -120,6 +139,15 @@ export default function MyAppointmentsPage() {
   const items = !canSeeMyAppts ? [] : [
     ...new Map([...(data?.items ?? []), ...(weekOffset !== 0 ? todayData?.items ?? [] : [])].map((a) => [a.id, a])).values(),
   ];
+
+  // Opens the linked appointment once its week has loaded (adjusting state
+  // during render rather than in an effect). Not found → the week stays shown.
+  const [linkedDone, setLinkedDone] = useState(!linked.id);
+  if (!linkedDone && data) {
+    setLinkedDone(true);
+    const hit = items.find((a) => a.id === linked.id);
+    if (hit) setDetailAppt(hit);
+  }
 
   // Meeting ids come back without names.
   const { data: staffData } = useEmployeesBasicList();
