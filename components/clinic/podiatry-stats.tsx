@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { CheckCircle2, CircleDashed, Footprints, UserCheck } from "lucide-react";
+import { CheckCircle2, CircleDashed, CircleHelp, Footprints, UserCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,7 @@ function StatCard({
   /** Omitted for the total itself — no share, no bar. */
   total?: number;
   sub?: string;
-  tone: "brand" | "green" | "amber" | "blue";
+  tone: "brand" | "green" | "amber" | "blue" | "gray";
 }) {
   const t = useTranslations("clinic.podiatry");
   const pct = total ? Math.round((value / total) * 100) : null;
@@ -24,6 +24,7 @@ function StatCard({
     green: { icon: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400", bar: "bg-emerald-500" },
     amber: { icon: "bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400", bar: "bg-amber-500" },
     blue: { icon: "bg-sky-100 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400", bar: "bg-sky-500" },
+    gray: { icon: "bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-400", bar: "bg-slate-400" },
   }[tone];
 
   return (
@@ -60,35 +61,39 @@ function StatCard({
  * practitioner. Counted from the full list, never just the visible page.
  */
 export function PodiatryStats({
-  total, patients, fitted, assigned, showAssignment, isLoading,
+  total, patients, fitted, notFitted, assigned, showAssignment, isLoading,
 }: {
   total: number;
   patients: number;
   fitted: number;
+  /** Marked NOT_INSTALLED; the rest of the unfitted are not decided yet. */
+  notFitted: number;
   assigned: number;
   showAssignment: boolean;
   isLoading?: boolean;
 }) {
   const t = useTranslations("clinic.podiatry");
-  const cards = showAssignment ? 4 : 3;
+  const cards = showAssignment ? 5 : 4;
+  const grid = cn("grid gap-4 sm:grid-cols-2", cards === 5 ? "lg:grid-cols-5" : "lg:grid-cols-4");
 
   if (isLoading) {
     return (
-      <div className={cn("grid gap-4 sm:grid-cols-2", cards === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
+      <div className={grid}>
         {Array.from({ length: cards }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
       </div>
     );
   }
 
   return (
-    <div className={cn("grid gap-4 sm:grid-cols-2", cards === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
+    <div className={grid}>
       <StatCard
         icon={Footprints} tone="brand"
         label={t("statTotal")} value={total}
         sub={t("statPatients", { count: patients })}
       />
       <StatCard icon={CheckCircle2} tone="green" label={t("statFitted")} value={fitted} total={total} />
-      <StatCard icon={CircleDashed} tone="amber" label={t("statNotFitted")} value={total - fitted} total={total} />
+      <StatCard icon={CircleDashed} tone="amber" label={t("statNotFitted")} value={notFitted} total={total} />
+      <StatCard icon={CircleHelp} tone="gray" label={t("statUnsetLabel")} value={total - fitted - notFitted} total={total} />
       {showAssignment && (
         <StatCard
           icon={UserCheck} tone="blue"

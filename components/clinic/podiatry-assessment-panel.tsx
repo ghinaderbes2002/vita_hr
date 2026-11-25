@@ -7,17 +7,16 @@
 // state (غير محدد / لم يُركَّب / رُكِّب).
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Loader2, Pencil, Save, Trash2, X } from "lucide-react";
+import { CheckCircle2, Loader2, Pencil, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
-  useCreatePodiatrySession, useDeletePodiatrySession, useSetPodiatryInstallStatus, useUpdatePodiatrySession,
+  useCreatePodiatrySession, useSetPodiatryInstallStatus, useUpdatePodiatrySession,
 } from "@/lib/hooks/use-clinic-podiatry";
 import { PodiatryInstallStatus, PodiatrySession } from "@/lib/api/clinic-podiatry";
 import {
@@ -58,7 +57,6 @@ export function PodiatryAssessmentPanel({
   // A new form opens straight in editing — but never in place of forms not loaded yet.
   const [editing, setEditing] = useState(isNew && state === "ready");
   const [form, setForm] = useState<AssessmentValue>(emptyAssessment);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const t = useTranslations("clinic.podiatry.form.panel");
   // نفس مترجم الورقة، ليخرج اسم كل حقل ناقص بالصيغة المعروضة فيها.
@@ -70,7 +68,6 @@ export function PodiatryAssessmentPanel({
   const create = useCreatePodiatrySession();
   const update = useUpdatePodiatrySession();
   const setStatus = useSetPodiatryInstallStatus();
-  const remove = useDeletePodiatrySession();
   const saving = create.isPending || update.isPending;
 
   const status = installStatusOf(session);
@@ -135,29 +132,12 @@ export function PodiatryAssessmentPanel({
                 </Button>
               </>
             ) : state !== "ready" || !session ? null : (
-              <>
-                <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT}>
-                  <Button size="sm" className="gap-1.5" onClick={startEditing}>
-                    <Pencil className="h-3.5 w-3.5" />
-                    {t("edit")}
-                  </Button>
-                </ActionGuard>
-                {/* Only a form entered by mistake — never one already fitted. */}
-                {status !== "INSTALLED" && (
-                  <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_ARCHIVE}>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1.5 text-destructive hover:text-destructive"
-                      disabled={remove.isPending}
-                      onClick={() => setConfirmDelete(true)}
-                    >
-                      {remove.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                      {t("delete")}
-                    </Button>
-                  </ActionGuard>
-                )}
-              </>
+              <ActionGuard permission={PERMISSIONS.CLINIC_PODIATRY.SESSION_EDIT}>
+                <Button size="sm" className="gap-1.5" onClick={startEditing}>
+                  <Pencil className="h-3.5 w-3.5" />
+                  {t("edit")}
+                </Button>
+              </ActionGuard>
             )}
           </div>
         </div>
@@ -216,18 +196,6 @@ export function PodiatryAssessmentPanel({
         )}
       </CardContent>
 
-      {session && (
-        <ConfirmDialog
-          open={confirmDelete}
-          onOpenChange={setConfirmDelete}
-          title={t("deleteTitle")}
-          description={t("deleteDescription")}
-          onConfirm={() => {
-            setConfirmDelete(false);
-            remove.mutate({ receptionId, sessionId: session.id });
-          }}
-        />
-      )}
     </Card>
   );
 }

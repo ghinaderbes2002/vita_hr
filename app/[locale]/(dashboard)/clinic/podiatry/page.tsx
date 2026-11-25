@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/shared/pagination";
+import { installStatusOf } from "@/components/clinic/podiatry-assessment-panel";
 import { PodiatryStats } from "@/components/clinic/podiatry-stats";
 import { usePodiatryReceptions, usePodiatryMyPatients } from "@/lib/hooks/use-clinic-podiatry";
 import { useMyEmployee, useEmployeesBasicList } from "@/lib/hooks/use-employees";
@@ -33,9 +34,18 @@ const PAGE_SIZE = 20;
 /** A reception is assigned once it carries at least one practitioner. */
 const isAssigned = (r: PodiatryReception) => (r.practitionerIds ?? []).length > 0;
 
-// A reception counts as fitted once any of its sessions carries an install stamp.
-const isFitted = (r: PodiatryReception) =>
-  (r.sessions ?? []).some((s) => !!s.installedAt);
+/**
+ * A reception's fitting state, from its forms: fitted once any form is
+ * INSTALLED; not fitted once a form says NOT_INSTALLED and none is fitted;
+ * otherwise not set yet (غير محدد) — no form has a decision, or there is no form.
+ */
+type ReceptionInstall = "fitted" | "notFitted" | "unset";
+const receptionInstall = (r: PodiatryReception): ReceptionInstall => {
+  const states = (r.sessions ?? []).map(installStatusOf);
+  if (states.includes("INSTALLED")) return "fitted";
+  if (states.includes("NOT_INSTALLED")) return "notFitted";
+  return "unset";
+};
 
 /**
  * المسميات التي تشرف على مرضى القسم كاملاً. غيرها يرى فقط الحالات المعيَّن
@@ -60,7 +70,7 @@ export default function PodiatryListPage() {
   const [page, setPage] = useState(1);
   // من له معالج ومن ليس له — يهمّ المشرف وحده: المعالج يرى حالاته المعيَّن عليها فقط.
   const [assignFilter, setAssignFilter] = useState<"all" | "assigned" | "unassigned">("all");
-  const [installFilter, setInstallFilter] = useState<"all" | "fitted" | "notFitted">("all");
+  const [installFilter, setInstallFilter] = useState<"all" | ReceptionInstall>("all");
 
   // The reception carries practitioner ids only; names come from the staff list.
   const { data: staffData } = useEmployeesBasicList();
@@ -90,13 +100,14 @@ export default function PodiatryListPage() {
 
   const unassignedCount = (receptions as PodiatryReception[]).filter((r) => !isAssigned(r)).length;
   // The whole list is loaded, so the fitting split is counted here over every reception.
-  const fittedCount = (receptions as PodiatryReception[]).filter(isFitted).length;
+  const installOf = new Map((receptions as PodiatryReception[]).map((r) => [r.id, receptionInstall(r)]));
+  const fittedCount = [...installOf.values()].filter((s) => s === "fitted").length;
+  const notFittedCount = [...installOf.values()].filter((s) => s === "notFitted").length;
 
   const filtered = (receptions as PodiatryReception[]).filter((r) => {
     if (assignFilter === "assigned" && !isAssigned(r)) return false;
     if (assignFilter === "unassigned" && isAssigned(r)) return false;
-    if (installFilter === "fitted" && !isFitted(r)) return false;
-    if (installFilter === "notFitted" && isFitted(r)) return false;
+    if (installFilter !== "all" && installOf.get(r.id) !== installFilter) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     const name = `${r.patient?.firstName ?? ""} ${r.patient?.lastName ?? ""}`.toLowerCase();
@@ -127,6 +138,7 @@ export default function PodiatryListPage() {
         total={(receptions as PodiatryReception[]).length}
         patients={patientCount}
         fitted={fittedCount}
+        notFitted={notFittedCount}
         assigned={(receptions as PodiatryReception[]).length - unassignedCount}
         showAssignment={seesAll}
       />
@@ -156,13 +168,14 @@ export default function PodiatryListPage() {
         )}
         <Select
           value={installFilter}
-          onValueChange={(v) => { setInstallFilter(v as "all" | "fitted" | "notFitted"); setPage(1); }}
+          onValueChange={(v) => { setInstallFilter(v as "all" | ReceptionInstall); setPage(1); }}
         >
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("installFilter.all")}</SelectItem>
             <SelectItem value="fitted">{t("installFilter.fitted")}</SelectItem>
             <SelectItem value="notFitted">{t("installFilter.notFitted")}</SelectItem>
+            <SelectItem value="unset">{t("installFilter.unset")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -228,13 +241,17 @@ export default function PodiatryListPage() {
                   <TableCell>{r.sessions?.length ?? 0}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{fmt(r.createdAt)}</TableCell>
                   <TableCell>
-                    {isFitted(r) ? (
+                    {installOf.get(r.id) === "fitted" ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
                         {t("installedBadge")}
                       </Badge>
+                    ) : installOf.get(r.id) === "notFitted" ? (
+                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                        {t("notInstalledBadge")}
+                      </Badge>
                     ) : (
                       <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-300">
-                        {t("notInstalledBadge")}
+                        {t("unsetBadge")}
                       </Badge>
                     )}
                   </TableCell>
