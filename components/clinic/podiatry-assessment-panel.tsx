@@ -7,11 +7,11 @@
 // state (غير محدد / لم يُركَّب / رُكِّب).
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Loader2, Pencil, Save, X } from "lucide-react";
+import { CheckCircle2, CircleDashed, CircleHelp, Footprints, Loader2, Pencil, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { ActionGuard } from "@/components/permissions/action-guard";
 import { PERMISSIONS } from "@/lib/permissions/catalog";
 import { usePermissions } from "@/lib/hooks/use-permissions";
@@ -32,6 +32,15 @@ export const installStatusOf = (s?: PodiatrySession | null): PodiatryInstallStat
   s?.installStatus ?? (s?.installedAt ? "INSTALLED" : null);
 
 const UNSET = "UNSET";
+
+/** The three fitting states as a segmented control — same colours as the list's stats. */
+const STATUS_OPTIONS: {
+  value: string; labelKey: string; icon: typeof CheckCircle2; on: string; iconCls: string;
+}[] = [
+  { value: UNSET, labelKey: "statusUnset", icon: CircleHelp, iconCls: "text-slate-500", on: "border-slate-300 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" },
+  { value: "NOT_INSTALLED", labelKey: "statusNotInstalled", icon: CircleDashed, iconCls: "text-amber-600", on: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300" },
+  { value: "INSTALLED", labelKey: "statusInstalled", icon: CheckCircle2, iconCls: "text-emerald-600", on: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" },
+];
 
 export function PodiatryAssessmentPanel({
   receptionId, session, title, actions, state = "ready", onRetry, onClose, onInstalled,
@@ -144,23 +153,40 @@ export function PodiatryAssessmentPanel({
 
         {/* Fitting state of this form. */}
         {session && !editing && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
-            <span className="text-xs font-medium">{t("installStatus")}:</span>
-            {canSetStatus ? (
-              <Select value={status ?? UNSET} onValueChange={changeStatus} disabled={setStatus.isPending}>
-                <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UNSET}>{t("statusUnset")}</SelectItem>
-                  <SelectItem value="NOT_INSTALLED">{t("statusNotInstalled")}</SelectItem>
-                  <SelectItem value="INSTALLED">{t("statusInstalled")}</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-muted/30 px-3 py-2.5">
+            <span className="flex items-center gap-1.5 text-sm font-medium">
+              <Footprints className="h-4 w-4 text-muted-foreground" />
+              {t("installStatus")}
+            </span>
+            {canSetStatus ? (() => {
+              // The trigger takes the chosen state's colour and icon.
+              const current = STATUS_OPTIONS.find((o) => o.value === (status ?? UNSET)) ?? STATUS_OPTIONS[0];
+              return (
+                <Select value={current.value} onValueChange={changeStatus} disabled={setStatus.isPending}>
+                  <SelectTrigger className={`h-9 w-44 gap-2 rounded-lg border text-sm font-medium shadow-none ${current.on}`}>
+                    <span className="flex items-center gap-2">
+                      <current.icon className="h-4 w-4" />
+                      {t(current.labelKey)}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value} className="py-2">
+                        <span className="flex items-center gap-2">
+                          <o.icon className={`h-4 w-4 ${o.iconCls}`} />
+                          {t(o.labelKey)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              );
+            })() : (
               <StatusBadge status={status} t={t} />
             )}
-            {setStatus.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+            {setStatus.isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
             {status === "INSTALLED" && session.installedAt && (
-              <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+              <span className="ms-auto inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 {fmt(session.installedAt)}
                 {session.installedByName ? ` — ${session.installedByName}` : ""}
@@ -205,7 +231,7 @@ function StatusBadge({ status, t }: { status: PodiatryInstallStatus | null; t: (
     return <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-700">{t("statusInstalled")}</Badge>;
   }
   if (status === "NOT_INSTALLED") {
-    return <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">{t("statusNotInstalled")}</Badge>;
+    return <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">{t("statusNotInstalled")}</Badge>;
   }
   return <Badge variant="outline" className="text-muted-foreground">{t("statusUnset")}</Badge>;
 }

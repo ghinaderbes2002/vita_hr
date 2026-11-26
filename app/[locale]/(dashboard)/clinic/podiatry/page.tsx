@@ -231,12 +231,23 @@ export default function PodiatryListPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {(r.visitTypes ?? []).map((v) => (
-                        <Badge key={v} variant="outline" className="text-[10px]">{enumLabel.visitType(v)}</Badge>
-                      ))}
-                      {(r.visitTypes ?? []).length === 0 && <span className="text-muted-foreground text-xs">—</span>}
-                    </div>
+                    {/* Newer receptions record the visit type per foot (right / left),
+                        leaving the general list empty — all three are shown, once each. */}
+                    {(() => {
+                      const types = [...new Set([
+                        ...(r.visitTypes ?? []),
+                        ...(r.visitTypesRight ?? []),
+                        ...(r.visitTypesLeft ?? []),
+                      ])];
+                      return (
+                        <div className="flex flex-wrap gap-1">
+                          {types.map((v) => (
+                            <Badge key={v} variant="outline" className="text-[10px]">{enumLabel.visitType(v)}</Badge>
+                          ))}
+                          {types.length === 0 && <span className="text-muted-foreground text-xs">—</span>}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>{r.sessions?.length ?? 0}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{fmt(r.createdAt)}</TableCell>
