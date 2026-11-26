@@ -45,8 +45,10 @@ export function useUpdateRolePermissions() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateRolePermissionsData }) =>
       rolesApi.updatePermissions(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
+      // The edit dialog reads the role from ["role", id]; left stale, reopening it showed the old permissions.
+      queryClient.invalidateQueries({ queryKey: ["role", id] });
       toast.success("تم تحديث صلاحيات الدور بنجاح");
     },
     onError: (error: any) => {
@@ -76,8 +78,9 @@ export function useUpdateRole() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateRoleData }) =>
       rolesApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
+      queryClient.invalidateQueries({ queryKey: ["role", id] });
       toast.success("تم تحديث الدور بنجاح");
     },
     onError: (error: any) => {

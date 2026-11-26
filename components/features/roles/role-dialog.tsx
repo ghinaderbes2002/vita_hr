@@ -47,12 +47,6 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const isUuid = (value: unknown): value is string =>
-  typeof value === "string" && UUID_RE.test(value);
-
 interface RoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -83,7 +77,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   const { data: permissionsData } = usePermissions();
 
   // Fetch full role data with permissions when editing
-  const { data: fullRoleData } = useRole(role?.id || "");
+  const { data: fullRoleData, isFetching: roleFetching } = useRole(role?.id || "");
   const roleToUse = isEdit ? fullRoleData : role;
 
   const permissions = useMemo(() => permissionsData ?? [], [permissionsData]);
@@ -98,10 +92,19 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
   // الباك يرجّع صلاحيات الدور أحياناً كـ objects وأحياناً كأسماء نصية (نفس الحالة
   // المعالَجة في auth-store). بدون التطبيع كان `p.id` يساوي undefined فتتحول إلى
   // null داخل الـ payload ويرفضها التحقق كـ UUID.
+  // A valid id is one the permissions list carries, not one shaped like a UUID:
+  // the 360 permissions are seeded with ids like "eval-360-manage", and the UUID
+  // check silently dropped them from every save.
+  const knownIds = useMemo(
+    () => new Set(permissions.map((p) => p?.id).filter((id): id is string => typeof id === "string" && id !== "")),
+    [permissions],
+  );
+  const isKnownId = (value: unknown): value is string => typeof value === "string" && knownIds.has(value);
+
   const idByName = useMemo(() => {
     const map = new Map<string, string>();
     permissions.forEach((p) => {
-      if (p?.name && isUuid(p.id)) map.set(p.name, p.id);
+      if (p?.name && typeof p.id === "string" && p.id) map.set(p.name, p.id);
     });
     return map;
   }, [permissions]);
@@ -110,13 +113,13 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     if (!rolePermissions) return [];
     return rolePermissions
       .map((p: any) => {
-        if (isUuid(p)) return p;
+        if (isKnownId(p)) return p;
         if (typeof p === "string") return idByName.get(p);
-        if (isUuid(p?.id)) return p.id;
-        if (isUuid(p?.permissionId)) return p.permissionId;
+        if (isKnownId(p?.id)) return p.id;
+        if (isKnownId(p?.permissionId)) return p.permissionId;
         return p?.name ? idByName.get(p.name) : undefined;
       })
-      .filter(isUuid);
+      .filter(isKnownId);
   };
 
   const nameById = useMemo(() => new Map(permissions.map((p) => [p.id, p.name])), [permissions]);
@@ -154,9 +157,13 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     },
   });
 
-  // Keyed on the record, not the object: the list behind this dialog refetches
-  // in the background, and reset() was firing over half-typed input.
+  // Refilled each time the dialog opens and whenever the role's data actually
+  // changes. React Query keeps the same object when a background refetch brings
+  // identical data, so that does not reset half-typed input. Keying on the id
+  // alone left the form empty on reopening the same role after a save (which
+  // resets it), and saving that empty form wiped every permission of the role.
   useEffect(() => {
+    if (!open) return;
     if (roleToUse) {
       form.reset({
         name: roleToUse.name || "",
@@ -176,17 +183,17 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
     }
     // idByName لازم ضمن الاعتماديات: بذرة الصلاحيات تُحلّ عبره عند وصول القائمة
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roleToUse?.id, form, idByName]);
+  }, [roleToUse, open, form, idByName]);
 
   const onSubmit = async (data: FormData) => {
-    // حارس: الباك يتحقق من permissionIds كـ UUIDs. أي قيمة غير صالحة تُسقط هنا
-    // وتُطبع بدل أن ترجع 400 بلا معلومة عن القيمة المخالفة.
+    // حارس: تُسقط القيم الفارغة أو غير الموجودة في قائمة الصلاحيات (مثل null).
+    // لا نشترط شكل UUID: صلاحيات 360 معرّفاتها نصية (eval-360-manage).
     const rawIds = data.permissionIds || [];
-    const permissionIds = rawIds.filter(isUuid);
+    const permissionIds = rawIds.filter(isKnownId);
     if (permissionIds.length !== rawIds.length) {
       console.warn(
         "[role-dialog] تم إسقاط قيم غير صالحة من permissionIds:",
-        rawIds.filter((id) => !isUuid(id))
+        rawIds.filter((id) => !isKnownId(id))
       );
     }
 
@@ -498,7 +505,8 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
               >
                 {t("common.cancel")}
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              {/* Saving before the role and its permissions arrive would send an empty or stale set and replace the real one. */}
+              <Button type="submit" disabled={isLoading || (isEdit && (roleFetching || !fullRoleData || permissions.length === 0))}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                 {t("common.save")}
               </Button>
