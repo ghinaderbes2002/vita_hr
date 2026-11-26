@@ -201,7 +201,7 @@ export default function PhysioListPage() {
           </Button>
         )}
         {/* Department-wide totals — not for a therapist who sees only their own cases. */}
-        {!shouldFilter && <PhysioSessionStatsButton />}
+        <PhysioSessionStatsButton />
       </div>
 
       <div className="rounded-md border">

@@ -1,5 +1,6 @@
 "use client";
 
+import { DateRangeFilter, EMPTY_DATE_FILTER, dateFilterParams, type DateFilterValue } from "@/components/features/cashbox/date-range-filter";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -44,12 +45,14 @@ function CashBoxDetails() {
   const { data: box, isLoading } = useCashBox(id);
   const [txType, setTxType] = useState(ALL);
   const [txPage, setTxPage] = useState(1);
+  const [txDates, setTxDates] = useState<DateFilterValue>(EMPTY_DATE_FILTER);
   const [countsPage, setCountsPage] = useState(1);
   const [countOpen, setCountOpen] = useState(false);
 
   const { data: txData, isLoading: txLoading } = useCashTransactions({
     cashBoxId: id,
     transactionType: txType !== ALL ? (txType as CashTransactionType) : undefined,
+    ...dateFilterParams(txDates),
     page: txPage,
     limit: LIMIT,
   });
@@ -99,13 +102,16 @@ function CashBoxDetails() {
         </TabsList>
         {canReadTx && (
           <TabsContent value="transactions" className="space-y-3">
-            <OptionSelect
-              value={txType}
-              onChange={(v) => { setTxType(v); setTxPage(1); }}
-              allLabel={t("allTypes")}
-              options={CASH_TRANSACTION_TYPES.map((k) => ({ value: k, label: t(`txType.${k}`) }))}
-              className="w-48"
-            />
+            <div className="flex flex-wrap gap-3">
+              <OptionSelect
+                value={txType}
+                onChange={(v) => { setTxType(v); setTxPage(1); }}
+                allLabel={t("allTypes")}
+                options={CASH_TRANSACTION_TYPES.map((k) => ({ value: k, label: t(`txType.${k}`) }))}
+                className="w-48"
+              />
+              <DateRangeFilter value={txDates} onChange={(v) => { setTxDates(v); setTxPage(1); }} />
+            </div>
             <TransactionsTable transactions={txData?.items ?? []} isLoading={txLoading} showBox={false} />
             {(txData?.totalPages ?? 1) > 1 && (
               <Pagination page={txPage} totalPages={txData!.totalPages} total={txData!.total} limit={LIMIT} onPageChange={setTxPage} />

@@ -164,6 +164,8 @@ export const cashboxApi = {
   // ── Transactions ──
   getTransactions: async (params?: {
     cashBoxId?: string; transactionType?: CashTransactionType; page?: number; limit?: number;
+    /** Inclusive days, yyyy-mm-dd; the same date in both picks one day. */
+    dateFrom?: string; dateTo?: string;
   }): Promise<Paged<CashTransaction>> =>
     paged((await apiClient.get(`${BASE}/transactions`, { params })).data, normTx),
   disburse: async (dto: DisbursementDto): Promise<CashTransaction> =>

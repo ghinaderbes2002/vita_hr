@@ -1,5 +1,6 @@
 "use client";
 
+import { DateRangeFilter, EMPTY_DATE_FILTER, dateFilterParams, type DateFilterValue } from "@/components/features/cashbox/date-range-filter";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/shared/page-header";
@@ -28,9 +29,11 @@ function CashTransactionsContent() {
   const [boxId, setBoxId] = useState(ALL);
   const [type, setType] = useState(ALL);
   const [page, setPage] = useState(1);
+  const [dates, setDates] = useState<DateFilterValue>(EMPTY_DATE_FILTER);
   const { data, isLoading } = useCashTransactions({
     cashBoxId: boxId !== ALL ? boxId : undefined,
     transactionType: type !== ALL ? (type as CashTransactionType) : undefined,
+    ...dateFilterParams(dates),
     page,
     limit: LIMIT,
   });
@@ -60,6 +63,7 @@ function CashTransactionsContent() {
           options={CASH_TRANSACTION_TYPES.map((k) => ({ value: k, label: t(`txType.${k}`) }))}
           className="w-48"
         />
+        <DateRangeFilter value={dates} onChange={(v) => { setDates(v); setPage(1); }} />
       </div>
       <TransactionsTable transactions={data?.items ?? []} isLoading={isLoading} />
       {(data?.totalPages ?? 1) > 1 && (

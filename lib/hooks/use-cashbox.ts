@@ -69,6 +69,7 @@ export function useSetMainCashBox() {
 // ── Transactions ──
 export function useCashTransactions(params?: {
   cashBoxId?: string; transactionType?: CashTransactionType; page?: number; limit?: number;
+  dateFrom?: string; dateTo?: string;
 }) {
   return useQuery({ queryKey: [K.transactions, params], queryFn: () => cashboxApi.getTransactions(params) });
 }
