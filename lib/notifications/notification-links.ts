@@ -25,13 +25,17 @@ export function resolveNotificationLink(
   // working without a frontend release. Only an internal absolute path is
   // followed — "//host" is protocol-relative and would navigate off the app.
   const link = typeof d.link === "string" ? d.link.trim() : "";
-  if (link.startsWith("/") && !link.startsWith("//")) return link;
+  // Appointment notifications saved before the server fixed its links point at
+  // "/appointments/<id>", a route that doesn't exist (404) — sent to the
+  // appointment the same way the new ones are instead.
+  const legacyAppointmentLink = /^\/appointments\/[^/?#]+$/.test(link);
+  if (link.startsWith("/") && !link.startsWith("//") && !legacyAppointmentLink) return link;
 
   // Appointment notifications (created / reminder / cancelled …) all carry an
   // `appointmentId` regardless of their type → open the therapist's own list.
   // There is no dedicated appointment detail route (appointments open in a
   // dialog), so we land on "my-appointments".
-  if (d.appointmentId) return "/clinic/my-appointments";
+  if (d.appointmentId) return `/clinic/my-appointments?appointmentId=${encodeURIComponent(d.appointmentId)}`;
 
   // The daily 8 a.m. reminder to finance that today's exchange rate is missing.
   if (d.type === "EXCHANGE_RATE_REMINDER") return "/warehouse/currencies";

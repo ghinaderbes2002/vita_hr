@@ -1,5 +1,6 @@
 "use client";
 
+import { phoneError, PHONE_HINT } from "@/lib/utils/phone";
 import { ExternalEmployeeFields } from "./external-employee-fields";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -230,8 +231,15 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
     firstNameEn: z.string().min(2, t("employees.form.firstNameEnRequired")),
     lastNameEn: z.string().min(2, t("employees.form.lastNameEnRequired")),
     email: z.string().email({ message: t("employees.form.invalidEmail") }),
-    phone: z.string().optional(),
-    mobile: z.string().optional(),
+    // Checked as WhatsApp reads it: foreign numbers need 00 or +.
+    phone: z.string().optional().superRefine((v, ctx) => {
+      const err = phoneError(v);
+      if (err) ctx.addIssue({ code: z.ZodIssueCode.custom, message: err });
+    }),
+    mobile: z.string().optional().superRefine((v, ctx) => {
+      const err = phoneError(v);
+      if (err) ctx.addIssue({ code: z.ZodIssueCode.custom, message: err });
+    }),
     nationalId: z.string().min(1, t("employees.form.nationalIdRequired")),
     gender: z.enum(["MALE", "FEMALE", "UNSPECIFIED"]),
     dateOfBirth: z.string().min(1, t("employees.form.dateOfBirthRequired")),
@@ -768,7 +776,8 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("employees.fields.phone")} ({t("common.optional")})</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormControl><Input {...field} dir="ltr" inputMode="tel" placeholder="09xxxxxxxx" /></FormControl>
+                        <p className="text-[11px] text-muted-foreground">{PHONE_HINT}</p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -779,7 +788,7 @@ export function EmployeeDialog({ open, onOpenChange, employee, defaultInterviewE
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("employees.fields.mobile")} ({t("common.optional")})</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormControl><Input {...field} dir="ltr" inputMode="tel" placeholder="09xxxxxxxx" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

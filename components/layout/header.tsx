@@ -7,7 +7,7 @@ import {
   Clock, AlertCircle, RotateCcw, FileText, AlertOctagon, Coffee, DollarSign,
   Mail, Trophy, CheckCircle2, XCircle, ClipboardList, FileWarning,
   Cake, UserPlus, FileCheck, UserX, ListTodo, Briefcase, Star, CalendarPlus,
-  Settings, Users, Building2, GraduationCap, Shield, UserCog, Menu,
+  Settings, Users, Building2, GraduationCap, Shield, UserCog, Menu, CalendarX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -95,6 +95,9 @@ export function Header() {
     ADDITIONAL_ASSIGNMENT_REQUEST:   { icon: Briefcase,     iconClass: "text-indigo-500", bgClass: "bg-indigo-50/60 dark:bg-indigo-950/20", dotClass: "bg-indigo-500" },
     ADDITIONAL_ASSIGNMENT_DECISION:  { icon: CheckCircle2,  iconClass: "text-green-500",  bgClass: "bg-green-50/60 dark:bg-green-950/20",   dotClass: "bg-green-500" },
     APPOINTMENT_CREATED_BY_THERAPIST: { icon: CalendarPlus, iconClass: "text-sky-500",    bgClass: "bg-sky-50/60 dark:bg-sky-950/20",       dotClass: "bg-sky-500" },
+    // Appointment notifications are all GENERAL; their kind travels in data.type.
+    APPOINTMENT_APOLOGIZED:          { icon: CalendarX,     iconClass: "text-sky-600",    bgClass: "bg-sky-50/60 dark:bg-sky-950/20",       dotClass: "bg-sky-600" },
+    APPOINTMENT_CANCELLED:           { icon: CalendarX,     iconClass: "text-red-500",    bgClass: "bg-red-50/60 dark:bg-red-950/20",       dotClass: "bg-red-500" },
     PATIENT_SURVEY_REQUIRED:         { icon: Star,          iconClass: "text-amber-500",  bgClass: "bg-amber-50/60 dark:bg-amber-950/20",   dotClass: "bg-amber-500" },
     JOB_APPLICATION_SUBMITTED:       { icon: Briefcase,     iconClass: "text-teal-500",   bgClass: "bg-teal-50/60 dark:bg-teal-950/20",     dotClass: "bg-teal-500" },
     GENERAL:                         { icon: Mail,         iconClass: "text-blue-500",   bgClass: "bg-blue-50/60 dark:bg-blue-950/20",     dotClass: "bg-blue-500" },
@@ -236,7 +239,8 @@ export function Header() {
                 </div>
               ) : (
                 notifList.map((notif: any) => {
-                  const cfg = NOTIF_CONFIG[notif.type] ?? DEFAULT_NOTIF_CFG;
+                  // data.type (stable) before notif.type — appointment notices are all GENERAL.
+                  const cfg = NOTIF_CONFIG[notif.data?.type] ?? NOTIF_CONFIG[notif.type] ?? DEFAULT_NOTIF_CFG;
                   const NotifIcon = cfg.icon;
                   return (
                     <div

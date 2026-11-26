@@ -61,6 +61,9 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
   INVENTORY_REQUEST:              { icon: Briefcase,     color: "text-indigo-600", bg: "bg-indigo-100", label: "طلب قطعة جديد" },
   INVENTORY_REQUEST_UPDATE:       { icon: CheckCircle2,  color: "text-green-600",  bg: "bg-green-100",  label: "تحديث طلب قطعة" },
   APPOINTMENT_CREATED_BY_THERAPIST: { icon: CalendarPlus, color: "text-sky-600", bg: "bg-sky-100", label: "موعد أنشأه معالج" },
+  // Sent as GENERAL with the kind in data.type.
+  APPOINTMENT_APOLOGIZED: { icon: CalendarX, color: "text-sky-700", bg: "bg-sky-100", label: "اعتذار عن موعد" },
+  APPOINTMENT_CANCELLED: { icon: CalendarX, color: "text-red-600", bg: "bg-red-100", label: "إلغاء موعد" },
   PATIENT_SURVEY_REQUIRED:        { icon: Star,          color: "text-amber-600",  bg: "bg-amber-100",  label: "استبيان رضا مطلوب" },
   JOB_APPLICATION_SUBMITTED:      { icon: Briefcase,     color: "text-teal-600",   bg: "bg-teal-100",   label: "طلب توظيف جديد" },
   GENERAL:                        { icon: Info,         color: "text-gray-600",   bg: "bg-gray-100",   label: "عام" },
@@ -72,8 +75,9 @@ const TYPE_LABELS: Record<string, string> = Object.fromEntries(
   Object.entries(TYPE_CONFIG).map(([k, v]) => [k, v.label])
 );
 
-function getConfig(type: string) {
-  return TYPE_CONFIG[type] ?? TYPE_CONFIG.GENERAL;
+/** data.type first — appointment notices are GENERAL with their real kind there. */
+function getConfig(type: string, dataType?: unknown) {
+  return (typeof dataType === "string" && TYPE_CONFIG[dataType]) || TYPE_CONFIG[type] || TYPE_CONFIG.GENERAL;
 }
 
 const PAGE_SIZE = 20;
@@ -250,7 +254,7 @@ export default function NotificationsPage() {
         ) : (
           <>
             {filtered.map((notif) => {
-              const cfg = getConfig(notif.type);
+              const cfg = getConfig(notif.type, (notif.data as { type?: unknown } | null)?.type);
               const Icon = cfg.icon;
               const isBirthday = notif.type === "BIRTHDAY";
               const evalLink = EVAL_TYPES.includes(notif.type) && notif.data?.evaluationId
@@ -373,7 +377,7 @@ export default function NotificationsPage() {
       <Dialog open={!!selectedNotif} onOpenChange={(o) => { if (!o) setSelectedNotif(null); }}>
         <DialogContent className="sm:max-w-md">
           {selectedNotif && (() => {
-            const cfg = getConfig(selectedNotif.type);
+            const cfg = getConfig(selectedNotif.type, (selectedNotif.data as { type?: unknown } | null)?.type);
             const Icon = cfg.icon;
             const link = resolveNotificationLink(selectedNotif, notifLinkCtx);
             const target = link ? `/${locale}${link}` : null;

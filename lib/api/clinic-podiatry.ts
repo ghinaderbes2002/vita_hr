@@ -412,18 +412,6 @@ export const clinicPodiatryApi = {
     return unwrap(data) as PodiatrySession;
   },
 
-  /** Stamps the fitting date and who recorded it; takes no body. */
-  installSession: async (receptionId: string, sessionId: string): Promise<PodiatrySession> => {
-    const { data } = await apiClient.post(`/podiatry/receptions/${receptionId}/sessions/${sessionId}/install`);
-    return unwrap(data) as PodiatrySession;
-  },
-
-  /** Clears the fitting stamp only; NOT_INSTALLED (400) if it wasn't fitted. */
-  uninstallSession: async (receptionId: string, sessionId: string): Promise<PodiatrySession> => {
-    const { data } = await apiClient.delete(`/podiatry/receptions/${receptionId}/sessions/${sessionId}/install`);
-    return unwrap(data) as PodiatrySession;
-  },
-
   deleteSession: async (receptionId: string, sessionId: string): Promise<void> => {
     await apiClient.delete(`/podiatry/receptions/${receptionId}/sessions/${sessionId}`);
   },

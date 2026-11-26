@@ -49,7 +49,13 @@ export default function MyPhysioCasesPage() {
 
   const all = (data?.items ?? []) as PhysioCase[];
 
-  const mine = all.filter((c) => c.physiotherapistId === user?.id || c.physiotherapistId === user?.employeeId);
+  // A case can have several therapists: the primary one (physiotherapistId) and
+  // everyone on the treatment plan (physiotherapistIds) — each sees it as theirs.
+  const myIds = [user?.id, user?.employeeId].filter(Boolean) as string[];
+  const mine = all.filter((c) => {
+    const ids = [c.physiotherapistId, ...((c as { physiotherapistIds?: string[] | null }).physiotherapistIds ?? [])];
+    return ids.some((tid) => !!tid && myIds.includes(tid));
+  });
 
   const filtered = mine.filter((c) => {
     const matchStatus = statusFilter === "all" || c.status === statusFilter;

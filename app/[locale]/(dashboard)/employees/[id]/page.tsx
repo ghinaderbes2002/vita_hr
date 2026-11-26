@@ -1,5 +1,7 @@
 "use client";
 
+import { phoneError } from "@/lib/utils/phone";
+import { toast } from "sonner";
 import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -517,6 +519,14 @@ export default function EmployeeDetailsPage() {
   const saveField =
     (field: string, cast: "text" | "number" | "boolean" = "text") =>
     (raw: string) => {
+      // Phone numbers go out on WhatsApp: refuse what the sender can't read.
+      if (field === "phone" || field === "mobile") {
+        const err = phoneError(raw);
+        if (err) {
+          toast.error(err);
+          return Promise.reject(new Error(err));
+        }
+      }
       const value =
         raw === ""
           ? null
