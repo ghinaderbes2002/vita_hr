@@ -296,10 +296,10 @@ const navigation: NavItem[] = [
         icon: Star,
         hiddenForRoles: ["IT", "تقنية المعلومات", "CFO"],
         children: [
-          { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
-          { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
-          { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate", showForRoles: ["hr_manager", "مدير الموارد البشرية"] },
-          { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all", hiddenForRoles: ["hr_manager", "مدير الموارد البشرية"] },
+          { title: "nav.evaluationPeriods", href: "/evaluations/periods", icon: CalendarDays, permission: "evaluation:periods:read" },
+          { title: "nav.evaluationCriteria", href: "/evaluations/criteria", icon: ListChecks, permission: "evaluation:criteria:read" },
+          { title: "nav.pendingReview", href: "/evaluations/pending-review", icon: UserRoundCheck, permission: "evaluation:forms:manager-evaluate", showForRoles: ["hr_manager", "مدير الموارد البشرية", "HR_Specialist"] },
+          { title: "nav.allEvaluations", href: "/evaluations/all-forms", icon: FileBarChart, permission: "evaluation:forms:view-all" },
           { title: "nav.appraisal360Cycles", href: "/evaluations/360-cycles", icon: CalendarDays, permission: "evaluation:appraisal:manage" },
           { title: "nav.appraisal360Setup", href: "/evaluations/360-setup", icon: Settings2, permission: "evaluation:appraisal:manage" },
           // Probation is its own flow, apart from the yearly and 360 evaluations — kept last.
